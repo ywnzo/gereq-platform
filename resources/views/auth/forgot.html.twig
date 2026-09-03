@@ -1,0 +1,15 @@
+{% extends 'auth/layout.html.twig' %}
+
+{% block content %}
+    <h1>Obnova hesla</h1>
+    <p class="muted">Zadejte e-mail. Pokud účet existuje, připravíme reset hesla.</p>
+    <form method="post" action="{{ url('admin.password.email') }}" class="stack">
+        {{ csrf_field()|raw }}
+        <label class="field">
+            <span>E-mail</span>
+            <input type="email" name="email" required>
+        </label>
+        <button type="submit" class="btn btn--primary btn--block">Pokračovat</button>
+        <a class="text-link" href="{{ url('admin.login') }}">Zpět na přihlášení</a>
+    </form>
+{% endblock %}

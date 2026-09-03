@@ -1,0 +1,16 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ definition.singular }}</h1>
+        <a class="btn btn--primary" href="{{ url('admin.' ~ definition.name ~ '.edit', {id: item.id()}) }}">Upravit</a>
+    </header>
+    <dl class="meta-list">
+        {% for field in definition.detailFields() %}
+            <div>
+                <dt>{{ field.label }}</dt>
+                <dd>{{ attribute(item, field.name) }}</dd>
+            </div>
+        {% endfor %}
+    </dl>
+{% endblock %}

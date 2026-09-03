@@ -1,0 +1,375 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Gereq\Http;
+
+use Gereq\Config\Repository;
+use Gereq\Debug\DebugBar;
+use Gereq\Hook\HookManager;
+use Gereq\Http\Exception\HttpException;
+use Gereq\Http\Exception\HttpExceptionInterface;
+use Gereq\Http\Exception\MethodNotAllowedHttpException;
+use Gereq\Http\Exception\NotFoundHttpException;
+use Gereq\Validation\ValidationException;
+use Gereq\Security\ContentSecurityPolicy;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Exception\MethodNotAllowedException;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Twig\Environment;
+
+final class ExceptionHandler
+{
+    /** @var array<int, array{title: string, heading: string}> */
+    private const PAGES = [
+        401 => ['title' => 'Přihlášení', 'heading' => 'Vyžadováno přihlášení'],
+        403 => ['title' => 'Přístup odepřen', 'heading' => 'Přístup odepřen'],
+        404 => ['title' => 'Nenalezeno', 'heading' => 'Stránka nebyla nalezena'],
+        405 => ['title' => 'Metoda není povolená', 'heading' => 'Metoda není povolená'],
+        419 => ['title' => 'Platnost vypršela', 'heading' => 'Platnost formuláře vypršela'],
+        422 => ['title' => 'Neplatná data', 'heading' => 'Formulář obsahuje chyby'],
+        429 => ['title' => 'Příliš mnoho požadavků', 'heading' => 'Příliš mnoho požadavků'],
+        500 => ['title' => 'Chyba serveru', 'heading' => 'Něco se pokazilo'],
+        503 => ['title' => 'Nedostupné', 'heading' => 'Služba je dočasně nedostupná'],
+    ];
+
+    public function __construct(
+        private readonly Environment $twig,
+        private readonly HookManager $hooks,
+        private readonly ContentSecurityPolicy $csp,
+        private readonly Repository $config,
+        private readonly Router $router,
+        private readonly string $basePath,
+        private readonly ?DebugBar $debugBar = null,
+    ) {
+    }
+
+    public function register(): void
+    {
+        error_reporting(E_ALL);
+        ini_set('display_errors', '0');
+        ini_set('log_errors', '1');
+        set_error_handler($this->handleError(...));
+        set_exception_handler($this->handleException(...));
+        register_shutdown_function($this->handleShutdown(...));
+    }
+
+    public function handleError(int $severity, string $message, string $file = '', int $line = 0): bool
+    {
+        if ((error_reporting() & $severity) === 0) {
+            return false;
+        }
+
+        if ($this->isIgnorable($severity)) {
+            return true;
+        }
+
+        throw new \ErrorException($message, 0, $severity, $file, $line);
+    }
+
+    public function handleException(\Throwable $exception): void
+    {
+        $this->report($exception);
+
+        if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+            fwrite(STDERR, $exception::class . ': ' . $exception->getMessage() . PHP_EOL);
+            fwrite(STDERR, $exception->getFile() . ':' . $exception->getLine() . PHP_EOL);
+            exit(1);
+        }
+
+        $this->render(Request::createFromGlobals(), $exception)->send();
+    }
+
+    public function handleShutdown(): void
+    {
+        $error = error_get_last();
+        if ($error === null) {
+            return;
+        }
+
+        $fatal = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
+        if (!in_array($error['type'], $fatal, true)) {
+            return;
+        }
+
+        $this->handleException(new \ErrorException(
+            $error['message'],
+            0,
+            $error['type'],
+            $error['file'],
+            $error['line'],
+        ));
+    }
+
+    public function report(\Throwable $exception): void
+    {
+        $exception = $this->normalize($exception);
+
+        if (!$this->shouldReport($exception)) {
+            return;
+        }
+
+        try {
+            $this->hooks->doAction('http.error.report', $exception);
+        } catch (\Throwable) {
+            // reporting nesmí shodit request
+        }
+
+        $this->writeLog($exception);
+    }
+
+    public function render(Request $request, \Throwable $exception): Response
+    {
+        $exception = $this->hooks->filter('http.error.prepare', $exception, $request);
+        if (!$exception instanceof \Throwable) {
+            $exception = new HttpException(500, 'Došlo k neočekávané chybě.');
+        }
+
+        $exception = $this->normalize($exception);
+        $status = $this->status($exception);
+
+        $response = $this->wantsJson($request)
+            ? $this->toJson($exception, $status)
+            : $this->toHtml($request, $exception, $status);
+
+        foreach ($this->headers($exception) as $name => $value) {
+            $response->headers->set($name, $value);
+        }
+
+        $this->applySecurityHeaders($request, $response);
+
+        $filtered = $this->hooks->filter('http.error.response', $response, $request, $exception);
+        $response = $filtered instanceof Response ? $filtered : $response;
+
+        if ($this->debugBar !== null && $this->debugBar->enabled()) {
+            $this->debugBar->addException($exception);
+            $response = $this->debugBar->inject($request, $response);
+        }
+
+        return $response;
+    }
+
+    public function decorate(Request $request, Response $response): Response
+    {
+        $this->applySecurityHeaders($request, $response);
+
+        return $response;
+    }
+
+    public static function fallback(\Throwable $exception, bool $debug = false): void
+    {
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: text/html; charset=UTF-8');
+            header('X-Content-Type-Options: nosniff');
+            header('Connection: close');
+        }
+
+        echo self::fallbackHtml($exception, $debug);
+    }
+
+    private function normalize(\Throwable $exception): \Throwable
+    {
+        if ($exception instanceof ResourceNotFoundException) {
+            return new NotFoundHttpException('', $exception);
+        }
+
+        if ($exception instanceof MethodNotAllowedException) {
+            return new MethodNotAllowedHttpException($exception->getAllowedMethods(), '', $exception);
+        }
+
+        return $exception;
+    }
+
+    private function status(\Throwable $exception): int
+    {
+        if ($exception instanceof HttpExceptionInterface) {
+            return $exception->status();
+        }
+
+        return 500;
+    }
+
+    /** @return array<string, string> */
+    private function headers(\Throwable $exception): array
+    {
+        if ($exception instanceof HttpExceptionInterface) {
+            return $exception->headers();
+        }
+
+        return [];
+    }
+
+    private function shouldReport(\Throwable $exception): bool
+    {
+        return $this->status($exception) >= 500;
+    }
+
+    private function isIgnorable(int $severity): bool
+    {
+        return ($severity & (E_DEPRECATED | E_USER_DEPRECATED | E_NOTICE | E_USER_NOTICE)) !== 0;
+    }
+
+    private function wantsJson(Request $request): bool
+    {
+        if (str_starts_with($request->getPathInfo(), '/api/')) {
+            return true;
+        }
+
+        $accept = (string) $request->headers->get('Accept', '');
+
+        return str_contains($accept, 'application/json') && !str_contains($accept, 'text/html');
+    }
+
+    private function toJson(\Throwable $exception, int $status): JsonResponse
+    {
+        $fields = $exception instanceof ValidationException ? $exception->errors() : [];
+        $payload = [
+            'error' => [
+                'code' => $this->errorCode($status),
+                'message' => $this->publicMessage($exception, $status),
+                'fields' => $fields,
+            ],
+        ];
+
+        if ($this->debug() && $status >= 500) {
+            $payload['error']['exception'] = $exception::class;
+            $payload['error']['file'] = $exception->getFile() . ':' . $exception->getLine();
+            $payload['error']['trace'] = explode("\n", $exception->getTraceAsString());
+        }
+
+        return new JsonResponse($payload, $status);
+    }
+
+    private function toHtml(Request $request, \Throwable $exception, int $status): Response
+    {
+        $page = self::PAGES[$status] ?? ['title' => 'Chyba', 'heading' => 'Něco se pokazilo'];
+        $context = [
+            'pageTitle' => $page['title'],
+            'heading' => $page['heading'],
+            'status' => $status,
+            'message' => $this->publicMessage($exception, $status),
+            'homeUrl' => $this->homeUrl($request),
+            'debug' => $this->debug() && $status >= 500,
+            'exception' => $exception,
+        ];
+
+        $templates = [
+            'errors/' . $status . '.html.twig',
+            'errors/generic.html.twig',
+        ];
+
+        foreach ($templates as $template) {
+            try {
+                if (!$this->twig->getLoader()->exists($template)) {
+                    continue;
+                }
+
+                return new Response($this->twig->render($template, $context), $status);
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return new Response(self::fallbackHtml($exception, $this->debug()), $status, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    }
+
+    private function publicMessage(\Throwable $exception, int $status): string
+    {
+        if ($exception instanceof HttpExceptionInterface && $exception->getMessage() !== '') {
+            return $exception->getMessage();
+        }
+
+        if ($this->debug() && $status >= 500 && $exception->getMessage() !== '') {
+            return $exception->getMessage();
+        }
+
+        return HttpException::defaultMessage($status);
+    }
+
+    private function errorCode(int $status): string
+    {
+        return match ($status) {
+            401 => 'unauthorized',
+            403 => 'forbidden',
+            404 => 'not_found',
+            405 => 'method_not_allowed',
+            419 => 'csrf_mismatch',
+            422 => 'validation_failed',
+            429 => 'too_many_requests',
+            503 => 'unavailable',
+            default => 'server_error',
+        };
+    }
+
+    private function homeUrl(Request $request): string
+    {
+        try {
+            if ($this->router->has('admin.dashboard')) {
+                return $this->router->url('admin.dashboard', [], $request);
+            }
+        } catch (\Throwable) {
+        }
+
+        return '/admin';
+    }
+
+    private function applySecurityHeaders(Request $request, Response $response): void
+    {
+        $nonce = (string) $request->attributes->get('csp_nonce', '');
+        if ($nonce === '') {
+            $nonce = $this->csp->nonce();
+            $request->attributes->set('csp_nonce', $nonce);
+        }
+
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('X-Frame-Options', 'DENY');
+        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        $response->headers->set('Content-Security-Policy', $this->csp->header($nonce));
+        $response->headers->set('Connection', 'close');
+        $response->setProtocolVersion('1.1');
+    }
+
+    private function writeLog(\Throwable $exception): void
+    {
+        $dir = $this->basePath . '/storage/logs';
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
+            error_log($exception->getMessage());
+
+            return;
+        }
+
+        $line = sprintf(
+            "[%s] %s: %s in %s:%d\n%s\n\n",
+            (new \DateTimeImmutable('now', new \DateTimeZone('Europe/Prague')))->format('Y-m-d H:i:s'),
+            $exception::class,
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine(),
+            $exception->getTraceAsString(),
+        );
+
+        @file_put_contents($dir . '/gereq.log', $line, FILE_APPEND | LOCK_EX);
+    }
+
+    private function debug(): bool
+    {
+        return (bool) $this->config->get('app.debug', false);
+    }
+
+    private static function fallbackHtml(\Throwable $exception, bool $debug): string
+    {
+        $message = $debug
+            ? e($exception::class . ': ' . $exception->getMessage())
+            : 'Došlo k neočekávané chybě.';
+        $trace = $debug ? '<pre>' . e($exception->getTraceAsString()) . '</pre>' : '';
+
+        return '<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>Chyba · GEREQ</title></head>'
+            . '<body><h1>Něco se pokazilo</h1><p>' . $message . '</p>' . $trace . '</body></html>';
+    }
+}

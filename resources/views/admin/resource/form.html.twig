@@ -1,0 +1,23 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ item ? 'Upravit' : 'Nový záznam' }}</h1>
+    </header>
+    <form method="post" class="form-grid" action="{{ item ? url('admin.' ~ definition.name ~ '.update', {id: item.id()}) : url('admin.' ~ definition.name ~ '.store') }}">
+        {{ csrf_field()|raw }}
+        {% for field in definition.formFields() %}
+            <label class="field {{ field.type == 'textarea' ? 'field--full' : '' }}">
+                <span>{{ field.label }}</span>
+                {% if field.type == 'textarea' %}
+                    <textarea name="{{ field.name }}" rows="4">{{ item ? attribute(item, field.name) : '' }}</textarea>
+                {% else %}
+                    <input type="{{ field.type == 'email' ? 'email' : 'text' }}" name="{{ field.name }}" value="{{ item ? attribute(item, field.name) : '' }}" {{ field.required ? 'required' : '' }}>
+                {% endif %}
+            </label>
+        {% endfor %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">Uložit</button>
+        </div>
+    </form>
+{% endblock %}

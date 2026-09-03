@@ -1,0 +1,10 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Gereq\Foundation\Application;
+
+require __DIR__ . '/vendor/autoload.php';
+
+exit(Application::create(__DIR__)->runConsole());

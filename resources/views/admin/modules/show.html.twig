@@ -1,0 +1,56 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">Modul</p>
+            <h1>{{ manifest.name }}</h1>
+            <p class="muted">{{ manifest.description }}</p>
+        </div>
+        <form method="post" action="{{ enabled ? url('admin.modules.disable', {id: manifest.id}) : url('admin.modules.enable', {id: manifest.id}) }}">
+            {{ csrf_field()|raw }}
+            <button class="btn {{ enabled ? 'btn--ghost' : 'btn--primary' }}" type="submit">
+                {{ enabled ? 'Deaktivovat' : 'Aktivovat' }}
+            </button>
+        </form>
+    </header>
+
+    <dl class="meta-list">
+        <div><dt>Verze</dt><dd>{{ manifest.version }}</dd></div>
+        <div><dt>Stav</dt><dd>{{ enabled ? 'Aktivní' : 'Vypnuto' }}</dd></div>
+        <div><dt>Autor</dt><dd>{{ manifest.author }}</dd></div>
+        <div>
+            <dt>Závislosti</dt>
+            <dd>
+                {% if manifest.requires is empty %}
+                    —
+                {% else %}
+                    {% for dep, constraint in manifest.requires %}
+                        <span class="badge">{{ dep }} {{ constraint }}</span>
+                    {% endfor %}
+                {% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt>Capabilities</dt>
+            <dd>
+                {% if manifest.capabilities is empty %}—{% else %}
+                    {% for cap in manifest.capabilities %}<span class="badge">{{ cap }}</span>{% endfor %}
+                {% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt>Oprávnění</dt>
+            <dd>
+                {% if manifest.permissions is empty %}—{% else %}
+                    {% for permission in manifest.permissions %}
+                        <code>{{ permission.name }}</code>
+                    {% endfor %}
+                {% endif %}
+            </dd>
+        </div>
+    </dl>
+    {% if missing is not empty %}
+        <div class="alert alert--danger">Chybí závislosti: {{ missing|join(', ') }}</div>
+    {% endif %}
+{% endblock %}

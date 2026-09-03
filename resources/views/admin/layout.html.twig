@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="gereq-dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ pageTitle|default('Administrace') }}{% endblock %} · GEREQ</title>
+    {% include 'partials/brand-head.html.twig' %}
+    <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+</head>
+<body class="admin-body" data-sidebar="expanded">
+    <div class="app-shell" x-data="gereqAdmin" x-cloak>
+        <div class="sidebar-backdrop" @click="closeSidebar" :class="backdropClass"></div>
+
+        <aside class="sidebar" :class="sidebarClass">
+            <div class="sidebar__brand">
+                {% include 'partials/brand-lockup.html.twig' with { href: url('admin.dashboard') } %}
+                <button type="button" class="icon-btn sidebar__collapse" @click="toggleCollapsed" aria-label="Sbalit menu">
+                    {{ icon('panel') }}
+                </button>
+            </div>
+
+            <nav class="sidebar__nav" aria-label="Hlavní menu">
+                {% set lastGroup = '' %}
+                {% for node in menu %}
+                    {% set menuItem = node.item %}
+                    {% set group = menuItem.group|default('Hlavní') %}
+                    {% if group != lastGroup %}
+                        <div class="nav-group__label">{{ group }}</div>
+                        {% set lastGroup = group %}
+                    {% endif %}
+                    {% set active = menuItem.route is not null and route_is(menuItem.route) %}
+                    <a href="{{ node.url }}" class="nav-item{% if active %} is-active{% endif %}" title="{{ menuItem.label }}">
+                        <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
+                        <span class="nav-item__label">{{ menuItem.label }}</span>
+                        {% if menuItem.badge %}
+                            <span class="nav-item__badge">{{ menuItem.badge }}</span>
+                        {% endif %}
+                    </a>
+                    {% for child in node.children %}
+                        {% if not child.hidden %}
+                            <a href="{{ child.route ? url(child.route) : (child.url|default('#')) }}" class="nav-item nav-item--child{% if child.route and route_is(child.route) %} is-active{% endif %}">
+                                <span class="nav-item__label">{{ child.label }}</span>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </nav>
+        </aside>
+
+        <div class="app-main">
+            <header class="topbar">
+                <div class="topbar__left">
+                    <button type="button" class="icon-btn topbar__menu" @click="openSidebar" aria-label="Menu">
+                        {{ icon('panel') }}
+                    </button>
+                    <nav class="breadcrumbs" aria-label="Drobečková navigace">
+                        {% block breadcrumb %}
+                            <span>{{ pageTitle|default('Administrace') }}</span>
+                        {% endblock %}
+                    </nav>
+                </div>
+                <div class="topbar__right">
+                    <button type="button" class="search-trigger" @click="openPalette">
+                        {{ icon('search') }}
+                        <span>Hledat</span>
+                        <kbd>Ctrl K</kbd>
+                    </button>
+                    <button type="button" class="icon-btn" @click="cycleTheme" aria-label="Motiv">
+                        {{ icon('sun') }}
+                    </button>
+                    <div class="user-menu">
+                        <button type="button" class="avatar-btn" @click="toggleUserMenu">
+                            <span class="avatar">{{ user ? user.initials() : 'G' }}</span>
+                        </button>
+                        <div class="flyout" :class="userMenuClass" @click.outside="closeUserMenu">
+                            <div class="flyout__meta">
+                                <strong>{{ user ? user.name() : '' }}</strong>
+                                <span>{{ user ? user.email() : '' }}</span>
+                            </div>
+                            <a href="{{ url('admin.profile') }}">Profil</a>
+                            <form method="post" action="{{ url('admin.logout') }}" id="logout-form">
+                                {{ csrf_field()|raw }}
+                                <button type="submit">Odhlásit se</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="page">
+                {% set flashes_success = flash('success') %}
+                {% set flashes_error = flash('error') %}
+                {% if flashes_success %}
+                    {% for message in flashes_success %}
+                        <div class="alert alert-success alert--success" role="status">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                {% if flashes_error %}
+                    {% for message in flashes_error %}
+                        <div class="alert alert-error alert--danger" role="alert">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        <div class="palette" :class="paletteClass">
+            <div class="palette__backdrop" @click="closePalette"></div>
+            <div class="palette__panel">
+                <input type="search" class="palette__input" placeholder="Přejít na stránku, vytvořit záznam…" x-model="query" @input="refreshCommands" x-ref="paletteInput">
+                <ul class="palette__list">
+                    <template x-for="command in visibleCommands" :key="command.id">
+                        <li>
+                            <a :href="command.url" class="palette__item" :data-command="command.id" @click="onCommandClick">
+                                <span x-text="command.label"></span>
+                                <span class="palette__group" x-text="command.group"></span>
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </div>
+        <div class="toasts" id="toasts"></div>
+    </div>
+
+    <script nonce="{{ csp_nonce() }}">
+        window.__GEREQ_COMMANDS__ = {{ commands|default([])|json_encode|raw }};
+        window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
+        window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
+    </script>
+    <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+</body>
+</html>

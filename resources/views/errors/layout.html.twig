@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="gereq">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ pageTitle|default('Chyba') }} · GEREQ</title>
+    {% include 'partials/brand-head.html.twig' %}
+    <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+</head>
+<body class="auth-body">
+    <main class="auth-shell">
+        <section class="auth-panel">
+            {% include 'partials/brand-lockup.html.twig' with { href: homeUrl|default('/admin'), modifier: 'brand--auth' } %}
+            {% block content %}{% endblock %}
+        </section>
+        <p class="auth-footnote">Interní platforma</p>
+    </main>
+</body>
+</html>

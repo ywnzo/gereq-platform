@@ -1,0 +1,26 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>Moduly</h1>
+            <p class="muted">Zapnutí a vypnutí funkcí platformy</p>
+        </div>
+    </header>
+    <div class="module-list">
+        {% for row in items %}
+            {% set manifest = row.manifest %}
+            <article class="module-card">
+                <div>
+                    <h2><a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a></h2>
+                    <p class="muted">{{ manifest.description ?: 'Bez popisu' }} · v{{ manifest.version }}</p>
+                </div>
+                {% if row.enabled %}
+                    <span class="badge badge--ok">Zapnuto</span>
+                {% else %}
+                    <span class="badge badge--muted">Vypnuto</span>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+{% endblock %}

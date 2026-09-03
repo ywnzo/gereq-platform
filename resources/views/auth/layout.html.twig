@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="gereq">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ pageTitle|default('Přihlášení') }} · GEREQ</title>
+    {% include 'partials/brand-head.html.twig' %}
+    <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+</head>
+<body class="auth-body">
+    <main class="auth-shell">
+        <section class="auth-panel">
+            {% include 'partials/brand-lockup.html.twig' with { href: url('admin.login'), modifier: 'brand--auth', subtitle: 'Platform' } %}
+            {% set flashes_success = flash('success') %}
+            {% set flashes_error = flash('error') %}
+            {% if flashes_success %}
+                {% for message in flashes_success %}
+                    <div class="alert alert-success alert--success">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% if flashes_error %}
+                {% for message in flashes_error %}
+                    <div class="alert alert-error alert--danger">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+        </section>
+        <p class="auth-footnote">Interní platforma · verze {{ '0.1.0' }}</p>
+    </main>
+    <script nonce="{{ csp_nonce() }}">
+        window.__GEREQ_COMMANDS__ = [];
+        window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
+        window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
+    </script>
+    <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+</body>
+</html>

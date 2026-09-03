@@ -1,0 +1,76 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set value = old(name, value|default(''), form) %}
+{% set err = error(name, form) %}
+{% set required = required|default(false) %}
+{% set optional = optional|default(false) %}
+{% set extra = extra|default('') %}
+{% set placeholder = placeholder|default('') %}
+{% set autocomplete = autocomplete|default('') %}
+{% set disabled = disabled|default(false) %}
+{% set readonly = readonly|default(false) %}
+{% set clearable = clearable|default(false) %}
+{% set prefix = prefix|default('') %}
+{% set suffix = suffix|default('') %}
+{% set inputmode = inputmode|default('') %}
+{% set min = min|default(null) %}
+{% set max = max|default(null) %}
+{% set step = step|default(null) %}
+{% set pattern = pattern|default('') %}
+{% set described = [] %}
+{% if hint %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
+{% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
+{% set wrap = prefix or suffix %}
+
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}"{% if type|default('text') == 'password' %} x-data="gereqPassword"{% endif %}>
+    {% if label %}
+        <label class="g-label" for="{{ id }}">
+            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+        </label>
+    {% endif %}
+    <div class="g-control-wrap{% if wrap %} g-addon{% endif %}">
+        {% if type|default('text') == 'search' %}
+            <span class="g-control__icon" aria-hidden="true">{{ icon('search') }}</span>
+        {% endif %}
+        {% if prefix %}
+            <span class="g-addon__affix">{{ prefix }}</span>
+        {% endif %}
+        <input
+            class="g-control{% if type|default('text') == 'search' %} g-control--icon{% endif %}{% if type|default('text') == 'password' or clearable %} g-control--actions{% endif %}{% if type|default('text') == 'color' %} g-control--color{% endif %}"
+            id="{{ id }}"
+            name="{{ name }}"
+            type="{{ type|default('text') == 'password' ? 'password' : type|default('text') }}"
+            value="{{ value }}"
+            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+            {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+            {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
+            {% if pattern %}pattern="{{ pattern }}"{% endif %}
+            {% if min is not null %}min="{{ min }}"{% endif %}
+            {% if max is not null %}max="{{ max }}"{% endif %}
+            {% if step is not null %}step="{{ step }}"{% endif %}
+            {% if required %}required{% endif %}
+            {% if disabled %}disabled{% endif %}
+            {% if readonly %}readonly{% endif %}
+            {% if err %}aria-invalid="true"{% endif %}
+            {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
+            {% if type|default('text') == 'password' %}x-ref="input"{% endif %}
+        >
+        {% if suffix %}
+            <span class="g-addon__affix">{{ suffix }}</span>
+        {% endif %}
+        {% if type|default('text') == 'password' %}
+            <button type="button" class="g-control__btn" @click="toggle" :aria-label="toggleLabel">
+                <span class="g-control__eye" aria-hidden="true"></span>
+            </button>
+        {% endif %}
+    </div>
+    {% if hint %}
+        <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
+    {% endif %}
+    {% if err %}
+        <p class="g-error" id="{{ id }}-error">{{ err }}</p>
+    {% endif %}
+</div>

@@ -1,0 +1,55 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">Přehled</p>
+            <h1 class="greeting">Dobrý den{% if user %}, {{ user.name()|split(' ')|first }}{% endif %}</h1>
+        </div>
+    </header>
+
+    <section class="metrics" aria-label="Stav systému">
+        <div>
+            <span>Moduly</span>
+            <strong>{{ stats.modules }}</strong>
+            <span class="muted">aktivní</span>
+        </div>
+        <div>
+            <span>Uživatelé</span>
+            <strong>{{ stats.users }}</strong>
+        </div>
+        <div>
+            <span>Fronta</span>
+            <strong>{{ stats.jobs }}</strong>
+            <span class="muted">selhaných úloh</span>
+        </div>
+        {% for widget in widgets %}
+            {{ widget.render()|raw }}
+        {% endfor %}
+    </section>
+
+    <section class="panel">
+        <header class="panel__head">
+            <h2>Aktivita</h2>
+        </header>
+        {% if activity is empty %}
+            <div class="empty">
+                <p>Zatím žádné záznamy. Změny z audit logu se objeví tady.</p>
+            </div>
+        {% else %}
+            <ul class="activity">
+                {% for log in activity %}
+                    <li>
+                        <div>
+                            <strong>{{ log.summary() }}</strong>
+                            {% if log.resource() %}
+                                <span class="muted">{{ log.resource() }}</span>
+                            {% endif %}
+                        </div>
+                        <time class="muted">{{ log.createdAt().format('d. m. Y H:i') }}</time>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+{% endblock %}

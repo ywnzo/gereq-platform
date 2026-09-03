@@ -1,0 +1,42 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set value = old(name, value|default(''), form) %}
+{% set err = error(name, form) %}
+{% set required = required|default(false) %}
+{% set extra = extra|default('') %}
+{% set options = options|default([]) %}
+
+<fieldset class="g-field g-radios{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+    {% if label %}
+        <legend class="g-label"><span>{{ label }}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span></legend>
+    {% endif %}
+    <div class="g-radios__list" role="radiogroup">
+        {% for option in options %}
+            {% set optValue = option.value is defined ? option.value : option %}
+            {% set optLabel = option.label is defined ? option.label : option %}
+            {% set optDesc = option.description|default('') %}
+            <label class="g-radio" for="{{ id }}-{{ loop.index }}">
+                <span class="g-radio__box">
+                    <input
+                        id="{{ id }}-{{ loop.index }}"
+                        type="radio"
+                        name="{{ name }}"
+                        value="{{ optValue }}"
+                        {% if optValue == value %}checked{% endif %}
+                        {% if required %}required{% endif %}
+                    >
+                    <span class="g-radio__dot" aria-hidden="true"></span>
+                </span>
+                <span class="g-radio__copy">
+                    <span class="g-radio__label">{{ optLabel }}</span>
+                    {% if optDesc %}<span class="g-radio__desc">{{ optDesc }}</span>{% endif %}
+                </span>
+            </label>
+        {% endfor %}
+    </div>
+    {% if hint %}<p class="g-hint">{{ hint }}</p>{% endif %}
+    {% if err %}<p class="g-error">{{ err }}</p>{% endif %}
+</fieldset>

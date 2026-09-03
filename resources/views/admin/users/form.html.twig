@@ -1,0 +1,56 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ item ? 'Upravit uživatele' : 'Nový uživatel' }}</h1>
+    </header>
+
+    <form method="post" action="{{ item ? url('admin.users.update', {id: item.id()}) : url('admin.users.store') }}" class="form-grid">
+        {{ csrf_field()|raw }}
+        <label class="field">
+            <span>Jméno</span>
+            <input type="text" name="name" value="{{ item ? item.name() : '' }}" required>
+        </label>
+        <label class="field">
+            <span>E-mail</span>
+            <input type="email" name="email" value="{{ item ? item.email() : '' }}" required>
+        </label>
+        <label class="field">
+            <span>{{ item ? 'Nové heslo (prázdné = beze změny)' : 'Heslo' }}</span>
+            <input type="password" name="password" {{ item ? '' : 'required minlength="10"' }}>
+        </label>
+        {% if item %}
+            <label class="field">
+                <span>Stav</span>
+                <select name="status">
+                    <option value="active" {{ item.status() == 'active' ? 'selected' : '' }}>Aktivní</option>
+                    <option value="disabled" {{ item.status() == 'disabled' ? 'selected' : '' }}>Neaktivní</option>
+                </select>
+            </label>
+        {% endif %}
+        <fieldset class="field field--full">
+            <legend>Role</legend>
+            <div class="chip-list">
+                {% for role in roles %}
+                    <label class="check">
+                        <input type="checkbox" name="roles[]" value="{{ role.id() }}"
+                            {{ item and item.hasRole(role.name()) ? 'checked' : '' }}>
+                        <span>{{ role.label() }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </fieldset>
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">Uložit</button>
+            <a class="btn btn--ghost" href="{{ url('admin.users.index') }}">Zrušit</a>
+            {% if item and user.can('users.delete') %}
+                <button class="btn btn--danger" type="submit" form="delete-user">Smazat</button>
+            {% endif %}
+        </div>
+    </form>
+    {% if item and user.can('users.delete') %}
+        <form id="delete-user" method="post" action="{{ url('admin.users.destroy', {id: item.id()}) }}" onsubmit="return confirm('Opravdu smazat uživatele?');">
+            {{ csrf_field()|raw }}
+        </form>
+    {% endif %}
+{% endblock %}

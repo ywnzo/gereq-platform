@@ -1,0 +1,16 @@
+parameters:
+    level: 5
+    paths:
+        - src
+        - modules
+    tmpDir: .phpstan-tmp
+    ignoreErrors:
+        -
+            identifier: property.onlyWritten
+        -
+            identifier: while.alwaysTrue
+        -
+            identifier: nullCoalesce.offset
+        -
+            identifier: property.unusedType
+

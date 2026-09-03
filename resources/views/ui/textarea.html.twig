@@ -1,0 +1,74 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set value = old(name, value|default(''), form) %}
+{% set err = error(name, form) %}
+{% set required = required|default(false) %}
+{% set optional = optional|default(false) %}
+{% set extra = extra|default('') %}
+{% set rows = rows|default(null) %}
+{% set placeholder = placeholder|default('') %}
+{% set maxlength = maxlength|default(null) %}
+{% set size = size|default('full') %}
+{% set mini = size == 'mini' %}
+{% set described = [] %}
+{% if hint %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
+{% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
+{% set areaClass = mini ? 'textarea-mini' : 'textarea' %}
+{% set areaRows = rows ? rows : (mini ? 3 : 8) %}
+
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}"{% if not mini %} x-data="gereqTextarea"{% endif %}>
+    {% if label %}
+        <label class="g-label" for="{{ id }}">
+            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+        </label>
+    {% endif %}
+    {% if mini %}
+        <textarea
+            class="{{ areaClass }}"
+            id="{{ id }}"
+            name="{{ name }}"
+            rows="{{ areaRows }}"
+            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+            {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+            {% if required %}required{% endif %}
+            {% if err %}aria-invalid="true"{% endif %}
+            {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
+        >{{ value }}</textarea>
+    {% else %}
+        <div class="textarea-shell{% if err %} is-invalid{% endif %}">
+            <div class="textarea-shell__bar">
+                <span class="textarea-shell__hint">Pište volně · označení má signal barvu</span>
+                <button type="button" class="textarea-shell__action" @click="selectAll">Označit vše</button>
+            </div>
+            <textarea
+                class="{{ areaClass }}"
+                id="{{ id }}"
+                name="{{ name }}"
+                rows="{{ areaRows }}"
+                x-ref="input"
+                @input="sync"
+                @select="sync"
+                @keyup="sync"
+                @click="sync"
+                {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+                {% if required %}required{% endif %}
+                {% if err %}aria-invalid="true"{% endif %}
+                {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
+            >{{ value }}</textarea>
+            <div class="textarea-shell__meta">
+                <span x-text="selectedLabel"></span>
+                <span x-text="countLabel"></span>
+            </div>
+        </div>
+    {% endif %}
+    {% if hint %}
+        <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
+    {% endif %}
+    {% if err %}
+        <p class="g-error" id="{{ id }}-error">{{ err }}</p>
+    {% endif %}
+</div>

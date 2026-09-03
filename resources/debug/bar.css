@@ -1,0 +1,345 @@
+#gereq-debug.gdb,
+#gereq-debug.gdb * {
+  box-sizing: border-box;
+}
+#gereq-debug.gdb {
+  --gdb-ink: #0a0b0a;
+  --gdb-ink-2: #121412;
+  --gdb-line: rgba(245, 245, 239, 0.1);
+  --gdb-paper: #fafafa;
+  --gdb-mute: rgba(250, 250, 250, 0.58);
+  --gdb-signal: #d7ff45;
+  --gdb-ok: #86b894;
+  --gdb-warn: #e4c35a;
+  --gdb-err: #ff6b5e;
+  --gdb-info: #72d6ff;
+  --gdb-sans: "IBM Plex Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --gdb-display: "IBM Plex Sans", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --gdb-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  position: fixed;
+  inset: auto;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2147483646;
+  color: var(--gdb-paper);
+  font-family: var(--gdb-sans);
+  font-size: 12.5px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+#gereq-debug.gdb[hidden] { display: none !important; }
+
+/* Soft button reset — do NOT zero padding/background (would beat .gdb-tab / .gdb-pill). */
+#gereq-debug.gdb button {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  cursor: pointer;
+}
+
+#gereq-debug.gdb kbd {
+  font-family: var(--gdb-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--gdb-line);
+  border-radius: 4px;
+  color: var(--gdb-mute);
+  background: transparent;
+}
+
+.gdb-pill,
+.gdb-dock {
+  pointer-events: auto;
+}
+#gereq-debug.gdb .gdb-pill {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 14px 0 12px;
+  background: var(--gdb-ink) !important;
+  color: var(--gdb-paper) !important;
+  border: 1px solid var(--gdb-line);
+  border-radius: 999px;
+  box-shadow: 0 12px 40px rgba(10, 11, 10, 0.45);
+  cursor: pointer;
+  user-select: none;
+}
+#gereq-debug.gdb .gdb-pill:hover { border-color: rgba(215, 255, 69, 0.35); }
+#gereq-debug.gdb .gdb-pill__brand {
+  font-family: var(--gdb-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--gdb-signal);
+}
+#gereq-debug.gdb .gdb-pill__meta {
+  display: inline-flex;
+  gap: 8px;
+  font-family: var(--gdb-mono);
+  font-size: 11px;
+  color: var(--gdb-mute);
+}
+#gereq-debug.gdb .gdb-pill__meta b { color: var(--gdb-paper); font-weight: 500; }
+
+#gereq-debug.gdb .gdb-dock {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  max-height: min(72vh, 720px);
+  background: var(--gdb-ink);
+  color: var(--gdb-paper);
+  border: 1px solid var(--gdb-line);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(10, 11, 10, 0.55);
+  overflow: hidden;
+}
+#gereq-debug.gdb .gdb-dock[hidden] { display: none !important; }
+
+#gereq-debug.gdb .gdb-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid var(--gdb-line);
+  flex: 0 0 auto;
+}
+#gereq-debug.gdb .gdb-bar__brand {
+  font-family: var(--gdb-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--gdb-signal);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+#gereq-debug.gdb .gdb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(245, 245, 239, 0.06);
+  font-family: var(--gdb-mono);
+  font-size: 11px;
+  color: var(--gdb-mute);
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#gereq-debug.gdb .gdb-chip b { color: var(--gdb-paper); font-weight: 500; }
+#gereq-debug.gdb .gdb-chip--ok { color: var(--gdb-ok); }
+#gereq-debug.gdb .gdb-chip--warn { color: var(--gdb-warn); }
+#gereq-debug.gdb .gdb-chip--err { color: var(--gdb-err); background: rgba(255, 107, 94, 0.12); }
+#gereq-debug.gdb .gdb-chip--info { color: var(--gdb-info); }
+
+#gereq-debug.gdb .gdb-bar__tabs {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+#gereq-debug.gdb .gdb-bar__tabs::-webkit-scrollbar { display: none; }
+
+#gereq-debug.gdb .gdb-tab {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 8px;
+  background: rgba(245, 245, 239, 0.05) !important;
+  color: var(--gdb-mute) !important;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+#gereq-debug.gdb .gdb-tab:hover {
+  color: var(--gdb-paper) !important;
+  background: rgba(245, 245, 239, 0.1) !important;
+}
+#gereq-debug.gdb .gdb-tab.is-active {
+  color: var(--gdb-ink) !important;
+  background: var(--gdb-signal) !important;
+  font-weight: 600;
+}
+#gereq-debug.gdb .gdb-tab__n {
+  display: inline-flex;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 5px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(250, 250, 250, 0.12);
+  font-family: var(--gdb-mono);
+  font-size: 10px;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+#gereq-debug.gdb .gdb-tab.is-active .gdb-tab__n {
+  background: rgba(10, 11, 10, 0.16);
+  color: var(--gdb-ink);
+}
+
+#gereq-debug.gdb .gdb-bar__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+#gereq-debug.gdb .gdb-iconbtn {
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 8px;
+  background: transparent !important;
+  color: var(--gdb-mute) !important;
+  display: grid !important;
+  place-items: center;
+}
+#gereq-debug.gdb .gdb-iconbtn:hover {
+  color: var(--gdb-paper) !important;
+  background: rgba(245, 245, 239, 0.06) !important;
+}
+
+#gereq-debug.gdb .gdb-panel {
+  flex: 1 1 auto;
+  min-height: 180px;
+  max-height: 52vh;
+  overflow: auto;
+  background: var(--gdb-ink-2);
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-panel[hidden] { display: none !important; }
+#gereq-debug.gdb .gdb-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--gdb-mute);
+}
+
+#gereq-debug.gdb .gdb-kv {
+  width: 100%;
+  border-collapse: collapse;
+}
+#gereq-debug.gdb .gdb-kv th,
+#gereq-debug.gdb .gdb-kv td {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--gdb-line);
+  vertical-align: top;
+  text-align: left;
+  background: transparent;
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-kv th {
+  width: 180px;
+  color: var(--gdb-mute);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+#gereq-debug.gdb .gdb-kv td { font-family: var(--gdb-mono); font-size: 12px; word-break: break-word; }
+
+#gereq-debug.gdb .gdb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+#gereq-debug.gdb .gdb-table th,
+#gereq-debug.gdb .gdb-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--gdb-line);
+  text-align: left;
+  vertical-align: top;
+  background: transparent;
+  color: var(--gdb-paper);
+  white-space: normal;
+}
+#gereq-debug.gdb .gdb-table th {
+  position: sticky;
+  top: 0;
+  background: var(--gdb-ink-2);
+  color: var(--gdb-mute);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+#gereq-debug.gdb .gdb-sql {
+  font-family: var(--gdb-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#gereq-debug.gdb .gdb-sql b { color: var(--gdb-signal); font-weight: 600; }
+#gereq-debug.gdb .gdb-ms { font-family: var(--gdb-mono); color: var(--gdb-mute); white-space: nowrap; }
+#gereq-debug.gdb .gdb-ms.is-slow { color: var(--gdb-warn); }
+#gereq-debug.gdb .gdb-origin { color: var(--gdb-mute); font-size: 11px; }
+#gereq-debug.gdb .gdb-barline {
+  display: block;
+  height: 3px;
+  margin-top: 6px;
+  background: rgba(215, 255, 69, 0.15);
+  border-radius: 99px;
+  overflow: hidden;
+}
+#gereq-debug.gdb .gdb-barline > i {
+  display: block;
+  height: 100%;
+  background: var(--gdb-signal);
+}
+
+#gereq-debug.gdb .gdb-dump { font-family: var(--gdb-mono); font-size: 12px; }
+#gereq-debug.gdb .gdb-dump--str { color: #c8e38a; }
+#gereq-debug.gdb .gdb-dump--num { color: var(--gdb-info); }
+#gereq-debug.gdb .gdb-dump--bool { color: #c9a0ff; }
+#gereq-debug.gdb .gdb-dump--null,
+#gereq-debug.gdb .gdb-dump--muted { color: var(--gdb-mute); }
+#gereq-debug.gdb .gdb-dump--obj { color: var(--gdb-signal); }
+#gereq-debug.gdb .gdb-dump__arr { margin: 4px 0 4px 12px; border-left: 1px solid var(--gdb-line); padding-left: 10px; }
+#gereq-debug.gdb .gdb-dump__row { display: flex; gap: 10px; padding: 2px 0; }
+#gereq-debug.gdb .gdb-dump__key { color: var(--gdb-mute); min-width: 80px; }
+#gereq-debug.gdb .gdb-card {
+  margin: 12px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--gdb-line);
+  border-radius: 12px;
+  background: rgba(10, 11, 10, 0.35);
+}
+#gereq-debug.gdb .gdb-card__meta { color: var(--gdb-mute); font-size: 11px; margin-bottom: 8px; font-family: var(--gdb-mono); }
+#gereq-debug.gdb .gdb-exc {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gdb-line);
+}
+#gereq-debug.gdb .gdb-exc__class { color: var(--gdb-err); font-family: var(--gdb-mono); font-weight: 600; }
+#gereq-debug.gdb .gdb-exc__msg { margin: 4px 0; }
+#gereq-debug.gdb .gdb-exc__file { color: var(--gdb-mute); font-family: var(--gdb-mono); font-size: 11px; }
+
+body.gdb-pad { padding-bottom: 72px; }

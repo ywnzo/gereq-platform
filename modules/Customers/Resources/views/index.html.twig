@@ -1,0 +1,94 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>Zákazníci</h1>
+        {% if user.can('customers.create') %}
+            <a class="btn btn--primary" href="{{ url('admin.customers.create') }}">{{ icon('plus') }} Přidat zákazníka</a>
+        {% endif %}
+    </header>
+
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="Hledat jméno, e-mail, firmu…">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">Všechny stavy</option>
+            <option value="active" {{ status == 'active' ? 'selected' : '' }}>Aktivní</option>
+            <option value="lead" {{ status == 'lead' ? 'selected' : '' }}>Lead</option>
+            <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>Neaktivní</option>
+        </select>
+    </form>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th><a href="?q={{ search }}&status={{ status }}&sort=name&dir={{ sort == 'name' and dir == 'asc' ? 'desc' : 'asc' }}">Jméno</a></th>
+                    <th><a href="?q={{ search }}&status={{ status }}&sort=email&dir={{ sort == 'email' and dir == 'asc' ? 'desc' : 'asc' }}">E-mail</a></th>
+                    <th>Telefon</th>
+                    <th><a href="?q={{ search }}&status={{ status }}&sort=company&dir={{ sort == 'company' and dir == 'asc' ? 'desc' : 'asc' }}">Firma</a></th>
+                    <th>Stav</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>
+                            <a class="cell-user" href="{{ url('admin.customers.show', {id: item.id()}) }}">
+                                <span class="avatar avatar--sm">{{ item.initials() }}</span>
+                                {{ item.name() }}
+                            </a>
+                        </td>
+                        <td>{{ item.email() }}</td>
+                        <td>{{ item.phone() ?: '—' }}</td>
+                        <td>{{ item.company() ?: '—' }}</td>
+                        <td>
+                            <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
+                                {{ item.statusLabel() }}
+                            </span>
+                        </td>
+                        <td class="table__actions" x-data="rowMenu">
+                            <button type="button" class="icon-btn" @click="toggle">{{ icon('dots') }}</button>
+                            <div class="flyout flyout--right" :class="menuClass" @click.outside="close">
+                                <a href="{{ url('admin.customers.show', {id: item.id()}) }}">Detail</a>
+                                {% if user.can('customers.edit') %}
+                                    <a href="{{ url('admin.customers.edit', {id: item.id()}) }}">Upravit</a>
+                                {% endif %}
+                                {% if user.can('customers.delete') %}
+                                    <form method="post" action="{{ url('admin.customers.destroy', {id: item.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">Smazat</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty">
+                                <h2>Žádní zákazníci</h2>
+                                <p>Přidejte prvního zákazníka, nebo upravte filtry.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total > 0 %}
+        <footer class="table-footer">
+            <span class="muted">{{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} z {{ total }}</span>
+            <nav class="pagination">
+                {% if page > 1 %}
+                    <a href="?q={{ search }}&status={{ status }}&sort={{ sort }}&dir={{ dir }}&page={{ page - 1 }}">Předchozí</a>
+                {% endif %}
+                <span>{{ page }} / {{ pages }}</span>
+                {% if page < pages %}
+                    <a href="?q={{ search }}&status={{ status }}&sort={{ sort }}&dir={{ dir }}&page={{ page + 1 }}">Další</a>
+                {% endif %}
+            </nav>
+        </footer>
+    {% endif %}
+{% endblock %}

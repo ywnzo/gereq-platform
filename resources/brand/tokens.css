@@ -1,0 +1,40 @@
+/**
+ * GEREQ design tokens — source of truth for brand colors & type.
+ * Mirrored in resources/css/app.css @theme for Tailwind.
+ *
+ * --gereq-brand / --gereq-ink / --gereq-cream / --gereq-signal stay brand-constant.
+ * --gereq-fg and surfaces swap under .dark (Filament admin chrome).
+ * Marketing remaps --color-* under html.dark in app.css.
+ */
+
+:root {
+  --gereq-brand: #0a0b0a;
+  --gereq-ink: #0a0b0a;
+  --gereq-cream: #f5f5ef;
+  --gereq-fg: #0a0b0a;
+  --gereq-paper: #f5f5ef;
+  --gereq-signal: #d7ff45;
+  --gereq-muted: #6b7067;
+  --gereq-border: #daddd4;
+  --gereq-white: #ffffff;
+  --gereq-wash: #eceee7;
+
+  /* School extended palette */
+  --gereq-violet: #625bff;
+  --gereq-sky: #72d6ff;
+  --gereq-coral: #ff6b5e;
+
+  --gereq-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --gereq-font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --gereq-font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.dark {
+  color-scheme: dark;
+  --gereq-fg: #f5f5ef;
+  --gereq-paper: #0a0b0a;
+  --gereq-muted: #b4b8ae;
+  --gereq-border: #2c2f2a;
+  --gereq-white: #161816;
+  --gereq-wash: #121412;
+}

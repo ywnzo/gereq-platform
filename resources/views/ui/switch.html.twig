@@ -1,0 +1,26 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set description = description|default('') %}
+{% set form = form|default(null) %}
+{% set on = old(name, on|default(false), form) %}
+{% set extra = extra|default('') %}
+
+<div class="g-switch {{ extra }}" x-data="gereqSwitch" data-on="{{ on ? '1' : '0' }}">
+    <input type="hidden" name="{{ name }}" value="{{ on ? '1' : '0' }}" x-ref="value">
+    <button
+        id="{{ id }}"
+        type="button"
+        class="g-switch__track"
+        :class="trackClass"
+        role="switch"
+        :aria-checked="checkedAttr"
+        @click="toggle"
+    >
+        <span class="g-switch__thumb" aria-hidden="true"></span>
+    </button>
+    <div class="g-switch__copy">
+        {% if label %}<label class="g-switch__label" for="{{ id }}">{{ label }}</label>{% endif %}
+        {% if description %}<p class="g-switch__desc">{{ description }}</p>{% endif %}
+    </div>
+</div>

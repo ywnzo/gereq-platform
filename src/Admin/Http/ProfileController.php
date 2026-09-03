@@ -1,0 +1,80 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Gereq\Admin\Http;
+
+use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Admin\CommandPalette\CommandPalette;
+use Gereq\Admin\Menu\Menu;
+use Gereq\Audit\Auditor;
+use Gereq\Auth\Authenticator;
+use Gereq\Auth\PasswordHasher;
+use Gereq\Http\Controller;
+use Gereq\Http\Router;
+use Gereq\User\Entity\User;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
+use Twig\Environment;
+
+final class ProfileController extends Controller
+{
+    public function __construct(
+        Environment $twig,
+        Router $router,
+        RequestStack $requestStack,
+        private readonly Authenticator $auth,
+        private readonly Menu $menu,
+        private readonly CommandPalette $palette,
+        private readonly EntityManagerInterface $em,
+        private readonly PasswordHasher $hasher,
+        private readonly Auditor $auditor,
+    ) {
+        parent::__construct($twig, $router, $requestStack);
+    }
+
+    public function edit(): Response
+    {
+        return $this->page('admin/profile.html.twig', [
+            'pageTitle' => 'Profil',
+        ]);
+    }
+
+    public function update(Request $request): Response
+    {
+        $user = $this->auth->user();
+        if (!$user instanceof User) {
+            return $this->redirect('admin.login');
+        }
+
+        $user->setName(trim((string) $request->request->get('name')));
+        $password = (string) $request->request->get('password');
+        if ($password !== '') {
+            if (strlen($password) < 10) {
+                $this->flash('error', 'Heslo musí mít alespoň 10 znaků.');
+
+                return $this->redirect('admin.profile');
+            }
+            $user->setPasswordHash($this->hasher->hash($password));
+        }
+
+        $this->em->flush();
+        $this->auditor->log('profile.updated', 'user', $user->id());
+        $this->flash('success', 'Profil byl uložen.');
+
+        return $this->redirect('admin.profile');
+    }
+
+    /** @param array<string, mixed> $data */
+    private function page(string $view, array $data): Response
+    {
+        $user = $this->auth->user();
+
+        return $this->render($view, array_merge($data, [
+            'menu' => $this->menu->tree($user, $this->router, $this->request()),
+            'commands' => $this->palette->all($user),
+            'user' => $user,
+        ]));
+    }
+}

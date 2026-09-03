@@ -1,0 +1,27 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set err = error(name, form) %}
+{% set required = required|default(false) %}
+{% set optional = optional|default(false) %}
+{% set extra = extra|default('') %}
+
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+    {% if label %}
+        <label class="g-label" for="{{ id }}">
+            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+            {% if label_end is defined %}{{ label_end|raw }}{% endif %}
+        </label>
+    {% endif %}
+    <div class="g-field__control">
+        {% block control %}{% endblock %}
+    </div>
+    {% if hint and not err %}
+        <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
+    {% endif %}
+    {% if err %}
+        <p class="g-error" id="{{ id }}-error">{{ err }}</p>
+    {% endif %}
+</div>

@@ -1,0 +1,25 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>Profil</h1>
+    </header>
+    <form method="post" action="{{ url('admin.profile.update') }}" class="form-grid">
+        {{ csrf_field()|raw }}
+        <label class="field">
+            <span>Jméno</span>
+            <input type="text" name="name" value="{{ user.name() }}" required>
+        </label>
+        <label class="field">
+            <span>E-mail</span>
+            <input type="email" value="{{ user.email() }}" disabled>
+        </label>
+        <label class="field field--full">
+            <span>Nové heslo</span>
+            <input type="password" name="password" minlength="10" placeholder="Ponechte prázdné, pokud neměníte">
+        </label>
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">Uložit profil</button>
+        </div>
+    </form>
+{% endblock %}

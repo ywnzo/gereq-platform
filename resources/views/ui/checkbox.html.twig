@@ -1,0 +1,34 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set description = description|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set checked = old(name, checked|default(false), form) %}
+{% set err = error(name, form) %}
+{% set required = required|default(false) %}
+{% set extra = extra|default('') %}
+{% set value = value|default('1') %}
+
+<div class="g-check{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+    <label class="g-check__row" for="{{ id }}">
+        <span class="g-check__box">
+            <input
+                id="{{ id }}"
+                type="checkbox"
+                name="{{ name }}"
+                value="{{ value }}"
+                {% if checked %}checked{% endif %}
+                {% if required %}required{% endif %}
+                {% if err %}aria-invalid="true" aria-describedby="{{ id }}-error"{% endif %}
+            >
+            <span class="g-check__mark" aria-hidden="true"></span>
+        </span>
+        <span class="g-check__copy">
+            {% if label %}<span class="g-check__label">{{ label }}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>{% endif %}
+            {% if description %}<span class="g-check__desc">{{ description }}</span>{% endif %}
+        </span>
+    </label>
+    {% if hint %}<p class="g-hint">{{ hint }}</p>{% endif %}
+    {% if err %}<p class="g-error" id="{{ id }}-error">{{ err }}</p>{% endif %}
+</div>

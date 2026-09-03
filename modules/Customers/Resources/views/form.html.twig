@@ -1,0 +1,67 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ item ? 'Upravit zákazníka' : 'Nový zákazník' }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'customers.save' } %}
+
+    <form method="post" class="form-grid" action="{{ item ? url('admin.customers.update', {id: item.id()}) : url('admin.customers.store') }}" data-form="customers.save" x-data="gereqForm"{% if form_errors('customers.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with {
+            name: 'name',
+            label: 'Jméno',
+            required: true,
+            form: 'customers.save',
+            value: item ? item.name() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'email',
+            type: 'email',
+            label: 'E-mail',
+            required: true,
+            form: 'customers.save',
+            value: item ? item.email() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'phone',
+            type: 'tel',
+            label: 'Telefon',
+            optional: true,
+            form: 'customers.save',
+            value: item ? item.phone() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'company',
+            label: 'Firma',
+            optional: true,
+            form: 'customers.save',
+            value: item ? item.company() : ''
+        } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'status',
+            label: 'Stav',
+            form: 'customers.save',
+            value: item ? item.status() : 'active',
+            options: [
+                { value: 'active', label: 'Aktivní' },
+                { value: 'lead', label: 'Lead' },
+                { value: 'inactive', label: 'Neaktivní' }
+            ]
+        } %}
+        {% include 'ui/editor.html.twig' with {
+            name: 'note',
+            label: 'Poznámka',
+            optional: true,
+            extra: 'field--full',
+            form: 'customers.save',
+            placeholder: 'Interní poznámka k zákazníkovi…',
+            value: item ? item.note() : ''
+        } %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">Uložit</button>
+            <a class="btn btn--ghost" href="{{ url('admin.customers.index') }}">Zrušit</a>
+        </div>
+    </form>
+{% endblock %}

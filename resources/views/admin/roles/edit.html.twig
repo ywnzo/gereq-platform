@@ -1,0 +1,42 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ role.label() }}</h1>
+    </header>
+    <form method="post" action="{{ url('admin.roles.update', {id: role.id()}) }}" class="stack">
+        {{ csrf_field()|raw }}
+        <label class="field">
+            <span>Název</span>
+            <input type="text" name="label" value="{{ role.label() }}" required>
+        </label>
+        <label class="field">
+            <span>Popis</span>
+            <textarea name="description" rows="3">{{ role.description() }}</textarea>
+        </label>
+
+        {% if role.name() == 'administrator' %}
+            <p class="muted">Administrátor má všechna oprávnění automaticky.</p>
+        {% else %}
+            {% for group, permissions in grouped %}
+                <section class="panel">
+                    <header class="panel__head"><h2>{{ group }}</h2></header>
+                    <div class="chip-list">
+                        {% for permission in permissions %}
+                            <label class="check">
+                                <input type="checkbox" name="permissions[]" value="{{ permission.id() }}"
+                                    {{ assigned[permission.id()] is defined ? 'checked' : '' }}>
+                                <span>{{ permission.label() }} <code>{{ permission.name() }}</code></span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        {% endif %}
+
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">Uložit</button>
+            <a class="btn btn--ghost" href="{{ url('admin.roles.index') }}">Zpět</a>
+        </div>
+    </form>
+{% endblock %}

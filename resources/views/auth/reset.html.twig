@@ -1,0 +1,17 @@
+{% extends 'auth/layout.html.twig' %}
+
+{% block content %}
+    <h1>Nové heslo</h1>
+    <form method="post" action="{{ url('admin.password.update', {token: token}) }}" class="stack">
+        {{ csrf_field()|raw }}
+        <label class="field">
+            <span>Nové heslo</span>
+            <input type="password" name="password" minlength="10" required>
+        </label>
+        <label class="field">
+            <span>Potvrzení hesla</span>
+            <input type="password" name="password_confirmation" minlength="10" required>
+        </label>
+        <button type="submit" class="btn btn--primary btn--block">Nastavit heslo</button>
+    </form>
+{% endblock %}

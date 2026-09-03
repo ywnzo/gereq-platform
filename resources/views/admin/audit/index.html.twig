@@ -1,0 +1,45 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>Audit log</h1>
+    </header>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Čas</th>
+                    <th>Uživatel</th>
+                    <th>Akce</th>
+                    <th>Zdroj</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                    <tr>
+                        <td>{{ log.createdAt().format('d. m. Y H:i:s') }}</td>
+                        <td>{{ log.userName() ?: 'Systém' }}</td>
+                        <td>{{ log.action() }}</td>
+                        <td>
+                            {{ log.resource() ?: '—' }}
+                            {% if log.oldValues() or log.newValues() %}
+                                <div class="diff muted">
+                                    {% for field, value in log.newValues()|default({}) %}
+                                        {% set old = log.oldValues()[field]|default(null) %}
+                                        {% if old is not null and old != value %}
+                                            <div>{{ field }}: {{ old }} → {{ value }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="muted">{{ log.ip() }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5"><div class="empty">Zatím žádné záznamy.</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,112 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Gereq\Module;
+
+use Gereq\Admin\CommandPalette\CommandPalette;
+use Gereq\Admin\Dashboard\Dashboard;
+use Gereq\Admin\Menu\Menu;
+use Gereq\Admin\Resource\ResourceRegistrar;
+use Gereq\Config\Repository;
+use Gereq\Event\EventBus;
+use Gereq\Hook\HookManager;
+use Gereq\Http\Router;
+use Gereq\Setting\Settings;
+use Gereq\User\PermissionRegistry;
+use Gereq\Validation\ValidationRegistry;
+use Psr\Container\ContainerInterface;
+
+final class ModuleContext
+{
+    public function __construct(
+        private readonly ContainerInterface $container,
+        private readonly HookManager $hooks,
+        private readonly EventBus $events,
+        private readonly Router $router,
+        private readonly Menu $menu,
+        private readonly CapabilityRegistry $capabilities,
+        private readonly PermissionRegistry $permissions,
+        private readonly Settings $settings,
+        private readonly Dashboard $dashboard,
+        private readonly CommandPalette $commandPalette,
+        private readonly ResourceRegistrar $resources,
+        private readonly Repository $config,
+    ) {
+    }
+
+    public function container(): ContainerInterface
+    {
+        return $this->container;
+    }
+
+    public function get(string $id): mixed
+    {
+        return $this->container->get($id);
+    }
+
+    public function hooks(): HookManager
+    {
+        return $this->hooks;
+    }
+
+    public function events(): EventBus
+    {
+        return $this->events;
+    }
+
+    public function router(): Router
+    {
+        return $this->router;
+    }
+
+    public function menu(): Menu
+    {
+        return $this->menu;
+    }
+
+    public function admin(): self
+    {
+        return $this;
+    }
+
+    public function capabilities(): CapabilityRegistry
+    {
+        return $this->capabilities;
+    }
+
+    public function permissions(): PermissionRegistry
+    {
+        return $this->permissions;
+    }
+
+    public function settings(): Settings
+    {
+        return $this->settings;
+    }
+
+    public function dashboard(): Dashboard
+    {
+        return $this->dashboard;
+    }
+
+    public function commandPalette(): CommandPalette
+    {
+        return $this->commandPalette;
+    }
+
+    public function resources(): ResourceRegistrar
+    {
+        return $this->resources;
+    }
+
+    public function config(): Repository
+    {
+        return $this->config;
+    }
+
+    public function validation(): ValidationRegistry
+    {
+        return $this->container->get(ValidationRegistry::class);
+    }
+}

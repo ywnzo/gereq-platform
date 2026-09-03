@@ -1,0 +1,66 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set value = old(name, value|default(''), form) %}
+{% set err = error(name, form) %}
+{% set required = required|default(false) %}
+{% set optional = optional|default(false) %}
+{% set extra = extra|default('') %}
+{% set placeholder = placeholder|default('Vyberte') %}
+{% set options = options|default([]) %}
+{% set described = [] %}
+{% if hint and not err %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
+{% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
+
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+    {% if label %}
+        <span class="g-label" id="{{ id }}-label">
+            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+        </span>
+    {% endif %}
+    <div class="g-select" x-data="gereqSelect" data-placeholder="{{ placeholder }}">
+        <input type="hidden" name="{{ name }}" id="{{ id }}" value="{{ value }}" {% if required %}required{% endif %} x-ref="value">
+        <button
+            type="button"
+            class="g-control g-select__trigger"
+            :class="triggerClass"
+            @click="toggle"
+            aria-haspopup="listbox"
+            :aria-expanded="expandedAttr"
+            aria-labelledby="{{ id }}-label"
+            {% if err %}aria-invalid="true"{% endif %}
+            {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
+        >
+            <span class="g-select__label" x-text="label"></span>
+            <span class="g-select__chevron" aria-hidden="true"></span>
+        </button>
+        <ul class="g-select__list" :class="listClass" role="listbox" tabindex="-1">
+            {% for option in options %}
+                {% set optValue = option.value is defined ? option.value : option %}
+                {% set optLabel = option.label is defined ? option.label : option %}
+                {% set optDesc = option.description|default('') %}
+                <li
+                    class="g-select__option{% if optValue == value %} is-selected{% endif %}"
+                    role="option"
+                    data-value="{{ optValue }}"
+                    data-label="{{ optLabel }}"
+                    {% if optValue == value %}data-selected="1"{% endif %}
+                    @click="choose"
+                >
+                    <span class="g-select__option-text">
+                        <span>{{ optLabel }}</span>
+                        {% if optDesc %}<span class="g-select__option-desc">{{ optDesc }}</span>{% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% if hint %}
+        <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
+    {% endif %}
+    {% if err %}
+        <p class="g-error" id="{{ id }}-error">{{ err }}</p>
+    {% endif %}
+</div>

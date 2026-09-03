@@ -1,0 +1,39 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set value = old(name, value|default(''), form) %}
+{% set err = error(name, form) %}
+{% set required = required|default(false) %}
+{% set optional = optional|default(false) %}
+{% set extra = extra|default('') %}
+{% set placeholder = placeholder|default('Pište…') %}
+
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+    {% if label %}
+        <label class="g-label" for="{{ id }}">
+            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+        </label>
+    {% endif %}
+    <div class="g-editor" x-data="gereqEditor" data-placeholder="{{ placeholder }}">
+        <div class="g-editor__bar" role="toolbar" aria-label="Formátování">
+            <button type="button" class="g-editor__btn" @click="bold" title="Tučně">B</button>
+            <button type="button" class="g-editor__btn g-editor__btn--em" @click="italic" title="Kurzíva">I</button>
+            <button type="button" class="g-editor__btn" @click="bullet" title="Odrážky">≡</button>
+            <button type="button" class="g-editor__btn" @click="ordered" title="Číslování">1.</button>
+            <button type="button" class="g-editor__btn" @click="toggleLink" title="Odkaz">↗</button>
+            <span class="g-editor__sep"></span>
+            <button type="button" class="g-editor__btn" @click="undo" title="Zpět">↺</button>
+            <button type="button" class="g-editor__btn" @click="redo" title="Znovu">↻</button>
+        </div>
+        <div class="g-editor__surface" x-ref="mount"></div>
+        <textarea class="g-editor__input" id="{{ id }}" name="{{ name }}" x-ref="input" {% if required %}required{% endif %}>{{ value }}</textarea>
+    </div>
+    {% if hint %}
+        <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
+    {% endif %}
+    {% if err %}
+        <p class="g-error" id="{{ id }}-error">{{ err }}</p>
+    {% endif %}
+</div>
