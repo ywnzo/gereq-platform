@@ -291,6 +291,7 @@ final class Application
             \Modules\Payments\Application\PaymentService::class => \DI\autowire(),
             \Modules\Webhooks\Application\InboundWebhookRegistry::class => \DI\autowire(),
             \Modules\Coupons\Application\CouponsProvider::class => \DI\autowire(),
+            \Modules\ProductDiscounts\Application\ProductDiscountsProvider::class => \DI\autowire(),
             \Modules\Customers\Application\StoreAuthService::class => \DI\autowire(),
             \Modules\Customers\Application\StoreTokenService::class => \DI\autowire(),
             \Modules\Customers\Application\StoreCookieBridge::class => \DI\autowire(),
