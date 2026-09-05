@@ -70,9 +70,9 @@ final class ComgateGateway implements PaymentGatewayInterface
             'delivery' => (string) ($context['delivery'] ?? 'HOME_DELIVERY'),
             'category' => 'PHYSICAL_GOODS_ONLY',
             'embedded' => !empty($context['embedded']) ? 'true' : 'false',
-            'url_paid' => $returnBase . '/api/v1/webhooks/inbound/comgate?status=paid',
-            'url_pending' => $returnBase . '/api/v1/webhooks/inbound/comgate?status=pending',
-            'url_cancelled' => $returnBase . '/api/v1/webhooks/inbound/comgate?status=cancelled',
+            'url_paid' => $returnBase . '/api/v1/payments/notify/comgate?status=paid',
+            'url_pending' => $returnBase . '/api/v1/payments/notify/comgate?status=pending',
+            'url_cancelled' => $returnBase . '/api/v1/payments/notify/comgate?status=cancelled',
         ];
 
         $response = $this->postForm(self::API . '/create', $params);

@@ -168,11 +168,10 @@ final class Seeder
 
     private function seedModules(): void
     {
-        // RealEstates: CRM / obsah / dokumenty — bez e-shop stacku.
+        // Norda / EShop: obchodní stack — bez RealEstates (listings/CRM/projekty…).
         $defaultEnabled = [
-            'customers', 'currency', 'crm', 'webhooks',
-            'notifications', 'documents', 'projects', 'calendar',
-            'newsletter', 'media', 'cms', 'listings',
+            'customers', 'currency', 'media', 'cms',
+            'products', 'shop', 'orders', 'payments',
         ];
 
         foreach ($this->modules->discover() as $manifest) {

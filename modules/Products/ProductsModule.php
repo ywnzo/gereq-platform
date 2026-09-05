@@ -20,6 +20,7 @@ use Modules\Products\Http\Api\ProductApiController;
 use Modules\Products\Http\Api\VariantApiController;
 use Modules\Products\Http\CategoryController;
 use Modules\Products\Http\ProductController;
+use Modules\Products\Http\Public\PublicStoreCatalogController;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ProductsModule implements ModuleInterface
@@ -31,7 +32,7 @@ final class ProductsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.1.0';
     }
 
     public function register(ModuleContext $context): void
@@ -113,6 +114,14 @@ final class ProductsModule implements ModuleInterface
                 ->name('admin.products.categories.destroy')
                 ->permission('products.manage');
         }, ['middleware' => ['auth']]);
+
+        $public = [PublicStoreCatalogController::class, 'options'];
+        $context->router()->add('/api/public/store/products', ['OPTIONS'], $public)->name('api.public.store.products.options');
+        $context->router()->add('/api/public/store/products/{id}', ['OPTIONS'], $public)->name('api.public.store.products.id.options');
+        $context->router()->add('/api/public/store/categories', ['OPTIONS'], $public)->name('api.public.store.categories.options');
+        $context->router()->get('/api/public/store/products', [PublicStoreCatalogController::class, 'index'])->name('api.public.store.products');
+        $context->router()->get('/api/public/store/products/{id}', [PublicStoreCatalogController::class, 'show'])->name('api.public.store.products.show');
+        $context->router()->get('/api/public/store/categories', [PublicStoreCatalogController::class, 'categories'])->name('api.public.store.categories');
 
         $this->registerApi($context);
         $this->registerPlatformEvents($context);

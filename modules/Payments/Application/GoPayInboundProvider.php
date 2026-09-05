@@ -1,0 +1,97 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Payments\Application;
+
+use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Api\ApiResponse;
+use Gereq\Api\InboundWebhookProviderInterface;
+use Modules\Orders\Domain\Order;
+use Modules\Payments\Application\Gateways\GoPayGateway;
+use Modules\Payments\Domain\PaymentIntent;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+final class GoPayInboundProvider implements InboundWebhookProviderInterface
+{
+    public function __construct(
+        private readonly GoPayGateway $gateway,
+        private readonly PaymentService $payments,
+        private readonly EntityManagerInterface $em,
+    ) {
+    }
+
+    public function name(): string
+    {
+        return 'gopay';
+    }
+
+    public function verify(Request $request): bool
+    {
+        return true;
+    }
+
+    public function handle(Request $request): Response
+    {
+        $payload = array_merge($request->query->all(), $request->request->all());
+        $raw = $request->getContent();
+        if (is_string($raw) && $raw !== '') {
+            $json = json_decode($raw, true);
+            if (is_array($json)) {
+                $payload = array_merge($payload, $json);
+            }
+        }
+
+        $result = $this->gateway->handleNotify($payload);
+        if (!$result['ok']) {
+            return ApiResponse::error('invalid', $result['message'], [], 400);
+        }
+
+        $intent = $this->findIntent($result['external_id'] ?? null, $result['ref_id'] ?? null);
+        if ($intent === null) {
+            return ApiResponse::error('not_found', 'Payment intent not found', [], 404);
+        }
+
+        if (($result['status'] ?? '') === 'paid' && $intent->status() !== 'paid') {
+            $this->payments->markPaid($intent, $result['external_id'] ?? null);
+        } elseif (in_array($result['status'] ?? '', ['cancelled', 'failed'], true)) {
+            $intent->setStatus($result['status'] === 'cancelled' ? 'cancelled' : 'failed');
+            $this->em->flush();
+        }
+
+        return ApiResponse::data([
+            'ok' => true,
+            'status' => $result['status'],
+            'intent_id' => $intent->id(),
+            'external_id' => $result['external_id'],
+        ]);
+    }
+
+    private function findIntent(?string $externalId, mixed $refId): ?PaymentIntent
+    {
+        if ($externalId) {
+            $byExt = $this->em->getRepository(PaymentIntent::class)->findOneBy([
+                'provider' => 'gopay',
+                'externalId' => $externalId,
+            ]);
+            if ($byExt instanceof PaymentIntent) {
+                return $byExt;
+            }
+        }
+        $ref = is_string($refId) ? $refId : '';
+        if ($ref === '') {
+            return null;
+        }
+        $order = $this->em->getRepository(Order::class)->findOneBy(['number' => $ref]);
+        if (!$order instanceof Order) {
+            return null;
+        }
+        $intent = $this->em->getRepository(PaymentIntent::class)->findOneBy(
+            ['orderId' => $order->id(), 'provider' => 'gopay'],
+            ['createdAt' => 'DESC'],
+        );
+
+        return $intent instanceof PaymentIntent ? $intent : null;
+    }
+}

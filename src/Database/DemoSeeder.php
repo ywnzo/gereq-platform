@@ -592,16 +592,24 @@ final class DemoSeeder
         $repo = $this->em->getRepository(\Modules\Payments\Domain\PaymentMethod::class);
         $defs = [
             // code, name, type, provider, fee_fixed, fee_percent, instructions, sort
-            ['BANK', 'Bankovní převod', 'bank_transfer', 'manual', '0', '0', "Účet: 2600123456/2010\nVariabilní symbol = číslo objednávky.\nSplatnost 7 dní.", 10],
-            ['COD', 'Dobírka', 'cod', 'manual', '39', '0', 'Platba hotově nebo kartou při převzetí. Poplatek 39 Kč.', 20],
             ['CARD_GOPAY', 'Platební karta (GoPay)', 'card', 'gopay', '0', '1.9', 'Okamžitá platba kartou přes GoPay.', 30],
             ['CARD_COMGATE', 'Platební karta (Comgate)', 'card', 'comgate', '0', '1.5', 'Okamžitá platba kartou přes Comgate.', 31],
-            ['TWISTO', 'Twisto — zaplať později', 'online', 'twisto', '0', '0', 'Nákup teď, zaplacení do 45 dní.', 40],
-            ['SKIPPAY', 'Skip Pay', 'online', 'skippay', '0', '0', 'Odložená platba Skip Pay.', 41],
+            ['CARD_STRIPE', 'Platební karta (Stripe)', 'card', 'stripe', '0', '2.9', 'Checkout Session přes Stripe (Apple/Google Pay dle Dashboardu).', 32],
             ['APPLE_PAY', 'Apple Pay', 'wallet', 'gopay', '0', '1.9', 'Platba přes Apple Pay (GoPay).', 50],
             ['GOOGLE_PAY', 'Google Pay', 'wallet', 'gopay', '0', '1.9', 'Platba přes Google Pay (GoPay).', 51],
-            ['PAYPAL', 'PayPal', 'online', 'paypal', '10', '3.4', 'Platba přes PayPal účet.', 60],
+            ['APPLE_PAY_STRIPE', 'Apple Pay (Stripe)', 'wallet', 'stripe', '0', '2.9', 'Apple Pay přes Stripe Checkout.', 52],
+            ['GOOGLE_PAY_STRIPE', 'Google Pay (Stripe)', 'wallet', 'stripe', '0', '2.9', 'Google Pay přes Stripe Checkout.', 53],
+            ['BANK', 'Bankovní převod', 'bank_transfer', 'manual', '0', '0', "Účet: 2600123456/2010\nVariabilní symbol = číslo objednávky.\nSplatnost 7 dní.", 10],
+            ['COD', 'Dobírka', 'cod', 'manual', '39', '0', 'Platba hotově nebo kartou při převzetí. Poplatek 39 Kč.', 20],
         ];
+
+        // Staré demo metody bez gatewaye nechat neaktivní, ať nematou.
+        foreach (['TWISTO', 'SKIPPAY', 'PAYPAL'] as $dead) {
+            $old = $repo->findOneBy(['code' => $dead]);
+            if ($old instanceof \Modules\Payments\Domain\PaymentMethod) {
+                $old->setActive(false);
+            }
+        }
 
         $created = 0;
         $updated = 0;
@@ -625,7 +633,7 @@ final class DemoSeeder
             $m->setActive(true);
         }
         $this->em->flush();
-        $log[] = sprintf('Platby: %d nových / %d aktualizovaných (převod, dobírka, GoPay, Comgate, Twisto, Apple/Google Pay…).', $created, $updated);
+        $log[] = sprintf('Platby: %d nových / %d aktualizovaných (převod, dobírka, GoPay, Comgate, Stripe, Apple/Google Pay…).', $created, $updated);
     }
 
     /** @param list<string> $log */

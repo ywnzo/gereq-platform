@@ -23,6 +23,8 @@ use Modules\Shop\Http\Api\CheckoutApiController;
 use Modules\Shop\Http\Api\PacketaApiController;
 use Modules\Shop\Http\Api\ShippingMethodApiController;
 use Modules\Shop\Http\CartController;
+use Modules\Shop\Http\Public\PublicStoreCartController;
+use Modules\Shop\Http\Public\PublicStoreShippingController;
 use Modules\Shop\Http\ShippingMethodController;
 use Modules\Shop\Application\Widgets\ShopShortcutWidget;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -37,7 +39,7 @@ final class ShopModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.1.1';
     }
 
     public function register(ModuleContext $context): void
@@ -85,6 +87,20 @@ final class ShopModule implements ModuleInterface
         $this->registerApi($context);
         $this->registerPlatformEvents($context);
         $this->registerValidation($context);
+
+        $public = [PublicStoreCartController::class, 'options'];
+        $context->router()->add('/api/public/store/cart', ['OPTIONS'], $public)->name('api.public.store.cart.options');
+        $context->router()->add('/api/public/store/cart/items', ['OPTIONS'], $public)->name('api.public.store.cart.items.options');
+        $context->router()->add('/api/public/store/cart/items/{id}', ['OPTIONS'], $public)->name('api.public.store.cart.items.id.options');
+        $context->router()->add('/api/public/store/checkout', ['OPTIONS'], $public)->name('api.public.store.checkout.options');
+        $context->router()->add('/api/public/store/shipping-methods', ['OPTIONS'], [PublicStoreShippingController::class, 'options'])->name('api.public.store.shipping.options');
+        $context->router()->get('/api/public/store/cart', [PublicStoreCartController::class, 'show'])->name('api.public.store.cart');
+        $context->router()->post('/api/public/store/cart', [PublicStoreCartController::class, 'store'])->name('api.public.store.cart.store');
+        $context->router()->post('/api/public/store/cart/items', [PublicStoreCartController::class, 'addItem'])->name('api.public.store.cart.items');
+        $context->router()->patch('/api/public/store/cart/items/{id}', [PublicStoreCartController::class, 'updateItem'])->name('api.public.store.cart.items.update');
+        $context->router()->delete('/api/public/store/cart/items/{id}', [PublicStoreCartController::class, 'removeItem'])->name('api.public.store.cart.items.delete');
+        $context->router()->post('/api/public/store/checkout', [PublicStoreCartController::class, 'checkout'])->name('api.public.store.checkout');
+        $context->router()->get('/api/public/store/shipping-methods', [PublicStoreShippingController::class, 'index'])->name('api.public.store.shipping');
     }
 
     public function boot(ModuleContext $context): void
