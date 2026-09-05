@@ -1,0 +1,29 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ item ? 'fleet.edit'|trans : 'fleet.new'|trans }}</h1></header>
+{% include 'ui/error-summary.html.twig' with { form: 'fleet.save' } %}
+<form method="post" class="form-grid" action="{{ item ? url('admin.fleet.update',{id:item.id()}) : url('admin.fleet.store') }}" data-form="fleet.save" x-data="gereqForm">
+{{ csrf_field()|raw }}
+{% include 'ui/input.html.twig' with { name:'plate', label:'fleet.field.plate'|trans, required:true, form:'fleet.save', value: item?item.plate():'' } %}
+{% include 'ui/input.html.twig' with { name:'vin', label:'fleet.field.vin'|trans, optional:true, form:'fleet.save', value: item?item.vin():'' } %}
+{% include 'ui/input.html.twig' with { name:'brand', label:'fleet.field.brand'|trans, optional:true, form:'fleet.save', value: item?item.brand():'' } %}
+{% include 'ui/input.html.twig' with { name:'model', label:'fleet.field.model'|trans, optional:true, form:'fleet.save', value: item?item.model():'' } %}
+{% include 'ui/input.html.twig' with { name:'model_year', type:'number', label:'fleet.field.year'|trans, optional:true, form:'fleet.save', value: item and item.modelYear()?item.modelYear():'' } %}
+{% include 'ui/input.html.twig' with { name:'color', label:'fleet.field.color'|trans, optional:true, form:'fleet.save', value: item?item.color():'' } %}
+{% include 'ui/input.html.twig' with { name:'fuel', label:'fleet.field.fuel'|trans, optional:true, form:'fleet.save', value: item?item.fuel():'' } %}
+{% include 'ui/input.html.twig' with { name:'mileage', type:'number', label:'fleet.field.mileage'|trans, optional:true, form:'fleet.save', value: item and item.mileage()?item.mileage():'' } %}
+{% include 'ui/select.html.twig' with { name:'status', label:'fleet.field.status'|trans, form:'fleet.save', value: item?item.status():'available', options:[
+{value:'available',label:'fleet.status.available'|trans},{value:'rented',label:'fleet.status.rented'|trans},{value:'in_service',label:'fleet.status.in_service'|trans},{value:'repair_wait',label:'fleet.status.repair_wait'|trans},{value:'out_of_service',label:'fleet.status.out_of_service'|trans}
+] } %}
+{% include 'ui/select.html.twig' with { name:'ownership', label:'fleet.field.ownership'|trans, form:'fleet.save', value: item?item.ownership():'owned', options:[
+{value:'owned',label:'fleet.ownership.owned'|trans},{value:'external',label:'fleet.ownership.external'|trans}
+] } %}
+{% include 'ui/select.html.twig' with { name:'customer_id', label:'fleet.field.customer'|trans, optional:true, form:'fleet.save', value: item?item.customerId():customerId, options:customerOptions } %}
+{% include 'ui/input.html.twig' with { name:'stk_at', type:'date', label:'fleet.field.stk'|trans, optional:true, form:'fleet.save', value: item and item.stkAt()?item.stkAt().format('Y-m-d'):'' } %}
+{% include 'ui/input.html.twig' with { name:'insurance_until', type:'date', label:'fleet.field.insurance'|trans, optional:true, form:'fleet.save', value: item and item.insuranceUntil()?item.insuranceUntil().format('Y-m-d'):'' } %}
+{% include 'ui/input.html.twig' with { name:'vignette_until', type:'date', label:'fleet.field.vignette'|trans, optional:true, form:'fleet.save', value: item and item.vignetteUntil()?item.vignetteUntil().format('Y-m-d'):'' } %}
+{% include 'ui/textarea.html.twig' with { name:'note', label:'fleet.field.note'|trans, optional:true, form:'fleet.save', value: item?item.note():'' } %}
+<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+<a class="btn btn--ghost" href="{{ url('admin.fleet.index') }}">{{ 'common.cancel'|trans }}</a></div>
+</form>
+{% endblock %}

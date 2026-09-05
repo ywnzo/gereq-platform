@@ -1,0 +1,44 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="fleet" data-actions-default="1">
+<header class="page-header"><h1>{{ 'fleet.title'|trans }}</h1>
+{% if user.can('fleet.manage') %}<a class="btn btn--primary" href="{{ url('admin.fleet.create') }}">{{ icon('plus') }} {{ 'fleet.new'|trans }}</a>{% endif %}
+</header>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'fleet.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()"><option value="">{{ 'fleet.all_statuses'|trans }}</option>
+        {% for s in statuses %}<option value="{{ s }}" {{ status==s?'selected':'' }}>{{ ('fleet.status.'~s)|trans }}</option>{% endfor %}
+        </select>
+        <select name="ownership" class="input" onchange="this.form.submit()"><option value="">{{ 'fleet.all_ownerships'|trans }}</option>
+        {% for o in ownerships %}<option value="{{ o }}" {{ ownership==o?'selected':'' }}>{{ ('fleet.ownership.'~o)|trans }}</option>{% endfor %}
+        </select>
+    </form>
+</div>
+<div class="table-wrap" data-table><table class="table"><thead><tr>
+{% include 'ui/sort_th.html.twig' with { label: 'fleet.field.plate'|trans, column: 'plate', query: { status: status, ownership: ownership } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'fleet.field.brand'|trans, column: 'brand', query: { status: status, ownership: ownership } } %}
+<th>{{ 'fleet.field.model'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'fleet.field.status'|trans, column: 'status', query: { status: status, ownership: ownership } } %}
+<th>{{ 'fleet.field.ownership'|trans }}</th>
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>{% for item in items %}
+<tr><td><a href="{{ url('admin.fleet.show',{id:item.id()}) }}">{{ item.plate() }}</a></td>
+<td>{{ item.brand() ?: '—' }}</td>
+<td>{{ item.model() ?: '—' }}</td>
+<td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+<td>{{ item.ownershipLabel()|trans }}</td>
+{% embed 'ui/row_actions.html.twig' %}
+    {% block items %}
+        {% include 'ui/row_action.html.twig' with { href: url('admin.fleet.show',{id:item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+    {% endblock %}
+{% endembed %}
+</tr>
+{% else %}<tr><td colspan="6"><div class="empty"><h2>{{ 'fleet.empty'|trans }}</h2></div></td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ 'fleet.brands.title'|trans }}</h1></header>
+<section class="panel">
+    <header class="panel__head"><h2>{{ 'fleet.brands.add'|trans }}</h2></header>
+    {% if user.can('fleet.manage') %}
+    <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.fleet.brands.store') }}">
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with { name:'name', label:'fleet.field.brand'|trans, required:true, value:'' } %}
+        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button></div>
+    </form>
+    {% endif %}
+</section>
+{% for brand in brands %}
+<section class="panel">
+    <header class="panel__head">
+        <h2>{{ brand.name() }}</h2>
+        {% if user.can('fleet.manage') %}
+        <form method="post" action="{{ url('admin.fleet.brands.destroy',{id:brand.id()}) }}" data-confirm="{{ 'fleet.brands.confirm_delete'|trans }}">
+            {{ csrf_field()|raw }}
+            <button type="submit" class="btn btn--ghost">{{ 'common.delete'|trans }}</button>
+        </form>
+        {% endif %}
+    </header>
+    <ul class="meta-list">
+        {% for m in modelsByBrand[brand.id()]|default([]) %}
+            <li>{{ m.name() }}</li>
+        {% else %}
+            <li class="muted">{{ 'fleet.brands.no_models'|trans }}</li>
+        {% endfor %}
+    </ul>
+    {% if user.can('fleet.manage') %}
+    <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.fleet.models.store') }}">
+        {{ csrf_field()|raw }}
+        <input type="hidden" name="brand_id" value="{{ brand.id() }}">
+        {% include 'ui/input.html.twig' with { name:'name', label:'fleet.field.model'|trans, required:true, value:'' } %}
+        <div class="form-actions"><button class="btn btn--ghost" type="submit">{{ 'fleet.brands.add_model'|trans }}</button></div>
+    </form>
+    {% endif %}
+</section>
+{% else %}
+<div class="empty"><h2>{{ 'fleet.brands.empty'|trans }}</h2></div>
+{% endfor %}
+{% endblock %}

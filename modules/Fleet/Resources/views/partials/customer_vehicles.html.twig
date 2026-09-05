@@ -1,0 +1,4 @@
+{% if vehicles is empty %}<div class="empty"><p>{{ 'fleet.partial.empty'|trans }}</p>
+{% if user is defined and user.can('fleet.manage') %}<a class="btn btn--ghost" href="{{ url('admin.fleet.create') }}?customer={{ customer.id() }}">{{ 'fleet.partial.add'|trans }}</a>{% endif %}</div>
+{% else %}<div class="table-wrap"><table class="table"><thead><tr><th>{{ 'fleet.field.plate'|trans }}</th><th>{{ 'fleet.field.status'|trans }}</th></tr></thead>
+<tbody>{% for v in vehicles %}<tr><td><a href="{{ url('admin.fleet.show',{id:v.id()}) }}">{{ v.label() }}</a></td><td>{{ v.statusLabel()|trans }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}

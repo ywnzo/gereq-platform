@@ -1,0 +1,126 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ item.label() }}</h1>
+        <p class="muted detail-layout__meta">
+            <span class="badge">{{ item.statusLabel()|trans }}</span>
+            <span>{{ item.ownershipLabel()|trans }}</span>
+            {% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% endif %}
+        </p>
+    </div>
+    <div class="actions">
+        {% if user.can('fleet.manage') %}
+            <a class="btn btn--ghost" href="{{ url('admin.fleet.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+            <form method="post" action="{{ url('admin.fleet.status',{id:item.id()}) }}" class="meta-list__action">
+                {{ csrf_field()|raw }}
+                <select name="status" class="input" aria-label="{{ 'fleet.field.status'|trans }}" onchange="this.form.submit()">
+                    {% for s in statuses %}
+                        <option value="{{ s }}" {{ item.status()==s?'selected':'' }}>{{ ('fleet.status.'~s)|trans }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        {% endif %}
+    </div>
+</header>
+
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'fleet.field.plate'|trans }}</span>
+                    <strong>{{ item.plate() }}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'fleet.field.brand'|trans }}</dt>
+                        <dd>{{ item.brand() ?: '—' }} {{ item.model() ?: '' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'fleet.field.vin'|trans }}</dt>
+                        <dd>{{ item.vin() ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'fleet.field.mileage'|trans }}</dt>
+                        <dd>{{ item.mileage() is not null ? item.mileage() : '—' }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        {% for section in hookSections %}
+            <section class="panel" id="{{ section.id }}">
+                <header class="panel__head"><h2>{{ section.label|trans }}</h2></header>
+                {{ section.html|raw }}
+            </section>
+        {% endfor %}
+
+        {% if mediaAvailable %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'fleet.media.title'|trans }}</h2></header>
+            <div class="table-wrap"><table class="table"><tbody>
+            {% for row in mediaItems %}
+                <tr>
+                    <td><a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">{{ row.asset.title() }}</a></td>
+                    <td>{{ row.link.label() ?: '—' }}</td>
+                </tr>
+            {% else %}
+                <tr><td class="muted" colspan="2">{{ 'fleet.media.empty'|trans }}</td></tr>
+            {% endfor %}
+            </tbody></table></div>
+            {% if user.can('fleet.manage') %}
+            <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.fleet.media',{id:item.id()}) }}">
+                {{ csrf_field()|raw }}
+                <label class="field"><span>{{ 'fleet.media.label'|trans }}</span>
+                    <select name="label" class="input">
+                        <option value="photo">{{ 'fleet.media.photo'|trans }}</option>
+                        <option value="orv">{{ 'fleet.media.orv'|trans }}</option>
+                        <option value="stk">{{ 'fleet.media.stk'|trans }}</option>
+                    </select>
+                </label>
+                <input class="input" type="file" name="file" accept="image/*,application/pdf" required>
+                <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'fleet.media.upload'|trans }}</button></div>
+            </form>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'fleet.status_log.title'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>{{ 'fleet.field.status'|trans }}</th><th>{{ 'fleet.field.reason'|trans }}</th><th>{{ 'common.time'|trans }}</th></tr></thead>
+                    <tbody>
+                    {% for log in logs %}
+                        <tr>
+                            <td>{% if log.fromStatus() %}{{ ('fleet.status.'~log.fromStatus())|trans }} → {% endif %}{{ ('fleet.status.'~log.toStatus())|trans }}</td>
+                            <td>{{ log.reason() ?: '—' }}</td>
+                            <td class="is-mute">{{ log.createdAt().format('d. m. Y H:i') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="3" class="muted">{{ 'fleet.status_log.empty'|trans }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div><dt>{{ 'fleet.field.status'|trans }}</dt><dd><span class="badge">{{ item.statusLabel()|trans }}</span></dd></div>
+                <div><dt>{{ 'fleet.field.ownership'|trans }}</dt><dd>{{ item.ownershipLabel()|trans }}</dd></div>
+                <div class="meta-list__full"><dt>{{ 'fleet.field.customer'|trans }}</dt>
+                    <dd>{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% else %}—{% endif %}</dd></div>
+                <div><dt>{{ 'fleet.field.stk'|trans }}</dt><dd>{{ item.stkAt()?item.stkAt().format('d. m. Y'):'—' }}</dd></div>
+                <div><dt>{{ 'fleet.field.insurance'|trans }}</dt><dd>{{ item.insuranceUntil()?item.insuranceUntil().format('d. m. Y'):'—' }}</dd></div>
+                <div><dt>{{ 'fleet.field.vignette'|trans }}</dt><dd>{{ item.vignetteUntil()?item.vignetteUntil().format('d. m. Y'):'—' }}</dd></div>
+                {% if item.note() %}<div class="meta-list__full"><dt>{{ 'fleet.field.note'|trans }}</dt><dd>{{ item.note() }}</dd></div>{% endif %}
+            </dl>
+        </section>
+    </aside>
+</div>
+{% endblock %}
