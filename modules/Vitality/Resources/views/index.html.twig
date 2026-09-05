@@ -1,0 +1,128 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="list-shell">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'vitality.title'|trans }}</h1>
+            <p class="muted">{{ 'vitality.threshold.hint'|trans({'%ms%': slowThreshold|number_format(0)}) }}</p>
+        </div>
+        <div class="actions">
+            <span class="vitality-status">
+                {% include '@vitality/_heart.html.twig' with { status: status, size: 'md', title: ('vitality.status.' ~ status)|trans } %}
+                {{ ('vitality.status.' ~ status)|trans }}
+            </span>
+            {% if user.can('vitality.manage') %}
+                <form method="post" action="{{ url('admin.vitality.reset') }}" onsubmit="return confirm({{ 'vitality.reset.confirm'|trans|json_encode|raw }})">
+                    {{ csrf_field()|raw }}
+                    <button type="submit" class="btn btn--ghost">{{ 'vitality.reset'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="list-shell" x-data="dataTable" data-table-id="vitality-endpoints" data-actions-default="0">
+        <header class="page-header">
+            <h2>{{ 'vitality.endpoints'|trans }}</h2>
+        </header>
+        <div class="table-wrap" data-table>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'vitality.field.endpoint'|trans }}</th>
+                        <th>{{ 'vitality.field.samples'|trans }}</th>
+                        <th>{{ 'vitality.field.avg'|trans }}</th>
+                        <th>{{ 'vitality.field.last'|trans }}</th>
+                        <th>{{ 'vitality.field.max'|trans }}</th>
+                        <th>{{ 'vitality.field.seen'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in endpoints %}
+                        <tr>
+                            <td>
+                                <div class="vitality-endpoint">
+                                    {% include '@vitality/_heart.html.twig' with { status: item.status(), size: 'sm', title: item.avgDurationMs() ~ ' ms' } %}
+                                    <span class="method-pill method-pill--{{ item.method()|lower }}">{{ item.method() }}</span>
+                                    <div class="vitality-endpoint__path">
+                                        <span>{{ item.path() }}</span>
+                                        {% if item.routeName() %}
+                                            <div class="muted">{{ item.routeName() }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ item.sampleCount() }}</td>
+                            <td><strong>{{ item.avgDurationMs()|number_format(1) }}</strong> ms</td>
+                            <td>{{ item.lastDurationMs() }} ms</td>
+                            <td>{{ item.maxDurationMs() }} ms</td>
+                            <td class="muted">{{ item.lastSeenAt().format('d. m. Y H:i:s') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty">
+                                    <h2>{{ 'vitality.endpoints.empty'|trans }}</h2>
+                                    <p>{{ 'vitality.endpoints.empty.hint'|trans }}</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="list-shell" x-data="dataTable" data-table-id="vitality-slow" data-actions-default="1" style="margin-top:1.5rem">
+        <header class="page-header">
+            <h2>{{ 'vitality.slow_logs'|trans }}</h2>
+        </header>
+        <div class="table-wrap" data-table>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'vitality.field.time'|trans }}</th>
+                        <th>{{ 'vitality.field.endpoint'|trans }}</th>
+                        <th>{{ 'vitality.field.duration'|trans }}</th>
+                        <th>{{ 'vitality.field.avg_at_time'|trans }}</th>
+                        <th>{{ 'vitality.field.queries'|trans }}</th>
+                        <th>{{ 'vitality.field.status'|trans }}</th>
+                        <th class="table__actions-head"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in slowLogs %}
+                        <tr>
+                            <td>{{ log.createdAt().format('d. m. Y H:i:s') }}</td>
+                            <td>
+                                <div class="vitality-endpoint">
+                                    <span class="method-pill method-pill--{{ log.method()|lower }}">{{ log.method() }}</span>
+                                    <span>{{ log.path() }}</span>
+                                </div>
+                            </td>
+                            <td><strong>{{ log.durationMs() }}</strong> ms</td>
+                            <td>{{ log.avgAtTimeMs()|number_format(1) }} ms</td>
+                            <td>{{ log.queryCount() }} ({{ log.queryTotalMs()|number_format(1) }} ms)</td>
+                            <td>{{ log.statusCode() }}</td>
+                            {% embed 'ui/row_actions.html.twig' %}
+                                {% block items %}
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.vitality.show', {id: log.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+                                {% endblock %}
+                            {% endembed %}
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty">
+                                    <h2>{{ 'vitality.slow_logs.empty'|trans }}</h2>
+                                    <p>{{ 'vitality.slow_logs.empty.hint'|trans }}</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

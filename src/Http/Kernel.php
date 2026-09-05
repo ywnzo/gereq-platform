@@ -89,6 +89,7 @@ final class Kernel
         $isApi = str_starts_with((string) $route->getPath(), '/api/');
         if ($isApi) {
             $middleware[] = \Gereq\Api\Http\ApiRateLimitMiddleware::class;
+            $middleware[] = \Modules\Vitality\Http\Middleware\VitalityTimingMiddleware::class;
         }
 
         foreach ($route->getMiddleware() as $item) {
