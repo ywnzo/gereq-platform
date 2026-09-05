@@ -1,0 +1,69 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'warehouse.movement.new'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'warehouse.movement.save' } %}
+
+    <form method="post" class="form-grid" action="{{ url('admin.warehouse.stock.movement.store') }}" data-form="warehouse.movement.save" x-data="gereqForm"{% if form_errors('warehouse.movement.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/select.html.twig' with {
+            name: 'warehouse_id',
+            label: 'warehouse.field.warehouse'|trans,
+            required: true,
+            form: 'warehouse.movement.save',
+            value: '',
+            options: warehouseOptions
+        } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'product_id',
+            label: 'warehouse.field.product'|trans,
+            required: true,
+            form: 'warehouse.movement.save',
+            value: '',
+            options: productOptions
+        } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'type',
+            label: 'warehouse.field.type'|trans,
+            required: true,
+            form: 'warehouse.movement.save',
+            value: 'in',
+            options: [
+                { value: 'in', label: 'warehouse.movement.type.in'|trans },
+                { value: 'out', label: 'warehouse.movement.type.out'|trans },
+                { value: 'transfer', label: 'warehouse.movement.type.transfer'|trans },
+                { value: 'adjust', label: 'warehouse.movement.type.adjust'|trans }
+            ]
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'qty',
+            label: 'warehouse.field.qty'|trans,
+            required: true,
+            form: 'warehouse.movement.save',
+            value: ''
+        } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'target_warehouse_id',
+            label: 'warehouse.field.target_warehouse'|trans,
+            optional: true,
+            form: 'warehouse.movement.save',
+            value: '',
+            options: warehouseOptions
+        } %}
+        {% include 'ui/textarea.html.twig' with {
+            name: 'note',
+            label: 'warehouse.field.note'|trans,
+            optional: true,
+            extra: 'field--full',
+            form: 'warehouse.movement.save',
+            value: ''
+        } %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.warehouse.stock.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

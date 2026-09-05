@@ -1,0 +1,105 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'crm.activities.title'|trans }}</h1>
+        {% if user.can('crm.activities.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.crm.activities.create') }}{% if customerId %}?customer={{ customerId }}{% endif %}">{{ icon('plus') }} {{ 'crm.activities.new'|trans }}</a>
+        {% endif %}
+    </header>
+
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'crm.activities.search'|trans }}">
+        <select name="type" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'crm.activities.all_types'|trans }}</option>
+            {% for t in types %}
+                <option value="{{ t }}" {{ type == t ? 'selected' : '' }}>{{ ('crm.activity.type.' ~ t)|trans }}</option>
+            {% endfor %}
+        </select>
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'common.all_statuses'|trans }}</option>
+            <option value="open" {{ status == 'open' ? 'selected' : '' }}>{{ 'crm.activities.status.open'|trans }}</option>
+            <option value="done" {{ status == 'done' ? 'selected' : '' }}>{{ 'crm.activities.status.done'|trans }}</option>
+        </select>
+        {% if customerId %}
+            <input type="hidden" name="customer" value="{{ customerId }}">
+        {% endif %}
+    </form>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'crm.field.subject'|trans }}</th>
+                    <th>{{ 'crm.field.type'|trans }}</th>
+                    <th>{{ 'crm.field.customer'|trans }}</th>
+                    <th>{{ 'crm.field.due'|trans }}</th>
+                    <th>{{ 'crm.field.status'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>{{ item.subject() }}</td>
+                        <td><span class="badge">{{ item.typeLabel()|trans }}</span></td>
+                        <td>
+                            {% set c = customers[item.customerId()]|default(null) %}
+                            {% if c %}
+                                <a href="{{ url('admin.customers.show', {id: c.id()}) }}">{{ c.name() }}</a>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>{{ item.dueAt() ? item.dueAt().format('d. m. Y H:i') : '—' }}</td>
+                        <td>
+                            <span class="badge badge--{{ item.isCompleted() ? 'ok' : 'warn' }}">
+                                {{ item.isCompleted() ? 'crm.activities.done'|trans : 'crm.activities.open'|trans }}
+                            </span>
+                        </td>
+                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
+                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
+                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                                {% if user.can('crm.activities.manage') %}
+                                    <a href="{{ url('admin.crm.activities.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                    <form method="post" action="{{ url('admin.crm.activities.complete', {id: item.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ item.isCompleted() ? 'crm.activities.reopen'|trans : 'crm.activities.complete'|trans }}</button>
+                                    </form>
+                                    <form method="post" action="{{ url('admin.crm.activities.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'crm.activities.confirm_delete'|trans|e('js') }}');">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ 'common.delete'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty">
+                                <h2>{{ 'crm.activities.empty'|trans }}</h2>
+                                <p>{{ 'crm.activities.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total > 0 %}
+        <footer class="table-footer">
+            <span class="muted">{{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} {{ 'common.of'|trans }} {{ total }}</span>
+            <nav class="pagination">
+                {% if page > 1 %}
+                    <a href="?q={{ search }}&type={{ type }}&status={{ status }}&customer={{ customerId }}&page={{ page - 1 }}">{{ 'common.previous'|trans }}</a>
+                {% endif %}
+                <span>{{ page }} / {{ pages }}</span>
+                {% if page < pages %}
+                    <a href="?q={{ search }}&type={{ type }}&status={{ status }}&customer={{ customerId }}&page={{ page + 1 }}">{{ 'common.next'|trans }}</a>
+                {% endif %}
+            </nav>
+        </footer>
+    {% endif %}
+{% endblock %}

@@ -9,10 +9,11 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
-use Gereq\Module\CapabilityRegistry;
+use Gereq\Module\ModuleInspector;
 use Gereq\Module\ModuleManager;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class ModuleController extends Controller
@@ -25,7 +26,8 @@ final class ModuleController extends Controller
         private readonly Menu $menu,
         private readonly CommandPalette $palette,
         private readonly ModuleManager $modules,
-        private readonly CapabilityRegistry $capabilities,
+        private readonly ModuleInspector $inspector,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -34,16 +36,32 @@ final class ModuleController extends Controller
     {
         $items = [];
         foreach ($this->modules->discover() as $manifest) {
+            $report = $this->inspector->inspect($manifest);
             $items[] = [
                 'manifest' => $manifest,
-                'enabled' => $this->modules->isEnabled($manifest->id),
-                'missing' => $this->modules->missingDependencies($manifest),
+                'enabled' => $report['overview']['enabled'],
+                'missing' => $report['overview']['missing'],
+                'counts' => $report['counts'],
+                'health_issues' => $report['counts']['health_issues'],
             ];
         }
 
+        usort($items, static function (array $a, array $b): int {
+            if ($a['enabled'] !== $b['enabled']) {
+                return $a['enabled'] ? -1 : 1;
+            }
+
+            return $a['manifest']->name <=> $b['manifest']->name;
+        });
+
         return $this->page('admin/modules/index.html.twig', [
-            'pageTitle' => 'Moduly',
+            'pageTitle' => $this->translator->trans('admin.modules.title'),
             'items' => $items,
+            'stats' => [
+                'total' => count($items),
+                'enabled' => count(array_filter($items, static fn (array $row): bool => $row['enabled'])),
+                'issues' => array_sum(array_map(static fn (array $row): int => $row['health_issues'], $items)),
+            ],
         ]);
     }
 
@@ -51,15 +69,17 @@ final class ModuleController extends Controller
     {
         $manifest = $this->modules->manifest($id);
         if ($manifest === null) {
-            $this->abort(404, 'Modul neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.modules.not_found'));
         }
+
+        $report = $this->inspector->inspect($manifest);
 
         return $this->page('admin/modules/show.html.twig', [
             'pageTitle' => $manifest->name,
             'manifest' => $manifest,
-            'enabled' => $this->modules->isEnabled($id),
-            'missing' => $this->modules->missingDependencies($manifest),
-            'capabilityProviders' => $this->capabilities->all(),
+            'enabled' => $report['overview']['enabled'],
+            'missing' => $report['overview']['missing'],
+            'report' => $report,
         ]);
     }
 
@@ -67,7 +87,7 @@ final class ModuleController extends Controller
     {
         try {
             $this->modules->enable($id);
-            $this->flash('success', 'Modul byl aktivován. Obnovte stránku, aby se načetly jeho služby.');
+            $this->flash('success', $this->translator->trans('admin.modules.activated'));
         } catch (\Throwable $e) {
             $this->flash('error', $e->getMessage());
         }
@@ -79,7 +99,7 @@ final class ModuleController extends Controller
     {
         try {
             $this->modules->disable($id);
-            $this->flash('success', 'Modul byl deaktivován.');
+            $this->flash('success', $this->translator->trans('admin.modules.deactivated'));
         } catch (\Throwable $e) {
             $this->flash('error', $e->getMessage());
         }

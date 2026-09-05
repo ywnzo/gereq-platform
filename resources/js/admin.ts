@@ -121,13 +121,92 @@ Alpine.data('gereqAdmin', () => ({
     },
 }));
 
-Alpine.data('rowMenu', () => ({
+Alpine.data('navGroup', () => ({
+    open: true,
+    init() {
+        const key = 'gereq-nav-group:' + ((this.$el as HTMLElement).dataset.group || '');
+        const stored = localStorage.getItem(key);
+        if (stored === '0') {
+            this.open = false;
+        } else if (stored === '1') {
+            this.open = true;
+        }
+    },
+    get chevronClass(): string {
+        return this.open ? 'is-open' : '';
+    },
+    get expandedAttr(): string {
+        return this.open ? 'true' : 'false';
+    },
+    toggle() {
+        this.open = !this.open;
+        const key = 'gereq-nav-group:' + ((this.$el as HTMLElement).dataset.group || '');
+        localStorage.setItem(key, this.open ? '1' : '0');
+    },
+}));
+
+Alpine.data('navTree', () => ({
     open: false,
+    init() {
+        this.open = ((this.$el as HTMLElement).dataset.defaultOpen || '0') === '1';
+    },
+    get chevronClass(): string {
+        return this.open ? 'is-open' : '';
+    },
+    get expandedAttr(): string {
+        return this.open ? 'true' : 'false';
+    },
     toggle() {
         this.open = !this.open;
     },
+}));
+
+Alpine.data('rowMenu', () => ({
+    open: false,
+    menuStyle: {} as Record<string, string>,
+    toggle() {
+        if (this.open) {
+            this.close();
+            return;
+        }
+        this.open = true;
+        this.$nextTick(() => this.place());
+    },
     close() {
         this.open = false;
+        this.menuStyle = {};
+    },
+    place() {
+        const btn = this.$refs.button as HTMLElement | undefined;
+        const menu = this.$refs.menu as HTMLElement | undefined;
+        if (!btn || !menu) {
+            return;
+        }
+
+        const rect = btn.getBoundingClientRect();
+        const menuWidth = menu.offsetWidth || 220;
+        const menuHeight = menu.offsetHeight || 0;
+        const gap = 6;
+        let top = rect.bottom + gap;
+        let left = rect.right - menuWidth;
+
+        if (top + menuHeight > window.innerHeight - 8) {
+            top = Math.max(8, rect.top - menuHeight - gap);
+        }
+        if (left < 8) {
+            left = 8;
+        }
+        if (left + menuWidth > window.innerWidth - 8) {
+            left = Math.max(8, window.innerWidth - menuWidth - 8);
+        }
+
+        this.menuStyle = {
+            position: 'fixed',
+            top: `${Math.round(top)}px`,
+            left: `${Math.round(left)}px`,
+            right: 'auto',
+            zIndex: '80',
+        };
     },
     get menuClass(): string {
         return this.open ? 'is-open' : '';

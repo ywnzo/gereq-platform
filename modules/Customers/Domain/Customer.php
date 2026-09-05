@@ -145,12 +145,33 @@ class Customer
         $this->touch();
     }
 
+    public function archive(): void
+    {
+        $this->status = 'archived';
+        $this->touch();
+    }
+
+    public function restore(string $status = 'active'): void
+    {
+        if (!in_array($status, ['active', 'inactive', 'lead'], true)) {
+            $status = 'active';
+        }
+        $this->status = $status;
+        $this->touch();
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->status === 'archived';
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {
-            'active' => 'Aktivní',
-            'inactive' => 'Neaktivní',
-            'lead' => 'Lead',
+            'active' => 'customers.status.active',
+            'inactive' => 'customers.status.inactive',
+            'lead' => 'customers.status.lead',
+            'archived' => 'customers.status.archived',
             default => $this->status,
         };
     }

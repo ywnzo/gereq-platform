@@ -1,0 +1,89 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'webhooks.delivery.title'|trans }}</h1>
+        <a class="btn btn--ghost" href="{{ url('admin.developer.webhooks.index') }}">{{ 'webhooks.delivery.back'|trans }}</a>
+    </header>
+
+    <form class="toolbar" method="get">
+        {% if webhookId %}
+            <input type="hidden" name="webhook" value="{{ webhookId }}">
+        {% endif %}
+        {% if filterWebhook %}
+            <span class="badge">{{ 'webhooks.delivery.filter_webhook'|trans({'%name%': filterWebhook.name()}) }}</span>
+            <a class="btn btn--ghost" href="{{ url('admin.developer.webhook-deliveries.index') }}">{{ 'webhooks.delivery.cancel_filter'|trans }}</a>
+        {% endif %}
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'common.all_statuses'|trans }}</option>
+            <option value="pending" {{ status == 'pending' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.pending'|trans }}</option>
+            <option value="delivered" {{ status == 'delivered' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.delivered'|trans }}</option>
+            <option value="failed" {{ status == 'failed' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.failed'|trans }}</option>
+            <option value="retrying" {{ status == 'retrying' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.retrying'|trans }}</option>
+        </select>
+    </form>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'webhooks.delivery.field.webhook'|trans }}</th>
+                    <th>{{ 'webhooks.delivery.field.event'|trans }}</th>
+                    <th>{{ 'webhooks.delivery.field.status'|trans }}</th>
+                    <th>{{ 'webhooks.field.http'|trans }}</th>
+                    <th>{{ 'webhooks.delivery.field.attempt'|trans }}</th>
+                    <th>{{ 'webhooks.delivery.field.created'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>
+                            {% set wh = webhooks[item.webhookId()]|default(null) %}
+                            {% if wh %}
+                                <a href="{{ url('admin.developer.webhooks.show', {id: wh.id()}) }}">{{ wh.name() }}</a>
+                            {% else %}
+                                <code>{{ item.webhookId()|slice(0, 8) }}…</code>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ item.eventType() }}</code></td>
+                        <td>
+                            <span class="badge badge--{{ item.status() == 'delivered' ? 'ok' : (item.status() == 'failed' ? 'danger' : 'warn') }}">
+                                {{ item.statusLabel()|trans }}
+                            </span>
+                        </td>
+                        <td>{{ item.responseStatus() ?: '—' }}</td>
+                        <td>{{ item.attempt() }}</td>
+                        <td>{{ item.createdAt().format('d. m. Y H:i:s') }}</td>
+                        <td><a href="{{ url('admin.developer.webhook-deliveries.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a></td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty">
+                                <h2>{{ 'webhooks.delivery.empty'|trans }}</h2>
+                                <p>{{ 'webhooks.delivery.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total > 0 %}
+        <footer class="table-footer">
+            <span class="muted">{{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} {{ 'common.of'|trans }} {{ total }}</span>
+            <nav class="pagination">
+                {% if page > 1 %}
+                    <a href="?webhook={{ webhookId }}&status={{ status }}&page={{ page - 1 }}">{{ 'common.previous'|trans }}</a>
+                {% endif %}
+                <span>{{ page }} / {{ pages }}</span>
+                {% if page < pages %}
+                    <a href="?webhook={{ webhookId }}&status={{ status }}&page={{ page + 1 }}">{{ 'common.next'|trans }}</a>
+                {% endif %}
+            </nav>
+        </footer>
+    {% endif %}
+{% endblock %}

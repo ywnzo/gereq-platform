@@ -1,26 +1,26 @@
 <!DOCTYPE html>
-<html lang="cs" data-theme="gereq">
+<html lang="{{ app_locale() }}" data-theme="gereq">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Design · GEREQ</title>
+    <title>{{ 'design.title'|trans }}</title>
     {% include 'partials/brand-head.html.twig' %}
     <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
 </head>
 <body class="design-body">
     <header class="design-bar">
-        {% include 'partials/brand-lockup.html.twig' with { href: '/design.html', modifier: 'brand--bar', subtitle: 'Design' } %}
-        <nav class="design-bar__links" aria-label="Systém">
-            <a href="/ok.html">Stav serveru</a>
-            <a href="{{ url('admin.login') }}">Administrace</a>
+        {% include 'partials/brand-lockup.html.twig' with { href: '/design.html', modifier: 'brand--bar', subtitle: 'design.subtitle'|trans } %}
+        <nav class="design-bar__links" aria-label="{{ 'design.nav.system'|trans }}">
+            <a href="/ok.html">{{ 'design.nav.server_status'|trans }}</a>
+            <a href="{{ url('admin.login') }}">{{ 'design.nav.admin'|trans }}</a>
         </nav>
     </header>
 
     <div class="design-wrap" x-data="gereqTabs"{% if form_errors('design.demo') %} data-initial="formular"{% endif %}>
         <header class="design-head">
-            <p class="design-head__kicker">Nastavení</p>
-            <h1>Komponenty rozhraní</h1>
-            <p class="design-head__lead">Stejný rytmus jako WordPress nastavení — horní lišta, záložky, postboxy, tabulka polí. Modernější: GEREQ tokeny, TipTap, žádný postranní panel.</p>
+            <p class="design-head__kicker">{{ 'design.head.kicker'|trans }}</p>
+            <h1>{{ 'design.head.title'|trans }}</h1>
+            <p class="design-head__lead">{{ 'design.head.lead'|trans }}</p>
         </header>
 
         {% set flashes_success = flash('success') %}
@@ -30,21 +30,21 @@
             {% endfor %}
         {% endif %}
 
-        <div class="design-tabs" role="tablist" aria-label="Sekce katalogu">
-            <button type="button" class="design-tab" role="tab" data-tab="znacka">Značka</button>
-            <button type="button" class="design-tab" role="tab" data-tab="tlacitka">Tlačítka</button>
-            <button type="button" class="design-tab" role="tab" data-tab="pole">Pole</button>
-            <button type="button" class="design-tab" role="tab" data-tab="vybery">Výběry</button>
-            <button type="button" class="design-tab" role="tab" data-tab="editor">Editor</button>
-            <button type="button" class="design-tab" role="tab" data-tab="overlay">Overlay</button>
-            <button type="button" class="design-tab" role="tab" data-tab="formular">Validace</button>
+        <div class="design-tabs" role="tablist" aria-label="{{ 'design.tabs.aria'|trans }}">
+            <button type="button" class="design-tab" role="tab" data-tab="znacka">{{ 'design.tabs.brand'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="tlacitka">{{ 'design.tabs.buttons'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="pole">{{ 'design.tabs.fields'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="vybery">{{ 'design.tabs.selects'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="editor">{{ 'design.tabs.editor'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="overlay">{{ 'design.tabs.overlay'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="formular">{{ 'design.tabs.validation'|trans }}</button>
         </div>
 
         <section class="design-panel" data-panel="znacka" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Paleta</h2>
-                    <p>Ink, paper, signal lime. Ne bronz, ne WordPress modrá.</p>
+                    <h2>{{ 'design.palette.title'|trans }}</h2>
+                    <p>{{ 'design.palette.lead'|trans }}</p>
                 </div>
                 <div class="design-box__body">
                     <div class="design-swatches">
@@ -62,34 +62,34 @@
         <section class="design-panel" data-panel="tlacitka" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Akce</h2>
-                    <p>Stejný radius 8 px, DM Sans, daisyUI barvy i GEREQ tokeny. Vlastní variantu složíte Tailwindem na <code class="design-code">btn</code>.</p>
+                    <h2>{{ 'design.actions.title'|trans }}</h2>
+                    <p>{{ 'design.actions.lead'|trans|raw }}</p>
                 </div>
                 <div class="design-box__body">
                     <div class="design-cluster">
-                        <p class="design-cluster__label">Základ</p>
+                        <p class="design-cluster__label">{{ 'design.actions.base'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn-primary" type="button">Uložit</button>
+                            <button class="btn btn-primary" type="button">{{ 'common.save'|trans }}</button>
                             <button class="btn btn-secondary" type="button">Signal</button>
                             <button class="btn btn-accent" type="button">Accent</button>
                             <button class="btn btn-neutral" type="button">Neutral</button>
                             <button class="btn btn-ghost" type="button">Ghost</button>
-                            <button class="btn btn-link" type="button">Odkaz</button>
+                            <button class="btn btn-link" type="button">{{ 'design.btn.link'|trans }}</button>
                         </div>
                     </div>
                     <div class="design-cluster">
-                        <p class="design-cluster__label">Stavy a význam</p>
+                        <p class="design-cluster__label">{{ 'design.actions.states'|trans }}</p>
                         <div class="design-row">
                             <button class="btn btn-info" type="button">Info</button>
-                            <button class="btn btn-success" type="button">Hotovo</button>
-                            <button class="btn btn-warning" type="button">Pozor</button>
-                            <button class="btn btn-error" type="button">Chyba</button>
-                            <button class="btn btn--danger" type="button">Do koše</button>
+                            <button class="btn btn-success" type="button">{{ 'design.btn.done'|trans }}</button>
+                            <button class="btn btn-warning" type="button">{{ 'design.btn.warning'|trans }}</button>
+                            <button class="btn btn-error" type="button">{{ 'design.btn.error'|trans }}</button>
+                            <button class="btn btn--danger" type="button">{{ 'design.btn.trash'|trans }}</button>
                             <button class="btn btn-primary" type="button" disabled>Disabled</button>
                         </div>
                     </div>
                     <div class="design-cluster">
-                        <p class="design-cluster__label">Obrys, soft, čárka</p>
+                        <p class="design-cluster__label">{{ 'design.actions.outline_soft_dash'|trans }}</p>
                         <div class="design-row">
                             <button class="btn btn-outline btn-primary" type="button">Outline</button>
                             <button class="btn btn-outline btn-error" type="button">Outline error</button>
@@ -99,18 +99,18 @@
                         </div>
                     </div>
                     <div class="design-cluster">
-                        <p class="design-cluster__label">GEREQ barvy</p>
+                        <p class="design-cluster__label">{{ 'design.actions.gereq_colors'|trans }}</p>
                         <div class="design-row">
                             <button class="btn btn--primary" type="button">Ink</button>
                             <button class="btn btn--signal" type="button">Signal</button>
                             <button class="btn btn--sky" type="button">Sky</button>
                             <button class="btn btn--violet" type="button">Violet</button>
-                            <button class="btn btn--outline" type="button">Obrys ink</button>
+                            <button class="btn btn--outline" type="button">{{ 'design.btn.outline_ink'|trans }}</button>
                             <button class="btn btn--soft" type="button">Soft signal</button>
                         </div>
                     </div>
                     <div class="design-cluster">
-                        <p class="design-cluster__label">Tailwind custom</p>
+                        <p class="design-cluster__label">{{ 'design.actions.tailwind_custom'|trans }}</p>
                         <div class="design-row">
                             <button class="btn bg-ink text-paper hover:bg-ink/90 rounded-lg" type="button">bg-ink</button>
                             <button class="btn bg-signal text-ink hover:brightness-95 rounded-lg" type="button">bg-signal</button>
@@ -122,13 +122,13 @@
                         </div>
                     </div>
                     <div class="design-cluster">
-                        <p class="design-cluster__label">Velikosti</p>
+                        <p class="design-cluster__label">{{ 'design.actions.sizes'|trans }}</p>
                         <div class="design-row">
                             <button class="btn btn-xs btn-primary" type="button">XS</button>
-                            <button class="btn btn-sm btn-primary" type="button">Small</button>
-                            <button class="btn btn-primary" type="button">Default</button>
-                            <button class="btn btn-lg btn-primary" type="button">Large</button>
-                            <button class="btn btn-primary g-tip" type="button" data-tip="Uloží koncept">S tipem</button>
+                            <button class="btn btn-sm btn-primary" type="button">{{ 'design.btn.small'|trans }}</button>
+                            <button class="btn btn-primary" type="button">{{ 'design.btn.default'|trans }}</button>
+                            <button class="btn btn-lg btn-primary" type="button">{{ 'design.btn.large'|trans }}</button>
+                            <button class="btn btn-primary g-tip" type="button" data-tip="{{ 'design.btn.tip_save_draft'|trans }}">{{ 'design.btn.with_tip'|trans }}</button>
                         </div>
                     </div>
                 </div>
@@ -138,32 +138,32 @@
         <section class="design-panel" data-panel="pole" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Typy polí</h2>
-                    <p>Jedna typografie (DM Sans), jeden radius 8 px, stejný focus kroužek. Popisek vlevo, ovládání vpravo.</p>
+                    <h2>{{ 'design.fields.title'|trans }}</h2>
+                    <p>{{ 'design.fields.lead'|trans }}</p>
                 </div>
                 <div class="design-box__body design-settings">
-                    {% include 'ui/input.html.twig' with { name: 'demo_name', label: 'Jméno', placeholder: 'Jan Novák', hint: 'Jak vás máme oslovovat.', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_email', type: 'email', label: 'E-mail', placeholder: 'jan@gereq.cz', required: true, hint: 'Slouží k přihlášení.', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_tel', type: 'tel', label: 'Telefon', placeholder: '777 123 456', prefix: '+420', inputmode: 'tel', hint: 'Předvolba je oddělená, do pole jde jen číslo.', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_url', type: 'url', label: 'Web', placeholder: 'https://gereq.cz', hint: 'S protokolem.', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_number', type: 'number', label: 'Limit', value: '12', min: 0, max: 99, suffix: 'ks', hint: 'Celé číslo s jednotkou vpravo.', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_money', type: 'number', label: 'Cena', value: '2490', min: 0, step: 10, suffix: 'Kč', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_password', type: 'password', label: 'Heslo', autocomplete: 'new-password', hint: 'Alespoň 12 znaků, ikona zobrazí heslo.', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_search', type: 'search', label: 'Hledat', placeholder: 'Zákazník, e-mail…', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_date', type: 'date', label: 'Datum', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_time', type: 'time', label: 'Čas', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_dt', type: 'datetime-local', label: 'Termín', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_color', type: 'color', label: 'Barva', value: '#d7ff45', hint: 'Signal lime je výchozí.', form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_off', label: 'Jen pro čtení', value: 'Nelze upravit', disabled: true, hint: 'Pole je zamčené.', form: 'design.static' } %}
-                    {% include 'ui/file.html.twig' with { label: 'Příloha' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_name', label: 'design.field.name'|trans, placeholder: 'design.field.name.placeholder'|trans, hint: 'design.field.name.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_email', type: 'email', label: 'common.email'|trans, placeholder: 'design.field.email.placeholder'|trans, required: true, hint: 'design.field.email.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_tel', type: 'tel', label: 'design.field.phone'|trans, placeholder: 'design.field.phone.placeholder'|trans, prefix: '+420', inputmode: 'tel', hint: 'design.field.phone.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_url', type: 'url', label: 'design.field.web'|trans, placeholder: 'design.field.web.placeholder'|trans, hint: 'design.field.web.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_number', type: 'number', label: 'design.field.limit'|trans, value: '12', min: 0, max: 99, suffix: 'design.field.limit.suffix'|trans, hint: 'design.field.limit.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_money', type: 'number', label: 'design.field.price'|trans, value: '2490', min: 0, step: 10, suffix: 'design.field.price.suffix'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_password', type: 'password', label: 'common.password'|trans, autocomplete: 'new-password', hint: 'design.field.password.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_search', type: 'search', label: 'design.field.search'|trans, placeholder: 'design.field.search.placeholder'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_date', type: 'date', label: 'design.field.date'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_time', type: 'time', label: 'design.field.time'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_dt', type: 'datetime-local', label: 'design.field.datetime'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_color', type: 'color', label: 'design.field.color'|trans, value: '#d7ff45', hint: 'design.field.color.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_off', label: 'design.field.readonly'|trans, value: 'design.field.readonly.value'|trans, disabled: true, hint: 'design.field.readonly.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/file.html.twig' with { label: 'design.field.attachment'|trans } %}
                     <div class="g-field">
-                        <label class="g-label" for="demo-range">Priorita</label>
+                        <label class="g-label" for="demo-range">{{ 'design.field.priority'|trans }}</label>
                         <input class="g-range" id="demo-range" type="range" min="0" max="100" value="40">
-                        <p class="g-hint">Tahem nastavíte pořadí ve frontě.</p>
+                        <p class="g-hint">{{ 'design.field.priority.hint'|trans }}</p>
                     </div>
                     <div class="g-field">
-                        <span class="g-label">PIN</span>
-                        <div class="g-pin" aria-label="PIN">
+                        <span class="g-label">{{ 'design.field.pin'|trans }}</span>
+                        <div class="g-pin" aria-label="{{ 'design.field.pin'|trans }}">
                             <input class="g-control" maxlength="1" inputmode="numeric">
                             <input class="g-control" maxlength="1" inputmode="numeric">
                             <input class="g-control" maxlength="1" inputmode="numeric">
@@ -174,25 +174,25 @@
             </div>
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Textarea</h2>
-                    <p><code class="design-code">textarea</code> je plná plocha s lištou a označením textu. <code class="design-code">textarea-mini</code> je kompaktní varianta, kterou jsme měli doteď.</p>
+                    <h2>{{ 'design.textarea.title'|trans }}</h2>
+                    <p>{{ 'design.textarea.lead'|trans|raw }}</p>
                 </div>
                 <div class="design-box__body design-settings">
                     {% include 'ui/textarea.html.twig' with {
                         name: 'demo_area',
-                        label: 'Popis',
-                        placeholder: 'Napište delší kontext. Označte slova — výběr má signal barvu.',
-                        hint: 'Označit vše, počet znaků, ::selection v GEREQ limetce.',
+                        label: 'design.textarea.description'|trans,
+                        placeholder: 'design.textarea.description.placeholder'|trans,
+                        hint: 'design.textarea.description.hint'|trans,
                         maxlength: 500,
                         form: 'design.static',
                         optional: true
                     } %}
                     {% include 'ui/textarea.html.twig' with {
                         name: 'demo_area_mini',
-                        label: 'Krátká poznámka',
+                        label: 'design.textarea.note'|trans,
                         size: 'mini',
-                        placeholder: 'Jedna až tři věty…',
-                        hint: 'textarea-mini — stejné rohy a písmo, menší výška.',
+                        placeholder: 'design.textarea.note.placeholder'|trans,
+                        hint: 'design.textarea.note.hint'|trans,
                         form: 'design.static',
                         optional: true
                     } %}
@@ -203,35 +203,35 @@
         <section class="design-panel" data-panel="vybery" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Výběry</h2>
-                    <p>Dropdown, radio, checkbox, switch. Escape a klik mimo zavře seznam.</p>
+                    <h2>{{ 'design.selects.title'|trans }}</h2>
+                    <p>{{ 'design.selects.lead'|trans }}</p>
                 </div>
                 <div class="design-box__body design-settings">
                     {% include 'ui/select.html.twig' with {
                         name: 'demo_role',
-                        label: 'Role',
+                        label: 'design.field.role'|trans,
                         value: 'editor',
-                        hint: 'Určuje oprávnění v administraci.',
+                        hint: 'design.field.role.hint'|trans,
                         form: 'design.static',
                         options: [
-                            { value: 'admin', label: 'Administrátor', description: 'Plný přístup' },
-                            { value: 'editor', label: 'Editor', description: 'Obsah a zákazníci' },
-                            { value: 'viewer', label: 'Čtenář', description: 'Jen náhled' }
+                            { value: 'admin', label: 'design.role.admin'|trans, description: 'design.role.admin.desc'|trans },
+                            { value: 'editor', label: 'design.role.editor'|trans, description: 'design.role.editor.desc'|trans },
+                            { value: 'viewer', label: 'design.role.viewer'|trans, description: 'design.role.viewer.desc'|trans }
                         ]
                     } %}
                     {% include 'ui/radio.html.twig' with {
                         name: 'demo_plan',
-                        label: 'Tarif',
+                        label: 'design.field.plan'|trans,
                         value: 'pro',
                         form: 'design.static',
                         options: [
-                            { value: 'start', label: 'Start' },
-                            { value: 'pro', label: 'Pro' },
-                            { value: 'scale', label: 'Scale' }
+                            { value: 'start', label: 'design.plan.start'|trans },
+                            { value: 'pro', label: 'design.plan.pro'|trans },
+                            { value: 'scale', label: 'design.plan.scale'|trans }
                         ]
                     } %}
-                    {% include 'ui/checkbox.html.twig' with { name: 'demo_news', label: 'Novinky e-mailem', description: 'Jednou za měsíc, bez spamu.', form: 'design.static' } %}
-                    {% include 'ui/switch.html.twig' with { name: 'demo_dark', label: 'Tmavý motiv', description: 'Jen ukázka stavu — globální přepínač je v adminu.', on: true } %}
+                    {% include 'ui/checkbox.html.twig' with { name: 'demo_news', label: 'design.field.news'|trans, description: 'design.field.news.desc'|trans, form: 'design.static' } %}
+                    {% include 'ui/switch.html.twig' with { name: 'demo_dark', label: 'design.field.dark'|trans, description: 'design.field.dark.desc'|trans, on: true } %}
                 </div>
             </div>
         </section>
@@ -239,15 +239,15 @@
         <section class="design-panel" data-panel="editor" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>TipTap</h2>
-                    <p>Náhrada textarea. Tučně, kurzíva, seznamy, odkaz. HTML se drží ve skrytém poli.</p>
+                    <h2>{{ 'design.editor.title'|trans }}</h2>
+                    <p>{{ 'design.editor.lead'|trans }}</p>
                 </div>
                 <div class="design-box__body design-settings">
                     {% include 'ui/editor.html.twig' with {
                         name: 'demo_body',
-                        label: 'Obsah',
-                        placeholder: 'Napište poznámku k zákazníkovi…',
-                        value: '<p>GEREQ platforma používá <strong>TipTap</strong> místo holé textarea.</p>',
+                        label: 'design.editor.content'|trans,
+                        placeholder: 'design.editor.placeholder'|trans,
+                        value: 'design.editor.sample'|trans,
                         form: 'design.static'
                     } %}
                 </div>
@@ -257,38 +257,38 @@
         <section class="design-panel" data-panel="overlay" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Modal, popover, hover</h2>
-                    <p>Escape zavře dialog. Tooltip i na focus-visible.</p>
+                    <h2>{{ 'design.overlay.title'|trans }}</h2>
+                    <p>{{ 'design.overlay.lead'|trans }}</p>
                 </div>
                 <div class="design-box__body">
                     <div class="design-row">
                         <div x-data="gereqModal">
-                            <button class="btn btn--primary" type="button" @click="show">Otevřít modal</button>
+                            <button class="btn btn--primary" type="button" @click="show">{{ 'design.modal.open'|trans }}</button>
                             <div class="g-modal__backdrop" :class="backdropClass" @click="close"></div>
                             <div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
                                 <div class="g-modal__panel">
-                                    <h3 class="g-modal__title" id="demo-modal-title">Přesunout do koše?</h3>
-                                    <p class="g-modal__body">Položka půjde obnovit z koše. Tenhle dialog používají moduly.</p>
+                                    <h3 class="g-modal__title" id="demo-modal-title">{{ 'design.modal.title'|trans }}</h3>
+                                    <p class="g-modal__body">{{ 'design.modal.body'|trans }}</p>
                                     <div class="g-modal__actions">
-                                        <button class="btn btn--ghost" type="button" @click="close" x-ref="close">Zrušit</button>
-                                        <button class="btn btn--danger" type="button" @click="close">Do koše</button>
+                                        <button class="btn btn--ghost" type="button" @click="close" x-ref="close">{{ 'common.cancel'|trans }}</button>
+                                        <button class="btn btn--danger" type="button" @click="close">{{ 'design.btn.trash'|trans }}</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="g-popover" x-data="gereqPopover">
-                            <button class="btn btn--ghost" type="button" @click="toggle">Popover</button>
+                            <button class="btn btn--ghost" type="button" @click="toggle">{{ 'design.popover'|trans }}</button>
                             <div class="g-popover__panel" :class="panelClass" role="dialog">
-                                <strong>Rychlé akce</strong>
-                                <p class="muted" style="margin: 0.4rem 0 0;">Upravit, duplikovat, archivovat.</p>
+                                <strong>{{ 'design.popover.title'|trans }}</strong>
+                                <p class="muted" style="margin: 0.4rem 0 0;">{{ 'design.popover.body'|trans }}</p>
                             </div>
                         </div>
-                        <button class="btn btn--ghost g-tip" type="button" data-tip="Zkratka Ctrl K">Tooltip</button>
+                        <button class="btn btn--ghost g-tip" type="button" data-tip="{{ 'design.tooltip.shortcut'|trans }}">{{ 'design.tooltip'|trans }}</button>
                         <div class="g-hovercard">
-                            <button class="btn btn--ghost" type="button">Hover karta</button>
+                            <button class="btn btn--ghost" type="button">{{ 'design.hovercard'|trans }}</button>
                             <div class="g-hovercard__panel">
-                                <strong>Jiří Novák</strong>
-                                <p class="muted" style="margin: 0.35rem 0 0;">Administrátor · jiri.novak@gereq.cz</p>
+                                <strong>{{ 'design.hovercard.name'|trans }}</strong>
+                                <p class="muted" style="margin: 0.35rem 0 0;">{{ 'design.hovercard.meta'|trans }}</p>
                             </div>
                         </div>
                     </div>
@@ -299,20 +299,20 @@
         <section class="design-panel" data-panel="formular" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Označení chyb</h2>
-                    <p>Neplatné pole má korálový pruh, tónované pozadí, tečku u hlášky a silnější rámeček. Úprava pole značení sundá.</p>
+                    <h2>{{ 'design.errors.title'|trans }}</h2>
+                    <p>{{ 'design.errors.lead'|trans }}</p>
                 </div>
                 <div class="design-box__body design-settings">
                     <div class="g-field">
-                        <label class="g-label" for="state-ok">V pořádku</label>
+                        <label class="g-label" for="state-ok">{{ 'design.errors.ok'|trans }}</label>
                         <input class="g-control" id="state-ok" value="jiri.novak@gereq.cz">
-                        <p class="g-hint">Neutrální stav, nápověda pod polem.</p>
+                        <p class="g-hint">{{ 'design.errors.ok.hint'|trans }}</p>
                     </div>
                     <div class="g-field is-invalid">
-                        <label class="g-label" for="state-bad">E-mail</label>
+                        <label class="g-label" for="state-bad">{{ 'common.email'|trans }}</label>
                         <input class="g-control" id="state-bad" value="neplatny" aria-invalid="true">
-                        <p class="g-hint">Nápověda zůstává vidět i u chyby.</p>
-                        <p class="g-error">Zadejte platný e-mail.</p>
+                        <p class="g-hint">{{ 'design.errors.email.hint'|trans }}</p>
+                        <p class="g-error">{{ 'design.errors.email.error'|trans }}</p>
                     </div>
                     <div class="g-check is-invalid">
                         <label class="g-check__row" for="state-check">
@@ -321,61 +321,61 @@
                                 <span class="g-check__mark" aria-hidden="true"></span>
                             </span>
                             <span class="g-check__copy">
-                                <span class="g-check__label">Souhlas <span class="g-req">*</span></span>
+                                <span class="g-check__label">{{ 'design.errors.consent'|trans }} <span class="g-req">*</span></span>
                             </span>
                         </label>
-                        <p class="g-error">Toto pole musí být potvrzené.</p>
+                        <p class="g-error">{{ 'design.errors.consent.error'|trans }}</p>
                     </div>
                 </div>
             </div>
             <div class="design-box">
                 <div class="design-box__head">
-                    <h2>Živá validace</h2>
-                    <p>Prázdné odeslání uloží hodnoty a vyznačí pole. Obnovení stránky stav podrží. Úspěch ho vyčistí.</p>
+                    <h2>{{ 'design.live.title'|trans }}</h2>
+                    <p>{{ 'design.live.lead'|trans }}</p>
                 </div>
                 <div class="design-box__body">
                     {% include 'ui/error-summary.html.twig' with { form: 'design.demo' } %}
                     <form method="post" action="{{ url('design.submit') }}" class="design-settings" data-form="design.demo" x-data="gereqForm"{% if form_errors('design.demo') %} data-server-state="1"{% endif %}>
                         {{ csrf_field()|raw }}
-                        {% include 'ui/input.html.twig' with { name: 'name', label: 'Jméno', required: true, hint: 'Alespoň 2 znaky.', form: 'design.demo' } %}
-                        {% include 'ui/input.html.twig' with { name: 'email', type: 'email', label: 'E-mail', required: true, hint: 'Pracovní adresa.', form: 'design.demo' } %}
-                        {% include 'ui/input.html.twig' with { name: 'phone', type: 'tel', label: 'Telefon', required: true, prefix: '+420', placeholder: '777 123 456', inputmode: 'tel', hint: '9–16 číslic, mezery jsou v pořádku.', form: 'design.demo' } %}
-                        {% include 'ui/input.html.twig' with { name: 'website', type: 'url', label: 'Web', optional: true, placeholder: 'https://', hint: 'Volitelné, ale musí to být URL.', form: 'design.demo' } %}
+                        {% include 'ui/input.html.twig' with { name: 'name', label: 'design.field.name'|trans, required: true, hint: 'design.live.name.hint'|trans, form: 'design.demo' } %}
+                        {% include 'ui/input.html.twig' with { name: 'email', type: 'email', label: 'common.email'|trans, required: true, hint: 'design.live.email.hint'|trans, form: 'design.demo' } %}
+                        {% include 'ui/input.html.twig' with { name: 'phone', type: 'tel', label: 'design.field.phone'|trans, required: true, prefix: '+420', placeholder: 'design.field.phone.placeholder'|trans, inputmode: 'tel', hint: 'design.live.phone.hint'|trans, form: 'design.demo' } %}
+                        {% include 'ui/input.html.twig' with { name: 'website', type: 'url', label: 'design.field.web'|trans, optional: true, placeholder: 'design.live.web.placeholder'|trans, hint: 'design.live.web.hint'|trans, form: 'design.demo' } %}
                         {% include 'ui/select.html.twig' with {
                             name: 'role',
-                            label: 'Role',
+                            label: 'design.field.role'|trans,
                             form: 'design.demo',
                             required: true,
-                            hint: 'Vyberte jednu hodnotu.',
+                            hint: 'design.live.role.hint'|trans,
                             options: [
-                                { value: 'admin', label: 'Administrátor' },
-                                { value: 'editor', label: 'Editor' },
-                                { value: 'viewer', label: 'Čtenář' }
+                                { value: 'admin', label: 'design.role.admin'|trans },
+                                { value: 'editor', label: 'design.role.editor'|trans },
+                                { value: 'viewer', label: 'design.role.viewer'|trans }
                             ]
                         } %}
                         {% include 'ui/textarea.html.twig' with {
                             name: 'note',
-                            label: 'Popis',
+                            label: 'design.textarea.description'|trans,
                             required: true,
                             maxlength: 500,
-                            placeholder: 'Alespoň 12 znaků. Označte větu a uvidíte počet v liště.',
-                            hint: 'Plná textarea s označením.',
+                            placeholder: 'design.live.note.placeholder'|trans,
+                            hint: 'design.live.note.hint'|trans,
                             form: 'design.demo'
                         } %}
                         {% include 'ui/textarea.html.twig' with {
                             name: 'comment',
-                            label: 'Interní komentář',
+                            label: 'design.live.comment'|trans,
                             size: 'mini',
                             optional: true,
                             maxlength: 120,
-                            placeholder: 'Krátká poznámka…',
-                            hint: 'textarea-mini, max. 120 znaků.',
+                            placeholder: 'design.live.comment.placeholder'|trans,
+                            hint: 'design.live.comment.hint'|trans,
                             form: 'design.demo'
                         } %}
-                        {% include 'ui/checkbox.html.twig' with { name: 'terms', label: 'Souhlasím s interními pravidly', required: true, form: 'design.demo' } %}
+                        {% include 'ui/checkbox.html.twig' with { name: 'terms', label: 'design.live.terms'|trans, required: true, form: 'design.demo' } %}
                         <div class="design-submit">
-                            <button class="btn btn--ghost" type="reset">Vymazat</button>
-                            <button class="btn btn-primary" type="submit">Ověřit formulář</button>
+                            <button class="btn btn--ghost" type="reset">{{ 'design.live.reset'|trans }}</button>
+                            <button class="btn btn-primary" type="submit">{{ 'design.live.submit'|trans }}</button>
                         </div>
                     </form>
                 </div>

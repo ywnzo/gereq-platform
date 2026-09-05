@@ -6,7 +6,7 @@ return [
     'id' => 'customers',
     'name' => 'Customers',
     'version' => '1.0.0',
-    'description' => 'Evidence zákazníků a firemních kontaktů.',
+    'description' => 'module.customers.description',
     'class' => Modules\Customers\CustomersModule::class,
     'author' => 'GEREQ',
     'requires' => [
@@ -15,16 +15,12 @@ return [
     'optional' => [
         'notifications' => '^1.0',
     ],
-    'provides' => [
-        'contacts',
-    ],
-    'capabilities' => [
-        'contacts',
-    ],
+    'provides' => ['contacts'],
+    'capabilities' => ['contacts'],
     'permissions' => [
-        ['name' => 'customers.view', 'label' => 'Zobrazit zákazníky', 'group' => 'Zákazníci'],
-        ['name' => 'customers.create', 'label' => 'Vytvořit zákazníka', 'group' => 'Zákazníci'],
-        ['name' => 'customers.edit', 'label' => 'Upravit zákazníka', 'group' => 'Zákazníci'],
-        ['name' => 'customers.delete', 'label' => 'Smazat zákazníka', 'group' => 'Zákazníci'],
+        ['name' => 'customers.view', 'label' => 'perm.customers.view', 'group' => 'perm.group.customers'],
+        ['name' => 'customers.create', 'label' => 'perm.customers.create', 'group' => 'perm.group.customers'],
+        ['name' => 'customers.edit', 'label' => 'perm.customers.edit', 'group' => 'perm.group.customers'],
+        ['name' => 'customers.delete', 'label' => 'perm.customers.delete', 'group' => 'perm.group.customers'],
     ],
 ];

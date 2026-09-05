@@ -1,0 +1,139 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Media\Domain;
+
+use Doctrine\ORM\Mapping as ORM;
+use Ramsey\Uuid\Uuid;
+
+#[ORM\Entity]
+#[ORM\Table(name: 'media_assets')]
+#[ORM\Index(name: 'idx_media_assets_mime', columns: ['mime'])]
+#[ORM\Index(name: 'idx_media_assets_created', columns: ['created_at'])]
+class MediaAsset
+{
+    #[ORM\Id]
+    #[ORM\Column(length: 36)]
+    private string $id;
+
+    #[ORM\Column(length: 190)]
+    private string $title;
+
+    #[ORM\Column(length: 255)]
+    private string $path;
+
+    #[ORM\Column(length: 120)]
+    private string $mime;
+
+    #[ORM\Column]
+    private int $size = 0;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $alt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $width = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $height = null;
+
+    #[ORM\Column(name: 'uploaded_by', length: 36, nullable: true)]
+    private ?string $uploadedBy = null;
+
+    #[ORM\Column(name: 'created_at')]
+    private \DateTimeImmutable $createdAt;
+
+    public function __construct(
+        string $title,
+        string $path,
+        string $mime,
+        int $size,
+        ?string $uploadedBy = null,
+        ?string $alt = null,
+        ?int $width = null,
+        ?int $height = null,
+    ) {
+        $this->id = Uuid::uuid7()->toString();
+        $this->title = $title;
+        $this->path = $path;
+        $this->mime = $mime;
+        $this->size = $size;
+        $this->uploadedBy = $uploadedBy;
+        $this->alt = $alt !== '' ? $alt : null;
+        $this->width = $width;
+        $this->height = $height;
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public function id(): string
+    {
+        return $this->id;
+    }
+
+    public function title(): string
+    {
+        return $this->title;
+    }
+
+    public function path(): string
+    {
+        return $this->path;
+    }
+
+    public function mime(): string
+    {
+        return $this->mime;
+    }
+
+    public function size(): int
+    {
+        return $this->size;
+    }
+
+    public function alt(): ?string
+    {
+        return $this->alt;
+    }
+
+    public function width(): ?int
+    {
+        return $this->width;
+    }
+
+    public function height(): ?int
+    {
+        return $this->height;
+    }
+
+    public function uploadedBy(): ?string
+    {
+        return $this->uploadedBy;
+    }
+
+    public function createdAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function isImage(): bool
+    {
+        return str_starts_with($this->mime, 'image/');
+    }
+
+    public function setTitle(string $title): void
+    {
+        $this->title = $title;
+    }
+
+    public function setAlt(?string $alt): void
+    {
+        $this->alt = $alt !== null && $alt !== '' ? $alt : null;
+    }
+
+    public function setDimensions(?int $width, ?int $height): void
+    {
+        $this->width = $width;
+        $this->height = $height;
+    }
+}

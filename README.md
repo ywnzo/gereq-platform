@@ -24,6 +24,7 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 - Node.js 20+ (Vite / Tailwind)
 - SQLite (výchozí), nebo MariaDB 10.11+ / PostgreSQL
 - volitelně Redis
+- volitelně Docker (pro `php gereq serve-docker`)
 
 ## Instalace
 
@@ -60,6 +61,7 @@ Heslo ihned změňte.
 | `DB_CONNECTION` | `sqlite`, `mysql`, `pgsql` |
 | `CACHE_DRIVER` | `file`, `redis`, `array` |
 | `QUEUE_DRIVER` | `sync`, `redis`, `file` |
+| `SESSION_DRIVER` | `file`, `redis` (Docker `serve-docker` vynutí `redis`) |
 | `FILE_DRIVER` | `local` (S3 driver lze doplnit) |
 
 MariaDB:
@@ -75,10 +77,24 @@ DB_PASSWORD=secret
 
 ## Dev server
 
+Vestavěný PHP server (rychlé lokální zkoušení):
+
 ```bash
 php gereq serve --port=8080
 npm run dev
 ```
+
+Docker stack s nginx + PHP-FPM + Redis (bližší produkci, připravené na frontu):
+
+```bash
+php gereq serve-docker --port=8080
+php gereq serve-docker --build          # první start / po změně Dockerfile
+php gereq serve-docker --queue          # + worker (queue profil)
+php gereq serve-docker -d               # na pozadí
+php gereq serve-docker --down           # zastavit stack
+```
+
+Pro Redis frontu v aplikaci nastavte v `.env` `QUEUE_DRIVER=redis` (v Dockeru je `REDIS_HOST=redis`). Session v Dockeru běží přes Redis (`SESSION_DRIVER=redis`).
 
 Frontend build do `public/build`:
 
@@ -99,6 +115,8 @@ php gereq migrate
 php gereq migrate:status
 php gereq cache:clear
 php gereq queue:work
+php gereq serve
+php gereq serve-docker
 php gereq user:create
 ```
 
@@ -176,7 +194,47 @@ $events->dispatch(new CustomerCreated($customer->id()));
 php gereq make:module Warehouse
 ```
 
-Potom doplňte `register()` (služby, routes, permissions) a `boot()` (menu, hooky, widgety). Po `php gereq migrate` modul aktivujte v administraci nebo přes CLI.
+Potom doplňte `register()` (služby, routes, permissions, **API**, **events**) a `boot()` (menu, hooky, widgety). Po `php gereq migrate` modul aktivujte v administraci nebo přes CLI.
+
+### Checklist nového modulu
+
+Každý modul má být plnohodnotná platform capability, ne jen admin CRUD:
+
+```text
+[ ] Domain + Admin UI
+[ ] Public API endpoints (/api/v1/…)
+[ ] API scopes (resource.read / resource.write)
+[ ] API serializers + whitelisted filters
+[ ] Domain / platform events (resource.action)
+[ ] Webhook-enabled event registrace
+[ ] Event payload version (ne Doctrine entity)
+[ ] Audit integration
+[ ] Queue jobs (pokud async)
+[ ] Idempotency (finanční / kritické POST)
+[ ] Extension points (hooks)
+[ ] Permissions
+[ ] Tests
+```
+
+## API, Events, Webhooks
+
+- Verzované API: `/api/v1/…`, OpenAPI: `/api/openapi.json`
+- Auth: session nebo Bearer token `grq_live_*` / `grq_test_*` (Developer → API Tokens)
+- Events: `EventRegistry` + `EventEnvelope`; dispatch přes `EventBus` / `emit()`
+- Outbound webhooks: modul `Webhooks` (HMAC, retries, SSRF protection, delivery log)
+- Developer admin: API explorer, Tokens, Events, Webhooks
+
+```php
+$context->api()->module('customers', function (ApiModule $api): void {
+    $api->get('/', [CustomerApiController::class, 'index'])->scope('customers.read');
+});
+
+$context->platformEvents()->register(
+    EventDefinition::make('customer.created')->withModule('customers')->version(1)->webhookEnabled()
+);
+
+$context->events()->emit('customer.created', ['type' => 'customer', 'id' => $id], ['customer' => $payload]);
+```
 
 ## Testy
 
@@ -197,7 +255,7 @@ Core
 ├── Notifications, Files, Settings
 ├── API, Audit, Admin UI
 Modules
-└── Customers (demo) + další později
+└── Customers, CRM, Currency, Webhooks + další
 ```
 
-Budoucí moduly (CRM, CMS, faktury, sklad, AI…) sem patří jako samostatné balíky. V 0.1 se neimplementují.
+Platforma je od začátku navržena jako integrační vrstva: **Admin + Domain + API + Events + Webhooks**.

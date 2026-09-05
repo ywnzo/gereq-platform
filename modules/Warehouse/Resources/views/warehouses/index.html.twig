@@ -1,0 +1,64 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'warehouse.title'|trans }}</h1>
+        <div class="actions">
+            <a class="btn btn--ghost" href="{{ url('admin.warehouse.stock.index') }}">{{ 'warehouse.stock.title'|trans }}</a>
+            {% if user.can('warehouse.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.warehouse.create') }}">{{ icon('plus') }} {{ 'warehouse.new'|trans }}</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'warehouse.search'|trans }}">
+    </form>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'warehouse.field.code'|trans }}</th>
+                    <th>{{ 'warehouse.field.name'|trans }}</th>
+                    <th>{{ 'warehouse.field.active'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td><strong>{{ item.code() }}</strong></td>
+                        <td>{{ item.name() }}</td>
+                        <td>
+                            <span class="badge badge--{{ item.isActive() ? 'ok' : 'muted' }}">
+                                {{ item.isActive() ? 'warehouse.active'|trans : 'warehouse.inactive'|trans }}
+                            </span>
+                        </td>
+                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
+                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
+                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                                {% if user.can('warehouse.manage') %}
+                                    <a href="{{ url('admin.warehouse.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                    <form method="post" action="{{ url('admin.warehouse.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'warehouse.confirm_delete'|trans|e('js') }}');">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ 'common.delete'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty">
+                                <h2>{{ 'warehouse.empty'|trans }}</h2>
+                                <p>{{ 'warehouse.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

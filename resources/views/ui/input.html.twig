@@ -28,7 +28,7 @@
 <div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}"{% if type|default('text') == 'password' %} x-data="gereqPassword"{% endif %}>
     {% if label %}
         <label class="g-label" for="{{ id }}">
-            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+            <span>{{ label }}{% if optional %} <span class="g-optional">({{ 'common.optional'|trans }})</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
         </label>
     {% endif %}
     <div class="g-control-wrap{% if wrap %} g-addon{% endif %}">

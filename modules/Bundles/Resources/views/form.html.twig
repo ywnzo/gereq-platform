@@ -1,0 +1,102 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<header class="page-header">
+    <h1>{{ item ? 'bundles.edit'|trans : 'bundles.new'|trans }}</h1>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'bundles.save' } %}
+
+{% set discountOptions = [] %}
+{% for type in discountTypes %}
+    {% set discountOptions = discountOptions|merge([{ value: type, label: ('bundles.discount.' ~ type)|trans }]) %}
+{% endfor %}
+
+<form method="post" class="form-grid" action="{{ item ? url('admin.bundles.update', {id: item.id()}) : url('admin.bundles.store') }}" data-form="bundles.save" x-data="gereqForm"{% if form_errors('bundles.save') %} data-server-state="1"{% endif %}>
+    {{ csrf_field()|raw }}
+    {% include 'ui/input.html.twig' with {
+        name: 'code',
+        label: 'bundles.field.code'|trans,
+        required: true,
+        form: 'bundles.save',
+        value: item ? item.code() : ''
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'name',
+        label: 'bundles.field.name'|trans,
+        required: true,
+        form: 'bundles.save',
+        value: item ? item.name() : ''
+    } %}
+    {% include 'ui/textarea.html.twig' with {
+        name: 'description',
+        label: 'bundles.field.description'|trans,
+        optional: true,
+        form: 'bundles.save',
+        value: item and item.description() ? item.description() : '',
+        size: 'mini',
+        rows: 3
+    } %}
+    {% include 'ui/select.html.twig' with {
+        name: 'discount_type',
+        label: 'bundles.field.discount_type'|trans,
+        required: true,
+        form: 'bundles.save',
+        value: item ? item.discountType() : 'none',
+        options: discountOptions
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'discount_value',
+        label: 'bundles.field.discount_value'|trans,
+        optional: true,
+        form: 'bundles.save',
+        value: item ? item.discountValue() : '0'
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'currency',
+        label: 'bundles.field.currency'|trans,
+        optional: true,
+        form: 'bundles.save',
+        value: item and item.currency() ? item.currency() : ''
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'min_items',
+        label: 'bundles.field.min_items'|trans,
+        optional: true,
+        form: 'bundles.save',
+        value: item ? item.minItems() : '1'
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'max_items',
+        label: 'bundles.field.max_items'|trans,
+        optional: true,
+        form: 'bundles.save',
+        value: item and item.maxItems() is not null ? item.maxItems() : ''
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'max_same_product',
+        label: 'bundles.field.max_same_product'|trans,
+        optional: true,
+        form: 'bundles.save',
+        value: item and item.maxSameProduct() is not null ? item.maxSameProduct() : ''
+    } %}
+    {% include 'ui/textarea.html.twig' with {
+        name: 'items_json',
+        label: 'bundles.field.items_json'|trans,
+        optional: true,
+        form: 'bundles.save',
+        value: itemsJson,
+        hint: 'bundles.field.items_json.hint'|trans,
+        size: 'mini',
+        rows: 8
+    } %}
+    <label class="field">
+        <span class="field__label">{{ 'bundles.field.active'|trans }}</span>
+        <input type="checkbox" name="active" value="1" {{ (item is null or item.isActive()) ? 'checked' : '' }}>
+    </label>
+    <div class="form-actions">
+        <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ url('admin.bundles.index') }}">{{ 'common.cancel'|trans }}</a>
+    </div>
+</form>
+{% endblock %}

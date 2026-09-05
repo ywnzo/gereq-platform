@@ -46,6 +46,11 @@ class InstalledModule
         return $this->enabled;
     }
 
+    public function enabledAt(): ?\DateTimeImmutable
+    {
+        return $this->enabledAt;
+    }
+
     public function enable(): void
     {
         $this->enabled = true;

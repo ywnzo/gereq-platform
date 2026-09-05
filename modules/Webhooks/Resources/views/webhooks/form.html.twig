@@ -1,0 +1,82 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ item ? 'webhooks.edit'|trans : 'webhooks.new'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'webhooks.save' } %}
+
+    <form method="post" class="form-grid" action="{{ item ? url('admin.developer.webhooks.update', {id: item.id()}) : url('admin.developer.webhooks.store') }}" data-form="webhooks.save" x-data="gereqForm"{% if form_errors('webhooks.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with {
+            name: 'name',
+            label: 'webhooks.field.name'|trans,
+            required: true,
+            form: 'webhooks.save',
+            value: item ? item.name() : '',
+            hint: 'webhooks.hint.name'|trans
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'url',
+            type: 'url',
+            label: 'webhooks.field.url'|trans,
+            required: true,
+            form: 'webhooks.save',
+            value: item ? item.url() : '',
+            placeholder: 'https://example.com/hooks/gereq',
+            hint: 'webhooks.hint.url'|trans
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'timeout_seconds',
+            type: 'number',
+            label: 'webhooks.field.timeout'|trans,
+            form: 'webhooks.save',
+            value: item ? item.timeoutSeconds() : defaultTimeout,
+            min: 1,
+            max: 120,
+            hint: 'webhooks.hint.timeout'|trans
+        } %}
+
+        <div class="field--full">
+            <h2 class="page-header page-header--compact">{{ 'webhooks.events'|trans }}</h2>
+            <p class="muted">{{ 'webhooks.events.hint'|trans }}</p>
+            {% set selected = item ? item.events() : ['*'] %}
+            {% set availableTypes = availableEvents|map(e => e.type) %}
+            <div class="chip-list" style="margin-top: 0.75rem;">
+                <label class="check">
+                    <input type="checkbox" name="events[]" value="*" {{ '*' in selected ? 'checked' : '' }}>
+                    <span>{{ 'webhooks.events.all'|trans }} <code>*</code></span>
+                </label>
+                {% for event in availableEvents %}
+                    <label class="check">
+                        <input type="checkbox" name="events[]" value="{{ event.type }}" {{ event.type in selected ? 'checked' : '' }}>
+                        <span>{{ event.description }} <code>{{ event.type }}</code></span>
+                    </label>
+                {% endfor %}
+                {% for pattern in selected %}
+                    {% if pattern != '*' and pattern not in availableTypes %}
+                        <label class="check">
+                            <input type="checkbox" name="events[]" value="{{ pattern }}" checked>
+                            <span>{{ 'webhooks.events.custom'|trans }} <code>{{ pattern }}</code></span>
+                        </label>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% include 'ui/input.html.twig' with {
+                name: 'events_custom',
+                label: 'webhooks.events.custom_patterns'|trans,
+                optional: true,
+                form: 'webhooks.save',
+                value: '',
+                hint: 'webhooks.events.custom_hint'|trans,
+                placeholder: 'customer.*, crm.*'
+            } %}
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ item ? url('admin.developer.webhooks.show', {id: item.id()}) : url('admin.developer.webhooks.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

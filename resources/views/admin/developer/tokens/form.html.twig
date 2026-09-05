@@ -1,0 +1,39 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ plain ? 'admin.tokens.created_title'|trans : 'admin.tokens.new_title'|trans }}</h1>
+    </header>
+
+    {% if plain %}
+        <div class="empty">
+            <h2>{{ 'admin.tokens.save_once'|trans }}</h2>
+            <p><code style="font-size:1rem;word-break:break-all">{{ plain }}</code></p>
+            <a class="btn btn--primary" href="{{ url('admin.developer.tokens.index') }}">{{ 'admin.tokens.back'|trans }}</a>
+        </div>
+    {% else %}
+        <form method="post" action="{{ url('admin.developer.tokens.store') }}" class="form-grid">
+            {{ csrf_field()|raw }}
+            {% include 'ui/input.html.twig' with { name: 'name', label: 'admin.tokens.name'|trans, required: true, value: '' } %}
+            {% include 'ui/input.html.twig' with { name: 'expires_at', type: 'date', label: 'admin.tokens.expires'|trans, optional: true, value: '' } %}
+            <div class="field field--full">
+                <label class="g-check"><input type="checkbox" name="test" value="1"> {{ 'admin.tokens.test'|trans }}</label>
+                <label class="g-check"><input type="checkbox" name="full_access" value="1"> {{ 'admin.tokens.full_access'|trans }}</label>
+            </div>
+            <div class="field field--full">
+                <span class="g-label">{{ 'admin.tokens.scopes'|trans }}</span>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+                    {% for scope in scopes %}
+                        <label class="g-check"><input type="checkbox" name="scopes[]" value="{{ scope }}"> {{ scope }}</label>
+                    {% else %}
+                        <p class="muted">{{ 'admin.tokens.scopes_empty'|trans }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">{{ 'common.create'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url('admin.developer.tokens.index') }}">{{ 'common.cancel'|trans }}</a>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

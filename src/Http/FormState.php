@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FormState
 {
@@ -20,14 +21,22 @@ final class FormState
     /** @var list<string> */
     private const SENSITIVE = ['password', 'password_confirmation', 'current_password', '_token', '_csrf'];
 
-    public function __construct(private readonly RequestStack $requestStack)
-    {
+    public function __construct(
+        private readonly RequestStack $requestStack,
+        private readonly TranslatorInterface $translator,
+    ) {
     }
 
     public function fail(ValidationException $exception): void
     {
         $form = $exception->form() !== '' ? $exception->form() : 'default';
-        $this->store($form, $exception->errors(), $exception->input(), $exception->getMessage());
+        $message = $exception->getMessage();
+        if ($message === '' || $message === 'validation.form_failed') {
+            $message = $this->translator->trans('validation.form_failed');
+        } elseif (str_starts_with($message, 'validation.') || str_starts_with($message, 'errors.')) {
+            $message = $this->translator->trans($message);
+        }
+        $this->store($form, $exception->errors(), $exception->input(), $message);
     }
 
     /**
@@ -49,7 +58,7 @@ final class FormState
         $bag[$form] = [
             'errors' => $errors,
             'input' => $this->scrub($input),
-            'message' => $message !== '' ? $message : 'Opravte vyznačená pole a zkuste to znovu.',
+            'message' => $message !== '' ? $message : $this->translator->trans('validation.form_failed'),
             'at' => time(),
         ];
         $session->set(self::BAG, $bag);

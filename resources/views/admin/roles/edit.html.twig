@@ -7,26 +7,26 @@
     <form method="post" action="{{ url('admin.roles.update', {id: role.id()}) }}" class="stack">
         {{ csrf_field()|raw }}
         <label class="field">
-            <span>Název</span>
+            <span>{{ 'admin.roles.name'|trans }}</span>
             <input type="text" name="label" value="{{ role.label() }}" required>
         </label>
         <label class="field">
-            <span>Popis</span>
+            <span>{{ 'common.description'|trans }}</span>
             <textarea name="description" rows="3">{{ role.description() }}</textarea>
         </label>
 
         {% if role.name() == 'administrator' %}
-            <p class="muted">Administrátor má všechna oprávnění automaticky.</p>
+            <p class="muted">{{ 'admin.roles.admin_hint'|trans }}</p>
         {% else %}
             {% for group, permissions in grouped %}
                 <section class="panel">
-                    <header class="panel__head"><h2>{{ group }}</h2></header>
+                    <header class="panel__head"><h2>{{ group|trans }}</h2></header>
                     <div class="chip-list">
                         {% for permission in permissions %}
                             <label class="check">
                                 <input type="checkbox" name="permissions[]" value="{{ permission.id() }}"
                                     {{ assigned[permission.id()] is defined ? 'checked' : '' }}>
-                                <span>{{ permission.label() }} <code>{{ permission.name() }}</code></span>
+                                <span>{{ permission.label()|trans }} <code>{{ permission.name() }}</code></span>
                             </label>
                         {% endfor %}
                     </div>
@@ -35,8 +35,8 @@
         {% endif %}
 
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">Uložit</button>
-            <a class="btn btn--ghost" href="{{ url('admin.roles.index') }}">Zpět</a>
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.roles.index') }}">{{ 'common.back'|trans }}</a>
         </div>
     </form>
 {% endblock %}

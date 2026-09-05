@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="cs" data-theme="gereq-dark">
+<html lang="{{ app_locale() }}" data-theme="gereq-dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}{{ pageTitle|default('Administrace') }}{% endblock %} · GEREQ</title>
+    <title>{% block title %}{{ pageTitle|default('admin.title'|trans) }}{% endblock %} · GEREQ</title>
     {% include 'partials/brand-head.html.twig' %}
     <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
 </head>
@@ -14,73 +14,128 @@
         <aside class="sidebar" :class="sidebarClass">
             <div class="sidebar__brand">
                 {% include 'partials/brand-lockup.html.twig' with { href: url('admin.dashboard') } %}
-                <button type="button" class="icon-btn sidebar__collapse" @click="toggleCollapsed" aria-label="Sbalit menu">
+                <button type="button" class="icon-btn sidebar__collapse" @click="toggleCollapsed" aria-label="{{ 'ui.collapse_menu'|trans }}">
                     {{ icon('panel') }}
                 </button>
             </div>
 
-            <nav class="sidebar__nav" aria-label="Hlavní menu">
+            <div class="sidebar__search">
+                <button type="button" class="sidebar__search-btn" @click="openPalette">
+                    {{ icon('search') }}
+                    <span>{{ 'common.search'|trans }}</span>
+                    <kbd>⌘K</kbd>
+                </button>
+            </div>
+
+            <nav class="sidebar__nav" aria-label="{{ 'ui.main_menu'|trans }}">
                 {% set lastGroup = '' %}
                 {% for node in menu %}
                     {% set menuItem = node.item %}
                     {% set group = menuItem.group|default('Hlavní') %}
                     {% if group != lastGroup %}
-                        <div class="nav-group__label">{{ group }}</div>
+                        {% if lastGroup != '' %}
+                </div></div>
+                        {% endif %}
+                        <div class="nav-group">
+                            <div class="nav-group__head">
+                                <span class="nav-group__label">{{ group|trans }}</span>
+                            </div>
+                            <div class="nav-group__items">
                         {% set lastGroup = group %}
                     {% endif %}
+
                     {% set active = menuItem.route is not null and route_is(menuItem.route) %}
-                    <a href="{{ node.url }}" class="nav-item{% if active %} is-active{% endif %}" title="{{ menuItem.label }}">
-                        <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
-                        <span class="nav-item__label">{{ menuItem.label }}</span>
-                        {% if menuItem.badge %}
-                            <span class="nav-item__badge">{{ menuItem.badge }}</span>
-                        {% endif %}
-                    </a>
+                    {% set childActive = false %}
                     {% for child in node.children %}
-                        {% if not child.hidden %}
-                            <a href="{{ child.route ? url(child.route) : (child.url|default('#')) }}" class="nav-item nav-item--child{% if child.route and route_is(child.route) %} is-active{% endif %}">
-                                <span class="nav-item__label">{{ child.label }}</span>
-                            </a>
+                        {% if child.route and route_is(child.route) %}
+                            {% set childActive = true %}
                         {% endif %}
                     {% endfor %}
+
+                    {% if node.children|length > 0 %}
+                        <div class="nav-tree" data-default-open="{{ (active or childActive) ? '1' : '0' }}" x-data="navTree">
+                            <div class="nav-tree__row">
+                                <a href="{{ node.url }}" class="nav-item{% if active or childActive %} is-active{% endif %}" title="{{ menuItem.label|trans }}">
+                                    <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
+                                    <span class="nav-item__label">{{ menuItem.label|trans }}</span>
+                                    {% if menuItem.badge %}
+                                        <span class="nav-item__badge">{{ menuItem.badge }}</span>
+                                    {% endif %}
+                                </a>
+                                <button type="button" class="nav-tree__expand" @click="toggle" :aria-expanded="expandedAttr" aria-label="{{ menuItem.label|trans }}">
+                                    <span :class="chevronClass">{{ icon('chevron-down') }}</span>
+                                </button>
+                            </div>
+                            <div class="nav-tree__children" x-show="open">
+                                {% for child in node.children %}
+                                    {% if not child.hidden %}
+                                        <a href="{{ child.route ? url(child.route) : (child.url|default('#')) }}" class="nav-item nav-item--child{% if child.route and route_is(child.route) %} is-active{% endif %}">
+                                            <span class="nav-item__label">{{ child.label|trans }}</span>
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ node.url }}" class="nav-item{% if active %} is-active{% endif %}" title="{{ menuItem.label|trans }}">
+                            <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
+                            <span class="nav-item__label">{{ menuItem.label|trans }}</span>
+                            {% if menuItem.badge %}
+                                <span class="nav-item__badge">{{ menuItem.badge }}</span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
                 {% endfor %}
+                {% if lastGroup != '' %}
+                            </div>
+                        </div>
+                {% endif %}
             </nav>
+
+            <div class="sidebar__footer">
+                <span class="sidebar__env">Platform</span>
+                <span class="sidebar__ver">GEREQ</span>
+            </div>
         </aside>
 
         <div class="app-main">
             <header class="topbar">
                 <div class="topbar__left">
-                    <button type="button" class="icon-btn topbar__menu" @click="openSidebar" aria-label="Menu">
+                    <button type="button" class="icon-btn topbar__menu" @click="openSidebar" aria-label="{{ 'ui.menu'|trans }}">
                         {{ icon('panel') }}
                     </button>
-                    <nav class="breadcrumbs" aria-label="Drobečková navigace">
+                    <nav class="breadcrumbs" aria-label="{{ 'ui.breadcrumbs'|trans }}">
                         {% block breadcrumb %}
-                            <span>{{ pageTitle|default('Administrace') }}</span>
+                            <a href="{{ url('admin.dashboard') }}" class="breadcrumbs__root">{{ 'nav.overview'|trans }}</a>
+                            <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+                            <span class="breadcrumbs__current">{{ pageTitle|default('admin.title'|trans) }}</span>
                         {% endblock %}
                     </nav>
                 </div>
                 <div class="topbar__right">
                     <button type="button" class="search-trigger" @click="openPalette">
                         {{ icon('search') }}
-                        <span>Hledat</span>
+                        <span>{{ 'common.search'|trans }}</span>
                         <kbd>Ctrl K</kbd>
                     </button>
-                    <button type="button" class="icon-btn" @click="cycleTheme" aria-label="Motiv">
+                    <button type="button" class="icon-btn" @click="cycleTheme" aria-label="{{ 'ui.theme'|trans }}">
                         {{ icon('sun') }}
                     </button>
-                    <div class="user-menu">
+                    {{ apply_filters('admin.topbar.actions', '')|raw }}
+                    <div class="user-menu" @click.outside="closeUserMenu">
                         <button type="button" class="avatar-btn" @click="toggleUserMenu">
                             <span class="avatar">{{ user ? user.initials() : 'G' }}</span>
                         </button>
-                        <div class="flyout" :class="userMenuClass" @click.outside="closeUserMenu">
+                        <div class="flyout" :class="userMenuClass">
                             <div class="flyout__meta">
                                 <strong>{{ user ? user.name() : '' }}</strong>
                                 <span>{{ user ? user.email() : '' }}</span>
                             </div>
-                            <a href="{{ url('admin.profile') }}">Profil</a>
+                            <a href="{{ url('admin.profile') }}">{{ 'admin.profile'|trans }}</a>
+                            <a href="{{ url('admin.settings.index') }}">{{ 'nav.settings'|trans }}</a>
                             <form method="post" action="{{ url('admin.logout') }}" id="logout-form">
                                 {{ csrf_field()|raw }}
-                                <button type="submit">Odhlásit se</button>
+                                <button type="submit">{{ 'admin.logout'|trans }}</button>
                             </form>
                         </div>
                     </div>
@@ -107,7 +162,7 @@
         <div class="palette" :class="paletteClass">
             <div class="palette__backdrop" @click="closePalette"></div>
             <div class="palette__panel">
-                <input type="search" class="palette__input" placeholder="Přejít na stránku, vytvořit záznam…" x-model="query" @input="refreshCommands" x-ref="paletteInput">
+                <input type="search" class="palette__input" placeholder="{{ 'ui.palette.placeholder'|trans }}" x-model="query" @input="refreshCommands" x-ref="paletteInput">
                 <ul class="palette__list">
                     <template x-for="command in visibleCommands" :key="command.id">
                         <li>
@@ -124,7 +179,18 @@
     </div>
 
     <script nonce="{{ csp_nonce() }}">
-        window.__GEREQ_COMMANDS__ = {{ commands|default([])|json_encode|raw }};
+        window.__GEREQ_COMMANDS__ = [
+            {%- for command in commands|default([]) -%}
+            {
+                "id": {{ command.id|json_encode|raw }},
+                "label": {{ command.label|trans|json_encode|raw }},
+                "url": {{ command.url|json_encode|raw }},
+                "icon": {{ command.icon|json_encode|raw }},
+                "keywords": {{ command.keywords|json_encode|raw }},
+                "group": {{ command.group|trans|json_encode|raw }}
+            }{% if not loop.last %},{% endif %}
+            {%- endfor -%}
+        ];
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
     </script>

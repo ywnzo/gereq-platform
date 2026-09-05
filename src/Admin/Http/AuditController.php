@@ -13,6 +13,7 @@ use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class AuditController extends Controller
@@ -25,6 +26,7 @@ final class AuditController extends Controller
         private readonly Menu $menu,
         private readonly CommandPalette $palette,
         private readonly EntityManagerInterface $em,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -34,7 +36,7 @@ final class AuditController extends Controller
         $logs = $this->em->getRepository(AuditLog::class)->findBy([], ['createdAt' => 'DESC'], 100);
 
         return $this->page('admin/audit/index.html.twig', [
-            'pageTitle' => 'Audit log',
+            'pageTitle' => $this->translator->trans('admin.audit.title'),
             'logs' => $logs,
         ]);
     }

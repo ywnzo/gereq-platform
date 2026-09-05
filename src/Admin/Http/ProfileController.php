@@ -12,10 +12,12 @@ use Gereq\Auth\Authenticator;
 use Gereq\Auth\PasswordHasher;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\I18n\LocaleCatalog;
 use Gereq\User\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class ProfileController extends Controller
@@ -30,6 +32,8 @@ final class ProfileController extends Controller
         private readonly EntityManagerInterface $em,
         private readonly PasswordHasher $hasher,
         private readonly Auditor $auditor,
+        private readonly LocaleCatalog $locales,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -37,7 +41,8 @@ final class ProfileController extends Controller
     public function edit(): Response
     {
         return $this->page('admin/profile.html.twig', [
-            'pageTitle' => 'Profil',
+            'pageTitle' => $this->translator->trans('profile.title'),
+            'locales' => $this->locales->all(),
         ]);
     }
 
@@ -49,10 +54,18 @@ final class ProfileController extends Controller
         }
 
         $user->setName(trim((string) $request->request->get('name')));
+
+        $locale = trim((string) $request->request->get('locale', ''));
+        if ($locale === '' || $locale === '_default') {
+            $user->setLocale(null);
+        } elseif ($this->locales->isSupported($locale)) {
+            $user->setLocale($locale);
+        }
+
         $password = (string) $request->request->get('password');
         if ($password !== '') {
             if (strlen($password) < 10) {
-                $this->flash('error', 'Heslo musí mít alespoň 10 znaků.');
+                $this->flash('error', $this->translator->trans('profile.password.min'));
 
                 return $this->redirect('admin.profile');
             }
@@ -61,7 +74,7 @@ final class ProfileController extends Controller
 
         $this->em->flush();
         $this->auditor->log('profile.updated', 'user', $user->id());
-        $this->flash('success', 'Profil byl uložen.');
+        $this->flash('success', $this->translator->trans('profile.saved'));
 
         return $this->redirect('admin.profile');
     }

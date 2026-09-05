@@ -3,14 +3,19 @@
 {% block content %}
     <header class="page-header">
         <h1>{{ definition.singular }}</h1>
-        <a class="btn btn--primary" href="{{ url('admin.' ~ definition.name ~ '.edit', {id: item.id()}) }}">Upravit</a>
+        <a class="btn btn--primary" href="{{ url('admin.' ~ definition.name ~ '.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
     </header>
-    <dl class="meta-list">
-        {% for field in definition.detailFields() %}
-            <div>
-                <dt>{{ field.label }}</dt>
-                <dd>{{ attribute(item, field.name) }}</dd>
-            </div>
-        {% endfor %}
-    </dl>
+    <div class="detail-stack">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush">
+                {% for field in definition.detailFields() %}
+                    <div>
+                        <dt>{{ field.label }}</dt>
+                        <dd>{{ attribute(item, field.name) }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        </section>
+    </div>
 {% endblock %}

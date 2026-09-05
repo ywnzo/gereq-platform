@@ -16,8 +16,11 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\Translation\Loader\ArrayLoader;
+use Symfony\Component\Translation\Translator;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Twig\TwigFilter;
 use Twig\TwigFunction;
 
 final class ExceptionHandlerTest extends TestCase
@@ -133,11 +136,19 @@ final class ExceptionHandlerTest extends TestCase
 
     private function handler(bool $debug, ?HookManager $hooks = null, ?string $basePath = null): ExceptionHandler
     {
+        $translator = new Translator('cs');
+        $translator->addLoader('array', new ArrayLoader());
+        $messages = require dirname(__DIR__, 2) . '/resources/translations/messages.cs.php';
+        $translator->addResource('array', $messages, 'cs');
+
         $loader = new FilesystemLoader(dirname(__DIR__, 2) . '/resources/views');
         $twig = new Environment($loader, ['autoescape' => 'html']);
+        $twig->addFilter(new TwigFilter('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
+        $twig->addFunction(new TwigFunction('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
         $twig->addFunction(new TwigFunction('asset', static fn (): string => '/build/admin.css'));
         $twig->addFunction(new TwigFunction('csp_nonce', static fn (): string => 'test'));
         $twig->addFunction(new TwigFunction('url', static fn (): string => '/admin'));
+        $twig->addFunction(new TwigFunction('app_locale', static fn (): string => 'cs'));
 
         $router = new Router();
         $router->get('/admin', static fn () => 'ok')->name('admin.dashboard');
@@ -149,6 +160,8 @@ final class ExceptionHandlerTest extends TestCase
             new Repository(['app' => ['debug' => $debug]]),
             $router,
             $basePath ?? sys_get_temp_dir(),
+            null,
+            $translator,
         );
     }
 }

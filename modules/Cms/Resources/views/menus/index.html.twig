@@ -1,0 +1,54 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'cms.menus.title'|trans }}</h1>
+        {% if user.can('cms.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.cms.menus.create') }}">{{ icon('plus') }} {{ 'cms.menus.new'|trans }}</a>
+        {% endif %}
+    </header>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'cms.field.name'|trans }}</th>
+                    <th>{{ 'cms.field.location'|trans }}</th>
+                    <th>{{ 'cms.field.updated'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td><a href="{{ url('admin.cms.menus.show', {id: item.id()}) }}">{{ item.name() }}</a></td>
+                        <td><span class="badge">{{ item.locationLabel()|trans }}</span></td>
+                        <td>{{ item.updatedAt().format('d. m. Y H:i') }}</td>
+                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
+                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
+                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                                <a href="{{ url('admin.cms.menus.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                {% if user.can('cms.manage') %}
+                                    <a href="{{ url('admin.cms.menus.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                    <form method="post" action="{{ url('admin.cms.menus.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'cms.confirm_delete_menu'|trans|e('js') }}');">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ 'common.delete'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty">
+                                <h2>{{ 'cms.menus.empty'|trans }}</h2>
+                                <p>{{ 'cms.menus.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

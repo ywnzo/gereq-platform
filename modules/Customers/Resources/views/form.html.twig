@@ -2,7 +2,7 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>{{ item ? 'Upravit zákazníka' : 'Nový zákazník' }}</h1>
+        <h1>{{ item ? 'customers.edit'|trans : 'customers.new'|trans }}</h1>
     </header>
 
     {% include 'ui/error-summary.html.twig' with { form: 'customers.save' } %}
@@ -11,7 +11,7 @@
         {{ csrf_field()|raw }}
         {% include 'ui/input.html.twig' with {
             name: 'name',
-            label: 'Jméno',
+            label: 'customers.field.name'|trans,
             required: true,
             form: 'customers.save',
             value: item ? item.name() : ''
@@ -19,7 +19,7 @@
         {% include 'ui/input.html.twig' with {
             name: 'email',
             type: 'email',
-            label: 'E-mail',
+            label: 'customers.field.email'|trans,
             required: true,
             form: 'customers.save',
             value: item ? item.email() : ''
@@ -27,41 +27,42 @@
         {% include 'ui/input.html.twig' with {
             name: 'phone',
             type: 'tel',
-            label: 'Telefon',
+            label: 'customers.field.phone'|trans,
             optional: true,
             form: 'customers.save',
             value: item ? item.phone() : ''
         } %}
         {% include 'ui/input.html.twig' with {
             name: 'company',
-            label: 'Firma',
+            label: 'customers.field.company'|trans,
             optional: true,
             form: 'customers.save',
             value: item ? item.company() : ''
         } %}
         {% include 'ui/select.html.twig' with {
             name: 'status',
-            label: 'Stav',
+            label: 'customers.field.status'|trans,
             form: 'customers.save',
             value: item ? item.status() : 'active',
             options: [
-                { value: 'active', label: 'Aktivní' },
-                { value: 'lead', label: 'Lead' },
-                { value: 'inactive', label: 'Neaktivní' }
+                { value: 'active', label: 'customers.status.active'|trans },
+                { value: 'lead', label: 'customers.status.lead'|trans },
+                { value: 'inactive', label: 'customers.status.inactive'|trans },
+                { value: 'archived', label: 'customers.status.archived'|trans }
             ]
         } %}
         {% include 'ui/editor.html.twig' with {
             name: 'note',
-            label: 'Poznámka',
+            label: 'customers.field.note'|trans,
             optional: true,
             extra: 'field--full',
             form: 'customers.save',
-            placeholder: 'Interní poznámka k zákazníkovi…',
+            placeholder: 'customers.note.placeholder'|trans,
             value: item ? item.note() : ''
         } %}
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">Uložit</button>
-            <a class="btn btn--ghost" href="{{ url('admin.customers.index') }}">Zrušit</a>
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.customers.index') }}">{{ 'common.cancel'|trans }}</a>
         </div>
     </form>
 {% endblock %}

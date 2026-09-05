@@ -1,0 +1,125 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ item.title() }}</h1>
+            <p class="muted"><code>/p/{{ item.slug() }}</code> · {{ item.statusLabel()|trans }} · {{ item.templateLabel()|trans }}</p>
+        </div>
+        <div class="actions">
+            <a class="btn btn--ghost" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank">{{ 'cms.pages.preview'|trans }}</a>
+            {% if user.can('cms.manage') %}
+                {% if not item.isPublished() %}
+                    <form method="post" action="{{ url('admin.cms.pages.publish', {id: item.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--primary" type="submit">{{ 'cms.pages.publish'|trans }}</button>
+                    </form>
+                {% endif %}
+                <a class="btn btn--ghost" href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.cms.pages.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'cms.confirm_delete_page'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-stack">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush">
+                <div class="meta-list__full"><dt>{{ 'cms.field.meta_description'|trans }}</dt><dd>{{ item.metaDescription()|default('—') }}</dd></div>
+                <div><dt>{{ 'cms.field.published_at'|trans }}</dt><dd>{{ item.publishedAt() ? item.publishedAt().format('d. m. Y H:i') : '—' }}</dd></div>
+                <div><dt>{{ 'cms.field.updated'|trans }}</dt><dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd></div>
+            </dl>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'cms.blocks.title'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'cms.field.order'|trans }}</th>
+                            <th>{{ 'cms.field.block_type'|trans }}</th>
+                            <th>{{ 'cms.field.preview'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for block in blocks %}
+                            <tr>
+                                <td>{{ block.sortOrder() }}</td>
+                                <td><span class="badge">{{ block.typeLabel()|trans }}</span></td>
+                                <td class="muted">{{ block.payload()|json_encode|slice(0, 80) }}{% if block.payload()|json_encode|length > 80 %}…{% endif %}</td>
+                                <td class="table__actions">
+                                    {% if user.can('cms.manage') %}
+                                        <form method="post" action="{{ url('admin.cms.blocks.up', {id: item.id(), blockId: block.id()}) }}" style="display:inline">{{ csrf_field()|raw }}<button class="btn btn--ghost" type="submit" title="{{ 'cms.blocks.move_up'|trans }}">↑</button></form>
+                                        <form method="post" action="{{ url('admin.cms.blocks.down', {id: item.id(), blockId: block.id()}) }}" style="display:inline">{{ csrf_field()|raw }}<button class="btn btn--ghost" type="submit" title="{{ 'cms.blocks.move_down'|trans }}">↓</button></form>
+                                        <a class="btn btn--ghost" href="{{ url('admin.cms.blocks.edit', {id: item.id(), blockId: block.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                        <form method="post" action="{{ url('admin.cms.blocks.destroy', {id: item.id(), blockId: block.id()}) }}" style="display:inline" onsubmit="return confirm('{{ 'cms.confirm_delete_block'|trans|e('js') }}');">
+                                            {{ csrf_field()|raw }}
+                                            <button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="muted">{{ 'cms.blocks.empty'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if user.can('cms.manage') %}
+                {% include 'ui/error-summary.html.twig' with { form: 'cms.block.save' } %}
+                <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.cms.blocks.store', {id: item.id()}) }}" data-form="cms.block.save" x-data="gereqForm"{% if form_errors('cms.block.save') %} data-server-state="1"{% endif %}>
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'type',
+                        label: 'cms.field.block_type'|trans,
+                        required: true,
+                        form: 'cms.block.save',
+                        value: 'text',
+                        options: blockTypeOptions
+                    } %}
+                    {% include 'ui/input.html.twig' with { name: 'text', label: 'cms.block.field.text'|trans, optional: true, form: 'cms.block.save', value: '', hint: 'cms.block.hint.heading'|trans } %}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'level',
+                        label: 'cms.block.field.level'|trans,
+                        optional: true,
+                        form: 'cms.block.save',
+                        value: '2',
+                        options: [{value:'1',label:'H1'},{value:'2',label:'H2'},{value:'3',label:'H3'}]
+                    } %}
+                    {% include 'ui/textarea.html.twig' with { name: 'body', label: 'cms.block.field.body'|trans, optional: true, form: 'cms.block.save', value: '', size: 'mini' } %}
+                    {% include 'ui/textarea.html.twig' with { name: 'html', label: 'cms.block.field.html'|trans, optional: true, form: 'cms.block.save', value: '', size: 'mini' } %}
+                    {% if hasMedia %}
+                        {% include 'ui/select.html.twig' with {
+                            name: 'media_id',
+                            label: 'cms.block.field.media_id'|trans,
+                            optional: true,
+                            form: 'cms.block.save',
+                            value: '',
+                            options: mediaOptions
+                        } %}
+                    {% endif %}
+                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, optional: true, form: 'cms.block.save', value: '' } %}
+                    {% include 'ui/input.html.twig' with { name: 'alt', label: 'cms.block.field.alt'|trans, optional: true, form: 'cms.block.save', value: '' } %}
+                    {% include 'ui/input.html.twig' with { name: 'caption', label: 'cms.block.field.caption'|trans, optional: true, form: 'cms.block.save', value: '' } %}
+                    {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.block.field.label'|trans, optional: true, form: 'cms.block.save', value: '' } %}
+                    {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: '' } %}
+                    {% include 'ui/textarea.html.twig' with { name: 'left', label: 'cms.block.field.left'|trans, optional: true, form: 'cms.block.save', value: '', size: 'mini' } %}
+                    {% include 'ui/textarea.html.twig' with { name: 'right', label: 'cms.block.field.right'|trans, optional: true, form: 'cms.block.save', value: '', size: 'mini' } %}
+                    {% if hasProducts %}
+                        {% include 'ui/input.html.twig' with { name: 'product_ids', label: 'cms.block.field.product_ids'|trans, optional: true, form: 'cms.block.save', value: '', hint: 'cms.block.hint.product_ids'|trans } %}
+                    {% endif %}
+                    {% include 'ui/input.html.twig' with { name: 'media_ids', label: 'cms.block.field.media_ids'|trans, optional: true, form: 'cms.block.save', value: '', hint: 'cms.block.hint.media_ids'|trans } %}
+                    <div class="form-actions">
+                        <button class="btn btn--primary" type="submit">{{ 'cms.blocks.add'|trans }}</button>
+                    </div>
+                </form>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

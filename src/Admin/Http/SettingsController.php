@@ -10,10 +10,12 @@ use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\I18n\LocaleCatalog;
 use Gereq\Setting\Settings;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class SettingsController extends Controller
@@ -27,6 +29,8 @@ final class SettingsController extends Controller
         private readonly CommandPalette $palette,
         private readonly Settings $settings,
         private readonly Auditor $auditor,
+        private readonly LocaleCatalog $locales,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -39,7 +43,7 @@ final class SettingsController extends Controller
         }
 
         return $this->page('admin/settings/index.html.twig', [
-            'pageTitle' => 'Nastavení',
+            'pageTitle' => $this->translator->trans('settings.title'),
             'definitions' => $this->settings->definitions(),
             'values' => $values,
         ]);
@@ -51,13 +55,19 @@ final class SettingsController extends Controller
             $posted = $request->request->get(str_replace('.', '__', $key));
             if ($definition['type'] === 'boolean') {
                 $this->settings->set($key, $posted === '1', $definition['type'], $definition['module']);
-            } else {
-                $this->settings->set($key, (string) $posted, $definition['type'], $definition['module']);
+                continue;
             }
+
+            $value = (string) $posted;
+            if ($key === 'app.locale' && !$this->locales->isSupported($value)) {
+                continue;
+            }
+
+            $this->settings->set($key, $value, $definition['type'], $definition['module']);
         }
 
         $this->auditor->log('settings.updated', 'settings', null);
-        $this->flash('success', 'Nastavení bylo uloženo.');
+        $this->flash('success', $this->translator->trans('settings.saved'));
 
         return $this->redirect('admin.settings.index');
     }

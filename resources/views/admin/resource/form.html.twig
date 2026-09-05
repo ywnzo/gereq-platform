@@ -2,7 +2,7 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>{{ item ? 'Upravit' : 'Nový záznam' }}</h1>
+        <h1>{{ item ? 'common.edit'|trans : 'admin.resource.new'|trans }}</h1>
     </header>
     <form method="post" class="form-grid" action="{{ item ? url('admin.' ~ definition.name ~ '.update', {id: item.id()}) : url('admin.' ~ definition.name ~ '.store') }}">
         {{ csrf_field()|raw }}
@@ -17,7 +17,7 @@
             </label>
         {% endfor %}
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">Uložit</button>
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         </div>
     </form>
 {% endblock %}

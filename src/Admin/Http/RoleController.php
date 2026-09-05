@@ -16,6 +16,7 @@ use Gereq\User\Entity\Role;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class RoleController extends Controller
@@ -29,6 +30,7 @@ final class RoleController extends Controller
         private readonly Menu $menu,
         private readonly CommandPalette $palette,
         private readonly Auditor $auditor,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -38,7 +40,7 @@ final class RoleController extends Controller
         $roles = $this->em->getRepository(Role::class)->findBy([], ['label' => 'ASC']);
 
         return $this->page('admin/roles/index.html.twig', [
-            'pageTitle' => 'Role',
+            'pageTitle' => $this->translator->trans('admin.roles.title'),
             'roles' => $roles,
         ]);
     }
@@ -47,7 +49,7 @@ final class RoleController extends Controller
     {
         $role = $this->em->find(Role::class, $id);
         if (!$role instanceof Role) {
-            $this->abort(404, 'Role neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.roles.not_found'));
         }
 
         $permissions = $this->em->getRepository(Permission::class)->findBy([], ['groupName' => 'ASC', 'name' => 'ASC']);
@@ -62,7 +64,7 @@ final class RoleController extends Controller
         }
 
         return $this->page('admin/roles/edit.html.twig', [
-            'pageTitle' => 'Role: ' . $role->label(),
+            'pageTitle' => $this->translator->trans('admin.roles.edit_title', ['%label%' => $role->label()]),
             'role' => $role,
             'grouped' => $grouped,
             'assigned' => $assigned,
@@ -73,7 +75,7 @@ final class RoleController extends Controller
     {
         $role = $this->em->find(Role::class, $id);
         if (!$role instanceof Role) {
-            $this->abort(404, 'Role neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.roles.not_found'));
         }
 
         $role->setLabel(trim((string) $request->request->get('label')));
@@ -93,7 +95,7 @@ final class RoleController extends Controller
 
         $this->em->flush();
         $this->auditor->log('role.updated', 'role', $role->id());
-        $this->flash('success', 'Role byla uložena.');
+        $this->flash('success', $this->translator->trans('admin.roles.saved'));
 
         return $this->redirect('admin.roles.index');
     }

@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'module.reviews.description' => 'Recenze produktů a moderace.',
+    'nav.reviews' => 'Recenze',
+    'palette.reviews.index' => 'Recenze',
+    'perm.group.reviews' => 'Recenze',
+    'perm.reviews.view' => 'Zobrazit recenze',
+    'perm.reviews.manage' => 'Spravovat recenze',
+    'reviews.title' => 'Recenze',
+    'reviews.search' => 'Hledat…',
+    'reviews.empty' => 'Žádné recenze',
+    'reviews.all_statuses' => 'Všechny stavy',
+    'reviews.status.pending' => 'Čeká',
+    'reviews.status.approved' => 'Schváleno',
+    'reviews.status.rejected' => 'Zamítnuto',
+    'reviews.field.product' => 'Produkt',
+    'reviews.field.author' => 'Autor',
+    'reviews.field.email' => 'E-mail',
+    'reviews.field.rating' => 'Hodnocení',
+    'reviews.field.title' => 'Titulek',
+    'reviews.field.body' => 'Text',
+    'reviews.field.status' => 'Stav',
+    'reviews.field.created' => 'Vytvořeno',
+    'reviews.field.average' => 'Průměr produktu',
+    'reviews.action.approve' => 'Schválit',
+    'reviews.action.reject' => 'Zamítnout',
+    'reviews.flash.approved' => 'Recenze byla schválena.',
+    'reviews.flash.rejected' => 'Recenze byla zamítnuta.',
+    'reviews.flash.deleted' => 'Recenze byla smazána.',
+    'reviews.error.not_found' => 'Recenze neexistuje.',
+    'reviews.error.invalid_status' => 'Neplatný stav.',
+    'reviews.error.invalid_rating' => 'Hodnocení musí být 1–5.',
+    'reviews.confirm_delete' => 'Smazat recenzi?',
+];

@@ -10,7 +10,7 @@ use Gereq\Support\Json;
 
 final class Settings
 {
-    /** @var array<string, array{type: string, label: string, module: ?string, default: mixed}> */
+    /** @var array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>}> */
     private array $definitions = [];
 
     public function __construct(
@@ -19,13 +19,21 @@ final class Settings
     ) {
     }
 
-    public function define(string $key, string $type, string $label, mixed $default = null, ?string $module = null): void
-    {
+    /** @param array<string, string> $options */
+    public function define(
+        string $key,
+        string $type,
+        string $label,
+        mixed $default = null,
+        ?string $module = null,
+        array $options = [],
+    ): void {
         $this->definitions[$key] = [
             'type' => $type,
             'label' => $label,
             'module' => $module,
             'default' => $default,
+            'options' => $options,
         ];
     }
 
@@ -59,7 +67,7 @@ final class Settings
         $this->em->flush();
     }
 
-    /** @return array<string, array{type: string, label: string, module: ?string, default: mixed}> */
+    /** @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>}> */
     public function definitions(): array
     {
         return $this->definitions;

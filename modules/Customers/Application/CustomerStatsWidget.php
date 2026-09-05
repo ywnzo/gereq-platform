@@ -7,11 +7,14 @@ namespace Modules\Customers\Application;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\Dashboard\DashboardWidget;
 use Modules\Customers\Domain\Customer;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class CustomerStatsWidget implements DashboardWidget
 {
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly TranslatorInterface $translator,
+    ) {
     }
 
     public function id(): string
@@ -21,7 +24,7 @@ final class CustomerStatsWidget implements DashboardWidget
 
     public function title(): string
     {
-        return 'Zákazníci';
+        return $this->translator->trans('customers.widget.title');
     }
 
     public function render(): string
@@ -40,8 +43,11 @@ final class CustomerStatsWidget implements DashboardWidget
             ->getQuery()
             ->getSingleScalarResult();
 
-        return '<div><span>Zákazníci</span><strong>'
-            . $total . '</strong><span class="muted">' . $active . ' aktivních</span></div>';
+        return '<div class="metric-card"><span class="metric-card__label">' . htmlspecialchars($this->translator->trans('customers.widget.title'), ENT_QUOTES, 'UTF-8')
+            . '</span><strong class="metric-card__value">'
+            . $total . '</strong><span class="muted">'
+            . htmlspecialchars($this->translator->trans('customers.widget.active', ['%count%' => (string) $active]), ENT_QUOTES, 'UTF-8')
+            . '</span></div>';
     }
 
     public function permission(): string

@@ -1,0 +1,48 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'orders.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.invoices.index') }}">{{ 'orders.invoices.title'|trans }}</a>
+        {% if user.can('orders.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.orders.create') }}">{{ icon('plus') }} {{ 'orders.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+<form class="toolbar" method="get">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
+    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'orders.search'|trans }}">
+    <select name="status" class="input" onchange="this.form.submit()">
+        <option value="">{{ 'orders.all_statuses'|trans }}</option>
+        {% for s in statuses %}
+            <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('orders.status.' ~ s)|trans }}</option>
+        {% endfor %}
+    </select>
+</form>
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+{% include 'ui/sort_th.html.twig' with { label: 'orders.field.number'|trans, column: 'number', query: { status: status } } %}
+<th>{{ 'orders.field.customer'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'orders.field.status'|trans, column: 'status', query: { status: status } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'orders.field.total'|trans, column: 'total', query: { status: status }, class: 'is-num' } %}
+<th></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+<td><a href="{{ url('admin.orders.show', {id: item.id()}) }}">{{ item.number() }}</a></td>
+<td>{% set c = customers[item.customerId()]|default(null) %}{{ c ? c.name() : '—' }}</td>
+<td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+<td class="is-num">{{ item.total() }} {{ item.currency() }}</td>
+<td class="table__actions"><a href="{{ url('admin.orders.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a></td>
+</tr>
+{% else %}
+<tr><td colspan="5"><div class="empty"><h2>{{ 'orders.empty'|trans }}</h2><p>{{ 'orders.empty.hint'|trans }}</p></div></td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% include 'ui/table_footer.html.twig' %}
+{% endblock %}

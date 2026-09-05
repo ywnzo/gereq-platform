@@ -14,6 +14,7 @@ use Gereq\Http\Router;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class ResourceController extends Controller
@@ -28,6 +29,7 @@ final class ResourceController extends Controller
         private readonly Menu $menu,
         private readonly CommandPalette $palette,
         private readonly Auditor $auditor,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -35,21 +37,30 @@ final class ResourceController extends Controller
     public function index(Request $request): Response
     {
         $definition = $this->current($request);
-        $search = trim((string) $request->query->get('q', ''));
-        $sort = (string) $request->query->get('sort', '');
-        $dir = strtolower((string) $request->query->get('dir', 'asc')) === 'desc' ? 'DESC' : 'ASC';
-        $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = 20;
+        $sortable = array_values(array_map(
+            static fn ($f) => $f->name,
+            array_filter($definition->fields, static fn ($f) => $f->sortable),
+        ));
+        if ($sortable === []) {
+            $sortable = ['createdAt'];
+        }
+
+        $list = \Gereq\Http\ListQuery::fromRequest(
+            $request,
+            sortable: $sortable,
+            defaultSort: in_array('createdAt', $sortable, true) ? 'createdAt' : $sortable[0],
+            defaultDir: 'desc',
+        );
 
         $alias = 'e';
         $qb = $this->em->createQueryBuilder()->select($alias)->from($definition->entityClass, $alias);
 
-        if ($search !== '') {
+        if ($list->search !== '') {
             $parts = [];
             foreach ($definition->fields as $i => $field) {
                 if ($field->searchable) {
                     $parts[] = $alias . '.' . $field->name . ' LIKE :q' . $i;
-                    $qb->setParameter('q' . $i, '%' . $search . '%');
+                    $qb->setParameter('q' . $i, '%' . $list->search . '%');
                 }
             }
             if ($parts !== []) {
@@ -57,28 +68,18 @@ final class ResourceController extends Controller
             }
         }
 
-        $sortable = array_map(static fn ($f) => $f->name, array_filter($definition->fields, static fn ($f) => $f->sortable));
-        if ($sort !== '' && in_array($sort, $sortable, true)) {
-            $qb->orderBy($alias . '.' . $sort, $dir);
-        } else {
-            $qb->orderBy($alias . '.createdAt', 'DESC');
-        }
+        $qb->orderBy($alias . '.' . $list->sort, $list->direction());
 
         $countQb = clone $qb;
         $total = (int) $countQb->select('COUNT(' . $alias . '.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
-        $items = $qb->setFirstResult(($page - 1) * $perPage)->setMaxResults($perPage)->getQuery()->getResult();
+        $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
 
-        return $this->page('admin/resource/index.html.twig', [
+        return $this->page('admin/resource/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $definition->label,
             'definition' => $definition,
             'items' => $items,
-            'search' => $search,
-            'sort' => $sort,
-            'dir' => strtolower($dir),
-            'page' => $page,
-            'perPage' => $perPage,
-            'total' => $total,
-        ]);
+            'sortable' => $sortable,
+        ]));
     }
 
     public function create(Request $request): Response
@@ -86,7 +87,7 @@ final class ResourceController extends Controller
         $definition = $this->current($request);
 
         return $this->page('admin/resource/form.html.twig', [
-            'pageTitle' => 'Nový záznam · ' . $definition->label,
+            'pageTitle' => $this->translator->trans('admin.resource.new_title', ['%label%' => $definition->label]),
             'definition' => $definition,
             'item' => null,
         ]);
@@ -100,7 +101,7 @@ final class ResourceController extends Controller
         $this->em->persist($entity);
         $this->em->flush();
         $this->auditor->log($definition->name . '.created', $definition->name, method_exists($entity, 'id') ? $entity->id() : null);
-        $this->flash('success', 'Záznam byl vytvořen.');
+        $this->flash('success', $this->translator->trans('admin.resource.created'));
 
         return $this->redirect('admin.' . $definition->name . '.index');
     }
@@ -110,7 +111,7 @@ final class ResourceController extends Controller
         $definition = $this->current($request);
         $item = $this->em->find($definition->entityClass, $id);
         if ($item === null) {
-            $this->abort(404, 'Záznam neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.resource.not_found'));
         }
 
         return $this->page('admin/resource/show.html.twig', [
@@ -125,11 +126,11 @@ final class ResourceController extends Controller
         $definition = $this->current($request);
         $item = $this->em->find($definition->entityClass, $id);
         if ($item === null) {
-            $this->abort(404, 'Záznam neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.resource.not_found'));
         }
 
         return $this->page('admin/resource/form.html.twig', [
-            'pageTitle' => 'Upravit · ' . $definition->singular,
+            'pageTitle' => $this->translator->trans('admin.resource.edit_title', ['%label%' => $definition->singular]),
             'definition' => $definition,
             'item' => $item,
         ]);
@@ -140,13 +141,13 @@ final class ResourceController extends Controller
         $definition = $this->current($request);
         $item = $this->em->find($definition->entityClass, $id);
         if ($item === null) {
-            $this->abort(404, 'Záznam neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.resource.not_found'));
         }
 
         $this->fill($item, $definition, $request);
         $this->em->flush();
         $this->auditor->log($definition->name . '.updated', $definition->name, $id);
-        $this->flash('success', 'Záznam byl uložen.');
+        $this->flash('success', $this->translator->trans('admin.resource.saved'));
 
         return $this->redirect('admin.' . $definition->name . '.show', ['id' => $id]);
     }
@@ -156,13 +157,13 @@ final class ResourceController extends Controller
         $definition = $this->current($request);
         $item = $this->em->find($definition->entityClass, $id);
         if ($item === null) {
-            $this->abort(404, 'Záznam neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.resource.not_found'));
         }
 
         $this->em->remove($item);
         $this->em->flush();
         $this->auditor->log($definition->name . '.deleted', $definition->name, $id);
-        $this->flash('success', 'Záznam byl smazán.');
+        $this->flash('success', $this->translator->trans('admin.resource.deleted'));
 
         return $this->redirect('admin.' . $definition->name . '.index');
     }

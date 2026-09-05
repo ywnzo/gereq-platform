@@ -1,0 +1,59 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'loyalty.accounts.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.loyalty.tiers.index') }}">{{ 'nav.loyalty.tiers'|trans }}</a>
+    </div>
+</header>
+
+<form class="toolbar" method="get">
+    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'loyalty.accounts.search'|trans }}">
+</form>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+<th>{{ 'loyalty.field.customer_id'|trans }}</th>
+<th>{{ 'loyalty.field.tier'|trans }}</th>
+<th>{{ 'loyalty.field.points'|trans }}</th>
+<th>{{ 'loyalty.field.lifetime_spend'|trans }}</th>
+<th>{{ 'loyalty.field.adjust'|trans }}</th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td><code>{{ item.customerId() }}</code></td>
+    <td>
+        {% if item.tierId() and tiers[item.tierId()] is defined %}
+            {{ tiers[item.tierId()].name() }}
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    <td><strong>{{ item.points() }}</strong></td>
+    <td>{{ item.lifetimeSpend() }}</td>
+    <td>
+        {% if user.can('loyalty.manage') %}
+            <form method="post" action="{{ url('admin.loyalty.accounts.adjust', {id: item.id()}) }}" class="inline-form" style="display:flex;gap:.5rem;align-items:center">
+                {{ csrf_field()|raw }}
+                <input class="input" type="number" name="delta" value="0" style="width:6rem">
+                <button class="btn btn--ghost" type="submit">{{ 'loyalty.action.adjust'|trans }}</button>
+            </form>
+        {% endif %}
+    </td>
+</tr>
+{% else %}
+<tr>
+<td colspan="5">
+<div class="empty">
+<h2>{{ 'loyalty.accounts.empty'|trans }}</h2>
+<p>{{ 'loyalty.accounts.empty.hint'|trans }}</p>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

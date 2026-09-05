@@ -22,7 +22,7 @@
 <div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}"{% if not mini %} x-data="gereqTextarea"{% endif %}>
     {% if label %}
         <label class="g-label" for="{{ id }}">
-            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+            <span>{{ label }}{% if optional %} <span class="g-optional">({{ 'common.optional'|trans }})</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
         </label>
     {% endif %}
     {% if mini %}
@@ -40,8 +40,8 @@
     {% else %}
         <div class="textarea-shell{% if err %} is-invalid{% endif %}">
             <div class="textarea-shell__bar">
-                <span class="textarea-shell__hint">Pište volně · označení má signal barvu</span>
-                <button type="button" class="textarea-shell__action" @click="selectAll">Označit vše</button>
+                <span class="textarea-shell__hint">{{ 'ui.textarea.hint'|trans }}</span>
+                <button type="button" class="textarea-shell__action" @click="selectAll">{{ 'ui.textarea.select_all'|trans }}</button>
             </div>
             <textarea
                 class="{{ areaClass }}"

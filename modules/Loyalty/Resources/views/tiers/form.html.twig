@@ -1,0 +1,56 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<header class="page-header">
+    <h1>{{ item ? 'loyalty.tiers.edit'|trans : 'loyalty.tiers.new'|trans }}</h1>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'loyalty.tier.save' } %}
+
+<form method="post" class="form-grid" action="{{ item ? url('admin.loyalty.tiers.update', {id: item.id()}) : url('admin.loyalty.tiers.store') }}" data-form="loyalty.tier.save" x-data="gereqForm"{% if form_errors('loyalty.tier.save') %} data-server-state="1"{% endif %}>
+    {{ csrf_field()|raw }}
+    {% include 'ui/input.html.twig' with {
+        name: 'code',
+        label: 'loyalty.field.code'|trans,
+        required: true,
+        form: 'loyalty.tier.save',
+        value: item ? item.code() : ''
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'name',
+        label: 'loyalty.field.name'|trans,
+        required: true,
+        form: 'loyalty.tier.save',
+        value: item ? item.name() : ''
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'min_spend',
+        label: 'loyalty.field.min_spend'|trans,
+        optional: true,
+        form: 'loyalty.tier.save',
+        value: item ? item.minSpend() : '0'
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'discount_percent',
+        label: 'loyalty.field.discount_percent'|trans,
+        optional: true,
+        form: 'loyalty.tier.save',
+        value: item ? item.discountPercent() : '0'
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'sort_order',
+        label: 'loyalty.field.sort_order'|trans,
+        optional: true,
+        form: 'loyalty.tier.save',
+        value: item ? item.sortOrder() : '0'
+    } %}
+    <label class="field">
+        <span class="field__label">{{ 'loyalty.field.active'|trans }}</span>
+        <input type="checkbox" name="active" value="1" {{ (item is null or item.isActive()) ? 'checked' : '' }}>
+    </label>
+    <div class="form-actions">
+        <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ url('admin.loyalty.tiers.index') }}">{{ 'common.cancel'|trans }}</a>
+    </div>
+</form>
+{% endblock %}

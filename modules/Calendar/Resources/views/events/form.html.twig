@@ -1,0 +1,19 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ item ? 'calendar.edit'|trans : 'calendar.new'|trans }}</h1></header>
+{% include 'ui/error-summary.html.twig' with { form: 'calendar.event.save' } %}
+<form method="post" class="form-grid" action="{{ item ? url('admin.calendar.update',{id:item.id()}) : url('admin.calendar.store') }}" data-form="calendar.event.save" x-data="gereqForm">
+{{ csrf_field()|raw }}
+{% include 'ui/input.html.twig' with { name:'title', label:'calendar.field.title'|trans, required:true, form:'calendar.event.save', value: item?item.title():'' } %}
+{% include 'ui/input.html.twig' with { name:'starts_at', type:'datetime-local', label:'calendar.field.starts'|trans, required:true, form:'calendar.event.save', value: item ? item.startsAt().format('Y-m-d\\TH:i') : defaultStarts } %}
+{% include 'ui/input.html.twig' with { name:'ends_at', type:'datetime-local', label:'calendar.field.ends'|trans, required:true, form:'calendar.event.save', value: item ? item.endsAt().format('Y-m-d\\TH:i') : '' } %}
+{% include 'ui/select.html.twig' with { name:'type', label:'calendar.field.type'|trans, form:'calendar.event.save', value: item?item.type():'meeting', options:[
+{value:'meeting',label:'calendar.type.meeting'|trans},{value:'deadline',label:'calendar.type.deadline'|trans},{value:'other',label:'calendar.type.other'|trans}
+] } %}
+<label class="field"><span class="field__label">{{ 'calendar.field.all_day'|trans }}</span>
+<input type="checkbox" name="all_day" value="1" {{ item and item.allDay() ? 'checked' : '' }}></label>
+{% include 'ui/textarea.html.twig' with { name:'description', label:'calendar.field.description'|trans, optional:true, extra:'field--full', form:'calendar.event.save', value: item?item.description():'' } %}
+<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+<a class="btn btn--ghost" href="{{ url('admin.calendar.index') }}">{{ 'common.cancel'|trans }}</a></div>
+</form>
+{% endblock %}

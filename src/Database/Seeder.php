@@ -20,6 +20,7 @@ final class Seeder
         private readonly PasswordHasher $hasher,
         private readonly PermissionRegistry $permissions,
         private readonly ModuleManager $modules,
+        private readonly DemoSeeder $demoSeeder,
     ) {
     }
 
@@ -32,21 +33,22 @@ final class Seeder
         $this->em->flush();
         $this->seedCustomers();
         $this->em->flush();
+        $this->demoSeeder->seed();
     }
 
     private function seedPermissions(): void
     {
         $core = [
-            ['users.view', 'Zobrazit uživatele', 'Uživatelé'],
-            ['users.create', 'Vytvořit uživatele', 'Uživatelé'],
-            ['users.edit', 'Upravit uživatele', 'Uživatelé'],
-            ['users.delete', 'Smazat uživatele', 'Uživatelé'],
-            ['users.manage', 'Spravovat uživatele', 'Uživatelé'],
-            ['roles.view', 'Zobrazit role', 'Role'],
-            ['roles.manage', 'Spravovat role', 'Role'],
-            ['modules.manage', 'Spravovat moduly', 'Systém'],
-            ['settings.manage', 'Spravovat nastavení', 'Systém'],
-            ['audit.view', 'Zobrazit audit log', 'Systém'],
+            ['users.view', 'perm.users.view', 'perm.group.users'],
+            ['users.create', 'perm.users.create', 'perm.group.users'],
+            ['users.edit', 'perm.users.edit', 'perm.group.users'],
+            ['users.delete', 'perm.users.delete', 'perm.group.users'],
+            ['users.manage', 'perm.users.manage', 'perm.group.users'],
+            ['roles.view', 'perm.roles.view', 'perm.group.roles'],
+            ['roles.manage', 'perm.roles.manage', 'perm.group.roles'],
+            ['modules.manage', 'perm.modules.manage', 'perm.group.system'],
+            ['settings.manage', 'perm.settings.manage', 'perm.group.system'],
+            ['audit.view', 'perm.audit.view', 'perm.group.system'],
         ];
 
         foreach ($core as [$name, $label, $group]) {
@@ -135,11 +137,23 @@ final class Seeder
 
     private function seedModules(): void
     {
+        $defaultEnabled = [
+            'customers', 'currency', 'crm', 'webhooks',
+            'notifications', 'documents', 'products', 'warehouse',
+            'orders', 'projects', 'calendar',
+            'shop', 'payments', 'coupons', 'bundles', 'loyalty', 'feeds',
+            'returns', 'reviews', 'newsletter', 'customer_uploads',
+            'media', 'cms',
+        ];
+
         foreach ($this->modules->discover() as $manifest) {
             $row = $this->em->find(InstalledModule::class, $manifest->id);
+            $shouldEnable = in_array($manifest->id, $defaultEnabled, true);
             if ($row === null) {
-                $enabled = $manifest->id === 'customers';
-                $this->em->persist(new InstalledModule($manifest->id, $manifest->version, $enabled));
+                $this->em->persist(new InstalledModule($manifest->id, $manifest->version, $shouldEnable));
+            } elseif ($shouldEnable && !$row->enabled()) {
+                $row->enable();
+                $row->setVersion($manifest->version);
             }
 
             foreach ($manifest->permissions as $item) {

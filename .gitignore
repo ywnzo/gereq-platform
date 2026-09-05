@@ -12,6 +12,7 @@
 /.phpunit.cache/
 /.phpstan-tmp/
 .phpstan-tmp/
+/.cache/
 *.log
 .DS_Store
 .phpunit.result.cache

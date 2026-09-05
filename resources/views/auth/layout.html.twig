@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="cs" data-theme="gereq">
+<html lang="{{ app_locale() }}" data-theme="gereq">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ pageTitle|default('Přihlášení') }} · GEREQ</title>
+    <title>{{ pageTitle|default('auth.login.title'|trans) }} · GEREQ</title>
     {% include 'partials/brand-head.html.twig' %}
     <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
 </head>
 <body class="auth-body">
     <main class="auth-shell">
         <section class="auth-panel">
-            {% include 'partials/brand-lockup.html.twig' with { href: url('admin.login'), modifier: 'brand--auth', subtitle: 'Platform' } %}
+            {% include 'partials/brand-lockup.html.twig' with { href: url('admin.login'), modifier: 'brand--auth', subtitle: 'brand.subtitle' } %}
             {% set flashes_success = flash('success') %}
             {% set flashes_error = flash('error') %}
             {% if flashes_success %}
@@ -25,7 +25,7 @@
             {% endif %}
             {% block content %}{% endblock %}
         </section>
-        <p class="auth-footnote">Interní platforma · verze {{ '0.1.0' }}</p>
+        <p class="auth-footnote">{{ 'brand.footnote'|trans({'%version%': '0.1.0'}) }}</p>
     </main>
     <script nonce="{{ csp_nonce() }}">
         window.__GEREQ_COMMANDS__ = [];

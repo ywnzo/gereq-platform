@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'module.reviews.description' => 'Product reviews and moderation.',
+    'nav.reviews' => 'Reviews',
+    'palette.reviews.index' => 'Reviews',
+    'perm.group.reviews' => 'Reviews',
+    'perm.reviews.view' => 'View reviews',
+    'perm.reviews.manage' => 'Manage reviews',
+    'reviews.title' => 'Reviews',
+    'reviews.search' => 'Search…',
+    'reviews.empty' => 'No reviews',
+    'reviews.all_statuses' => 'All statuses',
+    'reviews.status.pending' => 'Pending',
+    'reviews.status.approved' => 'Approved',
+    'reviews.status.rejected' => 'Rejected',
+    'reviews.field.product' => 'Product',
+    'reviews.field.author' => 'Author',
+    'reviews.field.email' => 'Email',
+    'reviews.field.rating' => 'Rating',
+    'reviews.field.title' => 'Title',
+    'reviews.field.body' => 'Body',
+    'reviews.field.status' => 'Status',
+    'reviews.field.created' => 'Created',
+    'reviews.field.average' => 'Product average',
+    'reviews.action.approve' => 'Approve',
+    'reviews.action.reject' => 'Reject',
+    'reviews.flash.approved' => 'Review was approved.',
+    'reviews.flash.rejected' => 'Review was rejected.',
+    'reviews.flash.deleted' => 'Review was deleted.',
+    'reviews.error.not_found' => 'Review not found.',
+    'reviews.error.invalid_status' => 'Invalid status.',
+    'reviews.error.invalid_rating' => 'Rating must be 1–5.',
+    'reviews.confirm_delete' => 'Delete this review?',
+];

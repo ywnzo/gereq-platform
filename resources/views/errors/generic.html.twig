@@ -5,7 +5,7 @@
     <h1>{{ heading }}</h1>
     <p class="muted">{{ message }}</p>
     <p class="error-actions">
-        <a class="btn btn-primary btn--primary" href="{{ homeUrl }}">Zpět na přehled</a>
+        <a class="btn btn-primary btn--primary" href="{{ homeUrl }}">{{ 'errors.back'|trans }}</a>
     </p>
     {% if debug %}
         <pre class="error-trace">{{ exception.message }}

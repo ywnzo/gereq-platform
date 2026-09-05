@@ -2,24 +2,24 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>Uživatelé</h1>
+        <h1>{{ 'admin.users.title'|trans }}</h1>
         {% if user.can('users.create') %}
-            <a class="btn btn--primary" href="{{ url('admin.users.create') }}">{{ icon('plus') }} Nový uživatel</a>
+            <a class="btn btn--primary" href="{{ url('admin.users.create') }}">{{ icon('plus') }} {{ 'admin.users.new'|trans }}</a>
         {% endif %}
     </header>
 
     <form class="toolbar" method="get">
-        <input type="search" name="q" value="{{ search }}" placeholder="Hledat jméno nebo e-mail…" class="input">
+        <input type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.users.search'|trans }}" class="input">
     </form>
 
     <div class="table-wrap">
         <table class="table">
             <thead>
                 <tr>
-                    <th>Jméno</th>
-                    <th>E-mail</th>
-                    <th>Role</th>
-                    <th>Stav</th>
+                    <th>{{ 'common.name'|trans }}</th>
+                    <th>{{ 'common.email'|trans }}</th>
+                    <th>{{ 'common.roles'|trans }}</th>
+                    <th>{{ 'common.status'|trans }}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -40,19 +40,19 @@
                         </td>
                         <td>
                             <span class="badge badge--{{ item.status() == 'active' ? 'ok' : 'muted' }}">
-                                {{ item.status() == 'active' ? 'Aktivní' : 'Neaktivní' }}
+                                {{ item.status() == 'active' ? 'common.active'|trans : 'common.inactive'|trans }}
                             </span>
                         </td>
                         <td class="table__actions">
                             {% if user.can('users.edit') %}
-                                <a href="{{ url('admin.users.edit', {id: item.id()}) }}">Upravit</a>
+                                <a href="{{ url('admin.users.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                             {% endif %}
                         </td>
                     </tr>
                 {% else %}
                     <tr>
                         <td colspan="5">
-                            <div class="empty">Nikdo tu zatím není.</div>
+                            <div class="empty">{{ 'empty.users'|trans }}</div>
                         </td>
                     </tr>
                 {% endfor %}

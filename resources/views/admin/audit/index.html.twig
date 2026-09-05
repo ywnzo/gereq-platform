@@ -2,27 +2,27 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>Audit log</h1>
+        <h1>{{ 'admin.audit.title'|trans }}</h1>
     </header>
     <div class="table-wrap">
         <table class="table">
             <thead>
                 <tr>
-                    <th>Čas</th>
-                    <th>Uživatel</th>
-                    <th>Akce</th>
-                    <th>Zdroj</th>
-                    <th>IP</th>
+                    <th>{{ 'common.time'|trans }}</th>
+                    <th>{{ 'common.user'|trans }}</th>
+                    <th>{{ 'common.action'|trans }}</th>
+                    <th>{{ 'common.source'|trans }}</th>
+                    <th>{{ 'common.ip'|trans }}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
                     <tr>
                         <td>{{ log.createdAt().format('d. m. Y H:i:s') }}</td>
-                        <td>{{ log.userName() ?: 'Systém' }}</td>
+                        <td>{{ log.userName() ?: 'common.system'|trans }}</td>
                         <td>{{ log.action() }}</td>
                         <td>
-                            {{ log.resource() ?: '—' }}
+                            {{ log.resource() ?: 'common.none'|trans }}
                             {% if log.oldValues() or log.newValues() %}
                                 <div class="diff muted">
                                     {% for field, value in log.newValues()|default({}) %}
@@ -37,7 +37,7 @@
                         <td class="muted">{{ log.ip() }}</td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="5"><div class="empty">Zatím žádné záznamy.</div></td></tr>
+                    <tr><td colspan="5"><div class="empty">{{ 'empty.audit'|trans }}</div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

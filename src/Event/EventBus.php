@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Gereq\Event;
 
+use Gereq\Hook\HookManager;
+use Ramsey\Uuid\Uuid;
+use Symfony\Component\HttpFoundation\RequestStack;
+
 final class EventBus
 {
     /** @var array<string, list<array{id: string, listener: callable, priority: int}>> */
@@ -12,6 +16,12 @@ final class EventBus
     private int $sequence = 0;
 
     private mixed $tracer = null;
+
+    public function __construct(
+        private readonly ?HookManager $hooks = null,
+        private readonly ?RequestStack $requestStack = null,
+    ) {
+    }
 
     /** @param callable(string, float): void|null $tracer */
     public function setTracer(?callable $tracer): void
@@ -46,11 +56,53 @@ final class EventBus
             ($item['listener'])($event);
         }
 
+        if ($event instanceof PlatformEvent) {
+            $envelope = $event->envelope();
+            $this->hooks?->doAction('platform.event.dispatched', $envelope, $event);
+        }
+
         if (is_callable($this->tracer)) {
             ($this->tracer)($event::class, (hrtime(true) - $start) / 1_000_000);
         }
 
         return $event;
+    }
+
+    /**
+     * @param array{type: string, id: ?string}|null $actor
+     * @param array{type: string, id: string} $resource
+     * @param array<string, mixed> $data
+     */
+    public function emit(
+        string $type,
+        array $resource,
+        array $data,
+        string $version = '1',
+        ?array $actor = null,
+    ): EventEnvelope {
+        $request = $this->requestStack?->getCurrentRequest();
+        $correlation = is_string($request?->attributes->get('correlation_id'))
+            ? (string) $request->attributes->get('correlation_id')
+            : null;
+        if ($actor === null) {
+            $attr = $request?->attributes->get('_api_actor');
+            $actor = is_array($attr) ? $attr : ['type' => 'system', 'id' => null];
+        }
+
+        $envelope = new EventEnvelope(
+            id: 'evt_' . Uuid::uuid7()->toString(),
+            type: $type,
+            version: $version,
+            occurredAt: new \DateTimeImmutable(),
+            actor: $actor,
+            resource: $resource,
+            data: $data,
+            correlationId: $correlation,
+        );
+
+        $this->hooks?->doAction('platform.event.dispatched', $envelope, null);
+
+        return $envelope;
     }
 
     public function remove(string $id): bool

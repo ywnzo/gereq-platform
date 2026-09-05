@@ -1,0 +1,94 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ item.title() }}</h1>
+            <p class="muted">{{ item.originalName() }}</p>
+        </div>
+        <div class="actions">
+            {% if user.can('documents.manage') %}
+                <form method="post" action="{{ url('admin.documents.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'documents.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-stack">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush">
+                <div><dt>{{ 'documents.field.mime'|trans }}</dt><dd><span class="badge">{{ item.mime() }}</span></dd></div>
+                <div><dt>{{ 'documents.field.size'|trans }}</dt><dd>{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB</dd></div>
+                <div class="meta-list__full"><dt>{{ 'documents.field.path'|trans }}</dt><dd><code>{{ item.path() }}</code></dd></div>
+                <div><dt>{{ 'documents.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
+            </dl>
+        </section>
+
+        {% if user.can('documents.manage') %}
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'documents.link.title'|trans }}</h2></header>
+                {% include 'ui/error-summary.html.twig' with { form: 'documents.link' } %}
+                <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.documents.link', {id: item.id()}) }}" data-form="documents.link" x-data="gereqForm"{% if form_errors('documents.link') %} data-server-state="1"{% endif %}>
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/input.html.twig' with {
+                        name: 'entity_type',
+                        label: 'documents.field.entity_type'|trans,
+                        required: true,
+                        form: 'documents.link',
+                        value: 'customer',
+                        hint: 'documents.field.entity_type.hint'|trans
+                    } %}
+                    {% include 'ui/input.html.twig' with {
+                        name: 'entity_id',
+                        label: 'documents.field.entity_id'|trans,
+                        required: true,
+                        form: 'documents.link',
+                        value: ''
+                    } %}
+                    <div class="form-actions">
+                        <button class="btn btn--primary" type="submit">{{ 'documents.link.submit'|trans }}</button>
+                    </div>
+                </form>
+            </section>
+        {% endif %}
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'documents.links.title'|trans }}</h2></header>
+            {% if links is empty %}
+                <div class="empty">
+                    <p>{{ 'documents.links.empty'|trans }}</p>
+                </div>
+            {% else %}
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'documents.field.entity_type'|trans }}</th>
+                                <th>{{ 'documents.field.entity_id'|trans }}</th>
+                                <th>{{ 'documents.field.created'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for link in links %}
+                                <tr>
+                                    <td><span class="badge">{{ link.entityType() }}</span></td>
+                                    <td>
+                                        {% if link.entityType() == 'customer' %}
+                                            <a href="{{ url('admin.customers.show', {id: link.entityId()}) }}">{{ link.entityId() }}</a>
+                                        {% else %}
+                                            <code>{{ link.entityId() }}</code>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ link.createdAt().format('d. m. Y H:i') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'feeds.title'|trans }}</h1>
+    <div class="actions">
+        {% if user.can('feeds.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.feeds.create') }}">{{ icon('plus') }} {{ 'feeds.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<form class="toolbar" method="get">
+    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'feeds.search'|trans }}">
+</form>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+<th>{{ 'feeds.field.code'|trans }}</th>
+<th>{{ 'feeds.field.name'|trans }}</th>
+<th>{{ 'feeds.field.driver'|trans }}</th>
+<th>{{ 'feeds.field.format'|trans }}</th>
+<th>{{ 'feeds.field.active'|trans }}</th>
+<th></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td><strong>{{ item.code() }}</strong></td>
+    <td>{{ item.name() }}</td>
+    <td>{{ ('feeds.driver.' ~ item.driver())|trans }}</td>
+    <td>{{ item.format()|upper }}</td>
+    <td>
+        <span class="badge badge--{{ item.isActive() ? 'ok' : 'muted' }}">
+            {{ item.isActive() ? 'feeds.active'|trans : 'feeds.inactive'|trans }}
+        </span>
+    </td>
+    <td class="table__actions" x-data="rowMenu" @click.outside="close">
+        <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
+        <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+            <a href="{{ url('admin.feeds.preview', {id: item.id()}) }}">{{ 'feeds.action.preview'|trans }}</a>
+            {% if user.can('feeds.manage') %}
+                <a href="{{ url('admin.feeds.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.feeds.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'feeds.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% else %}
+<tr>
+<td colspan="6">
+<div class="empty">
+<h2>{{ 'feeds.empty'|trans }}</h2>
+<p>{{ 'feeds.empty.hint'|trans }}</p>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

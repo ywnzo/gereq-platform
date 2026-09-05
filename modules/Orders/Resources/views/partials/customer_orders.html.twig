@@ -1,0 +1,19 @@
+{% if orders is empty %}
+<div class="empty"><p>{{ 'orders.partial.empty'|trans }}</p>
+{% if user is defined and user.can('orders.manage') %}
+<a class="btn btn--ghost" href="{{ url('admin.orders.create') }}?customer={{ customer.id() }}">{{ 'orders.partial.add'|trans }}</a>
+{% endif %}
+</div>
+{% else %}
+<div class="table-wrap"><table class="table">
+<thead><tr><th>{{ 'orders.field.number'|trans }}</th><th>{{ 'orders.field.status'|trans }}</th><th>{{ 'orders.field.total'|trans }}</th></tr></thead>
+<tbody>
+{% for o in orders %}
+<tr>
+<td><a href="{{ url('admin.orders.show', {id: o.id()}) }}">{{ o.number() }}</a></td>
+<td>{{ o.statusLabel()|trans }}</td>
+<td>{{ o.total() }} {{ o.currency() }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% endif %}

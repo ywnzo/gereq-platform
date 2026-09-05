@@ -1,0 +1,74 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ item ? 'products.edit'|trans : 'products.new'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'products.product.save' } %}
+
+    <form method="post" class="form-grid" action="{{ item ? url('admin.products.update', {id: item.id()}) : url('admin.products.store') }}" data-form="products.product.save" x-data="gereqForm"{% if form_errors('products.product.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with {
+            name: 'sku',
+            label: 'products.field.sku'|trans,
+            required: true,
+            form: 'products.product.save',
+            value: item ? item.sku() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'name',
+            label: 'products.field.name'|trans,
+            required: true,
+            form: 'products.product.save',
+            value: item ? item.name() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'unit',
+            label: 'products.field.unit'|trans,
+            required: true,
+            form: 'products.product.save',
+            value: item ? item.unit() : 'ks'
+        } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'status',
+            label: 'products.field.status'|trans,
+            form: 'products.product.save',
+            value: item ? item.status() : 'draft',
+            options: [
+                { value: 'draft', label: 'products.status.draft'|trans },
+                { value: 'active', label: 'products.status.active'|trans },
+                { value: 'archived', label: 'products.status.archived'|trans }
+            ]
+        } %}
+        {% include 'ui/textarea.html.twig' with {
+            name: 'description',
+            label: 'products.field.description'|trans,
+            optional: true,
+            extra: 'field--full',
+            form: 'products.product.save',
+            value: item ? item.description() : ''
+        } %}
+
+        <div class="g-field field--full">
+            <span class="g-label">{{ 'products.field.categories'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+            {% if categoryOptions is empty %}
+                <p class="muted">{{ 'products.categories.empty.hint'|trans }}</p>
+            {% else %}
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+                    {% for opt in categoryOptions %}
+                        <label class="g-switch">
+                            <input type="checkbox" name="category_ids[]" value="{{ opt.value }}" {{ opt.value in selectedCategories ? 'checked' : '' }}>
+                            <span>{{ opt.label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.products.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

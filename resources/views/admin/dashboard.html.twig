@@ -1,55 +1,105 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-    <header class="page-header">
+    <section class="dash-hero">
         <div>
-            <p class="eyebrow">Přehled</p>
-            <h1 class="greeting">Dobrý den{% if user %}, {{ user.name()|split(' ')|first }}{% endif %}</h1>
+            <p class="eyebrow">{{ 'admin.dashboard.eyebrow'|trans }}</p>
+            <h1 class="greeting">{% if user %}{{ 'admin.dashboard.greeting_named'|trans({'%name%': user.name()|split(' ')|first}) }}{% else %}{{ 'admin.dashboard.greeting'|trans }}{% endif %}</h1>
+            <p class="muted" style="margin:8px 0 0">{{ 'admin.dashboard.subtitle'|trans|default('Přehled platformy a rychlé akce.') }}</p>
         </div>
-    </header>
+        <div class="dash-hero__actions">
+            {% if user and user.can('orders.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.orders.create') }}">{{ 'nav.orders.create'|trans|default('Nová objednávka') }}</a>
+            {% endif %}
+            {% if user and user.can('products.manage') %}
+                <a class="btn btn--ghost" href="{{ url('admin.products.create') }}">{{ 'nav.products.create'|trans|default('Nový produkt') }}</a>
+            {% endif %}
+            {% if user and user.can('customers.edit') %}
+                <a class="btn btn--ghost" href="{{ url('admin.customers.create') }}">{{ 'admin.customers.new'|trans|default('Nový zákazník') }}</a>
+            {% endif %}
+            <button type="button" class="btn btn--ghost" @click="openPalette">{{ icon('search') }} {{ 'common.search'|trans }}</button>
+        </div>
+    </section>
 
-    <section class="metrics" aria-label="Stav systému">
-        <div>
-            <span>Moduly</span>
-            <strong>{{ stats.modules }}</strong>
-            <span class="muted">aktivní</span>
+    <section class="metrics" aria-label="{{ 'admin.dashboard.system_status'|trans }}">
+        <div class="metric-card">
+            <span class="metric-card__label">{{ 'nav.modules'|trans }}</span>
+            <strong class="metric-card__value">{{ stats.modules }}</strong>
+            <span class="muted">{{ 'admin.dashboard.modules_active'|trans }}</span>
         </div>
-        <div>
-            <span>Uživatelé</span>
-            <strong>{{ stats.users }}</strong>
+        <div class="metric-card">
+            <span class="metric-card__label">{{ 'nav.users'|trans }}</span>
+            <strong class="metric-card__value">{{ stats.users }}</strong>
+            <span class="muted">{{ 'admin.dashboard.users_hint'|trans|default('Administrátoři') }}</span>
         </div>
-        <div>
-            <span>Fronta</span>
-            <strong>{{ stats.jobs }}</strong>
-            <span class="muted">selhaných úloh</span>
-        </div>
+        {% if stats.orders is defined %}
+            <div class="metric-card">
+                <span class="metric-card__label">{{ 'nav.orders'|trans }}</span>
+                <strong class="metric-card__value">{{ stats.orders }}</strong>
+                <span class="muted">{{ 'admin.dashboard.open_orders'|trans|default('Otevřené') }}: {{ stats.open_orders|default(0) }}</span>
+            </div>
+        {% endif %}
+        {% if stats.revenue is defined %}
+            <div class="metric-card">
+                <span class="metric-card__label">{{ 'admin.dashboard.revenue'|trans|default('Obrat (30 dní)') }}</span>
+                <strong class="metric-card__value">{{ stats.revenue }}</strong>
+                <span class="muted">{{ stats.currency|default('CZK') }}</span>
+            </div>
+        {% endif %}
         {% for widget in widgets %}
             {{ widget.render()|raw }}
         {% endfor %}
     </section>
 
-    <section class="panel">
-        <header class="panel__head">
-            <h2>Aktivita</h2>
-        </header>
-        {% if activity is empty %}
-            <div class="empty">
-                <p>Zatím žádné záznamy. Změny z audit logu se objeví tady.</p>
-            </div>
-        {% else %}
-            <ul class="activity">
-                {% for log in activity %}
-                    <li>
-                        <div>
-                            <strong>{{ log.summary() }}</strong>
-                            {% if log.resource() %}
-                                <span class="muted">{{ log.resource() }}</span>
-                            {% endif %}
-                        </div>
-                        <time class="muted">{{ log.createdAt().format('d. m. Y H:i') }}</time>
-                    </li>
+    <div class="dash-grid">
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'admin.dashboard.activity'|trans }}</h2>
+                {% if user and user.can('audit.view') %}
+                    <a class="btn btn--ghost btn-sm" href="{{ url('admin.audit.index') }}">{{ 'common.all'|trans|default('Vše') }}</a>
+                {% endif %}
+            </header>
+            {% if activity is empty %}
+                <div class="empty">
+                    <p>{{ 'empty.activity'|trans }}</p>
+                </div>
+            {% else %}
+                <ul class="activity">
+                    {% for log in activity %}
+                        <li>
+                            <div class="activity__body">
+                                <span class="activity__dot" aria-hidden="true"></span>
+                                <div>
+                                    <strong>{{ log.summary() }}</strong>
+                                    {% if log.resource() %}
+                                        <span class="muted">{{ log.resource() }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <time class="muted">{{ log.createdAt().format('d. m. Y H:i') }}</time>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'admin.dashboard.shortcuts'|trans|default('Rychlé odkazy') }}</h2>
+            </header>
+            <div class="dash-shortcuts">
+                {% for item in shortcuts|default([]) %}
+                    <a class="dash-shortcut" href="{{ item.url }}">
+                        <span class="dash-shortcut__icon">{{ icon(item.icon|default('dot')) }}</span>
+                        <span>
+                            <strong>{{ item.label|trans }}</strong>
+                            <span>{{ item.hint|default('')|trans }}</span>
+                        </span>
+                    </a>
+                {% else %}
+                    <div class="empty"><p>{{ 'empty.generic'|trans|default('Žádné odkazy') }}</p></div>
                 {% endfor %}
-            </ul>
-        {% endif %}
-    </section>
+            </div>
+        </section>
+    </div>
 {% endblock %}

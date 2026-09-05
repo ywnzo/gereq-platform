@@ -1,0 +1,58 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ 'webhooks.delivery.show'|trans }}</h1>
+            <p class="muted"><code>{{ item.id() }}</code></p>
+        </div>
+        <div class="actions">
+            {% if webhook %}
+                <a class="btn btn--ghost" href="{{ url('admin.developer.webhooks.show', {id: webhook.id()}) }}">{{ 'webhooks.delivery.field.webhook'|trans }}</a>
+            {% endif %}
+            <a class="btn btn--ghost" href="{{ url('admin.developer.webhook-deliveries.index') }}">{{ 'webhooks.delivery.list'|trans }}</a>
+            {% if user.can('webhooks.deliveries.retry') %}
+                <form method="post" action="{{ url('admin.developer.webhook-deliveries.retry', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--primary" type="submit">{{ 'webhooks.delivery.retry'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-stack">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush">
+                <div><dt>{{ 'webhooks.delivery.field.webhook'|trans }}</dt><dd>{% if webhook %}<a href="{{ url('admin.developer.webhooks.show', {id: webhook.id()}) }}">{{ webhook.name() }}</a>{% else %}{{ item.webhookId() }}{% endif %}</dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.event'|trans }}</dt><dd><code>{{ item.eventType() }}</code></dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.event_id'|trans }}</dt><dd><code>{{ item.eventId() }}</code></dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.status'|trans }}</dt><dd><span class="badge">{{ item.statusLabel()|trans }}</span></dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.attempt'|trans }}</dt><dd>{{ item.attempt() }}</dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.http'|trans }}</dt><dd>{{ item.responseStatus() ?: '—' }}</dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.duration'|trans }}</dt><dd>{{ item.durationMs() is not null ? item.durationMs() ~ ' ms' : '—' }}</dd></div>
+                <div class="meta-list__full"><dt>{{ 'webhooks.delivery.field.url'|trans }}</dt><dd><code>{{ item.requestUrl() }}</code></dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i:s') }}</dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.delivered'|trans }}</dt><dd>{{ item.deliveredAt() ? item.deliveredAt().format('d. m. Y H:i:s') : '—' }}</dd></div>
+                <div><dt>{{ 'webhooks.delivery.field.next_retry'|trans }}</dt><dd>{{ item.nextRetryAt() ? item.nextRetryAt().format('d. m. Y H:i:s') : '—' }}</dd></div>
+            </dl>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'webhooks.delivery.request_headers'|trans }}</h2></header>
+            <pre class="g-prose" style="margin:0"><code>{{ item.requestHeaders()|json_encode(384) }}</code></pre>
+        </section>
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'webhooks.delivery.request_body'|trans }}</h2></header>
+            <pre class="g-prose" style="margin:0"><code>{{ item.requestBody() }}</code></pre>
+        </section>
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'webhooks.delivery.response_headers'|trans }}</h2></header>
+            <pre class="g-prose" style="margin:0"><code>{{ item.responseHeaders() ? item.responseHeaders()|json_encode(384) : '—' }}</code></pre>
+        </section>
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'webhooks.delivery.response_body'|trans }}</h2></header>
+            <pre class="g-prose" style="margin:0"><code>{{ item.responseBody() ?: '—' }}</code></pre>
+        </section>
+    </div>
+{% endblock %}

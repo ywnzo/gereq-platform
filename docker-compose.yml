@@ -1,0 +1,68 @@
+name: gereq
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "${GEREQ_PORT:-8080}:80"
+    volumes:
+      - .:/var/www/html:ro,z
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro,z
+    depends_on:
+      - php
+    networks:
+      - gereq
+
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - .:/var/www/html:z
+    env_file:
+      - .env
+    environment:
+      APP_URL: ${APP_URL:-http://127.0.0.1:8080}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SESSION_DRIVER: redis
+    depends_on:
+      - redis
+    networks:
+      - gereq
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - gereq-redis:/data
+    networks:
+      - gereq
+
+  queue:
+    profiles: ["queue"]
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    command: ["php", "gereq", "queue:work"]
+    volumes:
+      - .:/var/www/html:z
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_DRIVER: ${QUEUE_DRIVER:-redis}
+    depends_on:
+      - redis
+      - php
+    networks:
+      - gereq
+    restart: unless-stopped
+
+networks:
+  gereq:
+    driver: bridge
+
+volumes:
+  gereq-redis:

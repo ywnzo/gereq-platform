@@ -1,0 +1,50 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'documents.upload'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'documents.save' } %}
+
+    <form method="post" class="form-grid" action="{{ url('admin.documents.store') }}" enctype="multipart/form-data" data-form="documents.save" x-data="gereqForm"{% if form_errors('documents.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with {
+            name: 'title',
+            label: 'documents.field.title'|trans,
+            required: true,
+            form: 'documents.save',
+            value: ''
+        } %}
+        {% include 'ui/file.html.twig' with {
+            name: 'file',
+            label: 'documents.field.file'|trans,
+            hint: 'documents.field.file.hint'|trans,
+            extra: 'field--full'
+        } %}
+        {% if entityType %}
+            <input type="hidden" name="entity_type" value="{{ entityType }}">
+            <input type="hidden" name="entity_id" value="{{ entityId }}">
+        {% else %}
+            {% include 'ui/input.html.twig' with {
+                name: 'entity_type',
+                label: 'documents.field.entity_type'|trans,
+                optional: true,
+                form: 'documents.save',
+                value: '',
+                hint: 'documents.field.entity_type.hint'|trans
+            } %}
+            {% include 'ui/input.html.twig' with {
+                name: 'entity_id',
+                label: 'documents.field.entity_id'|trans,
+                optional: true,
+                form: 'documents.save',
+                value: ''
+            } %}
+        {% endif %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'documents.upload'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.documents.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

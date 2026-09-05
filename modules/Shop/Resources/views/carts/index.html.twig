@@ -1,0 +1,56 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'shop.carts.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.shop.shipping.index') }}">{{ 'shop.shipping.title'|trans }}</a>
+    </div>
+</header>
+<form class="toolbar" method="get">
+    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.carts.search'|trans }}">
+    <select name="status" class="input" onchange="this.form.submit()">
+        <option value="">{{ 'shop.carts.all_statuses'|trans }}</option>
+        {% for s in statuses %}
+            <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('shop.cart.status.' ~ s)|trans }}</option>
+        {% endfor %}
+    </select>
+</form>
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+<th>{{ 'shop.field.id'|trans }}</th>
+<th>{{ 'shop.field.customer'|trans }}</th>
+<th>{{ 'shop.field.status'|trans }}</th>
+<th>{{ 'shop.field.items'|trans }}</th>
+<th>{{ 'shop.field.total'|trans }}</th>
+<th>{{ 'shop.field.updated'|trans }}</th>
+<th></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+{% set t = totalsMap[item.id()]|default(null) %}
+<tr>
+<td><a href="{{ url('admin.shop.carts.show', {id: item.id()}) }}"><code>{{ item.id()|slice(0, 8) }}…</code></a></td>
+<td>
+{% if item.customerId() %}
+{% set c = customers[item.customerId()]|default(null) %}
+{% if c %}
+<a href="{{ url('admin.customers.show', {id: c.id()}) }}">{{ c.name() }}</a>
+{% else %}
+<code>{{ item.customerId()|slice(0, 8) }}…</code>
+{% endif %}
+{% else %}—{% endif %}
+</td>
+<td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+<td>{{ t ? t.item_count : '—' }}</td>
+<td>{% if t %}{{ t.total }} {{ t.currency }}{% else %}—{% endif %}</td>
+<td class="muted">{{ item.updatedAt()|date('d.m.Y H:i') }}</td>
+<td class="table__actions"><a href="{{ url('admin.shop.carts.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a></td>
+</tr>
+{% else %}
+<tr><td colspan="7"><div class="empty"><h2>{{ 'shop.carts.empty'|trans }}</h2><p>{{ 'shop.carts.empty.hint'|trans }}</p></div></td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

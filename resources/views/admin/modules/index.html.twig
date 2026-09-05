@@ -3,24 +3,57 @@
 {% block content %}
     <header class="page-header">
         <div>
-            <h1>Moduly</h1>
-            <p class="muted">Zapnutí a vypnutí funkcí platformy</p>
+            <h1>{{ 'admin.modules.title'|trans }}</h1>
+            <p class="muted">{{ 'admin.modules.subtitle'|trans }}</p>
         </div>
     </header>
-    <div class="module-list">
+
+    <div class="module-stats">
+        <div class="module-stat">
+            <span class="module-stat__value">{{ stats.total }}</span>
+            <span class="module-stat__label">{{ 'common.total'|trans }}</span>
+        </div>
+        <div class="module-stat">
+            <span class="module-stat__value">{{ stats.enabled }}</span>
+            <span class="module-stat__label">{{ 'common.active'|trans }}</span>
+        </div>
+        <div class="module-stat{% if stats.issues %} module-stat--warn{% endif %}">
+            <span class="module-stat__value">{{ stats.issues }}</span>
+            <span class="module-stat__label">{{ 'common.warnings'|trans }}</span>
+        </div>
+    </div>
+
+    <div class="module-grid">
         {% for row in items %}
             {% set manifest = row.manifest %}
-            <article class="module-card">
-                <div>
-                    <h2><a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a></h2>
-                    <p class="muted">{{ manifest.description ?: 'Bez popisu' }} · v{{ manifest.version }}</p>
+            {% set counts = row.counts %}
+            <a class="module-tile" href="{{ url('admin.modules.show', {id: manifest.id}) }}">
+                <div class="module-tile__top">
+                    <div>
+                        <h2>{{ manifest.name }}</h2>
+                        <p class="module-tile__id"><code>{{ manifest.id }}</code> · v{{ manifest.version }}</p>
+                    </div>
+                    {% if row.enabled %}
+                        <span class="badge badge--ok">{{ 'common.enabled'|trans }}</span>
+                    {% else %}
+                        <span class="badge badge--muted">{{ 'common.disabled'|trans }}</span>
+                    {% endif %}
                 </div>
-                {% if row.enabled %}
-                    <span class="badge badge--ok">Zapnuto</span>
-                {% else %}
-                    <span class="badge badge--muted">Vypnuto</span>
+                <p class="module-tile__desc">{{ (manifest.description ?: 'common.no_description')|trans }}</p>
+                <div class="module-tile__meta">
+                    <span>{{ counts.api }} API</span>
+                    <span>{{ counts.routes }} {{ 'admin.modules.meta.routes'|trans }}</span>
+                    <span>{{ counts.migrations }} {{ 'admin.modules.meta.migrations'|trans }}{% if counts.migrations_pending %} · {{ 'admin.modules.meta.pending'|trans({'%count%': counts.migrations_pending}) }}{% endif %}</span>
+                    {% if row.health_issues %}
+                        <span class="module-tile__warn">{{ row.health_issues }} {{ 'admin.modules.meta.health'|trans }}</span>
+                    {% endif %}
+                </div>
+                {% if row.missing is not empty %}
+                    <p class="module-tile__deps">{{ 'admin.modules.missing'|trans({'%list%': row.missing|join(', ')}) }}</p>
                 {% endif %}
-            </article>
+            </a>
+        {% else %}
+            <div class="empty"><h2>{{ 'empty.modules'|trans }}</h2><p>{{ 'empty.modules_hint'|trans }}</p></div>
         {% endfor %}
     </div>
 {% endblock %}

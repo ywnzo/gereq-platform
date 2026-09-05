@@ -64,6 +64,34 @@ final class HookManager
     }
 
     /**
+     * @return list<array{name: string, type: 'action'|'filter', listeners: int}>
+     */
+    public function inventory(): array
+    {
+        $items = [];
+
+        foreach ($this->actions as $name => $listeners) {
+            $items[] = [
+                'name' => $name,
+                'type' => 'action',
+                'listeners' => count($listeners),
+            ];
+        }
+
+        foreach ($this->filters as $name => $listeners) {
+            $items[] = [
+                'name' => $name,
+                'type' => 'filter',
+                'listeners' => count($listeners),
+            ];
+        }
+
+        usort($items, static fn (array $a, array $b): int => $a['name'] <=> $b['name']);
+
+        return $items;
+    }
+
+    /**
      * @param array<string, list<array{id: string, callback: callable, priority: int}>> $bag
      */
     private function add(array &$bag, string $hook, callable $callback, int $priority): string

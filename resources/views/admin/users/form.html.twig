@@ -2,34 +2,34 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>{{ item ? 'Upravit uživatele' : 'Nový uživatel' }}</h1>
+        <h1>{{ item ? 'admin.users.edit'|trans : 'admin.users.new'|trans }}</h1>
     </header>
 
     <form method="post" action="{{ item ? url('admin.users.update', {id: item.id()}) : url('admin.users.store') }}" class="form-grid">
         {{ csrf_field()|raw }}
         <label class="field">
-            <span>Jméno</span>
+            <span>{{ 'common.name'|trans }}</span>
             <input type="text" name="name" value="{{ item ? item.name() : '' }}" required>
         </label>
         <label class="field">
-            <span>E-mail</span>
+            <span>{{ 'common.email'|trans }}</span>
             <input type="email" name="email" value="{{ item ? item.email() : '' }}" required>
         </label>
         <label class="field">
-            <span>{{ item ? 'Nové heslo (prázdné = beze změny)' : 'Heslo' }}</span>
+            <span>{{ item ? 'admin.users.password_new'|trans : 'common.password'|trans }}</span>
             <input type="password" name="password" {{ item ? '' : 'required minlength="10"' }}>
         </label>
         {% if item %}
             <label class="field">
-                <span>Stav</span>
+                <span>{{ 'common.status'|trans }}</span>
                 <select name="status">
-                    <option value="active" {{ item.status() == 'active' ? 'selected' : '' }}>Aktivní</option>
-                    <option value="disabled" {{ item.status() == 'disabled' ? 'selected' : '' }}>Neaktivní</option>
+                    <option value="active" {{ item.status() == 'active' ? 'selected' : '' }}>{{ 'common.active'|trans }}</option>
+                    <option value="disabled" {{ item.status() == 'disabled' ? 'selected' : '' }}>{{ 'common.inactive'|trans }}</option>
                 </select>
             </label>
         {% endif %}
         <fieldset class="field field--full">
-            <legend>Role</legend>
+            <legend>{{ 'common.roles'|trans }}</legend>
             <div class="chip-list">
                 {% for role in roles %}
                     <label class="check">
@@ -41,15 +41,15 @@
             </div>
         </fieldset>
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">Uložit</button>
-            <a class="btn btn--ghost" href="{{ url('admin.users.index') }}">Zrušit</a>
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.users.index') }}">{{ 'common.cancel'|trans }}</a>
             {% if item and user.can('users.delete') %}
-                <button class="btn btn--danger" type="submit" form="delete-user">Smazat</button>
+                <button class="btn btn--danger" type="submit" form="delete-user">{{ 'common.delete'|trans }}</button>
             {% endif %}
         </div>
     </form>
     {% if item and user.can('users.delete') %}
-        <form id="delete-user" method="post" action="{{ url('admin.users.destroy', {id: item.id()}) }}" onsubmit="return confirm('Opravdu smazat uživatele?');">
+        <form id="delete-user" method="post" action="{{ url('admin.users.destroy', {id: item.id()}) }}" onsubmit="return confirm({{ 'admin.users.confirm_delete'|trans|json_encode|raw }});">
             {{ csrf_field()|raw }}
         </form>
     {% endif %}

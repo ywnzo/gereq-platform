@@ -13,6 +13,9 @@ final class Route
 
     private ?string $permission = null;
 
+    /** @var list<string> */
+    private array $scopes = [];
+
     /**
      * @param list<string> $methods
      * @param array{0: class-string, 1: string}|class-string|callable $handler
@@ -47,6 +50,16 @@ final class Route
         return $this;
     }
 
+    public function scope(string ...$scopes): self
+    {
+        foreach ($scopes as $scope) {
+            $this->scopes[] = $scope;
+        }
+        $this->scopes = array_values(array_unique($this->scopes));
+
+        return $this;
+    }
+
     public function getName(): ?string
     {
         return $this->name;
@@ -77,6 +90,12 @@ final class Route
     public function getPermission(): ?string
     {
         return $this->permission;
+    }
+
+    /** @return list<string> */
+    public function getScopes(): array
+    {
+        return $this->scopes;
     }
 
     public function setPath(string $path): void

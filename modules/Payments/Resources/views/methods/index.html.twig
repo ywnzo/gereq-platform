@@ -1,0 +1,73 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'payments.methods.title'|trans }}</h1>
+    <div class="actions">
+        {% if user.can('payments.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.payments.methods.create') }}">{{ icon('plus') }} {{ 'payments.methods.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<form class="toolbar" method="get">
+    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'payments.methods.search'|trans }}">
+</form>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+<th>{{ 'payments.field.code'|trans }}</th>
+<th>{{ 'payments.field.name'|trans }}</th>
+<th>{{ 'payments.field.type'|trans }}</th>
+<th>{{ 'payments.field.provider'|trans }}</th>
+<th>{{ 'payments.field.fee'|trans }}</th>
+<th>{{ 'payments.field.active'|trans }}</th>
+<th></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td><strong>{{ item.code() }}</strong></td>
+    <td>{{ item.name() }}</td>
+    <td>{{ ('payments.type.' ~ item.type())|trans }}</td>
+    <td>{{ item.provider() ?: '—' }}</td>
+    <td>
+        {% if item.feeFixed() != '0.00' or item.feePercent() != '0.0000' %}
+            {{ item.feeFixed() }} {{ item.currency() }}
+            {% if item.feePercent() != '0.0000' %}+ {{ item.feePercent() }} %{% endif %}
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    <td>
+        <span class="badge badge--{{ item.isActive() ? 'ok' : 'muted' }}">
+            {{ item.isActive() ? 'payments.active'|trans : 'payments.inactive'|trans }}
+        </span>
+    </td>
+    <td class="table__actions" x-data="rowMenu" @click.outside="close">
+        <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
+        <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+            {% if user.can('payments.manage') %}
+                <a href="{{ url('admin.payments.methods.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.payments.methods.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'payments.methods.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% else %}
+<tr>
+<td colspan="7">
+<div class="empty">
+<h2>{{ 'payments.methods.empty'|trans }}</h2>
+<p>{{ 'payments.methods.empty.hint'|trans }}</p>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

@@ -18,21 +18,22 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class ExceptionHandler
 {
-    /** @var array<int, array{title: string, heading: string}> */
+    /** @var array<int, array{title: string, heading: string, message: string}> */
     private const PAGES = [
-        401 => ['title' => 'Přihlášení', 'heading' => 'Vyžadováno přihlášení'],
-        403 => ['title' => 'Přístup odepřen', 'heading' => 'Přístup odepřen'],
-        404 => ['title' => 'Nenalezeno', 'heading' => 'Stránka nebyla nalezena'],
-        405 => ['title' => 'Metoda není povolená', 'heading' => 'Metoda není povolená'],
-        419 => ['title' => 'Platnost vypršela', 'heading' => 'Platnost formuláře vypršela'],
-        422 => ['title' => 'Neplatná data', 'heading' => 'Formulář obsahuje chyby'],
-        429 => ['title' => 'Příliš mnoho požadavků', 'heading' => 'Příliš mnoho požadavků'],
-        500 => ['title' => 'Chyba serveru', 'heading' => 'Něco se pokazilo'],
-        503 => ['title' => 'Nedostupné', 'heading' => 'Služba je dočasně nedostupná'],
+        401 => ['title' => 'errors.401.title', 'heading' => 'errors.401.heading', 'message' => 'errors.401.message'],
+        403 => ['title' => 'errors.403.title', 'heading' => 'errors.403.heading', 'message' => 'errors.403.message'],
+        404 => ['title' => 'errors.404.title', 'heading' => 'errors.404.heading', 'message' => 'errors.404.message'],
+        405 => ['title' => 'errors.405.title', 'heading' => 'errors.405.heading', 'message' => 'errors.405.message'],
+        419 => ['title' => 'errors.419.title', 'heading' => 'errors.419.heading', 'message' => 'errors.419.message'],
+        422 => ['title' => 'errors.422.title', 'heading' => 'errors.422.heading', 'message' => 'errors.422.message'],
+        429 => ['title' => 'errors.429.title', 'heading' => 'errors.429.heading', 'message' => 'errors.429.message'],
+        500 => ['title' => 'errors.500.title', 'heading' => 'errors.500.heading', 'message' => 'errors.500.message'],
+        503 => ['title' => 'errors.503.title', 'heading' => 'errors.503.heading', 'message' => 'errors.503.message'],
     ];
 
     public function __construct(
@@ -43,6 +44,7 @@ final class ExceptionHandler
         private readonly Router $router,
         private readonly string $basePath,
         private readonly ?DebugBar $debugBar = null,
+        private readonly ?TranslatorInterface $translator = null,
     ) {
     }
 
@@ -124,7 +126,7 @@ final class ExceptionHandler
     {
         $exception = $this->hooks->filter('http.error.prepare', $exception, $request);
         if (!$exception instanceof \Throwable) {
-            $exception = new HttpException(500, 'Došlo k neočekávané chybě.');
+            $exception = new HttpException(500, 'errors.500.message');
         }
 
         $exception = $this->normalize($exception);
@@ -245,10 +247,14 @@ final class ExceptionHandler
 
     private function toHtml(Request $request, \Throwable $exception, int $status): Response
     {
-        $page = self::PAGES[$status] ?? ['title' => 'Chyba', 'heading' => 'Něco se pokazilo'];
+        $page = self::PAGES[$status] ?? [
+            'title' => 'errors.generic.title',
+            'heading' => 'errors.generic.heading',
+            'message' => 'errors.generic.message',
+        ];
         $context = [
-            'pageTitle' => $page['title'],
-            'heading' => $page['heading'],
+            'pageTitle' => $this->t($page['title']),
+            'heading' => $this->t($page['heading']),
             'status' => $status,
             'message' => $this->publicMessage($exception, $status),
             'homeUrl' => $this->homeUrl($request),
@@ -281,14 +287,39 @@ final class ExceptionHandler
     private function publicMessage(\Throwable $exception, int $status): string
     {
         if ($exception instanceof HttpExceptionInterface && $exception->getMessage() !== '') {
-            return $exception->getMessage();
+            return $this->translateMaybe($exception->getMessage());
         }
 
         if ($this->debug() && $status >= 500 && $exception->getMessage() !== '') {
             return $exception->getMessage();
         }
 
-        return HttpException::defaultMessage($status);
+        $page = self::PAGES[$status] ?? null;
+        if ($page !== null) {
+            return $this->t($page['message']);
+        }
+
+        return $this->t('errors.generic.message');
+    }
+
+    private function translateMaybe(string $message): string
+    {
+        if (
+            str_starts_with($message, 'errors.')
+            || str_starts_with($message, 'validation.')
+            || str_starts_with($message, 'http.')
+            || str_starts_with($message, 'admin.')
+            || str_starts_with($message, 'auth.')
+        ) {
+            return $this->t($message);
+        }
+
+        return $message;
+    }
+
+    private function t(string $key, array $parameters = []): string
+    {
+        return $this->translator?->trans($key, $parameters) ?? $key;
     }
 
     private function errorCode(int $status): string
@@ -364,12 +395,13 @@ final class ExceptionHandler
 
     private static function fallbackHtml(\Throwable $exception, bool $debug): string
     {
+        // Static fallback — translator may be unavailable during bootstrap failure.
         $message = $debug
             ? e($exception::class . ': ' . $exception->getMessage())
-            : 'Došlo k neočekávané chybě.';
+            : 'Unexpected error.';
         $trace = $debug ? '<pre>' . e($exception->getTraceAsString()) . '</pre>' : '';
 
-        return '<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>Chyba · GEREQ</title></head>'
-            . '<body><h1>Něco se pokazilo</h1><p>' . $message . '</p>' . $trace . '</body></html>';
+        return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Error · GEREQ</title></head>'
+            . '<body><h1>Something went wrong</h1><p>' . $message . '</p>' . $trace . '</body></html>';
     }
 }

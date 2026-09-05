@@ -1,0 +1,27 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><div><h1>{{ item.title() }}</h1><p class="muted">{{ item.typeLabel()|trans }}</p></div>
+<div class="actions">{% if user.can('calendar.manage') %}
+<a class="btn btn--primary" href="{{ url('admin.calendar.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+<form method="post" action="{{ url('admin.calendar.destroy',{id:item.id()}) }}" onsubmit="return confirm('{{ 'calendar.confirm_delete'|trans|e('js') }}');">{{ csrf_field()|raw }}
+<button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button></form>{% endif %}</div></header>
+
+<div class="detail-stack">
+<section class="panel">
+<header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+<dl class="meta-list meta-list--flush">
+<div><dt>{{ 'calendar.field.starts'|trans }}</dt><dd>{{ item.startsAt().format('d. m. Y H:i') }}</dd></div>
+<div><dt>{{ 'calendar.field.ends'|trans }}</dt><dd>{{ item.endsAt().format('d. m. Y H:i') }}</dd></div>
+<div><dt>{{ 'calendar.field.all_day'|trans }}</dt><dd>{{ item.allDay() ? 'common.yes'|trans : 'common.no'|trans }}</dd></div>
+<div class="meta-list__full"><dt>{{ 'calendar.field.description'|trans }}</dt><dd>{{ item.description() ?: '—' }}</dd></div>
+</dl>
+</section>
+
+{% if links is not empty %}
+<section class="panel">
+<header class="panel__head"><h2>{{ 'calendar.links.title'|trans }}</h2></header>
+<ul>{% for l in links %}<li>{{ l.entityType() }}: {{ l.entityId() }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+</div>
+{% endblock %}

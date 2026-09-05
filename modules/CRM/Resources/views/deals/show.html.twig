@@ -1,0 +1,57 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ item.title() }}</h1>
+            <p class="muted">
+                {% if customer %}
+                    <a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
+                {% else %}
+                    {{ 'crm.deals.customer_unavailable'|trans }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="actions">
+            {% if user.can('crm.deals.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.crm.deals.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.crm.deals.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'crm.deals.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-stack">
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.overview'|trans }}</h2>
+            </header>
+            <dl class="meta-list meta-list--flush">
+                <div>
+                    <dt>{{ 'crm.field.stage'|trans }}</dt>
+                    <dd>
+                        {% if user.can('crm.deals.manage') %}
+                            <form method="post" action="{{ url('admin.crm.deals.stage', {id: item.id()}) }}" class="meta-list__action">
+                                {{ csrf_field()|raw }}
+                                <span class="badge">{{ item.stageLabel()|trans }}</span>
+                                <select id="stage" name="stage" class="input" aria-label="{{ 'crm.deals.change_stage'|trans }}" onchange="this.form.submit()">
+                                    {% for s in stages %}
+                                        <option value="{{ s }}" {{ item.stage() == s ? 'selected' : '' }}>{{ ('crm.stage.' ~ s)|trans }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        {% else %}
+                            <span class="badge">{{ item.stageLabel()|trans }}</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div><dt>{{ 'crm.field.amount'|trans }}</dt><dd>{{ item.amountFormatted() }}</dd></div>
+                <div><dt>{{ 'crm.field.due'|trans }}</dt><dd>{{ item.expectedCloseAt() ? item.expectedCloseAt().format('d. m. Y') : '—' }}</dd></div>
+                <div><dt>{{ 'crm.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
+                <div class="meta-list__full"><dt>{{ 'crm.field.note'|trans }}</dt><dd>{{ item.note() ?: '—' }}</dd></div>
+            </dl>
+        </section>
+    </div>
+{% endblock %}

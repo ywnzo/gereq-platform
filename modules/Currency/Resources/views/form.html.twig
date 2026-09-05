@@ -1,0 +1,59 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ item ? 'currency.edit'|trans : 'currency.new'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'currency.save' } %}
+
+    <form method="post" class="form-grid" action="{{ item ? url('admin.currencies.update', {code: item.code()}) : url('admin.currencies.store') }}" data-form="currency.save" x-data="gereqForm"{% if form_errors('currency.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with {
+            name: 'code',
+            label: 'currency.field.code'|trans,
+            required: true,
+            form: 'currency.save',
+            value: item ? item.code() : '',
+            hint: item ? 'currency.hint.code_readonly'|trans : 'currency.hint.code_iso'|trans,
+            readonly: item ? true : false
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'name',
+            label: 'currency.field.name'|trans,
+            required: true,
+            form: 'currency.save',
+            value: item ? item.name() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'symbol',
+            label: 'currency.field.symbol'|trans,
+            required: true,
+            form: 'currency.save',
+            value: item ? item.symbol() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'decimal_places',
+            type: 'number',
+            label: 'currency.field.decimal_places'|trans,
+            form: 'currency.save',
+            value: item ? item.decimalPlaces() : 2
+        } %}
+        {% include 'ui/switch.html.twig' with {
+            name: 'is_active',
+            label: 'currency.field.is_active'|trans,
+            form: 'currency.save',
+            on: item ? item.isActive() : true
+        } %}
+        {% include 'ui/switch.html.twig' with {
+            name: 'is_default',
+            label: 'currency.field.is_default'|trans,
+            form: 'currency.save',
+            on: item ? item.isDefault() : false
+        } %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.currencies.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

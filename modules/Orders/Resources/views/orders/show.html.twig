@@ -1,0 +1,160 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow"><a href="{{ url('admin.orders.index') }}">{{ 'nav.orders'|trans }}</a></p>
+        <h1>{{ item.number() }}</h1>
+        <p class="muted">
+            {% if customer %}<a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a> · {% endif %}
+            <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
+            · {{ item.paymentStatus()|default('unpaid') }}
+        </p>
+    </div>
+    <div class="actions">
+        <button type="button" class="btn btn--ghost" onclick="navigator.clipboard.writeText({{ item.number()|json_encode|e('html_attr') }})">{{ 'common.copy'|trans|default('Kopírovat') }}</button>
+        {% if user.can('orders.manage') and item.canEdit() %}
+            <a class="btn btn--ghost" href="{{ url('admin.orders.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+            <form method="post" action="{{ url('admin.orders.confirm', {id: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--primary" type="submit">{{ 'orders.action.confirm'|trans }}</button></form>
+        {% endif %}
+        {% if user.can('orders.manage') and item.status() == 'confirmed' %}
+            <form method="post" action="{{ url('admin.orders.fulfill', {id: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--primary" type="submit">{{ 'orders.action.fulfill'|trans }}</button></form>
+        {% endif %}
+        {% if user.can('orders.manage') and item.status() not in ['cancelled','fulfilled'] %}
+            <form method="post" action="{{ url('admin.orders.cancel', {id: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--danger" type="submit">{{ 'orders.action.cancel'|trans }}</button></form>
+        {% endif %}
+        {% if user.can('invoices.manage') and item.status() in ['confirmed','fulfilled'] %}
+            <form method="post" action="{{ url('admin.invoices.from_order', {orderId: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--ghost" type="submit">{{ 'orders.action.create_invoice'|trans }}</button></form>
+        {% endif %}
+    </div>
+</header>
+
+<div class="detail-hub" x-data="gereqTabs" data-initial="overview">
+    <div class="design-tabs detail-tabs" role="tablist">
+        <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="lines">{{ 'orders.lines.title'|trans }}{% if lines %}<span class="module-tab-count">{{ lines|length }}</span>{% endif %}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="fulfillment">{{ 'orders.tab.fulfillment'|trans|default('Doprava & platba') }}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="invoices">{{ 'orders.invoices.title'|trans }}{% if invoices %}<span class="module-tab-count">{{ invoices|length }}</span>{% endif %}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="note">{{ 'orders.field.note'|trans|default('Poznámka') }}</button>
+    </div>
+
+    <section class="design-panel" data-panel="overview" role="tabpanel">
+        <div class="detail-stack">
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+                <div class="meta-grid">
+                    <div class="meta-tile"><span>{{ 'orders.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.subtotal'|trans }}</span><strong>{{ item.subtotal() }} {{ item.currency() }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.tax'|trans }}</span><strong>{{ item.taxTotal() }} {{ item.currency() }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.discount'|trans|default('Sleva') }}</span><strong>{{ item.discountTotal() }} {{ item.currency() }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.total'|trans }}</span><strong>{{ item.total() }} {{ item.currency() }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.coupon'|trans|default('Kupón') }}</span><strong>{{ item.couponCode() ?: '—' }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.created'|trans|default('Vytvořeno') }}</span><strong>{{ item.createdAt().format('d. m. Y H:i') }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.payment_status'|trans|default('Platba') }}</span><strong>{{ item.paymentStatus() }}</strong></div>
+                </div>
+            </section>
+            {% if customer %}
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'nav.customers'|trans }}</h2>
+                    <a class="btn btn--ghost btn-sm" href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ 'common.open'|trans|default('Otevřít') }}</a>
+                </header>
+                <div class="meta-grid">
+                    <div class="meta-tile"><span>{{ 'customers.field.name'|trans|default('Jméno') }}</span><strong>{{ customer.name() }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'customers.field.email'|trans }}</span><strong><a href="mailto:{{ customer.email() }}">{{ customer.email() }}</a></strong></div>
+                    <div class="meta-tile"><span>{{ 'customers.field.phone'|trans }}</span><strong>{% if customer.phone() %}<a href="tel:{{ customer.phone() }}">{{ customer.phone() }}</a>{% else %}—{% endif %}</strong></div>
+                </div>
+            </section>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="design-panel" data-panel="lines" role="tabpanel">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'orders.lines.title'|trans }}</h2></header>
+            <div class="table-wrap"><table class="table">
+            <thead><tr><th>{{ 'orders.field.title'|trans }}</th><th>{{ 'orders.field.qty'|trans }}</th><th>{{ 'orders.field.unit_price'|trans }}</th><th>{{ 'orders.field.tax_rate'|trans }}</th><th>{{ 'orders.field.total'|trans }}</th></tr></thead>
+            <tbody>
+            {% for line in lines %}
+            <tr><td>{{ line.title() }}{% if line.sku() %} <span class="muted"><code>{{ line.sku() }}</code></span>{% endif %}</td><td>{{ line.qty() }}</td><td>{{ line.unitPrice() }}</td><td>{{ line.taxRate() }}%</td><td>{{ line.lineTotal() }}</td></tr>
+            {% else %}
+            <tr><td colspan="5" class="muted">{{ 'orders.lines.empty'|trans }}</td></tr>
+            {% endfor %}
+            </tbody></table></div>
+            {% if user.can('orders.manage') and item.canEdit() %}
+            <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.orders.lines.add', {id: item.id()}) }}" data-form="orders.line.save">
+            {{ csrf_field()|raw }}
+            {% include 'ui/select.html.twig' with { name: 'product_id', label: 'orders.field.product'|trans, optional: true, form: 'orders.line.save', value: '', options: productOptions } %}
+            {% include 'ui/input.html.twig' with { name: 'title', label: 'orders.field.title'|trans, optional: true, form: 'orders.line.save', value: '' } %}
+            {% include 'ui/input.html.twig' with { name: 'qty', label: 'orders.field.qty'|trans, required: true, form: 'orders.line.save', value: '1' } %}
+            {% include 'ui/input.html.twig' with { name: 'unit_price', label: 'orders.field.unit_price'|trans, required: true, form: 'orders.line.save', value: '0' } %}
+            {% include 'ui/input.html.twig' with { name: 'tax_rate', label: 'orders.field.tax_rate'|trans, optional: true, form: 'orders.line.save', value: '21' } %}
+            <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'orders.lines.add'|trans }}</button></div>
+            </form>
+            {% endif %}
+        </section>
+    </section>
+
+    <section class="design-panel" data-panel="fulfillment" role="tabpanel">
+        <div class="detail-stack">
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'orders.tab.shipping'|trans|default('Doprava') }}</h2></header>
+                <div class="meta-grid">
+                    <div class="meta-tile"><span>{{ 'orders.field.shipping'|trans|default('Způsob') }}</span><strong>{{ item.shippingMethodName() ?: item.shippingMethodCode() ?: '—' }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.shipping_price'|trans|default('Cena dopravy') }}</span><strong>{{ item.shippingPrice() }} {{ item.currency() }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.parcel_point'|trans|default('Výdejní místo') }}</span><strong>{{ item.parcelPointLabel() ?: item.parcelPointId() ?: '—' }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.tracking'|trans|default('Tracking') }}</span><strong>{{ item.trackingNumber() ?: '—' }}</strong></div>
+                </div>
+                {% set ship = item.shippingAddress() %}
+                {% if ship %}
+                    <div class="meta-tile" style="grid-column:1/-1"><span>{{ 'orders.field.shipping_address'|trans|default('Doručovací adresa') }}</span><strong>{{ ship.name|default('') }}{% if ship.street %}, {{ ship.street }}{% endif %}{% if ship.city %}, {{ ship.zip|default('') }} {{ ship.city }}{% endif %}{% if ship.country %}, {{ ship.country }}{% endif %}</strong></div>
+                {% endif %}
+            </section>
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'orders.tab.payment'|trans|default('Platba') }}</h2></header>
+                <div class="meta-grid">
+                    <div class="meta-tile"><span>{{ 'orders.field.payment_method'|trans|default('Metoda') }}</span><strong>{{ item.paymentMethodName() ?: item.paymentMethodCode() ?: '—' }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'orders.field.payment_status'|trans|default('Stav') }}</span><strong>{{ item.paymentStatus() }}</strong></div>
+                    {% if item.billingAddress() %}
+                    <div class="meta-tile"><span>{{ 'orders.field.billing_address'|trans|default('Fakturační') }}</span><strong>{{ item.billingAddress().street|default('') }} {{ item.billingAddress().city|default('') }}</strong></div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </section>
+
+    <section class="design-panel" data-panel="invoices" role="tabpanel">
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'orders.invoices.title'|trans }}</h2>
+                {% if user.can('invoices.manage') and item.status() in ['confirmed','fulfilled'] %}
+                    <form method="post" action="{{ url('admin.invoices.from_order', {orderId: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--primary btn-sm" type="submit">{{ 'orders.action.create_invoice'|trans }}</button></form>
+                {% endif %}
+            </header>
+            {% if invoices is empty %}
+                <div class="empty"><p>{{ 'orders.invoices.empty'|trans|default('Zatím žádné faktury.') }}</p></div>
+            {% else %}
+                <div class="table-wrap"><table class="table">
+                    <thead><tr><th>{{ 'orders.field.number'|trans|default('Číslo') }}</th><th>{{ 'orders.field.status'|trans }}</th><th>{{ 'orders.field.total'|trans }}</th><th></th></tr></thead>
+                    <tbody>
+                    {% for inv in invoices %}
+                        <tr>
+                            <td><a href="{{ url('admin.invoices.show', {id: inv.id()}) }}">{{ inv.number() }}</a></td>
+                            <td><span class="badge">{{ inv.statusLabel()|trans }}</span></td>
+                            <td>{{ inv.total() }} {{ inv.currency() }}</td>
+                            <td class="table__actions"><a href="{{ url('admin.invoices.pdf', {id: inv.id()}) }}" target="_blank">PDF</a></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table></div>
+            {% endif %}
+        </section>
+    </section>
+
+    <section class="design-panel" data-panel="note" role="tabpanel">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'orders.field.note'|trans|default('Poznámka') }}</h2></header>
+            <div class="g-prose">{{ item.note() ?: ('common.none'|trans) }}</div>
+        </section>
+    </section>
+</div>
+{% endblock %}

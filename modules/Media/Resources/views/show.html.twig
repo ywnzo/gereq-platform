@@ -1,0 +1,41 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ item.title() }}</h1>
+            <p class="muted">{{ item.path() }}</p>
+        </div>
+        <div class="actions">
+            {% if user.can('media.manage') %}
+                <a class="btn btn--ghost" href="{{ url('admin.media.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.media.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'media.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-stack">
+        {% if item.isImage() %}
+            <section class="panel">
+                <p style="margin:0">
+                    <img src="{{ url('admin.media.file', {id: item.id()}) }}" alt="{{ item.alt()|default(item.title()) }}" style="max-width:min(480px,100%);height:auto;border-radius:6px;display:block;">
+                </p>
+            </section>
+        {% endif %}
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush">
+                <div><dt>{{ 'media.field.mime'|trans }}</dt><dd><span class="badge">{{ item.mime() }}</span></dd></div>
+                <div><dt>{{ 'media.field.size'|trans }}</dt><dd>{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB</dd></div>
+                <div><dt>{{ 'media.field.alt'|trans }}</dt><dd>{{ item.alt()|default('—') }}</dd></div>
+                <div><dt>{{ 'media.field.dimensions'|trans }}</dt><dd>{% if item.width() and item.height() %}{{ item.width() }} × {{ item.height() }}{% else %}—{% endif %}</dd></div>
+                <div class="meta-list__full"><dt>{{ 'media.field.path'|trans }}</dt><dd><code>{{ item.path() }}</code></dd></div>
+                <div><dt>{{ 'media.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
+            </dl>
+        </section>
+    </div>
+{% endblock %}

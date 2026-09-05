@@ -1,0 +1,54 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'admin.tokens.title'|trans }}</h1>
+        {% if user.can('developer.tokens.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.developer.tokens.create') }}">{{ icon('plus') }} {{ 'admin.tokens.new'|trans }}</a>
+        {% endif %}
+    </header>
+
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'admin.tokens.name'|trans }}</th>
+                    <th>{{ 'admin.tokens.prefix'|trans }}</th>
+                    <th>{{ 'admin.tokens.scopes'|trans }}</th>
+                    <th>{{ 'admin.tokens.last_used'|trans }}</th>
+                    <th>{{ 'common.status'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>{{ item.name() }}</td>
+                        <td><code>{{ item.tokenPrefix() }}…</code></td>
+                        <td class="muted">{{ item.scopes()|join(', ') }}</td>
+                        <td>{{ item.lastUsedAt() ? item.lastUsedAt().format('d. m. Y H:i') : 'common.none'|trans }}</td>
+                        <td>
+                            {% if item.revokedAt() %}
+                                <span class="badge badge--muted">{{ 'admin.tokens.status.revoked'|trans }}</span>
+                            {% elseif item.isActive() %}
+                                <span class="badge badge--ok">{{ 'admin.tokens.status.active'|trans }}</span>
+                            {% else %}
+                                <span class="badge badge--warn">{{ 'admin.tokens.status.expired'|trans }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="table__actions">
+                            {% if user.can('developer.tokens.manage') and item.isActive() %}
+                                <form method="post" action="{{ url('admin.developer.tokens.revoke', {id: item.id()}) }}" onsubmit="return confirm({{ 'admin.tokens.confirm_revoke'|trans|json_encode|raw }});">
+                                    {{ csrf_field()|raw }}
+                                    <button type="submit" class="btn btn--danger">{{ 'admin.tokens.revoke'|trans }}</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6"><div class="empty"><h2>{{ 'empty.tokens'|trans }}</h2></div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

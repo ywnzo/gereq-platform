@@ -69,7 +69,7 @@ final class Migrator
     }
 
     /**
-     * @return list<array{version: string, ran: bool}>
+     * @return list<array{version: string, ran: bool, ran_at: ?string, file: string}>
      */
     public function status(): array
     {
@@ -77,14 +77,44 @@ final class Migrator
         $items = [];
 
         foreach ($this->modules->discover() as $manifest) {
-            $dir = $manifest->path . '/Database/Migrations';
-            if (!is_dir($dir)) {
-                continue;
+            foreach ($this->statusForModule($manifest->id) as $item) {
+                $items[] = $item;
             }
-            foreach (glob($dir . '/*.php') ?: [] as $file) {
-                $version = $manifest->id . ':' . basename($file, '.php');
-                $items[] = ['version' => $version, 'ran' => $this->ran($version)];
-            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<array{version: string, ran: bool, ran_at: ?string, file: string}>
+     */
+    public function statusForModule(string $moduleId): array
+    {
+        $this->ensureMigrationsTable();
+        $manifest = $this->modules->manifest($moduleId);
+        if ($manifest === null) {
+            return [];
+        }
+
+        $dir = $manifest->path . '/Database/Migrations';
+        if (!is_dir($dir)) {
+            return [];
+        }
+
+        $files = glob($dir . '/*.php') ?: [];
+        sort($files);
+        $items = [];
+
+        foreach ($files as $file) {
+            $basename = basename($file, '.php');
+            $version = $manifest->id . ':' . $basename;
+            $ranAt = $this->ranAt($version);
+            $items[] = [
+                'version' => $version,
+                'ran' => $ranAt !== null,
+                'ran_at' => $ranAt,
+                'file' => $basename . '.php',
+            ];
         }
 
         return $items;
@@ -110,11 +140,22 @@ final class Migrator
 
     private function ran(string $version): bool
     {
-        $result = $this->em->getConnection()->fetchOne(
-            'SELECT version FROM schema_migrations WHERE version = ?',
+        return $this->ranAt($version) !== null;
+    }
+
+    private function ranAt(string $version): ?string
+    {
+        $result = $this->em->getConnection()->fetchAssociative(
+            'SELECT version, ran_at FROM schema_migrations WHERE version = ?',
             [$version]
         );
 
-        return $result !== false && $result !== null;
+        if ($result === false || $result === null) {
+            return null;
+        }
+
+        $ranAt = $result['ran_at'] ?? null;
+
+        return is_string($ranAt) && $ranAt !== '' ? $ranAt : null;
     }
 }

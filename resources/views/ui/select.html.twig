@@ -8,7 +8,7 @@
 {% set required = required|default(false) %}
 {% set optional = optional|default(false) %}
 {% set extra = extra|default('') %}
-{% set placeholder = placeholder|default('Vyberte') %}
+{% set placeholder = placeholder|default('ui.select.placeholder'|trans) %}
 {% set options = options|default([]) %}
 {% set described = [] %}
 {% if hint and not err %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
@@ -17,7 +17,7 @@
 <div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
     {% if label %}
         <span class="g-label" id="{{ id }}-label">
-            <span>{{ label }}{% if optional %} <span class="g-optional">(volitelné)</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+            <span>{{ label }}{% if optional %} <span class="g-optional">({{ 'common.optional'|trans }})</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
         </span>
     {% endif %}
     <div class="g-select" x-data="gereqSelect" data-placeholder="{{ placeholder }}">

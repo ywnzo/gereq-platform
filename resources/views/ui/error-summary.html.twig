@@ -2,8 +2,8 @@
 {% set bag = errors(form_id) %}
 {% if bag %}
     <div class="g-summary" role="alert" tabindex="-1" id="form-errors">
-        <p class="g-summary__kicker">{{ bag|length }} {{ bag|length == 1 ? 'pole vyžaduje' : 'polí vyžaduje' }} úpravu</p>
-        <p class="g-summary__title">Opravte vyznačená pole a odešlete formulář znovu.</p>
+        <p class="g-summary__kicker">{{ (bag|length == 1 ? 'ui.error_summary.one' : 'ui.error_summary.many')|trans({'%count%': bag|length}) }}</p>
+        <p class="g-summary__title">{{ 'ui.error_summary.title'|trans }}</p>
         <ul class="g-summary__list">
             {% for field, message in bag %}
                 <li>

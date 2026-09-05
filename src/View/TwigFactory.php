@@ -7,15 +7,18 @@ namespace Gereq\View;
 use Gereq\Admin\Ui\Icons;
 use Gereq\Auth\Authenticator;
 use Gereq\Debug\DebugBar;
-use Gereq\Http\Router;
-use Gereq\Security\Csrf;
-use Gereq\View\AssetManager;
+use Gereq\Hook\HookManager;
 use Gereq\Http\FormState;
+use Gereq\Http\Router;
+use Gereq\I18n\LocaleCatalog;
+use Gereq\Security\Csrf;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 use Twig\Extension\ProfilerExtension;
 use Twig\Loader\FilesystemLoader;
 use Twig\Profiler\Profile;
+use Twig\TwigFilter;
 use Twig\TwigFunction;
 
 final class TwigFactory
@@ -29,6 +32,9 @@ final class TwigFactory
         private readonly RequestStack $requestStack,
         private readonly Icons $icons,
         private readonly FormState $formState,
+        private readonly HookManager $hooks,
+        private readonly TranslatorInterface $translator,
+        private readonly LocaleCatalog $locales,
         private readonly ?DebugBar $debugBar = null,
     ) {
     }
@@ -52,57 +58,40 @@ final class TwigFactory
             'strict_variables' => false,
         ]);
 
-        $twig->addFunction(new TwigFunction('url', function (string $name, array $params = []): string {
-            $request = $this->requestStack->getCurrentRequest();
+        $runtime = new TwigRuntime(
+            $this->router,
+            $this->csrf,
+            $this->auth,
+            $this->assets,
+            $this->requestStack,
+            $this->icons,
+            $this->formState,
+            $this->hooks,
+            $this->translator,
+            $this->locales,
+        );
 
-            return $this->router->url($name, $params, $request);
-        }));
-
-        $twig->addFunction(new TwigFunction('csrf_field', fn (): string => $this->csrf->field(), ['is_safe' => ['html']]));
-        $twig->addFunction(new TwigFunction('csrf_token', fn (): string => $this->csrf->token()));
-        $twig->addFunction(new TwigFunction('asset', fn (string $entry): string => $this->assets->url($entry)));
-        $twig->addFunction(new TwigFunction('icon', fn (string $name, string $class = ''): string => $this->icons->svg($name, $class), ['is_safe' => ['html']]));
-        $twig->addFunction(new TwigFunction('current_user', fn () => $this->auth->user()));
-        $twig->addFunction(new TwigFunction('route_is', function (string $name): bool {
-            $request = $this->requestStack->getCurrentRequest();
-            if ($request === null) {
-                return false;
-            }
-
-            return $request->attributes->get('_route') === $name
-                || str_starts_with((string) $request->attributes->get('_route'), $name);
-        }));
-        $twig->addFunction(new TwigFunction('flash', function (string $key): mixed {
-            $request = $this->requestStack->getCurrentRequest();
-            if ($request === null || !$request->hasSession()) {
-                return null;
-            }
-
-            $session = $request->getSession();
-            if (!$session instanceof \Symfony\Component\HttpFoundation\Session\Session) {
-                return null;
-            }
-
-            return $session->getFlashBag()->get($key);
-        }));
-        $twig->addFunction(new TwigFunction('csp_nonce', function (): string {
-            return (string) $this->requestStack->getCurrentRequest()?->attributes->get('csp_nonce', '');
-        }));
-        $twig->addFunction(new TwigFunction('old', function (string $key, mixed $default = null, ?string $form = null): mixed {
-            return $this->formState->old($key, $default, $form);
-        }));
-        $twig->addFunction(new TwigFunction('error', function (string $key, ?string $form = null): ?string {
-            return $this->formState->error($key, $form);
-        }));
-        $twig->addFunction(new TwigFunction('errors', function (?string $form = null): array {
-            return $this->formState->errors($form);
-        }));
-        $twig->addFunction(new TwigFunction('has_error', function (string $key, ?string $form = null): bool {
-            return $this->formState->error($key, $form) !== null;
-        }));
-        $twig->addFunction(new TwigFunction('form_errors', function (?string $form = null): bool {
-            return $this->formState->hasErrors($form);
-        }));
+        $twig->addFunction(new TwigFunction('url', [$runtime, 'url']));
+        $twig->addFunction(new TwigFunction('csrf_field', [$runtime, 'csrfField'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('csrf_token', [$runtime, 'csrfToken']));
+        $twig->addFunction(new TwigFunction('asset', [$runtime, 'asset']));
+        $twig->addFunction(new TwigFunction('icon', [$runtime, 'icon'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('current_user', [$runtime, 'currentUser']));
+        $twig->addFunction(new TwigFunction('route_is', [$runtime, 'routeIs']));
+        $twig->addFunction(new TwigFunction('flash', [$runtime, 'flash']));
+        $twig->addFunction(new TwigFunction('csp_nonce', [$runtime, 'cspNonce']));
+        $twig->addFunction(new TwigFunction('old', [$runtime, 'old']));
+        $twig->addFunction(new TwigFunction('error', [$runtime, 'error']));
+        $twig->addFunction(new TwigFunction('errors', [$runtime, 'errors']));
+        $twig->addFunction(new TwigFunction('has_error', [$runtime, 'hasError']));
+        $twig->addFunction(new TwigFunction('form_errors', [$runtime, 'formErrors']));
+        $twig->addFunction(new TwigFunction('do_action', [$runtime, 'doAction']));
+        $twig->addFunction(new TwigFunction('apply_filters', [$runtime, 'applyFilters']));
+        $twig->addFunction(new TwigFunction('trans', [$runtime, 'trans']));
+        $twig->addFunction(new TwigFunction('__', [$runtime, 'trans']));
+        $twig->addFunction(new TwigFunction('app_locale', [$runtime, 'appLocale']));
+        $twig->addFunction(new TwigFunction('available_locales', [$runtime, 'availableLocales']));
+        $twig->addFilter(new TwigFilter('trans', [$runtime, 'trans']));
 
         if ($this->debugBar !== null && $this->debugBar->enabled()) {
             $profile = new Profile();

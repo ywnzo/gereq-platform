@@ -30,17 +30,19 @@ class HttpException extends \RuntimeException implements HttpExceptionInterface
         return $this->headers;
     }
 
+    /** Default messages are translation keys resolved by ExceptionHandler. */
     public static function defaultMessage(int $status): string
     {
         return match ($status) {
-            401 => 'Pro pokračování se musíte přihlásit.',
-            403 => 'Na tuhle akci nemáte oprávnění.',
-            404 => 'Požadovaná adresa neexistuje.',
-            405 => 'Tato HTTP metoda tu není povolená.',
-            419 => 'Platnost formuláře vypršela. Obnovte stránku a zkuste to znovu.',
-            429 => 'Příliš mnoho požadavků. Zkuste to za chvíli.',
-            503 => 'Služba je dočasně nedostupná.',
-            default => 'Došlo k neočekávané chybě.',
+            401 => 'errors.401.message',
+            403 => 'errors.403.message',
+            404 => 'errors.404.message',
+            405 => 'errors.405.message',
+            419 => 'errors.419.message',
+            422 => 'validation.form_failed',
+            429 => 'errors.429.message',
+            503 => 'errors.503.message',
+            default => 'errors.500.message',
         };
     }
 }

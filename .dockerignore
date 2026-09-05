@@ -1,0 +1,15 @@
+.git
+.github
+.phpstan-tmp
+.phpunit.cache
+node_modules
+vendor
+storage/logs/*
+storage/cache/*
+storage/sessions/*
+storage/tmp/*
+storage/uploads/*
+*.log
+_UKAZKY_
+bun.lock
+README.md

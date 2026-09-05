@@ -1,0 +1,68 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'newsletter.subscribers.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.newsletter.campaigns.index') }}">{{ 'newsletter.campaigns.title'|trans }}</a>
+        {% if user.can('newsletter.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.newsletter.subscribers.create') }}">{{ icon('plus') }} {{ 'newsletter.subscribers.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<form class="toolbar" method="get">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
+    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'newsletter.subscribers.search'|trans }}">
+    <select name="status" class="input" onchange="this.form.submit()">
+        <option value="">{{ 'newsletter.all_statuses'|trans }}</option>
+        {% for s in statuses %}
+            <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('newsletter.subscriber.status.' ~ s)|trans }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+{% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.email'|trans, column: 'email', query: { status: status } } %}
+<th>{{ 'newsletter.field.name'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.status'|trans, column: 'status', query: { status: status } } %}
+<th>{{ 'newsletter.field.source'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.subscribed_at'|trans, column: 'subscribedAt', query: { status: status } } %}
+<th></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td><strong>{{ item.email() }}</strong></td>
+    <td>{{ item.name() ?: '—' }}</td>
+    <td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+    <td>{{ item.source() ?: '—' }}</td>
+    <td class="is-mute">{{ item.subscribedAt().format('d. m. Y') }}</td>
+    <td class="table__actions" x-data="rowMenu" @click.outside="close">
+        <button type="button" class="icon-btn" x-ref="button" @click="toggle">{{ icon('dots') }}</button>
+        <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+            {% if user.can('newsletter.manage') %}
+                {% if item.status() == 'subscribed' %}
+                <form method="post" action="{{ url('admin.newsletter.subscribers.unsubscribe', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <button type="submit">{{ 'newsletter.action.unsubscribe'|trans }}</button>
+                </form>
+                {% endif %}
+                <form method="post" action="{{ url('admin.newsletter.subscribers.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'newsletter.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% else %}
+<tr><td colspan="6"><div class="empty"><h2>{{ 'newsletter.subscribers.empty'|trans }}</h2></div></td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% include 'ui/table_footer.html.twig' %}
+{% endblock %}

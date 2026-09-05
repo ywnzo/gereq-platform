@@ -6,12 +6,14 @@ namespace Gereq\Validation;
 
 use Gereq\Hook\HookManager;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class Validator
 {
     public function __construct(
         private readonly ValidationRegistry $registry,
         private readonly HookManager $hooks,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -82,7 +84,12 @@ final class Validator
                 $normalized[(string) $field] = (string) $message;
             }
 
-            throw new ValidationException($normalized, $this->safeInput($data), $form);
+            throw new ValidationException(
+                $normalized,
+                $this->safeInput($data),
+                $form,
+                $this->translator->trans('validation.form_failed'),
+            );
         }
 
         return $validated;
@@ -108,57 +115,65 @@ final class Validator
 
         return match ($rule) {
             'nullable' => null,
-            'required' => $this->isEmpty($value) ? 'Toto pole je povinné.' : null,
-            'filled' => $this->isEmpty($value) ? 'Vyplňte toto pole.' : null,
+            'required' => $this->isEmpty($value) ? $this->t('validation.required') : null,
+            'filled' => $this->isEmpty($value) ? $this->t('validation.filled') : null,
             'email' => $this->isEmpty($value) || filter_var((string) $value, FILTER_VALIDATE_EMAIL)
                 ? null
-                : 'Zadejte platný e-mail.',
+                : $this->t('validation.email'),
             'url' => $this->isEmpty($value) || filter_var((string) $value, FILTER_VALIDATE_URL)
                 ? null
-                : 'Zadejte platnou URL.',
-            'numeric' => $this->isEmpty($value) || is_numeric($value) ? null : 'Zadejte číslo.',
+                : $this->t('validation.url'),
+            'numeric' => $this->isEmpty($value) || is_numeric($value) ? null : $this->t('validation.numeric'),
             'integer' => $this->isEmpty($value) || filter_var($value, FILTER_VALIDATE_INT) !== false
                 ? null
-                : 'Zadejte celé číslo.',
+                : $this->t('validation.integer'),
             'boolean' => in_array($value, [true, false, 0, 1, '0', '1', 'true', 'false', 'on', 'off', ''], true)
                 ? null
-                : 'Neplatná hodnota.',
+                : $this->t('validation.boolean'),
             'accepted' => in_array($value, [true, 1, '1', 'on', 'yes', 'true'], true)
                 ? null
-                : 'Toto pole musí být potvrzené.',
+                : $this->t('validation.accepted'),
             'min' => $this->min($value, (int) ($params[0] ?? 0)),
             'max' => $this->max($value, (int) ($params[0] ?? 0)),
             'between' => $this->between($value, (int) ($params[0] ?? 0), (int) ($params[1] ?? 0)),
             'in' => $this->isEmpty($value) || in_array((string) $value, $params, true)
                 ? null
-                : 'Vyberte jednu z nabízených hodnot.',
+                : $this->t('validation.in'),
             'not_in' => $this->isEmpty($value) || !in_array((string) $value, $params, true)
                 ? null
-                : 'Tato hodnota není povolená.',
+                : $this->t('validation.not_in'),
             'confirmed' => (string) $value === (string) ($data[$field . '_confirmation'] ?? '')
                 ? null
-                : 'Potvrzení se neshoduje.',
+                : $this->t('validation.confirmed'),
             'same' => (string) $value === (string) ($data[$params[0] ?? ''] ?? '')
                 ? null
-                : 'Hodnoty se neshodují.',
+                : $this->t('validation.same'),
             'different' => (string) $value !== (string) ($data[$params[0] ?? ''] ?? '')
                 ? null
-                : 'Hodnoty se musí lišit.',
+                : $this->t('validation.different'),
             'regex' => $this->regex($value, $params[0] ?? ''),
             'date' => $this->isEmpty($value) || strtotime((string) $value) !== false
                 ? null
-                : 'Zadejte platné datum.',
+                : $this->t('validation.date'),
             'alpha' => $this->isEmpty($value) || preg_match('/^[\p{L}]+$/u', (string) $value)
                 ? null
-                : 'Použijte jen písmena.',
+                : $this->t('validation.alpha'),
             'alpha_dash' => $this->isEmpty($value) || preg_match('/^[\p{L}0-9_-]+$/u', (string) $value)
                 ? null
-                : 'Použijte jen písmena, čísla, pomlčku nebo podtržítko.',
+                : $this->t('validation.alpha_dash'),
             'json' => $this->isEmpty($value) || $this->isJson((string) $value)
                 ? null
-                : 'Zadejte platný JSON.',
-            default => throw new \InvalidArgumentException('Neznámé validační pravidlo „' . $rule . '“.'),
+                : $this->t('validation.json'),
+            default => throw new \InvalidArgumentException(
+                $this->t('validation.unknown_rule', ['%rule%' => $rule]),
+            ),
         };
+    }
+
+    /** @param array<string, string|int|float> $parameters */
+    private function t(string $id, array $parameters = []): string
+    {
+        return $this->translator->trans($id, $parameters);
     }
 
     private function min(mixed $value, int $min): ?string
@@ -167,12 +182,16 @@ final class Validator
             return null;
         }
         if (is_numeric($value) && !is_string($value)) {
-            return (float) $value >= $min ? null : 'Minimální hodnota je ' . $min . '.';
+            return (float) $value >= $min
+                ? null
+                : $this->t('validation.min.numeric', ['%min%' => $min]);
         }
 
         $length = mb_strlen((string) $value);
 
-        return $length >= $min ? null : 'Zadejte alespoň ' . $min . ' znaků.';
+        return $length >= $min
+            ? null
+            : $this->t('validation.min.string', ['%min%' => $min]);
     }
 
     private function max(mixed $value, int $max): ?string
@@ -181,12 +200,16 @@ final class Validator
             return null;
         }
         if (is_numeric($value) && !is_string($value)) {
-            return (float) $value <= $max ? null : 'Maximální hodnota je ' . $max . '.';
+            return (float) $value <= $max
+                ? null
+                : $this->t('validation.max.numeric', ['%max%' => $max]);
         }
 
         $length = mb_strlen((string) $value);
 
-        return $length <= $max ? null : 'Maximálně ' . $max . ' znaků.';
+        return $length <= $max
+            ? null
+            : $this->t('validation.max.string', ['%max%' => $max]);
     }
 
     private function between(mixed $value, int $min, int $max): ?string
@@ -197,15 +220,15 @@ final class Validator
     private function regex(mixed $value, string $pattern): ?string
     {
         if ($this->isEmpty($value) || $pattern === '') {
-            return $pattern === '' ? 'Neplatný vzor.' : null;
+            return $pattern === '' ? $this->t('validation.regex.invalid') : null;
         }
 
         $ok = @preg_match($pattern, (string) $value);
         if ($ok === false) {
-            return 'Neplatný vzor.';
+            return $this->t('validation.regex.invalid');
         }
 
-        return $ok === 1 ? null : 'Hodnota má neplatný formát.';
+        return $ok === 1 ? null : $this->t('validation.regex.format');
     }
 
     private function isJson(string $value): bool

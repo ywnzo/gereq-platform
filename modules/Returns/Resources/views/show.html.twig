@@ -1,0 +1,57 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><div><h1>{{ item.number() }}</h1>
+<p class="muted">{{ 'returns.field.order'|trans }}: <code>{{ item.orderId() }}</code>
+{% if item.customerId() %} · {{ 'returns.field.customer'|trans }}: <code>{{ item.customerId() }}</code>{% endif %}
+</p></div>
+{% if user.can('returns.manage') %}
+<div class="actions">
+<form method="post" action="{{ url('admin.returns.destroy',{id:item.id()}) }}" onsubmit="return confirm('{{ 'returns.confirm_delete'|trans|e('js') }}');">{{ csrf_field()|raw }}
+<button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button></form>
+</div>
+{% endif %}
+</header>
+
+<div class="detail-stack">
+<section class="panel">
+<header class="panel__head"><h2>{{ 'returns.field.status'|trans }}</h2></header>
+{% if user.can('returns.manage') %}
+<form method="post" class="form-grid" action="{{ url('admin.returns.status',{id:item.id()}) }}">
+{{ csrf_field()|raw }}
+{% include 'ui/select.html.twig' with { name:'status', label:'returns.field.status'|trans, value:item.status(), options:[
+{value:'requested',label:'returns.status.requested'|trans},{value:'approved',label:'returns.status.approved'|trans},
+{value:'rejected',label:'returns.status.rejected'|trans},{value:'received',label:'returns.status.received'|trans},
+{value:'refunded',label:'returns.status.refunded'|trans},{value:'closed',label:'returns.status.closed'|trans}
+] } %}
+{% include 'ui/select.html.twig' with { name:'resolution', label:'returns.field.resolution'|trans, optional:true, value:item.resolution()|default(''), options:[
+{value:'',label:'—'},{value:'refund',label:'returns.resolution.refund'|trans},{value:'exchange',label:'returns.resolution.exchange'|trans},
+{value:'store_credit',label:'returns.resolution.store_credit'|trans},{value:'none',label:'returns.resolution.none'|trans}
+] } %}
+{% include 'ui/input.html.twig' with { name:'refund_amount', label:'returns.field.refund_amount'|trans, optional:true, value:item.refundAmount()|default('') } %}
+{% include 'ui/textarea.html.twig' with { name:'note', label:'returns.field.note'|trans, optional:true, value:item.note()|default('') } %}
+<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button></div>
+</form>
+{% else %}
+<p><span class="badge">{{ item.statusLabel()|trans }}</span>
+{% if item.resolutionLabel() %} · {{ item.resolutionLabel()|trans }}{% endif %}
+{% if item.refundAmount() %} · {{ item.refundAmount() }} {{ item.currency() }}{% endif %}
+</p>
+{% if item.note() %}<p class="muted">{{ item.note() }}</p>{% endif %}
+{% endif %}
+<p class="muted">{{ 'returns.field.reason'|trans }}: {{ item.reason() }}</p>
+</section>
+
+<section class="panel">
+<header class="panel__head"><h2>{{ 'returns.items'|trans }}</h2></header>
+<div class="table-wrap"><table class="table"><thead><tr>
+<th>{{ 'returns.field.title'|trans }}</th><th>{{ 'returns.field.qty'|trans }}</th>
+<th>{{ 'returns.field.product'|trans }}</th><th>{{ 'returns.field.item_reason'|trans }}</th>
+</tr></thead>
+<tbody>{% for line in lines %}
+<tr><td>{{ line.title() }}</td><td>{{ line.qty() }}</td>
+<td>{{ line.productId()|default('—') }}</td><td>{{ line.reason()|default('—') }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">{{ 'returns.items.empty'|trans }}</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+</div>
+{% endblock %}

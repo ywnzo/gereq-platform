@@ -2,24 +2,33 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>Profil</h1>
+        <h1>{{ 'profile.title'|trans }}</h1>
     </header>
     <form method="post" action="{{ url('admin.profile.update') }}" class="form-grid">
         {{ csrf_field()|raw }}
         <label class="field">
-            <span>Jméno</span>
+            <span>{{ 'profile.name'|trans }}</span>
             <input type="text" name="name" value="{{ user.name() }}" required>
         </label>
         <label class="field">
-            <span>E-mail</span>
+            <span>{{ 'profile.email'|trans }}</span>
             <input type="email" value="{{ user.email() }}" disabled>
         </label>
+        <label class="field">
+            <span>{{ 'profile.locale'|trans }}</span>
+            <select name="locale">
+                <option value="_default" {{ user.locale() is null ? 'selected' : '' }}>{{ 'profile.locale.default'|trans }}</option>
+                {% for code, label in locales %}
+                    <option value="{{ code }}" {{ user.locale() == code ? 'selected' : '' }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
         <label class="field field--full">
-            <span>Nové heslo</span>
-            <input type="password" name="password" minlength="10" placeholder="Ponechte prázdné, pokud neměníte">
+            <span>{{ 'profile.password'|trans }}</span>
+            <input type="password" name="password" minlength="10" placeholder="{{ 'profile.password.hint'|trans }}">
         </label>
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">Uložit profil</button>
+            <button class="btn btn--primary" type="submit">{{ 'profile.save'|trans }}</button>
         </div>
     </form>
 {% endblock %}

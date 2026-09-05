@@ -17,6 +17,7 @@ use Gereq\User\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class UserController extends Controller
@@ -31,6 +32,7 @@ final class UserController extends Controller
         private readonly CommandPalette $palette,
         private readonly PasswordHasher $hasher,
         private readonly Auditor $auditor,
+        private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -46,7 +48,7 @@ final class UserController extends Controller
         $users = $qb->getQuery()->getResult();
 
         return $this->page('admin/users/index.html.twig', [
-            'pageTitle' => 'Uživatelé',
+            'pageTitle' => $this->translator->trans('admin.users.title'),
             'users' => $users,
             'search' => $search,
         ]);
@@ -55,7 +57,7 @@ final class UserController extends Controller
     public function create(): Response
     {
         return $this->page('admin/users/form.html.twig', [
-            'pageTitle' => 'Nový uživatel',
+            'pageTitle' => $this->translator->trans('admin.users.new'),
             'item' => null,
             'roles' => $this->em->getRepository(Role::class)->findBy([], ['label' => 'ASC']),
         ]);
@@ -68,13 +70,13 @@ final class UserController extends Controller
         $password = (string) $request->request->get('password');
 
         if ($name === '' || $email === '' || strlen($password) < 10) {
-            $this->flash('error', 'Vyplňte jméno, e-mail a heslo (min. 10 znaků).');
+            $this->flash('error', $this->translator->trans('admin.users.validation'));
 
             return $this->redirect('admin.users.create');
         }
 
         if ($this->em->getRepository(User::class)->findOneBy(['email' => $email])) {
-            $this->flash('error', 'Uživatel s tímto e-mailem už existuje.');
+            $this->flash('error', $this->translator->trans('admin.users.exists'));
 
             return $this->redirect('admin.users.create');
         }
@@ -84,7 +86,7 @@ final class UserController extends Controller
         $this->em->persist($user);
         $this->em->flush();
         $this->auditor->log('user.created', 'user', $user->id(), null, ['email' => $email]);
-        $this->flash('success', 'Uživatel byl vytvořen.');
+        $this->flash('success', $this->translator->trans('admin.users.created'));
 
         return $this->redirect('admin.users.index');
     }
@@ -93,11 +95,11 @@ final class UserController extends Controller
     {
         $user = $this->em->find(User::class, $id);
         if (!$user instanceof User) {
-            $this->abort(404, 'Uživatel neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.users.not_found'));
         }
 
         return $this->page('admin/users/form.html.twig', [
-            'pageTitle' => 'Upravit uživatele',
+            'pageTitle' => $this->translator->trans('admin.users.edit'),
             'item' => $user,
             'roles' => $this->em->getRepository(Role::class)->findBy([], ['label' => 'ASC']),
         ]);
@@ -107,7 +109,7 @@ final class UserController extends Controller
     {
         $user = $this->em->find(User::class, $id);
         if (!$user instanceof User) {
-            $this->abort(404, 'Uživatel neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.users.not_found'));
         }
 
         $old = ['name' => $user->name(), 'email' => $user->email(), 'status' => $user->status()];
@@ -117,7 +119,7 @@ final class UserController extends Controller
         $password = (string) $request->request->get('password');
         if ($password !== '') {
             if (strlen($password) < 10) {
-                $this->flash('error', 'Heslo musí mít alespoň 10 znaků.');
+                $this->flash('error', $this->translator->trans('admin.users.password_min'));
 
                 return $this->redirect('admin.users.edit', ['id' => $id]);
             }
@@ -132,7 +134,7 @@ final class UserController extends Controller
             'email' => $user->email(),
             'status' => $user->status(),
         ]);
-        $this->flash('success', 'Uživatel byl uložen.');
+        $this->flash('success', $this->translator->trans('admin.users.saved'));
 
         return $this->redirect('admin.users.index');
     }
@@ -141,11 +143,11 @@ final class UserController extends Controller
     {
         $user = $this->em->find(User::class, $id);
         if (!$user instanceof User) {
-            $this->abort(404, 'Uživatel neexistuje.');
+            $this->abort(404, $this->translator->trans('admin.users.not_found'));
         }
 
         if ($this->auth->id() === $user->id()) {
-            $this->flash('error', 'Nemůžete smazat vlastní účet.');
+            $this->flash('error', $this->translator->trans('admin.users.cannot_delete_self'));
 
             return $this->redirect('admin.users.index');
         }
@@ -153,7 +155,7 @@ final class UserController extends Controller
         $this->em->remove($user);
         $this->em->flush();
         $this->auditor->log('user.deleted', 'user', $id);
-        $this->flash('success', 'Uživatel byl smazán.');
+        $this->flash('success', $this->translator->trans('admin.users.deleted'));
 
         return $this->redirect('admin.users.index');
     }

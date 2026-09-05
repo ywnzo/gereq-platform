@@ -16,7 +16,7 @@ final class ValidationException extends HttpException
         private readonly array $errors,
         private readonly array $input = [],
         private readonly string $form = '',
-        string $message = 'Opravte vyznačená pole a zkuste to znovu.',
+        string $message = 'validation.form_failed',
         private readonly ?string $redirectTo = null,
     ) {
         parent::__construct(422, $message);

@@ -58,6 +58,19 @@ function error(string $key, ?string $form = null): ?string
     return gereq()->make(\Gereq\Http\FormState::class)->error($key, $form);
 }
 
+/** @param array<string, mixed> $parameters */
+function __(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+{
+    return gereq()->make(\Symfony\Contracts\Translation\TranslatorInterface::class)
+        ->trans($id, $parameters, $domain, $locale);
+}
+
+/** @param array<string, mixed> $parameters */
+function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
+{
+    return __($id, $parameters, $domain, $locale);
+}
+
 function dump(mixed ...$values): mixed
 {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0] ?? [];

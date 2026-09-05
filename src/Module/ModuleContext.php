@@ -8,8 +8,10 @@ use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Dashboard\Dashboard;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Resource\ResourceRegistrar;
+use Gereq\Api\ApiRegistry;
 use Gereq\Config\Repository;
 use Gereq\Event\EventBus;
+use Gereq\Event\EventRegistry;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Router;
 use Gereq\Setting\Settings;
@@ -32,6 +34,8 @@ final class ModuleContext
         private readonly CommandPalette $commandPalette,
         private readonly ResourceRegistrar $resources,
         private readonly Repository $config,
+        private readonly ApiRegistry $api,
+        private readonly EventRegistry $eventRegistry,
     ) {
     }
 
@@ -53,6 +57,16 @@ final class ModuleContext
     public function events(): EventBus
     {
         return $this->events;
+    }
+
+    public function platformEvents(): EventRegistry
+    {
+        return $this->eventRegistry;
+    }
+
+    public function api(): ApiRegistry
+    {
+        return $this->api;
     }
 
     public function router(): Router

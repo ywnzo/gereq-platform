@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Audit\Auditor;
 use Gereq\User\Entity\Permission;
 use Gereq\User\PermissionRegistry;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ModuleManager
 {
@@ -22,6 +23,7 @@ final class ModuleManager
         private readonly EntityManagerInterface $em,
         private readonly PermissionRegistry $permissionRegistry,
         private readonly Auditor $auditor,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -116,11 +118,10 @@ final class ModuleManager
             }
 
             if (isset($other->requires[$id])) {
-                throw new \RuntimeException(sprintf(
-                    'Modul %s nelze vypnout, protože na něm závisí aktivní modul %s.',
-                    $id,
-                    $other->name
-                ));
+                throw new \RuntimeException($this->translator->trans('modules.error.disable_dependent', [
+                    '%id%' => $id,
+                    '%dependent%' => $other->name,
+                ]));
             }
         }
 
@@ -196,7 +197,7 @@ final class ModuleManager
     {
         $manifest = $this->manifest($id);
         if ($manifest === null) {
-            throw new \RuntimeException(sprintf('Modul "%s" nebyl nalezen.', $id));
+            throw new \RuntimeException($this->translator->trans('modules.error.not_found', ['%id%' => $id]));
         }
 
         return $manifest;
@@ -206,7 +207,9 @@ final class ModuleManager
     {
         $missing = $this->missingDependencies($manifest);
         if ($missing !== []) {
-            throw new \RuntimeException('Chybí závislosti: ' . implode(', ', $missing));
+            throw new \RuntimeException($this->translator->trans('modules.error.missing_deps', [
+                '%deps%' => implode(', ', $missing),
+            ]));
         }
     }
 

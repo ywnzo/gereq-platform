@@ -10,6 +10,7 @@ use Gereq\User\Entity\User;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class FileManager
 {
@@ -19,6 +20,7 @@ final class FileManager
         private readonly EntityManagerInterface $em,
         private readonly Repository $config,
         private readonly string $basePath,
+        private readonly TranslatorInterface $translator,
     ) {
         $root = $this->basePath . '/' . trim((string) $this->config->get('files.local_path', 'storage/uploads'), '/');
         if (!is_dir($root)) {
@@ -32,20 +34,20 @@ final class FileManager
     {
         $max = (int) $this->config->get('files.max_size', 10 * 1024 * 1024);
         if ($uploadedFile->getSize() > $max) {
-            throw new \RuntimeException('Soubor je příliš velký.');
+            throw new \RuntimeException($this->translator->trans('files.too_large', ['%max%' => $max]));
         }
 
         $mime = (string) ($uploadedFile->getMimeType() ?? 'application/octet-stream');
         $allowed = $this->config->get('files.allowed_mimes', []);
         if (is_array($allowed) && $allowed !== [] && !in_array($mime, $allowed, true)) {
-            throw new \RuntimeException('Tento typ souboru není povolen.');
+            throw new \RuntimeException($this->translator->trans('files.mime_not_allowed', ['%mime%' => $mime]));
         }
 
         $name = bin2hex(random_bytes(16)) . '.' . ($uploadedFile->guessExtension() ?: 'bin');
         $path = date('Y/m') . '/' . $name;
         $contents = file_get_contents($uploadedFile->getPathname());
         if ($contents === false) {
-            throw new \RuntimeException('Soubor nelze přečíst.');
+            throw new \RuntimeException($this->translator->trans('files.unreadable'));
         }
 
         $this->filesystem->write($path, $contents);

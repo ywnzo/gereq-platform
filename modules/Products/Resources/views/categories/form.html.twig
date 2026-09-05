@@ -1,0 +1,32 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ item ? 'products.categories.edit'|trans : 'products.categories.new'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'products.category.save' } %}
+
+    <form method="post" class="form-grid" action="{{ item ? url('admin.products.categories.update', {id: item.id()}) : url('admin.products.categories.store') }}" data-form="products.category.save" x-data="gereqForm"{% if form_errors('products.category.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with {
+            name: 'name',
+            label: 'products.categories.field.name'|trans,
+            required: true,
+            form: 'products.category.save',
+            value: item ? item.name() : ''
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'slug',
+            label: 'products.categories.field.slug'|trans,
+            optional: true,
+            form: 'products.category.save',
+            value: item ? item.slug() : '',
+            hint: 'products.categories.field.slug.hint'|trans
+        } %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.products.categories.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

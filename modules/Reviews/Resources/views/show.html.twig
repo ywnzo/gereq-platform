@@ -1,0 +1,29 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><div><h1>{{ item.title()|default(item.authorName()) }}</h1>
+<p class="muted">{{ item.authorName() }}{% if item.authorEmail() %} · {{ item.authorEmail() }}{% endif %}
+ · {{ item.rating() }}/5 · <span class="badge">{{ item.statusLabel()|trans }}</span></p></div>
+{% if user.can('reviews.manage') %}
+<div class="actions">
+{% if item.status()!='approved' %}
+<form method="post" action="{{ url('admin.reviews.approve',{id:item.id()}) }}">{{ csrf_field()|raw }}
+<button class="btn btn--primary" type="submit">{{ 'reviews.action.approve'|trans }}</button></form>
+{% endif %}
+{% if item.status()!='rejected' %}
+<form method="post" action="{{ url('admin.reviews.reject',{id:item.id()}) }}">{{ csrf_field()|raw }}
+<button class="btn btn--ghost" type="submit">{{ 'reviews.action.reject'|trans }}</button></form>
+{% endif %}
+<form method="post" action="{{ url('admin.reviews.destroy',{id:item.id()}) }}" onsubmit="return confirm('{{ 'reviews.confirm_delete'|trans|e('js') }}');">{{ csrf_field()|raw }}
+<button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button></form>
+</div>
+{% endif %}
+</header>
+
+<section class="panel">
+<p><strong>{{ 'reviews.field.product'|trans }}:</strong> <code>{{ item.productId() }}</code>
+{% if average is not null %} · {{ 'reviews.field.average'|trans }}: {{ average }}{% endif %}</p>
+{% if item.customerId() %}<p class="muted">{{ 'reviews.field.author'|trans }} ID: <code>{{ item.customerId() }}</code></p>{% endif %}
+<div class="prose">{{ item.body()|nl2br }}</div>
+<p class="muted">{{ item.createdAt().format('d. m. Y H:i') }}</p>
+</section>
+{% endblock %}

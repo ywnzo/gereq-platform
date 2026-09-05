@@ -14,8 +14,12 @@ use Gereq\Console\Command\ModuleDisableCommand;
 use Gereq\Console\Command\ModuleEnableCommand;
 use Gereq\Console\Command\ModuleListCommand;
 use Gereq\Console\Command\QueueWorkCommand;
+use Gereq\Console\Command\SeedDemoCommand;
 use Gereq\Console\Command\ServeCommand;
+use Gereq\Console\Command\ServeDockerCommand;
+use Gereq\Console\Command\TwigTypesCommand;
 use Gereq\Console\Command\UserCreateCommand;
+use Modules\Currency\Console\SyncRatesCommand;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
@@ -55,7 +59,11 @@ final class ConsoleKernel
             CacheClearCommand::class,
             QueueWorkCommand::class,
             UserCreateCommand::class,
+            SeedDemoCommand::class,
             ServeCommand::class,
+            ServeDockerCommand::class,
+            TwigTypesCommand::class,
+            SyncRatesCommand::class,
         ];
     }
 }

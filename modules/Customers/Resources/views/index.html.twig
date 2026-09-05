@@ -2,19 +2,21 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>Zákazníci</h1>
+        <h1>{{ 'customers.title'|trans }}</h1>
         {% if user.can('customers.create') %}
-            <a class="btn btn--primary" href="{{ url('admin.customers.create') }}">{{ icon('plus') }} Přidat zákazníka</a>
+            <a class="btn btn--primary" href="{{ url('admin.customers.create') }}">{{ icon('plus') }} {{ 'customers.add'|trans }}</a>
         {% endif %}
     </header>
 
     <form class="toolbar" method="get">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="Hledat jméno, e-mail, firmu…">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'customers.search'|trans }}">
         <select name="status" class="input" onchange="this.form.submit()">
-            <option value="">Všechny stavy</option>
-            <option value="active" {{ status == 'active' ? 'selected' : '' }}>Aktivní</option>
-            <option value="lead" {{ status == 'lead' ? 'selected' : '' }}>Lead</option>
-            <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>Neaktivní</option>
+            <option value="">{{ 'common.all_statuses'|trans }}</option>
+            <option value="active" {{ status == 'active' ? 'selected' : '' }}>{{ 'customers.status.active'|trans }}</option>
+            <option value="lead" {{ status == 'lead' ? 'selected' : '' }}>{{ 'customers.status.lead'|trans }}</option>
+            <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>{{ 'customers.status.inactive'|trans }}</option>
         </select>
     </form>
 
@@ -22,11 +24,11 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th><a href="?q={{ search }}&status={{ status }}&sort=name&dir={{ sort == 'name' and dir == 'asc' ? 'desc' : 'asc' }}">Jméno</a></th>
-                    <th><a href="?q={{ search }}&status={{ status }}&sort=email&dir={{ sort == 'email' and dir == 'asc' ? 'desc' : 'asc' }}">E-mail</a></th>
-                    <th>Telefon</th>
-                    <th><a href="?q={{ search }}&status={{ status }}&sort=company&dir={{ sort == 'company' and dir == 'asc' ? 'desc' : 'asc' }}">Firma</a></th>
-                    <th>Stav</th>
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.name'|trans, column: 'name', query: { status: status } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.email'|trans, column: 'email', query: { status: status } } %}
+                    <th>{{ 'customers.field.phone'|trans }}</th>
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.company'|trans, column: 'company', query: { status: status } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.status'|trans, column: 'status', query: { status: status } } %}
                     <th></th>
                 </tr>
             </thead>
@@ -40,24 +42,24 @@
                             </a>
                         </td>
                         <td>{{ item.email() }}</td>
-                        <td>{{ item.phone() ?: '—' }}</td>
+                        <td class="is-mute">{{ item.phone() ?: '—' }}</td>
                         <td>{{ item.company() ?: '—' }}</td>
                         <td>
                             <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
-                                {{ item.statusLabel() }}
+                                {{ item.statusLabel()|trans }}
                             </span>
                         </td>
-                        <td class="table__actions" x-data="rowMenu">
-                            <button type="button" class="icon-btn" @click="toggle">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" :class="menuClass" @click.outside="close">
-                                <a href="{{ url('admin.customers.show', {id: item.id()}) }}">Detail</a>
+                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
+                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
+                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                                <a href="{{ url('admin.customers.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
                                 {% if user.can('customers.edit') %}
-                                    <a href="{{ url('admin.customers.edit', {id: item.id()}) }}">Upravit</a>
+                                    <a href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                                 {% endif %}
                                 {% if user.can('customers.delete') %}
                                     <form method="post" action="{{ url('admin.customers.destroy', {id: item.id()}) }}">
                                         {{ csrf_field()|raw }}
-                                        <button type="submit">Smazat</button>
+                                        <button type="submit">{{ 'common.delete'|trans }}</button>
                                     </form>
                                 {% endif %}
                             </div>
@@ -67,8 +69,8 @@
                     <tr>
                         <td colspan="6">
                             <div class="empty">
-                                <h2>Žádní zákazníci</h2>
-                                <p>Přidejte prvního zákazníka, nebo upravte filtry.</p>
+                                <h2>{{ 'customers.empty'|trans }}</h2>
+                                <p>{{ 'customers.empty.hint'|trans }}</p>
                             </div>
                         </td>
                     </tr>
@@ -77,18 +79,5 @@
         </table>
     </div>
 
-    {% if total > 0 %}
-        <footer class="table-footer">
-            <span class="muted">{{ ((page - 1) * perPage) + 1 }}–{{ min(page * perPage, total) }} z {{ total }}</span>
-            <nav class="pagination">
-                {% if page > 1 %}
-                    <a href="?q={{ search }}&status={{ status }}&sort={{ sort }}&dir={{ dir }}&page={{ page - 1 }}">Předchozí</a>
-                {% endif %}
-                <span>{{ page }} / {{ pages }}</span>
-                {% if page < pages %}
-                    <a href="?q={{ search }}&status={{ status }}&sort={{ sort }}&dir={{ dir }}&page={{ page + 1 }}">Další</a>
-                {% endif %}
-            </nav>
-        </footer>
-    {% endif %}
+    {% include 'ui/table_footer.html.twig' %}
 {% endblock %}

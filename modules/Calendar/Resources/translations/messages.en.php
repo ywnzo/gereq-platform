@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'module.calendar.description' => 'Calendar events linked to CRM activities.',
+    'nav.calendar' => 'Calendar',
+    'nav.calendar.create' => 'New event',
+    'palette.calendar.index' => 'Calendar',
+    'perm.group.calendar' => 'Calendar',
+    'perm.calendar.view' => 'View calendar',
+    'perm.calendar.manage' => 'Manage calendar',
+    'calendar.title' => 'Calendar',
+    'calendar.new' => 'New event',
+    'calendar.edit' => 'Edit event',
+    'calendar.empty' => 'No events',
+    'calendar.empty.hint' => 'Create an event or wait for a CRM activity.',
+    'calendar.confirm_delete' => 'Delete event?',
+    'calendar.view.month' => 'Month',
+    'calendar.view.week' => 'Week',
+    'calendar.type.meeting' => 'Meeting',
+    'calendar.type.deadline' => 'Deadline',
+    'calendar.type.other' => 'Other',
+    'calendar.field.title' => 'Title',
+    'calendar.field.type' => 'Type',
+    'calendar.field.starts' => 'Starts',
+    'calendar.field.ends' => 'Ends',
+    'calendar.field.all_day' => 'All day',
+    'calendar.field.description' => 'Description',
+    'calendar.links.title' => 'Links',
+    'calendar.flash.created' => 'Event “%title%” was created.',
+    'calendar.flash.saved' => 'Event was saved.',
+    'calendar.flash.deleted' => 'Event “%title%” was deleted.',
+    'calendar.error.not_found' => 'Event not found.',
+    'calendar.error.invalid_range' => 'Invalid time range.',
+];

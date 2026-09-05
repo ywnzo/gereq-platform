@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Validation;
 
 use Gereq\Hook\HookManager;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ValidationRegistry
 {
@@ -17,8 +18,10 @@ final class ValidationRegistry
     /** @var array<string, list<callable(array<string, mixed>, array<string, string>, array<string, mixed>): array<string, string>>> */
     private array $after = [];
 
-    public function __construct(private readonly HookManager $hooks)
-    {
+    public function __construct(
+        private readonly HookManager $hooks,
+        private readonly TranslatorInterface $translator,
+    ) {
     }
 
     /**
@@ -85,7 +88,9 @@ final class ValidationRegistry
     {
         $rules = $this->rulesets[$name] ?? null;
         if ($rules === null) {
-            throw new \InvalidArgumentException('Validační sada „' . $name . '“ neexistuje.');
+            throw new \InvalidArgumentException(
+                $this->translator->trans('validation.ruleset_missing', ['%name%' => $name]),
+            );
         }
 
         $rules = $this->hooks->filter('validation.ruleset', $rules, $name, $data, $context);
@@ -93,7 +98,7 @@ final class ValidationRegistry
             $rules = $this->rulesets[$name];
         }
 
-        $validator = new Validator($this, $this->hooks);
+        $validator = new Validator($this, $this->hooks, $this->translator);
         $errors = [];
         $validated = [];
 
@@ -121,6 +126,11 @@ final class ValidationRegistry
             $normalized[(string) $field] = (string) $message;
         }
 
-        throw new ValidationException($normalized, $data, $name);
+        throw new ValidationException(
+            $normalized,
+            $data,
+            $name,
+            $this->translator->trans('validation.form_failed'),
+        );
     }
 }

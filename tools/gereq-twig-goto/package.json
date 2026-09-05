@@ -1,0 +1,24 @@
+{
+  "name": "twig-goto",
+  "displayName": "GEREQ Twig IDE",
+  "description": "Hover, autocomplete a Go to Definition pro Twig objekty z GEREQ controllerů",
+  "version": "0.3.3",
+  "publisher": "gereq",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:**/*.twig"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gereq.twigGoto.reindex",
+        "title": "GEREQ Twig: Reindex types (.cache/twig)"
+      }
+    ]
+  }
+}

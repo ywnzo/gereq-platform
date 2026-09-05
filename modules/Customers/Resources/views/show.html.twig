@@ -5,30 +5,72 @@
         <div class="cell-user cell-user--lg">
             <span class="avatar">{{ item.initials() }}</span>
             <div>
+                <p class="eyebrow"><a href="{{ url('admin.customers.index') }}">{{ 'nav.customers'|trans }}</a></p>
                 <h1>{{ item.name() }}</h1>
-                <p class="muted">{{ item.company() ?: item.email() }}</p>
+                <p class="muted">{{ item.company() ?: item.email() }} · <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span></p>
             </div>
         </div>
         <div class="actions">
+            <a class="btn btn--ghost" href="mailto:{{ item.email() }}">{{ icon('mail') }} E-mail</a>
+            {% if item.phone() %}
+                <a class="btn btn--ghost" href="tel:{{ item.phone() }}">{{ icon('phone') }} {{ item.phone() }}</a>
+            {% endif %}
+            {% for action in hookActions|default([]) %}
+                <a class="btn {{ action.class|default('btn--ghost') }}" href="{{ action.url }}">{{ action.label|trans }}</a>
+            {% endfor %}
             {% if user.can('customers.edit') %}
-                <a class="btn btn--primary" href="{{ url('admin.customers.edit', {id: item.id()}) }}">Upravit</a>
+                <a class="btn btn--primary" href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
             {% endif %}
             {% if user.can('customers.delete') %}
-                <form method="post" action="{{ url('admin.customers.destroy', {id: item.id()}) }}" onsubmit="return confirm('Smazat zákazníka?');">
+                <form method="post" action="{{ url('admin.customers.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'customers.confirm_delete'|trans|e('js') }}');">
                     {{ csrf_field()|raw }}
-                    <button class="btn btn--danger" type="submit">Smazat</button>
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
                 </form>
             {% endif %}
         </div>
     </header>
 
-    <dl class="meta-list">
-        <div><dt>E-mail</dt><dd>{{ item.email() }}</dd></div>
-        <div><dt>Telefon</dt><dd>{{ item.phone() ?: '—' }}</dd></div>
-        <div><dt>Firma</dt><dd>{{ item.company() ?: '—' }}</dd></div>
-        <div><dt>Stav</dt><dd><span class="badge">{{ item.statusLabel() }}</span></dd></div>
-        <div><dt>Vytvořeno</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
-        <div><dt>Upraveno</dt><dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd></div>
-        <div class="meta-list__full"><dt>Poznámka</dt><dd class="g-prose">{{ item.note() ? item.note()|striptags('<p><br><strong><em><ul><ol><li><a><h2><h3>')|raw : '—' }}</dd></div>
-    </dl>
+    <div class="detail-hub" x-data="gereqTabs" data-initial="overview">
+        <div class="design-tabs detail-tabs" role="tablist">
+            <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
+            {% for section in hookSections|default([]) %}
+                <button type="button" class="design-tab" role="tab" data-tab="{{ section.id|default(loop.index) }}">{{ section.label|trans }}</button>
+            {% endfor %}
+        </div>
+
+        <section class="design-panel" data-panel="overview" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'common.overview'|trans }}</h2>
+                </header>
+                <div class="meta-grid">
+                    <div class="meta-tile"><span>{{ 'customers.field.email'|trans }}</span><strong><a href="mailto:{{ item.email() }}">{{ item.email() }}</a></strong></div>
+                    <div class="meta-tile"><span>{{ 'customers.field.phone'|trans }}</span><strong>{% if item.phone() %}<a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% else %}—{% endif %}</strong></div>
+                    <div class="meta-tile"><span>{{ 'customers.field.company'|trans }}</span><strong>{{ item.company() ?: '—' }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'customers.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'customers.field.created'|trans }}</span><strong>{{ item.createdAt().format('d. m. Y H:i') }}</strong></div>
+                    <div class="meta-tile"><span>{{ 'customers.field.updated'|trans }}</span><strong>{{ item.updatedAt().format('d. m. Y H:i') }}</strong></div>
+                </div>
+                <div style="padding:12px 14px 14px">
+                    <div class="meta-tile">
+                        <span>{{ 'customers.field.note'|trans }}</span>
+                        <div class="g-prose">{{ item.note() ? item.note()|striptags('<p><br><strong><em><ul><ol><li><a><h2><h3>')|raw : '—' }}</div>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        {% for section in hookSections|default([]) %}
+            <section class="design-panel" data-panel="{{ section.id|default(loop.index) }}" role="tabpanel">
+                <section class="panel" id="{{ section.id|default('') }}">
+                    {% if section.label is defined and section.label %}
+                        <header class="panel__head">
+                            <h2>{{ section.label|trans }}</h2>
+                        </header>
+                    {% endif %}
+                    {{ section.html|raw }}
+                </section>
+            </section>
+        {% endfor %}
+    </div>
 {% endblock %}

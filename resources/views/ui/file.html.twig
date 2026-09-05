@@ -1,7 +1,7 @@
 {% set name = name|default('file') %}
 {% set id = id|default('f-' ~ name) %}
-{% set label = label|default('Soubor') %}
-{% set hint = hint|default('PNG, JPG nebo PDF do 8 MB.') %}
+{% set label = label|default('ui.file.label'|trans) %}
+{% set hint = hint|default('ui.file.hint'|trans) %}
 {% set extra = extra|default('') %}
 
 <div class="g-field {{ extra }}" data-field="{{ name }}">
@@ -11,7 +11,7 @@
     <label class="g-file" for="{{ id }}">
         <input class="g-file__input" id="{{ id }}" type="file" name="{{ name }}">
         <span class="g-file__box">
-            <span class="g-file__title">Přetáhněte soubor nebo klikněte</span>
+            <span class="g-file__title">{{ 'ui.file.drop'|trans }}</span>
             <span class="g-file__meta">{{ hint }}</span>
         </span>
     </label>

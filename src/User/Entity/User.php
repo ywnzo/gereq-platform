@@ -29,6 +29,10 @@ class User
     #[ORM\Column(length: 32)]
     private string $status = 'active';
 
+    /** Preferovaný jazyk uživatele; null = výchozí jazyk aplikace. */
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $locale = null;
+
     #[ORM\Column(name: 'totp_secret', length: 64, nullable: true)]
     private ?string $totpSecret = null;
 
@@ -98,6 +102,11 @@ class User
         return $this->status;
     }
 
+    public function locale(): ?string
+    {
+        return $this->locale;
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';
@@ -149,6 +158,12 @@ class User
     public function setStatus(string $status): void
     {
         $this->status = $status;
+        $this->touch();
+    }
+
+    public function setLocale(?string $locale): void
+    {
+        $this->locale = $locale !== null && $locale !== '' ? $locale : null;
         $this->touch();
     }
 

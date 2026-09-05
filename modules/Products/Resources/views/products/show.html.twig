@@ -1,0 +1,218 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <p class="eyebrow"><a href="{{ url('admin.products.index') }}">{{ 'nav.products'|trans }}</a></p>
+            <h1>{{ item.name() }}</h1>
+            <p class="muted">
+                <code>{{ item.sku() }}</code>
+                · <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
+            </p>
+        </div>
+        <div class="actions">
+            <button type="button" class="btn btn--ghost" onclick="navigator.clipboard.writeText({{ item.sku()|json_encode|e('html_attr') }})">SKU</button>
+            {% if user.can('products.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.products.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.products.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'products.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-hub" x-data="gereqTabs" data-initial="overview">
+        <div class="design-tabs detail-tabs" role="tablist">
+            <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="images">{{ 'products.images.title'|trans }}{% if images %}<span class="module-tab-count">{{ images|length }}</span>{% endif %}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="prices">{{ 'products.prices.title'|trans }}{% if prices %}<span class="module-tab-count">{{ prices|length }}</span>{% endif %}</button>
+        </div>
+
+        <section class="design-panel" data-panel="overview" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'common.overview'|trans }}</h2>
+                </header>
+                <dl class="meta-list meta-list--flush">
+                    <div>
+                        <dt>{{ 'products.field.status'|trans }}</dt>
+                        <dd>
+                            {% if user.can('products.manage') %}
+                                <form method="post" action="{{ url('admin.products.status', {id: item.id()}) }}" class="meta-list__action">
+                                    {{ csrf_field()|raw }}
+                                    <span class="badge">{{ item.statusLabel()|trans }}</span>
+                                    <select id="status" name="status" class="input" aria-label="{{ 'products.change_status'|trans }}" onchange="this.form.submit()">
+                                        {% for s in statuses %}
+                                            <option value="{{ s }}" {{ item.status() == s ? 'selected' : '' }}>{{ ('products.status.' ~ s)|trans }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            {% else %}
+                                <span class="badge">{{ item.statusLabel()|trans }}</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div><dt>{{ 'products.field.unit'|trans }}</dt><dd>{{ item.unit() }}</dd></div>
+                    <div><dt>{{ 'products.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
+                    <div><dt>{{ 'products.field.updated'|trans }}</dt><dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd></div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'products.field.categories'|trans }}</dt>
+                        <dd>
+                            {% if item.categories() is empty %}
+                                —
+                            {% else %}
+                                {% for cat in item.categories() %}
+                                    <span class="badge">{{ cat.name() }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'products.field.description'|trans }}</dt>
+                        <dd>{{ item.description() ?: '—' }}</dd>
+                    </div>
+                </dl>
+            </section>
+        </section>
+
+        <section class="design-panel" data-panel="images" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'products.images.title'|trans }}</h2>
+                </header>
+
+                {% if not hasMedia %}
+                    <div class="empty">
+                        <p>{{ 'products.images.error.media_required'|trans }}</p>
+                    </div>
+                {% else %}
+                    {% if images is empty %}
+                        <div class="empty">
+                            <p>{{ 'products.images.empty'|trans }}</p>
+                        </div>
+                    {% else %}
+                        <div class="product-gallery">
+                            {% for image in images %}
+                                {% set asset = imageAssets[image.id()]|default(null) %}
+                                <figure class="product-gallery__item{{ image.isPrimary() ? ' is-primary' : '' }}">
+                                    {% if asset %}
+                                        <a href="{{ url('admin.media.file', {id: asset.id()}) }}" target="_blank" rel="noopener">
+                                            <img src="{{ url('admin.media.file', {id: asset.id()}) }}" alt="{{ image.alt()|default(asset.alt()|default(asset.title())) }}">
+                                        </a>
+                                        <figcaption>
+                                            <span>{{ asset.title() }}</span>
+                                            {% if image.isPrimary() %}
+                                                <span class="badge">{{ 'products.images.primary'|trans }}</span>
+                                            {% endif %}
+                                        </figcaption>
+                                    {% else %}
+                                        <div class="product-gallery__missing muted">{{ 'products.images.missing_asset'|trans }}</div>
+                                    {% endif %}
+                                    {% if user.can('products.manage') %}
+                                        <div class="product-gallery__actions">
+                                            {% if not image.isPrimary() %}
+                                                <form method="post" action="{{ url('admin.products.images.primary', {id: item.id(), imageId: image.id()}) }}">
+                                                    {{ csrf_field()|raw }}
+                                                    <button class="btn btn--ghost btn-sm" type="submit">{{ 'products.images.set_primary'|trans }}</button>
+                                                </form>
+                                            {% endif %}
+                                            <form method="post" action="{{ url('admin.products.images.destroy', {id: item.id(), imageId: image.id()}) }}" onsubmit="return confirm('{{ 'products.images.confirm_delete'|trans|e('js') }}');">
+                                                {{ csrf_field()|raw }}
+                                                <button class="btn btn--ghost btn-sm" type="submit">{{ 'common.delete'|trans }}</button>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                </figure>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if user.can('products.manage') %}
+                        {% include 'ui/error-summary.html.twig' with { form: 'products.image.upload' } %}
+                        <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.products.images.store', {id: item.id()}) }}" enctype="multipart/form-data" data-form="products.image.upload" x-data="gereqForm"{% if form_errors('products.image.upload') %} data-server-state="1"{% endif %}>
+                            {{ csrf_field()|raw }}
+                            {% include 'ui/file.html.twig' with { name: 'file', label: 'products.images.field.file'|trans, hint: 'products.images.field.file.hint'|trans, extra: 'field--full' } %}
+                            {% include 'ui/input.html.twig' with { name: 'title', label: 'products.images.field.title'|trans, optional: true, form: 'products.image.upload', value: '' } %}
+                            {% include 'ui/input.html.twig' with { name: 'alt', label: 'products.images.field.alt'|trans, optional: true, form: 'products.image.upload', value: '' } %}
+                            <div class="form-actions">
+                                <button class="btn btn--primary" type="submit">{{ 'products.images.upload'|trans }}</button>
+                            </div>
+                        </form>
+
+                        {% if libraryImages is not empty %}
+                            {% include 'ui/error-summary.html.twig' with { form: 'products.image.attach' } %}
+                            <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.products.images.attach', {id: item.id()}) }}" data-form="products.image.attach" x-data="gereqForm"{% if form_errors('products.image.attach') %} data-server-state="1"{% endif %}>
+                                {{ csrf_field()|raw }}
+                                {% include 'ui/select.html.twig' with { name: 'media_asset_id', label: 'products.images.attach_existing'|trans, required: true, form: 'products.image.attach', value: '', options: libraryImages } %}
+                                <div class="form-actions">
+                                    <button class="btn btn--ghost" type="submit">{{ 'products.images.attach'|trans }}</button>
+                                </div>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            </section>
+        </section>
+
+        <section class="design-panel" data-panel="prices" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'products.prices.title'|trans }}</h2>
+                </header>
+
+                {% if prices is empty %}
+                    <div class="empty">
+                        <p>{{ 'products.prices.empty'|trans }}</p>
+                    </div>
+                {% else %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'products.prices.currency'|trans }}</th>
+                                    <th>{{ 'products.prices.amount'|trans }}</th>
+                                    <th>{{ 'products.prices.valid_from'|trans }}</th>
+                                    <th>{{ 'products.prices.valid_to'|trans }}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for price in prices %}
+                                    <tr>
+                                        <td><strong>{{ price.currencyCode() }}</strong></td>
+                                        <td>{{ price.amountFormatted() }}</td>
+                                        <td>{{ price.validFrom() ? price.validFrom().format('d. m. Y') : '—' }}</td>
+                                        <td>{{ price.validTo() ? price.validTo().format('d. m. Y') : '—' }}</td>
+                                        <td class="table__actions">
+                                            {% if user.can('products.manage') %}
+                                                <form method="post" action="{{ url('admin.products.prices.destroy', {id: item.id(), priceId: price.id()}) }}" onsubmit="return confirm('{{ 'products.prices.confirm_delete'|trans|e('js') }}');">
+                                                    {{ csrf_field()|raw }}
+                                                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+
+                {% if user.can('products.manage') %}
+                    {% include 'ui/error-summary.html.twig' with { form: 'products.price.save' } %}
+                    <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.products.prices.store', {id: item.id()}) }}" data-form="products.price.save" x-data="gereqForm"{% if form_errors('products.price.save') %} data-server-state="1"{% endif %}>
+                        {{ csrf_field()|raw }}
+                        {% include 'ui/select.html.twig' with { name: 'currency_code', label: 'products.prices.currency'|trans, required: true, form: 'products.price.save', value: 'CZK', options: currencyOptions } %}
+                        {% include 'ui/input.html.twig' with { name: 'amount', label: 'products.prices.amount'|trans, required: true, form: 'products.price.save', value: '' } %}
+                        {% include 'ui/input.html.twig' with { name: 'valid_from', type: 'date', label: 'products.prices.valid_from'|trans, optional: true, form: 'products.price.save', value: '' } %}
+                        {% include 'ui/input.html.twig' with { name: 'valid_to', type: 'date', label: 'products.prices.valid_to'|trans, optional: true, form: 'products.price.save', value: '' } %}
+                        <div class="form-actions">
+                            <button class="btn btn--primary" type="submit">{{ 'products.prices.add'|trans }}</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </section>
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'module.calendar.description' => 'Kalendář událostí napojený na CRM aktivity.',
+    'nav.calendar' => 'Kalendář',
+    'nav.calendar.create' => 'Nová událost',
+    'palette.calendar.index' => 'Kalendář',
+    'perm.group.calendar' => 'Kalendář',
+    'perm.calendar.view' => 'Zobrazit kalendář',
+    'perm.calendar.manage' => 'Spravovat kalendář',
+    'calendar.title' => 'Kalendář',
+    'calendar.new' => 'Nová událost',
+    'calendar.edit' => 'Upravit událost',
+    'calendar.empty' => 'Žádné události',
+    'calendar.empty.hint' => 'Vytvořte událost nebo počkejte na CRM aktivitu.',
+    'calendar.confirm_delete' => 'Smazat událost?',
+    'calendar.view.month' => 'Měsíc',
+    'calendar.view.week' => 'Týden',
+    'calendar.type.meeting' => 'Schůzka',
+    'calendar.type.deadline' => 'Termín',
+    'calendar.type.other' => 'Jiné',
+    'calendar.field.title' => 'Název',
+    'calendar.field.type' => 'Typ',
+    'calendar.field.starts' => 'Začátek',
+    'calendar.field.ends' => 'Konec',
+    'calendar.field.all_day' => 'Celý den',
+    'calendar.field.description' => 'Popis',
+    'calendar.links.title' => 'Propojení',
+    'calendar.flash.created' => 'Událost „%title%“ byla vytvořena.',
+    'calendar.flash.saved' => 'Událost byla uložena.',
+    'calendar.flash.deleted' => 'Událost „%title%“ byla smazána.',
+    'calendar.error.not_found' => 'Událost neexistuje.',
+    'calendar.error.invalid_range' => 'Neplatný časový rozsah.',
+];

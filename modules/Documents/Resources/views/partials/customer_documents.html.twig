@@ -1,0 +1,40 @@
+{% if documents is empty %}
+    <div class="empty">
+        <p>{{ 'documents.partial.empty'|trans }}</p>
+        {% if user is defined and user.can('documents.manage') %}
+            <a class="btn btn--ghost" href="{{ url('admin.documents.upload') }}?entity_type=customer&entity_id={{ customer.id() }}">{{ 'documents.partial.add'|trans }}</a>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'documents.field.title'|trans }}</th>
+                    <th>{{ 'documents.field.mime'|trans }}</th>
+                    <th>{{ 'documents.field.created'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                    <tr>
+                        <td><a href="{{ url('admin.documents.show', {id: doc.id()}) }}">{{ doc.title() }}</a></td>
+                        <td><span class="badge">{{ doc.mime() }}</span></td>
+                        <td>{{ doc.createdAt().format('d. m. Y') }}</td>
+                        <td class="table__actions">
+                            <a href="{{ url('admin.documents.show', {id: doc.id()}) }}">{{ 'common.detail'|trans }}</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="muted">
+        {% if user is defined and user.can('documents.manage') %}
+            <a href="{{ url('admin.documents.upload') }}?entity_type=customer&entity_id={{ customer.id() }}">{{ 'documents.partial.add'|trans }}</a>
+            ·
+        {% endif %}
+        <a href="{{ url('admin.documents.index') }}">{{ 'documents.partial.all'|trans }}</a>
+    </p>
+{% endif %}

@@ -9,6 +9,8 @@ use Gereq\Admin\CommandPalette\PaletteCommand;
 use Gereq\Admin\Http\AuditController;
 use Gereq\Admin\Http\AuthController;
 use Gereq\Admin\Http\DashboardController;
+use Gereq\Admin\Http\Developer\ApiTokenController;
+use Gereq\Admin\Http\Developer\DeveloperController;
 use Gereq\Admin\Http\ModuleController;
 use Gereq\Admin\Http\ProfileController;
 use Gereq\Admin\Http\RoleController;
@@ -17,8 +19,10 @@ use Gereq\Admin\Http\UserController;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Menu\MenuItem;
 use Gereq\Api\HealthController;
+use Gereq\Api\OpenApiController;
 use Gereq\Http\DesignController;
 use Gereq\Http\Router;
+use Gereq\I18n\LocaleCatalog;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 use Gereq\User\PermissionRegistry;
@@ -33,6 +37,7 @@ final class CoreRegistrar
         private readonly Settings $settings,
         private readonly CommandPalette $palette,
         private readonly ValidationRegistry $validation,
+        private readonly LocaleCatalog $locales,
     ) {
     }
 
@@ -49,16 +54,19 @@ final class CoreRegistrar
     private function permissions(): void
     {
         $items = [
-            ['users.view', 'Zobrazit uživatele', 'Uživatelé'],
-            ['users.create', 'Vytvořit uživatele', 'Uživatelé'],
-            ['users.edit', 'Upravit uživatele', 'Uživatelé'],
-            ['users.delete', 'Smazat uživatele', 'Uživatelé'],
-            ['users.manage', 'Spravovat uživatele', 'Uživatelé'],
-            ['roles.view', 'Zobrazit role', 'Role'],
-            ['roles.manage', 'Spravovat role', 'Role'],
-            ['modules.manage', 'Spravovat moduly', 'Systém'],
-            ['settings.manage', 'Spravovat nastavení', 'Systém'],
-            ['audit.view', 'Zobrazit audit log', 'Systém'],
+            ['users.view', 'perm.users.view', 'perm.group.users'],
+            ['users.create', 'perm.users.create', 'perm.group.users'],
+            ['users.edit', 'perm.users.edit', 'perm.group.users'],
+            ['users.delete', 'perm.users.delete', 'perm.group.users'],
+            ['users.manage', 'perm.users.manage', 'perm.group.users'],
+            ['roles.view', 'perm.roles.view', 'perm.group.roles'],
+            ['roles.manage', 'perm.roles.manage', 'perm.group.roles'],
+            ['modules.manage', 'perm.modules.manage', 'perm.group.system'],
+            ['settings.manage', 'perm.settings.manage', 'perm.group.system'],
+            ['audit.view', 'perm.audit.view', 'perm.group.system'],
+            ['developer.api.view', 'perm.developer.api.view', 'perm.group.developer'],
+            ['developer.tokens.manage', 'perm.developer.tokens.manage', 'perm.group.developer'],
+            ['developer.events.view', 'perm.developer.events.view', 'perm.group.developer'],
         ];
 
         foreach ($items as [$name, $label, $group]) {
@@ -68,8 +76,16 @@ final class CoreRegistrar
 
     private function settings(): void
     {
-        $this->settings->define('app.name', SettingRecord::TYPE_STRING, 'Název aplikace', 'GEREQ Platform');
-        $this->settings->define('admin.theme', SettingRecord::TYPE_STRING, 'Motiv', 'system');
+        $this->settings->define('app.name', SettingRecord::TYPE_STRING, 'settings.app.name', 'GEREQ Platform');
+        $this->settings->define(
+            'app.locale',
+            SettingRecord::TYPE_STRING,
+            'settings.app.locale',
+            (string) config('app.locale', $this->locales->fallback()),
+            null,
+            $this->locales->all(),
+        );
+        $this->settings->define('admin.theme', SettingRecord::TYPE_STRING, 'settings.admin.theme', 'system');
     }
 
     private function validation(): void
@@ -131,28 +147,40 @@ final class CoreRegistrar
             $router->get('/audit', [AuditController::class, 'index'])->name('admin.audit.index')->middleware('auth')->permission('audit.view');
             $router->get('/profile', [ProfileController::class, 'edit'])->name('admin.profile')->middleware('auth');
             $router->post('/profile', [ProfileController::class, 'update'])->name('admin.profile.update')->middleware('auth');
+
+            $router->get('/developer/api', [DeveloperController::class, 'api'])->name('admin.developer.api')->middleware('auth')->permission('developer.api.view');
+            $router->get('/developer/events', [DeveloperController::class, 'events'])->name('admin.developer.events')->middleware('auth')->permission('developer.events.view');
+            $router->get('/developer/tokens', [ApiTokenController::class, 'index'])->name('admin.developer.tokens.index')->middleware('auth')->permission('developer.tokens.manage');
+            $router->get('/developer/tokens/create', [ApiTokenController::class, 'create'])->name('admin.developer.tokens.create')->middleware('auth')->permission('developer.tokens.manage');
+            $router->post('/developer/tokens', [ApiTokenController::class, 'store'])->name('admin.developer.tokens.store')->middleware('auth')->permission('developer.tokens.manage');
+            $router->post('/developer/tokens/{id}/revoke', [ApiTokenController::class, 'revoke'])->name('admin.developer.tokens.revoke')->middleware('auth')->permission('developer.tokens.manage');
         });
 
         $this->router->get('/api/v1/health', [HealthController::class, 'show'])->name('api.health');
+        $this->router->get('/api/openapi.json', [OpenApiController::class, 'show'])->name('api.openapi');
     }
 
     private function menu(): void
     {
-        $this->menu->add(new MenuItem(id: 'dashboard', label: 'Přehled', icon: 'home', route: 'admin.dashboard', order: 10, group: 'Hlavní'));
-        $this->menu->add(new MenuItem(id: 'users', label: 'Uživatelé', icon: 'users', route: 'admin.users.index', permission: 'users.view', order: 80, group: 'Systém'));
-        $this->menu->add(new MenuItem(id: 'roles', label: 'Role', icon: 'shield', route: 'admin.roles.index', permission: 'roles.view', order: 81, group: 'Systém'));
-        $this->menu->add(new MenuItem(id: 'modules', label: 'Moduly', icon: 'modules', route: 'admin.modules.index', permission: 'modules.manage', order: 90, group: 'Systém'));
-        $this->menu->add(new MenuItem(id: 'audit', label: 'Audit', icon: 'activity', route: 'admin.audit.index', permission: 'audit.view', order: 91, group: 'Systém'));
-        $this->menu->add(new MenuItem(id: 'settings', label: 'Nastavení', icon: 'settings', route: 'admin.settings.index', permission: 'settings.manage', order: 100, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'dashboard', label: 'nav.overview', icon: 'home', route: 'admin.dashboard', order: 10, group: 'Hlavní'));
+        $this->menu->add(new MenuItem(id: 'developer', label: 'nav.developer', icon: 'key', route: 'admin.developer.api', permission: 'developer.api.view', order: 70, group: 'Developer'));
+        $this->menu->add(new MenuItem(id: 'developer.api', label: 'nav.api', route: 'admin.developer.api', permission: 'developer.api.view', parent: 'developer', order: 71, group: 'Developer'));
+        $this->menu->add(new MenuItem(id: 'developer.tokens', label: 'nav.api_tokens', route: 'admin.developer.tokens.index', permission: 'developer.tokens.manage', parent: 'developer', order: 72, group: 'Developer'));
+        $this->menu->add(new MenuItem(id: 'developer.events', label: 'nav.events', route: 'admin.developer.events', permission: 'developer.events.view', parent: 'developer', order: 73, group: 'Developer'));
+        $this->menu->add(new MenuItem(id: 'users', label: 'nav.users', icon: 'users', route: 'admin.users.index', permission: 'users.view', order: 80, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'roles', label: 'nav.roles', icon: 'shield', route: 'admin.roles.index', permission: 'roles.view', order: 81, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'modules', label: 'nav.modules', icon: 'modules', route: 'admin.modules.index', permission: 'modules.manage', order: 90, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'audit', label: 'nav.audit', icon: 'activity', route: 'admin.audit.index', permission: 'audit.view', order: 91, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'settings', label: 'nav.settings', icon: 'settings', route: 'admin.settings.index', permission: 'settings.manage', order: 100, group: 'Systém'));
     }
 
     private function commands(): void
     {
-        $this->palette->add(new PaletteCommand('go-dashboard', 'Přejít na přehled', '/admin', 'home', keywords: ['home', 'dashboard']));
-        $this->palette->add(new PaletteCommand('go-users', 'Přejít na uživatele', '/admin/users', 'users', 'users.view'));
-        $this->palette->add(new PaletteCommand('go-modules', 'Otevřít moduly', '/admin/modules', 'modules', 'modules.manage'));
-        $this->palette->add(new PaletteCommand('go-settings', 'Otevřít nastavení', '/admin/settings', 'settings', 'settings.manage', keywords: ['konfigurace']));
-        $this->palette->add(new PaletteCommand('go-profile', 'Můj profil', '/admin/profile', 'user'));
-        $this->palette->add(new PaletteCommand('logout', 'Odhlásit se', '/admin/logout', 'logout', group: 'Účet'));
+        $this->palette->add(new PaletteCommand('go-dashboard', 'palette.go_dashboard', '/admin', 'home', keywords: ['home', 'dashboard']));
+        $this->palette->add(new PaletteCommand('go-users', 'palette.go_users', '/admin/users', 'users', 'users.view'));
+        $this->palette->add(new PaletteCommand('go-modules', 'palette.go_modules', '/admin/modules', 'modules', 'modules.manage'));
+        $this->palette->add(new PaletteCommand('go-settings', 'palette.go_settings', '/admin/settings', 'settings', 'settings.manage', keywords: ['konfigurace', 'settings']));
+        $this->palette->add(new PaletteCommand('go-profile', 'palette.go_profile', '/admin/profile', 'user'));
+        $this->palette->add(new PaletteCommand('logout', 'palette.logout', '/admin/logout', 'logout', group: 'Účet'));
     }
 }

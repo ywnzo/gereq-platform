@@ -2,18 +2,24 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>Nastavení</h1>
+        <h1>{{ 'settings.title'|trans }}</h1>
     </header>
     <form method="post" action="{{ url('admin.settings.update') }}" class="stack">
         {{ csrf_field()|raw }}
         {% for key, definition in definitions %}
             {% set field = key|replace({'.': '__'}) %}
             <label class="field">
-                <span>{{ definition.label }}</span>
+                <span>{{ definition.label|trans }}</span>
                 {% if definition.type == 'boolean' %}
                     <select name="{{ field }}">
-                        <option value="1" {{ values[key] ? 'selected' : '' }}>Ano</option>
-                        <option value="0" {{ not values[key] ? 'selected' : '' }}>Ne</option>
+                        <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                        <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                    </select>
+                {% elseif definition.options is defined and definition.options is not empty %}
+                    <select name="{{ field }}">
+                        {% for optionValue, optionLabel in definition.options %}
+                            <option value="{{ optionValue }}" {{ values[key] == optionValue ? 'selected' : '' }}>{{ optionLabel }}</option>
+                        {% endfor %}
                     </select>
                 {% else %}
                     <input type="text" name="{{ field }}" value="{{ values[key] }}">
@@ -21,6 +27,6 @@
                 <small class="muted">{{ key }}</small>
             </label>
         {% endfor %}
-        <button class="btn btn--primary" type="submit">Uložit nastavení</button>
+        <button class="btn btn--primary" type="submit">{{ 'settings.save'|trans }}</button>
     </form>
 {% endblock %}

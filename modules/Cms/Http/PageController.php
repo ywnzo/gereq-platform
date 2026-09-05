@@ -1,0 +1,377 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Cms\Http;
+
+use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Admin\CommandPalette\CommandPalette;
+use Gereq\Admin\Menu\Menu;
+use Gereq\Audit\Auditor;
+use Gereq\Auth\Authenticator;
+use Gereq\Event\EventBus;
+use Gereq\Http\Controller;
+use Gereq\Http\Router;
+use Gereq\Module\CapabilityRegistry;
+use Gereq\Setting\Settings;
+use Modules\Cms\Domain\Events\PagePublished;
+use Modules\Cms\Domain\Events\PageUpdated;
+use Modules\Cms\Domain\Page;
+use Modules\Cms\Domain\PageBlock;
+use Modules\Cms\Domain\SiteMenu;
+use Modules\Cms\Domain\SiteMenuItem;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
+
+final class PageController extends Controller
+{
+    public function __construct(
+        Environment $twig,
+        Router $router,
+        RequestStack $requestStack,
+        private readonly EntityManagerInterface $em,
+        private readonly Authenticator $auth,
+        private readonly Menu $menu,
+        private readonly CommandPalette $palette,
+        private readonly Auditor $auditor,
+        private readonly EventBus $events,
+        private readonly TranslatorInterface $translator,
+        private readonly CapabilityRegistry $capabilities,
+        private readonly Settings $settings,
+    ) {
+        parent::__construct($twig, $router, $requestStack);
+    }
+
+    public function index(Request $request): Response
+    {
+        $search = trim((string) $request->query->get('q', ''));
+        $status = (string) $request->query->get('status', '');
+        $page = max(1, (int) $request->query->get('page', 1));
+        $perPage = 20;
+
+        $qb = $this->em->getRepository(Page::class)->createQueryBuilder('p')
+            ->orderBy('p.updatedAt', 'DESC');
+
+        if ($search !== '') {
+            $qb->andWhere('p.title LIKE :q OR p.slug LIKE :q')
+                ->setParameter('q', '%' . $search . '%');
+        }
+        if (in_array($status, Page::STATUSES, true)) {
+            $qb->andWhere('p.status = :status')->setParameter('status', $status);
+        }
+
+        $total = (int) (clone $qb)->select('COUNT(p.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        $items = $qb->setFirstResult(($page - 1) * $perPage)->setMaxResults($perPage)->getQuery()->getResult();
+
+        return $this->page('@cms/pages/index.html.twig', [
+            'pageTitle' => $this->translator->trans('cms.pages.title'),
+            'items' => $items,
+            'search' => $search,
+            'status' => $status,
+            'statuses' => Page::STATUSES,
+            'page' => $page,
+            'perPage' => $perPage,
+            'total' => $total,
+            'pages' => (int) ceil(max(1, $total) / $perPage),
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return $this->page('@cms/pages/form.html.twig', [
+            'pageTitle' => $this->translator->trans('cms.pages.new'),
+            'item' => null,
+        ]);
+    }
+
+    public function store(Request $request): Response
+    {
+        $data = $this->validate($request, 'cms.page.save');
+        $page = new Page((string) $data['slug'], trim((string) $data['title']));
+        $page->setTemplate((string) $data['template']);
+        $page->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
+        $status = (string) $data['status'];
+        $page->setStatus($status);
+        $this->em->persist($page);
+        $this->em->flush();
+
+        $payload = $this->serialize($page);
+        $this->events->dispatch(PageUpdated::make($page->id(), $payload));
+        if ($page->isPublished()) {
+            $this->events->dispatch(PagePublished::make($page->id(), $payload));
+        }
+        $this->auditor->log('page.created', 'cms_page', $page->id(), null, ['slug' => $page->slug()]);
+        $this->forgetForm('cms.page.save');
+        $this->flash('success', $this->translator->trans('cms.flash.page_created', ['%title%' => $page->title()]));
+
+        return $this->redirect('admin.cms.pages.show', ['id' => $page->id()]);
+    }
+
+    public function show(string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
+        }
+
+        $blocks = $this->em->getRepository(PageBlock::class)->findBy(
+            ['pageId' => $id],
+            ['sortOrder' => 'ASC'],
+        );
+
+        $blockTypeOptions = [];
+        foreach (PageBlock::TYPES as $type) {
+            $blockTypeOptions[] = [
+                'value' => $type,
+                'label' => $this->translator->trans('cms.block.type.' . $type),
+            ];
+        }
+
+        return $this->page('@cms/pages/show.html.twig', [
+            'pageTitle' => $item->title(),
+            'item' => $item,
+            'blocks' => $blocks,
+            'blockTypeOptions' => $blockTypeOptions,
+            'mediaOptions' => $this->mediaOptions(),
+            'hasMedia' => $this->capabilities->has('media'),
+            'hasProducts' => $this->capabilities->has('products'),
+        ]);
+    }
+
+    public function edit(string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
+        }
+
+        return $this->page('@cms/pages/form.html.twig', [
+            'pageTitle' => $this->translator->trans('cms.pages.edit'),
+            'item' => $item,
+        ]);
+    }
+
+    public function update(Request $request, string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
+        }
+
+        $data = $this->validate($request, 'cms.page.save', ['ignore_id' => $id]);
+        $wasPublished = $item->isPublished();
+        $item->setSlug((string) $data['slug']);
+        $item->setTitle(trim((string) $data['title']));
+        $item->setTemplate((string) $data['template']);
+        $item->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
+        $item->setStatus((string) $data['status']);
+        $this->em->flush();
+
+        $payload = $this->serialize($item);
+        $this->events->dispatch(PageUpdated::make($item->id(), $payload));
+        if ($item->isPublished() && !$wasPublished) {
+            $this->events->dispatch(PagePublished::make($item->id(), $payload));
+        }
+        $this->auditor->log('page.updated', 'cms_page', $item->id());
+        $this->forgetForm('cms.page.save');
+        $this->flash('success', $this->translator->trans('cms.flash.page_updated', ['%title%' => $item->title()]));
+
+        return $this->redirect('admin.cms.pages.show', ['id' => $id]);
+    }
+
+    public function publish(string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
+        }
+
+        if (!$item->isPublished()) {
+            $item->setStatus('published');
+            $this->em->flush();
+            $payload = $this->serialize($item);
+            $this->events->dispatch(PagePublished::make($item->id(), $payload));
+            $this->events->dispatch(PageUpdated::make($item->id(), $payload));
+            $this->auditor->log('page.published', 'cms_page', $item->id());
+            $this->flash('success', $this->translator->trans('cms.flash.page_published', ['%title%' => $item->title()]));
+        }
+
+        return $this->redirect('admin.cms.pages.show', ['id' => $id]);
+    }
+
+    public function preview(string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
+        }
+
+        $blocks = $this->em->getRepository(PageBlock::class)->findBy(
+            ['pageId' => $id],
+            ['sortOrder' => 'ASC'],
+        );
+
+        return $this->render('@cms/pages/preview.html.twig', [
+            'pageTitle' => $item->title(),
+            'item' => $item,
+            'blocks' => $blocks,
+            'siteTitle' => (string) $this->settings->get('cms.site_title', 'GEREQ Site'),
+            'menus' => $this->menusForRender(),
+            'preview' => true,
+            'user' => $this->auth->user(),
+            'products' => $this->resolveProducts($blocks),
+            'hasMedia' => $this->capabilities->has('media'),
+        ]);
+    }
+
+    public function destroy(string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
+        }
+
+        $title = $item->title();
+        foreach ($this->em->getRepository(PageBlock::class)->findBy(['pageId' => $id]) as $block) {
+            $this->em->remove($block);
+        }
+        $this->em->remove($item);
+        $this->em->flush();
+        $this->auditor->log('page.deleted', 'cms_page', $id);
+        $this->flash('success', $this->translator->trans('cms.flash.page_deleted', ['%title%' => $title]));
+
+        return $this->redirect('admin.cms.pages.index');
+    }
+
+    private function find(string $id): ?Page
+    {
+        $page = $this->em->find(Page::class, $id);
+
+        return $page instanceof Page ? $page : null;
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    private function mediaOptions(): array
+    {
+        if (!$this->capabilities->has('media')) {
+            return [];
+        }
+
+        $provider = $this->capabilities->get('media');
+        if (!method_exists($provider, 'images')) {
+            return [];
+        }
+
+        $options = [];
+        foreach ($provider->images(100) as $asset) {
+            $options[] = [
+                'value' => $asset->id(),
+                'label' => $asset->title() . ' (' . $asset->mime() . ')',
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @param list<PageBlock> $blocks
+     * @return array<string, object>
+     */
+    private function resolveProducts(array $blocks): array
+    {
+        if (!$this->capabilities->has('products')) {
+            return [];
+        }
+        $provider = $this->capabilities->get('products');
+        if (!method_exists($provider, 'find')) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($blocks as $block) {
+            if ($block->type() !== 'products') {
+                continue;
+            }
+            $ids = $this->parseIdList((string) ($block->payload()['product_ids'] ?? ''));
+            foreach ($ids as $pid) {
+                if (isset($map[$pid])) {
+                    continue;
+                }
+                $ref = $provider->find($pid);
+                if ($ref !== null) {
+                    $map[$pid] = $ref;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /** @return list<string> */
+    private function parseIdList(string $raw): array
+    {
+        $parts = preg_split('~[\s,;]+~', $raw) ?: [];
+
+        return array_values(array_filter(array_map('trim', $parts), static fn (string $v): bool => $v !== ''));
+    }
+
+    /**
+     * @return list<array{menu: SiteMenu, items: list<array{item: SiteMenuItem, href: string}>}>
+     */
+    private function menusForRender(): array
+    {
+        $menus = $this->em->getRepository(SiteMenu::class)->findBy([], ['name' => 'ASC']);
+        $result = [];
+        foreach ($menus as $menu) {
+            $items = $this->em->getRepository(SiteMenuItem::class)->findBy(
+                ['menuId' => $menu->id()],
+                ['sortOrder' => 'ASC'],
+            );
+            $mapped = [];
+            foreach ($items as $item) {
+                $href = $item->url() ?? '#';
+                if ($item->pageId() !== null) {
+                    $page = $this->em->find(Page::class, $item->pageId());
+                    if ($page instanceof Page) {
+                        $href = '/p/' . $page->slug();
+                    }
+                }
+                $mapped[] = ['item' => $item, 'href' => $href];
+            }
+            $result[] = ['menu' => $menu, 'items' => $mapped];
+        }
+
+        return $result;
+    }
+
+    /** @return array<string, mixed> */
+    private function serialize(Page $page): array
+    {
+        return [
+            'id' => $page->id(),
+            'slug' => $page->slug(),
+            'title' => $page->title(),
+            'status' => $page->status(),
+            'template' => $page->template(),
+            'meta_description' => $page->metaDescription(),
+            'published_at' => $page->publishedAt()?->format(\DateTimeInterface::ATOM),
+            'created_at' => $page->createdAt()->format(\DateTimeInterface::ATOM),
+            'updated_at' => $page->updatedAt()->format(\DateTimeInterface::ATOM),
+        ];
+    }
+
+    /** @param array<string, mixed> $data */
+    private function page(string $view, array $data): Response
+    {
+        $user = $this->auth->user();
+
+        return $this->render($view, array_merge($data, [
+            'menu' => $this->menu->tree($user, $this->router, $this->request()),
+            'commands' => $this->palette->all($user),
+            'user' => $user,
+        ]));
+    }
+}

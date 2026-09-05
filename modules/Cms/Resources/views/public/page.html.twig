@@ -1,0 +1,9 @@
+{% include '@cms/partials/blocks.html.twig' with {
+    blocks: blocks,
+    products: products|default({}),
+    siteTitle: siteTitle,
+    item: item,
+    menus: menus,
+    preview: false,
+    hasMedia: hasMedia|default(false)
+} %}

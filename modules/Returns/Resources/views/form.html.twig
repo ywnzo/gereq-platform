@@ -1,0 +1,34 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ 'returns.new'|trans }}</h1></header>
+{% include 'ui/error-summary.html.twig' with { form: 'returns.save' } %}
+<form method="post" class="form-grid" action="{{ url('admin.returns.store') }}" data-form="returns.save" x-data="gereqForm">
+{{ csrf_field()|raw }}
+{% include 'ui/input.html.twig' with { name:'order_id', label:'returns.field.order'|trans, required:true, form:'returns.save', value:'' } %}
+{% include 'ui/input.html.twig' with { name:'customer_id', label:'returns.field.customer'|trans, optional:true, form:'returns.save', value:'' } %}
+{% include 'ui/textarea.html.twig' with { name:'reason', label:'returns.field.reason'|trans, required:true, form:'returns.save', value:'' } %}
+{% include 'ui/select.html.twig' with { name:'resolution', label:'returns.field.resolution'|trans, optional:true, form:'returns.save', value:'', options:[
+{value:'',label:'—'},{value:'refund',label:'returns.resolution.refund'|trans},{value:'exchange',label:'returns.resolution.exchange'|trans},
+{value:'store_credit',label:'returns.resolution.store_credit'|trans},{value:'none',label:'returns.resolution.none'|trans}
+] } %}
+{% include 'ui/input.html.twig' with { name:'refund_amount', label:'returns.field.refund_amount'|trans, optional:true, form:'returns.save', value:'' } %}
+{% include 'ui/input.html.twig' with { name:'currency', label:'returns.field.currency'|trans, optional:true, form:'returns.save', value:'CZK' } %}
+{% include 'ui/textarea.html.twig' with { name:'note', label:'returns.field.note'|trans, optional:true, form:'returns.save', value:'' } %}
+
+<div class="field field--full">
+<span class="field__label">{{ 'returns.items'|trans }}</span>
+<p class="muted">{{ 'returns.items.add_hint'|trans }}</p>
+{% for i in 0..2 %}
+<div class="form-grid form-grid--compact" style="margin-bottom:0.75rem">
+{% include 'ui/input.html.twig' with { name:'item_title['~i~']', label:'returns.field.title'|trans, optional:true, value:'' } %}
+{% include 'ui/input.html.twig' with { name:'item_qty['~i~']', label:'returns.field.qty'|trans, optional:true, value:'1' } %}
+{% include 'ui/input.html.twig' with { name:'item_product_id['~i~']', label:'returns.field.product'|trans, optional:true, value:'' } %}
+{% include 'ui/input.html.twig' with { name:'item_reason['~i~']', label:'returns.field.item_reason'|trans, optional:true, value:'' } %}
+</div>
+{% endfor %}
+</div>
+
+<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+<a class="btn btn--ghost" href="{{ url('admin.returns.index') }}">{{ 'common.cancel'|trans }}</a></div>
+</form>
+{% endblock %}

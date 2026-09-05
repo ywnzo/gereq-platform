@@ -1,0 +1,31 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'media.edit'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'media.save' } %}
+
+    <form method="post" class="form-grid" action="{{ url('admin.media.update', {id: item.id()}) }}" data-form="media.save" x-data="gereqForm"{% if form_errors('media.save') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with {
+            name: 'title',
+            label: 'media.field.title'|trans,
+            required: true,
+            form: 'media.save',
+            value: item.title()
+        } %}
+        {% include 'ui/input.html.twig' with {
+            name: 'alt',
+            label: 'media.field.alt'|trans,
+            optional: true,
+            form: 'media.save',
+            value: item.alt()|default('')
+        } %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.media.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

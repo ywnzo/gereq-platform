@@ -6,13 +6,23 @@ namespace Gereq\Http;
 
 use Gereq\Validation\Validator;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class DesignController extends Controller
 {
+    public function __construct(
+        \Twig\Environment $twig,
+        Router $router,
+        \Symfony\Component\HttpFoundation\RequestStack $requestStack,
+        private readonly TranslatorInterface $translator,
+    ) {
+        parent::__construct($twig, $router, $requestStack);
+    }
+
     public function show(): \Symfony\Component\HttpFoundation\Response
     {
         return $this->render('design/index.html.twig', [
-            'pageTitle' => 'Design system',
+            'pageTitle' => $this->translator->trans('design.page_title'),
         ]);
     }
 
@@ -20,7 +30,7 @@ final class DesignController extends Controller
     {
         $validator->validateRequest($request, 'design.demo');
         $this->forgetForm('design.demo');
-        $this->flash('success', 'Formulář prošel validací. Stav byl vyčištěn.');
+        $this->flash('success', $this->translator->trans('design.flash.validated'));
 
         return $this->redirectTo('/design.html#formular');
     }

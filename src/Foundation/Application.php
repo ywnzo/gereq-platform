@@ -29,6 +29,14 @@ use Gereq\Http\ExceptionHandler;
 use Gereq\Http\FormState;
 use Gereq\Http\Kernel;
 use Gereq\Http\Router;
+use Gereq\I18n\LocaleCatalog;
+use Gereq\I18n\LocaleResolver;
+use Gereq\I18n\TranslatorFactory;
+use Gereq\Api\ApiRegistry;
+use Gereq\Api\Auth\ApiTokenService;
+use Gereq\Api\IdempotencyService;
+use Gereq\Api\OpenApi\OpenApiGenerator;
+use Gereq\Event\EventRegistry;
 use Gereq\Module\CapabilityRegistry;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleManager;
@@ -50,6 +58,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Transport;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class Application
@@ -80,6 +89,7 @@ final class Application
             $container->get(DebugBar::class);
         }
         $container->get(ModuleManager::class)->boot($container->get(ModuleContext::class));
+        $container->get(ApiRegistry::class)->bind($container->get(Router::class));
         $container->get(ResourceRegistrar::class)->bindRoutes($container->get(Router::class));
 
         return $app;
@@ -151,7 +161,12 @@ final class Application
             ValidationRegistry::class => \DI\autowire(),
             Validator::class => \DI\autowire(),
             FormState::class => \DI\autowire(),
-            EventBus::class => \DI\create(EventBus::class),
+            EventBus::class => \DI\autowire(),
+            EventRegistry::class => \DI\create(EventRegistry::class),
+            ApiRegistry::class => \DI\autowire(),
+            ApiTokenService::class => \DI\autowire(),
+            IdempotencyService::class => \DI\autowire(),
+            OpenApiGenerator::class => \DI\autowire(),
             Menu::class => \DI\create(Menu::class),
             CapabilityRegistry::class => \DI\create(CapabilityRegistry::class),
             PermissionRegistry::class => \DI\create(PermissionRegistry::class),
@@ -180,18 +195,34 @@ final class Application
             Authenticator::class => \DI\autowire(),
             Auditor::class => \DI\autowire(),
             Settings::class => \DI\autowire(),
-            Notifier::class => \DI\autowire(),
-            FileManager::class => \DI\factory(static function (EntityManagerInterface $em, Repository $config) use ($basePath): FileManager {
-                return new FileManager($em, $config, $basePath);
+            LocaleCatalog::class => \DI\autowire(),
+            LocaleResolver::class => \DI\autowire(),
+            TranslatorInterface::class => \DI\factory(static function (TranslatorFactory $factory): TranslatorInterface {
+                return $factory->create();
             }),
-            ModuleManager::class => \DI\factory(static function (EntityManagerInterface $em, PermissionRegistry $permissions, Auditor $auditor) use ($basePath): ModuleManager {
-                return new ModuleManager($basePath, $em, $permissions, $auditor);
+            TranslatorFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            Notifier::class => \DI\autowire(),
+            FileManager::class => \DI\factory(static function (
+                EntityManagerInterface $em,
+                Repository $config,
+                TranslatorInterface $translator,
+            ) use ($basePath): FileManager {
+                return new FileManager($em, $config, $basePath, $translator);
+            }),
+            ModuleManager::class => \DI\factory(static function (
+                EntityManagerInterface $em,
+                PermissionRegistry $permissions,
+                Auditor $auditor,
+                TranslatorInterface $translator,
+            ) use ($basePath): ModuleManager {
+                return new ModuleManager($basePath, $em, $permissions, $auditor, $translator);
             }),
             TwigFactory::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath)
                 ->constructorParameter('debugBar', \DI\get(DebugBar::class)),
             Environment::class => \DI\factory(static fn (TwigFactory $factory): Environment => $factory->create()),
-            Kernel::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            Kernel::class => \DI\autowire(),
+            \Gereq\Http\Session\SessionHandlerFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             ExceptionHandler::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath)
                 ->constructorParameter('debugBar', \DI\get(DebugBar::class)),
@@ -202,6 +233,51 @@ final class Application
             \Gereq\Console\Command\MakeModuleCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\MakeResourceCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ServeCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\ServeDockerCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\TwigTypesCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Modules\Currency\Application\RateProviderInterface::class => \DI\get(\Modules\Currency\Infrastructure\CnbRateProvider::class),
+            \Modules\Currency\Infrastructure\CnbRateProvider::class => \DI\autowire(),
+            \Modules\Currency\Application\SyncExchangeRates::class => \DI\autowire(),
+            \Modules\Notifications\Application\NotifierBridge::class => \DI\autowire(),
+            \Modules\Notifications\Application\NotificationsProvider::class => \DI\autowire(),
+            \Modules\Warehouse\Application\StockService::class => \DI\autowire(),
+            \Modules\Warehouse\Application\InventoryProvider::class => \DI\autowire(),
+            \Modules\Orders\Application\NumberSequencer::class => \DI\autowire(),
+            \Modules\Orders\Application\OrdersProvider::class => \DI\autowire(),
+            \Modules\Projects\Application\ProjectsProvider::class => \DI\autowire(),
+            \Modules\Calendar\Application\CalendarProvider::class => \DI\autowire(),
+            \Modules\Shop\Application\CartService::class => \DI\autowire(),
+            \Modules\Shop\Application\CheckoutService::class => \DI\autowire(),
+            \Modules\Shop\Application\ShopProvider::class => \DI\autowire(),
+            \Modules\Shop\Application\ShippingCarrierRegistry::class => \DI\autowire(),
+            \Modules\Shop\Application\Carriers\ManualCarrier::class => \DI\autowire(),
+            \Modules\Shop\Application\Carriers\PacketaCarrier::class => \DI\autowire(),
+            \Modules\Payments\Application\PaymentsProvider::class => \DI\autowire(),
+            \Modules\Payments\Application\PaymentGatewayRegistry::class => \DI\autowire(),
+            \Modules\Payments\Application\Gateways\ManualBankGateway::class => \DI\autowire(),
+            \Modules\Payments\Application\Gateways\ComgateGateway::class => \DI\autowire(),
+            \Modules\Payments\Application\ComgateInboundProvider::class => \DI\autowire(),
+            \Modules\Payments\Application\PaymentService::class => \DI\autowire(),
+            \Modules\Webhooks\Application\InboundWebhookRegistry::class => \DI\autowire(),
+            \Modules\Coupons\Application\CouponsProvider::class => \DI\autowire(),
+            \Modules\Customers\Application\StoreAuthService::class => \DI\autowire(),
+            \Modules\Customers\Application\StoreTokenService::class => \DI\autowire(),
+            \Modules\Orders\Application\InvoiceIssuingService::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
+            \Modules\CustomerUploads\Application\CustomerUploadService::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
+            \Modules\Bundles\Application\BundlesProvider::class => \DI\autowire(),
+            \Modules\Loyalty\Application\LoyaltyProvider::class => \DI\autowire(),
+            \Modules\Feeds\Application\Drivers\GoogleMerchantDriver::class => \DI\autowire(),
+            \Modules\Feeds\Application\Drivers\HeurekaDriver::class => \DI\autowire(),
+            \Modules\Feeds\Application\Drivers\CustomDriver::class => \DI\autowire(),
+            \Modules\Feeds\Application\FeedsProvider::class => \DI\autowire(),
+            \Modules\Media\Application\MediaProvider::class => \DI\autowire(),
+            \Modules\Media\Http\MediaController::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Modules\Cms\Application\CmsProvider::class => \DI\autowire(),
+            \Modules\Returns\Application\ReturnsProvider::class => \DI\autowire(),
+            \Modules\Reviews\Application\ReviewsProvider::class => \DI\autowire(),
+            \Modules\Newsletter\Application\NewsletterProvider::class => \DI\autowire(),
         ];
     }
 }

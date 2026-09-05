@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <title>Faktura {{ invoice.number }}</title>
+    <style>
+        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; }
+        h1 { font-size: 20px; margin: 0 0 16px; }
+        .grid { display: table; width: 100%; margin-bottom: 20px; }
+        .col { display: table-cell; width: 50%; vertical-align: top; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th { background: #f3f3f3; }
+        .totals { margin-top: 16px; text-align: right; font-size: 14px; }
+        .muted { color: #555; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <h1>Faktura {{ invoice.number }}</h1>
+    <p class="muted">
+        Vystaveno: {{ invoice.issuedAt ? invoice.issuedAt|date('d.m.Y') : '—' }}
+        {% if invoice.dueAt %} · Splatnost: {{ invoice.dueAt|date('d.m.Y') }}{% endif %}
+        {% if order %} · Objednávka: {{ order.number }}{% endif %}
+    </p>
+
+    <div class="grid">
+        <div class="col">
+            <strong>Dodavatel</strong><br>
+            {{ seller.name|default(app_name) }}<br>
+            {% if seller.address %}{{ seller.address }}<br>{% endif %}
+            {% if seller.ico %}IČO: {{ seller.ico }}<br>{% endif %}
+            {% if seller.dic %}DIČ: {{ seller.dic }}<br>{% endif %}
+            {% if seller.iban %}IBAN: {{ seller.iban }}{% elseif seller.account %}Účet: {{ seller.account }}/{{ seller.bank_code }}{% endif %}
+        </div>
+        <div class="col">
+            <strong>Odběratel</strong><br>
+            {{ buyer.name|default('—') }}<br>
+            {% if buyer.address %}{{ buyer.address }}<br>{% endif %}
+            {% if buyer.ico %}IČO: {{ buyer.ico }}<br>{% endif %}
+            {% if buyer.dic %}DIČ: {{ buyer.dic }}<br>{% endif %}
+            {% if buyer.email %}{{ buyer.email }}{% endif %}
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Položka</th>
+                <th>SKU</th>
+                <th>Množství</th>
+                <th>Cena</th>
+                <th>Celkem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+                <tr>
+                    <td>{{ line.title }}</td>
+                    <td>{{ line.sku|default('') }}</td>
+                    <td>{{ line.qty }}</td>
+                    <td>{{ line.unit_price }} {{ invoice.currency }}</td>
+                    <td>{{ line.total }} {{ invoice.currency }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5">{{ invoice.total }} {{ invoice.currency }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="totals"><strong>Celkem k úhradě: {{ invoice.total }} {{ invoice.currency }}</strong></p>
+    {% if invoice.paymentReference %}
+        <p>Variabilní symbol: {{ invoice.paymentReference }}</p>
+    {% endif %}
+    {% if invoice.spaydPayload %}
+        <p class="muted">SPAYD: {{ invoice.spaydPayload }}</p>
+    {% endif %}
+</body>
+</html>

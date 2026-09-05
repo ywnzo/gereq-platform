@@ -12,6 +12,7 @@ use Gereq\Http\Middleware\GuestMiddleware;
 use Gereq\Http\Middleware\PermissionMiddleware;
 use Gereq\Http\Middleware\Pipeline;
 use Gereq\Http\Middleware\SecurityHeadersMiddleware;
+use Gereq\Http\Middleware\SetLocaleMiddleware;
 use Gereq\Http\Middleware\StartSessionMiddleware;
 use Gereq\Validation\ValidationException;
 use Psr\Container\ContainerInterface;
@@ -30,7 +31,6 @@ final class Kernel
         private readonly ExceptionHandler $errors,
         private readonly FormState $formState,
         private readonly DebugBar $debugBar,
-        private readonly string $basePath,
     ) {
     }
 
@@ -58,29 +58,40 @@ final class Kernel
 
     private function dispatch(Request $request): Response
     {
-        $aliases = [
-            'auth' => AuthMiddleware::class,
-            'guest' => GuestMiddleware::class,
-            'csrf' => CsrfMiddleware::class,
-        ];
-
         $matched = $this->router->match($request);
         $route = $matched['route'];
         $parameters = $matched['parameters'];
         $request->attributes->set('_route', $route->getName());
         $request->attributes->set('_route_params', $parameters);
+        $request->attributes->set('_gereq_route', $route);
+
+        $aliases = [
+            'auth' => AuthMiddleware::class,
+            'guest' => GuestMiddleware::class,
+            'csrf' => CsrfMiddleware::class,
+            'api' => \Gereq\Api\Http\ApiAuthMiddleware::class,
+            'api.rate' => \Gereq\Api\Http\ApiRateLimitMiddleware::class,
+            'api.correlation' => \Gereq\Api\Http\CorrelationIdMiddleware::class,
+        ];
 
         $middleware = [
-            new StartSessionMiddleware($this->basePath),
+            StartSessionMiddleware::class,
+            SetLocaleMiddleware::class,
             SecurityHeadersMiddleware::class,
             CsrfMiddleware::class,
+            \Gereq\Api\Http\CorrelationIdMiddleware::class,
         ];
+
+        $isApi = str_starts_with((string) $route->getPath(), '/api/');
+        if ($isApi) {
+            $middleware[] = \Gereq\Api\Http\ApiRateLimitMiddleware::class;
+        }
 
         foreach ($route->getMiddleware() as $item) {
             $middleware[] = $aliases[$item] ?? $item;
         }
 
-        if ($route->getPermission() !== null) {
+        if (!$isApi && $route->getPermission() !== null) {
             $middleware[] = $this->container->get(PermissionMiddleware::class)->withPermission($route->getPermission());
         }
 

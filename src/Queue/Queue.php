@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Queue;
 
 use Gereq\Config\Repository;
+use Redis;
 
 final class Queue
 {
@@ -93,9 +94,9 @@ final class Queue
         return is_string($payload) ? $payload : null;
     }
 
-    private function redis(): \Redis
+    private function redis(): Redis
     {
-        if (!class_exists(\Redis::class)) {
+        if (!class_exists(Redis::class)) {
             throw new \RuntimeException('PHP rozšíření redis není nainstalované.');
         }
 
