@@ -33,6 +33,7 @@ RUN apt-get update \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/gereq.ini
+COPY docker/php/zz-www.conf /usr/local/etc/php-fpm.d/zz-www.conf
 COPY docker/php/entrypoint.sh /usr/local/bin/gereq-entrypoint
 RUN chmod +x /usr/local/bin/gereq-entrypoint
 

@@ -114,7 +114,7 @@ final class ServeDockerCommand extends Command
         $_ENV['FRONTEND_ORIGIN'] = $frontendOrigin;
 
         if ($detach || $raw) {
-            $output->writeln('GEREQ Platform (Docker): nginx + PHP-FPM + Redis + queue worker');
+            $output->writeln('GEREQ Platform (Docker): nginx + PHP-FPM + PostgreSQL + Redis + queue');
             $output->writeln(sprintf('V Cursoru / na VM:     <info>http://127.0.0.1:%d/admin</info>', $port));
             if ($lanIp !== null) {
                 $output->writeln(sprintf('Z Windows přes IP VM: <info>http://%s:%d/admin</info>', $lanIp, $port));
@@ -180,7 +180,7 @@ final class ServeDockerCommand extends Command
         if ($lanIp !== null) {
             $lines[] = sprintf('  lan     <info>http://%s:%d/admin</info>', $lanIp, $port);
         }
-        $lines[] = '  <fg=gray>Použijte 127.0.0.1, ne localhost. Queue + Redis jsou součástí stacku.</>';
+        $lines[] = '  <fg=gray>PostgreSQL + Redis + queue jsou součástí stacku. Použijte 127.0.0.1, ne localhost.</>';
 
         return implode("\n", $lines);
     }
