@@ -10,6 +10,7 @@ use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
 use Modules\CustomerUploads\Application\CustomerUploadService;
 use Modules\CustomerUploads\Http\Api\UploadApiController;
+use Modules\CustomerUploads\Http\Public\PublicStoreUploadController;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,7 +25,7 @@ final class CustomerUploadsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.1.0';
     }
 
     public function register(ModuleContext $context): void
@@ -49,6 +50,14 @@ final class CustomerUploadsModule implements ModuleInterface
             $routes->post('/link', [UploadApiController::class, 'link'])->name('api.uploads.link');
             $routes->get('/files/{id}', [UploadApiController::class, 'file'])->name('api.uploads.file');
         });
+
+        $public = [PublicStoreUploadController::class, 'options'];
+        $context->router()->add('/api/public/store/uploads/session', ['OPTIONS'], $public)->name('api.public.store.uploads.session.options');
+        $context->router()->add('/api/public/store/uploads/files', ['OPTIONS'], $public)->name('api.public.store.uploads.files.options');
+        $context->router()->add('/api/public/store/uploads/files/{id}', ['OPTIONS'], $public)->name('api.public.store.uploads.file.options');
+        $context->router()->get('/api/public/store/uploads/session', [PublicStoreUploadController::class, 'session'])->name('api.public.store.uploads.session');
+        $context->router()->post('/api/public/store/uploads/files', [PublicStoreUploadController::class, 'store'])->name('api.public.store.uploads.store');
+        $context->router()->get('/api/public/store/uploads/files/{id}', [PublicStoreUploadController::class, 'file'])->name('api.public.store.uploads.file');
     }
 
     public function boot(ModuleContext $context): void

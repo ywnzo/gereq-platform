@@ -140,8 +140,6 @@ final class CustomerUploadService
     /** @return array<string, mixed> */
     public function serialize(CustomerUpload $upload): array
     {
-        $base = rtrim((string) $this->config->get('app.url', ''), '/');
-
         return [
             'id' => $upload->id(),
             'product_id' => $upload->productId(),
@@ -150,7 +148,7 @@ final class CustomerUploadService
             'mime' => $upload->mime(),
             'size' => $upload->size(),
             'promotional_consent' => $upload->promotionalConsent(),
-            'url' => $base . '/api/v1/uploads/files/' . $upload->id(),
+            'url' => '/api/public/store/uploads/files/' . $upload->id(),
             'created_at' => $upload->createdAt()->format(\DateTimeInterface::ATOM),
         ];
     }
