@@ -7,6 +7,7 @@ namespace Gereq\Console;
 use Gereq\Console\Command\AboutCommand;
 use Gereq\Console\Command\CacheClearCommand;
 use Gereq\Console\Command\ImportLaravelCommand;
+use Gereq\Console\Command\ImportSqliteCommand;
 use Gereq\Console\Command\InstallCommand;
 use Gereq\Console\Command\MakeModuleCommand;
 use Gereq\Console\Command\MakeResourceCommand;
@@ -71,6 +72,7 @@ final class ConsoleKernel
             TwigTypesCommand::class,
             SyncRatesCommand::class,
             ImportLaravelCommand::class,
+            ImportSqliteCommand::class,
             ImportProductsCsvCommand::class,
             ImapMatchCommand::class,
             PurgeUploadsCommand::class,
