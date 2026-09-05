@@ -24,6 +24,12 @@ class Product
     private string $status = 'draft';
     #[ORM\Column(length: 32)]
     private string $unit = 'ks';
+    /** off | optional | required — customer note on storefront line item */
+    #[ORM\Column(name: 'customer_note_mode', length: 16, options: ['default' => 'off'])]
+    private string $customerNoteMode = 'off';
+    /** When true, option groups from the first category are included on the storefront / generator. */
+    #[ORM\Column(name: 'inherit_category_options', type: 'boolean', options: ['default' => false])]
+    private bool $inheritCategoryOptions = false;
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
     #[ORM\Column(name: 'updated_at')]
@@ -48,6 +54,8 @@ class Product
     public function description(): ?string { return $this->description; }
     public function status(): string { return $this->status; }
     public function unit(): string { return $this->unit; }
+    public function customerNoteMode(): string { return $this->customerNoteMode; }
+    public function inheritsCategoryOptions(): bool { return $this->inheritCategoryOptions; }
     public function createdAt(): \DateTimeImmutable { return $this->createdAt; }
     public function updatedAt(): \DateTimeImmutable { return $this->updatedAt; }
     /** @return Collection<int, ProductCategory> */
@@ -56,6 +64,17 @@ class Product
     public function setDescription(?string $description): void { $this->description = $description; $this->touch(); }
     public function setStatus(string $status): void { $this->status = $status; $this->touch(); }
     public function setUnit(string $unit): void { $this->unit = $unit; $this->touch(); }
+    public function setCustomerNoteMode(string $mode): void
+    {
+        $mode = strtolower(trim($mode));
+        $this->customerNoteMode = in_array($mode, ['off', 'optional', 'required'], true) ? $mode : 'off';
+        $this->touch();
+    }
+    public function setInheritCategoryOptions(bool $inherit): void
+    {
+        $this->inheritCategoryOptions = $inherit;
+        $this->touch();
+    }
     public function setSku(string $sku): void { $this->sku = strtoupper($sku); $this->touch(); }
     public function addCategory(ProductCategory $c): void { if (!$this->categories->contains($c)) $this->categories->add($c); }
     public function clearCategories(): void { $this->categories->clear(); }

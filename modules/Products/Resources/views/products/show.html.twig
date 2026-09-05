@@ -27,7 +27,7 @@
             <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="images">{{ 'products.images.title'|trans }}{% if images %}<span class="module-tab-count">{{ images|length }}</span>{% endif %}</button>
             <button type="button" class="design-tab" role="tab" data-tab="prices">{{ 'products.prices.title'|trans }}{% if prices %}<span class="module-tab-count">{{ prices|length }}</span>{% endif %}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="variants">Varianty{% if variants %}<span class="module-tab-count">{{ variants|length }}</span>{% endif %}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="variants">Varianty{% if optionGroups or variants %}<span class="module-tab-count">{{ optionGroups|length }}/{{ variants|length }}</span>{% endif %}</button>
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
@@ -272,61 +272,208 @@
         <section class="design-panel" data-panel="variants" role="tabpanel">
             <section class="panel">
                 <header class="panel__head">
-                    <h2>Varianty</h2>
+                    <div>
+                        <h2>Kolonky variant</h2>
+                        <p class="muted">Kolonky můžete nastavit u kategorie a tady je zdědit, nebo mít vlastní jen u produktu (případně obojí).</p>
+                    </div>
                 </header>
-                {% if optionGroups is not empty %}
-                    <p class="muted">Option groups: {% for g in optionGroups %}<span class="badge">{{ g.name() }} ({{ g.code() }})</span> {% endfor %}</p>
+
+                {% if user.can('products.manage') %}
+                    <form method="post" class="variant-inherit" action="{{ url('admin.products.inherit_category_options', {id: item.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <label class="check">
+                            <input type="hidden" name="inherit_category_options" value="0">
+                            <input type="checkbox" name="inherit_category_options" value="1" {{ item.inheritsCategoryOptions() ? 'checked' : '' }} onchange="this.form.submit()">
+                            <span>
+                                Dědit kolonky z kategorie
+                                {% if primaryCategory %}
+                                    <strong>{{ primaryCategory.name() }}</strong>
+                                {% else %}
+                                    <span class="muted">(produkt nemá kategorii)</span>
+                                {% endif %}
+                            </span>
+                        </label>
+                    </form>
+                {% elseif item.inheritsCategoryOptions() %}
+                    <p class="muted">Produkt dědí kolonky z kategorie{% if primaryCategory %} <strong>{{ primaryCategory.name() }}</strong>{% endif %}.</p>
                 {% endif %}
+
+                {% if item.inheritsCategoryOptions() %}
+                    <div class="variant-inherited">
+                        <h3 class="variant-inherited__title">Z kategorie {% if primaryCategory %}· {{ primaryCategory.name() }}{% endif %}</h3>
+                        {% if categoryOptionGroups is empty %}
+                            <p class="muted">Kategorie zatím nemá žádné kolonky. Nastavte je v editaci kategorie.</p>
+                        {% else %}
+                            <div class="variant-groups">
+                                {% for row in categoryOptionGroups %}
+                                    {% set group = row.group %}
+                                    <article class="variant-group variant-group--inherited">
+                                        <header class="variant-group__head">
+                                            <strong>{{ group.name() }}</strong>
+                                            <span class="badge">{{ group.code() }}</span>
+                                            <span class="badge badge--muted">děděno</span>
+                                        </header>
+                                        <p class="muted">{{ row.options_text|replace({'\n': ', '}) }}</p>
+                                    </article>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <h3 class="variant-inherited__title">Vlastní kolonky produktu</h3>
+
+                {% if optionGroups is empty %}
+                    <div class="empty"><p>Žádné vlastní kolonky. {% if item.inheritsCategoryOptions() and categoryOptionGroups is not empty %}Stačí ty z kategorie, nebo přidejte další.{% else %}Přidejte třeba „Barva“ nebo „Velikost“.{% endif %}</p></div>
+                {% else %}
+                    <div class="variant-groups">
+                        {% for row in optionGroups %}
+                            {% set group = row.group %}
+                            <article class="variant-group">
+                                <header class="variant-group__head">
+                                    <strong>{{ loop.index }}. kolonka</strong>
+                                    <span class="badge">{{ group.code() }}</span>
+                                    {% if user.can('products.manage') %}
+                                        <form method="post" action="{{ url('admin.products.option_groups.destroy', {id: item.id(), groupId: group.id()}) }}" data-confirm="Smazat kolonku a její možnosti?" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                            {{ csrf_field()|raw }}
+                                            <button type="submit" class="btn btn--ghost btn-sm">Odebrat</button>
+                                        </form>
+                                    {% endif %}
+                                </header>
+                                {% if user.can('products.manage') %}
+                                    <form method="post" class="variant-group-form" action="{{ url('admin.products.option_groups.update', {id: item.id(), groupId: group.id()}) }}" data-form="products.option_group.save">
+                                        {{ csrf_field()|raw }}
+                                        <div class="variant-group-form__top">
+                                            {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: group.name() } %}
+                                            <label class="check">
+                                                <input type="hidden" name="required" value="0">
+                                                <input type="checkbox" name="required" value="1" {{ group.isRequired() ? 'checked' : '' }}>
+                                                <span>Povinný výběr na storefrontu</span>
+                                            </label>
+                                        </div>
+                                        <label class="field">
+                                            <span class="g-label">Možnosti <span class="g-optional">(1 na řádek)</span></span>
+                                            <textarea class="input variant-options-textarea" name="options_text" rows="8" placeholder="Černá&#10;Dub&#10;Bílá">{{ row.options_text }}</textarea>
+                                        </label>
+                                        <div class="form-actions">
+                                            <button class="btn btn--primary" type="submit">Uložit kolonku</button>
+                                        </div>
+                                    </form>
+                                {% else %}
+                                    <p><strong>{{ group.name() }}</strong></p>
+                                    <p class="muted">{{ row.options_text|replace({'\n': ', '}) }}</p>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if user.can('products.manage') %}
+                    <div class="variant-group variant-group--new">
+                        <header class="variant-group__head"><strong>Nová kolonka produktu</strong></header>
+                        <form method="post" class="variant-group-form" action="{{ url('admin.products.option_groups.store', {id: item.id()}) }}" data-form="products.option_group.save">
+                            {{ csrf_field()|raw }}
+                            <div class="variant-group-form__top">
+                                {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: '', placeholder: 'Např. Barva látky' } %}
+                                <label class="check">
+                                    <input type="hidden" name="required" value="0">
+                                    <input type="checkbox" name="required" value="1" checked>
+                                    <span>Povinný výběr na storefrontu</span>
+                                </label>
+                            </div>
+                            <label class="field">
+                                <span class="g-label">Možnosti <span class="g-optional">(1 na řádek)</span></span>
+                                <textarea class="input variant-options-textarea" name="options_text" rows="8" placeholder="Bílá&#10;Černá&#10;Modrá"></textarea>
+                            </label>
+                            <div class="form-actions">
+                                <button class="btn btn--primary" type="submit">Přidat kolonku</button>
+                            </div>
+                        </form>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>Prodejní kombinace (SKU)</h2>
+                        <p class="muted">Každá kombinace kolonek (včetně děděných) má vlastní SKU, cenu a EAN. Generování doplní chybějící a odstraní kombinace, které už neodpovídají kolonkám.</p>
+                    </div>
+                    {% set canGenerate = optionGroups is not empty or (item.inheritsCategoryOptions() and categoryOptionGroups is not empty) %}
+                    {% if user.can('products.manage') and canGenerate %}
+                        <form method="post" action="{{ url('admin.products.variants.generate', {id: item.id()}) }}">
+                            {{ csrf_field()|raw }}
+                            <button class="btn btn--primary" type="submit">Vygenerovat chybějící kombinace</button>
+                        </form>
+                    {% endif %}
+                </header>
+
                 {% if variants is empty %}
-                    <div class="empty"><p>Zatím žádné varianty.</p></div>
+                    <div class="empty"><p>Zatím žádné kombinace. Nejdřív vyplňte kolonky a pak je vygenerujte.</p></div>
                 {% else %}
                     <div class="table-wrap">
-                        <table class="table">
+                        <table class="table table--variants">
                             <thead>
                                 <tr>
+                                    <th>Kombinace</th>
                                     <th>SKU</th>
-                                    <th>Název</th>
-                                    <th>Cena</th>
-                                    <th>Sklad</th>
+                                    <th class="table--variants__num">Cena</th>
+                                    <th>EAN</th>
+                                    <th class="table--variants__num">Sklad</th>
                                     <th>Stav</th>
-                                    <th></th>
+                                    {% if user.can('products.manage') %}<th></th>{% endif %}
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for v in variants %}
+                                    {% set formId = 'variant-form-' ~ v.id() %}
                                     <tr>
-                                        <td><code>{{ v.sku() }}</code></td>
-                                        <td>{{ v.name() ?: '—' }}</td>
-                                        <td>{% if v.priceAmount() %}{{ v.priceAmount() }} {{ v.priceCurrency() }}{% else %}—{% endif %}</td>
-                                        <td>{{ v.stockQty() is not null ? v.stockQty() : '—' }}</td>
-                                        <td>{{ v.isActive() ? 'aktivní' : 'neaktivní' }}</td>
-                                        <td class="table__actions">
+                                        <td class="table--variants__combo">
                                             {% if user.can('products.manage') %}
-                                                <form method="post" action="{{ url('admin.products.variants.destroy', {id: item.id(), variantId: v.id()}) }}" data-confirm="Smazat variantu?" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                                <form id="{{ formId }}" class="table--variants__shell" method="post" action="{{ url('admin.products.variants.update', {id: item.id(), variantId: v.id()}) }}">
                                                     {{ csrf_field()|raw }}
-                                                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                                                    <input type="hidden" name="price_currency" value="{{ v.priceCurrency() ?: 'CZK' }}">
+                                                    <input type="hidden" name="name" value="{{ v.name() }}">
                                                 </form>
                                             {% endif %}
+                                            {% if v.attributes() is empty %}
+                                                <strong>{{ v.name() ?: '—' }}</strong>
+                                            {% else %}
+                                                <div class="table--variants__badges">
+                                                    {% for code, val in v.attributes() %}
+                                                        <span class="badge">{{ code }}: {{ val }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                                {% if v.name() %}
+                                                    <div class="muted table--variants__name">{{ v.name() }}</div>
+                                                {% endif %}
+                                            {% endif %}
                                         </td>
+                                        {% if user.can('products.manage') %}
+                                            <td><input class="input" form="{{ formId }}" type="text" name="sku" value="{{ v.sku() }}" required aria-label="SKU"></td>
+                                            <td class="table--variants__num"><input class="input" form="{{ formId }}" type="text" name="price_amount" value="{{ v.priceAmount() }}" placeholder="—" aria-label="Cena"></td>
+                                            <td><input class="input" form="{{ formId }}" type="text" name="ean" value="{{ v.ean() }}" placeholder="—" aria-label="EAN"></td>
+                                            <td class="table--variants__num"><input class="input" form="{{ formId }}" type="text" name="stock_qty" value="{{ v.stockQty() is not null ? v.stockQty() : '' }}" placeholder="—" aria-label="Sklad"></td>
+                                            <td><span class="badge {{ v.isActive() ? 'badge--ok' : 'badge--muted' }}">{{ v.isActive() ? 'aktivní' : 'neaktivní' }}</span></td>
+                                            <td class="table--variants__actions">
+                                                <button class="btn btn--primary btn-sm" form="{{ formId }}" type="submit">Uložit</button>
+                                                <form method="post" action="{{ url('admin.products.variants.destroy', {id: item.id(), variantId: v.id()}) }}" data-confirm="Smazat variantu?" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                                    {{ csrf_field()|raw }}
+                                                    <button type="submit" class="btn btn--ghost btn-sm">Smazat</button>
+                                                </form>
+                                            </td>
+                                        {% else %}
+                                            <td><code>{{ v.sku() }}</code></td>
+                                            <td class="table--variants__num">{% if v.priceAmount() %}{{ v.priceAmount() }} {{ v.priceCurrency() }}{% else %}—{% endif %}</td>
+                                            <td>{{ v.ean() ?: '—' }}</td>
+                                            <td class="table--variants__num">{{ v.stockQty() is not null ? v.stockQty() : '—' }}</td>
+                                            <td>{{ v.isActive() ? 'aktivní' : 'neaktivní' }}</td>
+                                        {% endif %}
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                {% endif %}
-                {% if user.can('products.manage') %}
-                    <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.products.variants.store', {id: item.id()}) }}" data-form="products.variant.save">
-                        {{ csrf_field()|raw }}
-                        {% include 'ui/input.html.twig' with { name: 'sku', label: 'SKU', required: true, form: 'products.variant.save', value: '' } %}
-                        {% include 'ui/input.html.twig' with { name: 'name', label: 'Název', optional: true, form: 'products.variant.save', value: '' } %}
-                        {% include 'ui/input.html.twig' with { name: 'price_amount', label: 'Cena', optional: true, form: 'products.variant.save', value: '' } %}
-                        {% include 'ui/input.html.twig' with { name: 'price_currency', label: 'Měna', optional: true, form: 'products.variant.save', value: 'CZK' } %}
-                        {% include 'ui/input.html.twig' with { name: 'stock_qty', label: 'Sklad', optional: true, form: 'products.variant.save', value: '' } %}
-                        {% include 'ui/input.html.twig' with { name: 'ean', label: 'EAN', optional: true, form: 'products.variant.save', value: '' } %}
-                        <div class="form-actions">
-                            <button class="btn btn--primary" type="submit">Přidat variantu</button>
-                        </div>
-                    </form>
                 {% endif %}
             </section>
         </section>

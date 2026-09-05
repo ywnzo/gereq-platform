@@ -29,4 +29,82 @@
             <a class="btn btn--ghost" href="{{ url('admin.products.categories.index') }}">{{ 'common.cancel'|trans }}</a>
         </div>
     </form>
+
+    {% if item %}
+        <section class="panel" style="margin-top: 1.5rem">
+            <header class="panel__head">
+                <div>
+                    <h2>Kolonky variant kategorie</h2>
+                    <p class="muted">Produkty v této kategorii můžou kolonky zdědit (zapne se u produktu). Produkt může mít i vlastní kolonky navíc.</p>
+                </div>
+            </header>
+
+            {% set optionGroups = optionGroups|default([]) %}
+            {% if optionGroups is empty %}
+                <div class="empty"><p>Zatím žádné kolonky. Přidejte např. „Velikost“ nebo „Barva“.</p></div>
+            {% else %}
+                <div class="variant-groups">
+                    {% for row in optionGroups %}
+                        {% set group = row.group %}
+                        <article class="variant-group">
+                            <header class="variant-group__head">
+                                <strong>{{ loop.index }}. kolonka</strong>
+                                <span class="badge">{{ group.code() }}</span>
+                                {% if user.can('products.manage') %}
+                                    <form method="post" action="{{ url('admin.products.categories.option_groups.destroy', {id: item.id(), groupId: group.id()}) }}" data-confirm="Smazat kolonku?" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit" class="btn btn--ghost btn-sm">Odebrat</button>
+                                    </form>
+                                {% endif %}
+                            </header>
+                            {% if user.can('products.manage') %}
+                                <form method="post" class="variant-group-form" action="{{ url('admin.products.categories.option_groups.update', {id: item.id(), groupId: group.id()}) }}">
+                                    {{ csrf_field()|raw }}
+                                    <div class="variant-group-form__top">
+                                        {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: group.name() } %}
+                                        <label class="check">
+                                            <input type="hidden" name="required" value="0">
+                                            <input type="checkbox" name="required" value="1" {{ group.isRequired() ? 'checked' : '' }}>
+                                            <span>Povinný výběr</span>
+                                        </label>
+                                    </div>
+                                    <label class="field">
+                                        <span class="g-label">Možnosti <span class="g-optional">(1 na řádek)</span></span>
+                                        <textarea class="input variant-options-textarea" name="options_text" rows="8">{{ row.options_text }}</textarea>
+                                    </label>
+                                    <div class="form-actions">
+                                        <button class="btn btn--primary" type="submit">Uložit kolonku</button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if user.can('products.manage') %}
+                <div class="variant-group variant-group--new">
+                    <header class="variant-group__head"><strong>Nová kolonka</strong></header>
+                    <form method="post" class="variant-group-form" action="{{ url('admin.products.categories.option_groups.store', {id: item.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <div class="variant-group-form__top">
+                            {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: '', placeholder: 'Např. Velikost' } %}
+                            <label class="check">
+                                <input type="hidden" name="required" value="0">
+                                <input type="checkbox" name="required" value="1" checked>
+                                <span>Povinný výběr</span>
+                            </label>
+                        </div>
+                        <label class="field">
+                            <span class="g-label">Možnosti <span class="g-optional">(1 na řádek)</span></span>
+                            <textarea class="input variant-options-textarea" name="options_text" rows="8" placeholder="S&#10;M&#10;L"></textarea>
+                        </label>
+                        <div class="form-actions">
+                            <button class="btn btn--primary" type="submit">Přidat kolonku</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+        </section>
+    {% endif %}
 {% endblock %}

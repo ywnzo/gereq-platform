@@ -961,11 +961,12 @@ button.icon-btn.topbar__menu { display: none; }
 .icon-btn:hover { background: var(--hover-strong); color: var(--text); opacity: 1; }
 .sidebar .icon-btn:hover { background: var(--hover-strong); }
 
-.input, input, select, textarea {
+.input, input, textarea {
     width: 100%;
     box-sizing: border-box;
-    /* background-color (not shorthand) — shorthand would reset select arrow repeat */
+    /* Keep longhands — LightningCSS may rewrite lone background-color → background */
     background-color: var(--surface-2);
+    background-image: none;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0 9px;
@@ -988,22 +989,31 @@ input[type="radio"] {
     min-height: 0;
     accent-color: var(--primary);
 }
+/* Native selects: full background stack (avoid shorthand; beats .input specificity) */
 select,
 select.input {
+    width: 100%;
+    box-sizing: border-box;
     appearance: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 28px 0 9px;
+    min-height: 32px;
+    height: 32px;
+    font-size: 13px;
+    line-height: normal;
+    color: var(--text, inherit);
     background-color: var(--surface-2);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371717a' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
     background-size: 12px 12px;
-    padding-right: 28px;
-    /* Native select text clips if height fights padding/line-height */
-    line-height: normal;
 }
 html.dark select,
 html.dark select.input,
 html[data-theme="gereq-dark"] select,
 html[data-theme="gereq-dark"] select.input {
+    background-color: var(--surface-2);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23a1a1aa' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
@@ -2617,7 +2627,8 @@ code { font-size: 12px; color: var(--gereq-muted); font-family: var(--gereq-font
     width: 100%;
     max-width: none;
     appearance: none;
-    background: var(--surface);
+    background-color: var(--surface);
+    background-image: none;
     border: 1px solid var(--border);
     border-radius: var(--radius-field, 0);
     padding: 0.75rem 0.9rem;
@@ -2625,7 +2636,7 @@ code { font-size: 12px; color: var(--gereq-muted); font-family: var(--gereq-font
     font-family: var(--gereq-font-sans);
     font-size: 1rem;
     line-height: 1.45;
-    transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+    transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
 }
 .g-control::placeholder,
 .textarea::placeholder,
@@ -2646,7 +2657,7 @@ code { font-size: 12px; color: var(--gereq-muted); font-family: var(--gereq-font
 .textarea-mini:focus,
 .textarea-mini:focus-visible {
     outline: none;
-    background: var(--surface);
+    background-color: var(--surface);
     border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
 }
@@ -2671,6 +2682,7 @@ select.g-control {
 select.input.g-control,
 select.g-control {
     padding-right: 2rem;
+    background-color: var(--surface);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371717a' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
@@ -2680,6 +2692,7 @@ html.dark select.input.g-control,
 html.dark select.g-control,
 html[data-theme="gereq-dark"] select.input.g-control,
 html[data-theme="gereq-dark"] select.g-control {
+    background-color: var(--surface);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23a1a1aa' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
@@ -3393,7 +3406,9 @@ html[data-theme="gereq-dark"] .g-control,
 html[data-theme="gereq-dark"] .g-select__trigger,
 html[data-theme="gereq-dark"] .g-editor,
 html[data-theme="gereq-dark"] .g-file__box,
-html[data-theme="gereq-dark"] .g-modal__panel { background: var(--surface); }
+html[data-theme="gereq-dark"] .g-modal__panel {
+    background-color: var(--surface);
+}
 html.dark .g-select__list,
 html.dark .g-popover__panel,
 html.dark .g-hovercard__panel,
@@ -5796,4 +5811,122 @@ html[data-theme="gereq-dark"] .sidebar {
     .cal-agenda__when {
         grid-column: 2;
     }
+}
+
+/* Product variant option groups (baby-naty style fields) */
+.variant-groups { display: grid; gap: 12px; margin-bottom: 1rem; }
+.variant-group {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    padding: 12px 14px;
+}
+.variant-group--new { border-style: dashed; margin-top: 12px; }
+.variant-group__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.variant-group__head form { margin-left: auto; }
+
+.table--variants {
+    table-layout: fixed;
+    width: 100%;
+}
+.table--variants th,
+.table--variants td {
+    vertical-align: middle;
+    white-space: normal;
+}
+.table--variants th:nth-child(1),
+.table--variants td:nth-child(1) { width: 22%; }
+.table--variants th:nth-child(2),
+.table--variants td:nth-child(2) { width: 22%; }
+.table--variants th:nth-child(3),
+.table--variants td:nth-child(3) { width: 9%; }
+.table--variants th:nth-child(4),
+.table--variants td:nth-child(4) { width: 14%; }
+.table--variants th:nth-child(5),
+.table--variants td:nth-child(5) { width: 8%; }
+.table--variants th:nth-child(6),
+.table--variants td:nth-child(6) { width: 8%; }
+.table--variants th:nth-child(7),
+.table--variants td:nth-child(7) { width: 17%; }
+.table--variants__num { text-align: right; }
+.table--variants__num .input { text-align: right; }
+.table--variants__shell {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+.table--variants__combo { position: relative; }
+.table--variants__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.table--variants__name {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.3;
+}
+.table--variants .input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.table--variants__actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    justify-content: flex-end;
+    align-items: center;
+    white-space: nowrap;
+}
+.table--variants__actions form { margin: 0; display: inline; }
+
+.variant-inherit {
+    margin: 0 0 1rem;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--hover);
+}
+.variant-inherited { margin: 0 0 1.25rem; }
+.variant-inherited__title {
+    margin: 0 0 .65rem;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.variant-group--inherited {
+    opacity: .92;
+    background: color-mix(in srgb, var(--surface) 80%, var(--primary) 6%);
+}
+.variant-group-form {
+    display: grid;
+    gap: 12px;
+}
+.variant-group-form__top {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) auto;
+    gap: 12px 16px;
+    align-items: end;
+}
+.variant-group-form__top .check {
+    padding-bottom: 0.55rem;
+}
+.variant-options-textarea {
+    min-height: 10rem;
+    width: 100%;
+    resize: vertical;
+}
+@media (max-width: 700px) {
+    .variant-group-form__top { grid-template-columns: 1fr; }
+    .variant-group-form__top .check { padding-bottom: 0; }
 }

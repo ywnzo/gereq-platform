@@ -36,7 +36,10 @@ final class VariantApiController extends Controller
         if (!$product instanceof Product) {
             return ApiResponse::notFound();
         }
-        $groups = $this->em->getRepository(ProductOptionGroup::class)->findBy(['productId' => $productId], ['sortOrder' => 'ASC']);
+        $groups = $this->em->getRepository(ProductOptionGroup::class)->findBy(
+            ['scopeType' => ProductOptionGroup::SCOPE_PRODUCT, 'scopeId' => $productId],
+            ['sortOrder' => 'ASC'],
+        );
         $variants = $this->em->getRepository(ProductVariant::class)->findBy(['productId' => $productId], ['sku' => 'ASC']);
         $tiers = $this->em->getRepository(QuantityPriceTier::class)->findBy(
             ['scopeType' => 'product', 'scopeId' => $productId],
@@ -57,6 +60,7 @@ final class VariantApiController extends Controller
                     'name' => $v->name(),
                     'sort_order' => $v->sortOrder(),
                 ], $values),
+                'required' => $group->isRequired(),
             ];
         }
 
@@ -111,7 +115,12 @@ final class VariantApiController extends Controller
             return ApiResponse::notFound();
         }
         $data = gereq()->make(ValidationRegistry::class)->validate('products.option_group.save', $this->body($request));
-        $group = new ProductOptionGroup($productId, (string) $data['code'], (string) $data['name']);
+        $group = new ProductOptionGroup(
+            ProductOptionGroup::SCOPE_PRODUCT,
+            $productId,
+            (string) ($data['code'] ?? 'field'),
+            (string) $data['name'],
+        );
         $group->setSortOrder((int) ($data['sort_order'] ?? 0));
         $this->em->persist($group);
         $this->em->flush();
@@ -121,6 +130,7 @@ final class VariantApiController extends Controller
             'code' => $group->code(),
             'name' => $group->name(),
             'sort_order' => $group->sortOrder(),
+            'required' => $group->isRequired(),
         ], 201);
     }
 

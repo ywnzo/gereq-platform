@@ -15,6 +15,8 @@ use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
 use Modules\Currency\Domain\Currency;
+use Modules\Products\Application\ProductPersonalizationService;
+use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\Events\ProductActivated;
 use Modules\Products\Domain\Events\ProductCreated;
 use Modules\Products\Domain\Events\ProductDeactivated;
@@ -48,6 +50,8 @@ final class ProductController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly FileManager $files,
         private readonly CapabilityRegistry $capabilities,
+        private readonly ProductPersonalizationService $personalization,
+        private readonly ProductVariantOptionsService $variantOptions,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -90,6 +94,7 @@ final class ProductController extends Controller
             'item' => null,
             'categoryOptions' => $this->categoryOptions(),
             'selectedCategories' => [],
+            'imageRule' => null,
         ]);
     }
 
@@ -107,9 +112,11 @@ final class ProductController extends Controller
         $product->setDescription($data['description']);
         $product->setStatus($data['status']);
         $product->setUnit($data['unit']);
+        $product->setCustomerNoteMode($data['customer_note_mode']);
         $this->applyCategories($product, $data['category_ids']);
         $this->em->persist($product);
         $this->em->flush();
+        $this->personalization->upsertRule($product->id(), $data['image_rule']);
 
         $payload = $this->publicProduct($product);
         $this->events->dispatch(ProductCreated::make($product->id(), $payload));
@@ -146,10 +153,15 @@ final class ProductController extends Controller
             ['productId' => $product->id()],
             ['sku' => 'ASC'],
         );
-        $optionGroups = $this->em->getRepository(ProductOptionGroup::class)->findBy(
-            ['productId' => $product->id()],
-            ['sortOrder' => 'ASC'],
-        );
+        $optionGroups = $this->variantOptions->groupsWithValues($product->id());
+        $categoryOptionGroups = [];
+        $primaryCategory = $this->variantOptions->primaryCategory($product);
+        if ($primaryCategory !== null) {
+            $categoryOptionGroups = $this->variantOptions->groupsForScope(
+                ProductOptionGroup::SCOPE_CATEGORY,
+                $primaryCategory->id(),
+            );
+        }
 
         return $this->page('@products/products/show.html.twig', [
             'pageTitle' => $product->name(),
@@ -158,6 +170,8 @@ final class ProductController extends Controller
             'images' => $images,
             'variants' => $variants,
             'optionGroups' => $optionGroups,
+            'categoryOptionGroups' => $categoryOptionGroups,
+            'primaryCategory' => $primaryCategory,
             'imageAssets' => $this->resolveImageAssets($images),
             'libraryImages' => $this->libraryImageOptions($images),
             'hasMedia' => $this->capabilities->has('media') && class_exists(\Modules\Media\Domain\MediaAsset::class),
@@ -183,6 +197,7 @@ final class ProductController extends Controller
             'item' => $product,
             'categoryOptions' => $this->categoryOptions(),
             'selectedCategories' => $selected,
+            'imageRule' => $this->personalization->findRule($product->id()),
         ]);
     }
 
@@ -208,8 +223,10 @@ final class ProductController extends Controller
         $product->setDescription($data['description']);
         $product->setStatus($data['status']);
         $product->setUnit($data['unit']);
+        $product->setCustomerNoteMode($data['customer_note_mode']);
         $this->applyCategories($product, $data['category_ids']);
         $this->em->flush();
+        $this->personalization->upsertRule($product->id(), $data['image_rule']);
 
         $payload = $this->publicProduct($product);
         $this->events->dispatch(ProductUpdated::make($product->id(), $payload));
@@ -359,6 +376,10 @@ final class ProductController extends Controller
 
         $variant = new ProductVariant($product->id(), $sku);
         $variant->setName(isset($data['name']) ? trim((string) $data['name']) : null);
+        $attrs = $data['attributes'] ?? [];
+        if (is_array($attrs) && $attrs !== []) {
+            $variant->setAttributes(array_map('strval', $attrs));
+        }
         if (isset($data['price_amount']) && trim((string) $data['price_amount']) !== '') {
             $variant->setPrice(
                 (string) $data['price_amount'],
@@ -378,7 +399,53 @@ final class ProductController extends Controller
         $this->auditor->log('product.variant_created', 'product', $product->id(), null, ['sku' => $sku]);
         $this->flash('success', 'Varianta uložena.');
 
-        return $this->redirect('admin.products.show', ['id' => $id]);
+        return $this->redirectToVariants($id);
+    }
+
+    public function updateVariant(Request $request, string $id, string $variantId): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+        $variant = $this->em->find(ProductVariant::class, $variantId);
+        if (!$variant instanceof ProductVariant || $variant->productId() !== $product->id()) {
+            $this->abort(404);
+        }
+
+        $data = $this->validate($request, 'products.variant.update');
+        if (isset($data['sku']) && trim((string) $data['sku']) !== '') {
+            $sku = strtoupper(trim((string) $data['sku']));
+            $owner = $this->em->getRepository(ProductVariant::class)->findOneBy(['sku' => $sku]);
+            if ($owner instanceof ProductVariant && $owner->id() !== $variant->id()) {
+                $this->flash('error', $this->translator->trans('products.error.sku_exists'));
+
+                return $this->redirectToVariants($id);
+            }
+            $variant->setSku($sku);
+        }
+        if (array_key_exists('name', $data)) {
+            $variant->setName(trim((string) $data['name']));
+        }
+        if (isset($data['price_amount']) && trim((string) $data['price_amount']) !== '') {
+            $variant->setPrice(
+                (string) $data['price_amount'],
+                isset($data['price_currency']) ? (string) $data['price_currency'] : ($variant->priceCurrency() ?: 'CZK'),
+            );
+        } elseif (isset($data['price_amount']) && trim((string) $data['price_amount']) === '') {
+            $variant->setPrice(null);
+        }
+        if (array_key_exists('stock_qty', $data)) {
+            $stock = trim((string) $data['stock_qty']);
+            $variant->setStockQty($stock === '' ? null : (int) $stock);
+        }
+        if (array_key_exists('ean', $data)) {
+            $variant->setEan(trim((string) $data['ean']));
+        }
+        $this->em->flush();
+        $this->flash('success', 'Varianta aktualizována.');
+
+        return $this->redirectToVariants($id);
     }
 
     public function destroyVariant(string $id, string $variantId): Response
@@ -396,7 +463,142 @@ final class ProductController extends Controller
         $this->auditor->log('product.variant_deleted', 'product', $product->id(), ['sku' => $variant->sku()], null);
         $this->flash('success', 'Varianta smazána.');
 
-        return $this->redirect('admin.products.show', ['id' => $id]);
+        return $this->redirectToVariants($id);
+    }
+
+    public function storeOptionGroup(Request $request, string $id): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+        $data = $this->validate($request, 'products.option_group.save');
+        try {
+            $this->variantOptions->createGroup(
+                ProductOptionGroup::SCOPE_PRODUCT,
+                $product->id(),
+                (string) $data['name'],
+                (string) ($data['options_text'] ?? ''),
+                $this->truthy($request, $data, 'required', true),
+            );
+        } catch (\InvalidArgumentException $e) {
+            $this->flash('error', $this->translator->trans($e->getMessage()));
+
+            return $this->redirectToVariants($id);
+        }
+        $this->flash('success', 'Kolonka variant vytvořena.');
+
+        return $this->redirectToVariants($id);
+    }
+
+    public function updateOptionGroup(Request $request, string $id, string $groupId): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+        $group = $this->em->find(ProductOptionGroup::class, $groupId);
+        if (
+            !$group instanceof ProductOptionGroup
+            || $group->scopeType() !== ProductOptionGroup::SCOPE_PRODUCT
+            || $group->scopeId() !== $product->id()
+        ) {
+            $this->abort(404);
+        }
+        $data = $this->validate($request, 'products.option_group.save');
+        try {
+            $this->variantOptions->updateGroup(
+                $group,
+                (string) $data['name'],
+                (string) ($data['options_text'] ?? ''),
+                $this->truthy($request, $data, 'required', true),
+            );
+        } catch (\InvalidArgumentException $e) {
+            $this->flash('error', $this->translator->trans($e->getMessage()));
+
+            return $this->redirectToVariants($id);
+        }
+        $this->flash('success', 'Kolonka uložena.');
+
+        return $this->redirectToVariants($id);
+    }
+
+    public function destroyOptionGroup(string $id, string $groupId): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+        $group = $this->em->find(ProductOptionGroup::class, $groupId);
+        if (
+            !$group instanceof ProductOptionGroup
+            || $group->scopeType() !== ProductOptionGroup::SCOPE_PRODUCT
+            || $group->scopeId() !== $product->id()
+        ) {
+            $this->abort(404);
+        }
+        $this->variantOptions->deleteGroup($group);
+        $this->flash('success', 'Kolonka smazána.');
+
+        return $this->redirectToVariants($id);
+    }
+
+    public function generateVariants(string $id): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+        $result = $this->variantOptions->generateMissingVariants($product);
+        $created = $result['created'];
+        $removed = $result['removed'];
+        if ($created === 0 && $removed === 0) {
+            $this->flash('success', 'Žádná změna — všechny platné kombinace už existují, nebo chybí položky v kolonkách.');
+        } elseif ($removed > 0 && $created === 0) {
+            $this->flash('success', sprintf('Odstraněno %d neplatných kombinací (neodpovídají současným kolonkám).', $removed));
+        } elseif ($removed > 0) {
+            $this->flash('success', sprintf('Vygenerováno %d nových a odstraněno %d neplatných kombinací.', $created, $removed));
+        } else {
+            $this->flash('success', sprintf('Vygenerováno %d nových kombinací (SKU).', $created));
+        }
+
+        return $this->redirectToVariants($id);
+    }
+
+    public function setInheritCategoryOptions(Request $request, string $id): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+        $enabled = $request->request->get('inherit_category_options') === '1'
+            || $request->request->get('inherit_category_options') === 'on';
+        $product->setInheritCategoryOptions($enabled);
+        $this->em->flush();
+        $this->flash('success', $enabled
+            ? 'Produkt dědí kolonky z kategorie.'
+            : 'Dědění z kategorie vypnuto — platí jen kolonky produktu.');
+
+        return $this->redirectToVariants($id);
+    }
+
+    private function redirectToVariants(string $productId): Response
+    {
+        return $this->redirectTo($this->router->url('admin.products.show', ['id' => $productId], $this->request()) . '#variants');
+    }
+
+    /** @param array<string, mixed> $data */
+    private function truthy(Request $request, array $data, string $key, bool $default = false): bool
+    {
+        $raw = $request->request->all()[$key] ?? ($data[$key] ?? null);
+        if ($raw === null) {
+            return $default;
+        }
+        if (is_array($raw)) {
+            $raw = end($raw);
+        }
+
+        return $raw === '1' || $raw === 1 || $raw === true || $raw === 'on' || $raw === 'true';
     }
 
     public function storeImage(Request $request, string $id): Response
@@ -711,7 +913,16 @@ final class ProductController extends Controller
     }
 
     /**
-     * @return array{sku: string, name: string, description: ?string, status: string, unit: string, category_ids: list<string>}
+     * @return array{
+     *   sku: string,
+     *   name: string,
+     *   description: ?string,
+     *   status: string,
+     *   unit: string,
+     *   category_ids: list<string>,
+     *   customer_note_mode: string,
+     *   image_rule: array{enabled: bool, max_images: int, crop_required: bool}
+     * }
      */
     private function validated(Request $request): array
     {
@@ -728,6 +939,15 @@ final class ProductController extends Controller
         }
         $categoryIds = array_values(array_filter(array_map('strval', $categoryIds)));
 
+        $noteMode = strtolower(trim((string) ($data['customer_note_mode'] ?? 'off')));
+        if (!in_array($noteMode, ['off', 'optional', 'required'], true)) {
+            $noteMode = 'off';
+        }
+
+        $enabled = $request->request->get('user_images_enabled') === '1'
+            || $request->request->get('user_images_enabled') === 'on'
+            || (string) ($data['user_images_enabled'] ?? '') === '1';
+
         return [
             'sku' => strtoupper(trim((string) $data['sku'])),
             'name' => trim((string) $data['name']),
@@ -735,6 +955,14 @@ final class ProductController extends Controller
             'status' => $status,
             'unit' => trim((string) ($data['unit'] ?? 'ks')) ?: 'ks',
             'category_ids' => $categoryIds,
+            'customer_note_mode' => $noteMode,
+            'image_rule' => [
+                'enabled' => $enabled,
+                'max_images' => max(0, min(20, (int) ($data['user_images_max'] ?? 1))),
+                'crop_required' => $request->request->get('user_images_crop') === '1'
+                    || $request->request->get('user_images_crop') === 'on'
+                    || (string) ($data['user_images_crop'] ?? '') === '1',
+            ],
         ];
     }
 
@@ -796,20 +1024,21 @@ final class ProductController extends Controller
     /** @return array<string, mixed> */
     private function publicProduct(Product $product): array
     {
-        return [
+        return array_merge([
             'id' => $product->id(),
             'sku' => $product->sku(),
             'name' => $product->name(),
             'description' => $product->description(),
             'status' => $product->status(),
             'unit' => $product->unit(),
+            'customer_note_mode' => $product->customerNoteMode(),
             'category_ids' => array_map(
                 static fn (ProductCategory $c): string => $c->id(),
                 $product->categories()->toArray(),
             ),
             'created_at' => $product->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $product->updatedAt()->format(\DateTimeInterface::ATOM),
-        ];
+        ], $this->personalization->serializeForStore($product));
     }
 
     /** @param array<string, mixed> $data */

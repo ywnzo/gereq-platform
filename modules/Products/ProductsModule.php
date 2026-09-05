@@ -32,7 +32,7 @@ final class ProductsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.4.0';
     }
 
     public function register(ModuleContext $context): void
@@ -74,8 +74,26 @@ final class ProductsModule implements ModuleInterface
             $routes->post('/{id}/variants', [ProductController::class, 'storeVariant'])
                 ->name('admin.products.variants.store')
                 ->permission('products.manage');
+            $routes->post('/{id}/variants/generate', [ProductController::class, 'generateVariants'])
+                ->name('admin.products.variants.generate')
+                ->permission('products.manage');
+            $routes->post('/{id}/variants/{variantId}', [ProductController::class, 'updateVariant'])
+                ->name('admin.products.variants.update')
+                ->permission('products.manage');
             $routes->post('/{id}/variants/{variantId}/delete', [ProductController::class, 'destroyVariant'])
                 ->name('admin.products.variants.destroy')
+                ->permission('products.manage');
+            $routes->post('/{id}/option-groups', [ProductController::class, 'storeOptionGroup'])
+                ->name('admin.products.option_groups.store')
+                ->permission('products.manage');
+            $routes->post('/{id}/option-groups/{groupId}', [ProductController::class, 'updateOptionGroup'])
+                ->name('admin.products.option_groups.update')
+                ->permission('products.manage');
+            $routes->post('/{id}/option-groups/{groupId}/delete', [ProductController::class, 'destroyOptionGroup'])
+                ->name('admin.products.option_groups.destroy')
+                ->permission('products.manage');
+            $routes->post('/{id}/inherit-category-options', [ProductController::class, 'setInheritCategoryOptions'])
+                ->name('admin.products.inherit_category_options')
                 ->permission('products.manage');
             $routes->post('/{id}/images', [ProductController::class, 'storeImage'])
                 ->name('admin.products.images.store')
@@ -112,6 +130,15 @@ final class ProductsModule implements ModuleInterface
                 ->permission('products.manage');
             $routes->post('/{id}/delete', [CategoryController::class, 'destroy'])
                 ->name('admin.products.categories.destroy')
+                ->permission('products.manage');
+            $routes->post('/{id}/option-groups', [CategoryController::class, 'storeOptionGroup'])
+                ->name('admin.products.categories.option_groups.store')
+                ->permission('products.manage');
+            $routes->post('/{id}/option-groups/{groupId}', [CategoryController::class, 'updateOptionGroup'])
+                ->name('admin.products.categories.option_groups.update')
+                ->permission('products.manage');
+            $routes->post('/{id}/option-groups/{groupId}/delete', [CategoryController::class, 'destroyOptionGroup'])
+                ->name('admin.products.categories.option_groups.destroy')
                 ->permission('products.manage');
         }, ['middleware' => ['auth']]);
 
@@ -248,6 +275,10 @@ final class ProductsModule implements ModuleInterface
             'status' => 'required|in:draft,active,archived',
             'unit' => 'required|min:1|max:32',
             'category_ids' => 'nullable',
+            'customer_note_mode' => 'nullable|in:off,optional,required',
+            'user_images_enabled' => 'nullable',
+            'user_images_max' => 'nullable|max:10',
+            'user_images_crop' => 'nullable',
         ]);
 
         $validation->ruleset('products.category.save', [
@@ -283,9 +314,20 @@ final class ProductsModule implements ModuleInterface
             'active' => 'nullable',
         ]);
 
+        $validation->ruleset('products.variant.update', [
+            'sku' => 'nullable|max:64',
+            'name' => 'nullable|max:190',
+            'price_amount' => 'nullable',
+            'price_currency' => 'nullable|max:3',
+            'stock_qty' => 'nullable',
+            'ean' => 'nullable|max:64',
+        ]);
+
         $validation->ruleset('products.option_group.save', [
-            'code' => 'required|min:1|max:64',
             'name' => 'required|min:1|max:190',
+            'code' => 'nullable|max:64',
+            'options_text' => 'nullable|max:20000',
+            'required' => 'nullable',
             'sort_order' => 'nullable',
         ]);
     }

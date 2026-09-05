@@ -794,7 +794,12 @@ final class DemoSeeder
         if ($product === null) {
             return;
         }
-        $group = new \Modules\Products\Domain\ProductOptionGroup($product->id(), 'size', 'Velikost');
+        $group = new \Modules\Products\Domain\ProductOptionGroup(
+            \Modules\Products\Domain\ProductOptionGroup::SCOPE_PRODUCT,
+            $product->id(),
+            'size',
+            'Velikost',
+        );
         $this->em->persist($group);
         $this->em->flush();
         foreach ([['s', 'S'], ['m', 'M'], ['l', 'L']] as $i => [$code, $name]) {

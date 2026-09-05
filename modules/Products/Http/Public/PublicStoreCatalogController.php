@@ -9,10 +9,13 @@ use Gereq\Api\ApiResponse;
 use Gereq\Http\Controller;
 use Gereq\Http\PublicCors;
 use Gereq\Http\Router;
+use Modules\Products\Application\ProductPersonalizationService;
+use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\Product;
 use Modules\Products\Domain\ProductCategory;
 use Modules\Products\Domain\ProductImage;
 use Modules\Products\Domain\ProductPrice;
+use Modules\Products\Domain\ProductVariant;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -27,6 +30,8 @@ final class PublicStoreCatalogController extends Controller
         Router $router,
         RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
+        private readonly ProductPersonalizationService $personalization,
+        private readonly ProductVariantOptionsService $variantOptions,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -123,9 +128,47 @@ final class PublicStoreCatalogController extends Controller
 
         if ($detail) {
             $row['images'] = $this->allImageUrls($product->id());
+            $row['option_groups'] = $this->variantOptions->serializeGroupsForProduct($product);
+            $row['variants'] = $this->activeVariants($product->id());
+            $row['inherit_category_options'] = $product->inheritsCategoryOptions();
+            $row = array_merge($row, $this->personalization->serializeForStore($product));
+        } else {
+            // List hints so the catalog can surface personalization / variants.
+            $perso = $this->personalization->serializeForStore($product);
+            $row['customer_note_mode'] = $perso['customer_note_mode'];
+            $row['has_user_images'] = ($perso['user_image_rule'] ?? null) !== null;
+            $row['has_variants'] = $this->activeVariants($product->id()) !== []
+                || $this->variantOptions->serializeGroupsForProduct($product) !== [];
         }
 
         return $row;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function activeVariants(string $productId): array
+    {
+        $variants = $this->em->getRepository(ProductVariant::class)->findBy(
+            ['productId' => $productId, 'active' => true],
+            ['sku' => 'ASC'],
+        );
+        $out = [];
+        foreach ($variants as $variant) {
+            if (!$variant instanceof ProductVariant) {
+                continue;
+            }
+            $out[] = [
+                'id' => $variant->id(),
+                'sku' => $variant->sku(),
+                'name' => $variant->name() ?: $variant->sku(),
+                'attributes' => $variant->attributes(),
+                'price' => $variant->priceAmount() !== null
+                    ? ['amount' => $variant->priceAmount(), 'currency_code' => $variant->priceCurrency() ?: 'CZK']
+                    : null,
+                'stock_qty' => $variant->stockQty(),
+            ];
+        }
+
+        return $out;
     }
 
     private function currentPrice(string $productId, string $currency): string

@@ -12,7 +12,9 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\ProductCategory;
+use Modules\Products\Domain\ProductOptionGroup;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +34,7 @@ final class CategoryController extends Controller
         private readonly Auditor $auditor,
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
+        private readonly ProductVariantOptionsService $variantOptions,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -74,7 +77,7 @@ final class CategoryController extends Controller
         $this->forgetForm('products.category.save');
         $this->flash('success', $this->translator->trans('products.categories.flash.created', ['%name%' => $category->name()]));
 
-        return $this->redirect('admin.products.categories.index');
+        return $this->redirect('admin.products.categories.edit', ['id' => $category->id()]);
     }
 
     public function edit(string $id): Response
@@ -87,6 +90,10 @@ final class CategoryController extends Controller
         return $this->page('@products/categories/form.html.twig', [
             'pageTitle' => $this->translator->trans('products.categories.edit'),
             'item' => $category,
+            'optionGroups' => $this->variantOptions->groupsForScope(
+                ProductOptionGroup::SCOPE_CATEGORY,
+                $category->id(),
+            ),
         ]);
     }
 
@@ -116,7 +123,7 @@ final class CategoryController extends Controller
         $this->forgetForm('products.category.save');
         $this->flash('success', $this->translator->trans('products.categories.flash.saved'));
 
-        return $this->redirect('admin.products.categories.index');
+        return $this->redirect('admin.products.categories.edit', ['id' => $id]);
     }
 
     public function destroy(string $id): Response
@@ -127,12 +134,92 @@ final class CategoryController extends Controller
         }
 
         $name = $category->name();
+        foreach ($this->variantOptions->groupsForScope(ProductOptionGroup::SCOPE_CATEGORY, $category->id()) as $row) {
+            $this->variantOptions->deleteGroup($row['group']);
+        }
         $this->em->remove($category);
         $this->em->flush();
         $this->auditor->log('product_category.deleted', 'product_category', $id);
         $this->flash('success', $this->translator->trans('products.categories.flash.deleted', ['%name%' => $name]));
 
         return $this->redirect('admin.products.categories.index');
+    }
+
+    public function storeOptionGroup(Request $request, string $id): Response
+    {
+        $category = $this->find($id);
+        if ($category === null) {
+            $this->abort(404, $this->translator->trans('products.categories.error.not_found'));
+        }
+        $data = $this->validate($request, 'products.option_group.save');
+        try {
+            $this->variantOptions->createGroup(
+                ProductOptionGroup::SCOPE_CATEGORY,
+                $category->id(),
+                (string) $data['name'],
+                (string) ($data['options_text'] ?? ''),
+                $this->truthy($request, $data, 'required', true),
+            );
+        } catch (\InvalidArgumentException $e) {
+            $this->flash('error', $this->translator->trans($e->getMessage()));
+
+            return $this->redirect('admin.products.categories.edit', ['id' => $id]);
+        }
+        $this->flash('success', 'Kolonka kategorie vytvořena.');
+
+        return $this->redirect('admin.products.categories.edit', ['id' => $id]);
+    }
+
+    public function updateOptionGroup(Request $request, string $id, string $groupId): Response
+    {
+        $category = $this->find($id);
+        if ($category === null) {
+            $this->abort(404, $this->translator->trans('products.categories.error.not_found'));
+        }
+        $group = $this->em->find(ProductOptionGroup::class, $groupId);
+        if (
+            !$group instanceof ProductOptionGroup
+            || $group->scopeType() !== ProductOptionGroup::SCOPE_CATEGORY
+            || $group->scopeId() !== $category->id()
+        ) {
+            $this->abort(404);
+        }
+        $data = $this->validate($request, 'products.option_group.save');
+        try {
+            $this->variantOptions->updateGroup(
+                $group,
+                (string) $data['name'],
+                (string) ($data['options_text'] ?? ''),
+                $this->truthy($request, $data, 'required', true),
+            );
+        } catch (\InvalidArgumentException $e) {
+            $this->flash('error', $this->translator->trans($e->getMessage()));
+
+            return $this->redirect('admin.products.categories.edit', ['id' => $id]);
+        }
+        $this->flash('success', 'Kolonka kategorie uložena.');
+
+        return $this->redirect('admin.products.categories.edit', ['id' => $id]);
+    }
+
+    public function destroyOptionGroup(string $id, string $groupId): Response
+    {
+        $category = $this->find($id);
+        if ($category === null) {
+            $this->abort(404, $this->translator->trans('products.categories.error.not_found'));
+        }
+        $group = $this->em->find(ProductOptionGroup::class, $groupId);
+        if (
+            !$group instanceof ProductOptionGroup
+            || $group->scopeType() !== ProductOptionGroup::SCOPE_CATEGORY
+            || $group->scopeId() !== $category->id()
+        ) {
+            $this->abort(404);
+        }
+        $this->variantOptions->deleteGroup($group);
+        $this->flash('success', 'Kolonka kategorie smazána.');
+
+        return $this->redirect('admin.products.categories.edit', ['id' => $id]);
     }
 
     private function find(string $id): ?ProductCategory
@@ -155,6 +242,20 @@ final class CategoryController extends Controller
         }
 
         return ['name' => $name, 'slug' => $slug];
+    }
+
+    /** @param array<string, mixed> $data */
+    private function truthy(Request $request, array $data, string $key, bool $default = false): bool
+    {
+        $raw = $request->request->all()[$key] ?? ($data[$key] ?? null);
+        if ($raw === null) {
+            return $default;
+        }
+        if (is_array($raw)) {
+            $raw = end($raw);
+        }
+
+        return $raw === '1' || $raw === 1 || $raw === true || $raw === 'on' || $raw === 'true';
     }
 
     private function slugify(string $value): string

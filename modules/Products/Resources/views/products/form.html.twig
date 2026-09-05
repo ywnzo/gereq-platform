@@ -51,6 +51,37 @@
         } %}
 
         <div class="g-field field--full">
+            <span class="g-label">{{ 'products.field.personalization'|trans }}</span>
+            <p class="muted" style="margin:0 0 .75rem">{{ 'products.field.personalization.help'|trans }}</p>
+            {% include 'ui/select.html.twig' with {
+                name: 'customer_note_mode',
+                label: 'products.field.customer_note_mode'|trans,
+                form: 'products.product.save',
+                value: item ? item.customerNoteMode() : 'off',
+                options: [
+                    { value: 'off', label: 'products.note_mode.off'|trans },
+                    { value: 'optional', label: 'products.note_mode.optional'|trans },
+                    { value: 'required', label: 'products.note_mode.required'|trans }
+                ]
+            } %}
+            <label class="g-switch" style="margin-top:1rem">
+                <input type="checkbox" name="user_images_enabled" value="1" {{ imageRule and imageRule.isActive() and imageRule.allowsImages() ? 'checked' : '' }}>
+                <span>{{ 'products.field.user_images_enabled'|trans }}</span>
+            </label>
+            {% include 'ui/input.html.twig' with {
+                name: 'user_images_max',
+                label: 'products.field.user_images_max'|trans,
+                form: 'products.product.save',
+                value: imageRule ? imageRule.maxImages() : '1',
+                optional: true
+            } %}
+            <label class="g-switch">
+                <input type="checkbox" name="user_images_crop" value="1" {{ imageRule and imageRule.cropRequired() ? 'checked' : '' }}>
+                <span>{{ 'products.field.user_images_crop'|trans }}</span>
+            </label>
+        </div>
+
+        <div class="g-field field--full">
             <span class="g-label">{{ 'products.field.categories'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
             {% if categoryOptions is empty %}
                 <p class="muted">{{ 'products.categories.empty.hint'|trans }}</p>
