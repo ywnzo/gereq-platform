@@ -3,7 +3,10 @@
 {% block content %}
 <div class="list-shell" x-data="dataTable" data-table-id="customers" data-actions-default="1">
     <header class="page-header">
-        <h1>{{ 'customers.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'customers.title'|trans }}</h1>
+            <p class="muted">{{ 'customers.list.hint'|trans }}</p>
+        </div>
         <div class="actions">
             {% if user.can('customers.create') %}
                 <a class="btn btn--primary" href="{{ url('admin.customers.create') }}">{{ icon('plus') }} {{ 'customers.add'|trans }}</a>
@@ -21,19 +24,19 @@
                 <option value="active" {{ status == 'active' ? 'selected' : '' }}>{{ 'customers.status.active'|trans }}</option>
                 <option value="lead" {{ status == 'lead' ? 'selected' : '' }}>{{ 'customers.status.lead'|trans }}</option>
                 <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>{{ 'customers.status.inactive'|trans }}</option>
+                <option value="archived" {{ status == 'archived' ? 'selected' : '' }}>{{ 'customers.status.archived'|trans }}</option>
             </select>
         </form>
     </div>
 
     <div class="table-wrap" data-table>
-        <table class="table">
+        <table class="table table--customers">
             <thead>
                 <tr>
                     {% include 'ui/sort_th.html.twig' with { label: 'customers.field.name'|trans, column: 'name', query: { status: status } } %}
-                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.email'|trans, column: 'email', query: { status: status } } %}
-                    <th>{{ 'customers.field.phone'|trans }}</th>
-                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.company'|trans, column: 'company', query: { status: status } } %}
+                    <th>{{ 'customers.col.contact'|trans }}</th>
                     {% include 'ui/sort_th.html.twig' with { label: 'customers.field.status'|trans, column: 'status', query: { status: status } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.created'|trans, column: 'createdAt', query: { status: status } } %}
                     <th class="table__actions-head"></th>
                 </tr>
             </thead>
@@ -41,19 +44,26 @@
                 {% for item in items %}
                     <tr>
                         <td>
-                            <a class="cell-user" href="{{ url('admin.customers.show', {id: item.id()}) }}">
+                            <a class="cell-user cell-user--stack" href="{{ url('admin.customers.show', {id: item.id()}) }}">
                                 <span class="avatar avatar--sm">{{ item.initials() }}</span>
-                                {{ item.name() }}
+                                <span class="cell-user__text">
+                                    <strong>{{ item.name() }}</strong>
+                                    <small class="muted">{{ item.company() ?: '—' }}</small>
+                                </span>
                             </a>
                         </td>
-                        <td>{{ item.email() }}</td>
-                        <td class="is-mute">{{ item.phone() ?: '—' }}</td>
-                        <td>{{ item.company() ?: '—' }}</td>
+                        <td>
+                            <div class="table__title">
+                                <a href="mailto:{{ item.email() }}">{{ item.email() }}</a>
+                                <span class="muted">{{ item.phone() ?: '—' }}</span>
+                            </div>
+                        </td>
                         <td>
                             <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
                                 {{ item.statusLabel()|trans }}
                             </span>
                         </td>
+                        <td class="is-mute">{{ item.createdAt().format('d. m. Y') }}</td>
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
                                 {% include 'ui/row_action.html.twig' with { href: url('admin.customers.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
@@ -71,7 +81,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6">
+                        <td colspan="5">
                             <div class="empty">
                                 <h2>{{ 'customers.empty'|trans }}</h2>
                                 <p>{{ 'customers.empty.hint'|trans }}</p>

@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Customers\Application\Widgets;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\Dashboard\DashboardWidget;
 use Gereq\Admin\Dashboard\TwigDashboardWidget;
 use Gereq\Http\Router;
-use Modules\Customers\Domain\Customer;
+use Modules\Customers\Application\CustomerCounters;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -16,7 +15,7 @@ final class CustomerStatsWidget extends TwigDashboardWidget
 {
     public function __construct(
         Environment $twig,
-        private readonly EntityManagerInterface $em,
+        private readonly CustomerCounters $counters,
         private readonly TranslatorInterface $translator,
         private readonly Router $router,
     ) {
@@ -55,24 +54,12 @@ final class CustomerStatsWidget extends TwigDashboardWidget
 
     protected function data(): array
     {
-        $total = (int) $this->em->createQueryBuilder()
-            ->select('COUNT(c.id)')
-            ->from(Customer::class, 'c')
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        $active = (int) $this->em->createQueryBuilder()
-            ->select('COUNT(c.id)')
-            ->from(Customer::class, 'c')
-            ->where('c.status = :status')
-            ->setParameter('status', 'active')
-            ->getQuery()
-            ->getSingleScalarResult();
-
         return [
             'label' => $this->translator->trans('customers.widget.title'),
-            'value' => (string) $total,
-            'hint' => $this->translator->trans('customers.widget.active', ['%count%' => (string) $active]),
+            'value' => (string) $this->counters->total(),
+            'hint' => $this->translator->trans('customers.widget.active', [
+                '%count%' => (string) $this->counters->active(),
+            ]),
             'href' => $this->router->url('admin.customers.index'),
         ];
     }

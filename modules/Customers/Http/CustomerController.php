@@ -15,7 +15,10 @@ use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Security\HtmlSanitizer;
 use Modules\Customers\Domain\Customer;
+use Modules\Customers\Domain\CustomerAddress;
+use Modules\Customers\Domain\CustomerContact;
 use Modules\Customers\Domain\CustomerCreated;
+use Modules\Customers\Domain\CustomerNote;
 use Modules\Customers\Domain\Events\CustomerArchived;
 use Modules\Customers\Domain\Events\CustomerDeleted;
 use Modules\Customers\Domain\Events\CustomerRestored;
@@ -57,7 +60,7 @@ final class CustomerController extends Controller
 
         $qb = $this->em->getRepository(Customer::class)->createQueryBuilder('c');
         $list->applySearch($qb, 'c', ['name', 'email', 'company', 'phone']);
-        if (in_array($status, ['active', 'inactive', 'lead'], true)) {
+        if (in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
             $qb->andWhere('c.status = :status')->setParameter('status', $status);
         }
 
@@ -122,13 +125,151 @@ final class CustomerController extends Controller
         }
         usort($sections, static fn (array $a, array $b): int => ($a['order'] ?? 100) <=> ($b['order'] ?? 100));
 
+        $addresses = $this->em->getRepository(CustomerAddress::class)->findBy(
+            ['customerId' => $customer->id()],
+            ['isPrimary' => 'DESC', 'createdAt' => 'DESC'],
+        );
+        $contacts = $this->em->getRepository(CustomerContact::class)->findBy(
+            ['customerId' => $customer->id()],
+            ['isPrimary' => 'DESC', 'name' => 'ASC'],
+        );
+        $timelineNotes = $this->em->getRepository(CustomerNote::class)->findBy(
+            ['customerId' => $customer->id()],
+            ['createdAt' => 'DESC'],
+        );
+
         return $this->page('@customers/show.html.twig', [
             'pageTitle' => $customer->name(),
             'item' => $customer,
             'noteHtml' => $this->html->sanitize($customer->note()),
+            'addresses' => $addresses,
+            'contacts' => $contacts,
+            'timelineNotes' => $timelineNotes,
             'hookActions' => $actions,
             'hookSections' => $sections,
         ]);
+    }
+
+    public function storeAddress(Request $request, string $id): Response
+    {
+        $customer = $this->requireCustomer($id);
+        $type = (string) $request->request->get('type', 'other');
+        if (!in_array($type, CustomerAddress::TYPES, true)) {
+            $type = 'other';
+        }
+        $line1 = trim((string) $request->request->get('line1', ''));
+        $city = trim((string) $request->request->get('city', ''));
+        $zip = trim((string) $request->request->get('zip', ''));
+        $country = strtoupper(trim((string) $request->request->get('country', 'CZ'))) ?: 'CZ';
+        if ($line1 === '' || $city === '' || $zip === '') {
+            $this->flash('error', $this->translator->trans('customers.addresses.validation'));
+
+            return $this->redirectToShow($id);
+        }
+        $address = new CustomerAddress($customer->id(), $type, $line1, $city, $zip, $country);
+        $address->setLine2(trim((string) $request->request->get('line2', '')) ?: null);
+        $address->setIsPrimary($request->request->get('is_primary') === '1');
+        $this->em->persist($address);
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('customers.addresses.flash.created'));
+
+        return $this->redirectToShow($id);
+    }
+
+    public function destroyAddress(string $id, string $addressId): Response
+    {
+        $customer = $this->requireCustomer($id);
+        $address = $this->em->find(CustomerAddress::class, $addressId);
+        if (!$address instanceof CustomerAddress || $address->customerId() !== $customer->id()) {
+            $this->abort(404);
+        }
+        $this->em->remove($address);
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('customers.addresses.flash.deleted'));
+
+        return $this->redirectToShow($id);
+    }
+
+    public function storeContact(Request $request, string $id): Response
+    {
+        $customer = $this->requireCustomer($id);
+        $name = trim((string) $request->request->get('name', ''));
+        if ($name === '') {
+            $this->flash('error', $this->translator->trans('customers.contacts.validation'));
+
+            return $this->redirectToShow($id);
+        }
+        $contact = new CustomerContact($customer->id(), $name);
+        $contact->setRole(trim((string) $request->request->get('role', '')) ?: null);
+        $contact->setEmail(trim((string) $request->request->get('email', '')) ?: null);
+        $contact->setPhone(trim((string) $request->request->get('phone', '')) ?: null);
+        $contact->setIsPrimary($request->request->get('is_primary') === '1');
+        $this->em->persist($contact);
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('customers.contacts.flash.created'));
+
+        return $this->redirectToShow($id);
+    }
+
+    public function destroyContact(string $id, string $contactId): Response
+    {
+        $customer = $this->requireCustomer($id);
+        $contact = $this->em->find(CustomerContact::class, $contactId);
+        if (!$contact instanceof CustomerContact || $contact->customerId() !== $customer->id()) {
+            $this->abort(404);
+        }
+        $this->em->remove($contact);
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('customers.contacts.flash.deleted'));
+
+        return $this->redirectToShow($id);
+    }
+
+    public function storeNote(Request $request, string $id): Response
+    {
+        $customer = $this->requireCustomer($id);
+        $body = trim((string) $request->request->get('body', ''));
+        if ($body === '') {
+            $this->flash('error', $this->translator->trans('customers.notes.validation'));
+
+            return $this->redirectToShow($id);
+        }
+        $userId = $this->auth->user()?->id();
+        $note = new CustomerNote($customer->id(), $body, $userId);
+        $this->em->persist($note);
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('customers.notes.flash.created'));
+
+        return $this->redirectToShow($id);
+    }
+
+    public function destroyNote(string $id, string $noteId): Response
+    {
+        $customer = $this->requireCustomer($id);
+        $note = $this->em->find(CustomerNote::class, $noteId);
+        if (!$note instanceof CustomerNote || $note->customerId() !== $customer->id()) {
+            $this->abort(404);
+        }
+        $this->em->remove($note);
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('customers.notes.flash.deleted'));
+
+        return $this->redirectToShow($id);
+    }
+
+    private function requireCustomer(string $id): Customer
+    {
+        $customer = $this->find($id);
+        if ($customer === null) {
+            $this->abort(404, $this->translator->trans('customers.error.not_found'));
+        }
+
+        return $customer;
+    }
+
+    private function redirectToShow(string $id): Response
+    {
+        return $this->redirectTo($this->router->url('admin.customers.show', ['id' => $id], $this->request()) . '#overview');
     }
 
     public function edit(string $id): Response

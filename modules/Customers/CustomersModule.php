@@ -13,6 +13,7 @@ use Gereq\Hook\HookPriority;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
+use Modules\Customers\Application\CustomerCounters;
 use Modules\Customers\Application\Widgets\CustomerCreateHeroWidget;
 use Modules\Customers\Application\Widgets\CustomerGrowthChartWidget;
 use Modules\Customers\Application\Widgets\CustomerStatsWidget;
@@ -40,7 +41,7 @@ final class CustomersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.1.1';
     }
 
     public function register(ModuleContext $context): void
@@ -77,6 +78,24 @@ final class CustomersModule implements ModuleInterface
             $routes->post('/{id}/delete', [CustomerController::class, 'destroy'])
                 ->name('admin.customers.destroy')
                 ->permission('customers.delete');
+            $routes->post('/{id}/addresses', [CustomerController::class, 'storeAddress'])
+                ->name('admin.customers.addresses.store')
+                ->permission('customers.edit');
+            $routes->post('/{id}/addresses/{addressId}/delete', [CustomerController::class, 'destroyAddress'])
+                ->name('admin.customers.addresses.destroy')
+                ->permission('customers.edit');
+            $routes->post('/{id}/contacts', [CustomerController::class, 'storeContact'])
+                ->name('admin.customers.contacts.store')
+                ->permission('customers.edit');
+            $routes->post('/{id}/contacts/{contactId}/delete', [CustomerController::class, 'destroyContact'])
+                ->name('admin.customers.contacts.destroy')
+                ->permission('customers.edit');
+            $routes->post('/{id}/notes', [CustomerController::class, 'storeNote'])
+                ->name('admin.customers.notes.store')
+                ->permission('customers.edit');
+            $routes->post('/{id}/notes/{noteId}/delete', [CustomerController::class, 'destroyNote'])
+                ->name('admin.customers.notes.destroy')
+                ->permission('customers.edit');
         }, ['middleware' => ['auth']]);
 
         $this->registerApi($context);
@@ -156,8 +175,9 @@ final class CustomersModule implements ModuleInterface
         $em = $context->get(\Doctrine\ORM\EntityManagerInterface::class);
         $translator = $context->get(\Symfony\Contracts\Translation\TranslatorInterface::class);
         $router = $context->get(\Gereq\Http\Router::class);
-        $context->dashboard()->addWidget(new CustomerStatsWidget($twig, $em, $translator, $router));
-        $context->dashboard()->addWidget(new CustomerGrowthChartWidget($twig, $em, $translator, $router));
+        $counters = new CustomerCounters($em);
+        $context->dashboard()->addWidget(new CustomerStatsWidget($twig, $counters, $translator, $router));
+        $context->dashboard()->addWidget(new CustomerGrowthChartWidget($twig, $em, $counters, $translator, $router));
         $context->dashboard()->addWidget(new CustomerCreateHeroWidget($twig, $translator, $router));
         $context->dashboard()->addWidget(new CustomersShortcutWidget($twig, $translator, $router));
 

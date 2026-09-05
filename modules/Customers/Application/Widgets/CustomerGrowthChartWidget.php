@@ -9,6 +9,7 @@ use Gereq\Admin\Dashboard\ChartSeries;
 use Gereq\Admin\Dashboard\DashboardWidget;
 use Gereq\Admin\Dashboard\TwigDashboardWidget;
 use Gereq\Http\Router;
+use Modules\Customers\Application\CustomerCounters;
 use Modules\Customers\Domain\Customer;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -20,6 +21,7 @@ final class CustomerGrowthChartWidget extends TwigDashboardWidget
     public function __construct(
         Environment $twig,
         private readonly EntityManagerInterface $em,
+        private readonly CustomerCounters $counters,
         private readonly TranslatorInterface $translator,
         private readonly Router $router,
     ) {
@@ -71,11 +73,7 @@ final class CustomerGrowthChartWidget extends TwigDashboardWidget
         $values = ChartSeries::countsPerDay($days, $timestamps);
         $new = array_sum($values);
 
-        $total = (int) $this->em->createQueryBuilder()
-            ->select('COUNT(c.id)')
-            ->from(Customer::class, 'c')
-            ->getQuery()
-            ->getSingleScalarResult();
+        $total = $this->counters->total();
 
         return [
             'title' => $this->translator->trans('admin.dashboard.chart.customers'),
