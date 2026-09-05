@@ -6,6 +6,7 @@ namespace Modules\Media\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Modules\Media\Domain\MediaAsset;
+use Modules\Media\Domain\MediaLink;
 
 final class MediaProvider
 {
@@ -41,5 +42,54 @@ final class MediaProvider
     public function images(int $limit = 50): array
     {
         return $this->search('', $limit, 'image/');
+    }
+
+    public function attach(string $mediaAssetId, string $entityType, string $entityId, ?string $label = null, int $sortOrder = 0): MediaLink
+    {
+        if (!$this->find($mediaAssetId) instanceof MediaAsset) {
+            throw new \InvalidArgumentException('media.error.not_found');
+        }
+        $link = new MediaLink($mediaAssetId, $entityType, $entityId, $label, $sortOrder);
+        $this->em->persist($link);
+        $this->em->flush();
+
+        return $link;
+    }
+
+    public function detach(string $linkId): void
+    {
+        $link = $this->em->find(MediaLink::class, $linkId);
+        if ($link instanceof MediaLink) {
+            $this->em->remove($link);
+            $this->em->flush();
+        }
+    }
+
+    /**
+     * @return list<array{link: MediaLink, asset: MediaAsset}>
+     */
+    public function forEntity(string $entityType, string $entityId, ?string $label = null, int $limit = 100): array
+    {
+        $qb = $this->em->getRepository(MediaLink::class)->createQueryBuilder('l')
+            ->andWhere('l.entityType = :type')->setParameter('type', $entityType)
+            ->andWhere('l.entityId = :id')->setParameter('id', $entityId)
+            ->orderBy('l.sortOrder', 'ASC')
+            ->addOrderBy('l.createdAt', 'DESC')
+            ->setMaxResults($limit);
+        if ($label !== null && $label !== '') {
+            $qb->andWhere('l.label = :label')->setParameter('label', $label);
+        }
+        $out = [];
+        foreach ($qb->getQuery()->getResult() as $link) {
+            if (!$link instanceof MediaLink) {
+                continue;
+            }
+            $asset = $this->find($link->mediaAssetId());
+            if ($asset instanceof MediaAsset) {
+                $out[] = ['link' => $link, 'asset' => $asset];
+            }
+        }
+
+        return $out;
     }
 }
