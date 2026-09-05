@@ -1,7 +1,12 @@
 <a href="{{ href|default('/') }}" class="brand {{ modifier|default('') }}">
-    <img class="brand__mark" src="/brand/icons/favicon.svg" width="32" height="32" alt="">
+    {% if brand('logo_custom') %}
+        <img class="brand__mark" src="{{ brand('logo_url') }}" width="32" height="32" alt="">
+    {% else %}
+        <span class="brand__initials" aria-hidden="true">{{ brand('site_mark')|default(brand('name')|slice(0, 2))|upper }}</span>
+    {% endif %}
     <span class="brand__text">
-        <span class="brand__name">GEREQ</span>
-        <span class="brand__sub">{{ (subtitle|default('brand.subtitle'))|trans }}</span>
+        <span class="brand__name">{{ brand('name') }}</span>
+        {% set brandSub = brand('subtitle') %}
+        <span class="brand__sub">{{ brandSub != '' ? brandSub : ((subtitle|default('brand.subtitle'))|trans) }}</span>
     </span>
 </a>

@@ -12,7 +12,9 @@ use Gereq\Event\EventDefinition;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
-use Modules\Products\Application\ProductStatsWidget;
+use Modules\Products\Application\Widgets\ProductCreateHeroWidget;
+use Modules\Products\Application\Widgets\ProductStatsWidget;
+use Modules\Products\Application\Widgets\ProductsShortcutWidget;
 use Modules\Products\Application\ProductsProvider;
 use Modules\Products\Http\Api\ProductApiController;
 use Modules\Products\Http\Api\VariantApiController;
@@ -153,10 +155,13 @@ final class ProductsModule implements ModuleInterface
             hidden: true,
         ));
 
-        $context->dashboard()->addWidget(new ProductStatsWidget(
-            $context->get(EntityManagerInterface::class),
-            $context->get(TranslatorInterface::class),
-        ));
+        $twig = $context->get(\Twig\Environment::class);
+        $em = $context->get(EntityManagerInterface::class);
+        $translator = $context->get(TranslatorInterface::class);
+        $router = $context->get(Router::class);
+        $context->dashboard()->addWidget(new ProductStatsWidget($twig, $em, $translator, $router));
+        $context->dashboard()->addWidget(new ProductCreateHeroWidget($twig, $translator, $router));
+        $context->dashboard()->addWidget(new ProductsShortcutWidget($twig, $translator, $router));
 
         $context->commandPalette()->add(new PaletteCommand(
             id: 'products.index',

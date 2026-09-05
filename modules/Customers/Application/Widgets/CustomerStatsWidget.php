@@ -2,19 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Modules\Customers\Application;
+namespace Modules\Customers\Application\Widgets;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\Dashboard\DashboardWidget;
+use Gereq\Admin\Dashboard\TwigDashboardWidget;
+use Gereq\Http\Router;
 use Modules\Customers\Domain\Customer;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
-final class CustomerStatsWidget implements DashboardWidget
+final class CustomerStatsWidget extends TwigDashboardWidget
 {
     public function __construct(
+        Environment $twig,
         private readonly EntityManagerInterface $em,
         private readonly TranslatorInterface $translator,
+        private readonly Router $router,
     ) {
+        parent::__construct($twig);
     }
 
     public function id(): string
@@ -27,7 +33,27 @@ final class CustomerStatsWidget implements DashboardWidget
         return $this->translator->trans('customers.widget.title');
     }
 
-    public function render(): string
+    public function type(): string
+    {
+        return DashboardWidget::TYPE_METRIC;
+    }
+
+    public function permission(): ?string
+    {
+        return 'customers.view';
+    }
+
+    public function order(): int
+    {
+        return 40;
+    }
+
+    protected function template(): string
+    {
+        return 'admin/dashboard/widgets/metric.html.twig';
+    }
+
+    protected function data(): array
     {
         $total = (int) $this->em->createQueryBuilder()
             ->select('COUNT(c.id)')
@@ -43,20 +69,11 @@ final class CustomerStatsWidget implements DashboardWidget
             ->getQuery()
             ->getSingleScalarResult();
 
-        return '<div class="metric-card"><span class="metric-card__label">' . htmlspecialchars($this->translator->trans('customers.widget.title'), ENT_QUOTES, 'UTF-8')
-            . '</span><strong class="metric-card__value">'
-            . $total . '</strong><span class="muted">'
-            . htmlspecialchars($this->translator->trans('customers.widget.active', ['%count%' => (string) $active]), ENT_QUOTES, 'UTF-8')
-            . '</span></div>';
-    }
-
-    public function permission(): string
-    {
-        return 'customers.view';
-    }
-
-    public function order(): int
-    {
-        return 20;
+        return [
+            'label' => $this->translator->trans('customers.widget.title'),
+            'value' => (string) $total,
+            'hint' => $this->translator->trans('customers.widget.active', ['%count%' => (string) $active]),
+            'href' => $this->router->url('admin.customers.index'),
+        ];
     }
 }

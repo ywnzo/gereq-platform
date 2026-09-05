@@ -81,7 +81,7 @@ final class RoleController extends Controller
         $role->setLabel(trim((string) $request->request->get('label')));
         $role->setDescription(trim((string) $request->request->get('description')));
 
-        if ($role->name() !== 'administrator') {
+        if (!$role->isPrivileged()) {
             $ids = $request->request->all('permissions') ?: [];
             $selected = [];
             foreach ($ids as $permissionId) {

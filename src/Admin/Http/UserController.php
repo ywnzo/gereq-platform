@@ -126,9 +126,9 @@ final class UserController extends Controller
             $user->setPasswordHash($this->hasher->hash($password));
         }
 
-        $wasAdministrator = $user->hasRole('administrator');
+        $wasPrivileged = $user->isAdministrator();
         $user->roles()->clear();
-        $this->assignRoles($user, $request->request->all('roles') ?: [], keepAdministrator: $wasAdministrator);
+        $this->assignRoles($user, $request->request->all('roles') ?: [], keepPrivileged: $wasPrivileged);
         $this->em->flush();
         $this->auditor->log('user.updated', 'user', $user->id(), $old, [
             'name' => $user->name(),
@@ -162,27 +162,28 @@ final class UserController extends Controller
     }
 
     /** @param list<string> $roleIds */
-    private function assignRoles(User $user, array $roleIds, bool $keepAdministrator = false): void
+    private function assignRoles(User $user, array $roleIds, bool $keepPrivileged = false): void
     {
         $actor = $this->auth->user();
-        $actorIsAdmin = $actor instanceof User && $actor->hasRole('administrator');
-        $preserveAdministrator = $keepAdministrator && !$actorIsAdmin;
+        $actorIsPrivileged = $actor instanceof User && $actor->isAdministrator();
+        $preservePrivileged = $keepPrivileged && !$actorIsPrivileged;
 
         foreach ($roleIds as $roleId) {
             $role = $this->em->find(Role::class, (string) $roleId);
             if (!$role instanceof Role) {
                 continue;
             }
-            if ($role->name() === 'administrator' && !$actorIsAdmin) {
+            if ($role->isPrivileged() && !$actorIsPrivileged) {
                 continue;
             }
             $user->assignRole($role);
         }
 
-        if ($preserveAdministrator) {
-            $admin = $this->em->getRepository(Role::class)->findOneBy(['name' => 'administrator']);
-            if ($admin instanceof Role) {
-                $user->assignRole($admin);
+        if ($preservePrivileged) {
+            $super = $this->em->getRepository(Role::class)->findOneBy(['name' => 'superadmin'])
+                ?? $this->em->getRepository(Role::class)->findOneBy(['name' => 'administrator']);
+            if ($super instanceof Role) {
+                $user->assignRole($super);
             }
         }
     }

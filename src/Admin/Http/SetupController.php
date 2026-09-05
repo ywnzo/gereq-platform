@@ -69,6 +69,17 @@ final class SetupController extends Controller
             return $this->redirect('admin.setup.step', ['step' => 'welcome']);
         }
         $this->settings->set('app.name', $name, SettingRecord::TYPE_STRING, 'core');
+        // Derive short lockup name when not customized yet.
+        $existingBrand = trim((string) $this->settings->get('brand.name', ''));
+        if ($existingBrand === '') {
+            $short = trim((string) preg_replace('/\s+Platform$/iu', '', $name));
+            $parts = preg_split('/\s+/u', $short !== '' ? $short : $name) ?: [];
+            $this->settings->set('brand.name', $parts[0] ?? $name, SettingRecord::TYPE_STRING, 'core');
+        }
+        $existingSite = trim((string) $this->settings->get('brand.site_name', ''));
+        if ($existingSite === '') {
+            $this->settings->set('brand.site_name', $name, SettingRecord::TYPE_STRING, 'core');
+        }
         $locale = (string) $request->request->get('locale', 'cs');
         if ($this->locales->isSupported($locale)) {
             $this->settings->set('app.locale', $locale, SettingRecord::TYPE_STRING, 'core');

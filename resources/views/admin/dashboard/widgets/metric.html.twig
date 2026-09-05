@@ -1,0 +1,15 @@
+{% if href|default(null) %}
+<a class="metric-card metric-card--link" href="{{ href }}">
+{% else %}
+<div class="metric-card">
+{% endif %}
+    <span class="metric-card__label">{{ label }}</span>
+    <strong class="metric-card__value">{{ value }}</strong>
+    {% if hint|default('') != '' %}
+        <span class="muted">{{ hint }}</span>
+    {% endif %}
+{% if href|default(null) %}
+</a>
+{% else %}
+</div>
+{% endif %}

@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="{{ app_locale() }}" data-theme="gereq">
+<html lang="{{ app_locale() }}" data-theme="gereq" style="{{ brand_html_style() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ pageTitle|default('errors.title'|trans) }} · GEREQ</title>
+    <title>{{ pageTitle|default('errors.title'|trans) }} · {{ brand('name') }}</title>
     {% include 'partials/brand-head.html.twig' %}
     <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+    {% include 'partials/brand-overrides.html.twig' %}
 </head>
 <body class="auth-body">
     <main class="auth-shell">

@@ -6,6 +6,7 @@ namespace Gereq\View;
 
 use Gereq\Admin\Ui\Icons;
 use Gereq\Auth\Authenticator;
+use Gereq\Brand\Branding;
 use Gereq\Hook\HookManager;
 use Gereq\Http\FormState;
 use Gereq\Http\Router;
@@ -31,7 +32,31 @@ final class TwigRuntime
         private readonly HookManager $hooks,
         private readonly TranslatorInterface $translator,
         private readonly LocaleCatalog $locales,
+        private readonly Branding $branding,
     ) {
+    }
+
+    /**
+     * @return ($key is null ? array<string, mixed> : mixed)
+     */
+    public function brand(?string $key = null): mixed
+    {
+        $resolved = $this->branding->resolve();
+        if ($key === null || $key === '') {
+            return $resolved;
+        }
+
+        return $resolved[$key] ?? null;
+    }
+
+    public function brandCss(): string
+    {
+        return $this->branding->adminCssVariables();
+    }
+
+    public function brandHtmlStyle(): string
+    {
+        return $this->branding->htmlStyleAttribute();
     }
 
     /** @param array<string, mixed> $params */
@@ -142,6 +167,14 @@ final class TwigRuntime
     public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
     {
         return $this->translator->trans($id, $parameters, $domain, $locale);
+    }
+
+    public function auditAction(string $action): string
+    {
+        $key = 'audit.action.' . $action;
+        $translated = $this->translator->trans($key);
+
+        return $translated === $key ? $action : $translated;
     }
 
     public function appLocale(): string

@@ -1,0 +1,34 @@
+<section class="panel panel--chart">
+    <header class="panel__head">
+        <div>
+            <h2>{{ title }}</h2>
+            {% if subtitle|default('') != '' %}
+                <p class="muted panel__sub">{{ subtitle }}</p>
+            {% endif %}
+        </div>
+        {% if href|default(null) %}
+            <a class="btn btn--ghost btn-sm" href="{{ href }}">{{ link_label|default('common.open'|trans) }}</a>
+        {% endif %}
+    </header>
+    {% if empty|default(false) %}
+        <div class="empty"><p>{{ empty_message|default('empty.generic'|trans) }}</p></div>
+    {% else %}
+        <div
+            class="dash-chart"
+            x-data="gereqChart"
+            data-config="{{ config|json_encode|e('html_attr') }}"
+        >
+            <canvas x-ref="canvas" aria-label="{{ title }}"></canvas>
+        </div>
+        {% if stats|default([]) is not empty %}
+            <div class="dash-chart__stats">
+                {% for stat in stats %}
+                    <div>
+                        <span class="muted">{{ stat.label }}</span>
+                        <strong>{{ stat.value }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+</section>

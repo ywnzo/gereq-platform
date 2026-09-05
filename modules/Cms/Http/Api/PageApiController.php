@@ -10,6 +10,7 @@ use Gereq\Api\ApiResponse;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Security\HtmlSanitizer;
 use Gereq\Validation\ValidationRegistry;
 use Modules\Cms\Domain\Events\PagePublished;
 use Modules\Cms\Domain\Events\PageUpdated;
@@ -28,6 +29,7 @@ final class PageApiController extends Controller
         RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
+        private readonly HtmlSanitizer $html,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -70,6 +72,8 @@ final class PageApiController extends Controller
         $data = $this->validateBody($request, 'cms.page.save');
         $page = new Page((string) $data['slug'], trim((string) $data['title']));
         $page->setTemplate((string) $data['template']);
+        $page->setContentMode((string) ($data['content_mode'] ?? 'blocks'));
+        $page->setBody($this->sanitizeBody($data['body'] ?? null));
         $page->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
         $page->setStatus((string) $data['status']);
         $this->em->persist($page);
@@ -92,13 +96,17 @@ final class PageApiController extends Controller
         }
 
         $payload = $this->serialize($page);
-        $blocks = $this->em->getRepository(PageBlock::class)->findBy(['pageId' => $id], ['sortOrder' => 'ASC']);
-        $payload['blocks'] = array_map(static fn (PageBlock $b): array => [
-            'id' => $b->id(),
-            'type' => $b->type(),
-            'sort_order' => $b->sortOrder(),
-            'payload' => $b->payload(),
-        ], $blocks);
+        if (!$page->isRaw()) {
+            $blocks = $this->em->getRepository(PageBlock::class)->findBy(['pageId' => $id], ['sortOrder' => 'ASC']);
+            $payload['blocks'] = array_map(static fn (PageBlock $b): array => [
+                'id' => $b->id(),
+                'type' => $b->type(),
+                'sort_order' => $b->sortOrder(),
+                'payload' => $b->payload(),
+            ], $blocks);
+        } else {
+            $payload['blocks'] = [];
+        }
 
         return ApiResponse::data($payload);
     }
@@ -115,6 +123,8 @@ final class PageApiController extends Controller
         $page->setSlug((string) $data['slug']);
         $page->setTitle(trim((string) $data['title']));
         $page->setTemplate((string) $data['template']);
+        $page->setContentMode((string) ($data['content_mode'] ?? $page->contentMode()));
+        $page->setBody($this->sanitizeBody($data['body'] ?? null));
         $page->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
         $page->setStatus((string) $data['status']);
         $this->em->flush();
@@ -204,10 +214,22 @@ final class PageApiController extends Controller
             'title' => $page->title(),
             'status' => $page->status(),
             'template' => $page->template(),
+            'content_mode' => $page->contentMode(),
+            'body' => $page->body(),
             'meta_description' => $page->metaDescription(),
             'published_at' => $page->publishedAt()?->format(\DateTimeInterface::ATOM),
             'created_at' => $page->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $page->updatedAt()->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    private function sanitizeBody(mixed $body): ?string
+    {
+        if ($body === null) {
+            return null;
+        }
+        $clean = $this->html->sanitize((string) $body);
+
+        return $clean !== '' ? $clean : null;
     }
 }

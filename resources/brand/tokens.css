@@ -2,13 +2,15 @@
  * GEREQ design tokens — source of truth for brand colors & type.
  * Mirrored in resources/css/app.css @theme for Tailwind.
  *
- * --gereq-brand / --gereq-ink / --gereq-cream / --gereq-signal stay brand-constant.
- * --gereq-fg and surfaces swap under .dark (Filament admin chrome).
+ * --gereq-brand / --brand-ink / --brand-cream / --gereq-signal stay brand-constant.
+ * --gereq-ink / --gereq-fg / surfaces swap under .dark for UI chrome.
  * Marketing remaps --color-* under html.dark in app.css.
  */
 
 :root {
   --gereq-brand: #0a0b0a;
+  --brand-ink: #0a0b0a;
+  --brand-cream: #f5f5ef;
   --gereq-ink: #0a0b0a;
   --gereq-cream: #f5f5ef;
   --gereq-fg: #0a0b0a;

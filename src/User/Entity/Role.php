@@ -75,6 +75,17 @@ class Role
         $this->description = $description;
     }
 
+    public function rename(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    /** Full-access roles (bypass permission checks). */
+    public function isPrivileged(): bool
+    {
+        return in_array($this->name, ['superadmin', 'administrator'], true);
+    }
+
     /** @return Collection<int, Permission> */
     public function permissions(): Collection
     {
@@ -95,7 +106,7 @@ class Role
 
     public function hasPermission(string $name): bool
     {
-        if ($this->name === 'administrator') {
+        if ($this->isPrivileged()) {
             return true;
         }
 

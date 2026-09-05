@@ -13,7 +13,10 @@ use Gereq\Hook\HookPriority;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
-use Modules\Customers\Application\CustomerStatsWidget;
+use Modules\Customers\Application\Widgets\CustomerCreateHeroWidget;
+use Modules\Customers\Application\Widgets\CustomerGrowthChartWidget;
+use Modules\Customers\Application\Widgets\CustomerStatsWidget;
+use Modules\Customers\Application\Widgets\CustomersShortcutWidget;
 use Modules\Customers\Application\CustomersProvider;
 use Modules\Customers\Domain\Customer;
 use Modules\Customers\Domain\CustomerAddress;
@@ -149,10 +152,14 @@ final class CustomersModule implements ModuleInterface
             hidden: true,
         ));
 
-        $context->dashboard()->addWidget(new CustomerStatsWidget(
-            $context->get(\Doctrine\ORM\EntityManagerInterface::class),
-            $context->get(\Symfony\Contracts\Translation\TranslatorInterface::class),
-        ));
+        $twig = $context->get(\Twig\Environment::class);
+        $em = $context->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $translator = $context->get(\Symfony\Contracts\Translation\TranslatorInterface::class);
+        $router = $context->get(\Gereq\Http\Router::class);
+        $context->dashboard()->addWidget(new CustomerStatsWidget($twig, $em, $translator, $router));
+        $context->dashboard()->addWidget(new CustomerGrowthChartWidget($twig, $em, $translator, $router));
+        $context->dashboard()->addWidget(new CustomerCreateHeroWidget($twig, $translator, $router));
+        $context->dashboard()->addWidget(new CustomersShortcutWidget($twig, $translator, $router));
 
         $context->commandPalette()->add(new PaletteCommand(
             id: 'customers.index',

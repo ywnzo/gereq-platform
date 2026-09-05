@@ -15,6 +15,9 @@ use Gereq\Module\ModuleInterface;
 use Modules\Returns\Application\ReturnsProvider;
 use Modules\Returns\Http\Api\ReturnApiController;
 use Modules\Returns\Http\ReturnController;
+use Modules\Returns\Application\Widgets\ReturnsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class ReturnsModule implements ModuleInterface
 {
@@ -82,6 +85,11 @@ final class ReturnsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new ReturnsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'returns',
             label: 'nav.returns',

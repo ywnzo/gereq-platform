@@ -1,0 +1,53 @@
+<div
+    class="dash-settings"
+    x-data="gereqDashboardSettings"
+    data-items="{{ dashboardCatalog|default([])|json_encode|e('html_attr') }}"
+    data-label-metric="{{ 'settings.dashboard.type.metric'|trans|e('html_attr') }}"
+    data-label-hero="{{ 'settings.dashboard.type.hero'|trans|e('html_attr') }}"
+    data-label-panel="{{ 'settings.dashboard.type.panel'|trans|e('html_attr') }}"
+    data-label-shortcut="{{ 'settings.dashboard.type.shortcut'|trans|e('html_attr') }}"
+    data-width-full="{{ 'settings.dashboard.width.full'|trans|e('html_attr') }}"
+    data-width-two-thirds="{{ 'settings.dashboard.width.two_thirds'|trans|e('html_attr') }}"
+    data-width-half="{{ 'settings.dashboard.width.half'|trans|e('html_attr') }}"
+    data-width-third="{{ 'settings.dashboard.width.third'|trans|e('html_attr') }}"
+>
+    <input type="hidden" name="{{ field }}" x-ref="payload" value="[]">
+
+    <div class="dash-settings__toolbar">
+        <p class="muted">{{ 'settings.dashboard.help'|trans }}</p>
+        <div class="dash-settings__actions">
+            <button type="button" class="btn btn--ghost btn-sm" @click="enableAll">{{ 'settings.dashboard.enable_all'|trans }}</button>
+            <button type="button" class="btn btn--ghost btn-sm" @click="disableAll">{{ 'settings.dashboard.disable_all'|trans }}</button>
+        </div>
+    </div>
+
+    <template x-for="section in sections" :key="section.type">
+        <div class="dash-settings__section">
+            <h3 class="dash-settings__section-title" x-text="section.label"></h3>
+            <ul class="dash-settings__list">
+                <template x-for="item in section.items" :key="item.id">
+                    <li class="dash-settings__row" :class="item.enabled ? '' : 'is-off'">
+                        <label class="dash-settings__toggle">
+                            <input type="checkbox" :checked="item.enabled" @change="toggle(item.id)">
+                            <span class="dash-settings__title" x-text="item.title"></span>
+                        </label>
+                        <select
+                            class="input dash-settings__width"
+                            x-show="showWidth(section.type)"
+                            x-model="item.width"
+                            @change="sync"
+                        >
+                            <template x-for="w in widths" :key="w">
+                                <option :value="w" x-text="widthLabels[w]"></option>
+                            </template>
+                        </select>
+                        <div class="dash-settings__move">
+                            <button type="button" class="icon-btn" @click="move(item.id, -1)" :disabled="!canMoveUp(item.id)" aria-label="{{ 'settings.dashboard.move_up'|trans }}">↑</button>
+                            <button type="button" class="icon-btn" @click="move(item.id, 1)" :disabled="!canMoveDown(item.id)" aria-label="{{ 'settings.dashboard.move_down'|trans }}">↓</button>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+        </div>
+    </template>
+</div>

@@ -15,6 +15,9 @@ use Gereq\Module\ModuleInterface;
 use Modules\Bundles\Application\BundlesProvider;
 use Modules\Bundles\Http\Api\BundleApiController;
 use Modules\Bundles\Http\BundleController;
+use Modules\Bundles\Application\Widgets\BundlesShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class BundlesModule implements ModuleInterface
 {
@@ -67,6 +70,11 @@ final class BundlesModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new BundlesShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'bundles',
             label: 'nav.bundles',

@@ -18,6 +18,9 @@ use Modules\Feeds\Application\Drivers\HeurekaDriver;
 use Modules\Feeds\Application\FeedsProvider;
 use Modules\Feeds\Http\Api\FeedApiController;
 use Modules\Feeds\Http\FeedController;
+use Modules\Feeds\Application\Widgets\FeedsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class FeedsModule implements ModuleInterface
 {
@@ -78,6 +81,11 @@ final class FeedsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new FeedsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'feeds',
             label: 'nav.feeds',

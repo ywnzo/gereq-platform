@@ -15,7 +15,7 @@
             <textarea name="description" rows="3">{{ role.description() }}</textarea>
         </label>
 
-        {% if role.name() == 'administrator' %}
+        {% if role.isPrivileged() %}
             <p class="muted">{{ 'admin.roles.admin_hint'|trans }}</p>
         {% else %}
             {% for group, permissions in grouped %}

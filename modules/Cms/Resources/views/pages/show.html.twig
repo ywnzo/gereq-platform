@@ -38,13 +38,17 @@
         </div>
     </header>
 
-    <div class="detail-hub" x-data="gereqTabs" data-initial="blocks">
+    <div class="detail-hub" x-data="gereqTabs" data-initial="{{ item.isRaw() ? 'body' : 'blocks' }}">
         <div class="design-tabs detail-tabs" role="tablist">
             <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="blocks">
-                {{ 'cms.blocks.title'|trans }}
-                {% if blocks %}<span class="module-tab-count">{{ blocks|length }}</span>{% endif %}
-            </button>
+            {% if item.isRaw() %}
+                <button type="button" class="design-tab" role="tab" data-tab="body">{{ 'cms.field.body'|trans }}</button>
+            {% else %}
+                <button type="button" class="design-tab" role="tab" data-tab="blocks">
+                    {{ 'cms.blocks.title'|trans }}
+                    {% if blocks %}<span class="module-tab-count">{{ blocks|length }}</span>{% endif %}
+                </button>
+            {% endif %}
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
@@ -66,6 +70,10 @@
                         <strong>{{ item.templateLabel()|trans }}</strong>
                     </div>
                     <div class="meta-tile">
+                        <span>{{ 'cms.field.content_mode'|trans }}</span>
+                        <strong>{{ item.contentModeLabel()|trans }}</strong>
+                    </div>
+                    <div class="meta-tile">
                         <span>{{ 'cms.field.published_at'|trans }}</span>
                         <strong>{{ item.publishedAt() ? item.publishedAt().format('d. m. Y H:i') : '—' }}</strong>
                     </div>
@@ -81,6 +89,26 @@
             </section>
         </section>
 
+        {% if item.isRaw() %}
+        <section class="design-panel" data-panel="body" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'cms.field.body'|trans }}</h2>
+                    {% if user.can('cms.manage') %}
+                        <a class="btn btn--primary btn--sm" href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                    {% endif %}
+                </header>
+                {% if item.body() %}
+                    <div class="prose-cms">{{ item.body()|raw }}</div>
+                {% else %}
+                    <div class="empty">
+                        <h2>{{ 'cms.body.empty'|trans }}</h2>
+                        <p>{{ 'cms.body.empty.hint'|trans }}</p>
+                    </div>
+                {% endif %}
+            </section>
+        </section>
+        {% else %}
         <section class="design-panel" data-panel="blocks" role="tabpanel">
             <div class="detail-stack">
                 <section class="panel">
@@ -270,5 +298,6 @@
                 {% endif %}
             </div>
         </section>
+        {% endif %}
     </div>
 {% endblock %}

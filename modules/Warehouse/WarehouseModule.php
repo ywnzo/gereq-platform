@@ -21,6 +21,8 @@ use Modules\Warehouse\Http\Api\WarehouseApiController;
 use Modules\Warehouse\Http\StockController;
 use Modules\Warehouse\Http\WarehouseController;
 use Twig\Environment;
+use Modules\Warehouse\Application\Widgets\WarehouseShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class WarehouseModule implements ModuleInterface
 {
@@ -82,6 +84,11 @@ final class WarehouseModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new WarehouseShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'warehouse',
             label: 'nav.warehouse',

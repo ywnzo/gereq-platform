@@ -16,6 +16,9 @@ use Modules\Newsletter\Application\NewsletterProvider;
 use Modules\Newsletter\Http\Api\NewsletterApiController;
 use Modules\Newsletter\Http\CampaignController;
 use Modules\Newsletter\Http\SubscriberController;
+use Modules\Newsletter\Application\Widgets\NewsletterShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class NewsletterModule implements ModuleInterface
 {
@@ -93,6 +96,11 @@ final class NewsletterModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new NewsletterShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'newsletter',
             label: 'nav.newsletter',

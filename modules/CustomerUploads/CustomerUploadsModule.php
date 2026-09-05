@@ -10,6 +10,10 @@ use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
 use Modules\CustomerUploads\Application\CustomerUploadService;
 use Modules\CustomerUploads\Http\Api\UploadApiController;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
+use Doctrine\ORM\EntityManagerInterface;
+use Modules\CustomerUploads\Application\Widgets\CustomerUploadsStatsWidget;
 
 final class CustomerUploadsModule implements ModuleInterface
 {
@@ -49,5 +53,10 @@ final class CustomerUploadsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new CustomerUploadsStatsWidget(
+            $context->get(Environment::class),
+            $context->get(EntityManagerInterface::class),
+            $context->get(TranslatorInterface::class),
+        ));
     }
 }

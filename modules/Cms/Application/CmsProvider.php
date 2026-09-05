@@ -108,16 +108,23 @@ final class CmsProvider
             'title' => $page->title(),
             'status' => $page->status(),
             'template' => $page->template(),
+            'content_mode' => $page->contentMode(),
             'meta_description' => $page->metaDescription(),
             'published_at' => $page->publishedAt()?->format(\DateTimeInterface::ATOM),
             'updated_at' => $page->updatedAt()->format(\DateTimeInterface::ATOM),
         ];
 
         if ($withBlocks) {
-            $data['blocks'] = array_map(
-                fn (PageBlock $block): array => $this->serializeBlock($block),
-                $this->blocksForPage($page->id()),
-            );
+            if ($page->isRaw()) {
+                $data['body'] = $this->html->sanitizeNullable($page->body());
+                $data['blocks'] = [];
+            } else {
+                $data['body'] = null;
+                $data['blocks'] = array_map(
+                    fn (PageBlock $block): array => $this->serializeBlock($block),
+                    $this->blocksForPage($page->id()),
+                );
+            }
         }
 
         return $data;

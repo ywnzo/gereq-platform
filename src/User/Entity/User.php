@@ -212,7 +212,13 @@ class User
 
     public function isAdministrator(): bool
     {
-        return $this->hasRole('administrator');
+        foreach ($this->roles as $role) {
+            if ($role->isPrivileged()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function can(string $permission): bool

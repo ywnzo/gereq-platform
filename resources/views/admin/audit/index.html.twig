@@ -20,7 +20,7 @@
                     <tr>
                         <td>{{ log.createdAt().format('d. m. Y H:i:s') }}</td>
                         <td>{{ log.userName() ?: 'common.system'|trans }}</td>
-                        <td>{{ log.action() }}</td>
+                        <td>{{ log.action()|audit_action }}</td>
                         <td>
                             {{ log.resource() ?: 'common.none'|trans }}
                             {% if log.oldValues() or log.newValues() %}

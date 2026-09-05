@@ -21,6 +21,10 @@ use Modules\Listings\Http\NearLocationController;
 use Modules\Listings\Http\Public\PublicBrokersController;
 use Modules\Listings\Http\Public\PublicCitiesController;
 use Modules\Listings\Http\Public\PublicListingsController;
+use Modules\Listings\Application\Widgets\ListingStatusChartWidget;
+use Modules\Listings\Application\Widgets\ListingsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class ListingsModule implements ModuleInterface
 {
@@ -118,6 +122,17 @@ final class ListingsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new ListingsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
+        $context->dashboard()->addWidget(new ListingStatusChartWidget(
+            $context->get(Environment::class),
+            $context->get(\Doctrine\ORM\EntityManagerInterface::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'listings',
             label: 'nav.listings',

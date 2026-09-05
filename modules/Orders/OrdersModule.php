@@ -26,6 +26,14 @@ use Modules\Orders\Http\InvoiceController;
 use Modules\Orders\Http\OrderController;
 use Modules\Orders\Http\OrderShipmentController;
 use Modules\Orders\Application\OrderMailer;
+use Modules\Orders\Application\Widgets\InvoicesShortcutWidget;
+use Modules\Orders\Application\Widgets\OrderCreateHeroWidget;
+use Modules\Orders\Application\Widgets\OrderRevenueChartWidget;
+use Modules\Orders\Application\Widgets\OrderRevenueWidget;
+use Modules\Orders\Application\Widgets\OrderStatsWidget;
+use Modules\Orders\Application\Widgets\OrderStatusChartWidget;
+use Modules\Orders\Application\Widgets\OrdersShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final class OrdersModule implements ModuleInterface
@@ -96,6 +104,18 @@ final class OrdersModule implements ModuleInterface
 
         $context->commandPalette()->add(new PaletteCommand(id: 'orders.index', label: 'palette.orders.index', url: '/admin/orders', icon: 'cart', permission: 'orders.view', keywords: ['objednávka', 'order', 'invoice']));
         $context->commandPalette()->add(new PaletteCommand(id: 'invoices.index', label: 'palette.invoices.index', url: '/admin/invoices', icon: 'receipt', permission: 'invoices.view', keywords: ['faktura', 'invoice']));
+
+        $twig = $context->get(Environment::class);
+        $em = $context->get(EntityManagerInterface::class);
+        $translator = $context->get(TranslatorInterface::class);
+        $router = $context->get(Router::class);
+        $context->dashboard()->addWidget(new OrderStatsWidget($twig, $em, $translator, $router));
+        $context->dashboard()->addWidget(new OrderRevenueWidget($twig, $em, $translator));
+        $context->dashboard()->addWidget(new OrderRevenueChartWidget($twig, $em, $translator, $router));
+        $context->dashboard()->addWidget(new OrderStatusChartWidget($twig, $em, $translator, $router));
+        $context->dashboard()->addWidget(new OrderCreateHeroWidget($twig, $translator, $router));
+        $context->dashboard()->addWidget(new OrdersShortcutWidget($twig, $translator, $router));
+        $context->dashboard()->addWidget(new InvoicesShortcutWidget($twig, $translator, $router));
 
         $this->registerHooks($context);
         $this->registerPaidInvoiceHook($context);

@@ -21,10 +21,13 @@ use Modules\Payments\Application\Gateways\StripeGateway;
 use Modules\Payments\Application\PaymentGatewayRegistry;
 use Modules\Payments\Application\PaymentService;
 use Modules\Payments\Application\PaymentsProvider;
+use Modules\Payments\Application\Widgets\PaymentsShortcutWidget;
 use Modules\Payments\Http\Api\PaymentIntentApiController;
 use Modules\Payments\Http\Api\PaymentMethodApiController;
 use Modules\Payments\Http\PaymentMethodController;
 use Modules\Webhooks\Application\InboundWebhookRegistry;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class PaymentsModule implements ModuleInterface
 {
@@ -118,6 +121,11 @@ final class PaymentsModule implements ModuleInterface
             order: 33,
             hidden: true,
         ));
+
+        $twig = $context->get(Environment::class);
+        $translator = $context->get(TranslatorInterface::class);
+        $router = $context->get(Router::class);
+        $context->dashboard()->addWidget(new PaymentsShortcutWidget($twig, $translator, $router));
 
         $context->commandPalette()->add(new PaletteCommand(
             id: 'payments.methods',

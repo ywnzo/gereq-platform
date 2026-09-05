@@ -1,0 +1,44 @@
+{% set scope = key == 'cms.custom_css_public' ? 'public' : 'admin' %}
+{% set vars = cssVariables[scope]|default([]) %}
+<div
+    class="css-editor"
+    x-data="gereqCssEditor"
+    data-vars="{{ vars|json_encode|e('html_attr') }}"
+>
+    <div class="css-editor__main">
+        <div class="css-editor__host" x-ref="host"></div>
+        <textarea
+            class="css-editor__input"
+            name="{{ field }}"
+            x-ref="input"
+            hidden
+        >{{ values[key] }}</textarea>
+    </div>
+    <aside class="css-editor__vars">
+        <div class="css-editor__vars-head">
+            <strong>{{ 'settings.css.vars_title'|trans }}</strong>
+            <p class="muted">{{ scope == 'admin' ? ('settings.css.vars_admin'|trans) : ('settings.css.vars_public'|trans) }}</p>
+            <input
+                class="input css-editor__filter"
+                type="search"
+                placeholder="{{ 'settings.css.vars_filter'|trans }}"
+                x-model="filter"
+                @input="applyFilter"
+            >
+        </div>
+        <ul class="css-editor__list">
+            <template x-for="item in filteredVars" :key="item.name">
+                <li>
+                    <button type="button" class="css-editor__var" @click="insertVar(item.name)">
+                        <span class="css-editor__swatch" :style="swatchStyle(item.value)"></span>
+                        <span class="css-editor__var-meta">
+                            <code x-text="item.name"></code>
+                            <span class="css-editor__var-hint" x-text="item.hint"></span>
+                        </span>
+                        <span class="css-editor__var-value" x-text="item.value"></span>
+                    </button>
+                </li>
+            </template>
+        </ul>
+    </aside>
+</div>

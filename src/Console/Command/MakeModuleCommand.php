@@ -38,6 +38,7 @@ final class MakeModuleCommand extends Command
 
         $dirs = [
             'Application',
+            'Application/Widgets',
             'Domain',
             'Infrastructure',
             'Http',
@@ -100,6 +101,7 @@ final class {$name}Module implements ModuleInterface
 
     public function boot(ModuleContext \$context): void
     {
+        // Dashboard: \$context->dashboard()->addWidget(new \Modules\\\\{$name}\\\\Application\\\\Widgets\\\\ExampleWidget(...));
     }
 }
 PHP);

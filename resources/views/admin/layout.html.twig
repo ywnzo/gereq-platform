@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="{{ app_locale() }}" data-theme="gereq-dark">
+<html lang="{{ app_locale() }}" class="dark" data-theme="gereq-dark" data-csp-nonce="{{ csp_nonce() }}" style="{{ brand_html_style() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}{{ pageTitle|default('admin.title'|trans) }}{% endblock %} · GEREQ</title>
+    <title>{% block title %}{{ pageTitle|default('admin.title'|trans) }}{% endblock %} · {{ brand('name') }}</title>
     {% include 'partials/brand-head.html.twig' %}
     <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+    {% include 'partials/brand-overrides.html.twig' %}
 </head>
 <body class="admin-body" data-sidebar="expanded">
     <div class="app-shell" x-data="gereqAdmin" x-cloak>
@@ -55,7 +56,7 @@
                     {% if node.children|length > 0 %}
                         <div class="nav-tree" data-default-open="{{ (active or childActive) ? '1' : '0' }}" x-data="navTree">
                             <div class="nav-tree__row">
-                                <a href="{{ node.url }}" class="nav-item{% if active or childActive %} is-active{% endif %}" title="{{ menuItem.label|trans }}">
+                                <a href="{{ node.url }}" class="nav-item{% if active %} is-active{% elseif childActive %} is-branch{% endif %}" title="{{ menuItem.label|trans }}">
                                     <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
                                     <span class="nav-item__label">{{ menuItem.label|trans }}</span>
                                     {% if menuItem.badge %}
@@ -101,7 +102,7 @@
         <div class="app-main">
             <header class="topbar">
                 <div class="topbar__left">
-                    <button type="button" class="icon-btn topbar__menu" @click="openSidebar" aria-label="{{ 'ui.menu'|trans }}">
+                    <button type="button" class="icon-btn topbar__menu" @click="toggleMenu" aria-label="{{ 'ui.menu'|trans }}">
                         {{ icon('panel') }}
                     </button>
                     <nav class="breadcrumbs" aria-label="{{ 'ui.breadcrumbs'|trans }}">

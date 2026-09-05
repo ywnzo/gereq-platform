@@ -6,6 +6,13 @@ namespace Gereq\Foundation;
 
 use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\CommandPalette\PaletteCommand;
+use Gereq\Admin\Dashboard\Dashboard;
+use Gereq\Admin\Dashboard\Widgets\ActivityChartWidget;
+use Gereq\Admin\Dashboard\Widgets\ActivityWidget;
+use Gereq\Admin\Dashboard\Widgets\ModulesStatsWidget;
+use Gereq\Admin\Dashboard\Widgets\SearchHeroWidget;
+use Gereq\Admin\Dashboard\Widgets\SettingsShortcutWidget;
+use Gereq\Admin\Dashboard\Widgets\UsersStatsWidget;
 use Gereq\Admin\Http\AresController;
 use Gereq\Admin\Http\AuditController;
 use Gereq\Admin\Http\AuthController;
@@ -23,13 +30,20 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Menu\MenuItem;
 use Gereq\Api\HealthController;
 use Gereq\Api\OpenApiController;
+use Gereq\Api\PublicBrandingController;
+use Gereq\Auth\Authenticator;
+use Gereq\Http\BrandAssetController;
 use Gereq\Http\DesignController;
 use Gereq\Http\Router;
 use Gereq\I18n\LocaleCatalog;
+use Gereq\Module\ModuleManager;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 use Gereq\User\PermissionRegistry;
 use Gereq\Validation\ValidationRegistry;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class CoreRegistrar
 {
@@ -41,6 +55,12 @@ final class CoreRegistrar
         private readonly CommandPalette $palette,
         private readonly ValidationRegistry $validation,
         private readonly LocaleCatalog $locales,
+        private readonly Dashboard $dashboard,
+        private readonly EntityManagerInterface $em,
+        private readonly Environment $twig,
+        private readonly TranslatorInterface $translator,
+        private readonly ModuleManager $modules,
+        private readonly Authenticator $auth,
     ) {
     }
 
@@ -52,6 +72,7 @@ final class CoreRegistrar
         $this->routes();
         $this->menu();
         $this->commands();
+        $this->dashboard();
     }
 
     private function permissions(): void
@@ -79,7 +100,8 @@ final class CoreRegistrar
 
     private function settings(): void
     {
-        $this->settings->define('app.name', SettingRecord::TYPE_STRING, 'settings.app.name', 'GEREQ Platform');
+        $appName = (string) config('app.name', 'GEREQ Platform');
+        $this->settings->define('app.name', SettingRecord::TYPE_STRING, 'settings.app.name', $appName);
         $this->settings->define(
             'app.locale',
             SettingRecord::TYPE_STRING,
@@ -88,18 +110,31 @@ final class CoreRegistrar
             null,
             $this->locales->all(),
         );
+        $this->settings->define('admin.theme', SettingRecord::TYPE_STRING, 'settings.admin.theme', 'system', null, [
+            'system' => 'settings.theme.system',
+            'light' => 'settings.theme.light',
+            'dark' => 'settings.theme.dark',
+        ]);
         $this->settings->define(
-            'admin.theme',
-            SettingRecord::TYPE_STRING,
-            'settings.admin.theme',
-            'system',
-            null,
-            [
-                'system' => 'settings.theme.system',
-                'light' => 'settings.theme.light',
-                'dark' => 'settings.theme.dark',
-            ],
+            \Gereq\Admin\Dashboard\Dashboard::LAYOUT_SETTING,
+            SettingRecord::TYPE_JSON,
+            'settings.dashboard.layout',
+            [],
         );
+
+        // White-label branding (admin + public site).
+        $this->settings->define('brand.name', SettingRecord::TYPE_STRING, 'settings.brand.name', '');
+        $this->settings->define('brand.subtitle', SettingRecord::TYPE_STRING, 'settings.brand.subtitle', '');
+        $this->settings->define('brand.logo_url', SettingRecord::TYPE_STRING, 'settings.brand.logo_url', '');
+        $this->settings->define('brand.favicon_url', SettingRecord::TYPE_STRING, 'settings.brand.favicon_url', '');
+        $this->settings->define('brand.color_signal', SettingRecord::TYPE_STRING, 'settings.brand.color_signal', '#d7ff45');
+        $this->settings->define('brand.color_ink', SettingRecord::TYPE_STRING, 'settings.brand.color_ink', '#0a0b0a');
+        $this->settings->define('brand.color_cream', SettingRecord::TYPE_STRING, 'settings.brand.color_cream', '#f5f5ef');
+        $this->settings->define('brand.site_name', SettingRecord::TYPE_STRING, 'settings.brand.site_name', '');
+        $this->settings->define('brand.site_mark', SettingRecord::TYPE_STRING, 'settings.brand.site_mark', '');
+        $this->settings->define('brand.site_primary', SettingRecord::TYPE_STRING, 'settings.brand.site_primary', '#17375a');
+        $this->settings->define('brand.tagline', SettingRecord::TYPE_STRING, 'settings.brand.tagline', '');
+        $this->settings->define('brand.footnote', SettingRecord::TYPE_STRING, 'settings.brand.footnote', '');
     }
 
     private function validation(): void
@@ -188,6 +223,14 @@ final class CoreRegistrar
             ->name('api.public.ares.addresses.options');
         $this->router->get('/api/public/ares/addresses', [PublicAresController::class, 'addresses'])
             ->name('api.public.ares.addresses');
+
+        $this->router->add('/api/public/branding', ['OPTIONS'], [PublicBrandingController::class, 'options'])
+            ->name('api.public.branding.options');
+        $this->router->get('/api/public/branding', [PublicBrandingController::class, 'show'])
+            ->name('api.public.branding');
+
+        $this->router->get('/brand/asset/{name}', [BrandAssetController::class, 'show'])
+            ->name('brand.asset');
     }
 
     private function menu(): void
@@ -212,5 +255,15 @@ final class CoreRegistrar
         $this->palette->add(new PaletteCommand('go-settings', 'palette.go_settings', '/admin/settings', 'settings', 'settings.manage', keywords: ['konfigurace', 'settings']));
         $this->palette->add(new PaletteCommand('go-profile', 'palette.go_profile', '/admin/profile', 'user'));
         $this->palette->add(new PaletteCommand('logout', 'palette.logout', '/admin/logout', 'logout', group: 'Účet'));
+    }
+
+    private function dashboard(): void
+    {
+        $this->dashboard->addWidget(new ModulesStatsWidget($this->twig, $this->modules, $this->translator, $this->router));
+        $this->dashboard->addWidget(new UsersStatsWidget($this->twig, $this->em, $this->translator, $this->router));
+        $this->dashboard->addWidget(new ActivityWidget($this->twig, $this->em, $this->auth, $this->translator));
+        $this->dashboard->addWidget(new ActivityChartWidget($this->twig, $this->em, $this->translator, $this->router));
+        $this->dashboard->addWidget(new SettingsShortcutWidget($this->twig, $this->translator, $this->router));
+        $this->dashboard->addWidget(new SearchHeroWidget($this->twig, $this->translator));
     }
 }

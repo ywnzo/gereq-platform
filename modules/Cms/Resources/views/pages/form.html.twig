@@ -47,6 +47,27 @@
                 {value: 'landing', label: 'cms.page.template.landing'|trans}
             ]
         } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'content_mode',
+            label: 'cms.field.content_mode'|trans,
+            required: true,
+            form: 'cms.page.save',
+            value: item ? item.contentMode() : 'blocks',
+            hint: 'cms.field.content_mode.hint'|trans,
+            options: [
+                {value: 'blocks', label: 'cms.page.content_mode.blocks'|trans},
+                {value: 'raw', label: 'cms.page.content_mode.raw'|trans}
+            ]
+        } %}
+        {% include 'ui/textarea.html.twig' with {
+            name: 'body',
+            label: 'cms.field.body'|trans,
+            optional: true,
+            form: 'cms.page.save',
+            value: item ? item.body()|default('') : '',
+            hint: 'cms.field.body.hint'|trans,
+            extra: 'field--full'
+        } %}
         {% include 'ui/textarea.html.twig' with {
             name: 'meta_description',
             label: 'cms.field.meta_description'|trans,

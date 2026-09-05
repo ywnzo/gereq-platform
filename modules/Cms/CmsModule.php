@@ -21,6 +21,9 @@ use Modules\Cms\Http\BlockController;
 use Modules\Cms\Http\MenuController;
 use Modules\Cms\Http\PageController;
 use Modules\Cms\Http\Public\PublicCmsController;
+use Modules\Cms\Application\Widgets\CmsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class CmsModule implements ModuleInterface
 {
@@ -44,6 +47,20 @@ final class CmsModule implements ModuleInterface
 
         $context->settings()->define('cms.site_title', SettingRecord::TYPE_STRING, 'cms.settings.site_title', 'GEREQ Site', $this->id());
         $context->settings()->define('cms.home_page_id', SettingRecord::TYPE_STRING, 'cms.settings.home_page_id', '', $this->id());
+        $context->settings()->define(
+            'cms.custom_css_admin',
+            SettingRecord::TYPE_STRING,
+            'cms.settings.custom_css_admin',
+            "/* Admin CSS — přepište tokeny nebo doplňte pravidla */\n:root {\n  /* --primary: #47c2ff; */\n}\n",
+            $this->id(),
+        );
+        $context->settings()->define(
+            'cms.custom_css_public',
+            SettingRecord::TYPE_STRING,
+            'cms.settings.custom_css_public',
+            "/* Veřejný web (FE) */\n:root {\n  /* --color-brand-700: #17375a; */\n}\n",
+            $this->id(),
+        );
 
         $context->router()->group('/admin/cms/pages', function (Router $routes): void {
             $routes->get('', [PageController::class, 'index'])->name('admin.cms.pages.index')->permission('cms.view');
@@ -100,6 +117,11 @@ final class CmsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new CmsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'cms',
             label: 'nav.cms',
@@ -219,6 +241,8 @@ final class CmsModule implements ModuleInterface
             'title' => 'required|min:1|max:190',
             'status' => 'required|in:draft,published,archived',
             'template' => 'required|in:default,landing',
+            'content_mode' => 'required|in:blocks,raw',
+            'body' => 'nullable|max:200000',
             'meta_description' => 'nullable|max:2000',
         ]);
 

@@ -21,6 +21,8 @@ use Modules\Documents\Domain\DocumentLink;
 use Modules\Documents\Http\Api\DocumentApiController;
 use Modules\Documents\Http\DocumentController;
 use Twig\Environment;
+use Modules\Documents\Application\Widgets\DocumentsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class DocumentsModule implements ModuleInterface
 {
@@ -69,6 +71,11 @@ final class DocumentsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new DocumentsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'documents',
             label: 'nav.documents',

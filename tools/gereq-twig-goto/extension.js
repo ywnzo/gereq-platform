@@ -13,6 +13,7 @@ const TWIG_TO_RUNTIME = {
   route_is: 'routeIs',
   flash: 'flash',
   csp_nonce: 'cspNonce',
+  audit_action: 'auditAction',
   old: 'old',
   error: 'error',
   errors: 'errors',

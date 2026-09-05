@@ -19,6 +19,9 @@ use Modules\Calendar\Domain\CalendarEvent;
 use Modules\Calendar\Domain\CalendarEventLink;
 use Modules\Calendar\Http\Api\CalendarApiController;
 use Modules\Calendar\Http\CalendarController;
+use Modules\Calendar\Application\Widgets\CalendarShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class CalendarModule implements ModuleInterface
 {
@@ -83,6 +86,11 @@ final class CalendarModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new CalendarShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'calendar',
             label: 'nav.calendar',

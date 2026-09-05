@@ -16,6 +16,9 @@ use Modules\Loyalty\Application\LoyaltyProvider;
 use Modules\Loyalty\Http\AccountController;
 use Modules\Loyalty\Http\Api\LoyaltyApiController;
 use Modules\Loyalty\Http\TierController;
+use Modules\Loyalty\Application\Widgets\LoyaltyShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class LoyaltyModule implements ModuleInterface
 {
@@ -77,6 +80,11 @@ final class LoyaltyModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new LoyaltyShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'loyalty',
             label: 'nav.loyalty',

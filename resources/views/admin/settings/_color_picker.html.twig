@@ -1,0 +1,56 @@
+{% set colorValue = values[key]|default('#d7ff45') %}
+{% if colorValue is empty %}{% set colorValue = '#d7ff45' %}{% endif %}
+{% set colorHex = colorValue|replace({'#': ''}) %}
+<div
+    class="color-picker"
+    x-data="gereqColorField"
+    data-value="{{ colorValue }}"
+    @click.outside="close"
+>
+    <input type="hidden" name="{{ field }}" value="{{ colorValue }}" data-color-value :value="hex">
+    <div class="color-picker__row">
+        <label class="color-picker__chip">
+            <input
+                type="color"
+                class="color-picker__native"
+                value="{{ colorValue }}"
+                :value="hex"
+                @input="fromNative($event)"
+                aria-label="{{ definition.label|trans }}"
+            >
+            <span class="color-picker__chip-face" :style="swatchStyle" style="background: {{ colorValue }}"></span>
+        </label>
+        <div class="color-picker__hex-field">
+            <span class="color-picker__hash">#</span>
+            <input
+                class="color-picker__hex-input"
+                type="text"
+                maxlength="6"
+                value="{{ colorHex }}"
+                x-model="draft"
+                @keydown.enter.prevent="fromDraft"
+                @blur="fromDraft"
+                spellcheck="false"
+                autocomplete="off"
+                aria-label="HEX"
+            >
+        </div>
+        <button type="button" class="color-picker__more" @click="toggle" :aria-expanded="open ? 'true' : 'false'" title="{{ 'settings.color.presets'|trans }}">
+            {{ icon('palette') }}
+        </button>
+    </div>
+    <div class="color-picker__presets" x-show="open" x-cloak role="listbox" aria-label="{{ 'settings.color.presets'|trans }}">
+        <template x-for="preset in presets" :key="preset">
+            <button
+                type="button"
+                class="color-picker__preset"
+                role="option"
+                :class="isPreset(preset) ? 'is-active' : ''"
+                :style="presetStyle(preset)"
+                :aria-selected="isPreset(preset) ? 'true' : 'false'"
+                :title="preset"
+                @click="pick(preset)"
+            ></button>
+        </template>
+    </div>
+</div>

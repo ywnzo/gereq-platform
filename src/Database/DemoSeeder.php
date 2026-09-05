@@ -69,7 +69,7 @@ final class DemoSeeder
 
         $this->em->flush();
         $log[] = 'Demo data připravena.';
-        $log[] = sprintf('Přihlášení: %s / %s (role administrator)', self::DEMO_EMAIL, self::DEMO_PASSWORD);
+        $log[] = sprintf('Přihlášení: %s / %s (role superadmin)', self::DEMO_EMAIL, self::DEMO_PASSWORD);
 
         return $log;
     }
@@ -77,15 +77,21 @@ final class DemoSeeder
     /** @param list<string> $log */
     private function syncRolePermissions(array &$log): void
     {
-        $manager = $this->em->getRepository(Role::class)->findOneBy(['name' => 'manager']);
+        $this->ensureRole('superadmin', 'Superadmin', 'Plný přístup ke všemu (včetně uživatelů a rolí).', ['administrator']);
+        $this->ensureRole('admin', 'Admin', 'Správa běžného provozu bez systémových modulů a rolí.', ['manager']);
+        $this->ensureRole('editor', 'Editor', 'Úpravy obsahu bez správy uživatelů.', []);
+        $this->ensureRole('view', 'View', 'Pouze čtení.', ['viewer']);
+        $this->em->flush();
+
+        $admin = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin']);
         $editorRole = $this->em->getRepository(Role::class)->findOneBy(['name' => 'editor']);
-        $viewer = $this->em->getRepository(Role::class)->findOneBy(['name' => 'viewer']);
+        $view = $this->em->getRepository(Role::class)->findOneBy(['name' => 'view']);
         $all = $this->em->getRepository(\Gereq\User\Entity\Permission::class)->findAll();
 
-        if ($manager instanceof Role) {
+        if ($admin instanceof Role) {
             foreach ($all as $permission) {
                 if (!str_starts_with($permission->name(), 'modules.') && !str_starts_with($permission->name(), 'roles.')) {
-                    $manager->givePermission($permission);
+                    $admin->givePermission($permission);
                 }
             }
         }
@@ -104,16 +110,41 @@ final class DemoSeeder
                 }
             }
         }
-        if ($viewer instanceof Role) {
+        if ($view instanceof Role) {
             foreach ($all as $permission) {
                 if (str_ends_with($permission->name(), '.view')) {
-                    $viewer->givePermission($permission);
+                    $view->givePermission($permission);
                 }
             }
         }
 
         $this->em->flush();
-        $log[] = 'Oprávnění rolí manager/editor/viewer synchronizována.';
+        $log[] = 'Oprávnění rolí admin/editor/view synchronizována.';
+    }
+
+    /** @param list<string> $legacyNames */
+    private function ensureRole(string $name, string $label, string $description, array $legacyNames): void
+    {
+        $existing = $this->em->getRepository(Role::class)->findOneBy(['name' => $name]);
+        if ($existing instanceof Role) {
+            $existing->setLabel($label);
+            $existing->setDescription($description);
+
+            return;
+        }
+
+        foreach ($legacyNames as $legacy) {
+            $old = $this->em->getRepository(Role::class)->findOneBy(['name' => $legacy]);
+            if ($old instanceof Role) {
+                $old->rename($name);
+                $old->setLabel($label);
+                $old->setDescription($description);
+
+                return;
+            }
+        }
+
+        $this->em->persist(new Role($name, $label, $description));
     }
 
     private function alreadySeeded(): bool
@@ -128,17 +159,18 @@ final class DemoSeeder
 
     /**
      * @param list<string> $log
-     * @return array{demo: User, manager: User, editor: User, admin: ?User}
+     * @return array{demo: User, manager: User, editor: User, view: User, admin: ?User}
      */
     private function seedUsers(array &$log): array
     {
         $defs = [
-            'demo' => [self::DEMO_EMAIL, 'Anna Demo', 'administrator', 'cs'],
-            'manager' => ['manazer@gereq.cz', 'Petr Manažer', 'manager', 'cs'],
+            'demo' => [self::DEMO_EMAIL, 'Anna Demo', 'superadmin', 'cs'],
+            'manager' => ['manazer@gereq.cz', 'Petr Manažer', 'admin', 'cs'],
             'editor' => ['editor@gereq.cz', 'Lucie Editorová', 'editor', 'cs'],
+            'view' => ['view@gereq.cz', 'Jan View', 'view', 'cs'],
         ];
 
-        $out = ['demo' => null, 'manager' => null, 'editor' => null, 'admin' => null];
+        $out = ['demo' => null, 'manager' => null, 'editor' => null, 'view' => null, 'admin' => null];
 
         foreach ($defs as $key => [$email, $name, $roleName, $locale]) {
             $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
@@ -171,7 +203,7 @@ final class DemoSeeder
 
         $this->em->flush();
 
-        /** @var array{demo: User, manager: User, editor: User, admin: ?User} */
+        /** @var array{demo: User, manager: User, editor: User, view: User, admin: ?User} */
         return $out;
     }
 
@@ -1264,38 +1296,41 @@ SVG;
         }
 
         $pageRepo = $this->em->getRepository(\Modules\Cms\Domain\Page::class);
+        unset($products);
 
-        $home = $pageRepo->findOneBy(['slug' => 'uvod']);
+        $home = $pageRepo->findOneBy(['slug' => 'home']) ?? $pageRepo->findOneBy(['slug' => 'uvod']);
         if ($home === null) {
-            $home = new \Modules\Cms\Domain\Page('uvod', 'Úvodní stránka');
+            $home = new \Modules\Cms\Domain\Page('home', 'Úvodní stránka');
             $home->setStatus('published');
             $home->setTemplate('landing');
-            $home->setMetaDescription('Interní portál GEREQ — demo obsah.');
+            $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů.');
             $this->em->persist($home);
             $this->em->flush();
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($home->id(), 'heading', 0, ['text' => 'Vítejte v GEREQ', 'level' => 1]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($home->id(), 'text', 1, [
-                'html' => '<p>Toto je demo interního webu. Procházejte stránky, menu a content builder.</p>',
-            ]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($home->id(), 'cta', 2, [
-                'label' => 'Prohlédnout katalog',
-                'url' => '/admin/products',
-            ]));
+            $this->seedHomeBlocks($home->id());
+        } elseif ($home->slug() === 'uvod') {
+            $home->setSlug('home');
+            $home->setTitle('Úvodní stránka');
+            $home->setTemplate('landing');
+            $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů.');
+            $this->em->flush();
         }
 
         $about = $pageRepo->findOneBy(['slug' => 'o-nas']);
         if ($about === null) {
             $about = new \Modules\Cms\Domain\Page('o-nas', 'O nás');
             $about->setStatus('published');
+            $about->setMetaDescription('Kdo jsme a jak pracujeme.');
             $this->em->persist($about);
             $this->em->flush();
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'heading', 0, ['text' => 'Tým GEREQ', 'level' => 2]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'text', 1, [
-                'html' => '<p>Malý tým, který dodává ERP a interní portály firmám v ČR.</p>',
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'heading', 0, [
+                'text' => 'RealEstates',
+                'level' => 2,
             ]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'divider', 2, []));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'html', 3, [
-                'html' => '<ul><li>Implementace</li><li>Podpora</li><li>Školení</li></ul>',
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'text', 1, [
+                'body' => '<p>Jsme realitní kancelář zaměřená na Prahu a Brno. Každou nabídku vede konkrétní makléř, kterého klient kontaktuje přímo.</p>',
+            ]));
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'html', 2, [
+                'html' => '<ul><li>Prodej a pronájem</li><li>Odhad ceny</li><li>Prohlídky bez zbytečné administrativy</li></ul>',
             ]));
         }
 
@@ -1305,28 +1340,16 @@ SVG;
             $draft->setStatus('draft');
             $this->em->persist($draft);
             $this->em->flush();
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($draft->id(), 'heading', 0, ['text' => 'Připravujeme…', 'level' => 2]));
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($draft->id(), 'heading', 0, [
+                'text' => 'Připravujeme…',
+                'level' => 2,
+            ]));
             $this->em->persist(new \Modules\Cms\Domain\PageBlock($draft->id(), 'text', 1, [
-                'html' => '<p>Tato stránka je draft — ještě není veřejná.</p>',
+                'body' => '<p>Tato stránka je draft — ještě není veřejná.</p>',
             ]));
         }
 
-        $services = $pageRepo->findOneBy(['slug' => 'sluzby']);
-        if ($services === null) {
-            $services = new \Modules\Cms\Domain\Page('sluzby', 'Služby a produkty');
-            $services->setStatus('published');
-            $this->em->persist($services);
-            $this->em->flush();
-            $productIds = array_map(static fn ($p) => $p->id(), array_slice($products, 0, 4));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($services->id(), 'heading', 0, ['text' => 'Nabídka', 'level' => 2]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($services->id(), 'products', 1, [
-                'product_ids' => $productIds,
-                'title' => 'Vybrané položky',
-            ]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($services->id(), 'gallery', 2, [
-                'paths' => ['demo/hero-gereq.svg'],
-            ]));
-        }
+        $this->seedLegalPages($pageRepo);
 
         $this->em->flush();
 
@@ -1337,21 +1360,19 @@ SVG;
                 $header = new \Modules\Cms\Domain\SiteMenu('Hlavní menu', 'header');
                 $this->em->persist($header);
                 $this->em->flush();
-                $homePage = $pageRepo->findOneBy(['slug' => 'uvod']);
                 $aboutPage = $pageRepo->findOneBy(['slug' => 'o-nas']);
-                $servicesPage = $pageRepo->findOneBy(['slug' => 'sluzby']);
                 $i = 0;
-                foreach ([[$homePage, 'Domů'], [$aboutPage, 'O nás'], [$servicesPage, 'Služby']] as [$page, $label]) {
-                    if ($page === null) {
-                        continue;
-                    }
-                    $item = new \Modules\Cms\Domain\SiteMenuItem($header->id(), $label, $i++);
-                    $item->setPageId($page->id());
+                $sale = new \Modules\Cms\Domain\SiteMenuItem($header->id(), 'Koupit', $i++);
+                $sale->setUrl('/?offer=sale');
+                $this->em->persist($sale);
+                $rent = new \Modules\Cms\Domain\SiteMenuItem($header->id(), 'Pronajmout', $i++);
+                $rent->setUrl('/?offer=rent');
+                $this->em->persist($rent);
+                if ($aboutPage !== null) {
+                    $item = new \Modules\Cms\Domain\SiteMenuItem($header->id(), 'O nás', $i++);
+                    $item->setPageId($aboutPage->id());
                     $this->em->persist($item);
                 }
-                $ext = new \Modules\Cms\Domain\SiteMenuItem($header->id(), 'Administrace', $i);
-                $ext->setUrl('/admin');
-                $this->em->persist($ext);
             }
 
             $footer = $menuRepo->findOneBy(['location' => 'footer']);
@@ -1359,14 +1380,160 @@ SVG;
                 $footer = new \Modules\Cms\Domain\SiteMenu('Patička', 'footer');
                 $this->em->persist($footer);
                 $this->em->flush();
-                $item = new \Modules\Cms\Domain\SiteMenuItem($footer->id(), 'Kontakt', 0);
-                $item->setUrl('mailto:demo@gereq.cz');
+                $privacy = $pageRepo->findOneBy(['slug' => 'ochrana-osobnich-udaju']);
+                $cookies = $pageRepo->findOneBy(['slug' => 'cookies']);
+                $i = 0;
+                if ($privacy !== null) {
+                    $item = new \Modules\Cms\Domain\SiteMenuItem($footer->id(), 'Ochrana osobních údajů', $i++);
+                    $item->setPageId($privacy->id());
+                    $this->em->persist($item);
+                }
+                if ($cookies !== null) {
+                    $item = new \Modules\Cms\Domain\SiteMenuItem($footer->id(), 'Cookies', $i++);
+                    $item->setPageId($cookies->id());
+                    $this->em->persist($item);
+                }
+                $item = new \Modules\Cms\Domain\SiteMenuItem($footer->id(), 'Napsat e-mail', $i);
+                $item->setUrl('mailto:info@realestates.cz');
                 $this->em->persist($item);
             }
         }
 
         $this->em->flush();
-        $log[] = 'CMS: stránky (uvod/o-nas/sluzby/draft) + menu.';
+        $log[] = 'CMS: stránky (home/o-nas/cookies/GDPR/draft) + menu pro storefront.';
+    }
+
+    /** @param \Doctrine\ORM\EntityRepository<\Modules\Cms\Domain\Page> $pageRepo */
+    private function seedLegalPages($pageRepo): void
+    {
+        $privacy = $pageRepo->findOneBy(['slug' => 'ochrana-osobnich-udaju']);
+        if ($privacy === null) {
+            $privacy = new \Modules\Cms\Domain\Page('ochrana-osobnich-udaju', 'Ochrana osobních údajů');
+            $privacy->setStatus('published');
+            $privacy->setMetaDescription('Informace o zpracování osobních údajů podle GDPR.');
+            $this->em->persist($privacy);
+            $this->em->flush();
+            $this->seedPrivacyBlocks($privacy->id());
+        }
+
+        $cookies = $pageRepo->findOneBy(['slug' => 'cookies']);
+        if ($cookies === null) {
+            $cookies = new \Modules\Cms\Domain\Page('cookies', 'Zásady cookies');
+            $cookies->setStatus('published');
+            $cookies->setMetaDescription('Jaké cookies používáme a jak spravovat souhlas.');
+            $this->em->persist($cookies);
+            $this->em->flush();
+            $this->seedCookiesBlocks($cookies->id());
+        }
+    }
+
+    private function seedPrivacyBlocks(string $pageId): void
+    {
+        $blocks = [
+            ['heading', 0, ['text' => 'Správce údajů', 'level' => 2]],
+            ['text', 1, [
+                'body' => '<p>Správcem osobních údajů je <strong>RealEstates</strong>, Křižíkova 12, Praha 8, e-mail <a href="mailto:info@realestates.cz">info@realestates.cz</a>, telefon +420 777 000 000.</p>',
+            ]],
+            ['heading', 2, ['text' => 'Jaké údaje zpracováváme', 'level' => 2]],
+            ['html', 3, [
+                'html' => '<ul><li>identifikační a kontaktní údaje (jméno, e-mail, telefon),</li><li>údaje o poptávce a komunikaci s makléřem,</li><li>technické údaje o návštěvě webu (IP adresa, cookies — dle vašeho souhlasu).</li></ul>',
+            ]],
+            ['heading', 4, ['text' => 'Účel a právní základ', 'level' => 2]],
+            ['text', 5, [
+                'body' => '<p>Údaje zpracováváme za účelem vyřízení poptávky a prohlídky (plnění smlouvy / oprávněný zájem), odpovědi na dotazy a — jen se souhlasem — pro analytiku a marketing.</p>',
+            ]],
+            ['heading', 6, ['text' => 'Doba uložení', 'level' => 2]],
+            ['text', 7, [
+                'body' => '<p>Údaje z poptávek uchováváme po dobu jednání a následně nejvýše 3 roky, není-li delší doba vyžadována právními předpisy. Souhlas s cookies můžete kdykoli odvolat.</p>',
+            ]],
+            ['heading', 8, ['text' => 'Vaše práva', 'level' => 2]],
+            ['html', 9, [
+                'html' => '<ul><li>právo na přístup, opravu a výmaz,</li><li>právo na omezení zpracování a přenositelnost,</li><li>právo vznést námitku a podat stížnost u ÚOOÚ,</li><li>právo odvolat souhlas se zpracováním.</li></ul><p>Žádosti zasílejte na <a href="mailto:info@realestates.cz">info@realestates.cz</a>.</p>',
+            ]],
+        ];
+        foreach ($blocks as [$type, $order, $payload]) {
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($pageId, $type, $order, $payload));
+        }
+        $this->em->flush();
+    }
+
+    private function seedCookiesBlocks(string $pageId): void
+    {
+        $blocks = [
+            ['divider', 0, ['style' => 'banner']],
+            ['heading', 1, ['text' => 'Soubory cookies', 'level' => 2]],
+            ['text', 2, [
+                'body' => 'Používáme nezbytné cookies pro běh webu. Analytické a marketingové zapneme jen se vaším souhlasem. Podrobnosti najdete níže a v ochraně osobních údajů.',
+            ]],
+            ['cta', 3, ['label' => 'Přijmout vše', 'url' => '#', 'style' => 'primary']],
+            ['cta', 4, ['label' => 'Pouze nutné', 'url' => '#', 'style' => 'ghost']],
+            ['cta', 5, ['label' => 'Nastavení', 'url' => '#', 'style' => 'link']],
+            ['divider', 6, ['style' => 'policy']],
+            ['heading', 7, ['text' => 'Co jsou cookies', 'level' => 2]],
+            ['text', 8, [
+                'body' => '<p>Cookies jsou malé textové soubory ukládané do vašeho zařízení. Pomáhají webu fungovat, pamatovat si volby a — se souhlasem — měřit návštěvnost.</p>',
+            ]],
+            ['heading', 9, ['text' => 'Kategorie', 'level' => 2]],
+            ['html', 10, [
+                'html' => '<ul><li><strong>Nezbytné</strong> — technický provoz, zabezpečení, uložení souhlasu. Nelze vypnout.</li><li><strong>Analytické</strong> — anonymizovaná statistika používání webu.</li><li><strong>Marketingové</strong> — měření kampaní a relevantnější nabídky.</li></ul>',
+            ]],
+            ['heading', 11, ['text' => 'Správa souhlasu', 'level' => 2]],
+            ['text', 12, [
+                'body' => '<p>Souhlas můžete změnit kdykoli odkazem „Nastavení cookies“ v patičce webu. Odvolání souhlasu neovlivní zákonnost zpracování před jeho odvoláním.</p>',
+            ]],
+        ];
+        foreach ($blocks as [$type, $order, $payload]) {
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($pageId, $type, $order, $payload));
+        }
+        $this->em->flush();
+    }
+
+    private function seedHomeBlocks(string $pageId): void
+    {
+        $blocks = [
+            ['divider', 0, ['style' => 'hero']],
+            ['text', 1, ['body' => 'Realitní kancelář · Praha a Brno']],
+            ['heading', 2, ['text' => 'Najděte byt nebo dům, který sedne', 'level' => 1]],
+            ['text', 3, [
+                'body' => 'U každé nabídky najdete cenu, metráž, energetickou třídu i kontakt na makléře, který ji vede.',
+            ]],
+            ['image', 4, [
+                'url' => 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1920&q=80',
+                'alt' => 'Moderní bydlení',
+            ]],
+            ['divider', 5, ['style' => 'locations']],
+            ['heading', 6, ['text' => 'Lokality', 'level' => 2]],
+            ['text', 7, ['body' => 'Vyberte město a zobrazte dostupné nabídky.']],
+            ['divider', 8, ['style' => 'listings']],
+            ['heading', 9, ['text' => 'Aktuální nabídky', 'level' => 2]],
+            ['divider', 10, ['style' => 'how']],
+            ['heading', 11, ['text' => 'Jak to funguje', 'level' => 2]],
+            ['text', 12, ['body' => 'Od hledání k prohlídce ve třech krocích.']],
+            ['heading', 13, ['text' => 'Vyfiltrujte nabídky', 'level' => 3]],
+            ['text', 14, [
+                'body' => 'Zadejte lokalitu, cenové rozpětí, dispozici a plochu. Filtry fungují bez registrace.',
+            ]],
+            ['heading', 15, ['text' => 'Kontaktujte makléře', 'level' => 3]],
+            ['text', 16, [
+                'body' => 'U každé nabídky je uvedený makléř, který ji vede, včetně telefonu a e-mailu.',
+            ]],
+            ['heading', 17, ['text' => 'Domluvte si prohlídku', 'level' => 3]],
+            ['text', 18, [
+                'body' => 'Termín potvrzujeme do jednoho pracovního dne. Podklady k nemovitosti dostanete předem.',
+            ]],
+            ['divider', 19, ['style' => 'cta']],
+            ['heading', 20, ['text' => 'Nenašli jste, co hledáte?', 'level' => 2]],
+            ['text', 21, [
+                'body' => 'Napište nám, co potřebujete. Projdeme i nabídky, které zatím nejsou zveřejněné.',
+            ]],
+            ['cta', 22, ['label' => 'Napsat e-mail', 'url' => 'mailto:info@realestates.cz', 'style' => 'primary']],
+            ['cta', 23, ['label' => '777 000 000', 'url' => 'tel:+420777000000', 'style' => 'ghost']],
+        ];
+
+        foreach ($blocks as [$type, $order, $payload]) {
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($pageId, $type, $order, $payload));
+        }
+        $this->em->flush();
     }
 
     /** @param list<string> $log */

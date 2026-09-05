@@ -14,6 +14,9 @@ use Gereq\Module\ModuleInterface;
 use Modules\Media\Application\MediaProvider;
 use Modules\Media\Http\Api\MediaApiController;
 use Modules\Media\Http\MediaController;
+use Modules\Media\Application\Widgets\MediaShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class MediaModule implements ModuleInterface
 {
@@ -72,6 +75,11 @@ final class MediaModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new MediaShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'media',
             label: 'nav.media',

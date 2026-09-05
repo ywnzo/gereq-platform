@@ -17,6 +17,9 @@ use Modules\Currency\Http\ConvertApiController;
 use Modules\Currency\Http\CurrencyAdminController;
 use Modules\Currency\Http\CurrencyApiController;
 use Modules\Currency\Http\ExchangeRateApiController;
+use Modules\Currency\Application\Widgets\CurrencyShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class CurrencyModule implements ModuleInterface
 {
@@ -66,6 +69,11 @@ final class CurrencyModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new CurrencyShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'currencies',
             label: 'nav.currencies',

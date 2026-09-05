@@ -18,6 +18,8 @@ use Modules\Notifications\Application\NotificationsProvider;
 use Modules\Notifications\Http\Api\NotificationApiController;
 use Modules\Notifications\Http\NotificationController;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Modules\Notifications\Application\Widgets\NotificationsShortcutWidget;
+use Twig\Environment;
 
 final class NotificationsModule implements ModuleInterface
 {
@@ -76,6 +78,11 @@ final class NotificationsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new NotificationsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->commandPalette()->add(new PaletteCommand(
             id: 'notifications.index',
             label: 'palette.notifications.index',

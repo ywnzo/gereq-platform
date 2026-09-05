@@ -15,6 +15,9 @@ use Gereq\Module\ModuleInterface;
 use Modules\Coupons\Application\CouponsProvider;
 use Modules\Coupons\Http\Api\CouponApiController;
 use Modules\Coupons\Http\CouponController;
+use Modules\Coupons\Application\Widgets\CouponsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class CouponsModule implements ModuleInterface
 {
@@ -67,6 +70,11 @@ final class CouponsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new CouponsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'coupons',
             label: 'nav.coupons',

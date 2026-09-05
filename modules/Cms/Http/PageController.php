@@ -13,6 +13,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Security\HtmlSanitizer;
 use Modules\Cms\Application\CmsProvider;
 use Modules\Cms\Domain\Events\PagePublished;
 use Modules\Cms\Domain\Events\PageUpdated;
@@ -40,6 +41,7 @@ final class PageController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly CapabilityRegistry $capabilities,
         private readonly CmsProvider $cms,
+        private readonly HtmlSanitizer $html,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -91,6 +93,8 @@ final class PageController extends Controller
         $data = $this->validate($request, 'cms.page.save');
         $page = new Page((string) $data['slug'], trim((string) $data['title']));
         $page->setTemplate((string) $data['template']);
+        $page->setContentMode((string) ($data['content_mode'] ?? 'blocks'));
+        $page->setBody($this->sanitizeBody($data['body'] ?? null));
         $page->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
         $status = (string) $data['status'];
         $page->setStatus($status);
@@ -165,6 +169,8 @@ final class PageController extends Controller
         $item->setSlug((string) $data['slug']);
         $item->setTitle(trim((string) $data['title']));
         $item->setTemplate((string) $data['template']);
+        $item->setContentMode((string) ($data['content_mode'] ?? $item->contentMode()));
+        $item->setBody($this->sanitizeBody($data['body'] ?? null));
         $item->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
         $item->setStatus((string) $data['status']);
         $this->em->flush();
@@ -272,11 +278,23 @@ final class PageController extends Controller
             'title' => $page->title(),
             'status' => $page->status(),
             'template' => $page->template(),
+            'content_mode' => $page->contentMode(),
+            'body' => $page->body(),
             'meta_description' => $page->metaDescription(),
             'published_at' => $page->publishedAt()?->format(\DateTimeInterface::ATOM),
             'created_at' => $page->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $page->updatedAt()->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    private function sanitizeBody(mixed $body): ?string
+    {
+        if ($body === null) {
+            return null;
+        }
+        $clean = $this->html->sanitize((string) $body);
+
+        return $clean !== '' ? $clean : null;
     }
 
     /** @param array<string, mixed> $data */

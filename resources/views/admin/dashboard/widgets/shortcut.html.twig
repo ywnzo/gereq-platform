@@ -1,0 +1,7 @@
+<a class="dash-shortcut" href="{{ href }}">
+    <span class="dash-shortcut__icon">{{ icon(icon|default('dot')) }}</span>
+    <span>
+        <strong>{{ label }}</strong>
+        {% if hint|default('') != '' %}<span>{{ hint }}</span>{% endif %}
+    </span>
+</a>

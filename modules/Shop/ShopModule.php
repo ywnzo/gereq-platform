@@ -24,6 +24,9 @@ use Modules\Shop\Http\Api\PacketaApiController;
 use Modules\Shop\Http\Api\ShippingMethodApiController;
 use Modules\Shop\Http\CartController;
 use Modules\Shop\Http\ShippingMethodController;
+use Modules\Shop\Application\Widgets\ShopShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class ShopModule implements ModuleInterface
 {
@@ -86,6 +89,11 @@ final class ShopModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new ShopShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'shop',
             label: 'nav.shop',

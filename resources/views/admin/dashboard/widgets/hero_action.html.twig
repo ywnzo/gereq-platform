@@ -1,0 +1,3 @@
+<a class="btn {{ variant|default('btn--ghost') }}" href="{{ href }}">
+    {% if icon|default('') != '' %}{{ icon(icon) }} {% endif %}{{ label }}
+</a>

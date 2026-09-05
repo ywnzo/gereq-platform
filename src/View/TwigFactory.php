@@ -6,6 +6,7 @@ namespace Gereq\View;
 
 use Gereq\Admin\Ui\Icons;
 use Gereq\Auth\Authenticator;
+use Gereq\Brand\Branding;
 use Gereq\Debug\DebugBar;
 use Gereq\Hook\HookManager;
 use Gereq\Http\FormState;
@@ -35,6 +36,7 @@ final class TwigFactory
         private readonly HookManager $hooks,
         private readonly TranslatorInterface $translator,
         private readonly LocaleCatalog $locales,
+        private readonly Branding $branding,
         private readonly ?DebugBar $debugBar = null,
     ) {
     }
@@ -69,6 +71,7 @@ final class TwigFactory
             $this->hooks,
             $this->translator,
             $this->locales,
+            $this->branding,
         );
 
         $twig->addFunction(new TwigFunction('url', [$runtime, 'url']));
@@ -90,9 +93,14 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('apply_filters', [$runtime, 'applyFilters']));
         $twig->addFunction(new TwigFunction('trans', [$runtime, 'trans']));
         $twig->addFunction(new TwigFunction('__', [$runtime, 'trans']));
+        $twig->addFunction(new TwigFunction('audit_action', [$runtime, 'auditAction']));
         $twig->addFunction(new TwigFunction('app_locale', [$runtime, 'appLocale']));
         $twig->addFunction(new TwigFunction('available_locales', [$runtime, 'availableLocales']));
+        $twig->addFunction(new TwigFunction('brand', [$runtime, 'brand']));
+        $twig->addFunction(new TwigFunction('brand_css', [$runtime, 'brandCss'], ['is_safe' => ['css']]));
+        $twig->addFunction(new TwigFunction('brand_html_style', [$runtime, 'brandHtmlStyle'], ['is_safe' => ['html']]));
         $twig->addFilter(new TwigFilter('trans', [$runtime, 'trans']));
+        $twig->addFilter(new TwigFilter('audit_action', [$runtime, 'auditAction']));
 
         if ($this->debugBar !== null && $this->debugBar->enabled()) {
             $profile = new Profile();

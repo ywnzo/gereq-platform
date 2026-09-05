@@ -17,6 +17,9 @@ use Modules\Webhooks\Application\WebhookDispatcher;
 use Modules\Webhooks\Http\Api\InboundWebhookController;
 use Modules\Webhooks\Http\DeliveryController;
 use Modules\Webhooks\Http\WebhookController;
+use Modules\Webhooks\Application\Widgets\WebhooksShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class WebhooksModule implements ModuleInterface
 {
@@ -94,6 +97,11 @@ final class WebhooksModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new WebhooksShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'developer.webhooks',
             label: 'nav.webhooks',

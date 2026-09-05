@@ -3,19 +3,38 @@
   box-sizing: border-box;
 }
 #gereq-debug.gdb {
-  --gdb-ink: #0a0b0a;
-  --gdb-ink-2: #121412;
-  --gdb-line: rgba(245, 245, 239, 0.1);
-  --gdb-paper: #fafafa;
-  --gdb-mute: rgba(250, 250, 250, 0.58);
-  --gdb-signal: #d7ff45;
-  --gdb-ok: #86b894;
-  --gdb-warn: #e4c35a;
-  --gdb-err: #ff6b5e;
+  /*
+   * Mirror admin theme tokens so branding (signal) + light/dark stay in sync.
+   * Fallbacks keep the bar usable if admin.css is missing.
+   */
+  --gdb-signal: var(--gereq-signal, var(--primary, #d7ff45));
+  --gdb-on-signal: var(--primary-fg, var(--brand-ink, #18181b));
+  --gdb-accent-text: var(--gdb-signal);
+  --gdb-ink: var(--surface-2, var(--sidebar, #18181b));
+  --gdb-ink-2: var(--background, #09090b);
+  --gdb-paper: var(--text, #fafafa);
+  --gdb-mute: var(--text-muted, #b4b8ae);
+  --gdb-line: color-mix(in srgb, var(--border, #3f3f46) 85%, transparent);
+  --gdb-ok: var(--success, #4ade80);
+  --gdb-warn: var(--warning, #fbbf24);
+  --gdb-err: var(--danger, #f87171);
   --gdb-info: #72d6ff;
-  --gdb-sans: "IBM Plex Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --gdb-display: "IBM Plex Sans", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --gdb-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --gdb-fill: var(--hover, rgba(255, 255, 255, 0.04));
+  --gdb-fill-strong: var(--hover-strong, rgba(255, 255, 255, 0.07));
+  --gdb-fill-soft: color-mix(in srgb, var(--text, #fafafa) 5%, transparent);
+  --gdb-chip-err-bg: var(--danger-bg, rgba(248, 113, 113, 0.12));
+  --gdb-tab-n: color-mix(in srgb, var(--text, #fafafa) 12%, transparent);
+  --gdb-tab-n-active: color-mix(in srgb, var(--gdb-on-signal) 16%, transparent);
+  --gdb-barline-track: color-mix(in srgb, var(--gdb-signal) 22%, transparent);
+  --gdb-card-bg: color-mix(in srgb, var(--background, #09090b) 55%, transparent);
+  --gdb-shadow: var(--shadow, 0 12px 40px rgba(10, 11, 10, 0.45));
+  --gdb-shadow-dock: 0 24px 80px rgba(10, 11, 10, 0.55);
+  --gdb-hover-border: color-mix(in srgb, var(--gdb-signal) 45%, transparent);
+  --gdb-dump-str: color-mix(in srgb, var(--gdb-signal) 70%, #fff);
+  --gdb-dump-bool: #c9a0ff;
+  --gdb-sans: var(--gereq-font-sans, "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif);
+  --gdb-display: var(--gereq-font-display, "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif);
+  --gdb-mono: var(--gereq-font-mono, "JetBrains Mono", ui-monospace, monospace);
   position: fixed;
   inset: auto;
   width: 0;
@@ -31,6 +50,31 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Light admin: keep brand signal for fills, darken accent text for SQL/keywords on paper. */
+html[data-theme="gereq"] #gereq-debug.gdb {
+  --gdb-ink: var(--surface, #ffffff);
+  --gdb-ink-2: var(--surface-2, #fafafa);
+  --gdb-paper: var(--text, #18181b);
+  --gdb-mute: var(--text-muted, #52525b);
+  --gdb-line: var(--border, #d4d4d8);
+  --gdb-fill: var(--hover, rgba(0, 0, 0, 0.03));
+  --gdb-fill-strong: var(--hover-strong, rgba(0, 0, 0, 0.06));
+  --gdb-fill-soft: color-mix(in srgb, var(--text, #18181b) 5%, transparent);
+  --gdb-tab-n: color-mix(in srgb, var(--text, #18181b) 10%, transparent);
+  --gdb-card-bg: color-mix(in srgb, var(--surface, #fff) 85%, transparent);
+  --gdb-shadow: var(--shadow, 0 12px 40px rgba(10, 11, 10, 0.12));
+  --gdb-shadow-dock: 0 24px 80px rgba(10, 11, 10, 0.16);
+  --gdb-accent-text: color-mix(in srgb, var(--gdb-signal) 62%, #000);
+  --gdb-dump-str: color-mix(in srgb, var(--gdb-signal) 55%, #000);
+  --gdb-dump-bool: #6b3fa0;
+  --gdb-ok: var(--success, #16a34a);
+  --gdb-warn: var(--warning, #d97706);
+  --gdb-err: var(--danger, #dc2626);
+  --gdb-info: #0b7ea4;
+  --gdb-chip-err-bg: var(--danger-bg, rgba(220, 38, 38, 0.08));
+}
+
 #gereq-debug.gdb[hidden] { display: none !important; }
 
 /* Soft button reset — do NOT zero padding/background (would beat .gdb-tab / .gdb-pill). */
@@ -71,11 +115,11 @@
   color: var(--gdb-paper) !important;
   border: 1px solid var(--gdb-line);
   border-radius: 999px;
-  box-shadow: 0 12px 40px rgba(10, 11, 10, 0.45);
+  box-shadow: var(--gdb-shadow);
   cursor: pointer;
   user-select: none;
 }
-#gereq-debug.gdb .gdb-pill:hover { border-color: rgba(215, 255, 69, 0.35); }
+#gereq-debug.gdb .gdb-pill:hover { border-color: var(--gdb-hover-border); }
 #gereq-debug.gdb .gdb-pill__brand {
   font-family: var(--gdb-display);
   font-weight: 700;
@@ -104,7 +148,7 @@
   color: var(--gdb-paper);
   border: 1px solid var(--gdb-line);
   border-radius: 16px;
-  box-shadow: 0 24px 80px rgba(10, 11, 10, 0.55);
+  box-shadow: var(--gdb-shadow-dock);
   overflow: hidden;
 }
 #gereq-debug.gdb .gdb-dock[hidden] { display: none !important; }
@@ -134,7 +178,7 @@
   height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  background: rgba(245, 245, 239, 0.06);
+  background: var(--gdb-fill);
   font-family: var(--gdb-mono);
   font-size: 11px;
   color: var(--gdb-mute);
@@ -147,7 +191,7 @@
 #gereq-debug.gdb .gdb-chip b { color: var(--gdb-paper); font-weight: 500; }
 #gereq-debug.gdb .gdb-chip--ok { color: var(--gdb-ok); }
 #gereq-debug.gdb .gdb-chip--warn { color: var(--gdb-warn); }
-#gereq-debug.gdb .gdb-chip--err { color: var(--gdb-err); background: rgba(255, 107, 94, 0.12); }
+#gereq-debug.gdb .gdb-chip--err { color: var(--gdb-err); background: var(--gdb-chip-err-bg); }
 #gereq-debug.gdb .gdb-chip--info { color: var(--gdb-info); }
 
 #gereq-debug.gdb .gdb-bar__tabs {
@@ -173,7 +217,7 @@
   padding: 0 10px !important;
   border: 0 !important;
   border-radius: 8px;
-  background: rgba(245, 245, 239, 0.05) !important;
+  background: var(--gdb-fill-soft) !important;
   color: var(--gdb-mute) !important;
   font-size: 12px;
   font-weight: 500;
@@ -181,10 +225,10 @@
 }
 #gereq-debug.gdb .gdb-tab:hover {
   color: var(--gdb-paper) !important;
-  background: rgba(245, 245, 239, 0.1) !important;
+  background: var(--gdb-fill-strong) !important;
 }
 #gereq-debug.gdb .gdb-tab.is-active {
-  color: var(--gdb-ink) !important;
+  color: var(--gdb-on-signal) !important;
   background: var(--gdb-signal) !important;
   font-weight: 600;
 }
@@ -195,7 +239,7 @@
   margin-left: 5px;
   padding: 0 4px;
   border-radius: 999px;
-  background: rgba(250, 250, 250, 0.12);
+  background: var(--gdb-tab-n);
   font-family: var(--gdb-mono);
   font-size: 10px;
   align-items: center;
@@ -203,8 +247,8 @@
   color: inherit;
 }
 #gereq-debug.gdb .gdb-tab.is-active .gdb-tab__n {
-  background: rgba(10, 11, 10, 0.16);
-  color: var(--gdb-ink);
+  background: var(--gdb-tab-n-active);
+  color: var(--gdb-on-signal);
 }
 
 #gereq-debug.gdb .gdb-bar__actions {
@@ -227,7 +271,7 @@
 }
 #gereq-debug.gdb .gdb-iconbtn:hover {
   color: var(--gdb-paper) !important;
-  background: rgba(245, 245, 239, 0.06) !important;
+  background: var(--gdb-fill) !important;
 }
 
 #gereq-debug.gdb .gdb-panel {
@@ -298,7 +342,7 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
-#gereq-debug.gdb .gdb-sql b { color: var(--gdb-signal); font-weight: 600; }
+#gereq-debug.gdb .gdb-sql b { color: var(--gdb-accent-text); font-weight: 600; }
 #gereq-debug.gdb .gdb-ms { font-family: var(--gdb-mono); color: var(--gdb-mute); white-space: nowrap; }
 #gereq-debug.gdb .gdb-ms.is-slow { color: var(--gdb-warn); }
 #gereq-debug.gdb .gdb-origin { color: var(--gdb-mute); font-size: 11px; }
@@ -306,7 +350,7 @@
   display: block;
   height: 3px;
   margin-top: 6px;
-  background: rgba(215, 255, 69, 0.15);
+  background: var(--gdb-barline-track);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -317,12 +361,12 @@
 }
 
 #gereq-debug.gdb .gdb-dump { font-family: var(--gdb-mono); font-size: 12px; }
-#gereq-debug.gdb .gdb-dump--str { color: #c8e38a; }
+#gereq-debug.gdb .gdb-dump--str { color: var(--gdb-dump-str); }
 #gereq-debug.gdb .gdb-dump--num { color: var(--gdb-info); }
-#gereq-debug.gdb .gdb-dump--bool { color: #c9a0ff; }
+#gereq-debug.gdb .gdb-dump--bool { color: var(--gdb-dump-bool); }
 #gereq-debug.gdb .gdb-dump--null,
 #gereq-debug.gdb .gdb-dump--muted { color: var(--gdb-mute); }
-#gereq-debug.gdb .gdb-dump--obj { color: var(--gdb-signal); }
+#gereq-debug.gdb .gdb-dump--obj { color: var(--gdb-accent-text); }
 #gereq-debug.gdb .gdb-dump__arr { margin: 4px 0 4px 12px; border-left: 1px solid var(--gdb-line); padding-left: 10px; }
 #gereq-debug.gdb .gdb-dump__row { display: flex; gap: 10px; padding: 2px 0; }
 #gereq-debug.gdb .gdb-dump__key { color: var(--gdb-mute); min-width: 80px; }
@@ -331,7 +375,7 @@
   padding: 12px 14px;
   border: 1px solid var(--gdb-line);
   border-radius: 12px;
-  background: rgba(10, 11, 10, 0.35);
+  background: var(--gdb-card-bg);
 }
 #gereq-debug.gdb .gdb-card__meta { color: var(--gdb-mute); font-size: 11px; margin-bottom: 8px; font-family: var(--gdb-mono); }
 #gereq-debug.gdb .gdb-exc {

@@ -31,7 +31,7 @@ final class UserCreateCommand extends Command
             ->addOption('name', null, InputOption::VALUE_OPTIONAL)
             ->addOption('email', null, InputOption::VALUE_OPTIONAL)
             ->addOption('password', null, InputOption::VALUE_OPTIONAL)
-            ->addOption('role', null, InputOption::VALUE_OPTIONAL, 'administrator|manager|editor|viewer', 'administrator');
+            ->addOption('role', null, InputOption::VALUE_OPTIONAL, 'superadmin|admin|editor|view', 'superadmin');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

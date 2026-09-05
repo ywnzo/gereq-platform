@@ -1,0 +1,29 @@
+{% set assetUrl = values[key]|default('') %}
+{% set fileInput = key == 'brand.logo_url' ? 'brand_logo_file' : 'brand_favicon_file' %}
+<div class="brand-asset" x-data="gereqBrandAsset" data-preview="{{ assetUrl }}">
+    <div class="brand-asset__preview">
+        <img x-show="preview" :src="preview" alt="" class="brand-asset__img" width="48" height="48">
+        <span class="brand-asset__empty" x-show="!preview" x-cloak>{{ icon('image') }}</span>
+    </div>
+    <div class="brand-asset__fields">
+        <label class="brand-asset__upload btn btn--ghost">
+            <input
+                type="file"
+                name="{{ fileInput }}"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,.ico"
+                class="brand-asset__file"
+                @change="onFile($event)"
+            >
+            <span x-text="fileName ? fileName : '{{ 'settings.brand.upload'|trans|e('js') }}'"></span>
+        </label>
+        <input
+            class="input"
+            type="text"
+            name="{{ field }}"
+            value="{{ assetUrl }}"
+            placeholder="/brand/asset/logo.png"
+            {% if groupId == 'brand' %}@input="touch"{% endif %}
+        >
+        <span class="settings-card__help">{{ 'settings.brand.upload_hint'|trans }}</span>
+    </div>
+</div>

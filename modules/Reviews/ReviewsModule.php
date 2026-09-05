@@ -15,6 +15,9 @@ use Gereq\Module\ModuleInterface;
 use Modules\Reviews\Application\ReviewsProvider;
 use Modules\Reviews\Http\Api\ReviewApiController;
 use Modules\Reviews\Http\ReviewController;
+use Modules\Reviews\Application\Widgets\ReviewsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
 
 final class ReviewsModule implements ModuleInterface
 {
@@ -78,6 +81,11 @@ final class ReviewsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new ReviewsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'reviews',
             label: 'nav.reviews',

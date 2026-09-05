@@ -82,31 +82,22 @@ final class Seeder
 
     private function seedRoles(): void
     {
-        $defs = [
-            ['administrator', 'Administrátor', 'Plný přístup k platformě.'],
-            ['manager', 'Manažer', 'Správa běžného provozu bez systémových nastavení.'],
-            ['editor', 'Editor', 'Úpravy obsahu bez správy uživatelů.'],
-            ['viewer', 'Prohlížeč', 'Pouze čtení.'],
-        ];
-
-        foreach ($defs as [$name, $label, $description]) {
-            $existing = $this->em->getRepository(Role::class)->findOneBy(['name' => $name]);
-            if ($existing === null) {
-                $this->em->persist(new Role($name, $label, $description));
-            }
-        }
+        $this->ensureRole('superadmin', 'Superadmin', 'Plný přístup ke všemu (včetně uživatelů a rolí).', ['administrator']);
+        $this->ensureRole('admin', 'Admin', 'Správa běžného provozu bez systémových modulů a rolí.', ['manager']);
+        $this->ensureRole('editor', 'Editor', 'Úpravy obsahu bez správy uživatelů.', []);
+        $this->ensureRole('view', 'View', 'Pouze čtení.', ['viewer']);
 
         $this->em->flush();
 
-        $manager = $this->em->getRepository(Role::class)->findOneBy(['name' => 'manager']);
+        $admin = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin']);
         $editor = $this->em->getRepository(Role::class)->findOneBy(['name' => 'editor']);
-        $viewer = $this->em->getRepository(Role::class)->findOneBy(['name' => 'viewer']);
+        $view = $this->em->getRepository(Role::class)->findOneBy(['name' => 'view']);
 
         $all = $this->em->getRepository(Permission::class)->findAll();
-        if ($manager instanceof Role) {
+        if ($admin instanceof Role) {
             foreach ($all as $permission) {
                 if (!str_starts_with($permission->name(), 'modules.') && !str_starts_with($permission->name(), 'roles.')) {
-                    $manager->givePermission($permission);
+                    $admin->givePermission($permission);
                 }
             }
         }
@@ -119,13 +110,38 @@ final class Seeder
                 }
             }
         }
-        if ($viewer instanceof Role) {
+        if ($view instanceof Role) {
             foreach ($all as $permission) {
                 if (str_ends_with($permission->name(), '.view')) {
-                    $viewer->givePermission($permission);
+                    $view->givePermission($permission);
                 }
             }
         }
+    }
+
+    /** @param list<string> $legacyNames */
+    private function ensureRole(string $name, string $label, string $description, array $legacyNames): void
+    {
+        $existing = $this->em->getRepository(Role::class)->findOneBy(['name' => $name]);
+        if ($existing instanceof Role) {
+            $existing->setLabel($label);
+            $existing->setDescription($description);
+
+            return;
+        }
+
+        foreach ($legacyNames as $legacy) {
+            $old = $this->em->getRepository(Role::class)->findOneBy(['name' => $legacy]);
+            if ($old instanceof Role) {
+                $old->rename($name);
+                $old->setLabel($label);
+                $old->setDescription($description);
+
+                return;
+            }
+        }
+
+        $this->em->persist(new Role($name, $label, $description));
     }
 
     private function seedAdmin(): void
@@ -142,7 +158,7 @@ final class Seeder
             $this->hasher->hash((string) env_value('ADMIN_PASSWORD', 'change-me')),
         );
 
-        $adminRole = $this->em->getRepository(Role::class)->findOneBy(['name' => 'administrator']);
+        $adminRole = $this->em->getRepository(Role::class)->findOneBy(['name' => 'superadmin']);
         if ($adminRole instanceof Role) {
             $user->assignRole($adminRole);
         }

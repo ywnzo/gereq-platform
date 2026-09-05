@@ -23,6 +23,9 @@ use Modules\CRM\Http\DealController;
 use Modules\Customers\Domain\Customer;
 use Modules\Customers\Domain\CustomerCreated;
 use Twig\Environment;
+use Modules\CRM\Application\Widgets\CrmPipelineChartWidget;
+use Modules\CRM\Application\Widgets\CrmShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class CrmModule implements ModuleInterface
 {
@@ -99,6 +102,17 @@ final class CrmModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new CrmShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
+        $context->dashboard()->addWidget(new CrmPipelineChartWidget(
+            $context->get(Environment::class),
+            $context->get(EntityManagerInterface::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(
             id: 'crm',
             label: 'nav.crm',

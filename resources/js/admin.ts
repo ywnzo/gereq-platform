@@ -31,6 +31,7 @@ Alpine.data('gereqAdmin', () => ({
 
     init() {
         this.refreshCommands();
+        document.body.dataset.sidebar = this.collapsed ? 'collapsed' : 'expanded';
         document.addEventListener('keydown', (event: KeyboardEvent) => {
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
                 event.preventDefault();
@@ -60,6 +61,10 @@ Alpine.data('gereqAdmin', () => ({
     },
 
     openSidebar() {
+        if (this.collapsed) {
+            this.expandSidebar();
+            return;
+        }
         this.sidebarOpen = true;
     },
 
@@ -67,9 +72,31 @@ Alpine.data('gereqAdmin', () => ({
         this.sidebarOpen = false;
     },
 
+    expandSidebar() {
+        this.collapsed = false;
+        localStorage.setItem('gereq-sidebar', 'expanded');
+        document.body.dataset.sidebar = 'expanded';
+    },
+
     toggleCollapsed() {
         this.collapsed = !this.collapsed;
         localStorage.setItem('gereq-sidebar', this.collapsed ? 'collapsed' : 'expanded');
+        document.body.dataset.sidebar = this.collapsed ? 'collapsed' : 'expanded';
+        if (!this.collapsed) {
+            this.sidebarOpen = false;
+        }
+    },
+
+    toggleMenu() {
+        if (this.collapsed) {
+            this.expandSidebar();
+            return;
+        }
+        if (window.matchMedia('(max-width: 860px)').matches) {
+            this.sidebarOpen = !this.sidebarOpen;
+            return;
+        }
+        this.toggleCollapsed();
     },
 
     openPalette() {

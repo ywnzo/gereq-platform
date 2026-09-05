@@ -15,6 +15,7 @@ class Page
 {
     public const STATUSES = ['draft', 'published', 'archived'];
     public const TEMPLATES = ['default', 'landing'];
+    public const CONTENT_MODES = ['blocks', 'raw'];
 
     #[ORM\Id]
     #[ORM\Column(length: 36)]
@@ -31,6 +32,14 @@ class Page
 
     #[ORM\Column(length: 32)]
     private string $template = 'default';
+
+    /** blocks = PageBlock builder, raw = single textarea body */
+    #[ORM\Column(name: 'content_mode', length: 16, options: ['default' => 'blocks'])]
+    private string $contentMode = 'blocks';
+
+    /** HTML/plain body when content_mode=raw */
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $body = null;
 
     #[ORM\Column(name: 'meta_description', type: 'text', nullable: true)]
     private ?string $metaDescription = null;
@@ -78,6 +87,21 @@ class Page
         return $this->template;
     }
 
+    public function contentMode(): string
+    {
+        return $this->contentMode;
+    }
+
+    public function body(): ?string
+    {
+        return $this->body;
+    }
+
+    public function isRaw(): bool
+    {
+        return $this->contentMode === 'raw';
+    }
+
     public function metaDescription(): ?string
     {
         return $this->metaDescription;
@@ -111,6 +135,11 @@ class Page
     public function templateLabel(): string
     {
         return 'cms.page.template.' . $this->template;
+    }
+
+    public function contentModeLabel(): string
+    {
+        return 'cms.page.content_mode.' . $this->contentMode;
     }
 
     public function setSlug(string $slug): void
@@ -147,6 +176,22 @@ class Page
             throw new \InvalidArgumentException('cms.error.invalid_template');
         }
         $this->template = $template;
+        $this->touch();
+    }
+
+    public function setContentMode(string $mode): void
+    {
+        if (!in_array($mode, self::CONTENT_MODES, true)) {
+            throw new \InvalidArgumentException('cms.error.invalid_content_mode');
+        }
+        $this->contentMode = $mode;
+        $this->touch();
+    }
+
+    public function setBody(?string $body): void
+    {
+        $trimmed = $body !== null ? trim($body) : '';
+        $this->body = $trimmed !== '' ? $trimmed : null;
         $this->touch();
     }
 

@@ -172,7 +172,7 @@ final class Application
             Menu::class => \DI\create(Menu::class),
             CapabilityRegistry::class => \DI\create(CapabilityRegistry::class),
             PermissionRegistry::class => \DI\create(PermissionRegistry::class),
-            Dashboard::class => \DI\create(Dashboard::class),
+            Dashboard::class => \DI\autowire(Dashboard::class),
             CommandPalette::class => \DI\create(CommandPalette::class),
             ResourceRegistrar::class => \DI\create(ResourceRegistrar::class),
             Icons::class => \DI\create(Icons::class),
@@ -223,6 +223,10 @@ final class Application
             TwigFactory::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath)
                 ->constructorParameter('debugBar', \DI\get(DebugBar::class)),
+            \Gereq\Admin\Http\SettingsController::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
+            \Gereq\Http\BrandAssetController::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
             Environment::class => \DI\factory(static fn (TwigFactory $factory): Environment => $factory->create()),
             Kernel::class => \DI\autowire(),
             \Gereq\Http\Session\SessionHandlerFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),

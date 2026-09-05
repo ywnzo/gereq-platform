@@ -17,6 +17,8 @@ use Modules\Projects\Http\Api\ProjectApiController;
 use Modules\Projects\Http\ProjectController;
 use Modules\Projects\Http\TaskController;
 use Twig\Environment;
+use Modules\Projects\Application\Widgets\ProjectsShortcutWidget;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ProjectsModule implements ModuleInterface
 {
@@ -76,6 +78,11 @@ final class ProjectsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->dashboard()->addWidget(new ProjectsShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
         $context->menu()->add(new MenuItem(id:'projects', label:'nav.projects', icon:'clipboard', route:'admin.projects.index', permission:'projects.view', order:40, group:'Práce'));
         $context->menu()->add(new MenuItem(id:'projects.create', label:'nav.projects.create', route:'admin.projects.create', permission:'projects.manage', parent:'projects', order:41, hidden:true));
         $context->commandPalette()->add(new PaletteCommand(id:'projects.index', label:'palette.projects.index', url:'/admin/projects', icon:'clipboard', permission:'projects.view', keywords:['projekt','project','task']));
