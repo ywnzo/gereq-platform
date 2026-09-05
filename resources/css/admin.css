@@ -964,7 +964,8 @@ button.icon-btn.topbar__menu { display: none; }
 .input, input, select, textarea {
     width: 100%;
     box-sizing: border-box;
-    background: var(--surface-2);
+    /* background-color (not shorthand) — shorthand would reset select arrow repeat */
+    background-color: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0 9px;
@@ -987,18 +988,26 @@ input[type="radio"] {
     min-height: 0;
     accent-color: var(--primary);
 }
-select {
+select,
+select.input {
     appearance: none;
+    background-color: var(--surface-2);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371717a' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
+    background-size: 12px 12px;
     padding-right: 28px;
     /* Native select text clips if height fights padding/line-height */
     line-height: normal;
 }
 html.dark select,
-html[data-theme="gereq-dark"] select {
+html.dark select.input,
+html[data-theme="gereq-dark"] select,
+html[data-theme="gereq-dark"] select.input {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23a1a1aa' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 12px;
 }
 input:focus, select:focus, textarea:focus {
     outline: none;
@@ -2665,12 +2674,16 @@ select.g-control {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371717a' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
+    background-size: 12px 12px;
 }
 html.dark select.input.g-control,
 html.dark select.g-control,
 html[data-theme="gereq-dark"] select.input.g-control,
 html[data-theme="gereq-dark"] select.g-control {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23a1a1aa' stroke-width='1.5'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 12px;
 }
 .g-field.is-invalid .g-control,
 .g-field.is-invalid .g-select__trigger,

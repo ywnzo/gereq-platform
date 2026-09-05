@@ -24,3 +24,7 @@
 .phpunit.result.cache
 /var/
 frontend/
+/.env.new
+/.env.tmpkey
+/README-*.md
+/tools/seed_*.php
