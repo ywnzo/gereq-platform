@@ -8,23 +8,43 @@ use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Uuid;
 
 /**
- * Catalog sale on a single product (baby-naty product_discounts).
- * Applied to list/unit price before cart coupons.
+ * Catalog sale on a product or category (percent or fixed amount).
+ * Optional stock conditions (e.g. remaining qty ≤ N).
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'product_discounts')]
-#[ORM\UniqueConstraint(name: 'uniq_product_discounts_product', columns: ['product_id'])]
+#[ORM\Index(name: 'idx_product_discounts_scope', columns: ['scope_type', 'scope_id'])]
 #[ORM\Index(name: 'idx_product_discounts_active_window', columns: ['is_active', 'starts_at', 'ends_at'])]
 class ProductDiscount
 {
     public const KINDS = ['percent', 'amount'];
 
+    public const SCOPE_PRODUCT = 'product';
+    public const SCOPE_CATEGORY = 'category';
+    public const SCOPES = [self::SCOPE_PRODUCT, self::SCOPE_CATEGORY];
+
+    public const CONDITION_NONE = 'none';
+    public const CONDITION_STOCK_LTE = 'stock_lte';
+    public const CONDITION_STOCK_GTE = 'stock_gte';
+    public const CONDITIONS = [
+        self::CONDITION_NONE,
+        self::CONDITION_STOCK_LTE,
+        self::CONDITION_STOCK_GTE,
+    ];
+
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $id;
 
-    #[ORM\Column(name: 'product_id', length: 36)]
-    private string $productId;
+    /** Legacy mirror of product scope_id (nullable for category discounts). */
+    #[ORM\Column(name: 'product_id', length: 36, nullable: true)]
+    private ?string $productId = null;
+
+    #[ORM\Column(name: 'scope_type', length: 16, options: ['default' => 'product'])]
+    private string $scopeType = self::SCOPE_PRODUCT;
+
+    #[ORM\Column(name: 'scope_id', length: 36)]
+    private string $scopeId;
 
     #[ORM\Column(length: 16)]
     private string $kind = 'percent';
@@ -34,6 +54,12 @@ class ProductDiscount
 
     #[ORM\Column(length: 190, nullable: true)]
     private ?string $description = null;
+
+    #[ORM\Column(name: 'condition_type', length: 32, options: ['default' => 'none'])]
+    private string $conditionType = self::CONDITION_NONE;
+
+    #[ORM\Column(name: 'condition_value', type: 'integer', nullable: true)]
+    private ?int $conditionValue = null;
 
     #[ORM\Column(name: 'starts_at', nullable: true)]
     private ?\DateTimeImmutable $startsAt = null;
@@ -50,14 +76,30 @@ class ProductDiscount
     #[ORM\Column(name: 'updated_at')]
     private \DateTimeImmutable $updatedAt;
 
-    public function __construct(string $productId, string $kind = 'percent', string $value = '0')
-    {
+    public function __construct(
+        string $scopeType,
+        string $scopeId,
+        string $kind = 'percent',
+        string $value = '0',
+    ) {
         $this->id = Uuid::uuid7()->toString();
-        $this->productId = $productId;
+        $this->scopeType = $this->normalizeScope($scopeType);
+        $this->scopeId = $scopeId;
+        $this->productId = $this->scopeType === self::SCOPE_PRODUCT ? $scopeId : null;
         $this->kind = $this->normalizeKind($kind);
         $this->value = number_format((float) $value, 2, '.', '');
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public static function forProduct(string $productId, string $kind = 'percent', string $value = '0'): self
+    {
+        return new self(self::SCOPE_PRODUCT, $productId, $kind, $value);
+    }
+
+    public static function forCategory(string $categoryId, string $kind = 'percent', string $value = '0'): self
+    {
+        return new self(self::SCOPE_CATEGORY, $categoryId, $kind, $value);
     }
 
     public function id(): string
@@ -65,9 +107,19 @@ class ProductDiscount
         return $this->id;
     }
 
-    public function productId(): string
+    public function productId(): ?string
     {
-        return $this->productId;
+        return $this->productId ?? ($this->scopeType === self::SCOPE_PRODUCT ? $this->scopeId : null);
+    }
+
+    public function scopeType(): string
+    {
+        return $this->scopeType;
+    }
+
+    public function scopeId(): string
+    {
+        return $this->scopeId;
     }
 
     public function kind(): string
@@ -83,6 +135,16 @@ class ProductDiscount
     public function description(): ?string
     {
         return $this->description;
+    }
+
+    public function conditionType(): string
+    {
+        return $this->conditionType;
+    }
+
+    public function conditionValue(): ?int
+    {
+        return $this->conditionValue;
     }
 
     public function startsAt(): ?\DateTimeImmutable
@@ -126,6 +188,20 @@ class ProductDiscount
         return true;
     }
 
+    public function matchesStockCondition(?int $stockQty): bool
+    {
+        return match ($this->conditionType) {
+            self::CONDITION_NONE => true,
+            self::CONDITION_STOCK_LTE => $stockQty !== null
+                && $this->conditionValue !== null
+                && $stockQty <= $this->conditionValue,
+            self::CONDITION_STOCK_GTE => $stockQty !== null
+                && $this->conditionValue !== null
+                && $stockQty >= $this->conditionValue,
+            default => false,
+        };
+    }
+
     public function setKind(string $kind): void
     {
         $this->kind = $this->normalizeKind($kind);
@@ -142,6 +218,17 @@ class ProductDiscount
     {
         $description = $description !== null ? trim($description) : null;
         $this->description = $description !== '' ? $description : null;
+        $this->touch();
+    }
+
+    public function setCondition(string $type, ?int $value): void
+    {
+        $type = strtolower(trim($type));
+        if (!in_array($type, self::CONDITIONS, true)) {
+            $type = self::CONDITION_NONE;
+        }
+        $this->conditionType = $type;
+        $this->conditionValue = $type === self::CONDITION_NONE ? null : $value;
         $this->touch();
     }
 
@@ -171,6 +258,13 @@ class ProductDiscount
         }
 
         return in_array($kind, self::KINDS, true) ? $kind : 'percent';
+    }
+
+    private function normalizeScope(string $scope): string
+    {
+        $scope = strtolower(trim($scope));
+
+        return in_array($scope, self::SCOPES, true) ? $scope : self::SCOPE_PRODUCT;
     }
 
     private function touch(): void

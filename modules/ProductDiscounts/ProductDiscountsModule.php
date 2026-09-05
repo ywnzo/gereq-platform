@@ -5,19 +5,14 @@ declare(strict_types=1);
 namespace Modules\ProductDiscounts;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Gereq\Admin\CommandPalette\PaletteCommand;
-use Gereq\Admin\Menu\MenuItem;
 use Gereq\Api\ApiModule;
 use Gereq\Event\EventDefinition;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
 use Modules\ProductDiscounts\Application\ProductDiscountsProvider;
-use Modules\ProductDiscounts\Application\Widgets\ProductDiscountsShortcutWidget;
 use Modules\ProductDiscounts\Http\Api\ProductDiscountApiController;
 use Modules\ProductDiscounts\Http\ProductDiscountController;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 final class ProductDiscountsModule implements ModuleInterface
 {
@@ -28,7 +23,7 @@ final class ProductDiscountsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.1.3';
     }
 
     public function register(ModuleContext $context): void
@@ -61,6 +56,9 @@ final class ProductDiscountsModule implements ModuleInterface
             $routes->post('/{id}/delete', [ProductDiscountController::class, 'destroy'])
                 ->name('admin.product_discounts.destroy')
                 ->permission('product_discounts.manage');
+            $routes->post('/{id}/remove', [ProductDiscountController::class, 'destroyOne'])
+                ->name('admin.product_discounts.remove')
+                ->permission('product_discounts.manage');
         }, ['middleware' => ['auth']]);
 
         $context->router()->group('/admin/products/{productId}/discount', function (Router $routes): void {
@@ -72,6 +70,12 @@ final class ProductDiscountsModule implements ModuleInterface
                 ->permission('product_discounts.manage');
         }, ['middleware' => ['auth']]);
 
+        $context->router()->group('/admin/products/categories/{categoryId}/discounts', function (Router $routes): void {
+            $routes->post('', [ProductDiscountController::class, 'storeForCategory'])
+                ->name('admin.products.categories.discounts.store')
+                ->permission('product_discounts.manage');
+        }, ['middleware' => ['auth']]);
+
         $this->registerApi($context);
         $this->registerPlatformEvents($context);
         $this->registerValidation($context);
@@ -79,38 +83,7 @@ final class ProductDiscountsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
-        $context->dashboard()->addWidget(new ProductDiscountsShortcutWidget(
-            $context->get(Environment::class),
-            $context->get(TranslatorInterface::class),
-            $context->get(Router::class),
-        ));
-        $context->menu()->add(new MenuItem(
-            id: 'product_discounts',
-            label: 'nav.product_discounts',
-            icon: 'tag',
-            route: 'admin.product_discounts.index',
-            permission: 'product_discounts.view',
-            order: 33,
-            group: 'Obchod',
-        ));
-        $context->menu()->add(new MenuItem(
-            id: 'product_discounts.create',
-            label: 'nav.product_discounts.create',
-            route: 'admin.product_discounts.create',
-            permission: 'product_discounts.manage',
-            parent: 'product_discounts',
-            order: 34,
-            hidden: true,
-        ));
-
-        $context->commandPalette()->add(new PaletteCommand(
-            id: 'product_discounts.index',
-            label: 'palette.product_discounts.index',
-            url: '/admin/product-discounts',
-            icon: 'tag',
-            permission: 'product_discounts.view',
-            keywords: ['sleva', 'discount', 'akce', 'sale', 'produkt'],
-        ));
+        // UI žije v záložkách produktu / kategorie — bez samostatné položky v menu.
     }
 
     private function registerApi(ModuleContext $context): void
@@ -144,9 +117,13 @@ final class ProductDiscountsModule implements ModuleInterface
     {
         $context->validation()->ruleset('product_discounts.save', [
             'product_id' => 'nullable|max:36',
+            'scope_type' => 'nullable|max:16',
+            'scope_id' => 'nullable|max:36',
             'kind' => 'required|max:16',
             'value' => 'required',
             'description' => 'nullable|max:190',
+            'condition_type' => 'nullable|max:32',
+            'condition_value' => 'nullable',
             'starts_at' => 'nullable',
             'ends_at' => 'nullable',
             'active' => 'nullable',

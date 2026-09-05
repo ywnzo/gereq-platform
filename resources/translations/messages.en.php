@@ -122,6 +122,7 @@ return [
     'admin.dashboard.hint.documents' => 'Documents and files',
     'admin.dashboard.hint.currency' => 'Currencies and rates',
     'admin.dashboard.hint.coupons' => 'Discount coupons',
+    'admin.dashboard.hint.product_discounts' => 'Catalog product discounts',
     'admin.dashboard.hint.cms' => 'Pages and content',
     'admin.dashboard.hint.calendar' => 'Events and meetings',
     'admin.dashboard.hint.crm' => 'Deals and pipeline',

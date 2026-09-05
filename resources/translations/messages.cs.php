@@ -122,6 +122,7 @@ return [
     'admin.dashboard.hint.documents' => 'Dokumenty a přílohy',
     'admin.dashboard.hint.currency' => 'Měny a kurzy',
     'admin.dashboard.hint.coupons' => 'Slevové kupóny',
+    'admin.dashboard.hint.product_discounts' => 'Katalogové slevy produktů',
     'admin.dashboard.hint.cms' => 'Stránky a obsah',
     'admin.dashboard.hint.calendar' => 'Události a schůzky',
     'admin.dashboard.hint.crm' => 'Obchody a pipeline',

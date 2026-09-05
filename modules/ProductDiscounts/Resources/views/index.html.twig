@@ -1,0 +1,104 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="product-discounts" data-actions-default="1">
+<header class="page-header">
+    <h1>{{ 'product_discounts.title'|trans }}</h1>
+    <div class="actions">
+        {% if user.can('product_discounts.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.product_discounts.create') }}">{{ icon('plus') }} {{ 'product_discounts.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'product_discounts.search'|trans }}">
+    </form>
+</div>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+<th>{{ 'product_discounts.field.scope'|trans }}</th>
+<th>{{ 'product_discounts.field.kind'|trans }}</th>
+<th>{{ 'product_discounts.field.value'|trans }}</th>
+<th>{{ 'product_discounts.field.condition'|trans }}</th>
+<th>{{ 'product_discounts.field.starts_at'|trans }}</th>
+<th>{{ 'product_discounts.field.ends_at'|trans }}</th>
+<th>{{ 'product_discounts.field.status'|trans }}</th>
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+{% set product = item.scopeType() == 'product' ? (products[item.scopeId()] ?? null) : null %}
+{% set category = item.scopeType() == 'category' ? (categories[item.scopeId()] ?? null) : null %}
+<tr>
+    <td>
+        {% if item.scopeType() == 'category' %}
+            <span class="badge">{{ 'product_discounts.scope.category'|trans }}</span>
+            {% if category %}
+                <a href="{{ url('admin.products.categories.edit', {id: category.id()}) }}#discounts"><strong>{{ category.name() }}</strong></a>
+            {% else %}
+                <code>{{ item.scopeId() }}</code>
+            {% endif %}
+        {% else %}
+            <span class="badge">{{ 'product_discounts.scope.product'|trans }}</span>
+            {% if product %}
+                <a href="{{ url('admin.products.show', {id: product.id()}) }}#prices"><strong>{{ product.name() }}</strong></a>
+                <div class="muted"><code>{{ product.sku() }}</code></div>
+            {% else %}
+                <code>{{ item.scopeId() }}</code>
+            {% endif %}
+        {% endif %}
+    </td>
+    <td>{{ ('product_discounts.kind.' ~ item.kind())|trans }}</td>
+    <td>
+        {% if item.kind() == 'percent' %}
+            {{ item.value() }} %
+        {% else %}
+            {{ item.value() }} Kč
+        {% endif %}
+    </td>
+    <td>
+        {{ ('product_discounts.condition.' ~ item.conditionType())|trans }}
+        {% if item.conditionValue() is not null %}
+            <span class="muted">({{ item.conditionValue() }})</span>
+        {% endif %}
+    </td>
+    <td>{{ item.startsAt() ? item.startsAt().format('d.m.Y H:i') : '—' }}</td>
+    <td>{{ item.endsAt() ? item.endsAt().format('d.m.Y H:i') : '—' }}</td>
+    <td>
+        {% if item.isCurrentlyActive() %}
+            <span class="badge badge--ok">{{ 'product_discounts.active'|trans }}</span>
+        {% elseif not item.isActive() %}
+            <span class="badge badge--muted">{{ 'product_discounts.inactive'|trans }}</span>
+        {% elseif item.startsAt() and item.startsAt() > date() %}
+            <span class="badge">{{ 'product_discounts.scheduled'|trans }}</span>
+        {% else %}
+            <span class="badge badge--muted">{{ 'product_discounts.expired'|trans }}</span>
+        {% endif %}
+    </td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% if user.can('product_discounts.manage') %}
+                {% include 'ui/row_action.html.twig' with { href: url('admin.product_discounts.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.product_discounts.destroy', {id: item.id()}), confirm: 'product_discounts.confirm_delete'|trans } %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr>
+<td colspan="8">
+<div class="empty">
+<h2>{{ 'product_discounts.empty'|trans }}</h2>
+<p>{{ 'product_discounts.empty.hint'|trans }}</p>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endblock %}

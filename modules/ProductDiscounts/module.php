@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'product_discounts',
     'name' => 'Product Discounts',
-    'version' => '1.0.0',
+    'version' => '1.1.3',
     'description' => 'module.product_discounts.description',
     'class' => Modules\ProductDiscounts\ProductDiscountsModule::class,
     'author' => 'GEREQ',

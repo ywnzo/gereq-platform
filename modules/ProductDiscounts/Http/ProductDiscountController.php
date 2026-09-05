@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace Modules\ProductDiscounts\Http;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Gereq\Admin\CommandPalette\CommandPalette;
-use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
-use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Modules\ProductDiscounts\Application\ProductDiscountsProvider;
 use Modules\ProductDiscounts\Domain\ProductDiscount;
 use Modules\Products\Domain\Product;
+use Modules\Products\Domain\ProductCategory;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,9 +27,6 @@ final class ProductDiscountController extends Controller
         RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
         private readonly ProductDiscountsProvider $discounts,
-        private readonly Authenticator $auth,
-        private readonly Menu $menu,
-        private readonly CommandPalette $palette,
         private readonly Auditor $auditor,
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
@@ -41,124 +36,44 @@ final class ProductDiscountController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->query->get('q', ''));
-        $qb = $this->em->getRepository(ProductDiscount::class)->createQueryBuilder('d')
-            ->orderBy('d.updatedAt', 'DESC');
-
-        if ($search !== '') {
-            $matched = $this->em->getRepository(Product::class)->createQueryBuilder('p')
-                ->where('LOWER(p.name) LIKE :q OR LOWER(p.sku) LIKE :q')
-                ->setParameter('q', '%' . mb_strtolower($search) . '%')
-                ->getQuery()
-                ->getResult();
-            $ids = [];
-            foreach ($matched as $product) {
-                if ($product instanceof Product) {
-                    $ids[] = $product->id();
-                }
-            }
-            if ($ids === []) {
-                $qb->andWhere('1 = 0');
-            } else {
-                $qb->andWhere('d.productId IN (:pids)')->setParameter('pids', $ids);
-            }
-        }
-
-        /** @var list<ProductDiscount> $items */
-        $items = $qb->getQuery()->getResult();
-        $productMap = $this->productMap(array_map(static fn (ProductDiscount $d): string => $d->productId(), $items));
-
-        return $this->page('@productdiscounts/index.html.twig', [
-            'pageTitle' => $this->translator->trans('product_discounts.title'),
-            'items' => $items,
-            'products' => $productMap,
-            'search' => $search,
-        ]);
+        return $this->redirect('admin.products.index');
     }
 
     public function create(): Response
     {
-        return $this->page('@productdiscounts/form.html.twig', [
-            'pageTitle' => $this->translator->trans('product_discounts.new'),
-            'item' => null,
-            'product' => null,
-            'kinds' => ProductDiscount::KINDS,
-            'productOptions' => $this->productOptions(),
-        ]);
+        return $this->redirect('admin.products.index');
     }
 
     public function store(Request $request): Response
     {
-        $data = $this->validated($request, requireProduct: true);
-        $product = $this->em->find(Product::class, $data['product_id']);
-        if (!$product instanceof Product) {
-            $this->abort(404, $this->translator->trans('product_discounts.error.product_not_found'));
-        }
-        if ($this->discounts->findForProduct($product->id()) !== null) {
-            $this->flash('error', $this->translator->trans('product_discounts.error.exists'));
-
-            return $this->redirect('admin.product_discounts.create');
-        }
-
-        $discount = $this->discounts->upsert($product->id(), $data);
-        $this->events->emit('product_discount.saved', ['type' => 'product_discount', 'id' => $discount->id()], $this->discounts->serialize($discount) ?? []);
-        $this->auditor->log('product_discounts.created', 'product_discount', $discount->id(), null, [
-            'product_id' => $product->id(),
-            'kind' => $discount->kind(),
-            'value' => $discount->value(),
-        ]);
-        $this->forgetForm('product_discounts.save');
-        $this->flash('success', $this->translator->trans('product_discounts.flash.created'));
-
-        return $this->redirect('admin.product_discounts.index');
+        return $this->redirect('admin.products.index');
     }
 
     public function edit(string $id): Response
     {
         $item = $this->find($id);
         if ($item === null) {
-            $this->abort(404, $this->translator->trans('product_discounts.error.not_found'));
+            return $this->redirect('admin.products.index');
         }
-        $product = $this->em->find(Product::class, $item->productId());
+        if ($item->scopeType() === ProductDiscount::SCOPE_CATEGORY) {
+            return $this->redirectTo(
+                $this->router->url('admin.products.categories.edit', ['id' => $item->scopeId()], $this->request()) . '#discounts'
+            );
+        }
 
-        return $this->page('@productdiscounts/form.html.twig', [
-            'pageTitle' => $this->translator->trans('product_discounts.edit'),
-            'item' => $item,
-            'product' => $product instanceof Product ? $product : null,
-            'kinds' => ProductDiscount::KINDS,
-            'productOptions' => [],
-        ]);
+        return $this->redirectTo(
+            $this->router->url('admin.products.show', ['id' => $item->scopeId()], $this->request()) . '#discounts'
+        );
     }
 
     public function update(Request $request, string $id): Response
     {
-        $item = $this->find($id);
-        if ($item === null) {
-            $this->abort(404, $this->translator->trans('product_discounts.error.not_found'));
-        }
-        $data = $this->validated($request, requireProduct: false);
-        $discount = $this->discounts->upsert($item->productId(), $data);
-        $this->events->emit('product_discount.saved', ['type' => 'product_discount', 'id' => $discount->id()], $this->discounts->serialize($discount) ?? []);
-        $this->auditor->log('product_discounts.updated', 'product_discount', $discount->id());
-        $this->forgetForm('product_discounts.save');
-        $this->flash('success', $this->translator->trans('product_discounts.flash.saved'));
-
-        return $this->redirect('admin.product_discounts.index');
+        return $this->edit($id);
     }
 
     public function destroy(string $id): Response
     {
-        $item = $this->find($id);
-        if ($item === null) {
-            $this->abort(404, $this->translator->trans('product_discounts.error.not_found'));
-        }
-        $payload = $this->discounts->serialize($item) ?? [];
-        $this->discounts->deleteForProduct($item->productId());
-        $this->events->emit('product_discount.deleted', ['type' => 'product_discount', 'id' => $id], $payload);
-        $this->auditor->log('product_discounts.deleted', 'product_discount', $id);
-        $this->flash('success', $this->translator->trans('product_discounts.flash.deleted'));
-
-        return $this->redirect('admin.product_discounts.index');
+        return $this->destroyOne($id);
     }
 
     public function upsertForProduct(Request $request, string $productId): Response
@@ -167,8 +82,8 @@ final class ProductDiscountController extends Controller
         if (!$product instanceof Product) {
             $this->abort(404, $this->translator->trans('product_discounts.error.product_not_found'));
         }
-        $data = $this->validated($request, requireProduct: false);
-        $discount = $this->discounts->upsert($product->id(), $data);
+        $data = $this->validated($request, requireScope: false);
+        $discount = $this->discounts->create(ProductDiscount::SCOPE_PRODUCT, $product->id(), $data);
         $this->events->emit('product_discount.saved', ['type' => 'product_discount', 'id' => $discount->id()], $this->discounts->serialize($discount) ?? []);
         $this->auditor->log('product_discounts.upserted', 'product_discount', $discount->id(), null, [
             'product_id' => $product->id(),
@@ -176,7 +91,7 @@ final class ProductDiscountController extends Controller
         $this->forgetForm('product_discounts.save');
         $this->flash('success', $this->translator->trans('product_discounts.flash.saved'));
 
-        return $this->redirectTo($this->router->url('admin.products.show', ['id' => $productId], $this->request()) . '#prices');
+        return $this->redirectTo($this->router->url('admin.products.show', ['id' => $productId], $this->request()) . '#discounts');
     }
 
     public function destroyForProduct(string $productId): Response
@@ -194,7 +109,47 @@ final class ProductDiscountController extends Controller
         }
         $this->flash('success', $this->translator->trans('product_discounts.flash.deleted'));
 
-        return $this->redirectTo($this->router->url('admin.products.show', ['id' => $productId], $this->request()) . '#prices');
+        return $this->redirectTo($this->router->url('admin.products.show', ['id' => $productId], $this->request()) . '#discounts');
+    }
+
+    public function destroyOne(string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('product_discounts.error.not_found'));
+        }
+        $scopeType = $item->scopeType();
+        $scopeId = $item->scopeId();
+        $payload = $this->discounts->serialize($item) ?? [];
+        $this->discounts->delete($item);
+        $this->events->emit('product_discount.deleted', ['type' => 'product_discount', 'id' => $id], $payload);
+        $this->auditor->log('product_discounts.deleted', 'product_discount', $id);
+        $this->flash('success', $this->translator->trans('product_discounts.flash.deleted'));
+
+        if ($scopeType === ProductDiscount::SCOPE_CATEGORY) {
+            return $this->redirectTo($this->router->url('admin.products.categories.edit', ['id' => $scopeId], $this->request()) . '#discounts');
+        }
+
+        return $this->redirectTo($this->router->url('admin.products.show', ['id' => $scopeId], $this->request()) . '#discounts');
+    }
+
+    public function storeForCategory(Request $request, string $categoryId): Response
+    {
+        $category = $this->em->find(ProductCategory::class, $categoryId);
+        if (!$category instanceof ProductCategory) {
+            $this->abort(404, $this->translator->trans('product_discounts.error.category_not_found'));
+        }
+        $data = $this->validated($request, requireScope: false);
+        $discount = $this->discounts->create(ProductDiscount::SCOPE_CATEGORY, $category->id(), $data);
+        $this->events->emit('product_discount.saved', ['type' => 'product_discount', 'id' => $discount->id()], $this->discounts->serialize($discount) ?? []);
+        $this->auditor->log('product_discounts.created', 'product_discount', $discount->id(), null, [
+            'scope_type' => 'category',
+            'scope_id' => $category->id(),
+        ]);
+        $this->forgetForm('product_discounts.save');
+        $this->flash('success', $this->translator->trans('product_discounts.flash.created'));
+
+        return $this->redirectTo($this->router->url('admin.products.categories.edit', ['id' => $categoryId], $this->request()) . '#discounts');
     }
 
     private function find(string $id): ?ProductDiscount
@@ -206,29 +161,51 @@ final class ProductDiscountController extends Controller
 
     /**
      * @return array{
-     *   product_id: ?string,
+     *   scope_type: string,
+     *   scope_id: ?string,
      *   kind: string,
      *   value: string,
      *   description: ?string,
+     *   condition_type: string,
+     *   condition_value: ?int,
      *   starts_at: ?\DateTimeImmutable,
      *   ends_at: ?\DateTimeImmutable,
      *   active: bool
      * }
      */
-    private function validated(Request $request, bool $requireProduct): array
+    private function validated(Request $request, bool $requireScope): array
     {
         $data = $this->validate($request, 'product_discounts.save');
-        $productId = trim((string) ($data['product_id'] ?? $request->request->get('product_id', '')));
-        if ($requireProduct && $productId === '') {
-            $this->abort(422, $this->translator->trans('product_discounts.error.product_required'));
+        $scopeType = strtolower(trim((string) ($data['scope_type'] ?? $request->request->get('scope_type', ProductDiscount::SCOPE_PRODUCT))));
+        if (!in_array($scopeType, ProductDiscount::SCOPES, true)) {
+            $scopeType = ProductDiscount::SCOPE_PRODUCT;
+        }
+        $scopeId = trim((string) ($data['scope_id'] ?? $request->request->get('scope_id', '')));
+        if ($scopeId === '') {
+            $scopeId = trim((string) ($data['product_id'] ?? $request->request->get('product_id', '')));
+        }
+        if ($requireScope && $scopeId === '') {
+            $this->abort(422, $this->translator->trans(
+                $scopeType === ProductDiscount::SCOPE_CATEGORY
+                    ? 'product_discounts.error.category_required'
+                    : 'product_discounts.error.product_required'
+            ));
         }
         $activeRaw = $data['active'] ?? $request->request->get('active');
+        $conditionType = strtolower(trim((string) ($data['condition_type'] ?? ProductDiscount::CONDITION_NONE)));
+        if (!in_array($conditionType, ProductDiscount::CONDITIONS, true)) {
+            $conditionType = ProductDiscount::CONDITION_NONE;
+        }
+        $conditionValueRaw = trim((string) ($data['condition_value'] ?? $request->request->get('condition_value', '')));
 
         return [
-            'product_id' => $productId !== '' ? $productId : null,
+            'scope_type' => $scopeType,
+            'scope_id' => $scopeId !== '' ? $scopeId : null,
             'kind' => strtolower(trim((string) ($data['kind'] ?? 'percent'))),
             'value' => number_format((float) ($data['value'] ?? 0), 2, '.', ''),
             'description' => trim((string) ($data['description'] ?? '')) ?: null,
+            'condition_type' => $conditionType,
+            'condition_value' => $conditionValueRaw !== '' ? (int) $conditionValueRaw : null,
             'starts_at' => $this->parseDate($data['starts_at'] ?? null),
             'ends_at' => $this->parseDate($data['ends_at'] ?? null),
             'active' => $activeRaw === true || $activeRaw === '1' || $activeRaw === 1 || $activeRaw === 'on',
@@ -246,58 +223,5 @@ final class ProductDiscountController extends Controller
         } catch (\Throwable) {
             return null;
         }
-    }
-
-    /** @param list<string> $ids @return array<string, Product> */
-    private function productMap(array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-        /** @var list<Product> $products */
-        $products = $this->em->getRepository(Product::class)->createQueryBuilder('p')
-            ->where('p.id IN (:ids)')
-            ->setParameter('ids', $ids)
-            ->getQuery()
-            ->getResult();
-        $map = [];
-        foreach ($products as $product) {
-            $map[$product->id()] = $product;
-        }
-
-        return $map;
-    }
-
-    /** @return list<array{value: string, label: string}> */
-    private function productOptions(): array
-    {
-        $products = $this->em->getRepository(Product::class)->findBy([], ['name' => 'ASC'], 500);
-        $out = [];
-        foreach ($products as $product) {
-            if (!$product instanceof Product) {
-                continue;
-            }
-            if ($this->discounts->findForProduct($product->id()) !== null) {
-                continue;
-            }
-            $out[] = [
-                'value' => $product->id(),
-                'label' => $product->name() . ' (' . $product->sku() . ')',
-            ];
-        }
-
-        return $out;
-    }
-
-    /** @param array<string, mixed> $data */
-    private function page(string $view, array $data): Response
-    {
-        $user = $this->auth->user();
-
-        return $this->render($view, array_merge($data, [
-            'menu' => $this->menu->tree($user, $this->router, $this->request()),
-            'commands' => $this->palette->all($user),
-            'user' => $user,
-        ]));
     }
 }
