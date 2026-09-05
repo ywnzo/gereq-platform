@@ -47,10 +47,7 @@ final class MediaApiController extends Controller
 
         $qb = $this->em->getRepository(MediaAsset::class)->createQueryBuilder('m');
 
-        if ($query->search !== '') {
-            $qb->andWhere('m.title LIKE :q OR m.alt LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'm', ['title', 'alt'], $query->search);
         if (isset($query->filters['mime']) && $query->filters['mime'] !== '') {
             $mime = (string) $query->filters['mime'];
             if (str_ends_with($mime, '/*')) {

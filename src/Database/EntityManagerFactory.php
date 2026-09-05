@@ -11,6 +11,8 @@ use Doctrine\ORM\ORMSetup;
 use Gereq\Config\Repository;
 use Gereq\Debug\Doctrine\QueryMiddleware;
 use Gereq\Debug\QueryCollector;
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 final class EntityManagerFactory
 {
@@ -21,7 +23,7 @@ final class EntityManagerFactory
     ) {
     }
 
-    public function create(): EntityManagerInterface
+    public function create(?CacheItemPoolInterface $appCache = null): EntityManagerInterface
     {
         $paths = [$this->basePath . '/src'];
         $modulesDir = $this->basePath . '/modules';
@@ -41,6 +43,15 @@ final class EntityManagerFactory
         $isDev = (bool) $this->config->get('app.debug', false);
         $setup = ORMSetup::createAttributeMetadataConfiguration($paths, $isDev);
         $setup->enableNativeLazyObjects(true);
+        $setup->addCustomStringFunction('REPLACE', Dql\ReplaceFunction::class);
+
+        $metaCache = new FilesystemAdapter('doctrine_meta', 0, $this->basePath . '/storage/cache/doctrine');
+        $setup->setMetadataCache($metaCache);
+        $setup->setQueryCache($metaCache);
+
+        if ($appCache !== null && (bool) $this->config->get('cache.doctrine_result', true)) {
+            $setup->setResultCache($appCache);
+        }
 
         if ($isDev && $this->queries !== null) {
             $setup->setMiddlewares([new QueryMiddleware($this->queries)]);

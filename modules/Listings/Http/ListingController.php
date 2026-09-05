@@ -57,14 +57,11 @@ final class ListingController extends Controller
             sortable: ['title', 'price', 'city', 'status', 'createdAt'],
             defaultSort: 'createdAt',
             defaultDir: 'desc',
-            filterKeys: ['status', 'offer_type'],
+            filterKeys: ['status', 'offer_type', 'market_status', 'property_type', 'featured'],
         );
 
         $qb = $this->em->getRepository(Listing::class)->createQueryBuilder('l');
-        if ($list->search !== '') {
-            $qb->andWhere('l.title LIKE :q OR l.city LIKE :q OR l.slug LIKE :q OR l.street LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'l', ['title', 'city', 'slug', 'street']);
         $status = $list->filter('status');
         if (in_array($status, Listing::STATUSES, true)) {
             $qb->andWhere('l.status = :status')->setParameter('status', $status);
@@ -72,6 +69,18 @@ final class ListingController extends Controller
         $offer = $list->filter('offer_type');
         if (in_array($offer, Listing::OFFERS, true)) {
             $qb->andWhere('l.offerType = :offer')->setParameter('offer', $offer);
+        }
+        $market = $list->filter('market_status');
+        if (in_array($market, Listing::MARKET_STATUSES, true)) {
+            $qb->andWhere('l.marketStatus = :market')->setParameter('market', $market);
+        }
+        $type = $list->filter('property_type');
+        if (in_array($type, Listing::TYPES, true)) {
+            $qb->andWhere('l.propertyType = :ptype')->setParameter('ptype', $type);
+        }
+        $featured = $list->filter('featured');
+        if ($featured === '1' || $featured === '0') {
+            $qb->andWhere('l.featured = :featured')->setParameter('featured', $featured === '1');
         }
         $qb->orderBy('l.' . $list->sort, $list->direction());
 
@@ -83,8 +92,13 @@ final class ListingController extends Controller
             'items' => $items,
             'status' => $status,
             'offer_type' => $offer,
+            'market_status' => $market,
+            'property_type' => $type,
+            'featured' => $featured,
             'statuses' => Listing::STATUSES,
             'offers' => Listing::OFFERS,
+            'marketStatuses' => Listing::MARKET_STATUSES,
+            'types' => Listing::TYPES,
         ]));
     }
 
@@ -255,6 +269,49 @@ final class ListingController extends Controller
         ]));
 
         return $this->redirect('admin.listings.index');
+    }
+
+    public function togglePublish(string $id): Response
+    {
+        $listing = $this->provider->find($id);
+        if ($listing === null) {
+            $this->abort(404, $this->translator->trans('listings.error.not_found'));
+        }
+
+        if ($listing->status() === 'published') {
+            $listing->unpublish();
+            $on = false;
+            if (!$this->wantsJson()) {
+                $this->flash('success', $this->translator->trans('listings.flash.unpublished'));
+            }
+        } else {
+            $listing->publish();
+            $on = true;
+            if (!$this->wantsJson()) {
+                $this->flash('success', $this->translator->trans('listings.flash.published'));
+            }
+        }
+        $this->em->flush();
+
+        return $this->toggleResponse($on, 'admin.listings.index');
+    }
+
+    public function toggleFeature(string $id): Response
+    {
+        $listing = $this->provider->find($id);
+        if ($listing === null) {
+            $this->abort(404, $this->translator->trans('listings.error.not_found'));
+        }
+
+        $listing->setFeatured(!$listing->featured());
+        $this->em->flush();
+        if (!$this->wantsJson()) {
+            $this->flash('success', $this->translator->trans(
+                $listing->featured() ? 'listings.flash.featured' : 'listings.flash.unfeatured'
+            ));
+        }
+
+        return $this->toggleResponse($listing->featured(), 'admin.listings.index');
     }
 
     private function deleteListing(Listing $listing): void

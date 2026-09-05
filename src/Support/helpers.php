@@ -71,6 +71,36 @@ function trans(string $id, array $parameters = [], ?string $domain = null, ?stri
     return __($id, $parameters, $domain, $locale);
 }
 
+function ui(): \Gereq\Admin\Ui\Ui
+{
+    return gereq()->make(\Gereq\Admin\Ui\Ui::class);
+}
+
+function cache(): \Gereq\Cache\AppCache
+{
+    return gereq()->make(\Gereq\Cache\AppCache::class);
+}
+
+/**
+ * Diacritics + typo tolerant LIKE search (self-repair). No Elasticsearch required.
+ *
+ * @param list<string> $fields
+ */
+function self_repair_search(\Doctrine\ORM\QueryBuilder $qb, string $alias, array $fields, string $query): void
+{
+    if (trim($query) === '') {
+        return;
+    }
+
+    if (Gereq::has()) {
+        gereq()->make(\Gereq\Search\SelfRepairSearch::class)->apply($qb, $alias, $fields, $query);
+
+        return;
+    }
+
+    (new \Gereq\Search\SelfRepairSearch())->apply($qb, $alias, $fields, $query);
+}
+
 function dump(mixed ...$values): mixed
 {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0] ?? [];

@@ -1,0 +1,13 @@
+{# Opens a named drawer via data-drawer-open (window.gereq). #}
+{% set drawer_id = drawer_id|default('') %}
+{% set label = label|default('') %}
+{% set variant = variant|default('ghost') %}
+{% set icon_name = icon|default(null) %}
+{% set extra = class|default('') %}
+<button
+    type="button"
+    class="btn btn--{{ variant }}{{ extra ? ' ' ~ extra : '' }}"
+    data-drawer-open="{{ drawer_id }}"
+>
+    {% if icon_name %}{{ icon(icon_name) }} {% endif %}{{ label }}
+</button>

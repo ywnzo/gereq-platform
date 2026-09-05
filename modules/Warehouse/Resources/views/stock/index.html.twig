@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="warehouse-stock" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'warehouse.stock.title'|trans }}</h1>
         <div class="actions">
@@ -11,14 +12,16 @@
         </div>
     </header>
 
-    <form class="toolbar" method="get">
-        <select name="warehouse" class="input" onchange="this.form.submit()">
-            <option value="">{{ 'warehouse.stock.all_warehouses'|trans }}</option>
-            {% for opt in warehouseOptions %}
-                <option value="{{ opt.value }}" {{ warehouseId == opt.value ? 'selected' : '' }}>{{ opt.label }}</option>
-            {% endfor %}
-        </select>
-    </form>
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <select name="warehouse" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'warehouse.stock.all_warehouses'|trans }}</option>
+                {% for opt in warehouseOptions %}
+                    <option value="{{ opt.value }}" {{ warehouseId == opt.value ? 'selected' : '' }}>{{ opt.label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
 
     <div class="table-wrap" data-table>
         <table class="table">
@@ -62,4 +65,5 @@
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}

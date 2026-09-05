@@ -56,9 +56,7 @@ final class DealController extends Controller
 
         $qb = $this->em->getRepository(Deal::class)->createQueryBuilder('d');
 
-        if ($list->search !== '') {
-            $qb->andWhere('d.title LIKE :q')->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'd', ['title']);
         if (in_array($stage, Deal::STAGES, true)) {
             $qb->andWhere('d.stage = :stage')->setParameter('stage', $stage);
         }

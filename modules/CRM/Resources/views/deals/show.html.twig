@@ -4,12 +4,13 @@
     <header class="page-header">
         <div>
             <h1>{{ item.title() }}</h1>
-            <p class="muted">
+            <p class="muted detail-layout__meta">
                 {% if customer %}
                     <a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
                 {% else %}
                     {{ 'crm.deals.customer_unavailable'|trans }}
                 {% endif %}
+                <span class="badge">{{ item.stageLabel()|trans }}</span>
             </p>
         </div>
         <div class="actions">
@@ -23,35 +24,88 @@
         </div>
     </header>
 
-    <div class="detail-stack">
-        <section class="panel">
-            <header class="panel__head">
-                <h2>{{ 'common.overview'|trans }}</h2>
-            </header>
-            <dl class="meta-list meta-list--flush">
-                <div>
-                    <dt>{{ 'crm.field.stage'|trans }}</dt>
-                    <dd>
-                        {% if user.can('crm.deals.manage') %}
-                            <form method="post" action="{{ url('admin.crm.deals.stage', {id: item.id()}) }}" class="meta-list__action">
-                                {{ csrf_field()|raw }}
-                                <span class="badge">{{ item.stageLabel()|trans }}</span>
-                                <select id="stage" name="stage" class="input" aria-label="{{ 'crm.deals.change_stage'|trans }}" onchange="this.form.submit()">
-                                    {% for s in stages %}
-                                        <option value="{{ s }}" {{ item.stage() == s ? 'selected' : '' }}>{{ ('crm.stage.' ~ s)|trans }}</option>
-                                    {% endfor %}
-                                </select>
-                            </form>
-                        {% else %}
-                            <span class="badge">{{ item.stageLabel()|trans }}</span>
-                        {% endif %}
-                    </dd>
+    <div class="detail-layout">
+        <div class="detail-layout__main">
+            <section class="detail-hero panel">
+                <div class="detail-hero__body">
+                    <div class="detail-hero__highlight">
+                        <span>{{ 'crm.field.amount'|trans }}</span>
+                        <strong>{{ item.amountFormatted() }}</strong>
+                    </div>
+                    <dl class="detail-hero__facts">
+                        <div>
+                            <dt>{{ 'crm.field.stage'|trans }}</dt>
+                            <dd><span class="badge">{{ item.stageLabel()|trans }}</span></dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'crm.field.due'|trans }}</dt>
+                            <dd>{{ item.expectedCloseAt() ? item.expectedCloseAt().format('d. m. Y') : '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'crm.field.created'|trans }}</dt>
+                            <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'nav.customers'|trans }}</dt>
+                            <dd>
+                                {% if customer %}
+                                    <a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
                 </div>
-                <div><dt>{{ 'crm.field.amount'|trans }}</dt><dd>{{ item.amountFormatted() }}</dd></div>
-                <div><dt>{{ 'crm.field.due'|trans }}</dt><dd>{{ item.expectedCloseAt() ? item.expectedCloseAt().format('d. m. Y') : '—' }}</dd></div>
-                <div><dt>{{ 'crm.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
-                <div class="meta-list__full"><dt>{{ 'crm.field.note'|trans }}</dt><dd>{{ item.note() ?: '—' }}</dd></div>
-            </dl>
-        </section>
+            </section>
+
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'crm.field.note'|trans }}</h2>
+                </header>
+                <div class="detail-prose">{{ item.note() ?: '—' }}</div>
+            </section>
+        </div>
+
+        <aside class="detail-layout__aside">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'crm.field.stage'|trans }}</h2>
+                </header>
+                {% if user.can('crm.deals.manage') %}
+                    <form method="post" action="{{ url('admin.crm.deals.stage', {id: item.id()}) }}" class="meta-list__action" style="padding-bottom:0.35rem">
+                        {{ csrf_field()|raw }}
+                        <span class="badge">{{ item.stageLabel()|trans }}</span>
+                        <select id="stage" name="stage" class="input" aria-label="{{ 'crm.deals.change_stage'|trans }}" onchange="this.form.submit()">
+                            {% for s in stages %}
+                                <option value="{{ s }}" {{ item.stage() == s ? 'selected' : '' }}>{{ ('crm.stage.' ~ s)|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                {% else %}
+                    <p class="detail-side-card__empty"><span class="badge">{{ item.stageLabel()|trans }}</span></p>
+                {% endif %}
+            </section>
+
+            {% if customer %}
+                <section class="panel detail-side-card">
+                    <header class="panel__head">
+                        <h2>{{ 'nav.customers'|trans }}</h2>
+                        <a class="btn btn--ghost btn-sm" href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ 'common.detail'|trans }}</a>
+                    </header>
+                    <div class="detail-side-card__body">
+                        <strong class="detail-side-card__title">
+                            <a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
+                        </strong>
+                        <ul class="detail-side-card__list">
+                            <li><a href="mailto:{{ customer.email() }}">{{ customer.email() }}</a></li>
+                            {% if customer.phone() %}
+                                <li><a href="tel:{{ customer.phone() }}">{{ customer.phone() }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </section>
+            {% endif %}
+        </aside>
     </div>
 {% endblock %}

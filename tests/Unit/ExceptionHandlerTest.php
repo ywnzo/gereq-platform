@@ -12,6 +12,7 @@ use Gereq\Http\ExceptionHandler;
 use Gereq\Http\Router;
 use Gereq\Security\ContentSecurityPolicy;
 use Gereq\Validation\ValidationException;
+use Gereq\View\AssetManager;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -146,20 +147,28 @@ final class ExceptionHandlerTest extends TestCase
         $twig->addFilter(new TwigFilter('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
         $twig->addFunction(new TwigFunction('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
         $twig->addFunction(new TwigFunction('asset', static fn (): string => '/build/admin.css'));
+        $twig->addFunction(new TwigFunction('vite_hot', static fn (): bool => false));
+        $twig->addFunction(new TwigFunction('vite_tags', static fn (): string => ''));
         $twig->addFunction(new TwigFunction('csp_nonce', static fn (): string => 'test'));
         $twig->addFunction(new TwigFunction('url', static fn (): string => '/admin'));
         $twig->addFunction(new TwigFunction('app_locale', static fn (): string => 'cs'));
+        $twig->addFunction(new TwigFunction('brand', static fn (?string $key = null): mixed => $key === null ? [] : 'GEREQ'));
+        $twig->addFunction(new TwigFunction('brand_html_style', static fn (): string => ''));
+        $twig->addFunction(new TwigFunction('brand_css', static fn (): string => ''));
+        $twig->addFunction(new TwigFunction('icon', static fn (): string => ''));
 
         $router = new Router();
         $router->get('/admin', static fn () => 'ok')->name('admin.dashboard');
 
+        $base = $basePath ?? sys_get_temp_dir();
+
         return new ExceptionHandler(
             $twig,
             $hooks ?? new HookManager(),
-            new ContentSecurityPolicy(),
+            new ContentSecurityPolicy(new AssetManager($base)),
             new Repository(['app' => ['debug' => $debug]]),
             $router,
-            $basePath ?? sys_get_temp_dir(),
+            $base,
             null,
             $translator,
         );

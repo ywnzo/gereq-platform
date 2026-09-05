@@ -25,13 +25,11 @@ final class CustomersProvider implements ContactsProvider
 
     public function search(string $query, int $limit = 20): array
     {
-        $items = $this->em->getRepository(Customer::class)
+        $qb = $this->em->getRepository(Customer::class)
             ->createQueryBuilder('c')
-            ->where('c.name LIKE :q OR c.email LIKE :q OR c.company LIKE :q')
-            ->setParameter('q', '%' . $query . '%')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+        self_repair_search($qb, 'c', ['name', 'email', 'company'], $query);
+        $items = $qb->getQuery()->getResult();
 
         return array_map(
             static fn (Customer $customer): ContactReference => new ContactReference(

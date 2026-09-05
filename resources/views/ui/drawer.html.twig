@@ -1,0 +1,58 @@
+{#
+  Embeddable / includable drawer shell (Athena-style side panel).
+
+  Embed:
+  {% embed 'ui/drawer.html.twig' with { id: 'filters', title: 'Filtry'|trans } %}
+    {% block body %}…{% endblock %}
+    {% block footer %}…{% endblock %}
+  {% endembed %}
+
+  PHP / include with HTML strings:
+  {% include 'ui/drawer.html.twig' with { id: 'x', title: '…', body: html, footer: html } %}
+#}
+{% set id = id|default('drawer') %}
+{% set title = title|default('') %}
+{% set body = body|default('') %}
+{% set footer = footer|default(null) %}
+{% set wide = wide|default(false) %}
+{% set open = open|default(false) %}
+{% set host = host|default(false) %}
+{% set extra = class|default('') %}
+<div
+    id="{{ id }}"
+    class="g-drawer{{ wide ? ' g-drawer--wide' : '' }}{{ host ? ' g-drawer--host' : '' }}{{ extra ? ' ' ~ extra : '' }}"
+    data-drawer-id="{{ id }}"
+    data-open="{{ open ? 'true' : 'false' }}"
+    x-data="gereqDrawer"
+    x-cloak
+    @keydown.escape.window="onEscape"
+    role="dialog"
+    aria-modal="true"
+    :aria-hidden="open ? 'false' : 'true'"
+>
+    <div class="g-drawer__overlay" @click="close" data-drawer-close></div>
+    <div class="g-drawer__panel" @click.stop>
+        <header class="g-drawer__head">
+            <h2 class="g-drawer__title" data-drawer-title>{{ title }}</h2>
+            <button
+                type="button"
+                class="icon-btn g-drawer__close"
+                @click="close"
+                data-drawer-close
+                aria-label="{{ 'ui.drawer.close'|trans }}"
+                x-ref="close"
+            >{{ icon('close') }}</button>
+        </header>
+        <div class="g-drawer__body" data-drawer-body>
+            {% block body %}
+                {% if body is not empty %}{{ body|raw }}{% endif %}
+            {% endblock %}
+        </div>
+        {% set footer_block %}{% block footer %}{% endblock %}{% endset %}
+        {% set has_footer = (footer is not null and footer is not empty) or (footer_block|trim is not empty) %}
+        <footer class="g-drawer__foot{{ has_footer ? '' : ' is-empty' }}" data-drawer-foot {% if not has_footer %}hidden{% endif %}>
+            {% if footer %}{{ footer|raw }}{% endif %}
+            {{ footer_block|raw }}
+        </footer>
+    </div>
+</div>

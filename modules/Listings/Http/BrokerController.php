@@ -48,11 +48,7 @@ final class BrokerController extends Controller
         );
 
         $qb = $this->em->getRepository(Broker::class)->createQueryBuilder('b');
-        if ($list->search !== '') {
-            $qb->andWhere(
-                'b.firstName LIKE :q OR b.lastName LIKE :q OR b.email LIKE :q OR b.phone LIKE :q OR b.position LIKE :q'
-            )->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'b', ['firstName', 'lastName', 'email', 'phone', 'position']);
         $active = $list->filter('active');
         if ($active === '1') {
             $qb->andWhere('b.active = true');
@@ -149,6 +145,24 @@ final class BrokerController extends Controller
         $this->flash('success', $this->translator->trans('listings.brokers.flash.deleted'));
 
         return $this->redirect('admin.listings.brokers.index');
+    }
+
+    public function toggleActive(string $id): Response
+    {
+        $item = $this->provider->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('listings.brokers.error.not_found'));
+        }
+
+        $item->setActive(!$item->active());
+        $this->em->flush();
+        if (!$this->wantsJson()) {
+            $this->flash('success', $this->translator->trans(
+                $item->active() ? 'listings.brokers.flash.activated' : 'listings.brokers.flash.deactivated'
+            ));
+        }
+
+        return $this->toggleResponse($item->active(), 'admin.listings.brokers.index');
     }
 
     /**

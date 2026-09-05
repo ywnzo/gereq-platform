@@ -42,9 +42,7 @@ final class ShippingMethodController extends Controller
         $qb = $this->em->getRepository(ShippingMethod::class)->createQueryBuilder('s')
             ->orderBy('s.sortOrder', 'ASC')
             ->addOrderBy('s.code', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('s.code LIKE :q OR s.name LIKE :q')->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 's', ['code', 'name'], $search);
 
         return $this->page('@shop/shipping/index.html.twig', [
             'pageTitle' => $this->translator->trans('shop.shipping.title'),

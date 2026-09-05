@@ -1,10 +1,12 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="admin-audit" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'admin.audit.title'|trans }}</h1>
     </header>
-    <div class="table-wrap">
+
+    <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
@@ -42,4 +44,5 @@
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}

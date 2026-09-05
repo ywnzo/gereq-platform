@@ -4,10 +4,10 @@
     <div>
         <p class="eyebrow"><a href="{{ url('admin.orders.index') }}">{{ 'nav.orders'|trans }}</a></p>
         <h1>{{ item.number() }}</h1>
-        <p class="muted">
-            {% if customer %}<a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a> · {% endif %}
-            <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
-            · {{ item.paymentStatus()|default('unpaid') }}
+        <p class="muted detail-layout__meta">
+            {% if customer %}<a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>{% endif %}
+            <span class="badge">{{ item.statusLabel()|trans }}</span>
+            <span class="badge badge--muted">{{ item.paymentStatus()|default('unpaid') }}</span>
         </p>
     </div>
     <div class="actions">
@@ -38,33 +38,88 @@
     </div>
 
     <section class="design-panel" data-panel="overview" role="tabpanel">
-        <div class="detail-stack">
-            <section class="panel">
-                <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
-                <div class="meta-grid">
-                    <div class="meta-tile"><span>{{ 'orders.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.subtotal'|trans }}</span><strong>{{ item.subtotal() }} {{ item.currency() }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.tax'|trans }}</span><strong>{{ item.taxTotal() }} {{ item.currency() }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.discount'|trans|default('Sleva') }}</span><strong>{{ item.discountTotal() }} {{ item.currency() }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.total'|trans }}</span><strong>{{ item.total() }} {{ item.currency() }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.coupon'|trans|default('Kupón') }}</span><strong>{{ item.couponCode() ?: '—' }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.created'|trans|default('Vytvořeno') }}</span><strong>{{ item.createdAt().format('d. m. Y H:i') }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.payment_status'|trans|default('Platba') }}</span><strong>{{ item.paymentStatus() }}</strong></div>
-                </div>
-            </section>
-            {% if customer %}
-            <section class="panel">
-                <header class="panel__head">
-                    <h2>{{ 'nav.customers'|trans }}</h2>
-                    <a class="btn btn--ghost btn-sm" href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ 'common.open'|trans|default('Otevřít') }}</a>
-                </header>
-                <div class="meta-grid">
-                    <div class="meta-tile"><span>{{ 'customers.field.name'|trans|default('Jméno') }}</span><strong>{{ customer.name() }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.email'|trans }}</span><strong><a href="mailto:{{ customer.email() }}">{{ customer.email() }}</a></strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.phone'|trans }}</span><strong>{% if customer.phone() %}<a href="tel:{{ customer.phone() }}">{{ customer.phone() }}</a>{% else %}—{% endif %}</strong></div>
-                </div>
-            </section>
-            {% endif %}
+        <div class="detail-layout">
+            <div class="detail-layout__main">
+                <section class="detail-hero panel">
+                    <div class="detail-hero__body">
+                        <div class="detail-hero__highlight">
+                            <span>{{ 'orders.field.total'|trans }}</span>
+                            <strong>{{ item.total() }} {{ item.currency() }}</strong>
+                        </div>
+                        <dl class="detail-hero__facts">
+                            <div>
+                                <dt>{{ 'orders.field.status'|trans }}</dt>
+                                <dd>{{ item.statusLabel()|trans }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'orders.field.payment_status'|trans|default('Platba') }}</dt>
+                                <dd>{{ item.paymentStatus() }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'orders.field.subtotal'|trans }}</dt>
+                                <dd>{{ item.subtotal() }} {{ item.currency() }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'orders.field.created'|trans|default('Vytvořeno') }}</dt>
+                                <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+                    <dl class="meta-list meta-list--flush">
+                        <div>
+                            <dt>{{ 'orders.field.tax'|trans }}</dt>
+                            <dd>{{ item.taxTotal() }} {{ item.currency() }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'orders.field.discount'|trans|default('Sleva') }}</dt>
+                            <dd>{{ item.discountTotal() }} {{ item.currency() }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'orders.field.coupon'|trans|default('Kupón') }}</dt>
+                            <dd>{{ item.couponCode() ?: '—' }}</dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
+
+            <aside class="detail-layout__aside">
+                {% if customer %}
+                <section class="panel detail-side-card">
+                    <header class="panel__head">
+                        <h2>{{ 'nav.customers'|trans }}</h2>
+                        <a class="btn btn--ghost btn-sm" href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ 'common.open'|trans|default('Otevřít') }}</a>
+                    </header>
+                    <div class="detail-side-card__body">
+                        <strong class="detail-side-card__title">
+                            <a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
+                        </strong>
+                        <ul class="detail-side-card__list">
+                            <li><a href="mailto:{{ customer.email() }}">{{ customer.email() }}</a></li>
+                            {% if customer.phone() %}
+                                <li><a href="tel:{{ customer.phone() }}">{{ customer.phone() }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </section>
+                {% endif %}
+                <section class="panel">
+                    <header class="panel__head"><h2>{{ 'orders.field.status'|trans }}</h2></header>
+                    <dl class="meta-list meta-list--flush detail-layout__specs">
+                        <div>
+                            <dt>{{ 'orders.field.status'|trans }}</dt>
+                            <dd><span class="badge">{{ item.statusLabel()|trans }}</span></dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'orders.field.payment_status'|trans|default('Platba') }}</dt>
+                            <dd>{{ item.paymentStatus() }}</dd>
+                        </div>
+                    </dl>
+                </section>
+            </aside>
         </div>
     </section>
 
@@ -98,12 +153,31 @@
         <div class="detail-stack">
             <section class="panel">
                 <header class="panel__head"><h2>{{ 'orders.tab.shipping'|trans|default('Doprava') }}</h2></header>
-                <div class="meta-grid">
-                    <div class="meta-tile"><span>{{ 'orders.field.shipping'|trans|default('Způsob') }}</span><strong>{{ item.shippingMethodName() ?: item.shippingMethodCode() ?: '—' }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.shipping_price'|trans|default('Cena dopravy') }}</span><strong>{{ item.shippingPrice() }} {{ item.currency() }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.parcel_point'|trans|default('Výdejní místo') }}</span><strong>{{ item.parcelPointLabel() ?: item.parcelPointId() ?: '—' }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.tracking'|trans|default('Tracking') }}</span><strong>{{ item.trackingNumber() ?: '—' }}</strong></div>
-                </div>
+                <dl class="meta-list meta-list--flush">
+                    <div>
+                        <dt>{{ 'orders.field.shipping'|trans|default('Způsob') }}</dt>
+                        <dd>{{ item.shippingMethodName() ?: item.shippingMethodCode() ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'orders.field.shipping_price'|trans|default('Cena dopravy') }}</dt>
+                        <dd>{{ item.shippingPrice() }} {{ item.currency() }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'orders.field.parcel_point'|trans|default('Výdejní místo') }}</dt>
+                        <dd>{{ item.parcelPointLabel() ?: item.parcelPointId() ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'orders.field.tracking'|trans|default('Tracking') }}</dt>
+                        <dd>{{ item.trackingNumber() ?: '—' }}</dd>
+                    </div>
+                    {% set ship = item.shippingAddress() %}
+                    {% if ship %}
+                    <div class="meta-list__full">
+                        <dt>{{ 'orders.field.shipping_address'|trans|default('Doručovací adresa') }}</dt>
+                        <dd>{{ ship.name|default('') }}{% if ship.street %}, {{ ship.street }}{% endif %}{% if ship.city %}, {{ ship.zip|default('') }} {{ ship.city }}{% endif %}{% if ship.country %}, {{ ship.country }}{% endif %}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
                 {% if user.can('orders.manage') %}
                     <div class="actions" style="margin-top:1rem">
                         <form method="post" action="{{ url('admin.orders.shipment.create', {id: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--primary btn-sm" type="submit">Vytvořit zásilku (Packeta/PPL)</button></form>
@@ -125,20 +199,25 @@
                         </tbody>
                     </table></div>
                 {% endif %}
-                {% set ship = item.shippingAddress() %}
-                {% if ship %}
-                    <div class="meta-tile" style="grid-column:1/-1"><span>{{ 'orders.field.shipping_address'|trans|default('Doručovací adresa') }}</span><strong>{{ ship.name|default('') }}{% if ship.street %}, {{ ship.street }}{% endif %}{% if ship.city %}, {{ ship.zip|default('') }} {{ ship.city }}{% endif %}{% if ship.country %}, {{ ship.country }}{% endif %}</strong></div>
-                {% endif %}
             </section>
             <section class="panel">
                 <header class="panel__head"><h2>{{ 'orders.tab.payment'|trans|default('Platba') }}</h2></header>
-                <div class="meta-grid">
-                    <div class="meta-tile"><span>{{ 'orders.field.payment_method'|trans|default('Metoda') }}</span><strong>{{ item.paymentMethodName() ?: item.paymentMethodCode() ?: '—' }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'orders.field.payment_status'|trans|default('Stav') }}</span><strong>{{ item.paymentStatus() }}</strong></div>
+                <dl class="meta-list meta-list--flush">
+                    <div>
+                        <dt>{{ 'orders.field.payment_method'|trans|default('Metoda') }}</dt>
+                        <dd>{{ item.paymentMethodName() ?: item.paymentMethodCode() ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'orders.field.payment_status'|trans|default('Stav') }}</dt>
+                        <dd>{{ item.paymentStatus() }}</dd>
+                    </div>
                     {% if item.billingAddress() %}
-                    <div class="meta-tile"><span>{{ 'orders.field.billing_address'|trans|default('Fakturační') }}</span><strong>{{ item.billingAddress().street|default('') }} {{ item.billingAddress().city|default('') }}</strong></div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'orders.field.billing_address'|trans|default('Fakturační') }}</dt>
+                        <dd>{{ item.billingAddress().street|default('') }} {{ item.billingAddress().city|default('') }}</dd>
+                    </div>
                     {% endif %}
-                </div>
+                </dl>
             </section>
         </div>
     </section>

@@ -1,0 +1,9 @@
+<header class="page-header">
+    <div>
+        <h1>{{ title|default('') }}</h1>
+        {% if meta %}<p class="muted">{{ meta|raw }}</p>{% endif %}
+    </div>
+    {% if actions %}
+        <div class="actions">{{ actions|raw }}</div>
+    {% endif %}
+</header>

@@ -142,6 +142,10 @@ final class ExceptionHandler
 
         $this->applySecurityHeaders($request, $response);
 
+        if (PublicCors::isPublicApiPath($request->getPathInfo())) {
+            PublicCors::apply($response, $request, 'GET, POST, OPTIONS');
+        }
+
         $filtered = $this->hooks->filter('http.error.response', $response, $request, $exception);
         $response = $filtered instanceof Response ? $filtered : $response;
 

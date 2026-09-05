@@ -48,10 +48,7 @@ final class DocumentApiController extends Controller
 
         $qb = $this->em->getRepository(Document::class)->createQueryBuilder('d');
 
-        if ($query->search !== '') {
-            $qb->andWhere('d.title LIKE :q OR d.originalName LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'd', ['title', 'originalName'], $query->search);
         if (isset($query->filters['mime']) && $query->filters['mime'] !== '') {
             $qb->andWhere('d.mime = :mime')->setParameter('mime', $query->filters['mime']);
         }

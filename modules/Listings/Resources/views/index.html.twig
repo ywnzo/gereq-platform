@@ -10,6 +10,13 @@
 
 {% block content %}
 {% set pageIds = items|map(i => i.id) %}
+{% set filterQuery = {
+    status: status,
+    offer_type: offer_type,
+    market_status: market_status,
+    property_type: property_type,
+    featured: featured,
+} %}
 <div
     class="list-shell"
     x-data="dataTable"
@@ -27,10 +34,14 @@
     </div>
 </header>
 
+{% set advancedFilters = (market_status is not empty) or (property_type is not empty) or (featured is not empty) %}
 <div class="toolbar--table">
-    <form class="toolbar" method="get">
+    <form class="toolbar" method="get" id="listings-filter-form">
         <input type="hidden" name="sort" value="{{ sort }}">
         <input type="hidden" name="dir" value="{{ dir }}">
+        <input type="hidden" name="market_status" value="{{ market_status }}">
+        <input type="hidden" name="property_type" value="{{ property_type }}">
+        <input type="hidden" name="featured" value="{{ featured }}">
         <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'listings.search'|trans }}">
         <select name="status" class="input" onchange="this.form.submit()">
             <option value="">{{ 'listings.all_statuses'|trans }}</option>
@@ -42,17 +53,13 @@
         </select>
     </form>
     <div class="toolbar__toggles">
-        <button
-            type="button"
-            class="toolbar__toggle"
-            :class="showActions ? 'is-on' : ''"
-            @click="toggleActions"
-            :aria-pressed="showActions ? 'true' : 'false'"
-            title="{{ 'ui.table.actions_toggle'|trans }}"
-        >
-            {{ icon('dots') }}
-            <span>{{ 'ui.table.row_actions'|trans }}</span>
-        </button>
+        {{ ui_render('drawer_trigger', {
+            drawer_id: 'listings-filters',
+            label: 'ui.drawer.filters'|trans,
+            variant: advancedFilters ? 'primary' : 'ghost',
+            icon: 'filters',
+        }) }}
+        {% include 'ui/table_actions_toggle.html.twig' %}
     </div>
 </div>
 
@@ -107,19 +114,25 @@
         </label>
     </th>
     {% endif %}
-    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.title'|trans, column: 'title', query: { status: status, offer_type: offer_type } } %}
-    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.city'|trans, column: 'city', query: { status: status, offer_type: offer_type } } %}
+    <th class="table__thumb-cell"><span class="sr-only">{{ 'ui.table.col.thumb'|trans }}</span></th>
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.title'|trans, column: 'title', query: filterQuery } %}
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.city'|trans, column: 'city', query: filterQuery } %}
     <th>{{ 'listings.field.type'|trans }}</th>
     <th>{{ 'listings.field.offer'|trans }}</th>
-    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.price'|trans, column: 'price', query: { status: status, offer_type: offer_type }, class: 'is-num' } %}
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.price'|trans, column: 'price', query: filterQuery, class: 'is-num' } %}
     <th>{{ 'listings.field.market_status'|trans }}</th>
-    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.status'|trans, column: 'status', query: { status: status, offer_type: offer_type } } %}
+    {% if user.can('listings.manage') %}
+    <th class="table__toggle-cell">{{ 'ui.table.col.featured'|trans }}</th>
+    <th class="table__toggle-cell">{{ 'ui.table.col.publish'|trans }}</th>
+    {% else %}
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.status'|trans, column: 'status', query: filterQuery } %}
+    {% endif %}
     <th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr>
 </thead>
 <tbody>
 {% for item in items %}
-{% set statusTone = item.status() == 'published' ? 'ok' : (item.status() == 'draft' ? 'warn' : 'muted') %}
+{% set published = item.status() == 'published' %}
 {% set marketTone = item.marketStatus() == 'available' ? 'ok' : (item.marketStatus() in ['sold', 'rented'] ? 'danger' : (item.marketStatus() == 'reserved' ? 'warn' : 'muted')) %}
 <tr :class="isSelected('{{ item.id() }}') ? 'is-selected' : ''">
     {% if user.can('listings.manage') %}
@@ -135,13 +148,17 @@
         </label>
     </td>
     {% endif %}
+    <td class="table__thumb-cell">
+        {% include 'ui/table_thumb.html.twig' with {
+            src: item.coverImageUrl(),
+            href: url('admin.listings.show', {id: item.id()}),
+            alt: item.title(),
+        } %}
+    </td>
     <td>
         <div class="table__title">
             <a href="{{ url('admin.listings.show', {id: item.id()}) }}">{{ item.title() }}</a>
             <span class="table__meta"><code>{{ item.slug() }}</code></span>
-            {% if item.featured() %}
-                <div class="table__chips" style="margin-top:4px"><span class="badge badge--signal">TOP</span></div>
-            {% endif %}
         </div>
     </td>
     <td>
@@ -152,7 +169,27 @@
     <td><span class="badge badge--info">{{ ('listings.offer.' ~ item.offerType())|trans }}</span></td>
     <td class="is-num">{{ item.price()|number_format(0, ',', ' ') }}&nbsp;{{ item.currency() }}</td>
     <td><span class="badge badge--{{ marketTone }}">{{ ('listings.market.' ~ item.marketStatus())|trans }}</span></td>
+    {% if user.can('listings.manage') %}
+    <td class="table__toggle-cell">
+        {% include 'ui/table_toggle.html.twig' with {
+            action: url('admin.listings.feature', {id: item.id()}),
+            on: item.featured(),
+            title_on: 'ui.table.featured.on'|trans,
+            title_off: 'ui.table.featured.off'|trans,
+        } %}
+    </td>
+    <td class="table__toggle-cell">
+        {% include 'ui/table_toggle.html.twig' with {
+            action: url('admin.listings.publish', {id: item.id()}),
+            on: published,
+            title_on: 'ui.table.publish.on'|trans,
+            title_off: 'ui.table.publish.off'|trans,
+        } %}
+    </td>
+    {% else %}
+    {% set statusTone = published ? 'ok' : (item.status() == 'draft' ? 'warn' : 'muted') %}
     <td><span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span></td>
+    {% endif %}
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}
             <a href="{{ url('admin.listings.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
@@ -168,7 +205,7 @@
 </tr>
 {% else %}
 <tr>
-    <td colspan="9">
+    <td colspan="{{ user.can('listings.manage') ? 11 : 9 }}">
         <div class="empty">
             <h2>{{ 'listings.empty'|trans }}</h2>
             <p>{{ 'listings.empty.hint'|trans }}</p>
@@ -185,4 +222,46 @@
 
 {% include 'ui/table_footer.html.twig' %}
 </div>
+
+{% embed 'ui/drawer.html.twig' with { id: 'listings-filters', title: 'ui.drawer.filters'|trans } %}
+    {% block body %}
+        <form method="get" class="g-drawer__form stack" id="listings-drawer-filters">
+            <input type="hidden" name="q" value="{{ search }}">
+            <input type="hidden" name="status" value="{{ status }}">
+            <input type="hidden" name="offer_type" value="{{ offer_type }}">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'listings.field.market_status'|trans }}</span>
+                <select name="market_status" class="input">
+                    <option value="">{{ 'listings.all_market_statuses'|trans }}</option>
+                    {% for m in marketStatuses %}
+                        <option value="{{ m }}" {{ market_status==m?'selected':'' }}>{{ ('listings.market.'~m)|trans }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'listings.field.type'|trans }}</span>
+                <select name="property_type" class="input">
+                    <option value="">{{ 'listings.all_types'|trans }}</option>
+                    {% for t in types %}
+                        <option value="{{ t }}" {{ property_type==t?'selected':'' }}>{{ ('listings.type.'~t)|trans }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'listings.field.featured'|trans }}</span>
+                <select name="featured" class="input">
+                    <option value="">{{ 'listings.all_featured'|trans }}</option>
+                    <option value="1" {{ featured=='1'?'selected':'' }}>{{ 'listings.featured_only'|trans }}</option>
+                    <option value="0" {{ featured=='0'?'selected':'' }}>{{ 'listings.featured_none'|trans }}</option>
+                </select>
+            </label>
+        </form>
+    {% endblock %}
+    {% block footer %}
+        <a class="btn btn--ghost" href="?q={{ search|url_encode }}&status={{ status|url_encode }}&offer_type={{ offer_type|url_encode }}&sort={{ sort|url_encode }}&dir={{ dir|url_encode }}">{{ 'ui.drawer.reset'|trans }}</a>
+        <button class="btn btn--primary" type="submit" form="listings-drawer-filters">{{ 'ui.drawer.apply'|trans }}</button>
+    {% endblock %}
+{% endembed %}
 {% endblock %}

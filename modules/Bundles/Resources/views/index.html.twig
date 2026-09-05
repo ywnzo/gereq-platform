@@ -1,5 +1,6 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="bundles" data-actions-default="1">
 <header class="page-header">
     <h1>{{ 'bundles.title'|trans }}</h1>
     <div class="actions">
@@ -9,9 +10,14 @@
     </div>
 </header>
 
-<form class="toolbar" method="get">
-    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'bundles.search'|trans }}">
-</form>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'bundles.search'|trans }}">
+    </form>
+    <div class="toolbar__toggles">
+        {% include 'ui/table_actions_toggle.html.twig' %}
+    </div>
+</div>
 
 <div class="table-wrap" data-table>
 <table class="table">
@@ -21,7 +27,7 @@
 <th>{{ 'bundles.field.discount_type'|trans }}</th>
 <th>{{ 'bundles.field.discount_value'|trans }}</th>
 <th>{{ 'bundles.field.active'|trans }}</th>
-<th></th>
+<th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -43,9 +49,8 @@
             {{ item.isActive() ? 'bundles.active'|trans : 'bundles.inactive'|trans }}
         </span>
     </td>
-    <td class="table__actions" x-data="rowMenu" @click.outside="close">
-        <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-        <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
             {% if user.can('bundles.manage') %}
                 <a href="{{ url('admin.bundles.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                 <form method="post" action="{{ url('admin.bundles.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'bundles.confirm_delete'|trans|e('js') }}');">
@@ -53,8 +58,8 @@
                     <button type="submit">{{ 'common.delete'|trans }}</button>
                 </form>
             {% endif %}
-        </div>
-    </td>
+        {% endblock %}
+    {% endembed %}
 </tr>
 {% else %}
 <tr>
@@ -68,5 +73,6 @@
 {% endfor %}
 </tbody>
 </table>
+</div>
 </div>
 {% endblock %}

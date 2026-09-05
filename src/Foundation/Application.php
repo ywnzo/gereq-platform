@@ -177,16 +177,23 @@ final class Application
             ResourceRegistrar::class => \DI\create(ResourceRegistrar::class),
             Icons::class => \DI\create(Icons::class),
             PasswordHasher::class => \DI\create(PasswordHasher::class),
-            ContentSecurityPolicy::class => \DI\create(ContentSecurityPolicy::class),
-            AssetManager::class => \DI\factory(static fn (): AssetManager => new AssetManager($basePath)),
+            ContentSecurityPolicy::class => \DI\autowire(ContentSecurityPolicy::class),
+            AssetManager::class => \DI\factory(static function (RequestStack $requestStack) use ($basePath): AssetManager {
+                return new AssetManager($basePath, $requestStack);
+            }),
             QueryCollector::class => \DI\create(QueryCollector::class),
             Renderer::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             DebugBar::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            EntityManagerInterface::class => \DI\factory(static function (Repository $config, QueryCollector $queries) use ($basePath): EntityManagerInterface {
-                return (new EntityManagerFactory($config, $basePath, $queries))->create();
-            }),
             CacheItemPoolInterface::class => \DI\factory(static function (Repository $config) use ($basePath): CacheItemPoolInterface {
                 return (new CacheFactory($config, $basePath))->create();
+            }),
+            \Gereq\Cache\AppCache::class => \DI\autowire(),
+            EntityManagerInterface::class => \DI\factory(static function (
+                Repository $config,
+                QueryCollector $queries,
+                CacheItemPoolInterface $cache,
+            ) use ($basePath): EntityManagerInterface {
+                return (new EntityManagerFactory($config, $basePath, $queries))->create($cache);
             }),
             Queue::class => \DI\factory(static fn (Repository $config): Queue => new Queue($config, $basePath)),
             RateLimiter::class => \DI\factory(static fn (): RateLimiter => new RateLimiter($basePath . '/storage/cache/rate')),
@@ -200,6 +207,16 @@ final class Application
             Settings::class => \DI\autowire(),
             LocaleCatalog::class => \DI\autowire(),
             LocaleResolver::class => \DI\autowire(),
+            \Gereq\Search\SelfRepairSearch::class => \DI\factory(static function (Repository $config): \Gereq\Search\SelfRepairSearch {
+                $normalizer = new \Gereq\Search\TextNormalizer();
+                $expander = new \Gereq\Search\TypoExpander(
+                    $normalizer,
+                    (int) $config->get('search.typo_max_variants', 14),
+                    (int) $config->get('search.min_token_length', 3),
+                );
+
+                return new \Gereq\Search\SelfRepairSearch($normalizer, $expander);
+            }),
             TranslatorInterface::class => \DI\factory(static function (TranslatorFactory $factory): TranslatorInterface {
                 return $factory->create();
             }),

@@ -1,5 +1,6 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="newsletter-subscribers" data-actions-default="1">
 <header class="page-header">
     <h1>{{ 'newsletter.subscribers.title'|trans }}</h1>
     <div class="actions">
@@ -10,17 +11,22 @@
     </div>
 </header>
 
-<form class="toolbar" method="get">
-    <input type="hidden" name="sort" value="{{ sort }}">
-    <input type="hidden" name="dir" value="{{ dir }}">
-    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'newsletter.subscribers.search'|trans }}">
-    <select name="status" class="input" onchange="this.form.submit()">
-        <option value="">{{ 'newsletter.all_statuses'|trans }}</option>
-        {% for s in statuses %}
-            <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('newsletter.subscriber.status.' ~ s)|trans }}</option>
-        {% endfor %}
-    </select>
-</form>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'newsletter.subscribers.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'newsletter.all_statuses'|trans }}</option>
+            {% for s in statuses %}
+                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('newsletter.subscriber.status.' ~ s)|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    <div class="toolbar__toggles">
+        {% include 'ui/table_actions_toggle.html.twig' %}
+    </div>
+</div>
 
 <div class="table-wrap" data-table>
 <table class="table">
@@ -30,7 +36,7 @@
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.status'|trans, column: 'status', query: { status: status } } %}
 <th>{{ 'newsletter.field.source'|trans }}</th>
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.subscribed_at'|trans, column: 'subscribedAt', query: { status: status } } %}
-<th></th>
+<th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -40,9 +46,8 @@
     <td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
     <td>{{ item.source() ?: '—' }}</td>
     <td class="is-mute">{{ item.subscribedAt().format('d. m. Y') }}</td>
-    <td class="table__actions" x-data="rowMenu" @click.outside="close">
-        <button type="button" class="icon-btn" x-ref="button" @click="toggle">{{ icon('dots') }}</button>
-        <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
             {% if user.can('newsletter.manage') %}
                 {% if item.status() == 'subscribed' %}
                 <form method="post" action="{{ url('admin.newsletter.subscribers.unsubscribe', {id: item.id()}) }}">
@@ -55,8 +60,8 @@
                     <button type="submit">{{ 'common.delete'|trans }}</button>
                 </form>
             {% endif %}
-        </div>
-    </td>
+        {% endblock %}
+    {% endembed %}
 </tr>
 {% else %}
 <tr><td colspan="6"><div class="empty"><h2>{{ 'newsletter.subscribers.empty'|trans }}</h2></div></td></tr>
@@ -65,4 +70,5 @@
 </table>
 </div>
 {% include 'ui/table_footer.html.twig' %}
+</div>
 {% endblock %}

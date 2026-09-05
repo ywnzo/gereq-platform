@@ -64,10 +64,21 @@ final class ReviewApiController extends Controller
         if (!empty($data['title'])) {
             $review->setTitle((string) $data['title']);
         }
+        $source = (string) ($data['source'] ?? 'local');
+        if (in_array($source, ProductReview::SOURCES, true)) {
+            $review->setSource($source);
+        }
+        if (!empty($data['external_id'])) {
+            $review->setExternalId((string) $data['external_id']);
+        }
+        if (!empty($data['external_url'])) {
+            $review->setExternalUrl((string) $data['external_url']);
+        }
         $this->em->persist($review);
         $this->em->flush();
         $payload = $this->ser($review);
-        $this->events->emit('review.created', ['type' => 'product_review', 'id' => $review->id()], $payload);
+        $event = $source !== 'local' ? 'review.imported' : 'review.created';
+        $this->events->emit($event, ['type' => 'product_review', 'id' => $review->id()], $payload);
 
         return ApiResponse::data($payload, 201);
     }
@@ -105,6 +116,12 @@ final class ReviewApiController extends Controller
             'title' => $r->title(),
             'body' => $r->body(),
             'status' => $r->status(),
+            'source' => $r->source(),
+            'external_id' => $r->externalId(),
+            'external_url' => $r->externalUrl(),
+            'is_verified_purchase' => $r->isVerifiedPurchase(),
+            'helpful_count' => $r->helpfulCount(),
+            'locale' => $r->locale(),
             'created_at' => $r->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $r->updatedAt()->format(\DateTimeInterface::ATOM),
         ];

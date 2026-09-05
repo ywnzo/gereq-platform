@@ -29,17 +29,7 @@
         </select>
     </form>
     <div class="toolbar__toggles">
-        <button
-            type="button"
-            class="toolbar__toggle"
-            :class="showActions ? 'is-on' : ''"
-            @click="toggleActions"
-            :aria-pressed="showActions ? 'true' : 'false'"
-            title="{{ 'ui.table.actions_toggle'|trans }}"
-        >
-            {{ icon('dots') }}
-            <span>{{ 'ui.table.actions'|trans }}</span>
-        </button>
+        {% include 'ui/table_actions_toggle.html.twig' %}
     </div>
 </div>
 
@@ -50,7 +40,7 @@
 <th>{{ 'listings.brokers.field.email'|trans }}</th>
 <th>{{ 'listings.brokers.field.phone'|trans }}</th>
 <th>{{ 'listings.brokers.field.position'|trans }}</th>
-<th>{{ 'listings.brokers.field.active'|trans }}</th>
+<th class="table__toggle-cell">{{ 'ui.table.col.active'|trans }}</th>
 <th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
@@ -65,9 +55,18 @@
     <td class="is-mute">{{ item.phone() ?: '—' }}</td>
     <td class="is-mute">{{ item.position() ?: '—' }}</td>
     <td>
-        <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
-            {{ item.active() ? 'listings.brokers.status.active'|trans : 'listings.brokers.status.inactive'|trans }}
-        </span>
+        {% if user.can('listings.manage') %}
+            {% include 'ui/table_toggle.html.twig' with {
+                action: url('admin.listings.brokers.toggle_active', {id: item.id()}),
+                on: item.active(),
+                title_on: 'ui.table.active.on'|trans,
+                title_off: 'ui.table.active.off'|trans,
+            } %}
+        {% else %}
+            <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                {{ item.active() ? 'listings.brokers.status.active'|trans : 'listings.brokers.status.inactive'|trans }}
+            </span>
+        {% endif %}
     </td>
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}

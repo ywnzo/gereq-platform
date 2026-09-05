@@ -4,7 +4,10 @@
     <header class="page-header">
         <div>
             <h1>{{ item.title() }}</h1>
-            <p class="muted">{{ item.path() }}</p>
+            <p class="muted detail-layout__meta">
+                <code>{{ item.path() }}</code>
+                <span class="badge">{{ item.mime() }}</span>
+            </p>
         </div>
         <div class="actions">
             {% if user.can('media.manage') %}
@@ -17,25 +20,71 @@
         </div>
     </header>
 
-    <div class="detail-stack">
-        {% if item.isImage() %}
-            <section class="panel">
-                <p style="margin:0">
-                    <img src="{{ url('admin.media.file', {id: item.id()}) }}" alt="{{ item.alt()|default(item.title()) }}" style="max-width:min(480px,100%);height:auto;border-radius:6px;display:block;">
-                </p>
+    <div class="detail-layout">
+        <div class="detail-layout__main">
+            <section class="detail-hero panel">
+                {% if item.isImage() %}
+                    <a class="detail-hero__media" href="{{ url('admin.media.file', {id: item.id()}) }}" target="_blank" rel="noopener">
+                        <img src="{{ url('admin.media.file', {id: item.id()}) }}" alt="{{ item.alt()|default(item.title()) }}">
+                    </a>
+                {% endif %}
+                <div class="detail-hero__body">
+                    <div class="detail-hero__highlight">
+                        <span>{{ item.isImage() ? 'media.field.mime'|trans : 'media.field.size'|trans }}</span>
+                        <strong>{% if item.isImage() %}{{ item.mime() }}{% else %}{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB{% endif %}</strong>
+                    </div>
+                    <dl class="detail-hero__facts">
+                        <div>
+                            <dt>{{ 'media.field.mime'|trans }}</dt>
+                            <dd><span class="badge">{{ item.mime() }}</span></dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'media.field.size'|trans }}</dt>
+                            <dd>{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'media.field.dimensions'|trans }}</dt>
+                            <dd>{% if item.width() and item.height() %}{{ item.width() }} × {{ item.height() }}{% else %}—{% endif %}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'media.field.created'|trans }}</dt>
+                            <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                        </div>
+                    </dl>
+                </div>
             </section>
-        {% endif %}
+        </div>
 
-        <section class="panel">
-            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
-            <dl class="meta-list meta-list--flush">
-                <div><dt>{{ 'media.field.mime'|trans }}</dt><dd><span class="badge">{{ item.mime() }}</span></dd></div>
-                <div><dt>{{ 'media.field.size'|trans }}</dt><dd>{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB</dd></div>
-                <div><dt>{{ 'media.field.alt'|trans }}</dt><dd>{{ item.alt()|default('—') }}</dd></div>
-                <div><dt>{{ 'media.field.dimensions'|trans }}</dt><dd>{% if item.width() and item.height() %}{{ item.width() }} × {{ item.height() }}{% else %}—{% endif %}</dd></div>
-                <div class="meta-list__full"><dt>{{ 'media.field.path'|trans }}</dt><dd><code>{{ item.path() }}</code></dd></div>
-                <div><dt>{{ 'media.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
-            </dl>
-        </section>
+        <aside class="detail-layout__aside">
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+                <dl class="meta-list meta-list--flush detail-layout__specs">
+                    <div>
+                        <dt>{{ 'media.field.mime'|trans }}</dt>
+                        <dd><span class="badge">{{ item.mime() }}</span></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'media.field.size'|trans }}</dt>
+                        <dd>{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'media.field.alt'|trans }}</dt>
+                        <dd>{{ item.alt()|default('—') }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'media.field.dimensions'|trans }}</dt>
+                        <dd>{% if item.width() and item.height() %}{{ item.width() }} × {{ item.height() }}{% else %}—{% endif %}</dd>
+                    </div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'media.field.path'|trans }}</dt>
+                        <dd><code>{{ item.path() }}</code></dd>
+                    </div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'media.field.created'|trans }}</dt>
+                        <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                    </div>
+                </dl>
+            </section>
+        </aside>
     </div>
 {% endblock %}

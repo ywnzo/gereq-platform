@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="admin-tokens" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'admin.tokens.title'|trans }}</h1>
         {% if user.can('developer.tokens.manage') %}
@@ -8,7 +9,14 @@
         {% endif %}
     </header>
 
-    <div class="table-wrap">
+    <div class="toolbar--table">
+        <div class="toolbar"></div>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
+
+    <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
@@ -17,7 +25,7 @@
                     <th>{{ 'admin.tokens.scopes'|trans }}</th>
                     <th>{{ 'admin.tokens.last_used'|trans }}</th>
                     <th>{{ 'common.status'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -36,14 +44,16 @@
                                 <span class="badge badge--warn">{{ 'admin.tokens.status.expired'|trans }}</span>
                             {% endif %}
                         </td>
-                        <td class="table__actions">
-                            {% if user.can('developer.tokens.manage') and item.isActive() %}
-                                <form method="post" action="{{ url('admin.developer.tokens.revoke', {id: item.id()}) }}" onsubmit="return confirm({{ 'admin.tokens.confirm_revoke'|trans|json_encode|raw }});">
-                                    {{ csrf_field()|raw }}
-                                    <button type="submit" class="btn btn--danger">{{ 'admin.tokens.revoke'|trans }}</button>
-                                </form>
-                            {% endif %}
-                        </td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% if user.can('developer.tokens.manage') and item.isActive() %}
+                                    <form method="post" action="{{ url('admin.developer.tokens.revoke', {id: item.id()}) }}" onsubmit="return confirm({{ 'admin.tokens.confirm_revoke'|trans|json_encode|raw }});">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ 'admin.tokens.revoke'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr><td colspan="6"><div class="empty"><h2>{{ 'empty.tokens'|trans }}</h2></div></td></tr>
@@ -51,4 +61,5 @@
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}

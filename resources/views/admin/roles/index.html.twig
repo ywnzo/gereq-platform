@@ -1,16 +1,25 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="admin-roles" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'admin.roles.title'|trans }}</h1>
     </header>
-    <div class="table-wrap">
+
+    <div class="toolbar--table">
+        <div class="toolbar"></div>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
+
+    <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
                     <th>{{ 'common.role'|trans }}</th>
                     <th>{{ 'common.description'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -18,14 +27,17 @@
                     <tr>
                         <td>{{ role.label() }}</td>
                         <td class="muted">{{ role.description() }}</td>
-                        <td class="table__actions">
-                            {% if user.can('roles.manage') %}
-                                <a href="{{ url('admin.roles.edit', {id: role.id()}) }}">{{ 'admin.roles.permissions'|trans }}</a>
-                            {% endif %}
-                        </td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% if user.can('roles.manage') %}
+                                    <a href="{{ url('admin.roles.edit', {id: role.id()}) }}">{{ 'admin.roles.permissions'|trans }}</a>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}

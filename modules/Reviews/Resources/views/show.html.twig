@@ -1,29 +1,183 @@
 {% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.reviews'|trans, url: url('admin.reviews.index') },
+        { label: item.title()|default(item.authorName()) },
+    ] } %}
+{% endblock %}
+
 {% block content %}
-<header class="page-header"><div><h1>{{ item.title()|default(item.authorName()) }}</h1>
-<p class="muted">{{ item.authorName() }}{% if item.authorEmail() %} · {{ item.authorEmail() }}{% endif %}
- · {{ item.rating() }}/5 · <span class="badge">{{ item.statusLabel()|trans }}</span></p></div>
-{% if user.can('reviews.manage') %}
-<div class="actions">
-{% if item.status()!='approved' %}
-<form method="post" action="{{ url('admin.reviews.approve',{id:item.id()}) }}">{{ csrf_field()|raw }}
-<button class="btn btn--primary" type="submit">{{ 'reviews.action.approve'|trans }}</button></form>
-{% endif %}
-{% if item.status()!='rejected' %}
-<form method="post" action="{{ url('admin.reviews.reject',{id:item.id()}) }}">{{ csrf_field()|raw }}
-<button class="btn btn--ghost" type="submit">{{ 'reviews.action.reject'|trans }}</button></form>
-{% endif %}
-<form method="post" action="{{ url('admin.reviews.destroy',{id:item.id()}) }}" onsubmit="return confirm('{{ 'reviews.confirm_delete'|trans|e('js') }}');">{{ csrf_field()|raw }}
-<button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button></form>
-</div>
-{% endif %}
+{% set statusTone = item.status() == 'approved' ? 'ok' : (item.status() == 'pending' ? 'warn' : 'danger') %}
+{% set sourceTone = item.source() == 'local' ? 'muted' : 'info' %}
+
+<header class="page-header">
+    <div>
+        <p class="eyebrow"><a href="{{ url('admin.reviews.index') }}">{{ 'nav.reviews'|trans }}</a></p>
+        <h1>{{ item.title()|default(item.authorName()) }}</h1>
+        <p class="muted detail-layout__meta">
+            {{ item.authorName() }}
+            {% if item.authorEmail() %} · {{ item.authorEmail() }}{% endif %}
+            <span class="badge badge--{{ sourceTone }}">{{ item.sourceLabel()|trans }}</span>
+            <span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span>
+            {% if item.isVerifiedPurchase() %}
+                <span class="badge badge--ok">{{ 'reviews.field.verified'|trans }}</span>
+            {% endif %}
+        </p>
+    </div>
+    {% if user.can('reviews.manage') %}
+        <div class="actions">
+            {% if item.status() != 'approved' %}
+                <form method="post" action="{{ url('admin.reviews.approve', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--primary" type="submit">{{ 'reviews.action.approve'|trans }}</button>
+                </form>
+            {% endif %}
+            {% if item.status() != 'rejected' %}
+                <form method="post" action="{{ url('admin.reviews.reject', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--ghost" type="submit">{{ 'reviews.action.reject'|trans }}</button>
+                </form>
+            {% endif %}
+            <form method="post" action="{{ url('admin.reviews.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'reviews.confirm_delete'|trans|e('js') }}');">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button>
+            </form>
+        </div>
+    {% endif %}
 </header>
 
-<section class="panel">
-<p><strong>{{ 'reviews.field.product'|trans }}:</strong> <code>{{ item.productId() }}</code>
-{% if average is not null %} · {{ 'reviews.field.average'|trans }}: {{ average }}{% endif %}</p>
-{% if item.customerId() %}<p class="muted">{{ 'reviews.field.author'|trans }} ID: <code>{{ item.customerId() }}</code></p>{% endif %}
-<div class="prose">{{ item.body()|nl2br }}</div>
-<p class="muted">{{ item.createdAt().format('d. m. Y H:i') }}</p>
-</section>
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'reviews.field.rating'|trans }}</span>
+                    <strong>
+                        <span class="reviews-rating reviews-rating--lg" aria-label="{{ item.rating() }}/5">
+                            {% for i in 1..5 %}
+                                <span class="reviews-rating__star{% if i <= item.rating() %} is-on{% endif %}">★</span>
+                            {% endfor %}
+                        </span>
+                    </strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'reviews.field.product'|trans }}</dt>
+                        <dd><code>{{ item.productId() }}</code></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'reviews.field.locale'|trans }}</dt>
+                        <dd>{{ item.locale() }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'reviews.field.helpful'|trans }}</dt>
+                        <dd>{{ item.helpfulCount() }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'reviews.field.created'|trans }}</dt>
+                        <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'reviews.field.body'|trans }}</h2>
+            </header>
+            <div class="prose reviews-body detail-prose">{{ item.body()|nl2br }}</div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'reviews.replies.title'|trans }}</h2>
+                    <p class="muted">{{ 'reviews.replies.hint'|trans }}</p>
+                </div>
+                {% if user.can('reviews.manage') %}
+                    <a class="btn btn--ghost btn-sm" href="{{ url('admin.reviews.settings') }}">{{ icon('settings') }} {{ 'reviews.settings.title'|trans }}</a>
+                {% endif %}
+            </header>
+            {% if replies is empty %}
+                <div class="empty">
+                    <h2>{{ 'reviews.replies.empty'|trans }}</h2>
+                </div>
+            {% else %}
+                <div class="reviews-replies">
+                    {% for reply in replies %}
+                        <article class="reviews-reply">
+                            <header class="reviews-reply__head">
+                                <strong>{{ reply.authorName() }}</strong>
+                                {% if reply.isOfficial() %}
+                                    <span class="badge badge--info">{{ 'reviews.replies.official'|trans }}</span>
+                                {% endif %}
+                                <span class="muted">{{ reply.createdAt().format('d. m. Y H:i') }}</span>
+                            </header>
+                            <div class="prose">{{ reply.body()|nl2br }}</div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'reviews.detail.overview'|trans }}</h2>
+            </header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div>
+                    <dt>{{ 'reviews.field.status'|trans|default('Stav') }}</dt>
+                    <dd><span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span></dd>
+                </div>
+                <div>
+                    <dt>{{ 'reviews.field.source'|trans|default('Zdroj') }}</dt>
+                    <dd><span class="badge badge--{{ sourceTone }}">{{ item.sourceLabel()|trans }}</span></dd>
+                </div>
+                {% if average is not null %}
+                    <div>
+                        <dt>{{ 'reviews.field.average'|trans }}</dt>
+                        <dd>{{ average }}</dd>
+                    </div>
+                {% endif %}
+                {% if item.isVerifiedPurchase() %}
+                    <div>
+                        <dt>{{ 'reviews.field.verified'|trans }}</dt>
+                        <dd><span class="badge badge--ok">{{ 'common.yes'|trans }}</span></dd>
+                    </div>
+                {% endif %}
+                {% if item.externalId() or item.externalUrl() %}
+                    <div class="meta-list__full">
+                        <dt>{{ 'reviews.field.external'|trans }}</dt>
+                        <dd>
+                            {% if item.externalId() %}<code>{{ item.externalId() }}</code>{% endif %}
+                            {% if item.externalUrl() %}
+                                · <a href="{{ item.externalUrl() }}" target="_blank" rel="noopener">{{ 'reviews.action.open_external'|trans }}</a>
+                            {% endif %}
+                        </dd>
+                    </div>
+                {% endif %}
+            </dl>
+        </section>
+
+        <section class="panel detail-side-card">
+            <header class="panel__head">
+                <h2>{{ 'reviews.field.author'|trans|default('Autor') }}</h2>
+            </header>
+            <div class="detail-side-card__body">
+                <strong class="detail-side-card__title">{{ item.authorName() }}</strong>
+                <ul class="detail-side-card__list">
+                    {% if item.authorEmail() %}
+                        <li><a href="mailto:{{ item.authorEmail() }}">{{ item.authorEmail() }}</a></li>
+                    {% else %}
+                        <li class="muted">—</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </section>
+    </aside>
+</div>
 {% endblock %}

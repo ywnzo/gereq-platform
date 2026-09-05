@@ -28,10 +28,7 @@ final class MediaProvider
             ->orderBy('m.createdAt', 'DESC')
             ->setMaxResults($limit);
 
-        if ($query !== '') {
-            $qb->andWhere('m.title LIKE :q OR m.alt LIKE :q OR m.path LIKE :q')
-                ->setParameter('q', '%' . $query . '%');
-        }
+        self_repair_search($qb, 'm', ['title', 'alt', 'path'], $query);
 
         if ($mimePrefix !== null && $mimePrefix !== '') {
             $qb->andWhere('m.mime LIKE :mime')->setParameter('mime', $mimePrefix . '%');

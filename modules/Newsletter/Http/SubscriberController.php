@@ -51,9 +51,7 @@ final class SubscriberController extends Controller
         $status = $list->filter('status');
 
         $qb = $this->em->getRepository(Subscriber::class)->createQueryBuilder('s');
-        if ($list->search !== '') {
-            $qb->andWhere('s.email LIKE :q OR s.name LIKE :q')->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 's', ['email', 'name']);
         if (in_array($status, Subscriber::STATUSES, true)) {
             $qb->andWhere('s.status = :s')->setParameter('s', $status);
         }

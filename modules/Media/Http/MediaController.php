@@ -60,10 +60,7 @@ final class MediaController extends Controller
 
         $qb = $this->em->getRepository(MediaAsset::class)->createQueryBuilder('m');
 
-        if ($list->search !== '') {
-            $qb->andWhere('m.title LIKE :q OR m.alt LIKE :q OR m.path LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'm', ['title', 'alt', 'path']);
         if ($mime !== '') {
             if (str_ends_with($mime, '/*')) {
                 $qb->andWhere('m.mime LIKE :mime')->setParameter('mime', substr($mime, 0, -1) . '%');
@@ -221,7 +218,7 @@ final class MediaController extends Controller
         return $this->redirect('admin.media.index');
     }
 
-    public function publicFile(string $id): Response
+    public function publicFile(Request $request, string $id): Response
     {
         $asset = $this->find($id);
         if ($asset === null) {
@@ -233,20 +230,20 @@ final class MediaController extends Controller
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
-        return $this->serveFile($asset);
+        return $this->serveFile($asset, $request, public: true);
     }
 
-    public function file(string $id): Response
+    public function file(Request $request, string $id): Response
     {
         $asset = $this->find($id);
         if ($asset === null) {
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
-        return $this->serveFile($asset);
+        return $this->serveFile($asset, $request, public: false);
     }
 
-    private function serveFile(MediaAsset $asset): Response
+    private function serveFile(MediaAsset $asset, Request $request, bool $public): Response
     {
         $absolute = $this->absolutePath($asset->path());
         if ($absolute === null || !is_file($absolute)) {
@@ -256,6 +253,25 @@ final class MediaController extends Controller
         $response = new BinaryFileResponse($absolute);
         $response->headers->set('Content-Type', $asset->mime());
         $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->setAutoLastModified();
+        $response->setAutoEtag();
+
+        if ($public || str_starts_with($asset->mime(), 'image/')) {
+            $ttl = max(60, (int) $this->config->get('cache.media_ttl', 604800));
+            $response->setPublic();
+            $response->setMaxAge($ttl);
+            $response->headers->set(
+                'Cache-Control',
+                sprintf('public, max-age=%d, stale-while-revalidate=%d', $ttl, min(86400, $ttl)),
+            );
+            if ($response->isNotModified($request)) {
+                return $response;
+            }
+        } else {
+            $response->setPrivate();
+            $response->headers->set('Cache-Control', 'private, max-age=300');
+        }
+
         // Content-Disposition u inline obrázků není potřeba a UTF-8 názvy dřív shazovaly odpověď.
         if (!str_starts_with($asset->mime(), 'image/')) {
             $filename = $this->safeDownloadName($asset->title(), $asset->path());

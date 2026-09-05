@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Http;
 
+use Doctrine\ORM\QueryBuilder;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -57,6 +58,20 @@ final class ListQuery
     public function direction(): string
     {
         return $this->dir === 'desc' ? 'DESC' : 'ASC';
+    }
+
+    /**
+     * Apply typo/diacritics-tolerant search (self-repair) to a Doctrine query.
+     *
+     * @param list<string> $fields
+     */
+    public function applySearch(QueryBuilder $qb, string $alias, array $fields): void
+    {
+        if ($this->search === '') {
+            return;
+        }
+
+        self_repair_search($qb, $alias, $fields, $this->search);
     }
 
     public function filter(string $key, string $default = ''): string

@@ -1,5 +1,6 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="shop-shipping" data-actions-default="1">
 <header class="page-header">
     <h1>{{ 'shop.shipping.title'|trans }}</h1>
     <div class="actions">
@@ -10,9 +11,14 @@
     </div>
 </header>
 
-<form class="toolbar" method="get">
-    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.shipping.search'|trans }}">
-</form>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.shipping.search'|trans }}">
+    </form>
+    <div class="toolbar__toggles">
+        {% include 'ui/table_actions_toggle.html.twig' %}
+    </div>
+</div>
 
 <div class="table-wrap" data-table>
 <table class="table">
@@ -24,7 +30,7 @@
     <th>{{ 'shop.field.price'|trans }}</th>
     <th>{{ 'shop.field.estimated_days'|trans }}</th>
     <th>{{ 'shop.field.active'|trans }}</th>
-    <th></th>
+    <th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -40,18 +46,17 @@
 {{ item.isActive() ? 'shop.active'|trans : 'shop.inactive'|trans }}
 </span>
     </td>
-    <td class="table__actions" x-data="rowMenu" @click.outside="close">
-<button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-<div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
-{% if user.can('shop.manage') %}
-<a href="{{ url('admin.shop.shipping.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-<form method="post" action="{{ url('admin.shop.shipping.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'shop.shipping.confirm_delete'|trans|e('js') }}');">
-{{ csrf_field()|raw }}
-<button type="submit">{{ 'common.delete'|trans }}</button>
-</form>
-{% endif %}
-</div>
-    </td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% if user.can('shop.manage') %}
+                <a href="{{ url('admin.shop.shipping.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.shop.shipping.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'shop.shipping.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
 </tr>
 {% else %}
 <tr>
@@ -65,5 +70,6 @@
 {% endfor %}
 </tbody>
 </table>
+</div>
 </div>
 {% endblock %}

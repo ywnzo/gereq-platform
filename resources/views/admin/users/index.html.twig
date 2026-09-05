@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="admin-users" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'admin.users.title'|trans }}</h1>
         {% if user.can('users.create') %}
@@ -8,11 +9,16 @@
         {% endif %}
     </header>
 
-    <form class="toolbar" method="get">
-        <input type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.users.search'|trans }}" class="input">
-    </form>
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.users.search'|trans }}" class="input">
+        </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
@@ -20,7 +26,7 @@
                     <th>{{ 'common.email'|trans }}</th>
                     <th>{{ 'common.roles'|trans }}</th>
                     <th>{{ 'common.status'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -43,11 +49,13 @@
                                 {{ item.status() == 'active' ? 'common.active'|trans : 'common.inactive'|trans }}
                             </span>
                         </td>
-                        <td class="table__actions">
-                            {% if user.can('users.edit') %}
-                                <a href="{{ url('admin.users.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                            {% endif %}
-                        </td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% if user.can('users.edit') %}
+                                    <a href="{{ url('admin.users.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
@@ -59,4 +67,5 @@
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}

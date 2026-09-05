@@ -45,10 +45,7 @@ final class ProductApiController extends Controller
         );
 
         $qb = $this->em->getRepository(Product::class)->createQueryBuilder('p');
-        if ($query->search !== '') {
-            $qb->andWhere('p.name LIKE :q OR p.sku LIKE :q OR p.description LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'p', ['name', 'sku', 'description'], $query->search);
         if (isset($query->filters['status']) && $query->filters['status'] !== '') {
             $qb->andWhere('p.status = :status')->setParameter('status', $query->filters['status']);
         }
@@ -186,10 +183,7 @@ final class ProductApiController extends Controller
     {
         $query = ApiQuery::fromRequest($request, sortable: ['name', 'slug'], filterable: []);
         $qb = $this->em->getRepository(ProductCategory::class)->createQueryBuilder('c');
-        if ($query->search !== '') {
-            $qb->andWhere('c.name LIKE :q OR c.slug LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'c', ['name', 'slug'], $query->search);
         $sort = $query->sort ?? 'name';
         $qb->orderBy('c.' . $sort, strtoupper($query->direction));
 

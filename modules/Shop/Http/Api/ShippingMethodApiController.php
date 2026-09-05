@@ -50,9 +50,7 @@ final class ShippingMethodApiController extends Controller
         if (isset($query->filters['carrier']) && $query->filters['carrier'] !== '') {
             $qb->andWhere('s.carrier = :carrier')->setParameter('carrier', (string) $query->filters['carrier']);
         }
-        if ($query->search !== '') {
-            $qb->andWhere('s.code LIKE :q OR s.name LIKE :q OR s.carrier LIKE :q')->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 's', ['code', 'name', 'carrier'], $query->search);
 
         $sort = $query->sort ?? 'sortOrder';
         $qb->orderBy('s.' . $sort, strtoupper($query->direction));

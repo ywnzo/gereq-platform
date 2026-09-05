@@ -1,21 +1,47 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+    {% set fields = definition.detailFields() %}
+    {% set first = fields|first %}
     <header class="page-header">
         <h1>{{ definition.singular }}</h1>
         <a class="btn btn--primary" href="{{ url('admin.' ~ definition.name ~ '.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
     </header>
-    <div class="detail-stack">
-        <section class="panel">
-            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
-            <dl class="meta-list meta-list--flush">
-                {% for field in definition.detailFields() %}
-                    <div>
-                        <dt>{{ field.label }}</dt>
-                        <dd>{{ attribute(item, field.name) }}</dd>
-                    </div>
-                {% endfor %}
-            </dl>
-        </section>
+    <div class="detail-layout">
+        <div class="detail-layout__main">
+            <section class="detail-hero panel">
+                <div class="detail-hero__body{% if fields|length < 2 %} detail-hero__body--solo{% endif %}">
+                    {% if first %}
+                        <div class="detail-hero__highlight">
+                            <span>{{ first.label }}</span>
+                            <strong>{{ attribute(item, first.name) }}</strong>
+                        </div>
+                    {% endif %}
+                    {% if fields|length > 1 %}
+                        <dl class="detail-hero__facts">
+                            {% for field in fields|slice(1, 4) %}
+                                <div>
+                                    <dt>{{ field.label }}</dt>
+                                    <dd>{{ attribute(item, field.name) }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+        <aside class="detail-layout__aside">
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+                <dl class="meta-list meta-list--flush detail-layout__specs">
+                    {% for field in fields %}
+                        <div>
+                            <dt>{{ field.label }}</dt>
+                            <dd>{{ attribute(item, field.name) }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            </section>
+        </aside>
     </div>
 {% endblock %}

@@ -1,5 +1,6 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="orders" data-actions-default="1">
 <header class="page-header">
     <h1>{{ 'orders.title'|trans }}</h1>
     <div class="actions">
@@ -9,17 +10,22 @@
         {% endif %}
     </div>
 </header>
-<form class="toolbar" method="get">
-    <input type="hidden" name="sort" value="{{ sort }}">
-    <input type="hidden" name="dir" value="{{ dir }}">
-    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'orders.search'|trans }}">
-    <select name="status" class="input" onchange="this.form.submit()">
-        <option value="">{{ 'orders.all_statuses'|trans }}</option>
-        {% for s in statuses %}
-            <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('orders.status.' ~ s)|trans }}</option>
-        {% endfor %}
-    </select>
-</form>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'orders.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'orders.all_statuses'|trans }}</option>
+            {% for s in statuses %}
+                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('orders.status.' ~ s)|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    <div class="toolbar__toggles">
+        {% include 'ui/table_actions_toggle.html.twig' %}
+    </div>
+</div>
 <div class="table-wrap" data-table>
 <table class="table">
 <thead><tr>
@@ -27,7 +33,7 @@
 <th>{{ 'orders.field.customer'|trans }}</th>
 {% include 'ui/sort_th.html.twig' with { label: 'orders.field.status'|trans, column: 'status', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'orders.field.total'|trans, column: 'total', query: { status: status }, class: 'is-num' } %}
-<th></th>
+<th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -36,7 +42,11 @@
 <td>{% set c = customers[item.customerId()]|default(null) %}{{ c ? c.name() : '—' }}</td>
 <td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
 <td class="is-num">{{ item.total() }} {{ item.currency() }}</td>
-<td class="table__actions"><a href="{{ url('admin.orders.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a></td>
+{% embed 'ui/row_actions.html.twig' %}
+    {% block items %}
+        <a href="{{ url('admin.orders.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+    {% endblock %}
+{% endembed %}
 </tr>
 {% else %}
 <tr><td colspan="5"><div class="empty"><h2>{{ 'orders.empty'|trans }}</h2><p>{{ 'orders.empty.hint'|trans }}</p></div></td></tr>
@@ -45,4 +55,5 @@
 </table>
 </div>
 {% include 'ui/table_footer.html.twig' %}
+</div>
 {% endblock %}

@@ -1,34 +1,115 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
-<header class="page-header"><div><h1>{{ item.name() }}</h1>
-<p class="muted">{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% endif %}</p></div>
-<div class="actions">{% if user.can('projects.manage') %}
-<a class="btn btn--ghost" href="{{ url('admin.projects.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
-<form method="post" action="{{ url('admin.projects.status',{id:item.id()}) }}" class="meta-list__action">{{ csrf_field()|raw }}
-<select name="status" class="input" aria-label="{{ 'projects.field.status'|trans }}" onchange="this.form.submit()">{% for s in statuses %}<option value="{{ s }}" {{ item.status()==s?'selected':'' }}>{{ ('projects.status.'~s)|trans }}</option>{% endfor %}</select>
-</form>{% endif %}</div></header>
+<header class="page-header">
+    <div>
+        <h1>{{ item.name() }}</h1>
+        <p class="muted detail-layout__meta">
+            {% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% endif %}
+            <span class="badge">{{ item.statusLabel()|trans }}</span>
+        </p>
+    </div>
+    <div class="actions">
+        {% if user.can('projects.manage') %}
+            <a class="btn btn--ghost" href="{{ url('admin.projects.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+            <form method="post" action="{{ url('admin.projects.status',{id:item.id()}) }}" class="meta-list__action">
+                {{ csrf_field()|raw }}
+                <select name="status" class="input" aria-label="{{ 'projects.field.status'|trans }}" onchange="this.form.submit()">
+                    {% for s in statuses %}
+                        <option value="{{ s }}" {{ item.status()==s?'selected':'' }}>{{ ('projects.status.'~s)|trans }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        {% endif %}
+    </div>
+</header>
 
-<div class="detail-stack">
-<section class="panel">
-<header class="panel__head"><h2>{{ 'projects.tasks.title'|trans }}</h2></header>
-<div class="table-wrap"><table class="table"><thead><tr><th>{{ 'projects.field.title'|trans }}</th><th>{{ 'projects.field.status'|trans }}</th><th>{{ 'projects.field.due'|trans }}</th><th></th></tr></thead>
-<tbody>{% for t in tasks %}
-<tr><td>{{ t.title() }}</td><td>{{ t.statusLabel()|trans }}</td><td>{{ t.dueAt()?t.dueAt().format('d. m. Y'):'—' }}</td>
-<td>{% if user.can('projects.manage') %}<form method="post" action="{{ url('admin.projects.tasks.destroy',{id:item.id(),taskId:t.id()}) }}" onsubmit="return confirm('{{ 'projects.tasks.confirm_delete'|trans|e('js') }}');">{{ csrf_field()|raw }}<button type="submit">{{ 'common.delete'|trans }}</button></form>{% endif %}</td></tr>
-{% else %}<tr><td colspan="4" class="muted">{{ 'projects.tasks.empty'|trans }}</td></tr>{% endfor %}
-</tbody></table></div>
-{% if user.can('projects.manage') %}
-<form method="post" class="form-grid form-grid--compact" action="{{ url('admin.projects.tasks.store',{id:item.id()}) }}" data-form="projects.task.save">
-{{ csrf_field()|raw }}
-{% include 'ui/input.html.twig' with { name:'title', label:'projects.field.title'|trans, required:true, form:'projects.task.save', value:'' } %}
-{% include 'ui/select.html.twig' with { name:'status', label:'projects.field.status'|trans, form:'projects.task.save', value:'todo', options:[
-{value:'todo',label:'projects.task.status.todo'|trans},{value:'doing',label:'projects.task.status.doing'|trans},{value:'done',label:'projects.task.status.done'|trans}
-] } %}
-{% include 'ui/select.html.twig' with { name:'assignee_user_id', label:'projects.field.assignee'|trans, optional:true, form:'projects.task.save', value:'', options:userOptions } %}
-{% include 'ui/input.html.twig' with { name:'due_at', type:'date', label:'projects.field.due'|trans, optional:true, form:'projects.task.save', value:'' } %}
-<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'projects.tasks.add'|trans }}</button></div>
-</form>
-{% endif %}
-</section>
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'projects.field.status'|trans }}</span>
+                    <strong>{{ item.statusLabel()|trans }}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'projects.field.customer'|trans|default('Zákazník') }}</dt>
+                        <dd>{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% else %}—{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'projects.tasks.title'|trans }}</dt>
+                        <dd>{{ tasks|length }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'projects.tasks.title'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'projects.field.title'|trans }}</th>
+                            <th>{{ 'projects.field.status'|trans }}</th>
+                            <th>{{ 'projects.field.due'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in tasks %}
+                            <tr>
+                                <td>{{ t.title() }}</td>
+                                <td>{{ t.statusLabel()|trans }}</td>
+                                <td>{{ t.dueAt()?t.dueAt().format('d. m. Y'):'—' }}</td>
+                                <td>
+                                    {% if user.can('projects.manage') %}
+                                        <form method="post" action="{{ url('admin.projects.tasks.destroy',{id:item.id(),taskId:t.id()}) }}" onsubmit="return confirm('{{ 'projects.tasks.confirm_delete'|trans|e('js') }}');">
+                                            {{ csrf_field()|raw }}
+                                            <button type="submit">{{ 'common.delete'|trans }}</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="muted">{{ 'projects.tasks.empty'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if user.can('projects.manage') %}
+                <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.projects.tasks.store',{id:item.id()}) }}" data-form="projects.task.save">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/input.html.twig' with { name:'title', label:'projects.field.title'|trans, required:true, form:'projects.task.save', value:'' } %}
+                    {% include 'ui/select.html.twig' with { name:'status', label:'projects.field.status'|trans, form:'projects.task.save', value:'todo', options:[
+                    {value:'todo',label:'projects.task.status.todo'|trans},{value:'doing',label:'projects.task.status.doing'|trans},{value:'done',label:'projects.task.status.done'|trans}
+                    ] } %}
+                    {% include 'ui/select.html.twig' with { name:'assignee_user_id', label:'projects.field.assignee'|trans, optional:true, form:'projects.task.save', value:'', options:userOptions } %}
+                    {% include 'ui/input.html.twig' with { name:'due_at', type:'date', label:'projects.field.due'|trans, optional:true, form:'projects.task.save', value:'' } %}
+                    <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'projects.tasks.add'|trans }}</button></div>
+                </form>
+            {% endif %}
+        </section>
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div>
+                    <dt>{{ 'projects.field.status'|trans }}</dt>
+                    <dd><span class="badge">{{ item.statusLabel()|trans }}</span></dd>
+                </div>
+                <div class="meta-list__full">
+                    <dt>{{ 'projects.field.customer'|trans|default('Zákazník') }}</dt>
+                    <dd>{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% else %}—{% endif %}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'projects.tasks.title'|trans }}</dt>
+                    <dd>{{ tasks|length }}</dd>
+                </div>
+            </dl>
+        </section>
+    </aside>
 </div>
 {% endblock %}

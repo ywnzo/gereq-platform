@@ -55,9 +55,7 @@ final class OrderController extends Controller
         $customerId = $list->filter('customer');
 
         $qb = $this->em->getRepository(Order::class)->createQueryBuilder('o');
-        if ($list->search !== '') {
-            $qb->andWhere('o.number LIKE :q OR o.note LIKE :q')->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'o', ['number', 'note']);
         if (in_array($status, Order::STATUSES, true)) {
             $qb->andWhere('o.status = :status')->setParameter('status', $status);
         }

@@ -46,6 +46,85 @@ export function registerSwitch(alpine: typeof Alpine): void {
     }));
 }
 
+/** Row publish / active / featured toggle (POST + CSRF, no full reload). */
+export function registerTableToggle(alpine: typeof Alpine): void {
+    alpine.data('gereqTableToggle', () => ({
+        on: false,
+        busy: false,
+
+        init() {
+            this.on = (this.$el as HTMLElement).dataset.on === '1';
+        },
+
+        get btnClass(): string {
+            return [
+                this.on ? 'is-on' : 'is-off',
+                this.busy ? 'is-busy' : '',
+            ].filter(Boolean).join(' ');
+        },
+
+        get pressedAttr(): string {
+            return this.on ? 'true' : 'false';
+        },
+
+        get titleAttr(): string {
+            const el = this.$el as HTMLElement;
+            if (this.busy) {
+                return el.dataset.busy || '…';
+            }
+            return this.on
+                ? (el.dataset.titleOn || '')
+                : (el.dataset.titleOff || '');
+        },
+
+        async toggle() {
+            if (this.busy) {
+                return;
+            }
+            const el = this.$el as HTMLElement;
+            const action = el.dataset.action || '';
+            if (!action) {
+                return;
+            }
+
+            this.busy = true;
+            const prev = this.on;
+            this.on = !prev;
+
+            try {
+                const csrf = (window as Window & { __GEREQ_CSRF__?: string }).__GEREQ_CSRF__ || '';
+                const res = await fetch(action, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrf,
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    },
+                    body: '_csrf=' + encodeURIComponent(csrf),
+                });
+                if (!res.ok) {
+                    throw new Error('toggle failed');
+                }
+                const payload = await res.json() as { data?: { on?: boolean } };
+                if (typeof payload?.data?.on === 'boolean') {
+                    this.on = payload.data.on;
+                }
+                el.dataset.on = this.on ? '1' : '0';
+                el.dispatchEvent(new CustomEvent('gereq:table-toggle', {
+                    bubbles: true,
+                    detail: { on: this.on, action },
+                }));
+            } catch {
+                this.on = prev;
+            } finally {
+                this.busy = false;
+            }
+        },
+    }));
+}
+
 export function registerTextarea(alpine: typeof Alpine): void {
     alpine.data('gereqTextarea', () => ({
         count: 0,

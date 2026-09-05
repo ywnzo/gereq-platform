@@ -58,10 +58,7 @@ final class CustomerApiController extends AbstractCustomerApiController
         );
 
         $qb = $this->em->getRepository(Customer::class)->createQueryBuilder('c');
-        if ($query->search !== '') {
-            $qb->andWhere('c.name LIKE :q OR c.email LIKE :q OR c.company LIKE :q OR c.phone LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'c', ['name', 'email', 'company', 'phone'], $query->search);
         if (isset($query->filters['status']) && $query->filters['status'] !== '') {
             $qb->andWhere('c.status = :status')->setParameter('status', $query->filters['status']);
         }

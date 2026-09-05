@@ -33,9 +33,7 @@ final class WarehouseApiController extends Controller
     {
         $query = ApiQuery::fromRequest($request, sortable: ['code', 'name', 'createdAt'], filterable: ['active']);
         $qb = $this->em->getRepository(Warehouse::class)->createQueryBuilder('w');
-        if ($query->search !== '') {
-            $qb->andWhere('w.code LIKE :q OR w.name LIKE :q')->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'w', ['code', 'name'], $query->search);
         if (isset($query->filters['active']) && $query->filters['active'] !== '') {
             $qb->andWhere('w.active = :active')->setParameter('active', filter_var($query->filters['active'], FILTER_VALIDATE_BOOLEAN));
         }

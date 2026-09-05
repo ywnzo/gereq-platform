@@ -42,10 +42,7 @@ final class AccountController extends Controller
         $search = trim((string) $request->query->get('q', ''));
         $qb = $this->em->getRepository(LoyaltyAccount::class)->createQueryBuilder('a')
             ->orderBy('a.updatedAt', 'DESC');
-        if ($search !== '') {
-            $qb->andWhere('a.customerId LIKE :q OR a.id LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'a', ['customerId', 'id'], $search);
 
         /** @var list<LoyaltyAccount> $accounts */
         $accounts = $qb->setMaxResults(200)->getQuery()->getResult();

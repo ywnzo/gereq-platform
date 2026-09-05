@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="documents" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'documents.title'|trans }}</h1>
         {% if user.can('documents.manage') %}
@@ -8,11 +9,16 @@
         {% endif %}
     </header>
 
-    <form class="toolbar" method="get">
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <input type="hidden" name="dir" value="{{ dir }}">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'documents.search'|trans }}">
-    </form>
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'documents.search'|trans }}">
+        </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
 
     <div class="table-wrap" data-table>
         <table class="table">
@@ -23,7 +29,7 @@
                     {% include 'ui/sort_th.html.twig' with { label: 'documents.field.mime'|trans, column: 'mime' } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'documents.field.size'|trans, column: 'size', class: 'is-num' } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'documents.field.created'|trans, column: 'createdAt' } %}
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -34,9 +40,8 @@
                         <td><span class="badge">{{ item.mime() }}</span></td>
                         <td class="is-num is-mute">{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB</td>
                         <td class="is-mute">{{ item.createdAt().format('d. m. Y H:i') }}</td>
-                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
-                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
                                 <a href="{{ url('admin.documents.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
                                 {% if user.can('documents.manage') %}
                                     <form method="post" action="{{ url('admin.documents.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'documents.confirm_delete'|trans|e('js') }}');">
@@ -44,8 +49,8 @@
                                         <button type="submit">{{ 'common.delete'|trans }}</button>
                                     </form>
                                 {% endif %}
-                            </div>
-                        </td>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
@@ -62,4 +67,5 @@
     </div>
 
     {% include 'ui/table_footer.html.twig' %}
+</div>
 {% endblock %}

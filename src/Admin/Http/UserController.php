@@ -41,9 +41,7 @@ final class UserController extends Controller
     {
         $search = trim((string) $request->query->get('q', ''));
         $qb = $this->em->getRepository(User::class)->createQueryBuilder('u')->orderBy('u.name', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('u.name LIKE :q OR u.email LIKE :q')->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'u', ['name', 'email'], $search);
 
         $users = $qb->getQuery()->getResult();
 

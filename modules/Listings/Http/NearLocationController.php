@@ -48,10 +48,7 @@ final class NearLocationController extends Controller
         );
 
         $qb = $this->em->getRepository(NearLocation::class)->createQueryBuilder('n');
-        if ($list->search !== '') {
-            $qb->andWhere('n.name LIKE :q OR n.address LIKE :q OR n.city LIKE :q OR n.description LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'n', ['name', 'address', 'city', 'description']);
         $active = $list->filter('active');
         if ($active === '1') {
             $qb->andWhere('n.active = true');
@@ -160,6 +157,24 @@ final class NearLocationController extends Controller
         $this->flash('success', $this->translator->trans('listings.near.flash.deleted'));
 
         return $this->redirect('admin.listings.near.index');
+    }
+
+    public function toggleActive(string $id): Response
+    {
+        $item = $this->provider->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('listings.near.error.not_found'));
+        }
+
+        $item->setActive(!$item->active());
+        $this->em->flush();
+        if (!$this->wantsJson()) {
+            $this->flash('success', $this->translator->trans(
+                $item->active() ? 'listings.near.flash.activated' : 'listings.near.flash.deactivated'
+            ));
+        }
+
+        return $this->toggleResponse($item->active(), 'admin.listings.near.index');
     }
 
     /**

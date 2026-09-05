@@ -1,20 +1,26 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="shop-carts" data-actions-default="1">
 <header class="page-header">
     <h1>{{ 'shop.carts.title'|trans }}</h1>
     <div class="actions">
         <a class="btn btn--ghost" href="{{ url('admin.shop.shipping.index') }}">{{ 'shop.shipping.title'|trans }}</a>
     </div>
 </header>
-<form class="toolbar" method="get">
-    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.carts.search'|trans }}">
-    <select name="status" class="input" onchange="this.form.submit()">
-        <option value="">{{ 'shop.carts.all_statuses'|trans }}</option>
-        {% for s in statuses %}
-            <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('shop.cart.status.' ~ s)|trans }}</option>
-        {% endfor %}
-    </select>
-</form>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.carts.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'shop.carts.all_statuses'|trans }}</option>
+            {% for s in statuses %}
+                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('shop.cart.status.' ~ s)|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    <div class="toolbar__toggles">
+        {% include 'ui/table_actions_toggle.html.twig' %}
+    </div>
+</div>
 <div class="table-wrap" data-table>
 <table class="table">
 <thead><tr>
@@ -24,7 +30,7 @@
 <th>{{ 'shop.field.items'|trans }}</th>
 <th>{{ 'shop.field.total'|trans }}</th>
 <th>{{ 'shop.field.updated'|trans }}</th>
-<th></th>
+<th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -45,12 +51,17 @@
 <td>{{ t ? t.item_count : '—' }}</td>
 <td>{% if t %}{{ t.total }} {{ t.currency }}{% else %}—{% endif %}</td>
 <td class="muted">{{ item.updatedAt()|date('d.m.Y H:i') }}</td>
-<td class="table__actions"><a href="{{ url('admin.shop.carts.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a></td>
+{% embed 'ui/row_actions.html.twig' %}
+    {% block items %}
+        <a href="{{ url('admin.shop.carts.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+    {% endblock %}
+{% endembed %}
 </tr>
 {% else %}
 <tr><td colspan="7"><div class="empty"><h2>{{ 'shop.carts.empty'|trans }}</h2><p>{{ 'shop.carts.empty.hint'|trans }}</p></div></td></tr>
 {% endfor %}
 </tbody>
 </table>
+</div>
 </div>
 {% endblock %}

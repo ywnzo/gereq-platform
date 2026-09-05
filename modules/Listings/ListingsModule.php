@@ -59,6 +59,7 @@ final class ListingsModule implements ModuleInterface
             $routes->get('/brokers/{id}', [BrokerController::class, 'show'])->name('admin.listings.brokers.show')->permission('listings.view');
             $routes->get('/brokers/{id}/edit', [BrokerController::class, 'edit'])->name('admin.listings.brokers.edit')->permission('listings.manage');
             $routes->post('/brokers/{id}', [BrokerController::class, 'update'])->name('admin.listings.brokers.update')->permission('listings.manage');
+            $routes->post('/brokers/{id}/toggle-active', [BrokerController::class, 'toggleActive'])->name('admin.listings.brokers.toggle_active')->permission('listings.manage');
             $routes->post('/brokers/{id}/delete', [BrokerController::class, 'destroy'])->name('admin.listings.brokers.destroy')->permission('listings.manage');
 
             $routes->get('/near-locations', [NearLocationController::class, 'index'])->name('admin.listings.near.index')->permission('listings.view');
@@ -67,6 +68,7 @@ final class ListingsModule implements ModuleInterface
             $routes->get('/near-locations/{id}', [NearLocationController::class, 'show'])->name('admin.listings.near.show')->permission('listings.view');
             $routes->get('/near-locations/{id}/edit', [NearLocationController::class, 'edit'])->name('admin.listings.near.edit')->permission('listings.manage');
             $routes->post('/near-locations/{id}', [NearLocationController::class, 'update'])->name('admin.listings.near.update')->permission('listings.manage');
+            $routes->post('/near-locations/{id}/toggle-active', [NearLocationController::class, 'toggleActive'])->name('admin.listings.near.toggle_active')->permission('listings.manage');
             $routes->post('/near-locations/{id}/delete', [NearLocationController::class, 'destroy'])->name('admin.listings.near.destroy')->permission('listings.manage');
 
             $routes->get('/cities', [CityController::class, 'index'])->name('admin.listings.cities.index')->permission('listings.view');
@@ -75,11 +77,14 @@ final class ListingsModule implements ModuleInterface
             $routes->get('/cities/{id}', [CityController::class, 'show'])->name('admin.listings.cities.show')->permission('listings.view');
             $routes->get('/cities/{id}/edit', [CityController::class, 'edit'])->name('admin.listings.cities.edit')->permission('listings.manage');
             $routes->post('/cities/{id}', [CityController::class, 'update'])->name('admin.listings.cities.update')->permission('listings.manage');
+            $routes->post('/cities/{id}/toggle-active', [CityController::class, 'toggleActive'])->name('admin.listings.cities.toggle_active')->permission('listings.manage');
             $routes->post('/cities/{id}/delete', [CityController::class, 'destroy'])->name('admin.listings.cities.destroy')->permission('listings.manage');
 
             $routes->get('/{id}', [ListingController::class, 'show'])->name('admin.listings.show')->permission('listings.view');
             $routes->get('/{id}/edit', [ListingController::class, 'edit'])->name('admin.listings.edit')->permission('listings.manage');
             $routes->post('/{id}', [ListingController::class, 'update'])->name('admin.listings.update')->permission('listings.manage');
+            $routes->post('/{id}/publish', [ListingController::class, 'togglePublish'])->name('admin.listings.publish')->permission('listings.manage');
+            $routes->post('/{id}/feature', [ListingController::class, 'toggleFeature'])->name('admin.listings.feature')->permission('listings.manage');
             $routes->post('/{id}/images', [ListingController::class, 'storeImage'])->name('admin.listings.images.store')->permission('listings.manage');
             $routes->post('/{id}/images/attach', [ListingController::class, 'attachImage'])->name('admin.listings.images.attach')->permission('listings.manage');
             $routes->post('/{id}/images/url', [ListingController::class, 'storeUrlImage'])->name('admin.listings.images.url')->permission('listings.manage');

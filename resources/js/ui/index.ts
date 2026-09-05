@@ -1,7 +1,8 @@
 import type Alpine from '@alpinejs/csp';
 import { registerAres } from './ares';
 import { registerCmsBlockForm } from './cmsBlockForm';
-import { registerPassword, registerSwitch, registerTextarea } from './controls';
+import { registerPassword, registerSwitch, registerTableToggle, registerTextarea } from './controls';
+import { registerDrawer } from './drawer';
 import { registerEditor } from './editor';
 import { registerForm } from './form';
 import { registerModuleTable } from './moduleTable';
@@ -19,8 +20,10 @@ export function registerUi(alpine: typeof Alpine): void {
     registerSelect(alpine);
     registerModal(alpine);
     registerPopover(alpine);
+    registerDrawer(alpine);
     registerPassword(alpine);
     registerSwitch(alpine);
+    registerTableToggle(alpine);
     registerTextarea(alpine);
     registerForm(alpine);
     registerEditor(alpine);

@@ -51,9 +51,7 @@ final class ActivityController extends Controller
             ->orderBy('a.dueAt', 'ASC')
             ->addOrderBy('a.createdAt', 'DESC');
 
-        if ($search !== '') {
-            $qb->andWhere('a.subject LIKE :q OR a.body LIKE :q')->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'a', ['subject', 'body'], $search);
         if (in_array($type, Activity::TYPES, true)) {
             $qb->andWhere('a.type = :type')->setParameter('type', $type);
         }

@@ -56,10 +56,7 @@ final class PageController extends Controller
         $qb = $this->em->getRepository(Page::class)->createQueryBuilder('p')
             ->orderBy('p.updatedAt', 'DESC');
 
-        if ($search !== '') {
-            $qb->andWhere('p.title LIKE :q OR p.slug LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'p', ['title', 'slug'], $search);
         if (in_array($status, Page::STATUSES, true)) {
             $qb->andWhere('p.status = :status')->setParameter('status', $status);
         }
@@ -194,17 +191,30 @@ final class PageController extends Controller
             $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
         }
 
-        if (!$item->isPublished()) {
-            $item->setStatus('published');
+        if ($item->isPublished()) {
+            $item->setStatus('draft');
             $this->em->flush();
             $payload = $this->serialize($item);
-            $this->events->dispatch(PagePublished::make($item->id(), $payload));
             $this->events->dispatch(PageUpdated::make($item->id(), $payload));
-            $this->auditor->log('page.published', 'cms_page', $item->id());
+            $this->auditor->log('page.unpublished', 'cms_page', $item->id());
+            if (!$this->wantsJson()) {
+                $this->flash('success', $this->translator->trans('cms.flash.page_unpublished', ['%title%' => $item->title()]));
+            }
+
+            return $this->toggleResponse(false, 'admin.cms.pages.index');
+        }
+
+        $item->setStatus('published');
+        $this->em->flush();
+        $payload = $this->serialize($item);
+        $this->events->dispatch(PagePublished::make($item->id(), $payload));
+        $this->events->dispatch(PageUpdated::make($item->id(), $payload));
+        $this->auditor->log('page.published', 'cms_page', $item->id());
+        if (!$this->wantsJson()) {
             $this->flash('success', $this->translator->trans('cms.flash.page_published', ['%title%' => $item->title()]));
         }
 
-        return $this->redirect('admin.cms.pages.show', ['id' => $id]);
+        return $this->toggleResponse(true, 'admin.cms.pages.index');
     }
 
     public function preview(string $id): Response

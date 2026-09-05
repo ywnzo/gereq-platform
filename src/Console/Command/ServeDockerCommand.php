@@ -90,9 +90,15 @@ final class ServeDockerCommand extends Command
         $origins = [
             'http://127.0.0.1:5173',
             'http://localhost:5173',
+            'http://127.0.0.1:5174',
+            'http://localhost:5174',
+            'http://127.0.0.1:5175',
+            'http://localhost:5175',
         ];
         if ($lanIp !== null && $lanIp !== '') {
-            $origins[] = 'http://' . $lanIp . ':5173';
+            foreach ([5173, 5174, 5175] as $fePort) {
+                $origins[] = 'http://' . $lanIp . ':' . $fePort;
+            }
         }
         $existing = trim((string) (getenv('FRONTEND_ORIGIN') ?: ($_ENV['FRONTEND_ORIGIN'] ?? '')));
         if ($existing !== '' && $existing !== '*') {

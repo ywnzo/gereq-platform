@@ -1,0 +1,4 @@
+{% set tone = tone|default('muted') %}
+{% set label = label|default('') %}
+{% set extra = class|default('') %}
+<span class="badge badge--{{ tone }}{{ extra ? ' ' ~ extra : '' }}">{{ label }}</span>

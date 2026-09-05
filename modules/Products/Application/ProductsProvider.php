@@ -26,13 +26,11 @@ final class ProductsProvider
     /** @return list<ProductReference> */
     public function search(string $query, int $limit = 20): array
     {
-        $items = $this->em->getRepository(Product::class)
+        $qb = $this->em->getRepository(Product::class)
             ->createQueryBuilder('p')
-            ->where('p.name LIKE :q OR p.sku LIKE :q')
-            ->setParameter('q', '%' . $query . '%')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+        self_repair_search($qb, 'p', ['name', 'sku'], $query);
+        $items = $qb->getQuery()->getResult();
 
         return array_map(
             static fn (Product $product): ProductReference => new ProductReference(

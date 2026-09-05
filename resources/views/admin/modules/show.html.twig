@@ -16,22 +16,41 @@
         <div>
             <p class="eyebrow"><a href="{{ url('admin.modules.index') }}">{{ 'admin.modules.title'|trans }}</a></p>
             <h1>{{ manifest.name }}</h1>
-            <p class="muted">
+            <p class="muted detail-layout__meta">
                 <code>{{ manifest.id }}</code>
-                · v{{ manifest.version }}
-                · <span class="status-chip{% if not enabled %} status-chip--muted{% endif %}"><span class="status-chip__dot"></span>{{ enabled ? 'common.enabled'|trans : 'common.disabled'|trans }}</span>
+                <span>v{{ manifest.version }}</span>
+                {% if overview.update_available %}
+                    <span class="badge badge--warn">{{ 'admin.modules.update_available'|trans }}</span>
+                {% endif %}
+                <span class="status-chip{% if not enabled %} status-chip--muted{% endif %}"><span class="status-chip__dot"></span>{{ enabled ? 'common.enabled'|trans : 'common.disabled'|trans }}</span>
             </p>
             <p class="module-lead">{{ (manifest.description ?: 'common.no_description')|trans }}</p>
         </div>
         <div class="module-header-actions">
+            {% if overview.update_available %}
+                <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
+                </form>
+            {% endif %}
             <form method="post" action="{{ enabled ? url('admin.modules.disable', {id: manifest.id}) : url('admin.modules.enable', {id: manifest.id}) }}">
                 {{ csrf_field()|raw }}
-                <button class="btn {{ enabled ? 'btn--ghost' : 'btn--primary' }}" type="submit">
+                <button class="btn {{ enabled ? 'btn--ghost' : (overview.update_available ? 'btn--ghost' : 'btn--primary') }}" type="submit">
                     {{ enabled ? 'common.deactivate'|trans : 'common.activate'|trans }}
                 </button>
             </form>
         </div>
     </header>
+
+    {% if overview.update_available %}
+        <div class="alert alert--warn">
+            {{ 'admin.modules.update_hint'|trans({
+                '%installed%': overview.installed_version ?: '—',
+                '%current%': manifest.version,
+                '%pending%': counts.migrations_pending
+            }) }}
+        </div>
+    {% endif %}
 
     {% if missing is not empty %}
         <div class="alert alert--danger">{{ 'admin.modules.missing_deps'|trans({'%list%': missing|join(', ')}) }}</div>
@@ -65,119 +84,156 @@
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
             <div class="detail-stack">
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'admin.modules.tab.overview'|trans }}</h2>
-                    </header>
-                    <div class="meta-grid">
-                        <div class="meta-tile">
-                            <span>{{ 'common.version'|trans }}</span>
-                            <strong>v{{ manifest.version }}{% if overview.installed_version and overview.installed_version != manifest.version %} <span class="muted">{{ 'admin.modules.installed_version'|trans({'%version%': overview.installed_version}) }}</span>{% endif %}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'common.author'|trans }}</span>
-                            <strong>{{ manifest.author }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'common.activated_at'|trans }}</span>
-                            <strong>{{ overview.enabled_at ?: 'common.none'|trans }}</strong>
-                        </div>
-                        <div class="meta-tile meta-tile--wide">
-                            <span>{{ 'common.class'|trans }}</span>
-                            <strong><code>{{ manifest.moduleClass }}</code></strong>
-                        </div>
-                        <div class="meta-tile meta-tile--wide">
-                            <span>{{ 'common.path'|trans }}</span>
-                            <strong><code class="module-code-soft">{{ manifest.path }}</code></strong>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'admin.modules.summary.title'|trans }}</h2>
-                    </header>
-                    <div class="module-summary-cards">
-                        <div class="module-summary-card">
-                            <strong>{{ counts.api }}</strong>
-                            <span>{{ 'admin.modules.summary.api'|trans }}</span>
-                        </div>
-                        <div class="module-summary-card">
-                            <strong>{{ counts.routes }}</strong>
-                            <span>{{ 'admin.modules.summary.routes'|trans }}</span>
-                        </div>
-                        <div class="module-summary-card">
-                            <strong>{{ counts.migrations }}</strong>
-                            <span>{{ 'admin.modules.summary.migrations'|trans }}</span>
-                        </div>
-                        <div class="module-summary-card">
-                            <strong>{{ counts.events }}</strong>
-                            <span>{{ 'admin.modules.summary.events'|trans }}</span>
-                        </div>
-                        <div class="module-summary-card">
-                            <strong>{{ counts.hooks }}</strong>
-                            <span>{{ 'admin.modules.summary.hooks'|trans }}</span>
-                        </div>
-                        <div class="module-summary-card{% if counts.health_issues %} module-summary-card--warn{% endif %}">
-                            <strong>{{ counts.health_issues }}</strong>
-                            <span>{{ 'admin.modules.summary.health'|trans }}</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'common.dependencies'|trans }}</h2>
-                    </header>
-                    <div class="module-deps">
-                        <div class="module-deps__group">
-                            <h3>{{ 'common.dependencies'|trans }}</h3>
-                            <div class="module-chip-row">
-                                {% if manifest.requires is empty %}
-                                    <span class="muted">{{ 'common.none'|trans }}</span>
-                                {% else %}
-                                    {% for dep, constraint in manifest.requires %}
-                                        <span class="badge{% if dep in missing %} badge--danger{% else %} badge--info{% endif %}">{{ dep }} {{ constraint }}</span>
-                                    {% endfor %}
-                                {% endif %}
+                <div class="detail-layout">
+                    <div class="detail-layout__main">
+                        <section class="detail-hero panel">
+                            <div class="detail-hero__body">
+                                <div class="detail-hero__highlight">
+                                    <span>{{ 'common.version'|trans }}</span>
+                                    <strong>v{{ manifest.version }}{% if overview.installed_version and overview.installed_version != manifest.version %} <span class="muted" style="font-size:0.7em;font-weight:500">{{ 'admin.modules.installed_version'|trans({'%version%': overview.installed_version}) }}</span>{% endif %}</strong>
+                                </div>
+                                <dl class="detail-hero__facts">
+                                    <div>
+                                        <dt>{{ 'common.author'|trans }}</dt>
+                                        <dd>{{ manifest.author }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>{{ 'common.activated_at'|trans }}</dt>
+                                        <dd>{{ overview.enabled_at ?: 'common.none'|trans }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>{{ 'common.enabled'|trans|default('Stav') }}</dt>
+                                        <dd>{{ enabled ? 'common.enabled'|trans : 'common.disabled'|trans }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>{{ 'admin.modules.summary.health'|trans }}</dt>
+                                        <dd>{{ counts.health_issues }}</dd>
+                                    </div>
+                                </dl>
                             </div>
-                        </div>
-                        {% if manifest.optional is not empty %}
-                            <div class="module-deps__group">
-                                <h3>{{ 'common.optional_deps'|trans }}</h3>
-                                <div class="module-chip-row">
-                                    {% for dep, constraint in manifest.optional %}
-                                        <span class="badge badge--muted">{{ dep }} {{ constraint }}</span>
-                                    {% endfor %}
+                        </section>
+
+                        <section class="panel">
+                            <header class="panel__head">
+                                <h2>{{ 'admin.modules.summary.title'|trans }}</h2>
+                            </header>
+                            <div class="module-summary-cards">
+                                <div class="module-summary-card">
+                                    <strong>{{ counts.api }}</strong>
+                                    <span>{{ 'admin.modules.summary.api'|trans }}</span>
+                                </div>
+                                <div class="module-summary-card">
+                                    <strong>{{ counts.routes }}</strong>
+                                    <span>{{ 'admin.modules.summary.routes'|trans }}</span>
+                                </div>
+                                <div class="module-summary-card">
+                                    <strong>{{ counts.migrations }}</strong>
+                                    <span>{{ 'admin.modules.summary.migrations'|trans }}</span>
+                                </div>
+                                <div class="module-summary-card">
+                                    <strong>{{ counts.events }}</strong>
+                                    <span>{{ 'admin.modules.summary.events'|trans }}</span>
+                                </div>
+                                <div class="module-summary-card">
+                                    <strong>{{ counts.hooks }}</strong>
+                                    <span>{{ 'admin.modules.summary.hooks'|trans }}</span>
+                                </div>
+                                <div class="module-summary-card{% if counts.health_issues %} module-summary-card--warn{% endif %}">
+                                    <strong>{{ counts.health_issues }}</strong>
+                                    <span>{{ 'admin.modules.summary.health'|trans }}</span>
                                 </div>
                             </div>
-                        {% endif %}
-                        <div class="module-deps__group">
-                            <h3>{{ 'common.capabilities'|trans }}</h3>
-                            <div class="module-chip-row">
-                                {% if manifest.capabilities is empty %}
-                                    <span class="muted">{{ 'common.none'|trans }}</span>
-                                {% else %}
-                                    {% for cap in manifest.capabilities %}
-                                        <span class="badge badge--ok">{{ cap }}{% if overview.capability_providers[cap] is defined and overview.capability_providers[cap] is not empty %} · {{ overview.capability_providers[cap]|join(', ') }}{% endif %}</span>
-                                    {% endfor %}
+                        </section>
+
+                        <section class="panel">
+                            <header class="panel__head">
+                                <h2>{{ 'common.dependencies'|trans }}</h2>
+                            </header>
+                            <div class="module-deps">
+                                <div class="module-deps__group">
+                                    <h3>{{ 'common.dependencies'|trans }}</h3>
+                                    <div class="module-chip-row">
+                                        {% if manifest.requires is empty %}
+                                            <span class="muted">{{ 'common.none'|trans }}</span>
+                                        {% else %}
+                                            {% for dep, constraint in manifest.requires %}
+                                                <span class="badge{% if dep in missing %} badge--danger{% else %} badge--info{% endif %}">{{ dep }} {{ constraint }}</span>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if manifest.optional is not empty %}
+                                    <div class="module-deps__group">
+                                        <h3>{{ 'common.optional_deps'|trans }}</h3>
+                                        <div class="module-chip-row">
+                                            {% for dep, constraint in manifest.optional %}
+                                                <span class="badge badge--muted">{{ dep }} {{ constraint }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                 {% endif %}
+                                <div class="module-deps__group">
+                                    <h3>{{ 'common.capabilities'|trans }}</h3>
+                                    <div class="module-chip-row">
+                                        {% if manifest.capabilities is empty %}
+                                            <span class="muted">{{ 'common.none'|trans }}</span>
+                                        {% else %}
+                                            {% for cap in manifest.capabilities %}
+                                                <span class="badge badge--ok">{{ cap }}{% if overview.capability_providers[cap] is defined and overview.capability_providers[cap] is not empty %} · {{ overview.capability_providers[cap]|join(', ') }}{% endif %}</span>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="module-deps__group">
+                                    <h3>{{ 'common.permissions'|trans }}</h3>
+                                    <div class="module-chip-row">
+                                        {% if manifest.permissions is empty %}
+                                            <span class="muted">{{ 'common.none'|trans }}</span>
+                                        {% else %}
+                                            {% for permission in manifest.permissions %}
+                                                <code class="module-perm" title="{{ permission.label|trans }}">{{ permission.name }}</code>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="module-deps__group">
-                            <h3>{{ 'common.permissions'|trans }}</h3>
-                            <div class="module-chip-row">
-                                {% if manifest.permissions is empty %}
-                                    <span class="muted">{{ 'common.none'|trans }}</span>
-                                {% else %}
-                                    {% for permission in manifest.permissions %}
-                                        <code class="module-perm" title="{{ permission.label|trans }}">{{ permission.name }}</code>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                        </div>
+                        </section>
                     </div>
-                </section>
+
+                    <aside class="detail-layout__aside">
+                        <section class="panel">
+                            <header class="panel__head">
+                                <h2>{{ 'admin.modules.tab.health'|trans }}</h2>
+                            </header>
+                            <dl class="meta-list meta-list--flush detail-layout__specs">
+                                <div>
+                                    <dt>{{ 'common.enabled'|trans|default('Stav') }}</dt>
+                                    <dd>
+                                        <span class="status-chip{% if not enabled %} status-chip--muted{% endif %}">
+                                            <span class="status-chip__dot"></span>{{ enabled ? 'common.enabled'|trans : 'common.disabled'|trans }}
+                                        </span>
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'admin.modules.summary.health'|trans }}</dt>
+                                    <dd>{% if counts.health_issues %}<span class="badge badge--warn">{{ counts.health_issues }}</span>{% else %}<span class="badge badge--ok">0</span>{% endif %}</dd>
+                                </div>
+                                <div class="meta-list__full">
+                                    <dt>{{ 'common.class'|trans }}</dt>
+                                    <dd><code>{{ manifest.moduleClass }}</code></dd>
+                                </div>
+                                <div class="meta-list__full">
+                                    <dt>{{ 'common.path'|trans }}</dt>
+                                    <dd><code class="module-code-soft">{{ manifest.path }}</code></dd>
+                                </div>
+                                <div class="meta-list__full">
+                                    <dt>{{ 'common.activated_at'|trans }}</dt>
+                                    <dd>{{ overview.enabled_at ?: 'common.none'|trans }}</dd>
+                                </div>
+                            </dl>
+                        </section>
+                    </aside>
+                </div>
             </div>
         </section>
 
@@ -188,6 +244,12 @@
                         <h2>{{ 'admin.modules.migrations.title'|trans }}</h2>
                         <p class="muted">{{ 'admin.modules.migrations.hint'|trans }}</p>
                     </div>
+                    {% if overview.update_available and counts.migrations_pending %}
+                        <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
+                            {{ csrf_field()|raw }}
+                            <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
+                        </form>
+                    {% endif %}
                 </header>
                 {% if report.migrations is empty %}
                     <div class="empty"><h2>{{ 'empty.migrations'|trans }}</h2><p>{{ 'empty.migrations_hint'|trans }}</p></div>
@@ -357,6 +419,9 @@
                         <h2>{{ 'admin.modules.settings.title'|trans }}</h2>
                         <p class="muted">{{ 'admin.modules.settings.hint'|trans({'%id%': manifest.id}) }}</p>
                     </div>
+                    {% if manifest.id == 'reviews' %}
+                        <a class="btn btn--primary" href="{{ url('admin.reviews.settings') }}">{{ icon('settings') }} {{ 'reviews.settings.edit'|trans }}</a>
+                    {% endif %}
                 </header>
                 {% if report.settings is empty %}
                     <div class="empty"><h2>{{ 'empty.settings'|trans }}</h2><p>{{ 'empty.settings_hint'|trans }}</p></div>

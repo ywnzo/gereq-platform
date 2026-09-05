@@ -29,17 +29,7 @@
         </select>
     </form>
     <div class="toolbar__toggles">
-        <button
-            type="button"
-            class="toolbar__toggle"
-            :class="showActions ? 'is-on' : ''"
-            @click="toggleActions"
-            :aria-pressed="showActions ? 'true' : 'false'"
-            title="{{ 'ui.table.actions_toggle'|trans }}"
-        >
-            {{ icon('dots') }}
-            <span>{{ 'ui.table.actions'|trans }}</span>
-        </button>
+        {% include 'ui/table_actions_toggle.html.twig' %}
     </div>
 </div>
 
@@ -47,9 +37,9 @@
 <table class="table">
 <thead><tr>
 <th>{{ 'listings.cities.field.name'|trans }}</th>
-<th>{{ 'listings.cities.field.image_url'|trans }}</th>
+<th class="table__thumb-cell"><span class="sr-only">{{ 'ui.table.col.thumb'|trans }}</span></th>
 <th>{{ 'listings.cities.field.sort_order'|trans }}</th>
-<th>{{ 'listings.cities.field.active'|trans }}</th>
+<th class="table__toggle-cell">{{ 'ui.table.col.active'|trans }}</th>
 <th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
@@ -60,18 +50,27 @@
             <a href="{{ url('admin.listings.cities.show', {id: item.id()}) }}">{{ item.name() }}</a>
         </div>
     </td>
-    <td class="is-mute">
-        {% if item.imageUrl() %}
-            <img src="{{ item.imageUrl() }}" alt="" style="width:48px;height:32px;object-fit:cover;border-radius:6px;vertical-align:middle">
-        {% else %}
-            —
-        {% endif %}
+    <td class="table__thumb-cell">
+        {% include 'ui/table_thumb.html.twig' with {
+            src: item.imageUrl(),
+            href: url('admin.listings.cities.show', {id: item.id()}),
+            alt: item.name(),
+        } %}
     </td>
     <td class="is-mute">{{ item.sortOrder() }}</td>
     <td>
-        <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
-            {{ item.active() ? 'listings.cities.status.active'|trans : 'listings.cities.status.inactive'|trans }}
-        </span>
+        {% if user.can('listings.manage') %}
+            {% include 'ui/table_toggle.html.twig' with {
+                action: url('admin.listings.cities.toggle_active', {id: item.id()}),
+                on: item.active(),
+                title_on: 'ui.table.active.on'|trans,
+                title_off: 'ui.table.active.off'|trans,
+            } %}
+        {% else %}
+            <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                {{ item.active() ? 'listings.cities.status.active'|trans : 'listings.cities.status.inactive'|trans }}
+            </span>
+        {% endif %}
     </td>
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}

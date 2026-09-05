@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="crm-activities" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'crm.activities.title'|trans }}</h1>
         {% if user.can('crm.activities.manage') %}
@@ -8,23 +9,28 @@
         {% endif %}
     </header>
 
-    <form class="toolbar" method="get">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'crm.activities.search'|trans }}">
-        <select name="type" class="input" onchange="this.form.submit()">
-            <option value="">{{ 'crm.activities.all_types'|trans }}</option>
-            {% for t in types %}
-                <option value="{{ t }}" {{ type == t ? 'selected' : '' }}>{{ ('crm.activity.type.' ~ t)|trans }}</option>
-            {% endfor %}
-        </select>
-        <select name="status" class="input" onchange="this.form.submit()">
-            <option value="">{{ 'common.all_statuses'|trans }}</option>
-            <option value="open" {{ status == 'open' ? 'selected' : '' }}>{{ 'crm.activities.status.open'|trans }}</option>
-            <option value="done" {{ status == 'done' ? 'selected' : '' }}>{{ 'crm.activities.status.done'|trans }}</option>
-        </select>
-        {% if customerId %}
-            <input type="hidden" name="customer" value="{{ customerId }}">
-        {% endif %}
-    </form>
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'crm.activities.search'|trans }}">
+            <select name="type" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'crm.activities.all_types'|trans }}</option>
+                {% for t in types %}
+                    <option value="{{ t }}" {{ type == t ? 'selected' : '' }}>{{ ('crm.activity.type.' ~ t)|trans }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'common.all_statuses'|trans }}</option>
+                <option value="open" {{ status == 'open' ? 'selected' : '' }}>{{ 'crm.activities.status.open'|trans }}</option>
+                <option value="done" {{ status == 'done' ? 'selected' : '' }}>{{ 'crm.activities.status.done'|trans }}</option>
+            </select>
+            {% if customerId %}
+                <input type="hidden" name="customer" value="{{ customerId }}">
+            {% endif %}
+        </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
 
     <div class="table-wrap" data-table>
         <table class="table">
@@ -35,7 +41,7 @@
                     <th>{{ 'crm.field.customer'|trans }}</th>
                     <th>{{ 'crm.field.due'|trans }}</th>
                     <th>{{ 'crm.field.status'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -57,9 +63,8 @@
                                 {{ item.isCompleted() ? 'crm.activities.done'|trans : 'crm.activities.open'|trans }}
                             </span>
                         </td>
-                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
-                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
                                 {% if user.can('crm.activities.manage') %}
                                     <a href="{{ url('admin.crm.activities.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                                     <form method="post" action="{{ url('admin.crm.activities.complete', {id: item.id()}) }}">
@@ -71,8 +76,8 @@
                                         <button type="submit">{{ 'common.delete'|trans }}</button>
                                     </form>
                                 {% endif %}
-                            </div>
-                        </td>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
@@ -102,4 +107,5 @@
             </nav>
         </footer>
     {% endif %}
+</div>
 {% endblock %}

@@ -4,8 +4,8 @@
     <div>
         <p class="eyebrow"><a href="{{ url('admin.invoices.index') }}">{{ 'nav.invoices'|trans }}</a></p>
         <h1>{{ item.number() }}</h1>
-        <p class="muted">
-            {% if order %}<a href="{{ url('admin.orders.show', {id: order.id()}) }}">{{ order.number() }}</a> · {% endif %}
+        <p class="muted detail-layout__meta">
+            {% if order %}<a href="{{ url('admin.orders.show', {id: order.id()}) }}">{{ order.number() }}</a>{% endif %}
             <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
         </p>
     </div>
@@ -32,43 +32,120 @@
     </div>
 
     <section class="design-panel" data-panel="overview" role="tabpanel">
-        <section class="panel">
-            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
-            <div class="meta-grid">
-                <div class="meta-tile"><span>{{ 'orders.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>
-                <div class="meta-tile"><span>{{ 'orders.field.total'|trans }}</span><strong>{{ item.total() }} {{ item.currency() }}</strong></div>
-                <div class="meta-tile"><span>{{ 'orders.field.issued_at'|trans }}</span><strong>{{ item.issuedAt() ? item.issuedAt().format('d. m. Y') : '—' }}</strong></div>
-                <div class="meta-tile"><span>{{ 'orders.field.due_at'|trans }}</span><strong>{{ item.dueAt() ? item.dueAt().format('d. m. Y') : '—' }}</strong></div>
-                <div class="meta-tile"><span>{{ 'orders.field.vs'|trans|default('VS') }}</span><strong>{{ item.paymentReference() ?: '—' }}</strong></div>
+        <div class="detail-layout">
+            <div class="detail-layout__main">
+                <section class="detail-hero panel">
+                    <div class="detail-hero__body">
+                        <div class="detail-hero__highlight">
+                            <span>{{ 'orders.field.total'|trans }}</span>
+                            <strong>{{ item.total() }} {{ item.currency() }}</strong>
+                        </div>
+                        <dl class="detail-hero__facts">
+                            <div>
+                                <dt>{{ 'orders.field.issued_at'|trans }}</dt>
+                                <dd>{{ item.issuedAt() ? item.issuedAt().format('d. m. Y') : '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'orders.field.due_at'|trans }}</dt>
+                                <dd>{{ item.dueAt() ? item.dueAt().format('d. m. Y') : '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'orders.field.vs'|trans|default('VS') }}</dt>
+                                <dd>{{ item.paymentReference() ?: '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'orders.field.status'|trans }}</dt>
+                                <dd>{{ item.statusLabel()|trans }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </section>
+                {% if item.spaydPayload() %}
+                    <section class="panel">
+                        <header class="panel__head"><h2>SPAYD</h2></header>
+                        <p class="muted" style="margin:0;word-break:break-all"><code>{{ item.spaydPayload() }}</code></p>
+                    </section>
+                {% endif %}
             </div>
-            {% if item.spaydPayload() %}
-                <p class="muted" style="margin:12px 14px 0;word-break:break-all">SPAYD: <code>{{ item.spaydPayload() }}</code></p>
-            {% endif %}
-        </section>
+
+            <aside class="detail-layout__aside">
+                <section class="panel">
+                    <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+                    <dl class="meta-list meta-list--flush detail-layout__specs">
+                        <div>
+                            <dt>{{ 'orders.field.status'|trans }}</dt>
+                            <dd><span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span></dd>
+                        </div>
+                        {% if order %}
+                            <div class="meta-list__full">
+                                <dt>{{ 'nav.orders'|trans|default('Objednávka') }}</dt>
+                                <dd><a href="{{ url('admin.orders.show', {id: order.id()}) }}">{{ order.number() }}</a></dd>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <dt>{{ 'orders.field.total'|trans }}</dt>
+                            <dd><strong>{{ item.total() }} {{ item.currency() }}</strong></dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'orders.field.vs'|trans|default('VS') }}</dt>
+                            <dd>{{ item.paymentReference() ?: '—' }}</dd>
+                        </div>
+                    </dl>
+                </section>
+            </aside>
+        </div>
     </section>
 
     <section class="design-panel" data-panel="parties" role="tabpanel">
-        <div class="detail-stack">
-            <section class="panel">
-                <header class="panel__head"><h2>{{ 'orders.field.seller'|trans|default('Dodavatel') }}</h2></header>
-                <div class="meta-grid">
-                    {% set seller = item.seller() %}
-                    <div class="meta-tile"><span>{{ 'common.name'|trans|default('Název') }}</span><strong>{{ seller.name|default('—') }}</strong></div>
-                    <div class="meta-tile"><span>IČO</span><strong>{{ seller.ico|default('—') }}</strong></div>
-                    <div class="meta-tile"><span>DIČ</span><strong>{{ seller.dic|default('—') }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'common.address'|trans|default('Adresa') }}</span><strong>{{ seller.address|default('—') }}</strong></div>
-                </div>
-            </section>
-            <section class="panel">
-                <header class="panel__head"><h2>{{ 'orders.field.buyer'|trans|default('Odběratel') }}</h2></header>
-                <div class="meta-grid">
-                    {% set buyer = item.buyer() %}
-                    <div class="meta-tile"><span>{{ 'common.name'|trans|default('Název') }}</span><strong>{{ buyer.name|default('—') }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.email'|trans }}</span><strong>{{ buyer.email|default('—') }}</strong></div>
-                    <div class="meta-tile"><span>IČO</span><strong>{{ buyer.ico|default('—') }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'common.address'|trans|default('Adresa') }}</span><strong>{{ buyer.address|default('—') }}</strong></div>
-                </div>
-            </section>
+        {% set seller = item.seller() %}
+        {% set buyer = item.buyer() %}
+        <div class="detail-layout">
+            <div class="detail-layout__main">
+                <section class="panel">
+                    <header class="panel__head"><h2>{{ 'orders.field.seller'|trans|default('Dodavatel') }}</h2></header>
+                    <dl class="meta-list meta-list--flush">
+                        <div>
+                            <dt>{{ 'common.name'|trans|default('Název') }}</dt>
+                            <dd>{{ seller.name|default('—') }}</dd>
+                        </div>
+                        <div>
+                            <dt>IČO</dt>
+                            <dd>{{ seller.ico|default('—') }}</dd>
+                        </div>
+                        <div>
+                            <dt>DIČ</dt>
+                            <dd>{{ seller.dic|default('—') }}</dd>
+                        </div>
+                        <div class="meta-list__full">
+                            <dt>{{ 'common.address'|trans|default('Adresa') }}</dt>
+                            <dd>{{ seller.address|default('—') }}</dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
+            <aside class="detail-layout__aside">
+                <section class="panel">
+                    <header class="panel__head"><h2>{{ 'orders.field.buyer'|trans|default('Odběratel') }}</h2></header>
+                    <dl class="meta-list meta-list--flush detail-layout__specs">
+                        <div class="meta-list__full">
+                            <dt>{{ 'common.name'|trans|default('Název') }}</dt>
+                            <dd>{{ buyer.name|default('—') }}</dd>
+                        </div>
+                        <div class="meta-list__full">
+                            <dt>{{ 'customers.field.email'|trans }}</dt>
+                            <dd>{{ buyer.email|default('—') }}</dd>
+                        </div>
+                        <div>
+                            <dt>IČO</dt>
+                            <dd>{{ buyer.ico|default('—') }}</dd>
+                        </div>
+                        <div class="meta-list__full">
+                            <dt>{{ 'common.address'|trans|default('Adresa') }}</dt>
+                            <dd>{{ buyer.address|default('—') }}</dd>
+                        </div>
+                    </dl>
+                </section>
+            </aside>
         </div>
     </section>
 

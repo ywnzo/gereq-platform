@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ pageTitle|default('auth.login.title'|trans) }} · {{ brand('name') }}</title>
     {% include 'partials/brand-head.html.twig' %}
-    <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+    {% if vite_hot() %}
+        {{ vite_tags() }}
+    {% else %}
+        <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+    {% endif %}
     {% include 'partials/brand-overrides.html.twig' %}
 </head>
 <body class="auth-body">
@@ -33,6 +37,8 @@
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
     </script>
-    <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+    {% if not vite_hot() %}
+        <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+    {% endif %}
 </body>
 </html>

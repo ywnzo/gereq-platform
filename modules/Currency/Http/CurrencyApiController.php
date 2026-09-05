@@ -38,10 +38,7 @@ final class CurrencyApiController extends Controller
         );
 
         $qb = $this->em->getRepository(Currency::class)->createQueryBuilder('c');
-        if ($query->search !== '') {
-            $qb->andWhere('c.code LIKE :q OR c.name LIKE :q OR c.symbol LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'c', ['code', 'name', 'symbol'], $query->search);
         if (isset($query->filters['is_active']) && $query->filters['is_active'] !== '') {
             $qb->andWhere('c.isActive = :active')->setParameter('active', $this->boolValue($query->filters['is_active']));
         }

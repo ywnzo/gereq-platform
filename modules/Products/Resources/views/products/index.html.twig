@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="products" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'products.title'|trans }}</h1>
         <div class="actions">
@@ -11,17 +12,22 @@
         </div>
     </header>
 
-    <form class="toolbar" method="get">
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <input type="hidden" name="dir" value="{{ dir }}">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'products.search'|trans }}">
-        <select name="status" class="input" onchange="this.form.submit()">
-            <option value="">{{ 'common.all_statuses'|trans }}</option>
-            {% for s in statuses %}
-                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('products.status.' ~ s)|trans }}</option>
-            {% endfor %}
-        </select>
-    </form>
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'products.search'|trans }}">
+            <select name="status" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'common.all_statuses'|trans }}</option>
+                {% for s in statuses %}
+                    <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('products.status.' ~ s)|trans }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
 
     <div class="table-wrap" data-table>
         <table class="table">
@@ -32,7 +38,7 @@
                     {% include 'ui/sort_th.html.twig' with { label: 'products.field.unit'|trans, column: 'unit', query: { status: status } } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'products.field.status'|trans, column: 'status', query: { status: status } } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'products.field.updated'|trans, column: 'updatedAt', query: { status: status } } %}
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -47,9 +53,8 @@
                             </span>
                         </td>
                         <td class="is-mute">{{ item.updatedAt().format('d. m. Y') }}</td>
-                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
-                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
                                 <a href="{{ url('admin.products.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
                                 {% if user.can('products.manage') %}
                                     <a href="{{ url('admin.products.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
@@ -58,8 +63,8 @@
                                         <button type="submit">{{ 'common.delete'|trans }}</button>
                                     </form>
                                 {% endif %}
-                            </div>
-                        </td>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
@@ -76,4 +81,5 @@
     </div>
 
     {% include 'ui/table_footer.html.twig' %}
+</div>
 {% endblock %}

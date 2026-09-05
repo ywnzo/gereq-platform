@@ -26,6 +26,11 @@ final class StartSessionMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        // Public media files must stay cookie-free so browsers can cache images.
+        if ((bool) preg_match('#^/media/[^/]+/file$#', $request->getPathInfo())) {
+            return $next($request);
+        }
+
         if (!$request->hasSession()) {
             $lifetime = max(1, (int) $this->config->get('session.lifetime', 120)) * 60;
             $secure = $request->isSecure();

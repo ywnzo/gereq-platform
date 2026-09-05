@@ -18,7 +18,7 @@ final class ProjectApiController extends Controller
     public function index(Request $request): JsonResponse {
         $query = ApiQuery::fromRequest($request, sortable: ['name','status','createdAt','updatedAt'], filterable: ['status','customer_id']);
         $qb = $this->em->getRepository(Project::class)->createQueryBuilder('p');
-        if ($query->search !== '') $qb->andWhere('p.name LIKE :q')->setParameter('q', '%'.$query->search.'%');
+        if ($query->search !== '') self_repair_search($qb, 'p', ['name'], $query->search);
         if (!empty($query->filters['status'])) $qb->andWhere('p.status = :s')->setParameter('s', $query->filters['status']);
         if (!empty($query->filters['customer_id'])) $qb->andWhere('p.customerId = :c')->setParameter('c', $query->filters['customer_id']);
         $sort = $query->sort ?? 'updatedAt';

@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="products-categories" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'products.categories.title'|trans }}</h1>
         {% if user.can('products.manage') %}
@@ -8,13 +9,19 @@
         {% endif %}
     </header>
 
+    <div class="toolbar--table">
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
+
     <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
                     <th>{{ 'products.categories.field.name'|trans }}</th>
                     <th>{{ 'products.categories.field.slug'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -22,9 +29,8 @@
                     <tr>
                         <td>{{ item.name() }}</td>
                         <td><code>{{ item.slug() }}</code></td>
-                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
-                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
                                 {% if user.can('products.manage') %}
                                     <a href="{{ url('admin.products.categories.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                                     <form method="post" action="{{ url('admin.products.categories.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'products.categories.confirm_delete'|trans|e('js') }}');">
@@ -32,8 +38,8 @@
                                         <button type="submit">{{ 'common.delete'|trans }}</button>
                                     </form>
                                 {% endif %}
-                            </div>
-                        </td>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
@@ -48,4 +54,5 @@
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}

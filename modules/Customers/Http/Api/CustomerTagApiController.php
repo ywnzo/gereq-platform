@@ -36,10 +36,7 @@ final class CustomerTagApiController extends AbstractCustomerApiController
         $query = ApiQuery::fromRequest($request, sortable: ['name', 'slug', 'createdAt'], filterable: []);
 
         $qb = $this->em->getRepository(CustomerTag::class)->createQueryBuilder('t');
-        if ($query->search !== '') {
-            $qb->andWhere('t.name LIKE :q OR t.slug LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 't', ['name', 'slug'], $query->search);
         $sort = $query->sort ?? 'name';
         $qb->orderBy('t.' . $sort, strtoupper($query->direction));
 

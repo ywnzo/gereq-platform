@@ -42,10 +42,7 @@ final class BundleController extends Controller
         $search = trim((string) $request->query->get('q', ''));
         $qb = $this->em->getRepository(ProductBundle::class)->createQueryBuilder('b')
             ->orderBy('b.code', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('b.code LIKE :q OR b.name LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'b', ['code', 'name'], $search);
 
         return $this->page('@bundles/index.html.twig', [
             'pageTitle' => $this->translator->trans('bundles.title'),

@@ -55,9 +55,7 @@ final class InvoiceController extends Controller
         $status = $list->filter('status');
 
         $qb = $this->em->getRepository(Invoice::class)->createQueryBuilder('i');
-        if ($list->search !== '') {
-            $qb->andWhere('i.number LIKE :q')->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'i', ['number']);
         if (in_array($status, Invoice::STATUSES, true)) {
             $qb->andWhere('i.status = :status')->setParameter('status', $status);
         }

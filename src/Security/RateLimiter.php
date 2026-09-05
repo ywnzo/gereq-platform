@@ -9,7 +9,7 @@ final class RateLimiter
     public function __construct(private readonly string $path)
     {
         if (!is_dir($this->path)) {
-            mkdir($this->path, 0775, true);
+            @mkdir($this->path, 0775, true);
         }
     }
 
@@ -20,7 +20,7 @@ final class RateLimiter
         $attempts = [];
 
         if (is_file($file)) {
-            $decoded = json_decode((string) file_get_contents($file), true);
+            $decoded = json_decode((string) @file_get_contents($file), true);
             $attempts = is_array($decoded) ? $decoded : [];
         }
 
@@ -34,7 +34,9 @@ final class RateLimiter
         }
 
         $attempts[] = $now;
-        file_put_contents($file, json_encode($attempts), LOCK_EX);
+        if (is_dir($this->path) && is_writable($this->path)) {
+            @file_put_contents($file, json_encode($attempts), LOCK_EX);
+        }
 
         return true;
     }

@@ -42,10 +42,7 @@ final class PaymentMethodController extends Controller
         $qb = $this->em->getRepository(PaymentMethod::class)->createQueryBuilder('m')
             ->orderBy('m.sortOrder', 'ASC')
             ->addOrderBy('m.code', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('m.code LIKE :q OR m.name LIKE :q OR m.provider LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'm', ['code', 'name', 'provider'], $search);
 
         return $this->page('@payments/methods/index.html.twig', [
             'pageTitle' => $this->translator->trans('payments.methods.title'),

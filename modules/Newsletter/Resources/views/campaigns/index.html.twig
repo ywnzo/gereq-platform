@@ -1,5 +1,6 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="newsletter-campaigns" data-actions-default="1">
 <header class="page-header">
     <h1>{{ 'newsletter.campaigns.title'|trans }}</h1>
     <div class="actions">
@@ -10,17 +11,22 @@
     </div>
 </header>
 
-<form class="toolbar" method="get">
-    <input type="hidden" name="sort" value="{{ sort }}">
-    <input type="hidden" name="dir" value="{{ dir }}">
-    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'newsletter.campaigns.search'|trans }}">
-    <select name="status" class="input" onchange="this.form.submit()">
-        <option value="">{{ 'newsletter.all_statuses'|trans }}</option>
-        {% for s in statuses %}
-            <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('newsletter.campaign.status.' ~ s)|trans }}</option>
-        {% endfor %}
-    </select>
-</form>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'newsletter.campaigns.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'newsletter.all_statuses'|trans }}</option>
+            {% for s in statuses %}
+                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('newsletter.campaign.status.' ~ s)|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    <div class="toolbar__toggles">
+        {% include 'ui/table_actions_toggle.html.twig' %}
+    </div>
+</div>
 
 <div class="table-wrap" data-table>
 <table class="table">
@@ -29,7 +35,7 @@
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.status'|trans, column: 'status', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.sent_at'|trans, column: 'sentAt', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.created'|trans, column: 'createdAt', query: { status: status } } %}
-<th></th>
+<th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -38,9 +44,11 @@
     <td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
     <td class="is-mute">{{ item.sentAt() ? item.sentAt().format('d. m. Y H:i') : '—' }}</td>
     <td class="is-mute">{{ item.createdAt().format('d. m. Y') }}</td>
-    <td class="table__actions">
-        <a href="{{ url('admin.newsletter.campaigns.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-    </td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            <a href="{{ url('admin.newsletter.campaigns.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endblock %}
+    {% endembed %}
 </tr>
 {% else %}
 <tr><td colspan="5"><div class="empty"><h2>{{ 'newsletter.campaigns.empty'|trans }}</h2></div></td></tr>
@@ -49,4 +57,5 @@
 </table>
 </div>
 {% include 'ui/table_footer.html.twig' %}
+</div>
 {% endblock %}

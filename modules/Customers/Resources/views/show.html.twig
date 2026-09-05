@@ -7,7 +7,10 @@
             <div>
                 <p class="eyebrow"><a href="{{ url('admin.customers.index') }}">{{ 'nav.customers'|trans }}</a></p>
                 <h1>{{ item.name() }}</h1>
-                <p class="muted">{{ item.company() ?: item.email() }} · <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span></p>
+                <p class="muted detail-layout__meta">
+                    {{ item.company() ?: item.email() }}
+                    <span class="badge badge--{{ item.status() == 'active' ? 'ok' : 'muted' }}">{{ item.statusLabel()|trans }}</span>
+                </p>
             </div>
         </div>
         <div class="actions">
@@ -39,25 +42,65 @@
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
-            <section class="panel">
-                <header class="panel__head">
-                    <h2>{{ 'common.overview'|trans }}</h2>
-                </header>
-                <div class="meta-grid">
-                    <div class="meta-tile"><span>{{ 'customers.field.email'|trans }}</span><strong><a href="mailto:{{ item.email() }}">{{ item.email() }}</a></strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.phone'|trans }}</span><strong>{% if item.phone() %}<a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% else %}—{% endif %}</strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.company'|trans }}</span><strong>{{ item.company() ?: '—' }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.created'|trans }}</span><strong>{{ item.createdAt().format('d. m. Y H:i') }}</strong></div>
-                    <div class="meta-tile"><span>{{ 'customers.field.updated'|trans }}</span><strong>{{ item.updatedAt().format('d. m. Y H:i') }}</strong></div>
+            <div class="detail-layout">
+                <div class="detail-layout__main">
+                    <section class="detail-hero panel">
+                        <div class="detail-hero__body">
+                            <div class="detail-hero__highlight">
+                                <span>{{ 'customers.field.status'|trans }}</span>
+                                <strong>{{ item.statusLabel()|trans }}</strong>
+                            </div>
+                            <dl class="detail-hero__facts">
+                                <div>
+                                    <dt>{{ 'customers.field.email'|trans }}</dt>
+                                    <dd><a href="mailto:{{ item.email() }}">{{ item.email() }}</a></dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'customers.field.phone'|trans }}</dt>
+                                    <dd>{% if item.phone() %}<a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% else %}—{% endif %}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'customers.field.company'|trans }}</dt>
+                                    <dd>{{ item.company() ?: '—' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'customers.field.created'|trans }}</dt>
+                                    <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'customers.field.note'|trans }}</h2>
+                        </header>
+                        <div class="detail-prose g-prose">{{ noteHtml ? noteHtml|raw : '—' }}</div>
+                    </section>
                 </div>
-                <div style="padding:12px 14px 14px">
-                    <div class="meta-tile">
-                        <span>{{ 'customers.field.note'|trans }}</span>
-                        <div class="g-prose">{{ noteHtml ? noteHtml|raw : '—' }}</div>
-                    </div>
-                </div>
-            </section>
+
+                <aside class="detail-layout__aside">
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'common.overview'|trans }}</h2>
+                        </header>
+                        <dl class="meta-list meta-list--flush detail-layout__specs">
+                            <div>
+                                <dt>{{ 'customers.field.updated'|trans }}</dt>
+                                <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'customers.field.email'|trans }}</dt>
+                                <dd><a href="mailto:{{ item.email() }}">{{ item.email() }}</a></dd>
+                            </div>
+                            <div class="meta-list__full">
+                                <dt>{{ 'customers.field.phone'|trans }}</dt>
+                                <dd>{% if item.phone() %}<a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% else %}—{% endif %}</dd>
+                            </div>
+                        </dl>
+                    </section>
+                </aside>
+            </div>
         </section>
 
         {% for section in hookSections|default([]) %}

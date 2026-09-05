@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ 'design.title'|trans }}</title>
     {% include 'partials/brand-head.html.twig' %}
-    <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+    {% if vite_hot() %}
+        {{ vite_tags() }}
+    {% else %}
+        <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+    {% endif %}
     {% include 'partials/brand-overrides.html.twig' %}
 </head>
 <body class="design-body">
@@ -113,10 +117,10 @@
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.tailwind_custom'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn bg-ink text-paper hover:bg-ink/90 rounded-lg" type="button">bg-ink</button>
-                            <button class="btn bg-signal text-ink hover:brightness-95 rounded-lg" type="button">bg-signal</button>
-                            <button class="btn bg-coral text-paper hover:bg-coral/90 rounded-lg" type="button">bg-coral</button>
-                            <button class="btn bg-sky text-ink hover:bg-sky/90 rounded-lg" type="button">bg-sky</button>
+                            <button class="btn bg-ink text-paper hover:bg-ink/90" type="button">bg-ink</button>
+                            <button class="btn bg-signal text-ink hover:brightness-95" type="button">bg-signal</button>
+                            <button class="btn bg-coral text-paper hover:bg-coral/90" type="button">bg-coral</button>
+                            <button class="btn bg-sky text-ink hover:bg-sky/90" type="button">bg-sky</button>
                             <button class="btn bg-violet text-paper hover:bg-violet/90 rounded-lg" type="button">bg-violet</button>
                             <button class="btn border border-ink bg-transparent text-ink hover:bg-ink hover:text-paper rounded-lg" type="button">border-ink</button>
                             <button class="btn bg-signal/25 text-ink hover:bg-signal/45 rounded-lg" type="button">bg-signal/25</button>
@@ -277,6 +281,17 @@
                                 </div>
                             </div>
                         </div>
+                        {{ ui_render('drawer_trigger', {
+                            drawer_id: 'design-demo-drawer',
+                            label: 'ui.drawer.open'|trans,
+                            variant: 'ghost',
+                            icon: 'panel',
+                        }) }}
+                        <button
+                            class="btn btn--ghost"
+                            type="button"
+                            data-drawer-demo-load
+                        >{{ 'ui.drawer.demo.load'|trans }}</button>
                         <div class="g-popover" x-data="gereqPopover">
                             <button class="btn btn--ghost" type="button" @click="toggle">{{ 'design.popover'|trans }}</button>
                             <div class="g-popover__panel" :class="panelClass" role="dialog">
@@ -293,6 +308,25 @@
                             </div>
                         </div>
                     </div>
+                    {% embed 'ui/drawer.html.twig' with { id: 'design-demo-drawer', title: 'ui.drawer.demo.title'|trans } %}
+                        {% block body %}
+                            <p class="muted" style="margin:0">{{ 'ui.drawer.demo.body'|trans }}</p>
+                            <p>{{ ui_render('badge', { label: 'TOP', tone: 'signal' }) }} {{ ui_render('badge', { label: 'Published', tone: 'ok' }) }}</p>
+                        {% endblock %}
+                        {% block footer %}
+                            <button type="button" class="btn btn--ghost" data-drawer-close>{{ 'common.cancel'|trans }}</button>
+                            <button type="button" class="btn btn--primary" data-drawer-close>{{ 'common.save'|trans }}</button>
+                        {% endblock %}
+                    {% endembed %}
+                    <script nonce="{{ csp_nonce() }}">
+                        document.querySelector('[data-drawer-demo-load]')?.addEventListener('click', () => {
+                            window.gereq?.loadDrawer({
+                                title: {{ 'ui.drawer.demo.title'|trans|json_encode|raw }},
+                                html: '<p class="muted">' + {{ 'ui.drawer.demo.body'|trans|json_encode|raw }} + '</p>',
+                                footer: '<button type="button" class="btn btn--primary" data-drawer-close>' + {{ 'common.cancel'|trans|json_encode|raw }} + '</button>',
+                            });
+                        });
+                    </script>
                 </div>
             </div>
         </section>
@@ -389,6 +423,8 @@
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
     </script>
-    <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+    {% if not vite_hot() %}
+        <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+    {% endif %}
 </body>
 </html>

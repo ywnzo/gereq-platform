@@ -41,10 +41,7 @@ final class FeedApiController extends Controller
         );
 
         $qb = $this->em->getRepository(FeedDefinition::class)->createQueryBuilder('f');
-        if ($query->search !== '') {
-            $qb->andWhere('f.code LIKE :q OR f.name LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'f', ['code', 'name'], $query->search);
         if (isset($query->filters['driver']) && $query->filters['driver'] !== '') {
             $qb->andWhere('f.driver = :driver')->setParameter('driver', $query->filters['driver']);
         }

@@ -41,10 +41,7 @@ final class CouponController extends Controller
         $search = trim((string) $request->query->get('q', ''));
         $qb = $this->em->getRepository(Coupon::class)->createQueryBuilder('c')
             ->orderBy('c.code', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('c.code LIKE :q OR c.name LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'c', ['code', 'name'], $search);
 
         return $this->page('@coupons/index.html.twig', [
             'pageTitle' => $this->translator->trans('coupons.title'),

@@ -42,10 +42,7 @@ final class TierController extends Controller
         $qb = $this->em->getRepository(LoyaltyTier::class)->createQueryBuilder('t')
             ->orderBy('t.sortOrder', 'ASC')
             ->addOrderBy('t.minSpend', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('t.code LIKE :q OR t.name LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 't', ['code', 'name'], $search);
 
         return $this->page('@loyalty/tiers/index.html.twig', [
             'pageTitle' => $this->translator->trans('loyalty.tiers.title'),

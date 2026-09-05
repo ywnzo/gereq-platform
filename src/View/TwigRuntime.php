@@ -85,6 +85,16 @@ final class TwigRuntime
         return $this->assets->url($entry);
     }
 
+    public function viteHot(): bool
+    {
+        return $this->assets->isHot();
+    }
+
+    public function viteTags(string $entry = 'resources/js/admin.ts'): string
+    {
+        return $this->assets->tags($entry, $this->cspNonce());
+    }
+
     public function icon(string $name, string $class = ''): string
     {
         return $this->icons->svg($name, $class);

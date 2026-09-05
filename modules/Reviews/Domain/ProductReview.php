@@ -11,9 +11,13 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Table(name: 'product_reviews')]
 #[ORM\Index(name: 'idx_product_reviews_product', columns: ['product_id'])]
 #[ORM\Index(name: 'idx_product_reviews_status', columns: ['status'])]
+#[ORM\Index(name: 'idx_product_reviews_source', columns: ['source'])]
+#[ORM\UniqueConstraint(name: 'uniq_product_reviews_external', columns: ['source', 'external_id'])]
 class ProductReview
 {
     public const STATUSES = ['pending', 'approved', 'rejected'];
+
+    public const SOURCES = ['local', 'google', 'facebook'];
 
     #[ORM\Id]
     #[ORM\Column(length: 36)]
@@ -40,8 +44,26 @@ class ProductReview
     #[ORM\Column(type: 'text')]
     private string $body;
 
-    #[ORM\Column(length: 32)]
+    #[ORM\Column(length: 32, options: ['default' => 'pending'])]
     private string $status = 'pending';
+
+    #[ORM\Column(length: 32, options: ['default' => 'local'])]
+    private string $source = 'local';
+
+    #[ORM\Column(name: 'external_id', length: 190, nullable: true)]
+    private ?string $externalId = null;
+
+    #[ORM\Column(name: 'external_url', length: 500, nullable: true)]
+    private ?string $externalUrl = null;
+
+    #[ORM\Column(name: 'is_verified_purchase', options: ['default' => false])]
+    private bool $isVerifiedPurchase = false;
+
+    #[ORM\Column(name: 'helpful_count', options: ['default' => 0])]
+    private int $helpfulCount = 0;
+
+    #[ORM\Column(length: 16, options: ['default' => 'cs'])]
+    private string $locale = 'cs';
 
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
@@ -108,6 +130,36 @@ class ProductReview
         return $this->status;
     }
 
+    public function source(): string
+    {
+        return $this->source;
+    }
+
+    public function externalId(): ?string
+    {
+        return $this->externalId;
+    }
+
+    public function externalUrl(): ?string
+    {
+        return $this->externalUrl;
+    }
+
+    public function isVerifiedPurchase(): bool
+    {
+        return $this->isVerifiedPurchase;
+    }
+
+    public function helpfulCount(): int
+    {
+        return $this->helpfulCount;
+    }
+
+    public function locale(): string
+    {
+        return $this->locale;
+    }
+
     public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -172,6 +224,52 @@ class ProductReview
         $this->touch();
     }
 
+    public function setSource(string $source): void
+    {
+        if (!in_array($source, self::SOURCES, true)) {
+            throw new \InvalidArgumentException('reviews.error.invalid_source');
+        }
+        $this->source = $source;
+        $this->touch();
+    }
+
+    public function setExternalId(?string $externalId): void
+    {
+        $this->externalId = $externalId !== '' ? $externalId : null;
+        $this->touch();
+    }
+
+    public function setExternalUrl(?string $externalUrl): void
+    {
+        $this->externalUrl = $externalUrl !== '' ? $externalUrl : null;
+        $this->touch();
+    }
+
+    public function setVerifiedPurchase(bool $verified): void
+    {
+        $this->isVerifiedPurchase = $verified;
+        $this->touch();
+    }
+
+    public function setHelpfulCount(int $count): void
+    {
+        $this->helpfulCount = max(0, $count);
+        $this->touch();
+    }
+
+    public function markHelpful(): void
+    {
+        ++$this->helpfulCount;
+        $this->touch();
+    }
+
+    public function setLocale(string $locale): void
+    {
+        $locale = trim($locale);
+        $this->locale = $locale !== '' ? $locale : 'cs';
+        $this->touch();
+    }
+
     public function approve(): void
     {
         $this->setStatus('approved');
@@ -185,6 +283,11 @@ class ProductReview
     public function statusLabel(): string
     {
         return 'reviews.status.' . $this->status;
+    }
+
+    public function sourceLabel(): string
+    {
+        return 'reviews.source.' . $this->source;
     }
 
     private function touch(): void

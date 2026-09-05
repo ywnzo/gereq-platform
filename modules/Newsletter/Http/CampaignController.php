@@ -49,9 +49,7 @@ final class CampaignController extends Controller
         $status = $list->filter('status');
 
         $qb = $this->em->getRepository(Campaign::class)->createQueryBuilder('c');
-        if ($list->search !== '') {
-            $qb->andWhere('c.subject LIKE :q')->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'c', ['subject']);
         if (in_array($status, Campaign::STATUSES, true)) {
             $qb->andWhere('c.status = :s')->setParameter('s', $status);
         }

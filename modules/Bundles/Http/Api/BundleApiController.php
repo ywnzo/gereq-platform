@@ -41,10 +41,7 @@ final class BundleApiController extends Controller
         );
 
         $qb = $this->em->getRepository(ProductBundle::class)->createQueryBuilder('b');
-        if ($query->search !== '') {
-            $qb->andWhere('b.code LIKE :q OR b.name LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'b', ['code', 'name'], $query->search);
         if (isset($query->filters['active']) && $query->filters['active'] !== '') {
             $qb->andWhere('b.active = :active')
                 ->setParameter('active', filter_var($query->filters['active'], FILTER_VALIDATE_BOOLEAN));

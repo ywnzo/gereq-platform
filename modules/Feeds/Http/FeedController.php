@@ -43,10 +43,7 @@ final class FeedController extends Controller
         $search = trim((string) $request->query->get('q', ''));
         $qb = $this->em->getRepository(FeedDefinition::class)->createQueryBuilder('f')
             ->orderBy('f.code', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('f.code LIKE :q OR f.name LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'f', ['code', 'name'], $search);
 
         return $this->page('@feeds/index.html.twig', [
             'pageTitle' => $this->translator->trans('feeds.title'),

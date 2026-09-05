@@ -37,9 +37,7 @@ final class InvoiceApiController extends Controller
     {
         $query = ApiQuery::fromRequest($request, sortable: ['number', 'status', 'total', 'createdAt'], filterable: ['status', 'order_id']);
         $qb = $this->em->getRepository(Invoice::class)->createQueryBuilder('i');
-        if ($query->search !== '') {
-            $qb->andWhere('i.number LIKE :q')->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'i', ['number'], $query->search);
         if (isset($query->filters['status']) && $query->filters['status'] !== '') {
             $qb->andWhere('i.status = :status')->setParameter('status', $query->filters['status']);
         }

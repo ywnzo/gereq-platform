@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="notifications" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'notifications.title'|trans }}</h1>
         <div class="actions">
@@ -12,14 +13,22 @@
         </div>
     </header>
     <p class="muted">{{ 'notifications.unread_count'|trans({'%count%': unread}) }}</p>
-    <div class="table-wrap">
+
+    <div class="toolbar--table">
+        <div class="toolbar"></div>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
+
+    <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
                     <th>{{ 'notifications.col.title'|trans }}</th>
                     <th>{{ 'notifications.col.time'|trans }}</th>
                     <th>{{ 'common.status'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -32,14 +41,16 @@
                         </td>
                         <td>{{ item.createdAt()|date('d. m. Y H:i') }}</td>
                         <td>{{ item.readAt() ? 'notifications.status.read'|trans : 'notifications.status.unread'|trans }}</td>
-                        <td>
-                            {% if not item.readAt() %}
-                                <form method="post" action="{{ url('admin.notifications.read', {id: item.id()}) }}">
-                                    {{ csrf_field()|raw }}
-                                    <button class="btn btn--ghost" type="submit">{{ 'notifications.mark_read'|trans }}</button>
-                                </form>
-                            {% endif %}
-                        </td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% if not item.readAt() %}
+                                    <form method="post" action="{{ url('admin.notifications.read', {id: item.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ 'notifications.mark_read'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr><td colspan="4">{{ 'notifications.empty'|trans }}</td></tr>
@@ -47,4 +58,5 @@
             </tbody>
         </table>
     </div>
+</div>
 {% endblock %}

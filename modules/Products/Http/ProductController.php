@@ -65,10 +65,7 @@ final class ProductController extends Controller
 
         $qb = $this->em->getRepository(Product::class)->createQueryBuilder('p');
 
-        if ($list->search !== '') {
-            $qb->andWhere('p.name LIKE :q OR p.sku LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'p', ['name', 'sku']);
         if (in_array($status, Product::STATUSES, true)) {
             $qb->andWhere('p.status = :status')->setParameter('status', $status);
         }

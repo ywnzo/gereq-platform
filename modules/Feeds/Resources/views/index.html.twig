@@ -1,5 +1,6 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="feeds" data-actions-default="1">
 <header class="page-header">
     <h1>{{ 'feeds.title'|trans }}</h1>
     <div class="actions">
@@ -9,9 +10,14 @@
     </div>
 </header>
 
-<form class="toolbar" method="get">
-    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'feeds.search'|trans }}">
-</form>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'feeds.search'|trans }}">
+    </form>
+    <div class="toolbar__toggles">
+        {% include 'ui/table_actions_toggle.html.twig' %}
+    </div>
+</div>
 
 <div class="table-wrap" data-table>
 <table class="table">
@@ -21,7 +27,7 @@
 <th>{{ 'feeds.field.driver'|trans }}</th>
 <th>{{ 'feeds.field.format'|trans }}</th>
 <th>{{ 'feeds.field.active'|trans }}</th>
-<th></th>
+<th class="table__actions-head" x-show="showActions" x-cloak></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -35,9 +41,8 @@
             {{ item.isActive() ? 'feeds.active'|trans : 'feeds.inactive'|trans }}
         </span>
     </td>
-    <td class="table__actions" x-data="rowMenu" @click.outside="close">
-        <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-        <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
             <a href="{{ url('admin.feeds.preview', {id: item.id()}) }}">{{ 'feeds.action.preview'|trans }}</a>
             {% if user.can('feeds.manage') %}
                 <a href="{{ url('admin.feeds.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
@@ -46,8 +51,8 @@
                     <button type="submit">{{ 'common.delete'|trans }}</button>
                 </form>
             {% endif %}
-        </div>
-    </td>
+        {% endblock %}
+    {% endembed %}
 </tr>
 {% else %}
 <tr>
@@ -61,5 +66,6 @@
 {% endfor %}
 </tbody>
 </table>
+</div>
 </div>
 {% endblock %}

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Gereq\View;
 
 use Gereq\Admin\Ui\Icons;
+use Gereq\Admin\Ui\Ui;
 use Gereq\Auth\Authenticator;
 use Gereq\Brand\Branding;
+use Gereq\Config\Repository;
 use Gereq\Debug\DebugBar;
 use Gereq\Hook\HookManager;
 use Gereq\Http\FormState;
@@ -37,6 +39,7 @@ final class TwigFactory
         private readonly TranslatorInterface $translator,
         private readonly LocaleCatalog $locales,
         private readonly Branding $branding,
+        private readonly Repository $config,
         private readonly ?DebugBar $debugBar = null,
     ) {
     }
@@ -54,8 +57,18 @@ final class TwigFactory
             }
         }
 
+        $debug = (bool) $this->config->get('app.debug', false);
+        $twigCache = (bool) $this->config->get('cache.twig', true);
+        $cacheDir = $this->basePath . '/storage/cache/twig';
+        if ($twigCache && !$debug) {
+            if (!is_dir($cacheDir)) {
+                mkdir($cacheDir, 0775, true);
+            }
+        }
+
         $twig = new Environment($loader, [
-            'cache' => false,
+            'cache' => ($twigCache && !$debug) ? $cacheDir : false,
+            'auto_reload' => $debug,
             'autoescape' => 'html',
             'strict_variables' => false,
         ]);
@@ -79,6 +92,8 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('csrf_field', [$runtime, 'csrfField'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('csrf_token', [$runtime, 'csrfToken']));
         $twig->addFunction(new TwigFunction('asset', [$runtime, 'asset']));
+        $twig->addFunction(new TwigFunction('vite_hot', [$runtime, 'viteHot']));
+        $twig->addFunction(new TwigFunction('vite_tags', [$runtime, 'viteTags'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('icon', [$runtime, 'icon'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('current_user', [$runtime, 'currentUser']));
         $twig->addFunction(new TwigFunction('route_is', [$runtime, 'routeIs']));
@@ -95,10 +110,17 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('__', [$runtime, 'trans']));
         $twig->addFunction(new TwigFunction('audit_action', [$runtime, 'auditAction']));
         $twig->addFunction(new TwigFunction('app_locale', [$runtime, 'appLocale']));
+        $twig->addFunction(new TwigFunction('app_env', static fn (): string => (string) config('app.env', 'local')));
         $twig->addFunction(new TwigFunction('available_locales', [$runtime, 'availableLocales']));
         $twig->addFunction(new TwigFunction('brand', [$runtime, 'brand']));
         $twig->addFunction(new TwigFunction('brand_css', [$runtime, 'brandCss'], ['is_safe' => ['css']]));
         $twig->addFunction(new TwigFunction('brand_html_style', [$runtime, 'brandHtmlStyle'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('ui', static fn (): Ui => gereq()->make(Ui::class)));
+        $twig->addFunction(new TwigFunction(
+            'ui_render',
+            static fn (string $name, array $data = []): string => gereq()->make(Ui::class)->component($name, $data),
+            ['is_safe' => ['html']],
+        ));
         $twig->addFilter(new TwigFilter('trans', [$runtime, 'trans']));
         $twig->addFilter(new TwigFilter('audit_action', [$runtime, 'auditAction']));
 

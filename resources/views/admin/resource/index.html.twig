@@ -1,15 +1,23 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="admin-resource-{{ definition.name }}" data-actions-default="1">
     <header class="page-header">
         <h1>{{ definition.label }}</h1>
         <a class="btn btn--primary" href="{{ url('admin.' ~ definition.name ~ '.create') }}">{{ 'admin.resource.add'|trans }}</a>
     </header>
-    <form class="toolbar" method="get">
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <input type="hidden" name="dir" value="{{ dir }}">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.resource.search'|trans }}">
-    </form>
+
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.resource.search'|trans }}">
+        </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
+
     <div class="table-wrap" data-table>
         <table class="table">
             <thead>
@@ -21,7 +29,7 @@
                             <th>{{ field.label }}</th>
                         {% endif %}
                     {% endfor %}
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -30,9 +38,11 @@
                         {% for field in definition.indexFields() %}
                             <td>{{ attribute(item, field.name) is defined ? attribute(item, field.name) : '' }}</td>
                         {% endfor %}
-                        <td class="table__actions">
-                            <a href="{{ url('admin.' ~ definition.name ~ '.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
-                        </td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                <a href="{{ url('admin.' ~ definition.name ~ '.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr><td colspan="20"><div class="empty">{{ 'empty.none'|trans }}</div></td></tr>
@@ -40,5 +50,7 @@
             </tbody>
         </table>
     </div>
+
     {% include 'ui/table_footer.html.twig' %}
+</div>
 {% endblock %}

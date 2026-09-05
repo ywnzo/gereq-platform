@@ -53,9 +53,7 @@ final class ProjectController extends Controller
         $customerId = $list->filter('customer');
 
         $qb = $this->em->getRepository(Project::class)->createQueryBuilder('p');
-        if ($list->search !== '') {
-            $qb->andWhere('p.name LIKE :q')->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'p', ['name']);
         if (in_array($status, Project::STATUSES, true)) {
             $qb->andWhere('p.status = :s')->setParameter('s', $status);
         }

@@ -54,10 +54,7 @@ final class DocumentController extends Controller
 
         $qb = $this->em->getRepository(Document::class)->createQueryBuilder('d');
 
-        if ($list->search !== '') {
-            $qb->andWhere('d.title LIKE :q OR d.originalName LIKE :q OR d.mime LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'd', ['title', 'originalName', 'mime']);
 
         $qb->orderBy('d.' . $list->sort, $list->direction());
 

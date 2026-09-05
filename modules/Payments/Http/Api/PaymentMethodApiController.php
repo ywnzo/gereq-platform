@@ -40,10 +40,7 @@ final class PaymentMethodApiController extends Controller
         $qb = $this->em->getRepository(PaymentMethod::class)->createQueryBuilder('m')
             ->where('m.active = true');
 
-        if ($query->search !== '') {
-            $qb->andWhere('m.code LIKE :q OR m.name LIKE :q OR m.provider LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'm', ['code', 'name', 'provider'], $query->search);
         if (isset($query->filters['type']) && $query->filters['type'] !== '') {
             $qb->andWhere('m.type = :type')->setParameter('type', $query->filters['type']);
         }

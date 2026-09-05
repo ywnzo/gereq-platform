@@ -192,7 +192,7 @@ final class SettingsController extends Controller
      */
     private function groupDefinitions(array $definitions): array
     {
-        $order = ['core', 'dashboard', 'brand', 'orders', 'shop', 'payments', 'cms', 'customer_uploads', 'other'];
+        $order = ['core', 'dashboard', 'brand', 'orders', 'shop', 'payments', 'cms', 'customer_uploads', 'reviews', 'other'];
         $groups = [];
         foreach ($definitions as $key => $definition) {
             $module = $definition['module'] ?? null;
@@ -204,6 +204,7 @@ final class SettingsController extends Controller
                 $module === 'payments' => 'payments',
                 $module === 'cms' => 'cms',
                 $module === 'customer_uploads' => 'customer_uploads',
+                $module === 'reviews' => 'reviews',
                 default => 'other',
             };
             if (!isset($groups[$groupId])) {

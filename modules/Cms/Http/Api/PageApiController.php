@@ -43,10 +43,7 @@ final class PageApiController extends Controller
         );
 
         $qb = $this->em->getRepository(Page::class)->createQueryBuilder('p');
-        if ($query->search !== '') {
-            $qb->andWhere('p.title LIKE :q OR p.slug LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'p', ['title', 'slug'], $query->search);
         if (isset($query->filters['status']) && $query->filters['status'] !== '') {
             $qb->andWhere('p.status = :status')->setParameter('status', $query->filters['status']);
         }

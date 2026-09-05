@@ -40,10 +40,7 @@ final class ActivityApiController extends Controller
         );
 
         $qb = $this->em->getRepository(Activity::class)->createQueryBuilder('a');
-        if ($query->search !== '') {
-            $qb->andWhere('a.subject LIKE :q OR a.body LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'a', ['subject', 'body'], $query->search);
         if (isset($query->filters['type']) && $query->filters['type'] !== '') {
             $qb->andWhere('a.type = :type')->setParameter('type', $query->filters['type']);
         }

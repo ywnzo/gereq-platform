@@ -1,0 +1,15 @@
+{#
+  Toolbar toggle for showing/hiding the row-actions column.
+  Parent must use x-data="dataTable".
+#}
+<button
+    type="button"
+    class="toolbar__toggle"
+    :class="showActions ? 'is-on' : ''"
+    @click="toggleActions"
+    :aria-pressed="showActions ? 'true' : 'false'"
+    title="{{ 'ui.table.actions_toggle'|trans }}"
+>
+    {{ icon('dots') }}
+    <span>{{ 'ui.table.row_actions'|trans }}</span>
+</button>

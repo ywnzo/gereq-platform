@@ -4,24 +4,34 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Cache\AppCache;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'cache:clear', description: 'Vymazat cache')]
+#[AsCommand(name: 'cache:clear', description: 'Vymazat cache (app, Twig, Doctrine metadata)')]
 final class CacheClearCommand extends Command
 {
-    public function __construct(private readonly string $basePath)
-    {
+    public function __construct(
+        private readonly string $basePath,
+        private readonly AppCache $cache,
+    ) {
         parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $dir = $this->basePath . '/storage/cache';
-        $this->wipe($dir);
-        $output->writeln('Cache vymazána.');
+        $this->cache->flush();
+        $this->wipe($this->basePath . '/storage/cache');
+        // Keep directory structure for next writes
+        foreach (['data', 'twig', 'doctrine', 'rate'] as $subdir) {
+            $path = $this->basePath . '/storage/cache/' . $subdir;
+            if (!is_dir($path)) {
+                mkdir($path, 0775, true);
+            }
+        }
+        $output->writeln('Cache vymazána (app + twig + doctrine + filesystem).');
 
         return Command::SUCCESS;
     }

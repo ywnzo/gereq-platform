@@ -18,6 +18,7 @@ final class ModuleInspector
 {
     public function __construct(
         private readonly ModuleManager $modules,
+        private readonly ModuleUpdater $updater,
         private readonly Migrator $migrator,
         private readonly ApiRegistry $api,
         private readonly Router $router,
@@ -56,7 +57,8 @@ final class ModuleInspector
         $settings = $this->moduleSettings($manifest);
         $files = $this->fileTree($manifest);
         $installed = $this->em->find(InstalledModule::class, $manifest->id);
-        $health = $this->health($manifest, $enabled, $missing, $migrations);
+        $updateAvailable = $this->updater->isUpdateAvailable($manifest->id);
+        $health = $this->health($manifest, $enabled, $missing, $migrations, $installed?->version(), $updateAvailable);
 
         $pendingMigrations = count(array_filter($migrations, static fn (array $row): bool => !$row['ran']));
 
@@ -68,6 +70,7 @@ final class ModuleInspector
                 'enabled_at' => $installed?->enabledAt()?->format('c'),
                 'class_exists' => class_exists($manifest->moduleClass),
                 'capability_providers' => $this->capabilityMap($manifest),
+                'update_available' => $updateAvailable,
             ],
             'migrations' => $migrations,
             'api' => $api,
@@ -265,8 +268,14 @@ final class ModuleInspector
      * @param list<array{version: string, ran: bool, ran_at: ?string, file: string}> $migrations
      * @return list<array{id: string, label: string, status: 'ok'|'warn'|'fail'|'info', detail: string, detail_params: array<string, string|int>}>
      */
-    private function health(ModuleManifest $manifest, bool $enabled, array $missing, array $migrations): array
-    {
+    private function health(
+        ModuleManifest $manifest,
+        bool $enabled,
+        array $missing,
+        array $migrations,
+        ?string $installedVersion,
+        bool $updateAvailable,
+    ): array {
         $checks = [];
 
         $checks[] = [
@@ -292,6 +301,21 @@ final class ModuleInspector
             'status' => $missing === [] ? 'ok' : 'fail',
             'detail' => $missing === [] ? 'modules.health.deps.ok' : 'modules.health.deps.missing',
             'detail_params' => ['%deps%' => implode(', ', $missing)],
+        ];
+
+        $checks[] = [
+            'id' => 'version',
+            'label' => 'modules.health.version.label',
+            'status' => $updateAvailable ? 'warn' : 'ok',
+            'detail' => $installedVersion === null
+                ? 'modules.health.version.not_installed'
+                : ($updateAvailable
+                    ? 'modules.health.version.update'
+                    : 'modules.health.version.ok'),
+            'detail_params' => [
+                '%installed%' => $installedVersion ?? '—',
+                '%current%' => $manifest->version,
+            ],
         ];
 
         $pending = array_values(array_filter($migrations, static fn (array $row): bool => !$row['ran']));

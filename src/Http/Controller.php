@@ -43,6 +43,49 @@ abstract class Controller
         return new RedirectResponse($url);
     }
 
+    /**
+     * Prefer Referer when present; otherwise fall back to a named route.
+     *
+     * @param array<string, string|int> $params
+     */
+    protected function redirectBack(string $fallbackRoute, array $params = []): RedirectResponse
+    {
+        $referer = (string) ($this->request()?->headers->get('Referer') ?? '');
+        if ($referer !== '') {
+            return $this->redirectTo($referer);
+        }
+
+        return $this->redirect($fallbackRoute, $params);
+    }
+
+    protected function wantsJson(?Request $request = null): bool
+    {
+        $request ??= $this->request();
+        if ($request === null) {
+            return false;
+        }
+
+        if ($request->headers->get('X-Requested-With') === 'XMLHttpRequest') {
+            return true;
+        }
+
+        return str_contains((string) $request->headers->get('Accept', ''), 'application/json');
+    }
+
+    /**
+     * Response for row toggles (publish / active / featured): JSON for AJAX, redirect otherwise.
+     *
+     * @param array<string, string|int> $params
+     */
+    protected function toggleResponse(bool $on, string $fallbackRoute, array $params = []): Response
+    {
+        if ($this->wantsJson()) {
+            return $this->json(['on' => $on]);
+        }
+
+        return $this->redirectBack($fallbackRoute, $params);
+    }
+
     protected function flash(string $type, string $message): void
     {
         $session = $this->request()?->getSession();

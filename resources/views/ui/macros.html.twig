@@ -1,0 +1,27 @@
+{#
+  Twig macros mirroring Gereq\Admin\Ui\Ui.
+  {% import 'ui/macros.html.twig' as ui %}
+  {{ ui.badge('TOP', 'signal') }}
+  {{ ui.drawer_trigger('filters', 'Filtry'|trans, 'ghost', 'filters') }}
+#}
+{% macro badge(label, tone = 'muted', class = null) %}
+<span class="badge badge--{{ tone }}{{ class ? ' ' ~ class : '' }}">{{ label }}</span>
+{% endmacro %}
+
+{% macro drawer_trigger(drawer_id, label, variant = 'ghost', icon_name = null, class = null) %}
+<button
+    type="button"
+    class="btn btn--{{ variant }}{{ class ? ' ' ~ class : '' }}"
+    data-drawer-open="{{ drawer_id }}"
+>
+    {% if icon_name %}{{ icon(icon_name) }} {% endif %}{{ label }}
+</button>
+{% endmacro %}
+
+{% macro empty(title, hint = null, action = null) %}
+<div class="empty">
+    <h2>{{ title }}</h2>
+    {% if hint %}<p>{{ hint }}</p>{% endif %}
+    {% if action %}{{ action|raw }}{% endif %}
+</div>
+{% endmacro %}

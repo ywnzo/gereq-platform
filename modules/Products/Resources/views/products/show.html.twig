@@ -5,9 +5,9 @@
         <div>
             <p class="eyebrow"><a href="{{ url('admin.products.index') }}">{{ 'nav.products'|trans }}</a></p>
             <h1>{{ item.name() }}</h1>
-            <p class="muted">
+            <p class="muted detail-layout__meta">
                 <code>{{ item.sku() }}</code>
-                · <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
+                <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
             </p>
         </div>
         <div class="actions">
@@ -31,50 +31,103 @@
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
-            <section class="panel">
-                <header class="panel__head">
-                    <h2>{{ 'common.overview'|trans }}</h2>
-                </header>
-                <dl class="meta-list meta-list--flush">
-                    <div>
-                        <dt>{{ 'products.field.status'|trans }}</dt>
-                        <dd>
-                            {% if user.can('products.manage') %}
-                                <form method="post" action="{{ url('admin.products.status', {id: item.id()}) }}" class="meta-list__action">
-                                    {{ csrf_field()|raw }}
-                                    <span class="badge">{{ item.statusLabel()|trans }}</span>
-                                    <select id="status" name="status" class="input" aria-label="{{ 'products.change_status'|trans }}" onchange="this.form.submit()">
-                                        {% for s in statuses %}
-                                            <option value="{{ s }}" {{ item.status() == s ? 'selected' : '' }}>{{ ('products.status.' ~ s)|trans }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </form>
-                            {% else %}
-                                <span class="badge">{{ item.statusLabel()|trans }}</span>
-                            {% endif %}
-                        </dd>
-                    </div>
-                    <div><dt>{{ 'products.field.unit'|trans }}</dt><dd>{{ item.unit() }}</dd></div>
-                    <div><dt>{{ 'products.field.created'|trans }}</dt><dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd></div>
-                    <div><dt>{{ 'products.field.updated'|trans }}</dt><dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd></div>
-                    <div class="meta-list__full">
-                        <dt>{{ 'products.field.categories'|trans }}</dt>
-                        <dd>
+            <div class="detail-layout">
+                <div class="detail-layout__main">
+                    <section class="detail-hero panel">
+                        <div class="detail-hero__body">
+                            <div class="detail-hero__highlight">
+                                <span>{{ 'products.field.status'|trans }}</span>
+                                <strong>{{ item.statusLabel()|trans }}</strong>
+                            </div>
+                            <dl class="detail-hero__facts">
+                                <div>
+                                    <dt>{{ 'products.field.sku'|trans|default('SKU') }}</dt>
+                                    <dd><code>{{ item.sku() }}</code></dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'products.field.unit'|trans }}</dt>
+                                    <dd>{{ item.unit() }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'products.field.created'|trans }}</dt>
+                                    <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'products.field.updated'|trans }}</dt>
+                                    <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'products.field.description'|trans }}</h2>
+                        </header>
+                        <div class="detail-prose">{{ item.description() ?: '—' }}</div>
+                    </section>
+
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'products.field.categories'|trans }}</h2>
+                        </header>
+                        <div class="module-chip-row detail-layout__chips">
                             {% if item.categories() is empty %}
-                                —
+                                <span class="muted">—</span>
                             {% else %}
                                 {% for cat in item.categories() %}
                                     <span class="badge">{{ cat.name() }}</span>
                                 {% endfor %}
                             {% endif %}
-                        </dd>
-                    </div>
-                    <div class="meta-list__full">
-                        <dt>{{ 'products.field.description'|trans }}</dt>
-                        <dd>{{ item.description() ?: '—' }}</dd>
-                    </div>
-                </dl>
-            </section>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="detail-layout__aside">
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'products.field.status'|trans }}</h2>
+                        </header>
+                        {% if user.can('products.manage') %}
+                            <form method="post" action="{{ url('admin.products.status', {id: item.id()}) }}" class="meta-list__action">
+                                {{ csrf_field()|raw }}
+                                <span class="badge">{{ item.statusLabel()|trans }}</span>
+                                <select id="status" name="status" class="input" aria-label="{{ 'products.change_status'|trans }}" onchange="this.form.submit()">
+                                    {% for s in statuses %}
+                                        <option value="{{ s }}" {{ item.status() == s ? 'selected' : '' }}>{{ ('products.status.' ~ s)|trans }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        {% else %}
+                            <span class="badge">{{ item.statusLabel()|trans }}</span>
+                        {% endif %}
+                    </section>
+
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'common.overview'|trans }}</h2>
+                        </header>
+                        <dl class="meta-list meta-list--flush detail-layout__specs">
+                            <div>
+                                <dt>{{ 'products.field.sku'|trans|default('SKU') }}</dt>
+                                <dd><code>{{ item.sku() }}</code></dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'products.field.unit'|trans }}</dt>
+                                <dd>{{ item.unit() }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'products.field.created'|trans }}</dt>
+                                <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'products.field.updated'|trans }}</dt>
+                                <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                    </section>
+                </aside>
+            </div>
         </section>
 
         <section class="design-panel" data-panel="images" role="tabpanel">

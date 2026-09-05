@@ -8,7 +8,16 @@
 {% endblock %}
 
 {% block content %}
-<div class="list-shell" x-data="moduleTable">
+{% set pageIds = items|map(r => r.manifest.id) %}
+{% set updateIds = items|filter(r => r.update_available)|map(r => r.manifest.id) %}
+<div
+    class="list-shell"
+    x-data="moduleTable"
+    data-table-id="admin-modules"
+    data-actions-default="1"
+    data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
+    data-update-ids="{{ updateIds|json_encode|e('html_attr') }}"
+>
     <header class="page-header">
         <div>
             <h1>{{ 'admin.modules.title'|trans }}</h1>
@@ -24,6 +33,10 @@
         <div class="module-stat">
             <span class="module-stat__value">{{ stats.enabled }}</span>
             <span class="module-stat__label">{{ 'common.active'|trans }}</span>
+        </div>
+        <div class="module-stat{% if stats.updates %} module-stat--warn{% endif %}">
+            <span class="module-stat__value">{{ stats.updates }}</span>
+            <span class="module-stat__label">{{ 'admin.modules.stat.updates'|trans }}</span>
         </div>
         <div class="module-stat{% if stats.issues %} module-stat--warn{% endif %}">
             <span class="module-stat__value">{{ stats.issues }}</span>
@@ -45,15 +58,71 @@
                 <option value="">{{ 'admin.modules.filter.all'|trans }}</option>
                 <option value="on">{{ 'common.enabled'|trans }}</option>
                 <option value="off">{{ 'common.disabled'|trans }}</option>
+                <option value="update">{{ 'admin.modules.update_available'|trans }}</option>
                 <option value="warn">{{ 'common.warnings'|trans }}</option>
             </select>
         </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+            {% if stats.updates > 0 %}
+                <form method="post" action="{{ url('admin.modules.bulk') }}" title="{{ 'admin.modules.update_all'|trans }}">
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="action" value="update_outdated">
+                    <button
+                        type="submit"
+                        class="icon-btn"
+                        aria-label="{{ 'admin.modules.update_all'|trans }}"
+                        onclick="return confirm('{{ 'admin.modules.bulk.confirm_update_all'|trans({'%count%': stats.updates})|e('js') }}')"
+                    >{{ icon('refresh') }}</button>
+                </form>
+            {% else %}
+                <span class="icon-btn" aria-disabled="true" title="{{ 'admin.modules.update_all_none'|trans }}">{{ icon('refresh') }}</span>
+            {% endif %}
+        </div>
     </div>
+
+    <form
+        class="bulk-bar"
+        method="post"
+        action="{{ url('admin.modules.bulk') }}"
+        x-show="selectedCount > 0"
+        x-cloak
+    >
+        {{ csrf_field()|raw }}
+        <template x-for="id in selected" :key="id">
+            <input type="hidden" name="ids[]" :value="id">
+        </template>
+        <div class="bulk-bar__meta">
+            <strong x-text="selectedCount"></strong>
+            <span>{{ 'admin.modules.bulk.selected'|trans }}</span>
+            <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'admin.modules.bulk.clear'|trans }}</button>
+        </div>
+        <div class="bulk-bar__actions">
+            <select class="input" name="action" x-model="bulkAction" required>
+                <option value="">{{ 'admin.modules.bulk.choose'|trans }}</option>
+                <option value="update">{{ 'admin.modules.bulk.action.update'|trans }}</option>
+                <option value="enable">{{ 'admin.modules.bulk.action.enable'|trans }}</option>
+                <option value="disable">{{ 'admin.modules.bulk.action.disable'|trans }}</option>
+            </select>
+            <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'admin.modules.bulk.apply'|trans }}</button>
+        </div>
+    </form>
 
     <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
+                    <th class="table__check">
+                        <label class="table-check">
+                            <input
+                                type="checkbox"
+                                x-ref="selectAll"
+                                @change="toggleAll"
+                                :checked="allSelected"
+                            >
+                            <span class="sr-only">{{ 'admin.modules.bulk.select_all'|trans }}</span>
+                        </label>
+                    </th>
                     <th>{{ 'admin.modules.col.name'|trans }}</th>
                     <th>{{ 'admin.modules.col.description'|trans }}</th>
                     <th>{{ 'admin.modules.col.status'|trans }}</th>
@@ -61,7 +130,7 @@
                     <th class="is-num">{{ 'admin.modules.meta.routes'|trans }}</th>
                     <th class="is-num">{{ 'admin.modules.meta.migrations'|trans }}</th>
                     <th>{{ 'admin.modules.col.health'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -70,10 +139,24 @@
                     {% set counts = row.counts %}
                     {% set searchBlob = (manifest.name ~ ' ' ~ manifest.id ~ ' ' ~ (manifest.description|trans))|lower %}
                     <tr
+                        data-id="{{ manifest.id }}"
                         data-enabled="{{ row.enabled ? '1' : '0' }}"
-                        data-warn="{{ (row.health_issues or row.missing is not empty) ? '1' : '0' }}"
+                        data-warn="{{ (row.health_issues or row.missing is not empty or row.update_available) ? '1' : '0' }}"
+                        data-update="{{ row.update_available ? '1' : '0' }}"
                         data-search="{{ searchBlob|e('html_attr') }}"
+                        :class="isSelected('{{ manifest.id }}') ? 'is-selected' : ''"
                     >
+                        <td class="table__check">
+                            <label class="table-check">
+                                <input
+                                    type="checkbox"
+                                    value="{{ manifest.id }}"
+                                    @change="toggleId('{{ manifest.id }}')"
+                                    :checked="isSelected('{{ manifest.id }}')"
+                                >
+                                <span class="sr-only">{{ manifest.name }}</span>
+                            </label>
+                        </td>
                         <td>
                             <div class="table__title">
                                 <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
@@ -82,7 +165,9 @@
                         </td>
                         <td class="is-mute">{{ (manifest.description ?: 'common.no_description')|trans }}</td>
                         <td>
-                            {% if row.enabled %}
+                            {% if row.update_available %}
+                                <span class="badge badge--warn">{{ 'admin.modules.update_available'|trans }}</span>
+                            {% elseif row.enabled %}
                                 <span class="badge badge--ok">{{ 'common.enabled'|trans }}</span>
                             {% else %}
                                 <span class="badge badge--muted">{{ 'common.disabled'|trans }}</span>
@@ -105,27 +190,35 @@
                                 <span class="muted">—</span>
                             {% endif %}
                         </td>
-                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
-                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
                                 <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ 'common.detail'|trans }}</a>
+                                {% if row.update_available %}
+                                    <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <input type="hidden" name="return" value="index">
+                                        <button type="submit">{{ 'admin.modules.update'|trans }}</button>
+                                    </form>
+                                {% endif %}
                                 {% if row.enabled %}
                                     <form method="post" action="{{ url('admin.modules.disable', {id: manifest.id}) }}">
                                         {{ csrf_field()|raw }}
+                                        <input type="hidden" name="return" value="index">
                                         <button type="submit">{{ 'common.deactivate'|trans }}</button>
                                     </form>
                                 {% else %}
                                     <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
                                         {{ csrf_field()|raw }}
+                                        <input type="hidden" name="return" value="index">
                                         <button type="submit">{{ 'common.activate'|trans }}</button>
                                     </form>
                                 {% endif %}
-                            </div>
-                        </td>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="8">
+                        <td colspan="9">
                             <div class="empty">
                                 <h2>{{ 'empty.modules'|trans }}</h2>
                                 <p>{{ 'empty.modules_hint'|trans }}</p>
@@ -134,7 +227,7 @@
                     </tr>
                 {% endfor %}
                 <tr x-show="empty" x-cloak>
-                    <td colspan="8">
+                    <td colspan="9">
                         <div class="empty">
                             <h2>{{ 'admin.modules.filter.empty'|trans }}</h2>
                         </div>

@@ -40,10 +40,7 @@ final class CouponApiController extends Controller
         );
 
         $qb = $this->em->getRepository(Coupon::class)->createQueryBuilder('c');
-        if ($query->search !== '') {
-            $qb->andWhere('c.code LIKE :q OR c.name LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'c', ['code', 'name'], $query->search);
         if (isset($query->filters['type']) && $query->filters['type'] !== '') {
             $qb->andWhere('c.type = :type')->setParameter('type', $query->filters['type']);
         }

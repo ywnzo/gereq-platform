@@ -1,27 +1,92 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
-<header class="page-header"><div><h1>{{ item.title() }}</h1><p class="muted">{{ item.typeLabel()|trans }}</p></div>
-<div class="actions">{% if user.can('calendar.manage') %}
-<a class="btn btn--primary" href="{{ url('admin.calendar.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
-<form method="post" action="{{ url('admin.calendar.destroy',{id:item.id()}) }}" onsubmit="return confirm('{{ 'calendar.confirm_delete'|trans|e('js') }}');">{{ csrf_field()|raw }}
-<button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button></form>{% endif %}</div></header>
+<header class="page-header">
+    <div>
+        <h1>{{ item.title() }}</h1>
+        <p class="muted detail-layout__meta">
+            <span class="badge badge--info">{{ item.typeLabel()|trans }}</span>
+            {% if item.allDay() %}<span class="badge badge--muted">{{ 'calendar.field.all_day'|trans }}</span>{% endif %}
+        </p>
+    </div>
+    <div class="actions">
+        {% if user.can('calendar.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.calendar.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+            <form method="post" action="{{ url('admin.calendar.destroy',{id:item.id()}) }}" onsubmit="return confirm('{{ 'calendar.confirm_delete'|trans|e('js') }}');">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
+</header>
 
-<div class="detail-stack">
-<section class="panel">
-<header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
-<dl class="meta-list meta-list--flush">
-<div><dt>{{ 'calendar.field.starts'|trans }}</dt><dd>{{ item.startsAt().format('d. m. Y H:i') }}</dd></div>
-<div><dt>{{ 'calendar.field.ends'|trans }}</dt><dd>{{ item.endsAt().format('d. m. Y H:i') }}</dd></div>
-<div><dt>{{ 'calendar.field.all_day'|trans }}</dt><dd>{{ item.allDay() ? 'common.yes'|trans : 'common.no'|trans }}</dd></div>
-<div class="meta-list__full"><dt>{{ 'calendar.field.description'|trans }}</dt><dd>{{ item.description() ?: '—' }}</dd></div>
-</dl>
-</section>
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'calendar.field.starts'|trans }}</span>
+                    <strong>{{ item.startsAt().format('d. m. Y H:i') }}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'calendar.field.ends'|trans }}</dt>
+                        <dd>{{ item.endsAt().format('d. m. Y H:i') }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'calendar.field.all_day'|trans }}</dt>
+                        <dd>{{ item.allDay() ? 'common.yes'|trans : 'common.no'|trans }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'calendar.field.type'|trans|default('Typ') }}</dt>
+                        <dd>{{ item.typeLabel()|trans }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'calendar.links.title'|trans }}</dt>
+                        <dd>{{ links|default([])|length }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
 
-{% if links is not empty %}
-<section class="panel">
-<header class="panel__head"><h2>{{ 'calendar.links.title'|trans }}</h2></header>
-<ul>{% for l in links %}<li>{{ l.entityType() }}: {{ l.entityId() }}</li>{% endfor %}</ul>
-</section>
-{% endif %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'calendar.field.description'|trans }}</h2></header>
+            <div class="detail-prose">{{ item.description() ?: '—' }}</div>
+        </section>
+
+        {% if links is not empty %}
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'calendar.links.title'|trans }}</h2></header>
+                <ul>
+                    {% for l in links %}
+                        <li>{{ l.entityType() }}: {{ l.entityId() }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div>
+                    <dt>{{ 'calendar.field.starts'|trans }}</dt>
+                    <dd>{{ item.startsAt().format('d. m. Y H:i') }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'calendar.field.ends'|trans }}</dt>
+                    <dd>{{ item.endsAt().format('d. m. Y H:i') }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'calendar.field.all_day'|trans }}</dt>
+                    <dd>{{ item.allDay() ? 'common.yes'|trans : 'common.no'|trans }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'calendar.field.type'|trans|default('Typ') }}</dt>
+                    <dd>{{ item.typeLabel()|trans }}</dd>
+                </div>
+            </dl>
+        </section>
+    </aside>
 </div>
 {% endblock %}

@@ -1,24 +1,32 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="customers" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'customers.title'|trans }}</h1>
-        {% if user.can('customers.create') %}
-            <a class="btn btn--primary" href="{{ url('admin.customers.create') }}">{{ icon('plus') }} {{ 'customers.add'|trans }}</a>
-        {% endif %}
+        <div class="actions">
+            {% if user.can('customers.create') %}
+                <a class="btn btn--primary" href="{{ url('admin.customers.create') }}">{{ icon('plus') }} {{ 'customers.add'|trans }}</a>
+            {% endif %}
+        </div>
     </header>
 
-    <form class="toolbar" method="get">
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <input type="hidden" name="dir" value="{{ dir }}">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'customers.search'|trans }}">
-        <select name="status" class="input" onchange="this.form.submit()">
-            <option value="">{{ 'common.all_statuses'|trans }}</option>
-            <option value="active" {{ status == 'active' ? 'selected' : '' }}>{{ 'customers.status.active'|trans }}</option>
-            <option value="lead" {{ status == 'lead' ? 'selected' : '' }}>{{ 'customers.status.lead'|trans }}</option>
-            <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>{{ 'customers.status.inactive'|trans }}</option>
-        </select>
-    </form>
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'customers.search'|trans }}">
+            <select name="status" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'common.all_statuses'|trans }}</option>
+                <option value="active" {{ status == 'active' ? 'selected' : '' }}>{{ 'customers.status.active'|trans }}</option>
+                <option value="lead" {{ status == 'lead' ? 'selected' : '' }}>{{ 'customers.status.lead'|trans }}</option>
+                <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>{{ 'customers.status.inactive'|trans }}</option>
+            </select>
+        </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
 
     <div class="table-wrap" data-table>
         <table class="table">
@@ -29,7 +37,7 @@
                     <th>{{ 'customers.field.phone'|trans }}</th>
                     {% include 'ui/sort_th.html.twig' with { label: 'customers.field.company'|trans, column: 'company', query: { status: status } } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'customers.field.status'|trans, column: 'status', query: { status: status } } %}
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -49,9 +57,8 @@
                                 {{ item.statusLabel()|trans }}
                             </span>
                         </td>
-                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
-                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
                                 <a href="{{ url('admin.customers.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
                                 {% if user.can('customers.edit') %}
                                     <a href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
@@ -62,8 +69,8 @@
                                         <button type="submit">{{ 'common.delete'|trans }}</button>
                                     </form>
                                 {% endif %}
-                            </div>
-                        </td>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
@@ -80,4 +87,5 @@
     </div>
 
     {% include 'ui/table_footer.html.twig' %}
+</div>
 {% endblock %}

@@ -36,9 +36,7 @@ final class ReturnApiController extends Controller
     {
         $query = ApiQuery::fromRequest($request, sortable: ['status', 'number', 'createdAt'], filterable: ['status', 'order_id']);
         $qb = $this->em->getRepository(ReturnRequest::class)->createQueryBuilder('r');
-        if ($query->search !== '') {
-            $qb->andWhere('r.number LIKE :q OR r.orderId LIKE :q')->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'r', ['number', 'orderId'], $query->search);
         if (!empty($query->filters['status'])) {
             $qb->andWhere('r.status = :s')->setParameter('s', $query->filters['status']);
         }

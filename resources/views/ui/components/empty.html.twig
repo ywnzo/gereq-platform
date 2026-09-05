@@ -1,0 +1,5 @@
+<div class="empty">
+    <h2>{{ title|default('') }}</h2>
+    {% if hint %}<p>{{ hint }}</p>{% endif %}
+    {% if action %}{{ action|raw }}{% endif %}
+</div>

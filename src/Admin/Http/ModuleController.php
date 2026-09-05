@@ -11,6 +11,8 @@ use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleInspector;
 use Gereq\Module\ModuleManager;
+use Gereq\Module\ModuleUpdater;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -27,6 +29,7 @@ final class ModuleController extends Controller
         private readonly CommandPalette $palette,
         private readonly ModuleManager $modules,
         private readonly ModuleInspector $inspector,
+        private readonly ModuleUpdater $updater,
         private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -43,16 +46,22 @@ final class ModuleController extends Controller
                 'missing' => $report['overview']['missing'],
                 'counts' => $report['counts'],
                 'health_issues' => $report['counts']['health_issues'],
+                'update_available' => $report['overview']['update_available'],
             ];
         }
 
         usort($items, static function (array $a, array $b): int {
+            if ($a['update_available'] !== $b['update_available']) {
+                return $a['update_available'] ? -1 : 1;
+            }
             if ($a['enabled'] !== $b['enabled']) {
                 return $a['enabled'] ? -1 : 1;
             }
 
             return $a['manifest']->name <=> $b['manifest']->name;
         });
+
+        $updates = count(array_filter($items, static fn (array $row): bool => $row['update_available']));
 
         return $this->page('admin/modules/index.html.twig', [
             'pageTitle' => $this->translator->trans('admin.modules.title'),
@@ -61,6 +70,7 @@ final class ModuleController extends Controller
                 'total' => count($items),
                 'enabled' => count(array_filter($items, static fn (array $row): bool => $row['enabled'])),
                 'issues' => array_sum(array_map(static fn (array $row): int => $row['health_issues'], $items)),
+                'updates' => $updates,
             ],
         ]);
     }
@@ -92,7 +102,7 @@ final class ModuleController extends Controller
             $this->flash('error', $e->getMessage());
         }
 
-        return $this->redirect('admin.modules.show', ['id' => $id]);
+        return $this->modulesReturnRedirect($id);
     }
 
     public function disable(string $id): Response
@@ -102,6 +112,92 @@ final class ModuleController extends Controller
             $this->flash('success', $this->translator->trans('admin.modules.deactivated'));
         } catch (\Throwable $e) {
             $this->flash('error', $e->getMessage());
+        }
+
+        return $this->modulesReturnRedirect($id);
+    }
+
+    public function update(string $id): Response
+    {
+        try {
+            $messages = $this->updater->update($id);
+            $count = count($messages);
+            $this->flash('success', $this->translator->trans(
+                $count > 0 ? 'admin.modules.updated_with_migrations' : 'admin.modules.updated',
+                ['%count%' => $count]
+            ));
+        } catch (\Throwable $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return $this->modulesReturnRedirect($id);
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $action = (string) $request->request->get('action', '');
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn (mixed $id): string => is_string($id) ? trim($id) : '',
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+
+        if ($action === 'update_outdated') {
+            foreach ($this->modules->discover() as $manifest) {
+                if ($this->updater->isUpdateAvailable($manifest->id)) {
+                    $ids[] = $manifest->id;
+                }
+            }
+            $ids = array_values(array_unique($ids));
+            $action = 'update';
+        }
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('admin.modules.bulk.error.empty'));
+
+            return $this->redirect('admin.modules.index');
+        }
+
+        if (!in_array($action, ['update', 'enable', 'disable'], true)) {
+            $this->flash('error', $this->translator->trans('admin.modules.bulk.error.action'));
+
+            return $this->redirect('admin.modules.index');
+        }
+
+        $ok = 0;
+        $errors = [];
+        foreach ($ids as $id) {
+            try {
+                match ($action) {
+                    'update' => $this->updater->update($id),
+                    'enable' => $this->modules->enable($id),
+                    'disable' => $this->modules->disable($id),
+                };
+                ++$ok;
+            } catch (\Throwable $e) {
+                $errors[] = $id . ': ' . $e->getMessage();
+            }
+        }
+
+        if ($ok > 0) {
+            $this->flash('success', $this->translator->trans('admin.modules.bulk.flash.' . $action, [
+                '%count%' => $ok,
+            ]));
+        }
+        if ($errors !== []) {
+            $this->flash('error', implode(' · ', array_slice($errors, 0, 5)));
+        }
+
+        return $this->redirect('admin.modules.index');
+    }
+
+    private function modulesReturnRedirect(string $id): Response
+    {
+        if ($this->request()->request->get('return') === 'index') {
+            return $this->redirect('admin.modules.index');
         }
 
         return $this->redirect('admin.modules.show', ['id' => $id]);

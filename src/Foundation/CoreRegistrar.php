@@ -194,9 +194,11 @@ final class CoreRegistrar
             $router->post('/roles/{id}', [RoleController::class, 'update'])->name('admin.roles.update')->middleware('auth')->permission('roles.manage');
 
             $router->get('/modules', [ModuleController::class, 'index'])->name('admin.modules.index')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/bulk', [ModuleController::class, 'bulk'])->name('admin.modules.bulk')->middleware('auth')->permission('modules.manage');
             $router->get('/modules/{id}', [ModuleController::class, 'show'])->name('admin.modules.show')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/enable', [ModuleController::class, 'enable'])->name('admin.modules.enable')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/disable', [ModuleController::class, 'disable'])->name('admin.modules.disable')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/{id}/update', [ModuleController::class, 'update'])->name('admin.modules.update')->middleware('auth')->permission('modules.manage');
 
             $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth')->permission('settings.manage');
             $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth')->permission('settings.manage');

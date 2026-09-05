@@ -56,10 +56,7 @@ final class CustomerController extends Controller
         $status = $list->filter('status');
 
         $qb = $this->em->getRepository(Customer::class)->createQueryBuilder('c');
-        if ($list->search !== '') {
-            $qb->andWhere('c.name LIKE :q OR c.email LIKE :q OR c.company LIKE :q OR c.phone LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'c', ['name', 'email', 'company', 'phone']);
         if (in_array($status, ['active', 'inactive', 'lead'], true)) {
             $qb->andWhere('c.status = :status')->setParameter('status', $status);
         }

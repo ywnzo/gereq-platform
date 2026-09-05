@@ -39,9 +39,7 @@ final class WarehouseController extends Controller
         $search = trim((string) $request->query->get('q', ''));
         $qb = $this->em->getRepository(Warehouse::class)->createQueryBuilder('w')
             ->orderBy('w.code', 'ASC');
-        if ($search !== '') {
-            $qb->andWhere('w.code LIKE :q OR w.name LIKE :q')->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'w', ['code', 'name'], $search);
 
         return $this->page('@warehouse/warehouses/index.html.twig', [
             'pageTitle' => $this->translator->trans('warehouse.title'),

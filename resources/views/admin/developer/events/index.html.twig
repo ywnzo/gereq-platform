@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="admin-events" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'admin.events.title'|trans }}</h1>
     </header>
@@ -8,7 +9,7 @@
     {% for module, events in groups %}
         <section class="hook-section">
             <header class="page-header page-header--compact"><h2>{{ module }}</h2></header>
-            <div class="table-wrap">
+            <div class="table-wrap" data-table>
                 <table class="table">
                     <thead>
                         <tr><th>{{ 'admin.events.col.event'|trans }}</th><th>{{ 'admin.events.col.version'|trans }}</th><th>{{ 'admin.events.col.webhook'|trans }}</th><th>{{ 'admin.events.col.description'|trans }}</th></tr>
@@ -29,4 +30,5 @@
     {% else %}
         <div class="empty"><h2>{{ 'empty.events'|trans }}</h2></div>
     {% endfor %}
+</div>
 {% endblock %}

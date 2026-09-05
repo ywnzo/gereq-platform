@@ -39,10 +39,7 @@ final class DealApiController extends Controller
         );
 
         $qb = $this->em->getRepository(Deal::class)->createQueryBuilder('d');
-        if ($query->search !== '') {
-            $qb->andWhere('d.title LIKE :q OR d.note LIKE :q')
-                ->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'd', ['title', 'note'], $query->search);
         if (isset($query->filters['stage']) && $query->filters['stage'] !== '') {
             $qb->andWhere('d.stage = :stage')->setParameter('stage', $query->filters['stage']);
         }

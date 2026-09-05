@@ -14,21 +14,21 @@
         <div>
             <p class="eyebrow"><a href="{{ url('admin.cms.pages.index') }}">{{ 'nav.cms.pages'|trans }}</a></p>
             <h1>{{ item.title() }}</h1>
-            <p class="muted">
+            <p class="muted detail-layout__meta">
                 <code>/api/public/pages/{{ item.slug() }}</code>
-                · <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
-                · {{ item.templateLabel()|trans }}
+                <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
+                <span class="badge badge--muted">{{ item.templateLabel()|trans }}</span>
             </p>
         </div>
         <div class="actions">
             <a class="btn btn--ghost" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank">{{ 'cms.pages.preview_json'|trans }}</a>
             {% if user.can('cms.manage') %}
-                {% if not item.isPublished() %}
-                    <form method="post" action="{{ url('admin.cms.pages.publish', {id: item.id()}) }}">
-                        {{ csrf_field()|raw }}
-                        <button class="btn btn--primary" type="submit">{{ 'cms.pages.publish'|trans }}</button>
-                    </form>
-                {% endif %}
+                <form method="post" action="{{ url('admin.cms.pages.publish', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn {{ item.isPublished() ? 'btn--ghost' : 'btn--primary' }}" type="submit">
+                        {{ item.isPublished() ? 'cms.pages.unpublish'|trans : 'cms.pages.publish'|trans }}
+                    </button>
+                </form>
                 <a class="btn btn--primary" href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                 <form method="post" action="{{ url('admin.cms.pages.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'cms.confirm_delete_page'|trans|e('js') }}');">
                     {{ csrf_field()|raw }}
@@ -52,41 +52,62 @@
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
-            <section class="panel">
-                <header class="panel__head">
-                    <h2>{{ 'common.overview'|trans }}</h2>
-                </header>
-                <div class="meta-grid">
-                    <div class="meta-tile">
-                        <span>{{ 'cms.field.slug'|trans }}</span>
-                        <strong><code>{{ item.slug() }}</code></strong>
-                    </div>
-                    <div class="meta-tile">
-                        <span>{{ 'cms.field.status'|trans }}</span>
-                        <strong>{{ item.statusLabel()|trans }}</strong>
-                    </div>
-                    <div class="meta-tile">
-                        <span>{{ 'cms.field.template'|trans }}</span>
-                        <strong>{{ item.templateLabel()|trans }}</strong>
-                    </div>
-                    <div class="meta-tile">
-                        <span>{{ 'cms.field.content_mode'|trans }}</span>
-                        <strong>{{ item.contentModeLabel()|trans }}</strong>
-                    </div>
-                    <div class="meta-tile">
-                        <span>{{ 'cms.field.published_at'|trans }}</span>
-                        <strong>{{ item.publishedAt() ? item.publishedAt().format('d. m. Y H:i') : '—' }}</strong>
-                    </div>
-                    <div class="meta-tile">
-                        <span>{{ 'cms.field.updated'|trans }}</span>
-                        <strong>{{ item.updatedAt().format('d. m. Y H:i') }}</strong>
-                    </div>
-                    <div class="meta-tile meta-tile--wide">
-                        <span>{{ 'cms.field.meta_description'|trans }}</span>
-                        <strong>{{ item.metaDescription()|default('—') }}</strong>
-                    </div>
+            <div class="detail-layout">
+                <div class="detail-layout__main">
+                    <section class="detail-hero panel">
+                        <div class="detail-hero__body">
+                            <div class="detail-hero__highlight">
+                                <span>{{ 'cms.field.status'|trans }}</span>
+                                <strong>{{ item.statusLabel()|trans }}</strong>
+                            </div>
+                            <dl class="detail-hero__facts">
+                                <div>
+                                    <dt>{{ 'cms.field.slug'|trans }}</dt>
+                                    <dd><code>{{ item.slug() }}</code></dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'cms.field.template'|trans }}</dt>
+                                    <dd>{{ item.templateLabel()|trans }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'cms.field.content_mode'|trans }}</dt>
+                                    <dd>{{ item.contentModeLabel()|trans }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'cms.field.updated'|trans }}</dt>
+                                    <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
                 </div>
-            </section>
+
+                <aside class="detail-layout__aside">
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'common.overview'|trans }}</h2>
+                        </header>
+                        <dl class="meta-list meta-list--flush detail-layout__specs">
+                            <div class="meta-list__full">
+                                <dt>{{ 'cms.field.meta_description'|trans }}</dt>
+                                <dd>{{ item.metaDescription()|default('—') }}</dd>
+                            </div>
+                            <div class="meta-list__full">
+                                <dt>{{ 'cms.field.published_at'|trans }}</dt>
+                                <dd>{{ item.publishedAt() ? item.publishedAt().format('d. m. Y H:i') : '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'cms.field.status'|trans }}</dt>
+                                <dd>{{ item.statusLabel()|trans }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'cms.field.updated'|trans }}</dt>
+                                <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                    </section>
+                </aside>
+            </div>
         </section>
 
         {% if item.isRaw() %}

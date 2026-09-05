@@ -151,7 +151,7 @@ Alpine.data('gereqAdmin', () => ({
 Alpine.data('navGroup', () => ({
     open: true,
     init() {
-        const key = 'gereq-nav-group:' + ((this.$el as HTMLElement).dataset.group || '');
+        const key = this.storageKey();
         const stored = localStorage.getItem(key);
         if (stored === '0') {
             this.open = false;
@@ -159,6 +159,9 @@ Alpine.data('navGroup', () => ({
             this.open = true;
         }
     },
+    storageKey(): string {
+        return 'gereq-nav-group:' + ((this.$el as HTMLElement).dataset.group || '');
+    },
     get chevronClass(): string {
         return this.open ? 'is-open' : '';
     },
@@ -167,15 +170,29 @@ Alpine.data('navGroup', () => ({
     },
     toggle() {
         this.open = !this.open;
-        const key = 'gereq-nav-group:' + ((this.$el as HTMLElement).dataset.group || '');
-        localStorage.setItem(key, this.open ? '1' : '0');
+        localStorage.setItem(this.storageKey(), this.open ? '1' : '0');
     },
 }));
 
 Alpine.data('navTree', () => ({
     open: false,
     init() {
-        this.open = ((this.$el as HTMLElement).dataset.defaultOpen || '0') === '1';
+        const el = this.$el as HTMLElement;
+        const key = this.storageKey();
+        const stored = localStorage.getItem(key);
+        const routeOpen = (el.dataset.defaultOpen || '0') === '1';
+        if (routeOpen) {
+            this.open = true;
+        } else if (stored === '1') {
+            this.open = true;
+        } else if (stored === '0') {
+            this.open = false;
+        } else {
+            this.open = false;
+        }
+    },
+    storageKey(): string {
+        return 'gereq-nav-tree:' + ((this.$el as HTMLElement).dataset.treeId || '');
     },
     get chevronClass(): string {
         return this.open ? 'is-open' : '';
@@ -185,6 +202,7 @@ Alpine.data('navTree', () => ({
     },
     toggle() {
         this.open = !this.open;
+        localStorage.setItem(this.storageKey(), this.open ? '1' : '0');
     },
 }));
 

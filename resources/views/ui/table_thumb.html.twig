@@ -1,0 +1,30 @@
+<?php
+
+{#
+  Compact media cell for list tables.
+  Optional: src, alt, href, placeholder, loading (eager|lazy), width, height
+#}
+{% set src = src|default(null) %}
+{% set alt = alt|default('') %}
+{% set href = href|default(null) %}
+{% set placeholder = placeholder|default(true) %}
+{% set loading = loading|default('eager') %}
+{% set width = width|default(48) %}
+{% set height = height|default(48) %}
+{% if href %}
+    <a class="table-thumb{{ src ? '' : ' is-empty' }}" href="{{ href }}" tabindex="-1" aria-hidden="true">
+        {% if src %}
+            <img src="{{ src }}" alt="{{ alt }}" width="{{ width }}" height="{{ height }}" loading="{{ loading }}" decoding="async" fetchpriority="{{ loading == 'eager' ? 'high' : 'auto' }}">
+        {% elseif placeholder %}
+            <span class="table-thumb__ph"></span>
+        {% endif %}
+    </a>
+{% else %}
+    <span class="table-thumb{{ src ? '' : ' is-empty' }}" aria-hidden="true">
+        {% if src %}
+            <img src="{{ src }}" alt="{{ alt }}" width="{{ width }}" height="{{ height }}" loading="{{ loading }}" decoding="async" fetchpriority="{{ loading == 'eager' ? 'high' : 'auto' }}">
+        {% elseif placeholder %}
+            <span class="table-thumb__ph"></span>
+        {% endif %}
+    </span>
+{% endif %}

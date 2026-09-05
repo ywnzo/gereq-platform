@@ -10,18 +10,39 @@
 {% endblock %}
 
 {% block content %}
+    {% set statusTone = listing.status() == 'published' ? 'ok' : (listing.status() == 'draft' ? 'warn' : 'muted') %}
+    {% set marketTone = listing.marketStatus() == 'available' ? 'ok' : (listing.marketStatus() in ['sold', 'rented'] ? 'danger' : (listing.marketStatus() == 'reserved' ? 'warn' : 'muted')) %}
+    {% set coverUrl = listing.coverImageUrl() %}
+    {% if not coverUrl and images is not empty %}
+        {% for image in images %}
+            {% if image.isPrimary() and attribute(imageUrls, image.id()) %}
+                {% set coverUrl = attribute(imageUrls, image.id()) %}
+            {% endif %}
+        {% endfor %}
+        {% if not coverUrl %}
+            {% set firstImage = images|first %}
+            {% set coverUrl = imageUrls[firstImage.id()]|default(null) %}
+        {% endif %}
+    {% endif %}
+
     <header class="page-header">
         <div>
             <h1>{{ listing.title() }}</h1>
-            <p class="muted">
+            <p class="muted listing-detail__meta">
                 <code>{{ listing.slug() }}</code>
-                · <span class="status-chip"><span class="status-chip__dot"></span>{{ listing.statusLabel()|trans }}</span>
-                · {{ ('listings.market.' ~ listing.marketStatus())|trans }}
-                · {{ ('listings.offer.' ~ listing.offerType())|trans }}
-                {% if listing.featured() %}· <span class="badge badge--signal">TOP</span>{% endif %}
+                <span class="badge badge--{{ statusTone }}">{{ listing.statusLabel()|trans }}</span>
+                <span class="badge badge--{{ marketTone }}">{{ ('listings.market.' ~ listing.marketStatus())|trans }}</span>
+                <span class="badge badge--info">{{ ('listings.offer.' ~ listing.offerType())|trans }}</span>
+                {% if listing.featured() %}<span class="badge badge--signal">TOP</span>{% endif %}
             </p>
-            {% if listing.city() %}
-                <p class="module-lead">{{ listing.city() }}{% if listing.cityPart() %}, {{ listing.cityPart() }}{% endif %}{% if listing.street() %} · {{ listing.street() }}{% endif %}</p>
+            {% if listing.city() or listing.street() or listing.address() %}
+                <p class="module-lead">
+                    {% if listing.address() %}
+                        {{ listing.address() }}
+                    {% else %}
+                        {{ listing.city() }}{% if listing.cityPart() %}, {{ listing.cityPart() }}{% endif %}{% if listing.street() %} · {{ listing.street() }}{% endif %}
+                    {% endif %}
+                </p>
             {% endif %}
         </div>
         <div class="actions">
@@ -43,160 +64,173 @@
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
-            {% set statusTone = listing.status() == 'published' ? 'ok' : (listing.status() == 'draft' ? 'warn' : 'muted') %}
-            {% set marketTone = listing.marketStatus() == 'available' ? 'ok' : (listing.marketStatus() in ['sold', 'rented'] ? 'danger' : (listing.marketStatus() == 'reserved' ? 'warn' : 'muted')) %}
-            <div class="detail-stack">
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'listings.section.basic'|trans }}</h2>
-                    </header>
-                    <div class="meta-grid">
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.status'|trans }}</span>
-                            <strong><span class="badge badge--{{ statusTone }}">{{ listing.statusLabel()|trans }}</span></strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.market_status'|trans }}</span>
-                            <strong><span class="badge badge--{{ marketTone }}">{{ ('listings.market.' ~ listing.marketStatus())|trans }}</span></strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.offer'|trans }}</span>
-                            <strong><span class="badge badge--info">{{ ('listings.offer.' ~ listing.offerType())|trans }}</span></strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.type'|trans }}</span>
-                            <strong>{{ ('listings.type.' ~ listing.propertyType())|trans }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.featured'|trans }}</span>
-                            <strong>{% if listing.featured() %}<span class="badge badge--signal">TOP</span>{% else %}{{ 'common.no'|trans }}{% endif %}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.price'|trans }}</span>
-                            <strong class="meta-tile__price">{{ listing.price()|number_format(0, ',', ' ') }}&nbsp;{{ listing.currency() }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.area'|trans }}</span>
-                            <strong>{{ listing.areaM2() is not null ? listing.areaM2() : '—' }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.rooms'|trans }}</span>
-                            <strong>{{ listing.rooms() is not null ? listing.rooms() : '—' }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.floor'|trans }}</span>
-                            <strong>{{ listing.floor() is not null ? listing.floor() : '—' }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.floors'|trans }}</span>
-                            <strong>{{ listing.floors() is not null ? listing.floors() : '—' }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.energy'|trans }}</span>
-                            <strong>{{ listing.energyRating() ?: '—' }}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.created'|trans }}</span>
-                            <strong>{{ listing.createdAt().format('d. m. Y H:i') }}</strong>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'listings.section.location'|trans }}</h2>
-                    </header>
-                    <div class="meta-grid">
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.city'|trans }}</span>
-                            <strong>{{ listing.city() ?: '—' }}{% if listing.cityPart() %}<span class="muted"> · {{ listing.cityPart() }}</span>{% endif %}</strong>
-                        </div>
-                        <div class="meta-tile">
-                            <span>{{ 'listings.field.street'|trans }}</span>
-                            <strong>{{ listing.street() ?: '—' }}{% if listing.zip() %}<span class="muted"> · {{ listing.zip() }}</span>{% endif %}</strong>
-                        </div>
-                        <div class="meta-tile meta-tile--wide">
-                            <span>{{ 'listings.field.address'|trans }}</span>
-                            <strong>{{ listing.address() ?: '—' }}</strong>
-                        </div>
-                        {% if listing.latitude() is not null and listing.longitude() is not null %}
-                            <div class="meta-tile meta-tile--wide">
-                                <span>{{ 'listings.field.map'|trans }}</span>
-                                <strong>
-                                    <a href="https://www.openstreetmap.org/?mlat={{ listing.latitude() }}&mlon={{ listing.longitude() }}#map=16/{{ listing.latitude() }}/{{ listing.longitude() }}" target="_blank" rel="noopener">
-                                        {{ listing.latitude() }}, {{ listing.longitude() }}
-                                    </a>
-                                </strong>
-                            </div>
-                        {% endif %}
-                    </div>
-                </section>
-
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'listings.section.amenities'|trans }}</h2>
-                    </header>
-                    <div class="module-chip-row" style="padding:4px 0 8px">
-                        {% set amenities = listing.amenityLabels() %}
-                        {% if amenities is empty %}
-                            <span class="muted">—</span>
+            <div class="listing-detail">
+                <div class="listing-detail__main">
+                    <section class="listing-hero panel">
+                        {% if coverUrl %}
+                            <a class="listing-hero__media" href="{{ coverUrl }}" target="_blank" rel="noopener">
+                                <img src="{{ coverUrl }}" alt="{{ listing.title() }}" loading="eager" decoding="async" fetchpriority="high">
+                            </a>
                         {% else %}
-                            {% for key in amenities %}
-                                {% if key == 'parking' %}
-                                    <span class="badge badge--info">{{ 'listings.field.parking'|trans }}{% if listing.parkingLots() %} ({{ listing.parkingLots() }}){% endif %}</span>
-                                {% else %}
-                                    <span class="badge badge--info">{{ ('listings.amenity.' ~ key)|trans }}</span>
-                                {% endif %}
-                            {% endfor %}
+                            <div class="listing-hero__media listing-hero__media--empty muted">{{ 'listings.images.empty'|trans }}</div>
                         {% endif %}
-                    </div>
-                </section>
+                        <div class="listing-hero__body">
+                            <div class="listing-hero__price">
+                                <span>{{ 'listings.field.price'|trans }}</span>
+                                <strong>{{ listing.price()|number_format(0, ',', ' ') }}&nbsp;{{ listing.currency() }}</strong>
+                            </div>
+                            <dl class="listing-hero__facts">
+                                <div>
+                                    <dt>{{ 'listings.field.type'|trans }}</dt>
+                                    <dd>{{ ('listings.type.' ~ listing.propertyType())|trans }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'listings.field.area'|trans }}</dt>
+                                    <dd>{{ listing.areaM2() is not null ? listing.areaM2() ~ ' m²' : '—' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'listings.field.rooms'|trans }}</dt>
+                                    <dd>{{ listing.rooms() is not null ? listing.rooms() : '—' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'listings.field.energy'|trans }}</dt>
+                                    <dd>{{ listing.energyRating() ?: '—' }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
 
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'listings.section.broker'|trans }}</h2>
-                        {% if listing.brokerId() and user.can('listings.view') %}
-                            <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.brokers.show', {id: listing.brokerId()}) }}">{{ 'common.detail'|trans }}</a>
-                        {% endif %}
-                    </header>
-                    {% if listing.brokerId() or listing.brokerName() %}
-                        <div class="meta-grid">
-                            <div class="meta-tile">
-                                <span>{{ 'listings.field.broker_name'|trans }}</span>
-                                <strong>
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'listings.field.description'|trans }}</h2>
+                        </header>
+                        <div class="listing-desc">{{ listing.description() ?: '—' }}</div>
+                    </section>
+
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'listings.section.location'|trans }}</h2>
+                        </header>
+                        <dl class="meta-list meta-list--flush">
+                            <div>
+                                <dt>{{ 'listings.field.city'|trans }}</dt>
+                                <dd>{{ listing.city() ?: '—' }}{% if listing.cityPart() %}<span class="muted"> · {{ listing.cityPart() }}</span>{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'listings.field.street'|trans }}</dt>
+                                <dd>{{ listing.street() ?: '—' }}{% if listing.zip() %}<span class="muted"> · {{ listing.zip() }}</span>{% endif %}</dd>
+                            </div>
+                            <div class="meta-list__full">
+                                <dt>{{ 'listings.field.address'|trans }}</dt>
+                                <dd>{{ listing.address() ?: '—' }}</dd>
+                            </div>
+                            {% if listing.latitude() is not null and listing.longitude() is not null %}
+                                <div class="meta-list__full">
+                                    <dt>{{ 'listings.field.map'|trans }}</dt>
+                                    <dd>
+                                        <a href="https://www.openstreetmap.org/?mlat={{ listing.latitude() }}&mlon={{ listing.longitude() }}#map=16/{{ listing.latitude() }}/{{ listing.longitude() }}" target="_blank" rel="noopener">
+                                            {{ listing.latitude() }}, {{ listing.longitude() }}
+                                        </a>
+                                    </dd>
+                                </div>
+                            {% endif %}
+                        </dl>
+                    </section>
+
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'listings.section.amenities'|trans }}</h2>
+                        </header>
+                        <div class="module-chip-row listing-detail__chips">
+                            {% set amenities = listing.amenityLabels() %}
+                            {% if amenities is empty %}
+                                <span class="muted">—</span>
+                            {% else %}
+                                {% for key in amenities %}
+                                    {% if key == 'parking' %}
+                                        <span class="badge badge--info">{{ 'listings.field.parking'|trans }}{% if listing.parkingLots() %} ({{ listing.parkingLots() }}){% endif %}</span>
+                                    {% else %}
+                                        <span class="badge badge--info">{{ ('listings.amenity.' ~ key)|trans }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="listing-detail__aside">
+                    <section class="panel">
+                        <header class="panel__head">
+                            <h2>{{ 'listings.section.basic'|trans }}</h2>
+                        </header>
+                        <dl class="meta-list meta-list--flush listing-detail__specs">
+                            <div>
+                                <dt>{{ 'listings.field.status'|trans }}</dt>
+                                <dd><span class="badge badge--{{ statusTone }}">{{ listing.statusLabel()|trans }}</span></dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'listings.field.market_status'|trans }}</dt>
+                                <dd><span class="badge badge--{{ marketTone }}">{{ ('listings.market.' ~ listing.marketStatus())|trans }}</span></dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'listings.field.offer'|trans }}</dt>
+                                <dd><span class="badge badge--info">{{ ('listings.offer.' ~ listing.offerType())|trans }}</span></dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'listings.field.featured'|trans }}</dt>
+                                <dd>{% if listing.featured() %}<span class="badge badge--signal">TOP</span>{% else %}{{ 'common.no'|trans }}{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'listings.field.floor'|trans }}</dt>
+                                <dd>{{ listing.floor() is not null ? listing.floor() : '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'listings.field.floors'|trans }}</dt>
+                                <dd>{{ listing.floors() is not null ? listing.floors() : '—' }}</dd>
+                            </div>
+                            <div class="meta-list__full">
+                                <dt>{{ 'listings.field.created'|trans }}</dt>
+                                <dd>{{ listing.createdAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <section class="panel listing-broker">
+                        <header class="panel__head">
+                            <h2>{{ 'listings.section.broker'|trans }}</h2>
+                            {% if listing.brokerId() and user.can('listings.view') %}
+                                <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.brokers.show', {id: listing.brokerId()}) }}">{{ 'common.detail'|trans }}</a>
+                            {% endif %}
+                        </header>
+                        {% if listing.brokerId() or listing.brokerName() %}
+                            <div class="listing-broker__body">
+                                <strong class="listing-broker__name">
                                     {% if listing.brokerId() %}
                                         <a href="{{ url('admin.listings.brokers.show', {id: listing.brokerId()}) }}">{{ listing.brokerName() ?: '—' }}</a>
                                     {% else %}
                                         {{ listing.brokerName() ?: '—' }}
                                     {% endif %}
                                 </strong>
+                                {% if listing.brokerPosition() %}
+                                    <p class="muted listing-broker__role">{{ listing.brokerPosition() }}</p>
+                                {% endif %}
+                                <ul class="listing-broker__contacts">
+                                    {% if listing.brokerEmail() %}
+                                        <li><a href="mailto:{{ listing.brokerEmail() }}">{{ listing.brokerEmail() }}</a></li>
+                                    {% endif %}
+                                    {% if listing.brokerPhone() %}
+                                        <li><a href="tel:{{ listing.brokerPhone() }}">{{ listing.brokerPhone() }}</a></li>
+                                    {% endif %}
+                                    {% if not listing.brokerEmail() and not listing.brokerPhone() %}
+                                        <li class="muted">—</li>
+                                    {% endif %}
+                                </ul>
                             </div>
-                            <div class="meta-tile">
-                                <span>{{ 'listings.field.broker_position'|trans }}</span>
-                                <strong>{{ listing.brokerPosition() ?: '—' }}</strong>
-                            </div>
-                            <div class="meta-tile">
-                                <span>{{ 'listings.field.broker_email'|trans }}</span>
-                                <strong>{% if listing.brokerEmail() %}<a href="mailto:{{ listing.brokerEmail() }}">{{ listing.brokerEmail() }}</a>{% else %}—{% endif %}</strong>
-                            </div>
-                            <div class="meta-tile">
-                                <span>{{ 'listings.field.broker_phone'|trans }}</span>
-                                <strong>{% if listing.brokerPhone() %}<a href="tel:{{ listing.brokerPhone() }}">{{ listing.brokerPhone() }}</a>{% else %}—{% endif %}</strong>
-                            </div>
-                        </div>
-                    {% else %}
-                        <p class="muted" style="margin:0;padding:4px 0 8px">—</p>
-                    {% endif %}
-                </section>
-
-                <section class="panel">
-                    <header class="panel__head">
-                        <h2>{{ 'listings.field.description'|trans }}</h2>
-                    </header>
-                    <div class="listing-desc">
-                        {{ listing.description() ?: '—' }}
-                    </div>
-                </section>
+                        {% else %}
+                            <p class="muted listing-broker__empty">—</p>
+                        {% endif %}
+                    </section>
+                </aside>
             </div>
         </section>
 
@@ -276,7 +310,7 @@
                                 <div class="product-gallery__media">
                                     {% if preview %}
                                         <a href="{{ preview }}" target="_blank" rel="noopener">
-                                            <img src="{{ preview }}" alt="{{ image.alt()|default(listing.title()) }}">
+                                            <img src="{{ preview }}" alt="{{ image.alt()|default(listing.title()) }}" loading="lazy" decoding="async">
                                         </a>
                                     {% else %}
                                         <div class="product-gallery__missing muted">{{ 'listings.images.missing_asset'|trans }}</div>

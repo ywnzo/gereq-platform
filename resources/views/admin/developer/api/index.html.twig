@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="admin-api" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'admin.api.title'|trans }}</h1>
         <a class="btn btn--ghost" href="/api/openapi.json" target="_blank">{{ 'admin.api.openapi'|trans }}</a>
@@ -10,7 +11,7 @@
     {% for module, routes in modules %}
         <section class="hook-section">
             <header class="page-header page-header--compact"><h2>{{ module }}</h2></header>
-            <div class="table-wrap">
+            <div class="table-wrap" data-table>
                 <table class="table">
                     <thead>
                         <tr><th>{{ 'admin.api.col.method'|trans }}</th><th>{{ 'admin.api.col.path'|trans }}</th><th>{{ 'admin.api.col.scopes'|trans }}</th><th>{{ 'admin.api.col.summary'|trans }}</th></tr>
@@ -33,4 +34,5 @@
     {% else %}
         <div class="empty"><h2>{{ 'empty.api_routes'|trans }}</h2><p>{{ 'empty.api_routes_hint'|trans }}</p></div>
     {% endfor %}
+</div>
 {% endblock %}

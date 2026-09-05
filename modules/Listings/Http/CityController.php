@@ -52,9 +52,7 @@ final class CityController extends Controller
         );
 
         $qb = $this->em->getRepository(City::class)->createQueryBuilder('c');
-        if ($list->search !== '') {
-            $qb->andWhere('c.name LIKE :q')->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'c', ['name']);
         $active = $list->filter('active');
         if ($active === '1') {
             $qb->andWhere('c.active = true');
@@ -156,6 +154,24 @@ final class CityController extends Controller
         return $this->redirect('admin.listings.cities.index');
     }
 
+    public function toggleActive(string $id): Response
+    {
+        $item = $this->provider->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('listings.cities.error.not_found'));
+        }
+
+        $item->setActive(!$item->active());
+        $this->em->flush();
+        if (!$this->wantsJson()) {
+            $this->flash('success', $this->translator->trans(
+                $item->active() ? 'listings.cities.flash.activated' : 'listings.cities.flash.deactivated'
+            ));
+        }
+
+        return $this->toggleResponse($item->active(), 'admin.listings.cities.index');
+    }
+
     private function formPage(?City $item): Response
     {
         return $this->page('@listings/cities/form.html.twig', [
@@ -212,14 +228,14 @@ final class CityController extends Controller
             if (!$this->mediaAvailable()) {
                 $this->flash('error', $this->translator->trans('listings.images.error.media_required'));
 
-                return $this->redirectBack($request);
+                return $this->redirectBack('admin.listings.cities.index');
             }
 
             $mime = (string) ($uploaded->getMimeType() ?: '');
             if (!str_starts_with($mime, 'image/')) {
                 $this->flash('error', $this->translator->trans('listings.cities.error.not_image'));
 
-                return $this->redirectBack($request);
+                return $this->redirectBack('admin.listings.cities.index');
             }
 
             try {
@@ -227,7 +243,7 @@ final class CityController extends Controller
             } catch (\Throwable $e) {
                 $this->flash('error', $e->getMessage() !== '' ? $e->getMessage() : $this->translator->trans('listings.cities.error.file_upload'));
 
-                return $this->redirectBack($request);
+                return $this->redirectBack('admin.listings.cities.index');
             }
 
             $title = trim((string) $request->request->get('name', '')) ?: $stored->originalName();
@@ -252,14 +268,14 @@ final class CityController extends Controller
             if (!$this->mediaAvailable()) {
                 $this->flash('error', $this->translator->trans('listings.images.error.media_required'));
 
-                return $this->redirectBack($request);
+                return $this->redirectBack('admin.listings.cities.index');
             }
 
             $asset = $this->em->find(MediaAsset::class, $data['media_asset_id']);
             if (!$asset instanceof MediaAsset || !$asset->isImage()) {
                 $this->flash('error', $this->translator->trans('listings.cities.error.media_not_found'));
 
-                return $this->redirectBack($request);
+                return $this->redirectBack('admin.listings.cities.index');
             }
 
             return $this->publicMediaUrl($asset->id());
@@ -270,16 +286,6 @@ final class CityController extends Controller
         }
 
         return $current;
-    }
-
-    private function redirectBack(Request $request): Response
-    {
-        $referer = (string) $request->headers->get('Referer', '');
-        if ($referer !== '') {
-            return $this->redirectTo($referer);
-        }
-
-        return $this->redirect('admin.listings.cities.index');
     }
 
     private function publicMediaUrl(string $assetId): string

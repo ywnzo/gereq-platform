@@ -42,10 +42,7 @@ final class CartController extends Controller
         $search = trim((string) $request->query->get('q', ''));
         $status = (string) $request->query->get('status', '');
         $qb = $this->em->getRepository(Cart::class)->createQueryBuilder('c')->orderBy('c.updatedAt', 'DESC');
-        if ($search !== '') {
-            $qb->andWhere('c.id LIKE :q OR c.customerId LIKE :q OR c.sessionKey LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'c', ['id', 'customerId', 'sessionKey'], $search);
         if (in_array($status, Cart::STATUSES, true)) {
             $qb->andWhere('c.status = :status')->setParameter('status', $status);
         }

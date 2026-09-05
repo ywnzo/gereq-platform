@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="currencies" data-actions-default="1">
     <header class="page-header">
         <div>
             <h1>{{ 'currency.title'|trans }}</h1>
@@ -17,9 +18,14 @@
         </div>
     </header>
 
-    <form class="toolbar" method="get">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'currency.search'|trans }}">
-    </form>
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'currency.search'|trans }}">
+        </form>
+        <div class="toolbar__toggles">
+            {% include 'ui/table_actions_toggle.html.twig' %}
+        </div>
+    </div>
 
     <div class="table-wrap" data-table>
         <table class="table">
@@ -31,7 +37,7 @@
                     <th>{{ 'currency.field.decimal_places'|trans }}</th>
                     <th>{{ 'currency.field.status'|trans }}</th>
                     <th>{{ 'currency.field.default'|trans }}</th>
-                    <th></th>
+                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
                 </tr>
             </thead>
             <tbody>
@@ -58,14 +64,13 @@
                                 —
                             {% endif %}
                         </td>
-                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
-                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
-                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
                                 {% if user.can('currency.manage') %}
                                     <a href="{{ url('admin.currencies.edit', {code: item.code()}) }}">{{ 'common.edit'|trans }}</a>
                                 {% endif %}
-                            </div>
-                        </td>
+                            {% endblock %}
+                        {% endembed %}
                     </tr>
                 {% else %}
                     <tr>
@@ -80,39 +85,40 @@
             </tbody>
         </table>
     </div>
+</div>
 
-    <section class="hook-section">
-        <header class="page-header page-header--compact">
-            <h2>{{ 'currency.rates.title'|trans }}</h2>
-        </header>
-        {% if rates is empty %}
-            <div class="empty">
-                <h2>{{ 'currency.rates.empty'|trans }}</h2>
-                <p>{{ 'currency.rates.empty.hint'|trans }}</p>
-            </div>
-        {% else %}
-            <div class="table-wrap">
-                <table class="table">
-                    <thead>
+<section class="hook-section">
+    <header class="page-header page-header--compact">
+        <h2>{{ 'currency.rates.title'|trans }}</h2>
+    </header>
+    {% if rates is empty %}
+        <div class="empty">
+            <h2>{{ 'currency.rates.empty'|trans }}</h2>
+            <p>{{ 'currency.rates.empty.hint'|trans }}</p>
+        </div>
+    {% else %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'currency.rates.pair'|trans }}</th>
+                        <th>{{ 'currency.rates.rate'|trans }}</th>
+                        <th>{{ 'currency.rates.provider'|trans }}</th>
+                        <th>{{ 'currency.rates.valid_at'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rate in rates %}
                         <tr>
-                            <th>{{ 'currency.rates.pair'|trans }}</th>
-                            <th>{{ 'currency.rates.rate'|trans }}</th>
-                            <th>{{ 'currency.rates.provider'|trans }}</th>
-                            <th>{{ 'currency.rates.valid_at'|trans }}</th>
+                            <td><strong>{{ rate.base }}/{{ rate.quote }}</strong></td>
+                            <td><code>{{ rate.rate }}</code></td>
+                            <td><span class="badge">{{ rate.provider }}</span></td>
+                            <td class="muted">{{ rate.valid_at }}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {% for rate in rates %}
-                            <tr>
-                                <td><strong>{{ rate.base }}/{{ rate.quote }}</strong></td>
-                                <td><code>{{ rate.rate }}</code></td>
-                                <td><span class="badge">{{ rate.provider }}</span></td>
-                                <td class="muted">{{ rate.valid_at }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-    </section>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</section>
 {% endblock %}

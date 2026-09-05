@@ -23,14 +23,13 @@ final class DocumentsProvider
     /** @return list<Document> */
     public function search(string $query, int $limit = 20): array
     {
-        return $this->em->getRepository(Document::class)
+        $qb = $this->em->getRepository(Document::class)
             ->createQueryBuilder('d')
-            ->where('d.title LIKE :q OR d.originalName LIKE :q')
-            ->setParameter('q', '%' . $query . '%')
             ->orderBy('d.createdAt', 'DESC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+        self_repair_search($qb, 'd', ['title', 'originalName'], $query);
+
+        return $qb->getQuery()->getResult();
     }
 
     /** @return list<Document> */

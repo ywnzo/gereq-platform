@@ -55,18 +55,13 @@ final class ResourceController extends Controller
         $alias = 'e';
         $qb = $this->em->createQueryBuilder()->select($alias)->from($definition->entityClass, $alias);
 
-        if ($list->search !== '') {
-            $parts = [];
-            foreach ($definition->fields as $i => $field) {
-                if ($field->searchable) {
-                    $parts[] = $alias . '.' . $field->name . ' LIKE :q' . $i;
-                    $qb->setParameter('q' . $i, '%' . $list->search . '%');
-                }
-            }
-            if ($parts !== []) {
-                $qb->andWhere(implode(' OR ', $parts));
+        $searchFields = [];
+        foreach ($definition->fields as $field) {
+            if ($field->searchable) {
+                $searchFields[] = $field->name;
             }
         }
+        $list->applySearch($qb, $alias, $searchFields);
 
         $qb->orderBy($alias . '.' . $list->sort, $list->direction());
 

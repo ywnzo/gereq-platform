@@ -46,10 +46,7 @@ final class CurrencyAdminController extends Controller
             ->orderBy('c.isDefault', 'DESC')
             ->addOrderBy('c.code', 'ASC');
 
-        if ($search !== '') {
-            $qb->andWhere('c.code LIKE :q OR c.name LIKE :q OR c.symbol LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'c', ['code', 'name', 'symbol'], $search);
 
         /** @var list<Currency> $items */
         $items = $qb->getQuery()->getResult();

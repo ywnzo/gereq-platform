@@ -11,7 +11,15 @@
 
 {% block content %}
 <header class="page-header">
-    <h1>{{ item.name() }}</h1>
+    <div>
+        <h1>{{ item.name() }}</h1>
+        <p class="muted detail-layout__meta">
+            <span class="badge badge--info">{{ ('listings.near.category.' ~ item.category())|trans }}</span>
+            <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                {{ item.active() ? 'listings.near.status.active'|trans : 'listings.near.status.inactive'|trans }}
+            </span>
+        </p>
+    </div>
     <div class="actions">
         {% if user.can('listings.manage') %}
             <a class="btn btn--primary" href="{{ url('admin.listings.near.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
@@ -20,40 +28,92 @@
     </div>
 </header>
 
-<section class="panel">
-    <div class="meta-list">
-        <div>
-            <dt>{{ 'listings.near.field.category'|trans }}</dt>
-            <dd><span class="badge badge--info">{{ ('listings.near.category.' ~ item.category())|trans }}</span></dd>
-        </div>
-        <div>
-            <dt>{{ 'listings.near.field.city'|trans }}</dt>
-            <dd>{{ item.city() ?: '—' }}</dd>
-        </div>
-        <div class="meta-list__full">
-            <dt>{{ 'listings.near.field.address'|trans }}</dt>
-            <dd>{{ item.address() ?: '—' }}</dd>
-        </div>
-        <div>
-            <dt>{{ 'listings.near.field.latitude'|trans }}</dt>
-            <dd>{{ item.latitude() is not null ? item.latitude() : '—' }}</dd>
-        </div>
-        <div>
-            <dt>{{ 'listings.near.field.longitude'|trans }}</dt>
-            <dd>{{ item.longitude() is not null ? item.longitude() : '—' }}</dd>
-        </div>
-        <div>
-            <dt>{{ 'listings.near.field.active'|trans }}</dt>
-            <dd>
-                <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
-                    {{ item.active() ? 'listings.near.status.active'|trans : 'listings.near.status.inactive'|trans }}
-                </span>
-            </dd>
-        </div>
-        <div class="meta-list__full">
-            <dt>{{ 'listings.near.field.description'|trans }}</dt>
-            <dd>{{ item.description() ?: '—' }}</dd>
-        </div>
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'listings.near.field.category'|trans }}</span>
+                    <strong>{{ ('listings.near.category.' ~ item.category())|trans }}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'listings.near.field.city'|trans }}</dt>
+                        <dd>{{ item.city() ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'listings.near.field.latitude'|trans }}</dt>
+                        <dd>{{ item.latitude() is not null ? item.latitude() : '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'listings.near.field.longitude'|trans }}</dt>
+                        <dd>{{ item.longitude() is not null ? item.longitude() : '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'listings.near.field.active'|trans }}</dt>
+                        <dd>
+                            <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                                {{ item.active() ? 'listings.near.status.active'|trans : 'listings.near.status.inactive'|trans }}
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'listings.near.field.address'|trans }}</h2>
+            </header>
+            <div class="detail-prose">{{ item.address() ?: '—' }}</div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'listings.near.field.description'|trans }}</h2>
+            </header>
+            <div class="detail-prose">{{ item.description() ?: '—' }}</div>
+        </section>
     </div>
-</section>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.overview'|trans }}</h2>
+            </header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div>
+                    <dt>{{ 'listings.near.field.category'|trans }}</dt>
+                    <dd><span class="badge badge--info">{{ ('listings.near.category.' ~ item.category())|trans }}</span></dd>
+                </div>
+                <div>
+                    <dt>{{ 'listings.near.field.active'|trans }}</dt>
+                    <dd>
+                        <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                            {{ item.active() ? 'listings.near.status.active'|trans : 'listings.near.status.inactive'|trans }}
+                        </span>
+                    </dd>
+                </div>
+                <div>
+                    <dt>{{ 'listings.near.field.city'|trans }}</dt>
+                    <dd>{{ item.city() ?: '—' }}</dd>
+                </div>
+                <div class="meta-list__full">
+                    <dt>{{ 'listings.near.field.address'|trans }}</dt>
+                    <dd>{{ item.address() ?: '—' }}</dd>
+                </div>
+                {% if item.latitude() is not null and item.longitude() is not null %}
+                    <div class="meta-list__full">
+                        <dt>{{ 'listings.field.map'|trans|default('Mapa') }}</dt>
+                        <dd>
+                            <a href="https://www.openstreetmap.org/?mlat={{ item.latitude() }}&mlon={{ item.longitude() }}#map=16/{{ item.latitude() }}/{{ item.longitude() }}" target="_blank" rel="noopener">
+                                {{ item.latitude() }}, {{ item.longitude() }}
+                            </a>
+                        </dd>
+                    </div>
+                {% endif %}
+            </dl>
+        </section>
+    </aside>
+</div>
 {% endblock %}

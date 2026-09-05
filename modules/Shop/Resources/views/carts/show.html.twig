@@ -1,70 +1,123 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
 <header class="page-header">
-<div>
-<h1>{{ 'shop.carts.detail'|trans }}</h1>
-<p class="muted"><code>{{ item.id() }}</code></p>
-</div>
-<div class="actions">
-<a class="btn btn--ghost" href="{{ url('admin.shop.carts.index') }}">{{ 'shop.carts.title'|trans }}</a>
-{% if user.can('shop.manage') and item.isOpen() %}
-<form method="post" action="{{ url('admin.shop.carts.abandon', {id: item.id()}) }}">{{ csrf_field()|raw }}
-<button class="btn btn--danger" type="submit">{{ 'shop.cart.action.abandon'|trans }}</button>
-</form>
-{% endif %}
-</div>
+    <div>
+        <h1>{{ 'shop.carts.detail'|trans }}</h1>
+        <p class="muted detail-layout__meta">
+            <code>{{ item.id() }}</code>
+            <span class="badge">{{ item.statusLabel()|trans }}</span>
+        </p>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.shop.carts.index') }}">{{ 'shop.carts.title'|trans }}</a>
+        {% if user.can('shop.manage') and item.isOpen() %}
+            <form method="post" action="{{ url('admin.shop.carts.abandon', {id: item.id()}) }}">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--danger" type="submit">{{ 'shop.cart.action.abandon'|trans }}</button>
+            </form>
+        {% endif %}
+    </div>
 </header>
 
-<div class="detail-stack">
-<section class="panel">
-<header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
-<dl class="meta-list meta-list--flush">
-<div><dt>{{ 'shop.field.status'|trans }}</dt><dd><span class="badge">{{ item.statusLabel()|trans }}</span></dd></div>
-<div><dt>{{ 'shop.field.currency'|trans }}</dt><dd>{{ item.currency() }}</dd></div>
-<div><dt>{{ 'shop.field.customer'|trans }}</dt><dd>
-{% if customer %}
-<a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
-{% elseif item.customerId() %}
-<code>{{ item.customerId() }}</code>
-{% else %}—{% endif %}
-</dd></div>
-<div><dt>{{ 'shop.field.session'|trans }}</dt><dd>{{ item.sessionKey() ?: '—' }}</dd></div>
-<div><dt>{{ 'shop.field.subtotal'|trans }}</dt><dd>{{ totals.subtotal }} {{ totals.currency }}</dd></div>
-<div><dt>{{ 'shop.field.shipping'|trans }}</dt><dd>{{ totals.shipping }} {{ totals.currency }}</dd></div>
-<div><dt>{{ 'shop.field.total'|trans }}</dt><dd><strong>{{ totals.total }} {{ totals.currency }}</strong></dd></div>
-</dl>
-</section>
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'shop.field.total'|trans }}</span>
+                    <strong>{{ totals.total }} {{ totals.currency }}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'shop.field.status'|trans }}</dt>
+                        <dd><span class="badge">{{ item.statusLabel()|trans }}</span></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'shop.field.currency'|trans }}</dt>
+                        <dd>{{ item.currency() }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'shop.field.subtotal'|trans }}</dt>
+                        <dd>{{ totals.subtotal }} {{ totals.currency }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'shop.field.shipping'|trans }}</dt>
+                        <dd>{{ totals.shipping }} {{ totals.currency }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
 
-<section class="panel">
-<header class="panel__head"><h2>{{ 'shop.cart.items'|trans }}</h2></header>
-<div class="table-wrap"><table class="table">
-<thead><tr>
-<th>{{ 'shop.field.title'|trans }}</th>
-<th>{{ 'shop.field.sku'|trans }}</th>
-<th>{{ 'shop.field.qty'|trans }}</th>
-<th>{{ 'shop.field.unit_price'|trans }}</th>
-<th>{{ 'shop.field.total'|trans }}</th>
-</tr></thead>
-<tbody>
-{% for line in lines %}
-<tr>
-<td>{{ line.title() }}</td>
-<td><code>{{ line.sku() }}</code></td>
-<td>{{ line.qty() }}</td>
-<td>{{ line.unitPrice() }} {{ line.currency() }}</td>
-<td>{{ line.lineTotal() }} {{ line.currency() }}</td>
-</tr>
-{% else %}
-<tr><td colspan="5" class="muted">{{ 'shop.cart.items.empty'|trans }}</td></tr>
-{% endfor %}
-</tbody></table></div>
-</section>
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'shop.cart.items'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'shop.field.title'|trans }}</th>
+                            <th>{{ 'shop.field.sku'|trans }}</th>
+                            <th>{{ 'shop.field.qty'|trans }}</th>
+                            <th>{{ 'shop.field.unit_price'|trans }}</th>
+                            <th>{{ 'shop.field.total'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in lines %}
+                            <tr>
+                                <td>{{ line.title() }}</td>
+                                <td><code>{{ line.sku() }}</code></td>
+                                <td>{{ line.qty() }}</td>
+                                <td>{{ line.unitPrice() }} {{ line.currency() }}</td>
+                                <td>{{ line.lineTotal() }} {{ line.currency() }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="5" class="muted">{{ 'shop.cart.items.empty'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-{% if item.meta() %}
-<section class="panel">
-<header class="panel__head"><h2>{{ 'shop.cart.meta'|trans }}</h2></header>
-<pre class="muted" style="white-space:pre-wrap;margin:0">{{ item.meta()|json_encode }}</pre>
-</section>
-{% endif %}
+        {% if item.meta() %}
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'shop.cart.meta'|trans }}</h2></header>
+                <pre class="muted" style="white-space:pre-wrap;margin:0">{{ item.meta()|json_encode }}</pre>
+            </section>
+        {% endif %}
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div>
+                    <dt>{{ 'shop.field.status'|trans }}</dt>
+                    <dd><span class="badge">{{ item.statusLabel()|trans }}</span></dd>
+                </div>
+                <div>
+                    <dt>{{ 'shop.field.currency'|trans }}</dt>
+                    <dd>{{ item.currency() }}</dd>
+                </div>
+                <div class="meta-list__full">
+                    <dt>{{ 'shop.field.customer'|trans }}</dt>
+                    <dd>
+                        {% if customer %}
+                            <a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
+                        {% elseif item.customerId() %}
+                            <code>{{ item.customerId() }}</code>
+                        {% else %}—{% endif %}
+                    </dd>
+                </div>
+                <div class="meta-list__full">
+                    <dt>{{ 'shop.field.session'|trans }}</dt>
+                    <dd>{{ item.sessionKey() ?: '—' }}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'shop.field.total'|trans }}</dt>
+                    <dd><strong>{{ totals.total }} {{ totals.currency }}</strong></dd>
+                </div>
+            </dl>
+        </section>
+    </aside>
 </div>
 {% endblock %}

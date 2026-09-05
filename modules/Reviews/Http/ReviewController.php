@@ -15,6 +15,7 @@ use Gereq\Http\ListQuery;
 use Gereq\Http\Router;
 use Modules\Reviews\Application\ReviewsProvider;
 use Modules\Reviews\Domain\ProductReview;
+use Modules\Reviews\Domain\ProductReviewReply;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -51,10 +52,7 @@ final class ReviewController extends Controller
         $status = $list->filter('status');
 
         $qb = $this->em->getRepository(ProductReview::class)->createQueryBuilder('r');
-        if ($list->search !== '') {
-            $qb->andWhere('r.authorName LIKE :q OR r.title LIKE :q OR r.body LIKE :q OR r.productId LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'r', ['authorName', 'title', 'body', 'productId']);
         if (in_array($status, ProductReview::STATUSES, true)) {
             $qb->andWhere('r.status = :s')->setParameter('s', $status);
         }
@@ -82,6 +80,10 @@ final class ReviewController extends Controller
             'pageTitle' => $item->title() ?: $item->authorName(),
             'item' => $item,
             'average' => $this->provider->averageRating($item->productId()),
+            'replies' => $this->em->getRepository(ProductReviewReply::class)->findBy(
+                ['reviewId' => $item->id()],
+                ['createdAt' => 'ASC'],
+            ),
         ]);
     }
 
@@ -150,6 +152,10 @@ final class ReviewController extends Controller
             'title' => $r->title(),
             'body' => $r->body(),
             'status' => $r->status(),
+            'source' => $r->source(),
+            'is_verified_purchase' => $r->isVerifiedPurchase(),
+            'helpful_count' => $r->helpfulCount(),
+            'locale' => $r->locale(),
             'created_at' => $r->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $r->updatedAt()->format(\DateTimeInterface::ATOM),
         ];

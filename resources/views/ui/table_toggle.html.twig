@@ -1,0 +1,30 @@
+{#
+  Kernel row toggle (publish / active / TOP…), Athena-style.
+  Required: action (URL), on (bool)
+  Optional: title_on, title_off, label, busy_label
+#}
+{% set on = on|default(false) %}
+{% set title_on = title_on|default('ui.table.toggle.on'|trans) %}
+{% set title_off = title_off|default('ui.table.toggle.off'|trans) %}
+{% set title = on ? title_on : title_off %}
+{% set busy = busy_label|default('ui.table.toggle.busy'|trans) %}
+<button
+    type="button"
+    class="table-switch"
+    title="{{ title }}"
+    aria-pressed="{{ on ? 'true' : 'false' }}"
+    data-on="{{ on ? '1' : '0' }}"
+    data-title-on="{{ title_on|e('html_attr') }}"
+    data-title-off="{{ title_off|e('html_attr') }}"
+    data-busy="{{ busy|e('html_attr') }}"
+    x-data="gereqTableToggle"
+    data-action="{{ action|e('html_attr') }}"
+    @click="toggle"
+    :class="btnClass"
+    :aria-pressed="pressedAttr"
+    :title="titleAttr"
+    :disabled="busy"
+>
+    <span class="table-switch__knob" aria-hidden="true"></span>
+    <span class="sr-only" x-text="titleAttr">{{ title }}</span>
+</button>

@@ -52,10 +52,7 @@ final class WebhookController extends Controller
         $qb = $this->em->getRepository(Webhook::class)->createQueryBuilder('w')
             ->orderBy('w.createdAt', 'DESC');
 
-        if ($search !== '') {
-            $qb->andWhere('w.name LIKE :q OR w.url LIKE :q')
-                ->setParameter('q', '%' . $search . '%');
-        }
+        self_repair_search($qb, 'w', ['name', 'url'], $search);
         if (in_array($status, Webhook::STATUSES, true)) {
             $qb->andWhere('w.status = :status')->setParameter('status', $status);
         }

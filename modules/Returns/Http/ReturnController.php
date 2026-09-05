@@ -52,10 +52,7 @@ final class ReturnController extends Controller
         $status = $list->filter('status');
 
         $qb = $this->em->getRepository(ReturnRequest::class)->createQueryBuilder('r');
-        if ($list->search !== '') {
-            $qb->andWhere('r.number LIKE :q OR r.orderId LIKE :q OR r.reason LIKE :q')
-                ->setParameter('q', '%' . $list->search . '%');
-        }
+        $list->applySearch($qb, 'r', ['number', 'orderId', 'reason']);
         if (in_array($status, ReturnRequest::STATUSES, true)) {
             $qb->andWhere('r.status = :s')->setParameter('s', $status);
         }

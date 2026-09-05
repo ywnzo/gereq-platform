@@ -38,9 +38,7 @@ final class OrderApiController extends Controller
     {
         $query = ApiQuery::fromRequest($request, sortable: ['number', 'status', 'total', 'createdAt'], filterable: ['status', 'customer_id', 'currency']);
         $qb = $this->em->getRepository(Order::class)->createQueryBuilder('o');
-        if ($query->search !== '') {
-            $qb->andWhere('o.number LIKE :q OR o.note LIKE :q')->setParameter('q', '%' . $query->search . '%');
-        }
+        self_repair_search($qb, 'o', ['number', 'note'], $query->search);
         foreach (['status' => 'status', 'customer_id' => 'customerId', 'currency' => 'currency'] as $filter => $field) {
             if (isset($query->filters[$filter]) && $query->filters[$filter] !== '') {
                 $qb->andWhere('o.' . $field . ' = :' . $filter)->setParameter($filter, $query->filters[$filter]);
