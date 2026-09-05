@@ -32,6 +32,8 @@ final class DebugBar
 
     private bool $injected = false;
 
+    private bool $nPlusOneReported = false;
+
     public function __construct(
         private readonly Repository $config,
         private readonly QueryCollector $queries,
@@ -102,7 +104,14 @@ final class DebugBar
 
     public function inject(Request $request, Response $response): Response
     {
-        if (!$this->enabled() || $this->injected) {
+        if (!$this->enabled()) {
+            return $response;
+        }
+
+        $this->applyNPlusOneHeaders($response);
+        $this->reportNPlusOnes($request);
+
+        if ($this->injected) {
             return $response;
         }
         if ($response instanceof JsonResponse || $response instanceof RedirectResponse) {
@@ -157,6 +166,9 @@ final class DebugBar
             'queries' => $this->queries->all(),
             'queryCount' => $this->queries->count(),
             'queryMs' => $this->queries->totalMs(),
+            'nPlusOnes' => $this->queries->nPlusOnes(),
+            'nPlusOneCount' => $this->queries->nPlusOneCount(),
+            'nPlusOneThreshold' => $this->queries->nPlusOneThreshold(),
             'views' => $this->views(),
             'route' => $this->route($request),
             'request' => $this->requestBag($request),
@@ -302,6 +314,7 @@ final class DebugBar
             'app.name' => $this->config->get('app.name'),
             'app.env' => $this->config->get('app.env'),
             'app.debug' => $this->config->get('app.debug'),
+            'app.n_plus_one_threshold' => $this->config->get('app.n_plus_one_threshold'),
             'app.url' => $this->config->get('app.url'),
             'app.version' => $this->config->get('app.version'),
             'database.connection' => $this->config->get('database.connection'),
@@ -319,6 +332,47 @@ final class DebugBar
         }
 
         return $file;
+    }
+
+    private function applyNPlusOneHeaders(Response $response): void
+    {
+        $hits = $this->queries->nPlusOnes();
+        if ($hits === []) {
+            return;
+        }
+
+        $response->headers->set('X-Debug-N-Plus-One', (string) count($hits));
+        $response->headers->set(
+            'X-Debug-N-Plus-One-Queries',
+            (string) array_sum(array_map(static fn (array $hit): int => $hit['count'], $hits)),
+        );
+    }
+
+    private function reportNPlusOnes(Request $request): void
+    {
+        if ($this->nPlusOneReported || !(bool) $this->config->get('app.n_plus_one_log', true)) {
+            return;
+        }
+
+        $hits = $this->queries->nPlusOnes();
+        if ($hits === []) {
+            return;
+        }
+
+        $this->nPlusOneReported = true;
+        $path = $request->getMethod() . ' ' . $request->getPathInfo();
+        foreach ($hits as $hit) {
+            $origins = $hit['origins'] !== [] ? implode(', ', $hit['origins']) : '—';
+            $sql = strlen($hit['sql']) > 240 ? substr($hit['sql'], 0, 240) . '…' : $hit['sql'];
+            error_log(sprintf(
+                '[N+1] %s · %dx · %s ms · %s · %s',
+                $path,
+                $hit['count'],
+                $hit['totalMs'],
+                $origins,
+                $sql,
+            ));
+        }
     }
 
     private function bytes(int $bytes): string

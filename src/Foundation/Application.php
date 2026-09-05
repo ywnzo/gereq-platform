@@ -181,7 +181,9 @@ final class Application
             AssetManager::class => \DI\factory(static function (RequestStack $requestStack) use ($basePath): AssetManager {
                 return new AssetManager($basePath, $requestStack);
             }),
-            QueryCollector::class => \DI\create(QueryCollector::class),
+            QueryCollector::class => \DI\factory(static function (Repository $config): QueryCollector {
+                return new QueryCollector((int) $config->get('app.n_plus_one_threshold', 2));
+            }),
             Renderer::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             DebugBar::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             CacheItemPoolInterface::class => \DI\factory(static function (Repository $config) use ($basePath): CacheItemPoolInterface {
@@ -259,6 +261,7 @@ final class Application
             \Gereq\Console\Command\MakeResourceCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ServeCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ServeDockerCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\ImportSqliteCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\TwigTypesCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Ares\AresClient::class => \DI\autowire(),
             \Gereq\Ares\AresService::class => \DI\autowire(),
@@ -272,6 +275,14 @@ final class Application
             \Modules\Orders\Application\NumberSequencer::class => \DI\autowire(),
             \Modules\Orders\Application\OrdersProvider::class => \DI\autowire(),
             \Modules\Projects\Application\ProjectsProvider::class => \DI\autowire(),
+            \Modules\Fleet\Application\FleetProvider::class => \DI\autowire(),
+            \Modules\Fleet\Application\VehicleMediaService::class => \DI\autowire(),
+            \Modules\Fleet\Application\VehicleCalendarService::class => \DI\autowire(),
+            \Modules\CarService\Application\CarServiceProvider::class => \DI\autowire(),
+            \Modules\CarService\Application\FinishOrderService::class => \DI\autowire(),
+            \Modules\CarService\Application\OrderMediaService::class => \DI\autowire(),
+            \Modules\CarService\Application\OrderCalendarService::class => \DI\autowire(),
+            \Modules\CarService\Application\QrCodeService::class => \DI\autowire(),
             \Modules\Calendar\Application\CalendarProvider::class => \DI\autowire(),
             \Modules\Shop\Application\CartService::class => \DI\autowire(),
             \Modules\Shop\Application\CheckoutService::class => \DI\autowire(),

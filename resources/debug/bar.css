@@ -273,6 +273,31 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   color: var(--gdb-paper) !important;
   background: var(--gdb-fill) !important;
 }
+#gereq-debug.gdb .gdb-copybtn {
+  height: 28px;
+  padding: 0 10px !important;
+  border: 1px solid var(--gdb-line) !important;
+  border-radius: 8px;
+  background: var(--gdb-fill-soft) !important;
+  color: var(--gdb-mute) !important;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+#gereq-debug.gdb .gdb-copybtn:hover {
+  color: var(--gdb-paper) !important;
+  background: var(--gdb-fill-strong) !important;
+  border-color: var(--gdb-hover-border) !important;
+}
+#gereq-debug.gdb .gdb-copybtn.is-ok {
+  color: var(--gdb-ok) !important;
+  border-color: color-mix(in srgb, var(--gdb-ok) 45%, var(--gdb-line)) !important;
+}
+#gereq-debug.gdb .gdb-copybtn.is-err {
+  color: var(--gdb-err) !important;
+  border-color: color-mix(in srgb, var(--gdb-err) 45%, var(--gdb-line)) !important;
+}
 
 #gereq-debug.gdb .gdb-panel {
   flex: 1 1 auto;
@@ -345,7 +370,41 @@ html[data-theme="gereq"] #gereq-debug.gdb {
 #gereq-debug.gdb .gdb-sql b { color: var(--gdb-accent-text); font-weight: 600; }
 #gereq-debug.gdb .gdb-ms { font-family: var(--gdb-mono); color: var(--gdb-mute); white-space: nowrap; }
 #gereq-debug.gdb .gdb-ms.is-slow { color: var(--gdb-warn); }
+#gereq-debug.gdb .gdb-ms.is-n1 { color: var(--gdb-err); }
+#gereq-debug.gdb .gdb-table tr.is-n1 td {
+  background: color-mix(in srgb, var(--gdb-err) 8%, transparent);
+}
 #gereq-debug.gdb .gdb-origin { color: var(--gdb-mute); font-size: 11px; }
+#gereq-debug.gdb .gdb-alert {
+  margin: 10px 14px 4px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--gdb-warn) 45%, var(--gdb-line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--gdb-warn) 12%, transparent);
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-alert b { color: var(--gdb-warn); }
+#gereq-debug.gdb .gdb-badge {
+  display: inline-block;
+  margin: 0 8px 6px 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gdb-on-signal);
+  background: var(--gdb-err);
+  vertical-align: middle;
+}
+#gereq-debug.gdb .gdb-card--warn {
+  border-color: color-mix(in srgb, var(--gdb-err) 40%, var(--gdb-line));
+}
+#gereq-debug.gdb .gdb-tab.is-warn .gdb-tab__n,
+#gereq-debug.gdb .gdb-tab__n.is-warn {
+  color: var(--gdb-err);
+  background: var(--gdb-chip-err-bg);
+}
+#gereq-debug.gdb .gdb-chip[data-tab-jump] { cursor: pointer; }
 #gereq-debug.gdb .gdb-barline {
   display: block;
   height: 3px;

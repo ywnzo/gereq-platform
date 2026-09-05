@@ -7,6 +7,7 @@ namespace Gereq\Tests\Unit;
 use Gereq\Config\Repository;
 use Gereq\Debug\DebugBar;
 use Gereq\Debug\Dumper;
+use Gereq\Debug\NPlusOneDetector;
 use Gereq\Debug\QueryCollector;
 use Gereq\Debug\Redactor;
 use Gereq\Debug\Renderer;
@@ -46,6 +47,58 @@ final class DebugBarTest extends TestCase
         self::assertSame(2, $queries->count());
         self::assertSame(3.75, $queries->totalMs());
         self::assertSame('Foo.php:10', $queries->all()[1]['origin']);
+        self::assertFalse($queries->all()[0]['nPlusOne']);
+    }
+
+    public function testNPlusOneDetectionGroupsSimilarQueries(): void
+    {
+        $queries = new QueryCollector(2);
+        $queries->add('SELECT * FROM products WHERE id = ?', [1], 0.5, 'Product.php:10');
+        $queries->add('SELECT * FROM products WHERE id = ?', [2], 0.4, 'Product.php:10');
+        $queries->add('SELECT * FROM products WHERE id = ?', [3], 0.6, 'Product.php:12');
+        $queries->add('SELECT COUNT(*) FROM orders', [], 1.0, 'Order.php:1');
+
+        $hits = $queries->nPlusOnes();
+        self::assertCount(1, $hits);
+        self::assertSame(3, $hits[0]['count']);
+        self::assertSame(1, $queries->nPlusOneCount());
+        self::assertTrue($queries->all()[0]['nPlusOne']);
+        self::assertSame(3, $queries->all()[0]['nPlusOneCount']);
+        self::assertFalse($queries->all()[3]['nPlusOne']);
+    }
+
+    public function testNPlusOneFingerprintNormalizesLiterals(): void
+    {
+        self::assertSame(
+            NPlusOneDetector::fingerprint("SELECT * FROM t WHERE id = 1 AND name = 'a'"),
+            NPlusOneDetector::fingerprint('SELECT * FROM t WHERE id = 99 AND name = "b"'),
+        );
+
+        $detector = new NPlusOneDetector(2);
+        $hits = $detector->detect([
+            ['sql' => 'SELECT * FROM users WHERE id = 1', 'params' => [], 'duration' => 1.0, 'origin' => 'A.php:1'],
+            ['sql' => 'SELECT * FROM users WHERE id = 2', 'params' => [], 'duration' => 1.0, 'origin' => 'A.php:1'],
+        ]);
+        self::assertCount(1, $hits);
+        self::assertSame(2, $hits[0]['count']);
+    }
+
+    public function testPayloadIncludesNPlusOnesAndHeadersOnInject(): void
+    {
+        $bar = $this->bar();
+        $bar->queries()->add('SELECT * FROM x WHERE id = ?', [1], 0.2, 'X.php:1');
+        $bar->queries()->add('SELECT * FROM x WHERE id = ?', [2], 0.3, 'X.php:1');
+
+        $request = Request::create('/admin');
+        $payload = $bar->payload($request, new Response('ok'));
+        self::assertSame(1, $payload['nPlusOneCount']);
+        self::assertNotEmpty($payload['nPlusOnes']);
+
+        $response = new Response('<html><body>ok</body></html>', 200, ['Content-Type' => 'text/html']);
+        $out = $bar->inject($request, $response);
+        self::assertSame('1', $out->headers->get('X-Debug-N-Plus-One'));
+        self::assertSame('2', $out->headers->get('X-Debug-N-Plus-One-Queries'));
+        self::assertStringContainsString('nPlusOnes', (string) $out->getContent());
     }
 
     public function testInjectsIntoHtmlResponse(): void
@@ -118,7 +171,15 @@ final class DebugBarTest extends TestCase
         $redactor = new Redactor();
 
         return new DebugBar(
-            new Repository(['app' => ['debug' => $debug, 'env' => 'testing', 'name' => 'GEREQ']]),
+            new Repository([
+                'app' => [
+                    'debug' => $debug,
+                    'env' => 'testing',
+                    'name' => 'GEREQ',
+                    'n_plus_one_log' => false,
+                    'n_plus_one_threshold' => 2,
+                ],
+            ]),
             new QueryCollector(),
             new Dumper($redactor),
             $redactor,
