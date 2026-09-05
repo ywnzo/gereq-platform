@@ -23,6 +23,7 @@ final class Auditor
         ?array $newValues = null,
         ?string $userId = null,
         ?string $userName = null,
+        bool $flush = true,
     ): void {
         $request = $this->requestStack->getCurrentRequest();
         $ip = $request?->getClientIp();
@@ -46,7 +47,9 @@ final class Auditor
         );
 
         $this->em->persist($log);
-        $this->em->flush();
+        if ($flush) {
+            $this->em->flush();
+        }
     }
 
     private function resolveUserName(?string $userId): ?string

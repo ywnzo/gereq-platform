@@ -10,6 +10,11 @@ use Gereq\Module\ModuleManager;
 
 final class Migrator
 {
+    /** @var array<string, string>|null version => ran_at */
+    private ?array $ranCache = null;
+
+    private bool $migrationsTableReady = false;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ModuleManager $modules,
@@ -35,6 +40,8 @@ final class Migrator
         $sm = $conn->createSchemaManager();
         if ($sm->tablesExist(['schema_migrations'])) {
             $conn->executeStatement('DELETE FROM schema_migrations');
+            $this->ranCache = [];
+            $this->migrationsTableReady = true;
             $messages[] = 'Tabulka schema_migrations vyčištěna.';
         }
 
@@ -167,10 +174,13 @@ final class Migrator
                     $migration->afterUp($conn);
                 }
 
+                $ranAt = (new \DateTimeImmutable())->format('c');
                 $conn->executeStatement(
                     'INSERT INTO schema_migrations (version, ran_at) VALUES (?, ?)',
-                    [$version, (new \DateTimeImmutable())->format('c')]
+                    [$version, $ranAt]
                 );
+                $this->warmRan();
+                $this->ranCache[$version] = $ranAt;
                 $messages[] = 'Migrace ' . $version;
             }
         }
@@ -204,7 +214,6 @@ final class Migrator
      */
     public function statusForModule(string $moduleId): array
     {
-        $this->ensureMigrationsTable();
         $manifest = $this->modules->manifest($moduleId);
         if ($manifest === null) {
             return [];
@@ -215,6 +224,7 @@ final class Migrator
             return [];
         }
 
+        $this->warmRan();
         $files = glob($dir . '/*.php') ?: [];
         sort($files);
         $items = [];
@@ -222,7 +232,7 @@ final class Migrator
         foreach ($files as $file) {
             $basename = basename($file, '.php');
             $version = $manifest->id . ':' . $basename;
-            $ranAt = $this->ranAt($version);
+            $ranAt = $this->ranCache[$version] ?? null;
             $items[] = [
                 'version' => $version,
                 'ran' => $ranAt !== null,
@@ -236,8 +246,14 @@ final class Migrator
 
     private function ensureMigrationsTable(): void
     {
+        if ($this->migrationsTableReady) {
+            return;
+        }
+
         $sm = $this->em->getConnection()->createSchemaManager();
         if ($sm->tablesExist(['schema_migrations'])) {
+            $this->migrationsTableReady = true;
+
             return;
         }
 
@@ -250,6 +266,8 @@ final class Migrator
         foreach ($schema->toSql($this->em->getConnection()->getDatabasePlatform()) as $sql) {
             $this->em->getConnection()->executeStatement($sql);
         }
+
+        $this->migrationsTableReady = true;
     }
 
     private function ran(string $version): bool
@@ -259,17 +277,34 @@ final class Migrator
 
     private function ranAt(string $version): ?string
     {
-        $result = $this->em->getConnection()->fetchAssociative(
-            'SELECT version, ran_at FROM schema_migrations WHERE version = ?',
-            [$version]
-        );
+        $this->warmRan();
 
-        if ($result === false || $result === null) {
-            return null;
+        return $this->ranCache[$version] ?? null;
+    }
+
+    /** Jedním SELECT načte všechny záznamy schema_migrations (místo N× WHERE version = ?). */
+    private function warmRan(): void
+    {
+        if ($this->ranCache !== null) {
+            return;
         }
 
-        $ranAt = $result['ran_at'] ?? null;
+        $this->ensureMigrationsTable();
+        $this->ranCache = [];
 
-        return is_string($ranAt) && $ranAt !== '' ? $ranAt : null;
+        try {
+            $rows = $this->em->getConnection()->fetchAllAssociative(
+                'SELECT version, ran_at FROM schema_migrations /* gereq:warm */'
+            );
+            foreach ($rows as $row) {
+                $version = (string) ($row['version'] ?? '');
+                $ranAt = $row['ran_at'] ?? null;
+                if ($version !== '' && is_string($ranAt) && $ranAt !== '') {
+                    $this->ranCache[$version] = $ranAt;
+                }
+            }
+        } catch (\Throwable) {
+            $this->ranCache = [];
+        }
     }
 }

@@ -13,6 +13,9 @@ final class Settings
     /** @var array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>}> */
     private array $definitions = [];
 
+    /** @var array<string, mixed>|null null = ještě nenačteno */
+    private ?array $values = null;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly Config $config,
@@ -37,18 +40,26 @@ final class Settings
         ];
     }
 
+    public function has(string $key): bool
+    {
+        $this->warm();
+
+        return array_key_exists($key, $this->values ?? []);
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
-        $record = $this->em->find(SettingRecord::class, $key);
-        if (!$record instanceof SettingRecord) {
-            if (array_key_exists($key, $this->definitions)) {
-                return $this->definitions[$key]['default'] ?? $default;
-            }
+        $this->warm();
 
-            return $this->config->get($key, $default);
+        if (array_key_exists($key, $this->values ?? [])) {
+            return $this->values[$key];
         }
 
-        return $this->cast($record->value(), $record->type());
+        if (array_key_exists($key, $this->definitions)) {
+            return $this->definitions[$key]['default'] ?? $default;
+        }
+
+        return $this->config->get($key, $default);
     }
 
     public function set(string $key, mixed $value, string $type = SettingRecord::TYPE_STRING, ?string $module = null): void
@@ -65,12 +76,34 @@ final class Settings
         }
 
         $this->em->flush();
+        $this->warm();
+        $this->values[$key] = $this->cast($stored, $type);
     }
 
     /** @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>}> */
     public function definitions(): array
     {
         return $this->definitions;
+    }
+
+    /** Jedním SELECT * načte všechna nastavení pro request (eliminuje N+1 z find-per-key). */
+    private function warm(): void
+    {
+        if ($this->values !== null) {
+            return;
+        }
+
+        $this->values = [];
+        try {
+            /** @var list<SettingRecord> $rows */
+            $rows = $this->em->getRepository(SettingRecord::class)->findAll();
+            foreach ($rows as $record) {
+                $this->values[$record->keyName()] = $this->cast($record->value(), $record->type());
+            }
+        } catch (\Throwable) {
+            // tabulka ještě nemusí existovat (install / migrate)
+            $this->values = [];
+        }
     }
 
     private function cast(?string $value, string $type): mixed

@@ -13,6 +13,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ModuleUpdater
 {
+    /** @var array<string, bool> */
+    private array $updateAvailableCache = [];
+
     public function __construct(
         private readonly ModuleManager $modules,
         private readonly Migrator $migrator,
@@ -25,27 +28,31 @@ final class ModuleUpdater
 
     public function isUpdateAvailable(string $id): bool
     {
-        $manifest = $this->modules->manifest($id);
-        if ($manifest === null) {
-            return false;
+        if (array_key_exists($id, $this->updateAvailableCache)) {
+            return $this->updateAvailableCache[$id];
         }
 
-        $row = $this->em->find(InstalledModule::class, $id);
+        $manifest = $this->modules->manifest($id);
+        if ($manifest === null) {
+            return $this->updateAvailableCache[$id] = false;
+        }
+
+        $row = $this->modules->installed($id);
         if ($row === null) {
-            return false;
+            return $this->updateAvailableCache[$id] = false;
         }
 
         if ($row->version() !== $manifest->version) {
-            return true;
+            return $this->updateAvailableCache[$id] = true;
         }
 
         foreach ($this->migrator->statusForModule($id) as $item) {
             if (!$item['ran']) {
-                return true;
+                return $this->updateAvailableCache[$id] = true;
             }
         }
 
-        return false;
+        return $this->updateAvailableCache[$id] = false;
     }
 
     /**
@@ -60,7 +67,7 @@ final class ModuleUpdater
             throw new \RuntimeException($this->translator->trans('modules.error.not_found', ['%id%' => $id]));
         }
 
-        $row = $this->em->find(InstalledModule::class, $id);
+        $row = $this->modules->installed($id);
         if ($row === null) {
             throw new \RuntimeException($this->translator->trans('modules.error.not_installed', ['%id%' => $id]));
         }
@@ -78,6 +85,8 @@ final class ModuleUpdater
             'version' => $manifest->version,
             'migrations' => count($messages),
         ]);
+
+        unset($this->updateAvailableCache[$id]);
 
         return $messages;
     }
@@ -97,9 +106,16 @@ final class ModuleUpdater
             );
         }
 
+        /** @var array<string, Permission> $existing */
+        $existing = [];
+        foreach ($this->em->getRepository(Permission::class)->findAll() as $permission) {
+            if ($permission instanceof Permission) {
+                $existing[$permission->name()] = $permission;
+            }
+        }
+
         foreach ($this->permissionRegistry->all() as $item) {
-            $existing = $this->em->getRepository(Permission::class)->findOneBy(['name' => $item['name']]);
-            if ($existing === null) {
+            if (!isset($existing[$item['name']])) {
                 $this->em->persist(new Permission($item['name'], $item['label'], $item['group']));
             }
         }

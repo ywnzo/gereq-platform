@@ -18,6 +18,12 @@ final class ModuleManager
     /** @var list<ModuleInterface> */
     private array $booted = [];
 
+    /** @var list<string>|null */
+    private ?array $enabledIds = null;
+
+    /** @var array<string, InstalledModule>|null */
+    private ?array $installedById = null;
+
     public function __construct(
         private readonly string $basePath,
         private readonly EntityManagerInterface $em,
@@ -74,18 +80,51 @@ final class ModuleManager
         return in_array($id, $this->enabledIds(), true);
     }
 
+    public function installed(string $id): ?InstalledModule
+    {
+        return $this->installedById()[$id] ?? null;
+    }
+
+    /**
+     * @return array<string, InstalledModule>
+     */
+    public function installedById(): array
+    {
+        if ($this->installedById !== null) {
+            return $this->installedById;
+        }
+
+        $this->installedById = [];
+        try {
+            foreach ($this->em->getRepository(InstalledModule::class)->findAll() as $row) {
+                if ($row instanceof InstalledModule) {
+                    $this->installedById[$row->id()] = $row;
+                }
+            }
+        } catch (\Throwable) {
+            $this->installedById = [];
+        }
+
+        return $this->installedById;
+    }
+
     /**
      * @return list<string>
      */
     public function enabledIds(): array
     {
-        try {
-            $rows = $this->em->getRepository(InstalledModule::class)->findBy(['enabled' => true]);
-
-            return array_map(static fn (InstalledModule $row): string => $row->id(), $rows);
-        } catch (\Throwable) {
-            return [];
+        if ($this->enabledIds !== null) {
+            return $this->enabledIds;
         }
+
+        $this->enabledIds = [];
+        foreach ($this->installedById() as $row) {
+            if ($row->enabled()) {
+                $this->enabledIds[] = $row->id();
+            }
+        }
+
+        return $this->enabledIds;
     }
 
     public function enable(string $id): void
@@ -93,7 +132,7 @@ final class ModuleManager
         $manifest = $this->requireManifest($id);
         $this->assertDependencies($manifest);
 
-        $row = $this->em->find(InstalledModule::class, $id);
+        $row = $this->installed($id);
         if ($row === null) {
             $row = new InstalledModule($id, $manifest->version, true);
             $this->em->persist($row);
@@ -105,6 +144,8 @@ final class ModuleManager
         $this->syncManifestPermissions($manifest);
         $this->syncPermissions($manifest);
         $this->em->flush();
+        $this->enabledIds = null;
+        $this->installedById = null;
         $this->auditor->log('module.enabled', 'module', $id);
     }
 
@@ -125,12 +166,14 @@ final class ModuleManager
             }
         }
 
-        $row = $this->em->find(InstalledModule::class, $id);
+        $row = $this->installed($id);
         if ($row !== null) {
             $row->disable();
             $this->em->flush();
         }
 
+        $this->enabledIds = null;
+        $this->installedById = null;
         $this->auditor->log('module.disabled', 'module', $id);
     }
 
@@ -233,9 +276,16 @@ final class ModuleManager
     {
         $this->syncManifestPermissions($manifest);
 
+        /** @var array<string, Permission> $existing */
+        $existing = [];
+        foreach ($this->em->getRepository(Permission::class)->findAll() as $permission) {
+            if ($permission instanceof Permission) {
+                $existing[$permission->name()] = $permission;
+            }
+        }
+
         foreach ($this->permissionRegistry->all() as $item) {
-            $existing = $this->em->getRepository(Permission::class)->findOneBy(['name' => $item['name']]);
-            if ($existing === null) {
+            if (!isset($existing[$item['name']])) {
                 $this->em->persist(new Permission($item['name'], $item['label'], $item['group']));
             }
         }

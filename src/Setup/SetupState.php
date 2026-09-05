@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Gereq\Setup;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 
@@ -15,14 +14,12 @@ final class SetupState
 
     public function __construct(
         private readonly Settings $settings,
-        private readonly EntityManagerInterface $em,
     ) {
     }
 
     public function isComplete(): bool
     {
-        $record = $this->em->find(SettingRecord::class, self::KEY);
-        if (!$record instanceof SettingRecord) {
+        if (!$this->settings->has(self::KEY)) {
             // Legacy installs without the flag are considered done.
             return true;
         }

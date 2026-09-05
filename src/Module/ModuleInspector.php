@@ -12,7 +12,6 @@ use Gereq\Hook\HookManager;
 use Gereq\Http\Route;
 use Gereq\Http\Router;
 use Gereq\Setting\Settings;
-use Doctrine\ORM\EntityManagerInterface;
 
 final class ModuleInspector
 {
@@ -26,7 +25,6 @@ final class ModuleInspector
         private readonly HookManager $hooks,
         private readonly CapabilityRegistry $capabilities,
         private readonly Settings $settings,
-        private readonly EntityManagerInterface $em,
         private readonly Repository $config,
     ) {
     }
@@ -56,7 +54,7 @@ final class ModuleInspector
         $events = $this->moduleEvents($manifest);
         $settings = $this->moduleSettings($manifest);
         $files = $this->fileTree($manifest);
-        $installed = $this->em->find(InstalledModule::class, $manifest->id);
+        $installed = $this->modules->installed($manifest->id);
         $updateAvailable = $this->updater->isUpdateAvailable($manifest->id);
         $health = $this->health($manifest, $enabled, $missing, $migrations, $installed?->version(), $updateAvailable);
 

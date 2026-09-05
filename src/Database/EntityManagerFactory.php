@@ -56,7 +56,8 @@ final class EntityManagerFactory
             $setup->setResultCache($appCache);
         }
 
-        if ($isDev && $this->queries !== null) {
+        // Always collect SQL timings so Vitality (and DebugBar in debug) can inspect requests.
+        if ($this->queries !== null) {
             $setup->setMiddlewares([new QueryMiddleware($this->queries)]);
         }
 
