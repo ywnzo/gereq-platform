@@ -49,23 +49,54 @@ final class OrderController extends Controller
             sortable: ['number', 'status', 'total', 'createdAt', 'updatedAt'],
             defaultSort: 'createdAt',
             defaultDir: 'desc',
-            filterKeys: ['status', 'customer'],
+            filterKeys: ['status', 'customer', 'payment_status', 'currency'],
         );
         $status = $list->filter('status');
         $customerId = $list->filter('customer');
+        $paymentStatus = $list->filter('payment_status');
+        $currency = strtoupper($list->filter('currency'));
 
         $qb = $this->em->getRepository(Order::class)->createQueryBuilder('o');
-        $list->applySearch($qb, 'o', ['number', 'note']);
+        $list->applySearch($qb, 'o', ['number', 'note', 'shippingMethodName', 'paymentMethodName']);
         if (in_array($status, Order::STATUSES, true)) {
             $qb->andWhere('o.status = :status')->setParameter('status', $status);
         }
         if ($customerId !== '') {
             $qb->andWhere('o.customerId = :cid')->setParameter('cid', $customerId);
         }
+        if ($paymentStatus !== '') {
+            $qb->andWhere('o.paymentStatus = :pay')->setParameter('pay', $paymentStatus);
+        }
+        if ($currency !== '' && strlen($currency) === 3) {
+            $qb->andWhere('o.currency = :currency')->setParameter('currency', $currency);
+        }
         $qb->orderBy('o.' . $list->sort, $list->direction());
 
         $total = (int) (clone $qb)->select('COUNT(o.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        /** @var list<Order> $items */
         $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+
+        $currencyRows = $this->em->createQueryBuilder()
+            ->select('DISTINCT o.currency AS currency')
+            ->from(Order::class, 'o')
+            ->orderBy('o.currency', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+        $currencies = array_values(array_filter(array_map(
+            static fn (array $row): string => (string) ($row['currency'] ?? ''),
+            $currencyRows,
+        )));
+
+        $paymentRows = $this->em->createQueryBuilder()
+            ->select('DISTINCT o.paymentStatus AS paymentStatus')
+            ->from(Order::class, 'o')
+            ->orderBy('o.paymentStatus', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+        $paymentStatuses = array_values(array_unique(array_filter(array_merge(
+            ['unpaid', 'paid', 'pending'],
+            array_map(static fn (array $row): string => (string) ($row['paymentStatus'] ?? ''), $paymentRows),
+        ))));
 
         return $this->page('@orders/orders/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('orders.title'),
@@ -73,7 +104,12 @@ final class OrderController extends Controller
             'customers' => $this->customerMap($items),
             'status' => $status,
             'customerId' => $customerId,
+            'payment_status' => $paymentStatus,
+            'currency' => $currency,
             'statuses' => Order::STATUSES,
+            'currencies' => $currencies !== [] ? $currencies : ['CZK', 'EUR'],
+            'paymentStatuses' => $paymentStatuses,
+            'customerFilterOptions' => $this->customerOptions(),
         ]));
     }
 
@@ -207,6 +243,77 @@ final class OrderController extends Controller
     public function cancel(string $id): Response
     {
         return $this->transition($id, 'cancelled', 'order.cancelled', 'orders.flash.cancelled');
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'orders.bulk');
+        $action = (string) $data['action'];
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('orders.bulk.error.empty'));
+
+            return $this->redirect('admin.orders.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('orders.bulk.error.confirm'));
+
+            return $this->redirect('admin.orders.index');
+        }
+
+        $affected = 0;
+        foreach ($ids as $id) {
+            $order = $this->find($id);
+            if ($order === null) {
+                continue;
+            }
+
+            try {
+                if ($action === 'confirm') {
+                    $order->setStatus('confirmed');
+                    $this->events->emit('order.confirmed', ['type' => 'order', 'id' => $order->id()], $this->publicOrder($order));
+                    $this->auditor->log('orders.confirmed', 'order', $order->id());
+                    $affected++;
+                } elseif ($action === 'fulfill') {
+                    $order->setStatus('fulfilled');
+                    $this->events->emit('order.fulfilled', ['type' => 'order', 'id' => $order->id()], $this->publicOrder($order));
+                    $this->auditor->log('orders.fulfilled', 'order', $order->id());
+                    $affected++;
+                } elseif ($action === 'cancel') {
+                    $order->setStatus('cancelled');
+                    $this->events->emit('order.cancelled', ['type' => 'order', 'id' => $order->id()], $this->publicOrder($order));
+                    $this->auditor->log('orders.cancelled', 'order', $order->id());
+                    $affected++;
+                } elseif ($action === 'delete') {
+                    if ($order->status() !== 'draft' && $order->status() !== 'cancelled') {
+                        continue;
+                    }
+                    foreach ($this->em->getRepository(OrderLine::class)->findBy(['orderId' => $id]) as $line) {
+                        $this->em->remove($line);
+                    }
+                    $this->em->remove($order);
+                    $this->auditor->log('orders.deleted', 'order', $id);
+                    $affected++;
+                }
+            } catch (\InvalidArgumentException) {
+                continue;
+            }
+        }
+
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('orders.bulk.flash.' . $action, [
+            '%count%' => (string) $affected,
+        ]));
+
+        return $this->redirect('admin.orders.index');
     }
 
     public function addLine(Request $request, string $id): Response
@@ -355,7 +462,7 @@ final class OrderController extends Controller
 
         return array_map(
             static fn (Product $p): array => ['value' => $p->id(), 'label' => $p->sku() . ' — ' . $p->name()],
-            $this->em->getRepository(Product::class)->createQueryBuilder('p')->orderBy('p.name', 'ASC')->setMaxResults(500)->getQuery()->getResult(),
+            $this->em->getRepository(Product::class)->createQueryBuilder('p')->orderBy('p.name', 'ASC')->setMaxResults(100)->getQuery()->getResult(),
         );
     }
 

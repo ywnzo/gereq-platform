@@ -45,7 +45,7 @@ final class OrdersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.2.1';
     }
 
     public function register(ModuleContext $context): void
@@ -70,6 +70,7 @@ final class OrdersModule implements ModuleInterface
             $routes->get('', [OrderController::class, 'index'])->name('admin.orders.index')->permission('orders.view');
             $routes->get('/create', [OrderController::class, 'create'])->name('admin.orders.create')->permission('orders.manage');
             $routes->post('', [OrderController::class, 'store'])->name('admin.orders.store')->permission('orders.manage');
+            $routes->post('/bulk', [OrderController::class, 'bulk'])->name('admin.orders.bulk')->permission('orders.manage');
             $routes->get('/{id}', [OrderController::class, 'show'])->name('admin.orders.show')->permission('orders.view');
             $routes->get('/{id}/edit', [OrderController::class, 'edit'])->name('admin.orders.edit')->permission('orders.manage');
             $routes->post('/{id}', [OrderController::class, 'update'])->name('admin.orders.update')->permission('orders.manage');
@@ -228,6 +229,10 @@ final class OrdersModule implements ModuleInterface
     private function registerValidation(ModuleContext $context): void
     {
         $v = $context->validation();
+        $v->ruleset('orders.bulk', [
+            'action' => 'required|max:32',
+            'confirmed' => 'nullable',
+        ]);
         $v->ruleset('orders.save', [
             'customer_id' => 'required|max:36',
             'currency' => 'nullable|max:3',

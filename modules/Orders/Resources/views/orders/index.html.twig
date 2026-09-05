@@ -1,56 +1,232 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="orders" data-actions-default="1">
-<header class="page-header">
-    <h1>{{ 'orders.title'|trans }}</h1>
-    <div class="actions">
-        <a class="btn btn--ghost" href="{{ url('admin.invoices.index') }}">{{ 'orders.invoices.title'|trans }}</a>
-        {% if user.can('orders.manage') %}
-            <a class="btn btn--primary" href="{{ url('admin.orders.create') }}">{{ icon('plus') }} {{ 'orders.new'|trans }}</a>
-        {% endif %}
+{% set pageIds = items|map(i => i.id()) %}
+{% set paymentFilter = payment_status|default('') %}
+{% set currencyFilter = currency|default('') %}
+{% set advancedFilters = (paymentFilter is not empty) or (currencyFilter is not empty) or (customerId|default('') is not empty) %}
+{% set filterQuery = {
+    status: status,
+    payment_status: paymentFilter,
+    currency: currencyFilter,
+    customer: customerId|default(''),
+} %}
+<div
+    class="list-shell"
+    x-data="dataTable"
+    data-table-id="orders"
+    data-actions-default="1"
+    data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
+    data-bulk-delete-confirm="{{ 'orders.bulk.confirm_delete'|trans|e('html_attr') }}"
+>
+    <header class="page-header">
+        <div>
+            <h1>{{ 'orders.title'|trans }}</h1>
+            <p class="muted">{{ 'orders.list.hint'|trans }}</p>
+        </div>
+        <div class="actions">
+            <a class="btn btn--ghost" href="{{ url('admin.invoices.index') }}">{{ 'orders.invoices.title'|trans }}</a>
+            {% if user.can('orders.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.orders.create') }}">{{ icon('plus') }} {{ 'orders.new'|trans }}</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="toolbar--table">
+        <form class="toolbar" method="get" id="orders-filter-form">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input type="hidden" name="payment_status" value="{{ paymentFilter }}">
+            <input type="hidden" name="currency" value="{{ currencyFilter }}">
+            <input type="hidden" name="customer" value="{{ customerId|default('') }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'orders.search'|trans }}">
+            <select name="status" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'orders.all_statuses'|trans }}</option>
+                {% for s in statuses %}
+                    <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('orders.status.' ~ s)|trans }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <div class="toolbar__toggles">
+            {{ ui_render('drawer_trigger', {
+                drawer_id: 'orders-filters',
+                label: 'ui.drawer.filters'|trans,
+                variant: advancedFilters ? 'primary' : 'ghost',
+                icon: 'filters',
+            }) }}
+        </div>
     </div>
-</header>
-<div class="toolbar--table">
-    <form class="toolbar" method="get">
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <input type="hidden" name="dir" value="{{ dir }}">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'orders.search'|trans }}">
-        <select name="status" class="input" onchange="this.form.submit()">
-            <option value="">{{ 'orders.all_statuses'|trans }}</option>
-            {% for s in statuses %}
-                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('orders.status.' ~ s)|trans }}</option>
-            {% endfor %}
-        </select>
-    </form>
+
+    {% if user.can('orders.manage') and items is not empty %}
+        <form
+            class="bulk-bar"
+            method="post"
+            action="{{ url('admin.orders.bulk') }}"
+            x-show="selectedCount > 0"
+            x-cloak
+            @submit="confirmBulk"
+        >
+            {{ csrf_field()|raw }}
+            <input type="hidden" name="confirmed" value="1">
+            <template x-for="id in selected" :key="id">
+                <input type="hidden" name="ids[]" :value="id">
+            </template>
+            <div class="bulk-bar__meta">
+                <strong x-text="selectedCount"></strong>
+                <span>{{ 'orders.bulk.selected'|trans }}</span>
+                <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'orders.bulk.clear'|trans }}</button>
+            </div>
+            <div class="bulk-bar__actions">
+                <select class="input" name="action" x-model="bulkAction" required>
+                    <option value="">{{ 'orders.bulk.choose'|trans }}</option>
+                    <option value="confirm">{{ 'orders.bulk.action.confirm'|trans }}</option>
+                    <option value="fulfill">{{ 'orders.bulk.action.fulfill'|trans }}</option>
+                    <option value="cancel">{{ 'orders.bulk.action.cancel'|trans }}</option>
+                    <option value="delete">{{ 'orders.bulk.action.delete'|trans }}</option>
+                </select>
+                <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'orders.bulk.apply'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    {% if user.can('orders.manage') %}
+                        <th class="table__check">
+                            <label class="table-check">
+                                <input type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected">
+                                <span class="sr-only">{{ 'orders.bulk.select_all'|trans }}</span>
+                            </label>
+                        </th>
+                    {% endif %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'orders.field.number'|trans, column: 'number', query: filterQuery } %}
+                    <th>{{ 'orders.field.customer'|trans }}</th>
+                    {% include 'ui/sort_th.html.twig' with { label: 'orders.field.status'|trans, column: 'status', query: filterQuery } %}
+                    <th>{{ 'orders.field.payment_status'|trans }}</th>
+                    {% include 'ui/sort_th.html.twig' with { label: 'orders.field.total'|trans, column: 'total', query: filterQuery, class: 'is-num' } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'orders.field.created'|trans, column: 'createdAt', query: filterQuery } %}
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    {% set statusTone = item.status() == 'fulfilled' ? 'ok' : (item.status() == 'confirmed' ? 'info' : (item.status() == 'cancelled' ? 'danger' : 'muted')) %}
+                    {% set pay = item.paymentStatus()|default('unpaid') %}
+                    {% set payTone = pay == 'paid' ? 'ok' : (pay in ['pending', 'processing'] ? 'warn' : 'muted') %}
+                    <tr :class="isSelected('{{ item.id() }}') ? 'is-selected' : ''">
+                        {% if user.can('orders.manage') %}
+                            <td class="table__check">
+                                <label class="table-check">
+                                    <input
+                                        type="checkbox"
+                                        value="{{ item.id() }}"
+                                        @change="toggleId('{{ item.id() }}')"
+                                        :checked="isSelected('{{ item.id() }}')"
+                                    >
+                                    <span class="sr-only">{{ item.number() }}</span>
+                                </label>
+                            </td>
+                        {% endif %}
+                        <td>
+                            <div class="table__title">
+                                <a href="{{ url('admin.orders.show', {id: item.id()}) }}"><strong>{{ item.number() }}</strong></a>
+                                {% if item.shippingMethodName() %}
+                                    <span class="table__meta muted">{{ item.shippingMethodName() }}</span>
+                                {% elseif item.paymentMethodName() %}
+                                    <span class="table__meta muted">{{ item.paymentMethodName() }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% set c = customers[item.customerId()]|default(null) %}
+                            {% if c %}
+                                <a class="cell-user cell-user--stack" href="{{ url('admin.customers.show', {id: c.id()}) }}">
+                                    <span class="avatar avatar--sm">{{ c.initials() }}</span>
+                                    <span class="cell-user__text">
+                                        <strong>{{ c.name() }}</strong>
+                                        <small class="muted">{{ c.email() }}</small>
+                                    </span>
+                                </a>
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span></td>
+                        <td>
+                            <span class="badge badge--{{ payTone }}">
+                                {{ ('orders.payment_status.' ~ pay)|trans }}
+                            </span>
+                        </td>
+                        <td class="is-num"><strong>{{ item.total() }}</strong> <span class="muted">{{ item.currency() }}</span></td>
+                        <td class="is-mute">{{ item.createdAt().format('d. m. Y H:i') }}</td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.orders.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+                                {% if user.can('orders.manage') and item.canEdit() %}
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.orders.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="{{ user.can('orders.manage') ? 8 : 7 }}">
+                            <div class="empty">
+                                <h2>{{ 'orders.empty'|trans }}</h2>
+                                <p>{{ 'orders.empty.hint'|trans }}</p>
+                                {% if user.can('orders.manage') %}
+                                    <a class="btn btn--primary" href="{{ url('admin.orders.create') }}">{{ icon('plus') }} {{ 'orders.new'|trans }}</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include 'ui/table_footer.html.twig' %}
 </div>
-<div class="table-wrap" data-table>
-<table class="table">
-<thead><tr>
-{% include 'ui/sort_th.html.twig' with { label: 'orders.field.number'|trans, column: 'number', query: { status: status } } %}
-<th>{{ 'orders.field.customer'|trans }}</th>
-{% include 'ui/sort_th.html.twig' with { label: 'orders.field.status'|trans, column: 'status', query: { status: status } } %}
-{% include 'ui/sort_th.html.twig' with { label: 'orders.field.total'|trans, column: 'total', query: { status: status }, class: 'is-num' } %}
-<th class="table__actions-head"></th>
-</tr></thead>
-<tbody>
-{% for item in items %}
-<tr>
-<td><a href="{{ url('admin.orders.show', {id: item.id()}) }}">{{ item.number() }}</a></td>
-<td>{% set c = customers[item.customerId()]|default(null) %}{{ c ? c.name() : '—' }}</td>
-<td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
-<td class="is-num">{{ item.total() }} {{ item.currency() }}</td>
-{% embed 'ui/row_actions.html.twig' %}
-    {% block items %}
-        {% include 'ui/row_action.html.twig' with { href: url('admin.orders.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+
+{% embed 'ui/drawer.html.twig' with { id: 'orders-filters', title: 'ui.drawer.filters'|trans } %}
+    {% block body %}
+        <form method="get" class="g-drawer__form stack" id="orders-drawer-filters">
+            <input type="hidden" name="q" value="{{ search }}">
+            <input type="hidden" name="status" value="{{ status }}">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'orders.field.payment_status'|trans }}</span>
+                <select class="input" name="payment_status">
+                    <option value="">{{ 'orders.filter.payment_any'|trans }}</option>
+                    {% for p in paymentStatuses|default(['unpaid', 'paid', 'pending']) %}
+                        <option value="{{ p }}" {{ paymentFilter == p ? 'selected' : '' }}>{{ ('orders.payment_status.' ~ p)|trans }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'orders.field.currency'|trans }}</span>
+                <select class="input" name="currency">
+                    <option value="">{{ 'orders.filter.currency_any'|trans }}</option>
+                    {% for cur in currencies|default(['CZK', 'EUR']) %}
+                        <option value="{{ cur }}" {{ currencyFilter == cur ? 'selected' : '' }}>{{ cur }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'orders.field.customer'|trans }}</span>
+                <select class="input" name="customer">
+                    <option value="">{{ 'orders.filter.customer_any'|trans }}</option>
+                    {% for opt in customerFilterOptions|default([]) %}
+                        <option value="{{ opt.value }}" {{ customerId|default('') == opt.value ? 'selected' : '' }}>{{ opt.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+    {% endblock %}
+    {% block footer %}
+        <a class="btn btn--ghost" href="?q={{ search|url_encode }}&status={{ status|url_encode }}&sort={{ sort|url_encode }}&dir={{ dir|url_encode }}">{{ 'ui.drawer.reset'|trans }}</a>
+        <button class="btn btn--primary" type="submit" form="orders-drawer-filters">{{ 'ui.drawer.apply'|trans }}</button>
     {% endblock %}
 {% endembed %}
-</tr>
-{% else %}
-<tr><td colspan="5"><div class="empty"><h2>{{ 'orders.empty'|trans }}</h2><p>{{ 'orders.empty.hint'|trans }}</p></div></td></tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-{% include 'ui/table_footer.html.twig' %}
-</div>
 {% endblock %}
