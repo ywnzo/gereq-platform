@@ -1,0 +1,91 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.moneys3'|trans },
+    ] } %}
+{% endblock %}
+
+{% macro control(field) %}
+    {% if field.definition.type == 'boolean' %}
+        <select class="input" name="{{ field.field }}">
+            <option value="1" {{ field.value ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+            <option value="0" {{ not field.value ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+        </select>
+    {% elseif field.secret %}
+        <input class="input" type="password" name="{{ field.field }}" value="" autocomplete="new-password" placeholder="{{ field.value ? ('settings.secret.placeholder'|trans) : '' }}">
+    {% else %}
+        <input class="input" type="text" name="{{ field.field }}" value="{{ field.value }}">
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+    {% import _self as ui %}
+
+    <header class="page-header">
+        <div>
+            <h1>{{ 'moneys3.settings.title'|trans }}</h1>
+            <p class="muted">{{ 'moneys3.settings.intro'|trans }}</p>
+        </div>
+        <div class="actions">
+            <button class="btn btn--primary" type="submit" form="moneys3-settings-form">{{ 'common.save'|trans }}</button>
+        </div>
+    </header>
+
+    {% if enabled %}
+        <p class="muted">{{ 'moneys3.status.enabled'|trans }}</p>
+    {% elseif configured %}
+        <p class="muted">{{ 'moneys3.status.configured'|trans }}</p>
+    {% else %}
+        <p class="muted">{{ 'moneys3.status.missing'|trans }}</p>
+    {% endif %}
+
+    <form id="moneys3-settings-form" method="post" action="{{ url('admin.moneys3.settings.update') }}" class="detail-stack" autocomplete="off">
+        {{ csrf_field()|raw }}
+
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'moneys3.settings.section.api'|trans }}</h2>
+                    <p class="muted">{{ 'moneys3.settings.section.api_hint'|trans }}</p>
+                </div>
+            </header>
+            <div class="form-grid">
+                {% for key in sections.api %}
+                    {% if fields[key] is defined %}
+                        <label class="field">
+                            <span>{{ fields[key].definition.label|trans }}</span>
+                            {{ ui.control(fields[key]) }}
+                        </label>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        </div>
+    </form>
+
+    <section class="panel">
+        <header class="panel__head">
+            <div>
+                <h2>{{ 'moneys3.settings.section.lists'|trans }}</h2>
+                <p class="muted">{{ 'moneys3.settings.section.lists_hint'|trans }}</p>
+            </div>
+        </header>
+        <div class="form-grid">
+            {% for name, count in cache %}
+                <div class="field">
+                    <span>{{ ('moneys3.list.' ~ name)|trans }} ({{ count }})</span>
+                    <form method="post" action="{{ url('admin.moneys3.sync') }}" class="inline">
+                        {{ csrf_field()|raw }}
+                        <input type="hidden" name="list" value="{{ name }}">
+                        <button class="btn btn--ghost" type="submit" {{ configured ? '' : 'disabled' }}>{{ 'moneys3.action.sync'|trans }}</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}
