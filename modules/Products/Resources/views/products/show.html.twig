@@ -27,6 +27,9 @@
             <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="images">{{ 'products.images.title'|trans }}{% if images %}<span class="module-tab-count">{{ images|length }}</span>{% endif %}</button>
             <button type="button" class="design-tab" role="tab" data-tab="prices">{{ 'products.prices.title'|trans }}{% if prices %}<span class="module-tab-count">{{ prices|length }}</span>{% endif %}</button>
+            {% if hasProductDiscounts is defined and hasProductDiscounts %}
+                <button type="button" class="design-tab" role="tab" data-tab="discounts">{{ 'product_discounts.tab'|trans }}{% if productDiscounts|default([]) %}<span class="module-tab-count">{{ productDiscounts|length }}</span>{% endif %}</button>
+            {% endif %}
             <button type="button" class="design-tab" role="tab" data-tab="variants">Varianty{% if optionGroups or variants %}<span class="module-tab-count">{{ optionGroups|length }}/{{ variants|length }}</span>{% endif %}</button>
         </div>
 
@@ -269,6 +272,18 @@
             </section>
         </section>
 
+        {% if hasProductDiscounts is defined and hasProductDiscounts %}
+            <section class="design-panel" data-panel="discounts" role="tabpanel">
+                {% include '@productdiscounts/_panel.html.twig' with {
+                    discounts: productDiscounts|default([]),
+                    discountConditions: discountConditions|default(['none']),
+                    formAction: url('admin.products.discount.upsert', {productId: item.id()}),
+                    panelTitle: 'product_discounts.panel.title'|trans,
+                    panelHint: 'product_discounts.panel.hint'|trans
+                } %}
+            </section>
+        {% endif %}
+
         <section class="design-panel" data-panel="variants" role="tabpanel">
             <section class="panel">
                 <header class="panel__head">
@@ -353,7 +368,8 @@
                                         </div>
                                         <label class="field">
                                             <span class="g-label">Možnosti <span class="g-optional">(1 na řádek)</span></span>
-                                            <textarea class="input variant-options-textarea" name="options_text" rows="8" placeholder="Černá&#10;Dub&#10;Bílá">{{ row.options_text }}</textarea>
+                                            <textarea class="input variant-options-textarea" name="options_text" rows="8" placeholder="Černá&#10;Dub|+500&#10;Bílá|-10%">{{ row.options_text }}</textarea>
+                                            <span class="g-hint">Úprava ceny: <code>Název|+500</code> (Kč) nebo <code>Název|-10%</code>.</span>
                                         </label>
                                         <div class="form-actions">
                                             <button class="btn btn--primary" type="submit">Uložit kolonku</button>
@@ -383,7 +399,8 @@
                             </div>
                             <label class="field">
                                 <span class="g-label">Možnosti <span class="g-optional">(1 na řádek)</span></span>
-                                <textarea class="input variant-options-textarea" name="options_text" rows="8" placeholder="Bílá&#10;Černá&#10;Modrá"></textarea>
+                                <textarea class="input variant-options-textarea" name="options_text" rows="8" placeholder="Bílá&#10;Černá|+200&#10;Modrá|-5%"></textarea>
+                                <span class="g-hint">Úprava ceny: <code>Název|+500</code> (Kč) nebo <code>Název|-10%</code>.</span>
                             </label>
                             <div class="form-actions">
                                 <button class="btn btn--primary" type="submit">Přidat kolonku</button>

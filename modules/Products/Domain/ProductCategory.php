@@ -31,6 +31,8 @@ class ProductCategory
     public function id(): string { return $this->id; }
     public function name(): string { return $this->name; }
     public function slug(): string { return $this->slug; }
+    /** @return Collection<int, Product> */
+    public function products(): Collection { return $this->products; }
     public function setName(string $name): void { $this->name = $name; }
     public function setSlug(string $slug): void { $this->slug = $slug; }
 }

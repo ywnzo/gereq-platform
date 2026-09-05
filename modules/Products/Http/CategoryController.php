@@ -12,6 +12,7 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Module\CapabilityRegistry;
 use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\ProductCategory;
 use Modules\Products\Domain\ProductOptionGroup;
@@ -35,17 +36,47 @@ final class CategoryController extends Controller
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
         private readonly ProductVariantOptionsService $variantOptions,
+        private readonly CapabilityRegistry $capabilities,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $items = $this->em->getRepository(ProductCategory::class)->findBy([], ['name' => 'ASC']);
+        $search = trim((string) $request->query->get('q', ''));
+        $hasProducts = (string) $request->query->get('has_products', '');
+
+        $qb = $this->em->getRepository(ProductCategory::class)->createQueryBuilder('c')
+            ->orderBy('c.name', 'ASC');
+        if ($search !== '') {
+            self_repair_search($qb, 'c', ['name', 'slug'], $search);
+        }
+        if ($hasProducts === '1') {
+            $qb->andWhere('SIZE(c.products) > 0');
+        } elseif ($hasProducts === '0') {
+            $qb->andWhere('SIZE(c.products) = 0');
+        }
+
+        /** @var list<ProductCategory> $items */
+        $items = $qb->getQuery()->getResult();
+
+        $productCounts = [];
+        $optionCounts = [];
+        foreach ($items as $item) {
+            $productCounts[$item->id()] = $item->products()->count();
+            $optionCounts[$item->id()] = count($this->variantOptions->groupsForScope(
+                ProductOptionGroup::SCOPE_CATEGORY,
+                $item->id(),
+            ));
+        }
 
         return $this->page('@products/categories/index.html.twig', [
             'pageTitle' => $this->translator->trans('products.categories.title'),
             'items' => $items,
+            'search' => $search,
+            'has_products' => $hasProducts,
+            'productCounts' => $productCounts,
+            'optionCounts' => $optionCounts,
         ]);
     }
 
@@ -94,6 +125,14 @@ final class CategoryController extends Controller
                 ProductOptionGroup::SCOPE_CATEGORY,
                 $category->id(),
             ),
+            'hasProductDiscounts' => $this->capabilities->has('product_discounts'),
+            'categoryDiscounts' => $this->capabilities->has('product_discounts')
+                && class_exists(\Modules\ProductDiscounts\Application\ProductDiscountsProvider::class)
+                ? $this->capabilities->get('product_discounts')->listForCategory($category->id())
+                : [],
+            'discountConditions' => class_exists(\Modules\ProductDiscounts\Domain\ProductDiscount::class)
+                ? \Modules\ProductDiscounts\Domain\ProductDiscount::CONDITIONS
+                : ['none'],
         ]);
     }
 
@@ -141,6 +180,54 @@ final class CategoryController extends Controller
         $this->em->flush();
         $this->auditor->log('product_category.deleted', 'product_category', $id);
         $this->flash('success', $this->translator->trans('products.categories.flash.deleted', ['%name%' => $name]));
+
+        return $this->redirect('admin.products.categories.index');
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'products.categories.bulk');
+        $action = (string) $data['action'];
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('products.bulk.error.empty'));
+
+            return $this->redirect('admin.products.categories.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('products.bulk.error.confirm'));
+
+            return $this->redirect('admin.products.categories.index');
+        }
+
+        $affected = 0;
+        if ($action === 'delete') {
+            foreach ($ids as $id) {
+                $category = $this->find($id);
+                if ($category === null) {
+                    continue;
+                }
+                foreach ($this->variantOptions->groupsForScope(ProductOptionGroup::SCOPE_CATEGORY, $category->id()) as $row) {
+                    $this->variantOptions->deleteGroup($row['group']);
+                }
+                $this->em->remove($category);
+                $this->auditor->log('product_category.deleted', 'product_category', $id);
+                $affected++;
+            }
+            $this->em->flush();
+        }
+
+        $this->flash('success', $this->translator->trans('products.categories.bulk.flash.delete', [
+            '%count%' => (string) $affected,
+        ]));
 
         return $this->redirect('admin.products.categories.index');
     }

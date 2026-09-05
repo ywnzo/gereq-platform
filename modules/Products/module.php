@@ -3,7 +3,7 @@ declare(strict_types=1);
 return [
     'id' => 'products',
     'name' => 'Products',
-    'version' => '1.2.0',
+    'version' => '1.7.2',
     'description' => 'module.products.description',
     'class' => Modules\Products\ProductsModule::class,
     'author' => 'GEREQ',

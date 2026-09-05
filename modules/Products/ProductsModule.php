@@ -32,7 +32,7 @@ final class ProductsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.4.0';
+        return '1.7.2';
     }
 
     public function register(ModuleContext $context): void
@@ -52,6 +52,9 @@ final class ProductsModule implements ModuleInterface
                 ->permission('products.manage');
             $routes->post('', [ProductController::class, 'store'])
                 ->name('admin.products.store')
+                ->permission('products.manage');
+            $routes->post('/bulk', [ProductController::class, 'bulk'])
+                ->name('admin.products.bulk')
                 ->permission('products.manage');
             $routes->get('/{id}', [ProductController::class, 'show'])
                 ->name('admin.products.show')
@@ -121,6 +124,9 @@ final class ProductsModule implements ModuleInterface
                 ->permission('products.manage');
             $routes->post('', [CategoryController::class, 'store'])
                 ->name('admin.products.categories.store')
+                ->permission('products.manage');
+            $routes->post('/bulk', [CategoryController::class, 'bulk'])
+                ->name('admin.products.categories.bulk')
                 ->permission('products.manage');
             $routes->get('/{id}/edit', [CategoryController::class, 'edit'])
                 ->name('admin.products.categories.edit')
@@ -268,6 +274,14 @@ final class ProductsModule implements ModuleInterface
     {
         $validation = $context->validation();
 
+        $validation->ruleset('products.bulk', [
+            'action' => 'required|max:32',
+            'confirmed' => 'nullable',
+        ]);
+        $validation->ruleset('products.categories.bulk', [
+            'action' => 'required|max:32',
+            'confirmed' => 'nullable',
+        ]);
         $validation->ruleset('products.product.save', [
             'sku' => 'required|min:1|max:64',
             'name' => 'required|min:2|max:190',

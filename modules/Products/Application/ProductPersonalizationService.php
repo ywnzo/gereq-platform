@@ -16,9 +16,38 @@ final class ProductPersonalizationService
 
     public function findRule(string $productId): ?ProductUserImageRule
     {
-        $rule = $this->em->getRepository(ProductUserImageRule::class)->findOneBy(['productId' => $productId]);
+        return $this->findRulesByProductIds([$productId])[$productId] ?? null;
+    }
 
-        return $rule instanceof ProductUserImageRule ? $rule : null;
+    /**
+     * @param list<string> $productIds
+     * @return array<string, ProductUserImageRule>
+     */
+    public function findRulesByProductIds(array $productIds): array
+    {
+        $productIds = array_values(array_unique(array_filter(
+            $productIds,
+            static fn (string $id): bool => $id !== '',
+        )));
+        if ($productIds === []) {
+            return [];
+        }
+
+        /** @var list<ProductUserImageRule> $rows */
+        $rows = $this->em->getRepository(ProductUserImageRule::class)->createQueryBuilder('r')
+            ->where('r.productId IN (:ids)')
+            ->setParameter('ids', $productIds)
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+        foreach ($rows as $rule) {
+            if ($rule instanceof ProductUserImageRule) {
+                $map[$rule->productId()] = $rule;
+            }
+        }
+
+        return $map;
     }
 
     public function activeRule(string $productId): ?ProductUserImageRule
@@ -26,6 +55,22 @@ final class ProductPersonalizationService
         $rule = $this->findRule($productId);
 
         return $rule !== null && $rule->isActive() && $rule->allowsImages() ? $rule : null;
+    }
+
+    /**
+     * @param list<string> $productIds
+     * @return array<string, ProductUserImageRule>
+     */
+    public function activeRulesByProductIds(array $productIds): array
+    {
+        $map = [];
+        foreach ($this->findRulesByProductIds($productIds) as $productId => $rule) {
+            if ($rule->isActive() && $rule->allowsImages()) {
+                $map[$productId] = $rule;
+            }
+        }
+
+        return $map;
     }
 
     /**
@@ -65,10 +110,15 @@ final class ProductPersonalizationService
         return $rule;
     }
 
-    /** @return array<string, mixed> */
-    public function serializeForStore(Product $product): array
+    /**
+     * @param array{rule?: ?ProductUserImageRule}|null $preloaded
+     * @return array<string, mixed>
+     */
+    public function serializeForStore(Product $product, ?array $preloaded = null): array
     {
-        $rule = $this->activeRule($product->id());
+        $rule = array_key_exists('rule', $preloaded ?? [])
+            ? $preloaded['rule']
+            : $this->activeRule($product->id());
         $out = [
             'customer_note_mode' => $product->customerNoteMode(),
             'user_image_rule' => null,

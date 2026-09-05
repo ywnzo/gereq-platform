@@ -27,12 +27,142 @@ final class ProductVariantOptionsService
      */
     public function groupsForScope(string $scopeType, string $scopeId): array
     {
-        $groups = $this->em->getRepository(ProductOptionGroup::class)->findBy(
-            ['scopeType' => $scopeType, 'scopeId' => $scopeId],
-            ['sortOrder' => 'ASC', 'name' => 'ASC'],
-        );
+        return $this->groupsForScopes($scopeType, [$scopeId])[$scopeId] ?? [];
+    }
 
-        return $this->hydrateGroups($groups, inherited: false);
+    /**
+     * @param list<string> $scopeIds
+     * @return array<string, list<array{group: ProductOptionGroup, values: list<ProductOptionValue>, options_text: string, inherited: bool}>>
+     */
+    public function groupsForScopes(string $scopeType, array $scopeIds): array
+    {
+        $scopeIds = array_values(array_unique(array_filter(
+            $scopeIds,
+            static fn (string $id): bool => $id !== '',
+        )));
+        $map = [];
+        foreach ($scopeIds as $id) {
+            $map[$id] = [];
+        }
+        if ($scopeIds === []) {
+            return $map;
+        }
+
+        /** @var list<ProductOptionGroup> $groups */
+        $groups = $this->em->getRepository(ProductOptionGroup::class)->createQueryBuilder('g')
+            ->where('g.scopeType = :type')
+            ->andWhere('g.scopeId IN (:ids)')
+            ->setParameter('type', $scopeType)
+            ->setParameter('ids', $scopeIds)
+            ->orderBy('g.sortOrder', 'ASC')
+            ->addOrderBy('g.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $hydrated = $this->hydrateGroups($groups, inherited: false);
+        foreach ($hydrated as $row) {
+            $map[$row['group']->scopeId()][] = $row;
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param list<string> $productIds
+     * @return array<string, bool>
+     */
+    public function productIdsWithOptionGroups(array $productIds): array
+    {
+        $flags = $this->scopeIdsWithOptionGroups(ProductOptionGroup::SCOPE_PRODUCT, $productIds);
+
+        return $flags;
+    }
+
+    /**
+     * @param list<string> $scopeIds
+     * @return array<string, bool>
+     */
+    public function scopeIdsWithOptionGroups(string $scopeType, array $scopeIds): array
+    {
+        $scopeIds = array_values(array_unique(array_filter(
+            $scopeIds,
+            static fn (string $id): bool => $id !== '',
+        )));
+        $map = array_fill_keys($scopeIds, false);
+        if ($scopeIds === []) {
+            return $map;
+        }
+
+        $rows = $this->em->createQueryBuilder()
+            ->select('DISTINCT g.scopeId AS scopeId')
+            ->from(ProductOptionGroup::class, 'g')
+            ->where('g.scopeType = :type')
+            ->andWhere('g.scopeId IN (:ids)')
+            ->setParameter('type', $scopeType)
+            ->setParameter('ids', $scopeIds)
+            ->getQuery()
+            ->getScalarResult();
+
+        foreach ($rows as $row) {
+            $id = (string) ($row['scopeId'] ?? '');
+            if ($id !== '') {
+                $map[$id] = true;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param list<string> $productIds
+     * @param list<string> $categoryIds
+     * @return array{products: array<string, bool>, categories: array<string, bool>}
+     */
+    public function optionGroupFlags(array $productIds, array $categoryIds): array
+    {
+        $productIds = array_values(array_unique(array_filter(
+            $productIds,
+            static fn (string $id): bool => $id !== '',
+        )));
+        $categoryIds = array_values(array_unique(array_filter(
+            $categoryIds,
+            static fn (string $id): bool => $id !== '',
+        )));
+        $products = array_fill_keys($productIds, false);
+        $categories = array_fill_keys($categoryIds, false);
+        if ($productIds === [] && $categoryIds === []) {
+            return ['products' => $products, 'categories' => $categories];
+        }
+
+        $qb = $this->em->createQueryBuilder()
+            ->select('g.scopeType AS scopeType', 'g.scopeId AS scopeId')
+            ->distinct()
+            ->from(ProductOptionGroup::class, 'g');
+
+        $parts = [];
+        if ($productIds !== []) {
+            $parts[] = '(g.scopeType = :productType AND g.scopeId IN (:productIds))';
+            $qb->setParameter('productType', ProductOptionGroup::SCOPE_PRODUCT)
+                ->setParameter('productIds', $productIds);
+        }
+        if ($categoryIds !== []) {
+            $parts[] = '(g.scopeType = :categoryType AND g.scopeId IN (:categoryIds))';
+            $qb->setParameter('categoryType', ProductOptionGroup::SCOPE_CATEGORY)
+                ->setParameter('categoryIds', $categoryIds);
+        }
+        $qb->where(implode(' OR ', $parts));
+
+        foreach ($qb->getQuery()->getScalarResult() as $row) {
+            $type = (string) ($row['scopeType'] ?? '');
+            $id = (string) ($row['scopeId'] ?? '');
+            if ($type === ProductOptionGroup::SCOPE_PRODUCT && isset($products[$id])) {
+                $products[$id] = true;
+            } elseif ($type === ProductOptionGroup::SCOPE_CATEGORY && isset($categories[$id])) {
+                $categories[$id] = true;
+            }
+        }
+
+        return ['products' => $products, 'categories' => $categories];
     }
 
     /**
@@ -183,18 +313,19 @@ final class ProductVariantOptionsService
     public function syncValues(ProductOptionGroup $group, string $optionsText): void
     {
         $lines = preg_split('/\R/u', $optionsText) ?: [];
+        /** @var array<string, array{label: string, kind: string, value: string}> $wanted */
         $wanted = [];
         foreach ($lines as $line) {
-            $label = trim((string) $line);
-            if ($label === '') {
+            $parsed = $this->parseOptionLine((string) $line);
+            if ($parsed === null) {
                 continue;
             }
-            $code = $this->codeFromLabel($label);
+            $code = $this->codeFromLabel($parsed['label']);
             if ($code === '') {
                 continue;
             }
             if (!isset($wanted[$code])) {
-                $wanted[$code] = $label;
+                $wanted[$code] = $parsed;
             }
         }
 
@@ -208,13 +339,15 @@ final class ProductVariantOptionsService
         }
 
         $order = 0;
-        foreach ($wanted as $code => $label) {
+        foreach ($wanted as $code => $parsed) {
             if (isset($byCode[$code])) {
-                $byCode[$code]->setName($label);
+                $byCode[$code]->setName($parsed['label']);
+                $byCode[$code]->setPriceAdjust($parsed['kind'], $parsed['value']);
                 $byCode[$code]->setSortOrder($order);
                 unset($byCode[$code]);
             } else {
-                $value = new ProductOptionValue($group->id(), $code, $label);
+                $value = new ProductOptionValue($group->id(), $code, $parsed['label']);
+                $value->setPriceAdjust($parsed['kind'], $parsed['value']);
                 $value->setSortOrder($order);
                 $this->em->persist($value);
             }
@@ -224,6 +357,91 @@ final class ProductVariantOptionsService
         foreach ($byCode as $orphan) {
             $this->em->remove($orphan);
         }
+    }
+
+    /**
+     * Parse "Dub|+500", "XL|-10%", "Bílá" → label + optional price adjust.
+     *
+     * @return array{label: string, kind: string, value: string}|null
+     */
+    public function parseOptionLine(string $line): ?array
+    {
+        $line = trim($line);
+        if ($line === '') {
+            return null;
+        }
+        if (preg_match('/^(.*?)\s*\|\s*([+-]?\d+(?:[.,]\d+)?)\s*(%|Kč|kc|CZK)?\s*$/iu', $line, $m)) {
+            $label = trim($m[1]);
+            if ($label === '') {
+                return null;
+            }
+            $raw = str_replace(',', '.', $m[2]);
+            $suffix = strtolower(trim((string) ($m[3] ?? '')));
+            $kind = $suffix === '%' ? ProductOptionValue::ADJUST_PERCENT : ProductOptionValue::ADJUST_AMOUNT;
+
+            return [
+                'label' => $label,
+                'kind' => $kind,
+                'value' => number_format((float) $raw, 2, '.', ''),
+            ];
+        }
+
+        return [
+            'label' => $line,
+            'kind' => ProductOptionValue::ADJUST_NONE,
+            'value' => '0.00',
+        ];
+    }
+
+    public function formatOptionLine(ProductOptionValue $value): string
+    {
+        $line = $value->name();
+        if (!$value->hasPriceAdjust()) {
+            return $line;
+        }
+        $num = (float) $value->priceAdjustValue();
+        $formatted = rtrim(rtrim(number_format($num, 2, '.', ''), '0'), '.');
+        if ($num > 0) {
+            $formatted = '+' . $formatted;
+        }
+        if ($value->priceAdjustKind() === ProductOptionValue::ADJUST_PERCENT) {
+            return $line . '|' . $formatted . '%';
+        }
+
+        return $line . '|' . $formatted;
+    }
+
+    /**
+     * Apply option value price modifiers for selected attributes onto a base price.
+     *
+     * @param array<string, string> $attributes group_code => value_code
+     */
+    public function applyAttributePriceAdjust(Product $product, array $attributes, string|float $basePrice): string
+    {
+        $price = (float) $basePrice;
+        if ($attributes === []) {
+            return number_format($price, 2, '.', '');
+        }
+
+        $rows = $this->effectiveGroupsForProduct($product);
+        /** @var array<string, array<string, ProductOptionValue>> $byGroup */
+        $byGroup = [];
+        foreach ($rows as $row) {
+            $gCode = $row['group']->code();
+            $byGroup[$gCode] = [];
+            foreach ($row['values'] as $value) {
+                $byGroup[$gCode][$value->code()] = $value;
+            }
+        }
+
+        foreach ($attributes as $groupCode => $valueCode) {
+            $value = $byGroup[(string) $groupCode][(string) $valueCode] ?? null;
+            if ($value instanceof ProductOptionValue) {
+                $price = $value->applyToPrice($price);
+            }
+        }
+
+        return number_format($price, 2, '.', '');
     }
 
     /**
@@ -312,21 +530,42 @@ final class ProductVariantOptionsService
      */
     private function hydrateGroups(array $groups, bool $inherited): array
     {
+        $groupIds = [];
+        foreach ($groups as $group) {
+            if ($group instanceof ProductOptionGroup) {
+                $groupIds[] = $group->id();
+            }
+        }
+
+        /** @var array<string, list<ProductOptionValue>> $valuesByGroup */
+        $valuesByGroup = array_fill_keys($groupIds, []);
+        if ($groupIds !== []) {
+            /** @var list<ProductOptionValue> $values */
+            $values = $this->em->getRepository(ProductOptionValue::class)->createQueryBuilder('v')
+                ->where('v.groupId IN (:ids)')
+                ->setParameter('ids', $groupIds)
+                ->orderBy('v.sortOrder', 'ASC')
+                ->addOrderBy('v.name', 'ASC')
+                ->getQuery()
+                ->getResult();
+            foreach ($values as $value) {
+                if ($value instanceof ProductOptionValue) {
+                    $valuesByGroup[$value->groupId()][] = $value;
+                }
+            }
+        }
+
         $out = [];
         foreach ($groups as $group) {
             if (!$group instanceof ProductOptionGroup) {
                 continue;
             }
-            $values = $this->em->getRepository(ProductOptionValue::class)->findBy(
-                ['groupId' => $group->id()],
-                ['sortOrder' => 'ASC', 'name' => 'ASC'],
-            );
-            /** @var list<ProductOptionValue> $values */
+            $values = $valuesByGroup[$group->id()] ?? [];
             $out[] = [
                 'group' => $group,
                 'values' => $values,
                 'options_text' => implode("\n", array_map(
-                    static fn (ProductOptionValue $v): string => $v->name(),
+                    fn (ProductOptionValue $v): string => $this->formatOptionLine($v),
                     $values,
                 )),
                 'inherited' => $inherited,
@@ -359,6 +598,8 @@ final class ProductVariantOptionsService
                         'code' => $v->code(),
                         'name' => $v->name(),
                         'sort_order' => $v->sortOrder(),
+                        'price_adjust_kind' => $v->priceAdjustKind(),
+                        'price_adjust_value' => $v->priceAdjustValue(),
                     ],
                     $row['values'],
                 ),

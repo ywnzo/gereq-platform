@@ -63,27 +63,55 @@ final class ProductController extends Controller
             sortable: ['sku', 'name', 'status', 'unit', 'updatedAt', 'createdAt'],
             defaultSort: 'updatedAt',
             defaultDir: 'desc',
-            filterKeys: ['status'],
+            filterKeys: ['status', 'category_id', 'unit'],
         );
         $status = $list->filter('status');
+        $categoryId = $list->filter('category_id');
+        $unit = $list->filter('unit');
 
-        $qb = $this->em->getRepository(Product::class)->createQueryBuilder('p');
-
+        $qb = $this->em->getRepository(Product::class)->createQueryBuilder('p')
+            ->leftJoin('p.categories', 'cats')
+            ->addSelect('cats');
         $list->applySearch($qb, 'p', ['name', 'sku']);
         if (in_array($status, Product::STATUSES, true)) {
             $qb->andWhere('p.status = :status')->setParameter('status', $status);
         }
+        if ($categoryId !== '') {
+            $qb->innerJoin('p.categories', 'filterCat')
+                ->andWhere('filterCat.id = :cid')
+                ->setParameter('cid', $categoryId);
+        }
+        if ($unit !== '') {
+            $qb->andWhere('LOWER(p.unit) = :unit')->setParameter('unit', mb_strtolower($unit));
+        }
 
         $qb->orderBy('p.' . $list->sort, $list->direction());
 
-        $total = (int) (clone $qb)->select('COUNT(p.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
-        $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+        $total = (int) (clone $qb)->select('COUNT(DISTINCT p.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        /** @var list<Product> $items */
+        $items = $qb->distinct(true)->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+
+        $unitRows = $this->em->createQueryBuilder()
+            ->select('DISTINCT p.unit AS unit')
+            ->from(Product::class, 'p')
+            ->orderBy('p.unit', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+        $units = array_values(array_filter(array_map(
+            static fn (array $row): string => (string) ($row['unit'] ?? ''),
+            $unitRows,
+        )));
 
         return $this->page('@products/products/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('products.title'),
             'items' => $items,
             'status' => $status,
             'statuses' => Product::STATUSES,
+            'category_id' => $categoryId,
+            'unit' => $unit,
+            'units' => $units,
+            'categoryOptions' => $this->categoryOptions(),
+            'thumbs' => $this->primaryThumbs($items),
         ]));
     }
 
@@ -175,6 +203,18 @@ final class ProductController extends Controller
             'imageAssets' => $this->resolveImageAssets($images),
             'libraryImages' => $this->libraryImageOptions($images),
             'hasMedia' => $this->capabilities->has('media') && class_exists(\Modules\Media\Domain\MediaAsset::class),
+            'hasProductDiscounts' => $this->capabilities->has('product_discounts'),
+            'productDiscount' => $this->capabilities->has('product_discounts')
+                && class_exists(\Modules\ProductDiscounts\Application\ProductDiscountsProvider::class)
+                ? $this->capabilities->get('product_discounts')->findForProduct($product->id())
+                : null,
+            'productDiscounts' => $this->capabilities->has('product_discounts')
+                && class_exists(\Modules\ProductDiscounts\Application\ProductDiscountsProvider::class)
+                ? $this->capabilities->get('product_discounts')->listForProduct($product->id())
+                : [],
+            'discountConditions' => class_exists(\Modules\ProductDiscounts\Domain\ProductDiscount::class)
+                ? \Modules\ProductDiscounts\Domain\ProductDiscount::CONDITIONS
+                : ['none'],
             'statuses' => Product::STATUSES,
             'currencyOptions' => $this->currencyOptions(),
         ]);
@@ -819,6 +859,113 @@ final class ProductController extends Controller
         $this->flash('success', $this->translator->trans('products.flash.deleted', ['%name%' => $name]));
 
         return $this->redirect('admin.products.index');
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'products.bulk');
+        $action = (string) $data['action'];
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('products.bulk.error.empty'));
+
+            return $this->redirect('admin.products.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('products.bulk.error.confirm'));
+
+            return $this->redirect('admin.products.index');
+        }
+
+        $affected = 0;
+        foreach ($ids as $id) {
+            $product = $this->find($id);
+            if ($product === null) {
+                continue;
+            }
+
+            if ($action === 'activate') {
+                $previous = $product->status();
+                $product->setStatus('active');
+                $payload = $this->publicProduct($product);
+                $this->events->dispatch(ProductUpdated::make($product->id(), $payload));
+                $this->emitStatusChange($previous, 'active', $product->id(), $payload);
+                $this->auditor->log('product.status_changed', 'product', $product->id(), ['status' => $previous], ['status' => 'active']);
+                $affected++;
+            } elseif ($action === 'draft') {
+                $previous = $product->status();
+                $product->setStatus('draft');
+                $payload = $this->publicProduct($product);
+                $this->events->dispatch(ProductUpdated::make($product->id(), $payload));
+                $this->emitStatusChange($previous, 'draft', $product->id(), $payload);
+                $this->auditor->log('product.status_changed', 'product', $product->id(), ['status' => $previous], ['status' => 'draft']);
+                $affected++;
+            } elseif ($action === 'archive') {
+                $previous = $product->status();
+                $product->setStatus('archived');
+                $payload = $this->publicProduct($product);
+                $this->events->dispatch(ProductUpdated::make($product->id(), $payload));
+                $this->emitStatusChange($previous, 'archived', $product->id(), $payload);
+                $this->auditor->log('product.status_changed', 'product', $product->id(), ['status' => $previous], ['status' => 'archived']);
+                $affected++;
+            } elseif ($action === 'delete') {
+                foreach ($this->em->getRepository(ProductPrice::class)->findBy(['productId' => $id]) as $price) {
+                    $this->em->remove($price);
+                }
+                foreach ($this->em->getRepository(ProductImage::class)->findBy(['productId' => $id]) as $image) {
+                    $this->em->remove($image);
+                }
+                $product->clearCategories();
+                $this->em->remove($product);
+                $this->auditor->log('product.deleted', 'product', $id);
+                $affected++;
+            }
+        }
+
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('products.bulk.flash.' . $action, [
+            '%count%' => (string) $affected,
+        ]));
+
+        return $this->redirect('admin.products.index');
+    }
+
+    /**
+     * @param list<Product> $products
+     * @return array<string, string>
+     */
+    private function primaryThumbs(array $products): array
+    {
+        if ($products === []) {
+            return [];
+        }
+        $ids = array_map(static fn (Product $p): string => $p->id(), $products);
+        /** @var list<ProductImage> $images */
+        $images = $this->em->getRepository(ProductImage::class)->createQueryBuilder('i')
+            ->where('i.productId IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->orderBy('i.isPrimary', 'DESC')
+            ->addOrderBy('i.sortOrder', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+        foreach ($images as $image) {
+            if (!$image instanceof ProductImage || isset($map[$image->productId()])) {
+                continue;
+            }
+            $map[$image->productId()] = '/media/' . $image->mediaAssetId() . '/file';
+        }
+
+        return $map;
     }
 
     private function mediaAvailable(): bool
