@@ -10,6 +10,7 @@
         "ext-mbstring": "*",
         "ext-pdo": "*",
         "ext-redis": "*",
+        "bacon/bacon-qr-code": "^3.1",
         "doctrine/dbal": "^4.2",
         "doctrine/migrations": "^3.9",
         "doctrine/orm": "^3.3",

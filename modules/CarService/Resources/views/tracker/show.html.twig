@@ -1,0 +1,68 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ vehicle ? vehicle.plate() : 'carservice.tracker.title'|trans }}</h1>
+        <p class="muted">{{ item.statusLabel()|trans }} · {{ item.teamLabel()|trans }}</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.carservice.show',{id:item.id()}) }}">{{ 'common.detail'|trans }}</a>
+        <a class="btn btn--ghost" href="{{ url('admin.carservice.tracker') }}">{{ 'carservice.tracker.back'|trans }}</a>
+    </div>
+</header>
+
+<section class="panel" style="text-align:center">
+    <img src="{{ qrDataUri }}" alt="QR" width="160" height="160">
+    <p><code>{{ item.trackerToken() }}</code></p>
+</section>
+
+<section class="panel">
+    {% if running %}
+        <p>{{ 'carservice.tracker.running'|trans }}: <strong>{{ running.type() }}</strong>
+            ({{ running.startedAt().format('H:i') }})</p>
+        <form method="post" action="{{ url('admin.carservice.tracker.job_stop',{id:item.id(),jobId:running.id()}) }}">
+            {{ csrf_field()|raw }}
+            <button class="btn btn--primary" type="submit">{{ 'carservice.jobs.stop'|trans }}</button>
+        </form>
+    {% else %}
+        <form method="post" action="{{ url('admin.carservice.tracker.job_start',{id:item.id()}) }}" class="form-grid form-grid--compact">
+            {{ csrf_field()|raw }}
+            {% include 'ui/input.html.twig' with { name:'type', label:'carservice.field.job_type'|trans, value:'work' } %}
+            {% include 'ui/input.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, value:'' } %}
+            <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.jobs.start'|trans }}</button></div>
+        </form>
+    {% endif %}
+</section>
+
+{% if mediaAvailable %}
+<section class="panel">
+    <header class="panel__head"><h2>{{ 'carservice.media.title'|trans }}</h2></header>
+    <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.tracker.media',{id:item.id()}) }}">
+        {{ csrf_field()|raw }}
+        <label class="field"><span>{{ 'carservice.media.phase_label'|trans }}</span>
+            <select name="phase" class="input">
+                {% for phase in mediaPhases %}<option value="{{ phase }}">{{ ('carservice.media.phase.'~phase)|trans }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="field"><span>{{ 'carservice.media.file'|trans }}</span>
+            <input class="input" type="file" name="file" accept="image/*" capture="environment" required>
+        </label>
+        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
+    </form>
+    {% for phase in mediaPhases %}
+        <h3>{{ ('carservice.media.phase.'~phase)|trans }} ({{ mediaByPhase[phase]|default([])|length }})</h3>
+    {% endfor %}
+</section>
+{% endif %}
+
+<section class="panel">
+    <header class="panel__head"><h2>{{ 'carservice.jobs.title'|trans }}</h2></header>
+    <ul class="meta-list">
+        {% for j in jobs %}
+            <li>{{ j.type() }} — {{ j.startedAt().format('d.m. H:i') }}{% if j.endedAt() %} → {{ j.endedAt().format('H:i') }}{% else %} ({{ 'carservice.jobs.running'|trans }}){% endif %}</li>
+        {% else %}
+            <li class="muted">{{ 'carservice.jobs.empty'|trans }}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

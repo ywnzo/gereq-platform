@@ -1,0 +1,25 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ item ? 'carservice.edit'|trans : 'carservice.new'|trans }}</h1></header>
+{% include 'ui/error-summary.html.twig' with { form: 'carservice.save' } %}
+<form method="post" class="form-grid" action="{{ item ? url('admin.carservice.update',{id:item.id()}) : url('admin.carservice.store') }}" data-form="carservice.save" x-data="gereqForm">
+{{ csrf_field()|raw }}
+{% include 'ui/select.html.twig' with { name:'vehicle_id', label:'carservice.field.vehicle'|trans, required:true, form:'carservice.save', value: item?item.vehicleId():vehicleId, options:vehicleOptions } %}
+{% include 'ui/select.html.twig' with { name:'customer_id', label:'carservice.field.customer'|trans, optional:true, form:'carservice.save', value: item?item.customerId():customerId, options:customerOptions } %}
+{% include 'ui/select.html.twig' with { name:'type', label:'carservice.field.type'|trans, form:'carservice.save', value: item?item.type():'external_customer', options:[
+{value:'internal_fleet',label:'carservice.type.internal_fleet'|trans},{value:'external_customer',label:'carservice.type.external_customer'|trans},{value:'linked',label:'carservice.type.linked'|trans}
+] } %}
+{% include 'ui/select.html.twig' with { name:'status', label:'carservice.field.status'|trans, form:'carservice.save', value: item?item.status():'intake', options:[
+{value:'intake',label:'carservice.status.intake'|trans},{value:'in_progress',label:'carservice.status.in_progress'|trans},{value:'waiting',label:'carservice.status.waiting'|trans},{value:'ready',label:'carservice.status.ready'|trans},{value:'done',label:'carservice.status.done'|trans},{value:'cancelled',label:'carservice.status.cancelled'|trans}
+] } %}
+{% include 'ui/select.html.twig' with { name:'team', label:'carservice.field.team'|trans, form:'carservice.save', value: item?item.team():'body_shop', options:[
+{value:'body_shop',label:'carservice.team.body_shop'|trans},{value:'paint_shop',label:'carservice.team.paint_shop'|trans}
+] } %}
+{% include 'ui/input.html.twig' with { name:'branch_id', label:'carservice.field.branch'|trans, optional:true, form:'carservice.save', value: item?item.branchId():'' } %}
+{% include 'ui/input.html.twig' with { name:'intake_at', type:'date', label:'carservice.field.intake'|trans, optional:true, form:'carservice.save', value: item and item.intakeAt()?item.intakeAt().format('Y-m-d'):'' } %}
+{% include 'ui/input.html.twig' with { name:'handover_at', type:'date', label:'carservice.field.handover'|trans, optional:true, form:'carservice.save', value: item and item.handoverAt()?item.handoverAt().format('Y-m-d'):'' } %}
+{% include 'ui/textarea.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, form:'carservice.save', value: item?item.note():'' } %}
+<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+<a class="btn btn--ghost" href="{{ url('admin.carservice.index') }}">{{ 'common.cancel'|trans }}</a></div>
+</form>
+{% endblock %}

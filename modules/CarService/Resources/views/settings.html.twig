@@ -1,0 +1,18 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ 'carservice.settings.title'|trans }}</h1></header>
+{% include 'ui/error-summary.html.twig' with { form: 'carservice.settings' } %}
+<form method="post" class="form-grid" action="{{ url('admin.carservice.settings.update') }}" data-form="carservice.settings" x-data="gereqForm">
+{{ csrf_field()|raw }}
+{% include 'ui/input.html.twig' with { name:'job_soft_limit_hours', type:'number', label:'carservice.settings.job_soft_limit'|trans, required:true, form:'carservice.settings', value:jobSoftLimitHours } %}
+{% include 'ui/select.html.twig' with { name:'default_team', label:'carservice.settings.default_team'|trans, form:'carservice.settings', value:defaultTeam, options:[
+{value:'body_shop',label:'carservice.team.body_shop'|trans},{value:'paint_shop',label:'carservice.team.paint_shop'|trans}
+] } %}
+{% include 'ui/input.html.twig' with { name:'media_phases', label:'carservice.settings.media_phases'|trans, required:true, form:'carservice.settings', value:mediaPhases } %}
+<label class="field field--checkbox">
+    <input type="checkbox" name="auto_idoklad" value="1" {{ autoIdoklad ? 'checked' : '' }}>
+    <span>{{ 'carservice.settings.auto_idoklad'|trans }}</span>
+</label>
+<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button></div>
+</form>
+{% endblock %}

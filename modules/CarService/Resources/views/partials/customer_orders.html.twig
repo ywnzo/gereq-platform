@@ -1,0 +1,4 @@
+{% if orders is empty %}<div class="empty"><p>{{ 'carservice.partial.empty'|trans }}</p>
+{% if user is defined and user.can('carservice.manage') %}<a class="btn btn--ghost" href="{{ url('admin.carservice.create') }}?customer={{ customer.id() }}">{{ 'carservice.partial.add'|trans }}</a>{% endif %}</div>
+{% else %}<div class="table-wrap"><table class="table"><thead><tr><th>{{ 'carservice.field.status'|trans }}</th><th>{{ 'carservice.field.team'|trans }}</th></tr></thead>
+<tbody>{% for o in orders %}<tr><td><a href="{{ url('admin.carservice.show',{id:o.id()}) }}">{{ o.statusLabel()|trans }}</a></td><td>{{ o.teamLabel()|trans }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}

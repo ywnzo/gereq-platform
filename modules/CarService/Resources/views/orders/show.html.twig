@@ -1,0 +1,196 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ vehicle ? vehicle.label() : ('carservice.order'|trans({'%id%': item.id()|slice(0,8)})) }}</h1>
+        <p class="muted detail-layout__meta">
+            <span class="badge">{{ item.statusLabel()|trans }}</span>
+            <span>{{ item.teamLabel()|trans }}</span>
+            {% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% endif %}
+        </p>
+    </div>
+    <div class="actions">
+        {% if user.can('carservice.manage') and item.isOpen() %}
+            <form method="post" action="{{ url('admin.carservice.finish',{id:item.id()}) }}">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--primary" type="submit">{{ 'carservice.finish'|trans }}</button>
+            </form>
+            <a class="btn btn--ghost" href="{{ url('admin.carservice.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endif %}
+        {% if user.can('carservice.tracker') and item.isOpen() %}
+            <a class="btn btn--ghost" href="{{ url('admin.carservice.tracker.show',{id:item.id()}) }}">{{ 'carservice.tracker.open'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'carservice.field.status'|trans }}</span>
+                    <strong>{{ item.statusLabel()|trans }}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'carservice.field.vehicle'|trans }}</dt>
+                        <dd>{% if vehicle %}<a href="{{ url('admin.fleet.show',{id:vehicle.id()}) }}">{{ vehicle.label() }}</a>{% else %}—{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'carservice.field.job_time'|trans }}</dt>
+                        <dd>{{ (jobSeconds / 3600)|number_format(1) }} h</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'carservice.field.tracker'|trans }}</dt>
+                        <dd><code>{{ item.trackerToken() }}</code></dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        {% if user.can('carservice.manage') and item.isOpen() %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.actions'|trans }}</h2></header>
+            <div class="form-grid form-grid--compact">
+                <form method="post" action="{{ url('admin.carservice.status',{id:item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <label class="field"><span>{{ 'carservice.field.status'|trans }}</span>
+                        <select name="status" class="input" onchange="this.form.submit()">
+                            {% for s in statuses %}<option value="{{ s }}" {{ item.status()==s?'selected':'' }}>{{ ('carservice.status.'~s)|trans }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </form>
+                <form method="post" action="{{ url('admin.carservice.team',{id:item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <label class="field"><span>{{ 'carservice.field.team'|trans }}</span>
+                        <select name="team" class="input" onchange="this.form.submit()">
+                            {% for t in teams %}<option value="{{ t }}" {{ item.team()==t?'selected':'' }}>{{ ('carservice.team.'~t)|trans }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </form>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.jobs.title'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>{{ 'carservice.field.job_type'|trans }}</th><th>{{ 'carservice.field.started'|trans }}</th><th>{{ 'carservice.field.ended'|trans }}</th><th>{{ 'carservice.field.duration'|trans }}</th><th></th></tr></thead>
+                    <tbody>
+                    {% for j in jobs %}
+                        <tr>
+                            <td>{{ j.type() }}{% if j.note() %}<div class="muted">{{ j.note() }}</div>{% endif %}</td>
+                            <td>{{ j.startedAt().format('d. m. Y H:i') }}</td>
+                            <td>{{ j.endedAt() ? j.endedAt().format('d. m. Y H:i') : ('carservice.jobs.running'|trans) }}</td>
+                            <td>{{ j.durationSeconds() is not null ? ((j.durationSeconds() / 3600)|number_format(2) ~ ' h') : '—' }}</td>
+                            <td>
+                                {% if user.can('carservice.manage') and j.isRunning() %}
+                                    <form method="post" action="{{ url('admin.carservice.jobs.complete',{id:item.id(),jobId:j.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit" class="btn btn--ghost">{{ 'carservice.jobs.stop'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="muted">{{ 'carservice.jobs.empty'|trans }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if user.can('carservice.manage') and item.isOpen() %}
+                <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.carservice.jobs.store',{id:item.id()}) }}" data-form="carservice.job">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/input.html.twig' with { name:'type', label:'carservice.field.job_type'|trans, form:'carservice.job', value:'work' } %}
+                    {% include 'ui/select.html.twig' with { name:'employee_user_id', label:'carservice.field.employee'|trans, optional:true, form:'carservice.job', value:user.id(), options:userOptions } %}
+                    {% include 'ui/input.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, form:'carservice.job', value:'' } %}
+                    <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.jobs.start'|trans }}</button></div>
+                </form>
+            {% endif %}
+        </section>
+
+        {% if mediaAvailable %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.media.title'|trans }}</h2></header>
+            {% for phase in mediaPhases %}
+                <h3>{{ ('carservice.media.phase.'~phase)|trans }}</h3>
+                <div class="table-wrap"><table class="table"><tbody>
+                {% for row in mediaByPhase[phase]|default([]) %}
+                    <tr>
+                        <td><a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">{{ row.asset.title() }}</a></td>
+                        <td class="is-mute">{{ row.asset.mime() }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td class="muted" colspan="2">{{ 'carservice.media.empty_phase'|trans }}</td></tr>
+                {% endfor %}
+                </tbody></table></div>
+            {% endfor %}
+            {% if user.can('carservice.manage') %}
+                <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.media',{id:item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <label class="field"><span>{{ 'carservice.media.phase_label'|trans }}</span>
+                        <select name="phase" class="input">
+                            {% for phase in mediaPhases %}<option value="{{ phase }}">{{ ('carservice.media.phase.'~phase)|trans }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="field"><span>{{ 'carservice.media.file'|trans }}</span>
+                        <input class="input" type="file" name="file" accept="image/*,application/pdf" required>
+                    </label>
+                    <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
+                </form>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if documents is defined and documents is not empty %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.documents.title'|trans }}</h2></header>
+            <ul class="meta-list">
+                {% for d in documents %}
+                    <li><a href="{{ url('admin.documents.show',{id:d.id()}) }}">{{ d.title() }}</a></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.field.tracker'|trans }}</h2></header>
+            <div style="text-align:center;margin-bottom:12px">
+                <img src="{{ qrDataUri }}" alt="QR" width="180" height="180">
+            </div>
+            <p><code>{{ item.trackerToken() }}</code></p>
+            <p class="muted"><a href="{{ trackerUrl }}">{{ 'carservice.tracker.open'|trans }}</a></p>
+        </section>
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div><dt>{{ 'carservice.field.type'|trans }}</dt><dd>{{ item.typeLabel()|trans }}</dd></div>
+                <div><dt>{{ 'carservice.field.team'|trans }}</dt><dd>{{ item.teamLabel()|trans }}</dd></div>
+                <div><dt>{{ 'carservice.field.intake'|trans }}</dt><dd>{{ item.intakeAt()?item.intakeAt().format('d. m. Y'):'—' }}</dd></div>
+                <div><dt>{{ 'carservice.field.handover'|trans }}</dt><dd>{{ item.handoverAt()?item.handoverAt().format('d. m. Y'):'—' }}</dd></div>
+                <div class="meta-list__full"><dt>{{ 'carservice.field.customer'|trans }}</dt>
+                    <dd>{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% else %}—{% endif %}</dd></div>
+                {% if item.note() %}<div class="meta-list__full"><dt>{{ 'carservice.field.note'|trans }}</dt><dd>{{ item.note() }}</dd></div>{% endif %}
+                {% if links is not empty %}
+                    <div class="meta-list__full"><dt>{{ 'carservice.field.links'|trans }}</dt>
+                        <dd>{% for l in links %}{{ l.linkType() }}: {{ l.linkId() }}{% if not loop.last %}<br>{% endif %}{% endfor %}</dd></div>
+                {% endif %}
+            </dl>
+        </section>
+        {% if switches is not empty %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.team_history'|trans }}</h2></header>
+            <ul class="meta-list meta-list--flush">
+                {% for s in switches %}
+                    <li>{% if s.fromTeam() %}{{ ('carservice.team.'~s.fromTeam())|trans }} → {% endif %}{{ ('carservice.team.'~s.toTeam())|trans }}
+                        <span class="muted">{{ s.createdAt().format('d. m. H:i') }}</span></li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,302 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\CarService;
+
+use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Admin\CommandPalette\PaletteCommand;
+use Gereq\Admin\Menu\MenuItem;
+use Gereq\Api\ApiModule;
+use Gereq\Auth\Authenticator;
+use Gereq\Event\EventDefinition;
+use Gereq\Event\EventEnvelope;
+use Gereq\Hook\HookPriority;
+use Gereq\Http\Router;
+use Gereq\Module\ModuleContext;
+use Gereq\Module\ModuleInterface;
+use Gereq\Setting\SettingRecord;
+use Modules\CarService\Application\CarServiceProvider;
+use Modules\CarService\Application\Widgets\CarServiceShortcutWidget;
+use Modules\CarService\Http\Api\ServiceOrderApiController;
+use Modules\CarService\Http\Api\TrackerApiController;
+use Modules\CarService\Http\CostController;
+use Modules\CarService\Http\ServiceOrderController;
+use Modules\CarService\Http\SettingsController;
+use Modules\CarService\Http\TrackerController;
+use Modules\Customers\Domain\Customer;
+use Modules\Fleet\Domain\Vehicle;
+use Modules\iDoklad\Application\iDokladService;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use Twig\Environment;
+
+final class CarServiceModule implements ModuleInterface
+{
+    public function id(): string
+    {
+        return 'carservice';
+    }
+
+    public function version(): string
+    {
+        return '1.1.0';
+    }
+
+    public function register(ModuleContext $context): void
+    {
+        $context->permissions()->register('carservice.view', 'perm.carservice.view', 'perm.group.carservice');
+        $context->permissions()->register('carservice.manage', 'perm.carservice.manage', 'perm.group.carservice');
+        $context->permissions()->register('carservice.tracker', 'perm.carservice.tracker', 'perm.group.carservice');
+
+        $provider = new CarServiceProvider(
+            $context->get(EntityManagerInterface::class),
+            $context->settings(),
+        );
+        $context->capabilities()->register('carservice', $this->id(), $provider);
+
+        $context->settings()->define('carservice.job_soft_limit_hours', SettingRecord::TYPE_STRING, 'carservice.settings.job_soft_limit', '8', $this->id());
+        $context->settings()->define('carservice.default_team', SettingRecord::TYPE_STRING, 'carservice.settings.default_team', 'body_shop', $this->id());
+        $context->settings()->define('carservice.media_phases', SettingRecord::TYPE_STRING, 'carservice.settings.media_phases', 'before,progress,paint,after', $this->id());
+        $context->settings()->define('carservice.auto_idoklad', SettingRecord::TYPE_BOOLEAN, 'carservice.settings.auto_idoklad', false, $this->id());
+
+        $context->router()->group('/admin/carservice', function (Router $routes): void {
+            $routes->get('', [ServiceOrderController::class, 'index'])->name('admin.carservice.index')->permission('carservice.view');
+            $routes->get('/create', [ServiceOrderController::class, 'create'])->name('admin.carservice.create')->permission('carservice.manage');
+            $routes->post('', [ServiceOrderController::class, 'store'])->name('admin.carservice.store')->permission('carservice.manage');
+            $routes->get('/costs', [CostController::class, 'index'])->name('admin.carservice.costs')->permission('carservice.view');
+            $routes->post('/costs', [CostController::class, 'store'])->name('admin.carservice.costs.store')->permission('carservice.manage');
+            $routes->post('/costs/{id}/delete', [CostController::class, 'destroy'])->name('admin.carservice.costs.destroy')->permission('carservice.manage');
+            $routes->get('/settings', [SettingsController::class, 'edit'])->name('admin.carservice.settings')->permission('carservice.view');
+            $routes->post('/settings', [SettingsController::class, 'update'])->name('admin.carservice.settings.update')->permission('carservice.manage');
+            $routes->get('/tracker', [TrackerController::class, 'index'])->name('admin.carservice.tracker')->permission('carservice.tracker');
+            $routes->post('/tracker/resolve', [TrackerController::class, 'resolve'])->name('admin.carservice.tracker.resolve')->permission('carservice.tracker');
+            $routes->get('/tracker/{id}', [TrackerController::class, 'show'])->name('admin.carservice.tracker.show')->permission('carservice.tracker');
+            $routes->post('/tracker/{id}/job-start', [TrackerController::class, 'startJob'])->name('admin.carservice.tracker.job_start')->permission('carservice.tracker');
+            $routes->post('/tracker/{id}/job-stop/{jobId}', [TrackerController::class, 'stopJob'])->name('admin.carservice.tracker.job_stop')->permission('carservice.tracker');
+            $routes->post('/tracker/{id}/media', [TrackerController::class, 'uploadMedia'])->name('admin.carservice.tracker.media')->permission('carservice.tracker');
+            $routes->get('/{id}', [ServiceOrderController::class, 'show'])->name('admin.carservice.show')->permission('carservice.view');
+            $routes->get('/{id}/edit', [ServiceOrderController::class, 'edit'])->name('admin.carservice.edit')->permission('carservice.manage');
+            $routes->post('/{id}', [ServiceOrderController::class, 'update'])->name('admin.carservice.update')->permission('carservice.manage');
+            $routes->post('/{id}/status', [ServiceOrderController::class, 'updateStatus'])->name('admin.carservice.status')->permission('carservice.manage');
+            $routes->post('/{id}/team', [ServiceOrderController::class, 'switchTeam'])->name('admin.carservice.team')->permission('carservice.manage');
+            $routes->post('/{id}/jobs', [ServiceOrderController::class, 'storeJob'])->name('admin.carservice.jobs.store')->permission('carservice.manage');
+            $routes->post('/{id}/jobs/{jobId}/complete', [ServiceOrderController::class, 'completeJob'])->name('admin.carservice.jobs.complete')->permission('carservice.manage');
+            $routes->post('/{id}/media', [ServiceOrderController::class, 'uploadMedia'])->name('admin.carservice.media')->permission('carservice.manage');
+            $routes->post('/{id}/finish', [ServiceOrderController::class, 'finish'])->name('admin.carservice.finish')->permission('carservice.manage');
+            $routes->post('/{id}/delete', [ServiceOrderController::class, 'destroy'])->name('admin.carservice.destroy')->permission('carservice.manage');
+        }, ['middleware' => ['auth']]);
+
+        $context->api()->registerKnownScope('carservice.read');
+        $context->api()->registerKnownScope('carservice.write');
+        $context->api()->registerKnownScope('carservice.tracker');
+        $context->api()->module('carservice', function (ApiModule $api): void {
+            $api->get('/', [ServiceOrderApiController::class, 'index'])->scope('carservice.read');
+            $api->post('/', [ServiceOrderApiController::class, 'store'])->scope('carservice.write');
+            $api->get('/{id}', [ServiceOrderApiController::class, 'show'])->scope('carservice.read');
+            $api->patch('/{id}', [ServiceOrderApiController::class, 'update'])->scope('carservice.write');
+            $api->post('/{id}/team', [ServiceOrderApiController::class, 'switchTeam'])->scope('carservice.write');
+            $api->post('/{id}/jobs', [ServiceOrderApiController::class, 'addJob'])->scope('carservice.write');
+            $api->post('/{id}/jobs/{jobId}/complete', [ServiceOrderApiController::class, 'completeJob'])->scope('carservice.write');
+            $api->post('/{id}/finish', [ServiceOrderApiController::class, 'finish'])->scope('carservice.write');
+            $api->post('/tracker/resolve', [TrackerApiController::class, 'resolve'])->scope('carservice.tracker');
+            $api->post('/tracker/{id}/jobs', [TrackerApiController::class, 'startJob'])->scope('carservice.tracker');
+            $api->post('/tracker/{id}/jobs/{jobId}/complete', [TrackerApiController::class, 'completeJob'])->scope('carservice.tracker');
+            $api->post('/tracker/{id}/media', [TrackerApiController::class, 'uploadMedia'])->scope('carservice.tracker');
+        });
+
+        foreach ([
+            'carservice.order_created' => 'Servisní zakázka vytvořena',
+            'carservice.order_updated' => 'Servisní zakázka upravena',
+            'carservice.team_switched' => 'Přepnut tým zakázky',
+            'carservice.order_finished' => 'Servisní zakázka dokončena',
+            'carservice.job_started' => 'Zahájena práce na zakázce',
+            'carservice.job_finished' => 'Ukončena práce na zakázce',
+        ] as $type => $desc) {
+            $context->platformEvents()->register(
+                (new EventDefinition($type, $this->id()))->description($desc)->webhookEnabled(true),
+            );
+        }
+
+        $v = $context->validation();
+        $v->ruleset('carservice.save', [
+            'vehicle_id' => 'required|max:36',
+            'customer_id' => 'nullable|max:36',
+            'type' => 'nullable|in:internal_fleet,external_customer,linked',
+            'status' => 'nullable|in:intake,in_progress,waiting,ready,done,cancelled',
+            'team' => 'nullable|in:body_shop,paint_shop',
+            'branch_id' => 'nullable|max:36',
+            'note' => 'nullable|max:5000',
+            'intake_at' => 'nullable',
+            'handover_at' => 'nullable',
+        ]);
+        $v->ruleset('carservice.job', [
+            'type' => 'nullable|max:64',
+            'note' => 'nullable|max:2000',
+            'employee_user_id' => 'nullable|max:36',
+        ]);
+        $v->ruleset('carservice.cost', [
+            'year_month' => 'required|max:7',
+            'category' => 'nullable|max:64',
+            'amount' => 'required',
+            'note' => 'nullable|max:2000',
+        ]);
+        $v->ruleset('carservice.settings', [
+            'job_soft_limit_hours' => 'required',
+            'default_team' => 'required|in:body_shop,paint_shop',
+            'media_phases' => 'required|max:255',
+            'auto_idoklad' => 'nullable',
+        ]);
+    }
+
+    public function boot(ModuleContext $context): void
+    {
+        $context->dashboard()->addWidget(new CarServiceShortcutWidget(
+            $context->get(Environment::class),
+            $context->get(TranslatorInterface::class),
+            $context->get(Router::class),
+        ));
+
+        $context->menu()->add(new MenuItem(
+            id: 'carservice',
+            label: 'nav.carservice',
+            icon: 'build',
+            route: 'admin.carservice.index',
+            permission: 'carservice.view',
+            order: 36,
+            group: 'Provoz',
+        ));
+        $context->menu()->add(new MenuItem(
+            id: 'carservice.tracker',
+            label: 'nav.carservice.tracker',
+            route: 'admin.carservice.tracker',
+            permission: 'carservice.tracker',
+            parent: 'carservice',
+            order: 37,
+        ));
+        $context->menu()->add(new MenuItem(
+            id: 'carservice.costs',
+            label: 'nav.carservice.costs',
+            route: 'admin.carservice.costs',
+            permission: 'carservice.view',
+            parent: 'carservice',
+            order: 38,
+        ));
+        $context->menu()->add(new MenuItem(
+            id: 'carservice.settings',
+            label: 'nav.carservice.settings',
+            route: 'admin.carservice.settings',
+            permission: 'carservice.view',
+            parent: 'carservice',
+            order: 39,
+        ));
+        $context->commandPalette()->add(new PaletteCommand(
+            id: 'carservice.index',
+            label: 'palette.carservice.index',
+            url: '/admin/carservice',
+            icon: 'build',
+            permission: 'carservice.view',
+            keywords: ['servis', 'dílna', 'zakázka', 'carservice', 'lakovna'],
+        ));
+        $context->commandPalette()->add(new PaletteCommand(
+            id: 'carservice.tracker',
+            label: 'palette.carservice.tracker',
+            url: '/admin/carservice/tracker',
+            icon: 'build',
+            permission: 'carservice.tracker',
+            keywords: ['tracker', 'qr', 'spz', 'dílna'],
+        ));
+
+        $em = $context->get(EntityManagerInterface::class);
+        $twig = $context->get(Environment::class);
+        $auth = $context->get(Authenticator::class);
+        $provider = new CarServiceProvider($em, $context->settings());
+
+        if (class_exists(Customer::class)) {
+            $context->hooks()->addFilter('customers.show.sections', static function (array $sections, Customer $customer) use ($twig, $auth, $provider): array {
+                if ($auth->user() === null || !$auth->user()->can('carservice.view')) {
+                    return $sections;
+                }
+                $sections[] = [
+                    'id' => 'carservice.orders',
+                    'label' => 'carservice.partial.customer_title',
+                    'order' => 46,
+                    'html' => $twig->render('@carservice/partials/customer_orders.html.twig', [
+                        'customer' => $customer,
+                        'orders' => $provider->listForCustomer($customer->id()),
+                        'user' => $auth->user(),
+                    ]),
+                ];
+
+                return $sections;
+            }, HookPriority::NORMAL);
+        }
+
+        if (class_exists(Vehicle::class)) {
+            $context->hooks()->addFilter('fleet.vehicle.show.sections', static function (array $sections, Vehicle $vehicle) use ($twig, $auth, $provider): array {
+                if ($auth->user() === null || !$auth->user()->can('carservice.view')) {
+                    return $sections;
+                }
+                $sections[] = [
+                    'id' => 'carservice.orders',
+                    'label' => 'carservice.partial.vehicle_title',
+                    'order' => 20,
+                    'html' => $twig->render('@carservice/partials/vehicle_orders.html.twig', [
+                        'vehicle' => $vehicle,
+                        'orders' => $provider->listForVehicle($vehicle->id()),
+                        'user' => $auth->user(),
+                    ]),
+                ];
+
+                return $sections;
+            }, HookPriority::NORMAL);
+        }
+
+        $settings = $context->settings();
+        $context->hooks()->addAction('platform.event.dispatched', static function (EventEnvelope $envelope) use ($context, $settings): void {
+            if ($envelope->type !== 'carservice.order_finished') {
+                return;
+            }
+            if (!(bool) $settings->get('carservice.auto_idoklad', false)) {
+                return;
+            }
+            if (!$context->capabilities()->has('idoklad') || !class_exists(iDokladService::class)) {
+                return;
+            }
+            /** @var iDokladService $idoklad */
+            $idoklad = $context->capabilities()->get('idoklad');
+            if (!$idoklad->isEnabled()) {
+                return;
+            }
+            $orderId = (string) ($envelope->resource['id'] ?? '');
+            if ($orderId === '' || $idoklad->findLink('carservice_order', $orderId, 'invoice') !== null) {
+                return;
+            }
+            $customerId = (string) ($envelope->data['customer_id'] ?? '');
+            $partnerId = 0;
+            if ($customerId !== '') {
+                $contactLink = $idoklad->findLink('customer', $customerId, 'contact');
+                if ($contactLink !== null) {
+                    $partnerId = (int) $contactLink->iDokladId();
+                }
+            }
+            if ($partnerId <= 0) {
+                return;
+            }
+            $hours = max(1, (int) ceil(((int) ($envelope->data['job_seconds'] ?? 0)) / 3600));
+            $result = $idoklad->setDocument([
+                'documentType' => 'invoice',
+                'Description' => 'Servisní zakázka ' . substr($orderId, 0, 8),
+                'Items' => [[
+                    'Name' => 'Servisní práce',
+                    'Amount' => $hours,
+                    'UnitPrice' => 0,
+                ]],
+            ], $partnerId);
+            if (!empty($result['isSucceed']) && isset($result['data']['Id'])) {
+                $idoklad->rememberLink('carservice_order', $orderId, (string) $result['data']['Id'], 'invoice', [
+                    'source' => 'carservice.order_finished',
+                ]);
+            }
+        }, HookPriority::NORMAL);
+    }
+}

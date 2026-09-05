@@ -1,0 +1,30 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ 'carservice.tracker.title'|trans }}</h1></header>
+<section class="panel">
+    <p class="muted">{{ 'carservice.tracker.hint'|trans }}</p>
+    <form method="post" action="{{ url('admin.carservice.tracker.resolve') }}" class="form-grid form-grid--compact">
+        {{ csrf_field()|raw }}
+        {% include 'ui/input.html.twig' with { name:'q', label:'carservice.tracker.query'|trans, required:true, value:'' } %}
+        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.tracker.resolve'|trans }}</button></div>
+    </form>
+</section>
+{% if openOrders is not empty %}
+<section class="panel">
+    <header class="panel__head"><h2>{{ 'carservice.tracker.open_list'|trans }}</h2></header>
+    <div class="table-wrap"><table class="table">
+        <thead><tr><th>{{ 'carservice.field.status'|trans }}</th><th>{{ 'carservice.field.team'|trans }}</th><th>{{ 'carservice.field.tracker'|trans }}</th><th></th></tr></thead>
+        <tbody>
+        {% for o in openOrders %}
+            <tr>
+                <td>{{ o.statusLabel()|trans }}</td>
+                <td>{{ o.teamLabel()|trans }}</td>
+                <td><code>{{ o.trackerToken()|slice(0,8) }}…</code></td>
+                <td><a href="{{ url('admin.carservice.tracker.show',{id:o.id()}) }}">{{ 'carservice.tracker.open'|trans }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table></div>
+</section>
+{% endif %}
+{% endblock %}

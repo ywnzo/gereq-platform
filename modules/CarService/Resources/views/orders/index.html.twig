@@ -1,0 +1,45 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="carservice" data-actions-default="1">
+<header class="page-header"><h1>{{ 'carservice.title'|trans }}</h1>
+{% if user.can('carservice.manage') %}<a class="btn btn--primary" href="{{ url('admin.carservice.create') }}">{{ icon('plus') }} {{ 'carservice.new'|trans }}</a>{% endif %}
+</header>
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <select name="status" class="input" onchange="this.form.submit()"><option value="">{{ 'carservice.all_statuses'|trans }}</option>
+        {% for s in statuses %}<option value="{{ s }}" {{ status==s?'selected':'' }}>{{ ('carservice.status.'~s)|trans }}</option>{% endfor %}
+        </select>
+        <select name="team" class="input" onchange="this.form.submit()"><option value="">{{ 'carservice.all_teams'|trans }}</option>
+        {% for t in teams %}<option value="{{ t }}" {{ team==t?'selected':'' }}>{{ ('carservice.team.'~t)|trans }}</option>{% endfor %}
+        </select>
+    </form>
+</div>
+<div class="table-wrap" data-table><table class="table"><thead><tr>
+<th>{{ 'carservice.field.vehicle'|trans }}</th>
+<th>{{ 'carservice.field.customer'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'carservice.field.status'|trans, column: 'status', query: { status: status, team: team } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'carservice.field.team'|trans, column: 'team', query: { status: status, team: team } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'carservice.field.updated'|trans, column: 'updatedAt', query: { status: status, team: team } } %}
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>{% for item in items %}
+{% set v = vehicles[item.vehicleId()]|default(null) %}
+{% set c = item.customerId() ? customers[item.customerId()]|default(null) : null %}
+<tr><td><a href="{{ url('admin.carservice.show',{id:item.id()}) }}">{{ v ? v.label() : item.vehicleId() }}</a></td>
+<td>{{ c ? c.name() : '—' }}</td>
+<td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+<td>{{ item.teamLabel()|trans }}</td>
+<td class="is-mute">{{ item.updatedAt().format('d. m. Y H:i') }}</td>
+{% embed 'ui/row_actions.html.twig' %}
+    {% block items %}
+        {% include 'ui/row_action.html.twig' with { href: url('admin.carservice.show',{id:item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+    {% endblock %}
+{% endembed %}
+</tr>
+{% else %}<tr><td colspan="6"><div class="empty"><h2>{{ 'carservice.empty'|trans }}</h2></div></td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}
