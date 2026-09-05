@@ -38,17 +38,62 @@ final class ShippingMethodController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->query->get('q', ''));
-        $qb = $this->em->getRepository(ShippingMethod::class)->createQueryBuilder('s')
-            ->orderBy('s.sortOrder', 'ASC')
-            ->addOrderBy('s.code', 'ASC');
-        self_repair_search($qb, 's', ['code', 'name'], $search);
+        $list = \Gereq\Http\ListQuery::fromRequest(
+            $request,
+            sortable: ['sortOrder', 'code', 'name', 'price'],
+            defaultSort: 'sortOrder',
+            defaultDir: 'asc',
+            perPage: 100,
+            filterKeys: ['active', 'type', 'carrier'],
+        );
+        $active = $list->filter('active');
+        $type = $list->filter('type');
+        $carrier = $list->filter('carrier');
 
-        return $this->page('@shop/shipping/index.html.twig', [
+        $qb = $this->em->getRepository(ShippingMethod::class)->createQueryBuilder('s');
+        $list->applySearch($qb, 's', ['code', 'name', 'carrier']);
+        if ($active === '1') {
+            $qb->andWhere('s.active = true');
+        } elseif ($active === '0') {
+            $qb->andWhere('s.active = false');
+        }
+        if ($type !== '' && in_array($type, ShippingMethod::TYPES, true)) {
+            $qb->andWhere('s.type = :type')->setParameter('type', $type);
+        }
+        if ($carrier !== '') {
+            $qb->andWhere('LOWER(s.carrier) = :carrier')->setParameter('carrier', mb_strtolower($carrier));
+        }
+        $qb->orderBy('s.' . $list->sort, $list->direction());
+        if ($list->sort === 'sortOrder') {
+            $qb->addOrderBy('s.code', 'ASC');
+        }
+
+        $total = (int) (clone $qb)->select('COUNT(s.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        /** @var list<ShippingMethod> $items */
+        $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+
+        $carrierRows = $this->em->createQueryBuilder()
+            ->select('DISTINCT s.carrier AS carrier')
+            ->from(ShippingMethod::class, 's')
+            ->where('s.carrier IS NOT NULL')
+            ->andWhere("s.carrier <> ''")
+            ->orderBy('s.carrier', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+        $carriers = array_values(array_filter(array_map(
+            static fn (array $row): string => (string) ($row['carrier'] ?? ''),
+            $carrierRows,
+        )));
+
+        return $this->page('@shop/shipping/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('shop.shipping.title'),
-            'items' => $qb->getQuery()->getResult(),
-            'search' => $search,
-        ]);
+            'items' => $items,
+            'active' => $active,
+            'type' => $type,
+            'carrier' => $carrier,
+            'types' => ShippingMethod::TYPES,
+            'carriers' => $carriers,
+        ]));
     }
 
     public function create(): Response
@@ -156,6 +201,80 @@ final class ShippingMethodController extends Controller
         $this->events->emit('shipping.method_deleted', ['type' => 'shipping_method', 'id' => $id], $payload);
         $this->auditor->log('shop.shipping.deleted', 'shipping_method', $id);
         $this->flash('success', $this->translator->trans('shop.flash.shipping_deleted', ['%name%' => $name]));
+
+        return $this->redirect('admin.shop.shipping.index');
+    }
+
+    public function toggle(string $id): Response
+    {
+        $item = $this->find($id);
+        if ($item === null) {
+            $this->abort(404, $this->translator->trans('shop.error.shipping_not_found'));
+        }
+        $item->setActive(!$item->isActive());
+        $this->em->flush();
+        $this->events->emit('shipping.method_updated', ['type' => 'shipping_method', 'id' => $item->id()], $this->publicMethod($item));
+        $this->auditor->log('shop.shipping.toggled', 'shipping_method', $item->id(), null, [
+            'active' => $item->isActive(),
+        ]);
+        $message = $this->translator->trans(
+            $item->isActive() ? 'shop.flash.shipping_activated' : 'shop.flash.shipping_deactivated'
+        );
+        if (!$this->wantsJson()) {
+            $this->flash('success', $message);
+        }
+
+        return $this->toggleResponse($item->isActive(), 'admin.shop.shipping.index', [], $message);
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'shop.shipping.bulk');
+        $action = (string) $data['action'];
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('shop.bulk.error.empty'));
+
+            return $this->redirect('admin.shop.shipping.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('shop.bulk.error.confirm'));
+
+            return $this->redirect('admin.shop.shipping.index');
+        }
+
+        $affected = 0;
+        foreach ($ids as $id) {
+            $item = $this->find($id);
+            if ($item === null) {
+                continue;
+            }
+            if ($action === 'activate') {
+                $item->setActive(true);
+                $affected++;
+            } elseif ($action === 'deactivate') {
+                $item->setActive(false);
+                $affected++;
+            } elseif ($action === 'delete') {
+                $payload = $this->publicMethod($item);
+                $this->em->remove($item);
+                $this->events->emit('shipping.method_deleted', ['type' => 'shipping_method', 'id' => $id], $payload);
+                $this->auditor->log('shop.shipping.deleted', 'shipping_method', $id);
+                $affected++;
+            }
+        }
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('shop.shipping.bulk.flash.' . $action, [
+            '%count%' => (string) $affected,
+        ]));
 
         return $this->redirect('admin.shop.shipping.index');
     }

@@ -6,8 +6,10 @@ namespace Modules\Shop\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Event\EventBus;
+use Gereq\Module\CapabilityRegistry;
 use Gereq\Setting\Settings;
 use Modules\Products\Application\ProductPersonalizationService;
+use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\Product;
 use Modules\Products\Domain\ProductImage;
 use Modules\Products\Domain\ProductPrice;
@@ -22,6 +24,8 @@ final class CartService
         private readonly EventBus $events,
         private readonly Settings $settings,
         private readonly ProductPersonalizationService $personalization,
+        private readonly ProductVariantOptionsService $variantOptions,
+        private readonly CapabilityRegistry $capabilities,
     ) {
     }
 
@@ -78,7 +82,40 @@ final class CartService
     /** @return list<CartItem> */
     public function items(string $cartId): array
     {
-        return $this->em->getRepository(CartItem::class)->findBy(['cartId' => $cartId], ['title' => 'ASC']);
+        return $this->itemsByCartIds([$cartId])[$cartId] ?? [];
+    }
+
+    /**
+     * @param list<string> $cartIds
+     * @return array<string, list<CartItem>>
+     */
+    public function itemsByCartIds(array $cartIds): array
+    {
+        $cartIds = array_values(array_unique(array_filter(
+            $cartIds,
+            static fn (string $id): bool => $id !== '',
+        )));
+        if ($cartIds === []) {
+            return [];
+        }
+
+        /** @var list<CartItem> $rows */
+        $rows = $this->em->getRepository(CartItem::class)->createQueryBuilder('i')
+            ->where('i.cartId IN (:ids)')
+            ->setParameter('ids', $cartIds)
+            ->orderBy('i.title', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+        foreach ($cartIds as $id) {
+            $map[$id] = [];
+        }
+        foreach ($rows as $item) {
+            $map[$item->cartId()][] = $item;
+        }
+
+        return $map;
     }
 
     /**
@@ -120,9 +157,7 @@ final class CartService
             $title .= ' — ' . $variant->name();
         }
         $sku = $variant?->sku() ?? $product->sku();
-        $unitPrice = $variant !== null && $variant->priceAmount() !== null
-            ? number_format((float) $variant->priceAmount(), 2, '.', '')
-            : $this->resolvePrice($productId, $cart->currency());
+        $unitPrice = $this->resolveLinePrice($product, $variant, $cart->currency());
 
         if (!$personalized) {
             $existing = $this->em->getRepository(CartItem::class)->findOneBy([
@@ -241,11 +276,54 @@ final class CartService
     }
 
     /**
-     * @return array{subtotal: string, shipping: string, payment_fee: string, total: string, currency: string, item_count: int}
+     * @param list<CartItem>|null $items
+     * @return array{subtotal: string, shipping: string, payment_fee: string, discount: string, total: string, currency: string, item_count: int}
      */
-    public function totals(Cart $cart, string $shippingPrice = '0', string $paymentFee = '0'): array
+    public function totals(
+        Cart $cart,
+        string $shippingPrice = '0',
+        string $paymentFee = '0',
+        ?array $items = null,
+    ): array {
+        return $this->totalsFromItems(
+            $cart,
+            $items ?? $this->items($cart->id()),
+            $shippingPrice,
+            $paymentFee,
+        );
+    }
+
+    /**
+     * @param list<Cart> $carts
+     * @return array<string, array{subtotal: string, shipping: string, payment_fee: string, discount: string, total: string, currency: string, item_count: int}>
+     */
+    public function totalsMap(array $carts): array
     {
-        $items = $this->items($cart->id());
+        $itemsByCart = $this->itemsByCartIds(array_map(
+            static fn (Cart $cart): string => $cart->id(),
+            $carts,
+        ));
+        $map = [];
+        foreach ($carts as $cart) {
+            $map[$cart->id()] = $this->totalsFromItems(
+                $cart,
+                $itemsByCart[$cart->id()] ?? [],
+            );
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param list<CartItem> $items
+     * @return array{subtotal: string, shipping: string, payment_fee: string, discount: string, total: string, currency: string, item_count: int}
+     */
+    private function totalsFromItems(
+        Cart $cart,
+        array $items,
+        string $shippingPrice = '0',
+        string $paymentFee = '0',
+    ): array {
         $subtotal = 0.0;
         foreach ($items as $item) {
             $subtotal += (float) $item->lineTotal();
@@ -268,8 +346,8 @@ final class CartService
     /** @return array<string, mixed> */
     public function serialize(Cart $cart, bool $withItems = true): array
     {
-        $items = $withItems ? $this->items($cart->id()) : [];
-        $totals = $this->totals($cart);
+        $lineItems = $this->items($cart->id());
+        $totals = $this->totalsFromItems($cart, $lineItems);
 
         $payload = [
             'id' => $cart->id(),
@@ -284,7 +362,7 @@ final class CartService
         ];
 
         if ($withItems) {
-            $payload['items'] = array_map(fn (CartItem $item): array => $this->serializeItem($item), $items);
+            $payload['items'] = array_map(fn (CartItem $item): array => $this->serializeItem($item), $lineItems);
         }
 
         return $payload;
@@ -325,13 +403,35 @@ final class CartService
         return $img instanceof ProductImage ? '/media/' . $img->mediaAssetId() . '/file' : null;
     }
 
+    private function resolveLinePrice(Product $product, ?ProductVariant $variant, string $currency): string
+    {
+        $base = $this->baseProductPrice($product->id(), $currency);
+        $stockQty = null;
+        if ($variant !== null) {
+            $stockQty = $variant->stockQty();
+            if ($variant->priceAmount() !== null) {
+                $base = number_format((float) $variant->priceAmount(), 2, '.', '');
+            } else {
+                $base = $this->variantOptions->applyAttributePriceAdjust($product, $variant->attributes(), $base);
+            }
+        }
+
+        return $this->applyCatalogDiscount($product->id(), $base, $stockQty);
+    }
+
     private function resolvePrice(string $productId, string $currency): string
+    {
+        return $this->applyCatalogDiscount($productId, $this->baseProductPrice($productId, $currency));
+    }
+
+    private function baseProductPrice(string $productId, string $currency): string
     {
         $prices = $this->em->getRepository(ProductPrice::class)->findBy(
             ['productId' => $productId, 'currencyCode' => strtoupper($currency)],
             ['validFrom' => 'DESC'],
         );
         $now = new \DateTimeImmutable('today');
+        $base = '0.00';
         foreach ($prices as $price) {
             if (!$price instanceof ProductPrice) {
                 continue;
@@ -343,10 +443,26 @@ final class CartService
                 continue;
             }
 
-            return number_format((float) $price->amount(), 2, '.', '');
+            $base = number_format((float) $price->amount(), 2, '.', '');
+            break;
         }
 
-        return '0.00';
+        return $base;
+    }
+
+    private function applyCatalogDiscount(string $productId, string $basePrice, ?int $stockQty = null): string
+    {
+        if (
+            !$this->capabilities->has('product_discounts')
+            || !class_exists(\Modules\ProductDiscounts\Application\ProductDiscountsProvider::class)
+        ) {
+            return number_format((float) $basePrice, 2, '.', '');
+        }
+        /** @var \Modules\ProductDiscounts\Application\ProductDiscountsProvider $provider */
+        $provider = $this->capabilities->get('product_discounts');
+        $priced = $provider->priceForProduct($productId, $basePrice, null, $stockQty);
+
+        return $priced['price'];
     }
 
     private function assertOpen(Cart $cart): void

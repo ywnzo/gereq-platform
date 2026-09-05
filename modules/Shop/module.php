@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'shop',
     'name' => 'Shop',
-    'version' => '1.2.0',
+    'version' => '1.4.5',
     'description' => 'module.shop.description',
     'class' => Modules\Shop\ShopModule::class,
     'author' => 'GEREQ',

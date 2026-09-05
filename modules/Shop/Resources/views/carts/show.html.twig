@@ -1,4 +1,11 @@
 {% extends 'admin/layout.html.twig' %}
+{% set meta = item.meta()|default({}) %}
+{% set shipping = meta.shipping|default({}) %}
+{% set payment = meta.payment|default({}) %}
+{% set coupon = meta.coupon|default({}) %}
+{% set billing = meta.billing_address|default({}) %}
+{% set shipAddr = meta.shipping_address|default({}) %}
+{% set metaTotals = meta.totals|default({}) %}
 {% block content %}
 <header class="page-header">
     <div>
@@ -6,10 +13,16 @@
         <p class="muted detail-layout__meta">
             <code>{{ item.id() }}</code>
             <span class="badge">{{ item.statusLabel()|trans }}</span>
+            {% if meta.order_number %}
+                <span class="badge badge--muted">{{ meta.order_number }}</span>
+            {% endif %}
         </p>
     </div>
     <div class="actions">
         <a class="btn btn--ghost" href="{{ url('admin.shop.carts.index') }}">{{ 'shop.carts.title'|trans }}</a>
+        {% if meta.order_id and route_exists('admin.orders.show') and user.can('orders.view') %}
+            <a class="btn btn--primary" href="{{ url('admin.orders.show', {id: meta.order_id}) }}">{{ 'shop.cart.open_order'|trans }}</a>
+        {% endif %}
         {% if user.can('shop.manage') and item.isOpen() %}
             <form method="post" action="{{ url('admin.shop.carts.abandon', {id: item.id()}) }}">
                 {{ csrf_field()|raw }}
@@ -25,7 +38,7 @@
             <div class="detail-hero__body">
                 <div class="detail-hero__highlight">
                     <span>{{ 'shop.field.total'|trans }}</span>
-                    <strong>{{ totals.total }} {{ totals.currency }}</strong>
+                    <strong>{{ metaTotals.total|default(totals.total) }} {{ metaTotals.currency|default(totals.currency) }}</strong>
                 </div>
                 <dl class="detail-hero__facts">
                     <div>
@@ -38,11 +51,11 @@
                     </div>
                     <div>
                         <dt>{{ 'shop.field.subtotal'|trans }}</dt>
-                        <dd>{{ totals.subtotal }} {{ totals.currency }}</dd>
+                        <dd>{{ metaTotals.subtotal|default(totals.subtotal) }} {{ metaTotals.currency|default(totals.currency) }}</dd>
                     </div>
                     <div>
                         <dt>{{ 'shop.field.shipping'|trans }}</dt>
-                        <dd>{{ totals.shipping }} {{ totals.currency }}</dd>
+                        <dd>{{ metaTotals.shipping|default(totals.shipping) }} {{ metaTotals.currency|default(totals.currency) }}</dd>
                     </div>
                 </dl>
             </div>
@@ -78,11 +91,147 @@
             </div>
         </section>
 
-        {% if item.meta() %}
-            <section class="panel">
-                <header class="panel__head"><h2>{{ 'shop.cart.meta'|trans }}</h2></header>
-                <pre class="muted" style="white-space:pre-wrap;margin:0">{{ item.meta()|json_encode }}</pre>
-            </section>
+        {% if shipping or payment or billing or shipAddr or meta.note or coupon.code %}
+            <div class="detail-stack">
+                {% if shipping %}
+                    <section class="panel">
+                        <header class="panel__head"><h2>{{ 'shop.cart.section.shipping'|trans }}</h2></header>
+                        <dl class="meta-list meta-list--flush">
+                            <div>
+                                <dt>{{ 'shop.field.name'|trans }}</dt>
+                                <dd>{{ shipping.name|default(shipping.code)|default('—') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.code'|trans }}</dt>
+                                <dd>{% if shipping.code %}<code>{{ shipping.code }}</code>{% else %}—{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.price'|trans }}</dt>
+                                <dd>{% if shipping.price is defined and shipping.price is not null %}{{ shipping.price }} {{ shipping.currency|default(item.currency()) }}{% else %}—{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.carrier'|trans }}</dt>
+                                <dd>{{ shipping.carrier|default('—') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.shipping_type'|trans }}</dt>
+                                <dd>
+                                    {% if shipping.type %}
+                                        {{ ('shop.shipping.type.' ~ shipping.type)|trans }}
+                                    {% else %}—{% endif %}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.estimated_days'|trans }}</dt>
+                                <dd>{{ shipping.estimated_days|default('—') }}</dd>
+                            </div>
+                            {% if shipping.parcel_point_label or shipping.parcel_point_id %}
+                                <div class="meta-list__full">
+                                    <dt>{{ 'shop.field.parcel_point'|trans }}</dt>
+                                    <dd>{{ shipping.parcel_point_label|default(shipping.parcel_point_id) }}</dd>
+                                </div>
+                            {% endif %}
+                        </dl>
+                    </section>
+                {% endif %}
+
+                {% if payment %}
+                    <section class="panel">
+                        <header class="panel__head"><h2>{{ 'shop.cart.section.payment'|trans }}</h2></header>
+                        <dl class="meta-list meta-list--flush">
+                            <div>
+                                <dt>{{ 'shop.field.name'|trans }}</dt>
+                                <dd>{{ payment.name|default(payment.code)|default('—') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.code'|trans }}</dt>
+                                <dd>{% if payment.code %}<code>{{ payment.code }}</code>{% else %}—{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.payment_type'|trans }}</dt>
+                                <dd>{{ payment.type|default('—') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.payment_provider'|trans }}</dt>
+                                <dd>{{ payment.provider|default('—') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.payment_fee'|trans }}</dt>
+                                <dd>{{ payment.fee|default('0.00') }} {{ payment.currency|default(item.currency()) }}</dd>
+                            </div>
+                            {% if payment.instructions %}
+                                <div class="meta-list__full">
+                                    <dt>{{ 'shop.field.payment_instructions'|trans }}</dt>
+                                    <dd>{{ payment.instructions }}</dd>
+                                </div>
+                            {% endif %}
+                        </dl>
+                    </section>
+                {% endif %}
+
+                {% if billing or shipAddr %}
+                    <section class="panel">
+                        <header class="panel__head"><h2>{{ 'shop.cart.section.addresses'|trans }}</h2></header>
+                        <dl class="meta-list meta-list--flush">
+                            {% if billing %}
+                                <div class="meta-list__full">
+                                    <dt>{{ 'shop.field.billing_address'|trans }}</dt>
+                                    <dd>
+                                        <strong>{{ billing.name|default('—') }}</strong>
+                                        {% if billing.email %}<br><a href="mailto:{{ billing.email }}">{{ billing.email }}</a>{% endif %}
+                                        {% if billing.phone %}<br><a href="tel:{{ billing.phone }}">{{ billing.phone }}</a>{% endif %}
+                                        {% if billing.street %}<br>{{ billing.street }}{% endif %}
+                                        {% if billing.zip or billing.city %}<br>{{ billing.zip|default('') }} {{ billing.city|default('') }}{% endif %}
+                                        {% if billing.country %}<br>{{ billing.country }}{% endif %}
+                                    </dd>
+                                </div>
+                            {% endif %}
+                            {% if shipAddr %}
+                                <div class="meta-list__full">
+                                    <dt>{{ 'shop.field.shipping_address'|trans }}</dt>
+                                    <dd>
+                                        <strong>{{ shipAddr.name|default('—') }}</strong>
+                                        {% if shipAddr.email %}<br><a href="mailto:{{ shipAddr.email }}">{{ shipAddr.email }}</a>{% endif %}
+                                        {% if shipAddr.phone %}<br><a href="tel:{{ shipAddr.phone }}">{{ shipAddr.phone }}</a>{% endif %}
+                                        {% if shipAddr.street %}<br>{{ shipAddr.street }}{% endif %}
+                                        {% if shipAddr.zip or shipAddr.city %}<br>{{ shipAddr.zip|default('') }} {{ shipAddr.city|default('') }}{% endif %}
+                                        {% if shipAddr.country %}<br>{{ shipAddr.country }}{% endif %}
+                                    </dd>
+                                </div>
+                            {% endif %}
+                        </dl>
+                    </section>
+                {% endif %}
+
+                {% if coupon.code or (coupon.discount is defined and coupon.discount != '0.00' and coupon.discount != 0 and coupon.discount != '0') %}
+                    <section class="panel">
+                        <header class="panel__head"><h2>{{ 'shop.cart.section.coupon'|trans }}</h2></header>
+                        <dl class="meta-list meta-list--flush">
+                            <div>
+                                <dt>{{ 'shop.field.code'|trans }}</dt>
+                                <dd>{% if coupon.code %}<code>{{ coupon.code }}</code>{% else %}—{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'shop.field.discount'|trans }}</dt>
+                                <dd>{{ coupon.discount|default('0.00') }} {{ item.currency() }}</dd>
+                            </div>
+                            {% if coupon.message %}
+                                <div class="meta-list__full">
+                                    <dt>{{ 'shop.field.coupon_message'|trans }}</dt>
+                                    <dd>{{ coupon.message }}</dd>
+                                </div>
+                            {% endif %}
+                        </dl>
+                    </section>
+                {% endif %}
+
+                {% if meta.note %}
+                    <section class="panel">
+                        <header class="panel__head"><h2>{{ 'shop.field.note'|trans }}</h2></header>
+                        <div class="g-prose">{{ meta.note }}</div>
+                    </section>
+                {% endif %}
+            </div>
         {% endif %}
     </div>
 
@@ -98,11 +247,26 @@
                     <dt>{{ 'shop.field.currency'|trans }}</dt>
                     <dd>{{ item.currency() }}</dd>
                 </div>
+                {% if meta.order_number %}
+                    <div class="meta-list__full">
+                        <dt>{{ 'shop.field.order'|trans }}</dt>
+                        <dd>
+                            {% if meta.order_id and route_exists('admin.orders.show') and user.can('orders.view') %}
+                                <a href="{{ url('admin.orders.show', {id: meta.order_id}) }}">{{ meta.order_number }}</a>
+                            {% else %}
+                                {{ meta.order_number }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                {% endif %}
                 <div class="meta-list__full">
                     <dt>{{ 'shop.field.customer'|trans }}</dt>
                     <dd>
                         {% if customer %}
                             <a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>
+                        {% elseif billing.name %}
+                            {{ billing.name }}
+                            {% if billing.email %}<br><a href="mailto:{{ billing.email }}">{{ billing.email }}</a>{% endif %}
                         {% elseif item.customerId() %}
                             <code>{{ item.customerId() }}</code>
                         {% else %}—{% endif %}
@@ -112,9 +276,21 @@
                     <dt>{{ 'shop.field.session'|trans }}</dt>
                     <dd>{{ item.sessionKey() ?: '—' }}</dd>
                 </div>
+                {% if metaTotals.discount is defined and metaTotals.discount != '0.00' and metaTotals.discount != 0 %}
+                    <div>
+                        <dt>{{ 'shop.field.discount'|trans }}</dt>
+                        <dd>{{ metaTotals.discount }} {{ metaTotals.currency|default(item.currency()) }}</dd>
+                    </div>
+                {% endif %}
+                {% if metaTotals.payment_fee is defined and metaTotals.payment_fee != '0.00' and metaTotals.payment_fee != 0 %}
+                    <div>
+                        <dt>{{ 'shop.field.payment_fee'|trans }}</dt>
+                        <dd>{{ metaTotals.payment_fee }} {{ metaTotals.currency|default(item.currency()) }}</dd>
+                    </div>
+                {% endif %}
                 <div>
                     <dt>{{ 'shop.field.total'|trans }}</dt>
-                    <dd><strong>{{ totals.total }} {{ totals.currency }}</strong></dd>
+                    <dd><strong>{{ metaTotals.total|default(totals.total) }} {{ metaTotals.currency|default(totals.currency) }}</strong></dd>
                 </div>
             </dl>
         </section>

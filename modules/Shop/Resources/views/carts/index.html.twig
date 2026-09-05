@@ -1,64 +1,196 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="shop-carts" data-actions-default="1">
-<header class="page-header">
-    <h1>{{ 'shop.carts.title'|trans }}</h1>
-    <div class="actions">
-        <a class="btn btn--ghost" href="{{ url('admin.shop.shipping.index') }}">{{ 'shop.shipping.title'|trans }}</a>
+{% set pageIds = items|map(i => i.id()) %}
+{% set hasCustomer = has_customer|default('') %}
+{% set currencyFilter = currency|default('') %}
+{% set advancedFilters = (hasCustomer is not empty) or (currencyFilter is not empty) %}
+<div
+    class="list-shell"
+    x-data="dataTable"
+    data-table-id="shop-carts"
+    data-actions-default="1"
+    data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
+    data-bulk-delete-confirm="{{ 'shop.carts.bulk.confirm_delete'|trans|e('html_attr') }}"
+>
+    <header class="page-header">
+        <div>
+            <h1>{{ 'shop.carts.title'|trans }}</h1>
+            <p class="muted">{{ 'shop.carts.list.hint'|trans }}</p>
+        </div>
+        <div class="actions">
+            <a class="btn btn--ghost" href="{{ url('admin.shop.shipping.index') }}">{{ icon('truck') }} {{ 'shop.shipping.title'|trans }}</a>
+        </div>
+    </header>
+
+    <div class="toolbar--table">
+        <form class="toolbar" method="get" id="carts-filter-form">
+            <input type="hidden" name="has_customer" value="{{ hasCustomer }}">
+            <input type="hidden" name="currency" value="{{ currencyFilter }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.carts.search'|trans }}">
+            <select name="status" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'shop.carts.all_statuses'|trans }}</option>
+                {% for s in statuses %}
+                    <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('shop.cart.status.' ~ s)|trans }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <div class="toolbar__toggles">
+            {{ ui_render('drawer_trigger', {
+                drawer_id: 'carts-filters',
+                label: 'ui.drawer.filters'|trans,
+                variant: advancedFilters ? 'primary' : 'ghost',
+                icon: 'filters',
+            }) }}
+        </div>
     </div>
-</header>
-<div class="toolbar--table">
-    <form class="toolbar" method="get">
-        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.carts.search'|trans }}">
-        <select name="status" class="input" onchange="this.form.submit()">
-            <option value="">{{ 'shop.carts.all_statuses'|trans }}</option>
-            {% for s in statuses %}
-                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('shop.cart.status.' ~ s)|trans }}</option>
-            {% endfor %}
-        </select>
-    </form>
+
+    {% if user.can('shop.manage') and items is not empty %}
+        <form
+            class="bulk-bar"
+            method="post"
+            action="{{ url('admin.shop.carts.bulk') }}"
+            x-show="selectedCount > 0"
+            x-cloak
+            @submit="confirmBulk"
+        >
+            {{ csrf_field()|raw }}
+            <input type="hidden" name="confirmed" value="1">
+            <template x-for="id in selected" :key="id">
+                <input type="hidden" name="ids[]" :value="id">
+            </template>
+            <div class="bulk-bar__meta">
+                <strong x-text="selectedCount"></strong>
+                <span>{{ 'shop.bulk.selected'|trans }}</span>
+                <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'shop.bulk.clear'|trans }}</button>
+            </div>
+            <div class="bulk-bar__actions">
+                <select class="input" name="action" x-model="bulkAction" required>
+                    <option value="">{{ 'shop.bulk.choose'|trans }}</option>
+                    <option value="abandon">{{ 'shop.carts.bulk.action.abandon'|trans }}</option>
+                    <option value="delete">{{ 'shop.carts.bulk.action.delete'|trans }}</option>
+                </select>
+                <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'shop.bulk.apply'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    {% if user.can('shop.manage') %}
+                        <th class="table__check">
+                            <label class="table-check">
+                                <input type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected">
+                                <span class="sr-only">{{ 'shop.bulk.select_all'|trans }}</span>
+                            </label>
+                        </th>
+                    {% endif %}
+                    <th>{{ 'shop.field.cart'|trans }}</th>
+                    <th>{{ 'shop.field.customer'|trans }}</th>
+                    <th>{{ 'shop.field.status'|trans }}</th>
+                    <th class="is-num">{{ 'shop.field.items'|trans }}</th>
+                    <th class="is-num">{{ 'shop.field.total'|trans }}</th>
+                    <th>{{ 'shop.field.updated'|trans }}</th>
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    {% set t = totalsMap[item.id()]|default(null) %}
+                    {% set statusTone = item.status() == 'open' ? 'ok' : (item.status() == 'converted' ? 'info' : 'muted') %}
+                    <tr :class="isSelected('{{ item.id() }}') ? 'is-selected' : ''">
+                        {% if user.can('shop.manage') %}
+                            <td class="table__check">
+                                <label class="table-check">
+                                    <input
+                                        type="checkbox"
+                                        value="{{ item.id() }}"
+                                        @change="toggleId('{{ item.id() }}')"
+                                        :checked="isSelected('{{ item.id() }}')"
+                                    >
+                                    <span class="sr-only">{{ item.id() }}</span>
+                                </label>
+                            </td>
+                        {% endif %}
+                        <td>
+                            <div class="table__title">
+                                <a href="{{ url('admin.shop.carts.show', {id: item.id()}) }}"><code>{{ item.id()|slice(0, 8) }}…</code></a>
+                                <span class="table__meta muted">{{ item.currency() }}{% if item.sessionKey() %} · session{% endif %}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.customerId() %}
+                                {% set c = customers[item.customerId()]|default(null) %}
+                                {% if c %}
+                                    <a class="cell-user cell-user--stack" href="{{ url('admin.customers.show', {id: c.id()}) }}">
+                                        <span class="avatar avatar--sm">{{ c.initials() }}</span>
+                                        <span class="cell-user__text">
+                                            <strong>{{ c.name() }}</strong>
+                                            <small class="muted">{{ c.email() }}</small>
+                                        </span>
+                                    </a>
+                                {% else %}
+                                    <code>{{ item.customerId()|slice(0, 8) }}…</code>
+                                {% endif %}
+                            {% else %}
+                                <span class="muted">{{ 'shop.carts.guest'|trans }}</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span></td>
+                        <td class="is-num">{{ t ? t.item_count : '—' }}</td>
+                        <td class="is-num">{% if t %}<strong>{{ t.total }}</strong> <span class="muted">{{ t.currency }}</span>{% else %}—{% endif %}</td>
+                        <td class="is-mute">{{ item.updatedAt()|date('d. m. Y H:i') }}</td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.shop.carts.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+                            {% endblock %}
+                        {% endembed %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="{{ user.can('shop.manage') ? 8 : 7 }}">
+                            <div class="empty">
+                                <h2>{{ 'shop.carts.empty'|trans }}</h2>
+                                <p>{{ 'shop.carts.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'ui/table_footer.html.twig' %}
 </div>
-<div class="table-wrap" data-table>
-<table class="table">
-<thead><tr>
-<th>{{ 'shop.field.id'|trans }}</th>
-<th>{{ 'shop.field.customer'|trans }}</th>
-<th>{{ 'shop.field.status'|trans }}</th>
-<th>{{ 'shop.field.items'|trans }}</th>
-<th>{{ 'shop.field.total'|trans }}</th>
-<th>{{ 'shop.field.updated'|trans }}</th>
-<th class="table__actions-head"></th>
-</tr></thead>
-<tbody>
-{% for item in items %}
-{% set t = totalsMap[item.id()]|default(null) %}
-<tr>
-<td><a href="{{ url('admin.shop.carts.show', {id: item.id()}) }}"><code>{{ item.id()|slice(0, 8) }}…</code></a></td>
-<td>
-{% if item.customerId() %}
-{% set c = customers[item.customerId()]|default(null) %}
-{% if c %}
-<a href="{{ url('admin.customers.show', {id: c.id()}) }}">{{ c.name() }}</a>
-{% else %}
-<code>{{ item.customerId()|slice(0, 8) }}…</code>
-{% endif %}
-{% else %}—{% endif %}
-</td>
-<td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
-<td>{{ t ? t.item_count : '—' }}</td>
-<td>{% if t %}{{ t.total }} {{ t.currency }}{% else %}—{% endif %}</td>
-<td class="muted">{{ item.updatedAt()|date('d.m.Y H:i') }}</td>
-{% embed 'ui/row_actions.html.twig' %}
-    {% block items %}
-        {% include 'ui/row_action.html.twig' with { href: url('admin.shop.carts.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+
+{% embed 'ui/drawer.html.twig' with { id: 'carts-filters', title: 'ui.drawer.filters'|trans } %}
+    {% block body %}
+        <form method="get" class="g-drawer__form stack" id="carts-drawer-filters">
+            <input type="hidden" name="q" value="{{ search }}">
+            <input type="hidden" name="status" value="{{ status }}">
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'shop.carts.filter.customer'|trans }}</span>
+                <select class="input" name="has_customer">
+                    <option value="">{{ 'shop.carts.filter.customer_any'|trans }}</option>
+                    <option value="1" {{ hasCustomer == '1' ? 'selected' : '' }}>{{ 'shop.carts.filter.customer_yes'|trans }}</option>
+                    <option value="0" {{ hasCustomer == '0' ? 'selected' : '' }}>{{ 'shop.carts.filter.customer_no'|trans }}</option>
+                </select>
+            </label>
+            <label class="g-drawer__field">
+                <span class="g-drawer__label">{{ 'shop.field.currency'|trans }}</span>
+                <select class="input" name="currency">
+                    <option value="">{{ 'shop.carts.filter.currency_any'|trans }}</option>
+                    {% for cur in currencies|default(['CZK', 'EUR']) %}
+                        <option value="{{ cur }}" {{ currencyFilter == cur ? 'selected' : '' }}>{{ cur }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+    {% endblock %}
+    {% block footer %}
+        <a class="btn btn--ghost" href="?q={{ search|url_encode }}&status={{ status|url_encode }}">{{ 'ui.drawer.reset'|trans }}</a>
+        <button class="btn btn--primary" type="submit" form="carts-drawer-filters">{{ 'ui.drawer.apply'|trans }}</button>
     {% endblock %}
 {% endembed %}
-</tr>
-{% else %}
-<tr><td colspan="7"><div class="empty"><h2>{{ 'shop.carts.empty'|trans }}</h2><p>{{ 'shop.carts.empty.hint'|trans }}</p></div></td></tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-</div>
 {% endblock %}

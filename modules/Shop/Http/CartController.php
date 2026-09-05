@@ -39,24 +39,59 @@ final class CartController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->query->get('q', ''));
-        $status = (string) $request->query->get('status', '');
-        $qb = $this->em->getRepository(Cart::class)->createQueryBuilder('c')->orderBy('c.updatedAt', 'DESC');
-        self_repair_search($qb, 'c', ['id', 'customerId', 'sessionKey'], $search);
+        $list = \Gereq\Http\ListQuery::fromRequest(
+            $request,
+            sortable: ['updatedAt', 'createdAt', 'status', 'currency'],
+            defaultSort: 'updatedAt',
+            defaultDir: 'desc',
+            perPage: 100,
+            filterKeys: ['status', 'has_customer', 'currency'],
+        );
+        $status = $list->filter('status');
+        $hasCustomer = $list->filter('has_customer');
+        $currency = strtoupper($list->filter('currency'));
+
+        $qb = $this->em->getRepository(Cart::class)->createQueryBuilder('c');
+        $list->applySearch($qb, 'c', ['id', 'customerId', 'sessionKey']);
         if (in_array($status, Cart::STATUSES, true)) {
             $qb->andWhere('c.status = :status')->setParameter('status', $status);
         }
-        $items = $qb->getQuery()->getResult();
+        if ($hasCustomer === '1') {
+            $qb->andWhere('c.customerId IS NOT NULL');
+        } elseif ($hasCustomer === '0') {
+            $qb->andWhere('c.customerId IS NULL');
+        }
+        if ($currency !== '' && strlen($currency) === 3) {
+            $qb->andWhere('c.currency = :currency')->setParameter('currency', $currency);
+        }
+        $qb->orderBy('c.' . $list->sort, $list->direction());
 
-        return $this->page('@shop/carts/index.html.twig', [
+        $total = (int) (clone $qb)->select('COUNT(c.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        /** @var list<Cart> $items */
+        $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+
+        $currencyRows = $this->em->createQueryBuilder()
+            ->select('DISTINCT c.currency AS currency')
+            ->from(Cart::class, 'c')
+            ->orderBy('c.currency', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+        $currencies = array_values(array_filter(array_map(
+            static fn (array $row): string => (string) ($row['currency'] ?? ''),
+            $currencyRows,
+        )));
+
+        return $this->page('@shop/carts/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('shop.carts.title'),
             'items' => $items,
             'customers' => $this->customerMap($items),
-            'totalsMap' => $this->totalsMap($items),
-            'search' => $search,
+            'totalsMap' => $this->carts->totalsMap($items),
             'status' => $status,
             'statuses' => Cart::STATUSES,
-        ]);
+            'has_customer' => $hasCustomer,
+            'currency' => $currency,
+            'currencies' => $currencies !== [] ? $currencies : ['CZK', 'EUR'],
+        ]));
     }
 
     public function show(string $id): Response
@@ -84,7 +119,7 @@ final class CartController extends Controller
             'item' => $cart,
             'lines' => $items,
             'customer' => $customer,
-            'totals' => $this->carts->totals($cart, $shippingPrice),
+            'totals' => $this->carts->totals($cart, $shippingPrice, '0', $items),
         ]);
     }
 
@@ -108,6 +143,73 @@ final class CartController extends Controller
         return $this->redirect('admin.shop.carts.show', ['id' => $id]);
     }
 
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'shop.carts.bulk');
+        $action = (string) $data['action'];
+        $ids = $this->bulkIds($request);
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('shop.bulk.error.empty'));
+
+            return $this->redirect('admin.shop.carts.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('shop.bulk.error.confirm'));
+
+            return $this->redirect('admin.shop.carts.index');
+        }
+
+        /** @var list<Cart> $carts */
+        $carts = $this->em->getRepository(Cart::class)->createQueryBuilder('c')
+            ->where('c.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+        $itemsByCart = $action === 'delete'
+            ? $this->carts->itemsByCartIds(array_map(static fn (Cart $c): string => $c->id(), $carts))
+            : [];
+
+        $affected = 0;
+        foreach ($carts as $cart) {
+            $id = $cart->id();
+            if ($action === 'abandon') {
+                if (!$cart->isOpen()) {
+                    continue;
+                }
+                $cart->setStatus('abandoned');
+                $this->auditor->log('shop.cart.abandoned', 'cart', $id, flush: false);
+                $affected++;
+            } elseif ($action === 'delete') {
+                foreach ($itemsByCart[$id] ?? [] as $item) {
+                    $this->em->remove($item);
+                }
+                $this->em->remove($cart);
+                $this->auditor->log('shop.cart.deleted', 'cart', $id, flush: false);
+                $affected++;
+            }
+        }
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('shop.carts.bulk.flash.' . $action, [
+            '%count%' => (string) $affected,
+        ]));
+
+        return $this->redirect('admin.shop.carts.index');
+    }
+
+    /** @return list<string> */
+    private function bulkIds(Request $request): array
+    {
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+    }
+
     /** @param list<Cart> $carts @return array<string, Customer> */
     private function customerMap(array $carts): array
     {
@@ -127,20 +229,6 @@ final class CartController extends Controller
             if ($c instanceof Customer) {
                 $map[$c->id()] = $c;
             }
-        }
-
-        return $map;
-    }
-
-    /**
-     * @param list<Cart> $carts
-     * @return array<string, array{subtotal: string, shipping: string, total: string, currency: string, item_count: int}>
-     */
-    private function totalsMap(array $carts): array
-    {
-        $map = [];
-        foreach ($carts as $cart) {
-            $map[$cart->id()] = $this->carts->totals($cart);
         }
 
         return $map;

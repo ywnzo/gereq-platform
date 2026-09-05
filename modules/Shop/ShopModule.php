@@ -39,7 +39,7 @@ final class ShopModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.1';
+        return '1.4.5';
     }
 
     public function register(ModuleContext $context): void
@@ -71,6 +71,7 @@ final class ShopModule implements ModuleInterface
 
         $context->router()->group('/admin/shop/carts', function (Router $routes): void {
             $routes->get('', [CartController::class, 'index'])->name('admin.shop.carts.index')->permission('shop.view');
+            $routes->post('/bulk', [CartController::class, 'bulk'])->name('admin.shop.carts.bulk')->permission('shop.manage');
             $routes->get('/{id}', [CartController::class, 'show'])->name('admin.shop.carts.show')->permission('shop.view');
             $routes->post('/{id}/abandon', [CartController::class, 'abandon'])->name('admin.shop.carts.abandon')->permission('shop.manage');
         }, ['middleware' => ['auth']]);
@@ -79,8 +80,10 @@ final class ShopModule implements ModuleInterface
             $routes->get('', [ShippingMethodController::class, 'index'])->name('admin.shop.shipping.index')->permission('shop.view');
             $routes->get('/create', [ShippingMethodController::class, 'create'])->name('admin.shop.shipping.create')->permission('shop.manage');
             $routes->post('', [ShippingMethodController::class, 'store'])->name('admin.shop.shipping.store')->permission('shop.manage');
+            $routes->post('/bulk', [ShippingMethodController::class, 'bulk'])->name('admin.shop.shipping.bulk')->permission('shop.manage');
             $routes->get('/{id}/edit', [ShippingMethodController::class, 'edit'])->name('admin.shop.shipping.edit')->permission('shop.manage');
             $routes->post('/{id}', [ShippingMethodController::class, 'update'])->name('admin.shop.shipping.update')->permission('shop.manage');
+            $routes->post('/{id}/toggle', [ShippingMethodController::class, 'toggle'])->name('admin.shop.shipping.toggle')->permission('shop.manage');
             $routes->post('/{id}/delete', [ShippingMethodController::class, 'destroy'])->name('admin.shop.shipping.destroy')->permission('shop.manage');
         }, ['middleware' => ['auth']]);
 
@@ -197,6 +200,14 @@ final class ShopModule implements ModuleInterface
     private function registerValidation(ModuleContext $context): void
     {
         $v = $context->validation();
+        $v->ruleset('shop.carts.bulk', [
+            'action' => 'required|max:32',
+            'confirmed' => 'nullable',
+        ]);
+        $v->ruleset('shop.shipping.bulk', [
+            'action' => 'required|max:32',
+            'confirmed' => 'nullable',
+        ]);
         $v->ruleset('shop.shipping.save', [
             'code' => 'required|min:1|max:64',
             'name' => 'required|min:2|max:190',
