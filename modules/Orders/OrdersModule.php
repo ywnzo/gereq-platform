@@ -24,6 +24,8 @@ use Modules\Orders\Http\Api\InvoiceApiController;
 use Modules\Orders\Http\Api\OrderApiController;
 use Modules\Orders\Http\InvoiceController;
 use Modules\Orders\Http\OrderController;
+use Modules\Orders\Http\OrderShipmentController;
+use Modules\Orders\Application\OrderMailer;
 use Twig\Environment;
 
 final class OrdersModule implements ModuleInterface
@@ -68,6 +70,8 @@ final class OrdersModule implements ModuleInterface
             $routes->post('/{id}/fulfill', [OrderController::class, 'fulfill'])->name('admin.orders.fulfill')->permission('orders.manage');
             $routes->post('/{id}/cancel', [OrderController::class, 'cancel'])->name('admin.orders.cancel')->permission('orders.manage');
             $routes->post('/{id}/lines', [OrderController::class, 'addLine'])->name('admin.orders.lines.add')->permission('orders.manage');
+            $routes->post('/{id}/shipment/create', [OrderShipmentController::class, 'create'])->name('admin.orders.shipment.create')->permission('orders.manage');
+            $routes->post('/{id}/shipment/sync', [OrderShipmentController::class, 'sync'])->name('admin.orders.shipment.sync')->permission('orders.manage');
         }, ['middleware' => ['auth']]);
 
         $context->router()->group('/admin/invoices', function (Router $routes): void {
@@ -95,6 +99,39 @@ final class OrdersModule implements ModuleInterface
 
         $this->registerHooks($context);
         $this->registerPaidInvoiceHook($context);
+        $this->registerOrderMailHooks($context);
+    }
+
+    private function registerOrderMailHooks(ModuleContext $context): void
+    {
+        $mailer = $context->get(OrderMailer::class);
+        $em = $context->get(EntityManagerInterface::class);
+
+        $context->hooks()->addAction(
+            'platform.event.dispatched',
+            static function (EventEnvelope $envelope) use ($mailer, $em): void {
+                $map = [
+                    'order.confirmed' => 'confirmed',
+                    'order.fulfilled' => 'shipped',
+                ];
+                if (!isset($map[$envelope->type])) {
+                    return;
+                }
+                $orderId = (string) ($envelope->resource['id'] ?? $envelope->data['id'] ?? '');
+                if ($orderId === '') {
+                    return;
+                }
+                $order = $em->find(Order::class, $orderId);
+                if (!$order instanceof Order) {
+                    return;
+                }
+                $customer = $em->find(Customer::class, $order->customerId());
+                if ($customer instanceof Customer) {
+                    $mailer->sendStatus($order, $customer, $map[$envelope->type]);
+                }
+            },
+            HookPriority::NORMAL,
+        );
     }
 
     private function registerPaidInvoiceHook(ModuleContext $context): void

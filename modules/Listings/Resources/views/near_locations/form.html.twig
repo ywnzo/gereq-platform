@@ -1,0 +1,95 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.listings'|trans, url: url('admin.listings.index') },
+        { label: 'nav.listings.near'|trans, url: url('admin.listings.near.index') },
+        { label: item ? item.name() : 'listings.near.new'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>{{ item ? 'listings.near.edit'|trans : 'listings.near.new'|trans }}</h1>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'listings.near.save' } %}
+
+{% set categoryOptions = [] %}
+{% for cat in categories %}
+    {% set categoryOptions = categoryOptions|merge([{ value: cat, label: ('listings.near.category.' ~ cat)|trans }]) %}
+{% endfor %}
+
+<form method="post" class="form-grid" action="{{ item ? url('admin.listings.near.update', {id: item.id()}) : url('admin.listings.near.store') }}" data-form="listings.near.save" x-data="gereqForm"{% if form_errors('listings.near.save') %} data-server-state="1"{% endif %}>
+    {{ csrf_field()|raw }}
+    {% include 'ui/input.html.twig' with {
+        name: 'name',
+        label: 'listings.near.field.name'|trans,
+        required: true,
+        form: 'listings.near.save',
+        value: item ? item.name() : ''
+    } %}
+    {% include 'ui/select.html.twig' with {
+        name: 'category',
+        label: 'listings.near.field.category'|trans,
+        required: true,
+        form: 'listings.near.save',
+        value: item ? item.category() : 'other',
+        options: categoryOptions
+    } %}
+    <div class="field field--full ares-field" x-data="gereqAresAddress">
+        <span>{{ 'listings.near.field.address'|trans }} · ARES</span>
+        <input
+            class="input"
+            name="address"
+            data-ares-query
+            data-ares-fill="address"
+            autocomplete="off"
+            value="{{ item and item.address() ? item.address() : '' }}"
+            @input="onInput"
+            @keydown="onKeydown"
+            x-ref="query"
+        >
+        <input type="hidden" name="city" data-ares-fill="city" value="{{ item and item.city() ? item.city() : '' }}">
+        {% include 'ui/ares_address_suggest.html.twig' %}
+    </div>
+    {% include 'ui/input.html.twig' with {
+        name: 'latitude',
+        label: 'listings.near.field.latitude'|trans,
+        optional: true,
+        form: 'listings.near.save',
+        value: item and item.latitude() is not null ? item.latitude() : ''
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'longitude',
+        label: 'listings.near.field.longitude'|trans,
+        optional: true,
+        form: 'listings.near.save',
+        value: item and item.longitude() is not null ? item.longitude() : ''
+    } %}
+    {% include 'ui/input.html.twig' with {
+        name: 'sort_order',
+        label: 'listings.near.field.sort_order'|trans,
+        optional: true,
+        form: 'listings.near.save',
+        value: item ? item.sortOrder() : '0'
+    } %}
+    {% include 'ui/editor.html.twig' with {
+        name: 'description',
+        label: 'listings.near.field.description'|trans,
+        optional: true,
+        form: 'listings.near.save',
+        value: item and item.description() ? item.description() : '',
+        extra: 'field--full'
+    } %}
+    <label class="field">
+        <span class="field__label">{{ 'listings.near.field.active'|trans }}</span>
+        <input type="checkbox" name="active" value="1" {{ (item is null or item.active()) ? 'checked' : '' }}>
+    </label>
+    <div class="form-actions">
+        <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ item ? url('admin.listings.near.show', {id: item.id()}) : url('admin.listings.near.index') }}">{{ 'common.cancel'|trans }}</a>
+    </div>
+</form>
+{% endblock %}

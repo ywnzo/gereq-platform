@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Gereq\Tests\Unit;
 
 use Gereq\Event\EventBus;
+use Gereq\Hook\HookManager;
 use PHPUnit\Framework\TestCase;
 
 final class EventBusTest extends TestCase
 {
     public function testDispatchInvokesTypedListener(): void
     {
-        $bus = new EventBus();
+        $bus = new EventBus(new HookManager());
         $seen = null;
         $event = new class ('abc') {
             public function __construct(public readonly string $id)
@@ -30,7 +31,7 @@ final class EventBusTest extends TestCase
 
     public function testTracerReceivesEventDuration(): void
     {
-        $bus = new EventBus();
+        $bus = new EventBus(new HookManager());
         $seen = [];
         $event = new class {
         };
@@ -43,5 +44,18 @@ final class EventBusTest extends TestCase
         self::assertSame($event::class, $seen['class']);
         self::assertIsFloat($seen['ms']);
         self::assertGreaterThanOrEqual(0, $seen['ms']);
+    }
+
+    public function testEmitFiresPlatformHook(): void
+    {
+        $hooks = new HookManager();
+        $seen = null;
+        $hooks->addAction('platform.event.dispatched', static function ($envelope) use (&$seen): void {
+            $seen = $envelope->type;
+        });
+        $bus = new EventBus($hooks);
+        $bus->emit('webhook.test', ['type' => 'webhook', 'id' => '1'], ['ok' => true]);
+
+        self::assertSame('webhook.test', $seen);
     }
 }

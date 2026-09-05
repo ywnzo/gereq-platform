@@ -91,7 +91,45 @@ final class InvoiceIssuingService
             return $pdfPath;
         }
 
-        return $htmlPath;
+        $lines = $this->pdfLines($invoice, $order instanceof Order ? $order : null);
+        file_put_contents($pdfPath, SimpleInvoicePdf::render($lines, $invoice->number()));
+
+        return $pdfPath;
+    }
+
+    /** @return list<string> */
+    private function pdfLines(Invoice $invoice, ?Order $order): array
+    {
+        $seller = $invoice->seller();
+        $buyer = $invoice->buyer();
+        $lines = [
+            'FAKTURA ' . $invoice->number(),
+            'Stav: ' . $invoice->status(),
+            'Datum: ' . ($invoice->issuedAt()?->format('d.m.Y') ?? date('d.m.Y')),
+            'Splatnost: ' . ($invoice->dueAt()?->format('d.m.Y') ?? '—'),
+            '',
+            'Dodavatel: ' . (string) ($seller['name'] ?? ''),
+            'ICO: ' . (string) ($seller['ico'] ?? '') . '  DIC: ' . (string) ($seller['dic'] ?? ''),
+            (string) ($seller['address'] ?? ''),
+            '',
+            'Odberatel: ' . (string) ($buyer['name'] ?? ''),
+            (string) ($buyer['address'] ?? ''),
+            (string) ($buyer['email'] ?? ''),
+            '',
+        ];
+        if ($order instanceof Order) {
+            $lines[] = 'Objednavka: ' . $order->number();
+            foreach ($this->em->getRepository(\Modules\Orders\Domain\OrderLine::class)->findBy(['orderId' => $order->id()]) as $line) {
+                if ($line instanceof \Modules\Orders\Domain\OrderLine) {
+                    $lines[] = sprintf('%s  %s x %s = %s', $line->title(), $line->qty(), $line->unitPrice(), $line->lineTotal());
+                }
+            }
+            $lines[] = '';
+        }
+        $lines[] = 'CELKEM: ' . $invoice->total() . ' ' . $invoice->currency();
+        $lines[] = 'VS: ' . (string) ($invoice->paymentReference() ?? $invoice->number());
+
+        return $lines;
     }
 
     public function pathFor(Invoice $invoice): ?string

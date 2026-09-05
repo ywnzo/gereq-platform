@@ -1,0 +1,278 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Gereq\Ares;
+
+/**
+ * Doménová vrstva nad ARES — vyhledání subjektů a standardizovaných adres RÚIAN.
+ */
+final class AresService
+{
+    public function __construct(private readonly AresClient $client)
+    {
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function searchSubjects(string $query, int $limit = 10): array
+    {
+        $query = trim($query);
+        if ($query === '' || mb_strlen($query) < 2) {
+            return [];
+        }
+
+        $limit = max(1, min(50, $limit));
+        $ico = $this->client->normalizeIco($query);
+
+        if ($ico !== null && preg_match('/^\d{2,8}$/', preg_replace('/\D+/', '', $query) ?? '') === 1) {
+            try {
+                return [$this->mapSubject($this->client->getSubject($ico))];
+            } catch (AresException $e) {
+                if ($e->status() === 404) {
+                    return [];
+                }
+                throw $e;
+            }
+        }
+
+        $response = $this->client->searchSubjects([
+            'obchodniJmeno' => $query,
+            'pocet' => $limit,
+            'start' => 0,
+        ]);
+
+        $items = $response['ekonomickeSubjekty'] ?? [];
+        if (!is_array($items)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $out[] = $this->mapSubject($item);
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function searchAddresses(string $query, int $limit = 10): array
+    {
+        $query = trim(preg_replace('/\s+/u', ' ', $query) ?? '');
+        if ($query === '' || mb_strlen($query) < 2) {
+            return [];
+        }
+
+        $limit = max(1, min(30, $limit));
+
+        // Jednoslovný název obce → částečná standardizace (bez tisíců adresních míst).
+        if ($this->looksLikeCityOnly($query)) {
+            return $this->searchCity($query, $limit);
+        }
+
+        try {
+            $response = $this->client->searchAddresses([
+                'typStandardizaceAdresy' => 'VYHOVUJICI_ADRESY',
+                'textovaAdresa' => mb_substr($query, 0, 1500),
+                'pocet' => $limit,
+                'start' => 0,
+            ]);
+        } catch (AresException $e) {
+            // Příliš široký dotaz — zkusíme aspoň obec.
+            if ($this->isTooManyResults($e)) {
+                $city = $this->guessCityToken($query);
+                if ($city !== null) {
+                    return $this->searchCity($city, $limit);
+                }
+            }
+            throw $e;
+        }
+
+        return $this->mapAddressList($response, $limit);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function searchCity(string $city, int $limit): array
+    {
+        $response = $this->client->searchAddresses([
+            'typStandardizaceAdresy' => 'UPLNA_STANDARDIZACE',
+            'nazevObce' => mb_substr($city, 0, 48),
+            'pocet' => $limit,
+            'start' => 0,
+        ]);
+
+        return $this->mapAddressList($response, $limit, cityHint: $city);
+    }
+
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>
+     */
+    private function mapSubject(array $raw): array
+    {
+        $sidlo = is_array($raw['sidlo'] ?? null) ? $raw['sidlo'] : [];
+        $address = $this->mapAddress($sidlo);
+
+        return [
+            'ico' => (string) ($raw['ico'] ?? $raw['icoId'] ?? ''),
+            'dic' => isset($raw['dic']) ? (string) $raw['dic'] : null,
+            'name' => (string) ($raw['obchodniJmeno'] ?? ''),
+            'legal_form' => isset($raw['pravniForma']) ? (string) $raw['pravniForma'] : null,
+            'address' => $address,
+            'address_text' => $address['text'] ?? null,
+            'label' => trim(sprintf(
+                'IČO %s%s',
+                (string) ($raw['ico'] ?? ''),
+                ($address['text'] ?? '') !== '' ? ' · ' . $address['text'] : '',
+            )),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     * @return list<array<string, mixed>>
+     */
+    private function mapAddressList(array $response, int $limit, ?string $cityHint = null): array
+    {
+        $items = $response['standardizovaneAdresy'] ?? [];
+        if (!is_array($items)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $mapped = $this->mapAddress($item);
+            if (($mapped['city'] ?? '') === '' && $cityHint !== null) {
+                $mapped['city'] = $cityHint;
+                $mapped['text'] = $mapped['text'] !== '' ? $mapped['text'] : $cityHint;
+                $mapped['label'] = $mapped['text'];
+            }
+            if (($mapped['text'] ?? '') === '' && ($mapped['city'] ?? '') === '') {
+                continue;
+            }
+            $out[] = $mapped;
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>
+     */
+    private function mapAddress(array $raw): array
+    {
+        $streetName = trim((string) ($raw['nazevUlice'] ?? ''));
+        $house = $this->formatHouseNumber(
+            isset($raw['cisloDomovni']) ? (int) $raw['cisloDomovni'] : null,
+            isset($raw['cisloOrientacni']) ? (int) $raw['cisloOrientacni'] : null,
+            isset($raw['cisloOrientacniPismeno']) ? (string) $raw['cisloOrientacniPismeno'] : null,
+        );
+        $street = trim($streetName . ($house !== '' ? ' ' . $house : ''));
+
+        $city = trim((string) ($raw['nazevObce'] ?? ''));
+        $cityPart = trim((string) ($raw['nazevCastiObce'] ?? ''));
+        if ($cityPart === '') {
+            $cityPart = trim((string) ($raw['nazevMestskeCastiObvodu'] ?? ''));
+        }
+
+        $zip = isset($raw['psc']) ? preg_replace('/\D+/', '', (string) $raw['psc']) : '';
+        $zip = is_string($zip) ? $zip : '';
+
+        $text = trim((string) ($raw['textovaAdresa'] ?? ''));
+        if ($text === '') {
+            $parts = array_filter([$street, $cityPart, trim(($zip !== '' ? $zip . ' ' : '') . $city)]);
+            $text = implode(', ', $parts);
+        }
+
+        return [
+            'text' => $text,
+            'label' => $text,
+            'street' => $street !== '' ? $street : null,
+            'street_name' => $streetName !== '' ? $streetName : null,
+            'house_number' => $house !== '' ? $house : null,
+            'city' => $city !== '' ? $city : null,
+            'city_part' => $cityPart !== '' ? $cityPart : null,
+            'zip' => $zip !== '' ? $zip : null,
+            'ruian_code' => isset($raw['kodAdresnihoMista']) ? (int) $raw['kodAdresnihoMista'] : null,
+            'municipality_code' => isset($raw['kodObce']) ? (int) $raw['kodObce'] : null,
+        ];
+    }
+
+    private function formatHouseNumber(?int $domovni, ?int $orientacni, ?string $letter): string
+    {
+        if ($domovni === null || $domovni <= 0) {
+            return '';
+        }
+
+        $out = (string) $domovni;
+        if ($orientacni !== null && $orientacni > 0) {
+            $out .= '/' . $orientacni;
+            $letter = $letter !== null ? trim($letter) : '';
+            if ($letter !== '') {
+                $out .= $letter;
+            }
+        }
+
+        return $out;
+    }
+
+    private function looksLikeCityOnly(string $query): bool
+    {
+        if (preg_match('/\d/u', $query) === 1) {
+            return false;
+        }
+
+        if (str_contains($query, ',') || str_contains($query, '/')) {
+            return false;
+        }
+
+        $words = preg_split('/\s+/u', $query) ?: [];
+
+        // Jedno slovo = obec. Dvě slova (např. „Nový Jičín“) jen pokud začíná přívlastkem.
+        if (count($words) === 1) {
+            return true;
+        }
+
+        if (count($words) === 2) {
+            $first = mb_strtolower($words[0]);
+            return in_array($first, ['nový', 'nová', 'nové', 'starý', 'stará', 'staré', 'horní', 'dolní', 'velký', 'velká', 'malý', 'malá'], true);
+        }
+
+        return false;
+    }
+
+    private function guessCityToken(string $query): ?string
+    {
+        $parts = preg_split('/[,\s]+/u', $query) ?: [];
+        $parts = array_values(array_filter($parts, static fn (string $p): bool => $p !== '' && preg_match('/\d/u', $p) !== 1));
+        if ($parts === []) {
+            return null;
+        }
+
+        return mb_substr((string) end($parts), 0, 48);
+    }
+
+    private function isTooManyResults(AresException $e): bool
+    {
+        return str_contains(mb_strtolower($e->getMessage()), 'příliš mnoho')
+            || str_contains(mb_strtolower($e->getMessage()), 'prilis mnoho');
+    }
+}

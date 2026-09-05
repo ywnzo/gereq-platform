@@ -155,6 +155,42 @@ final class CustomerUploadService
         ];
     }
 
+    public function purgeExpired(?int $days = null, bool $dryRun = false): array
+    {
+        $days = $days ?? max(1, (int) $this->settings->get('uploads.retention_days', 7));
+        $cutoff = (new \DateTimeImmutable())->modify('-' . $days . ' days');
+        $items = $this->em->getRepository(CustomerUpload::class)->createQueryBuilder('u')
+            ->where('u.createdAt < :cutoff')
+            ->setParameter('cutoff', $cutoff)
+            ->getQuery()
+            ->getResult();
+        $deleted = 0;
+        foreach ($items as $upload) {
+            if (!$upload instanceof CustomerUpload) {
+                continue;
+            }
+            if ($dryRun) {
+                $deleted++;
+                continue;
+            }
+            $path = $this->absolutePath($upload);
+            if (is_file($path)) {
+                @unlink($path);
+            }
+            $this->em->remove($upload);
+            $deleted++;
+        }
+        if (!$dryRun && $deleted > 0) {
+            $this->em->flush();
+        }
+
+        return [
+            'days' => $days,
+            'candidates' => count($items),
+            'deleted' => $deleted,
+        ];
+    }
+
     private function maxBytes(): int
     {
         return max(1024 * 100, (int) $this->settings->get('uploads.max_bytes', 25 * 1024 * 1024));

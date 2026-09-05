@@ -3,8 +3,7 @@
 {% set label = label|default('') %}
 {% set hint = hint|default('') %}
 {% set form = form|default(null) %}
-{% set value = old(name, value|default(''), form) %}
-{% set err = error(name, form) %}
+{% set value = value|default('') %}
 {% set required = required|default(false) %}
 {% set optional = optional|default(false) %}
 {% set extra = extra|default('') %}
@@ -13,58 +12,46 @@
 {% set maxlength = maxlength|default(null) %}
 {% set size = size|default('full') %}
 {% set mini = size == 'mini' %}
+
+{% if not mini %}
+    {% include 'ui/editor.html.twig' with {
+        name: name,
+        id: id,
+        label: label,
+        hint: hint,
+        form: form,
+        value: value,
+        required: required,
+        optional: optional,
+        extra: extra,
+        placeholder: placeholder|default('ui.editor.placeholder'|trans)
+    } only %}
+{% else %}
+{% set err = error(name, form) %}
 {% set described = [] %}
 {% if hint %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
 {% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
-{% set areaClass = mini ? 'textarea-mini' : 'textarea' %}
-{% set areaRows = rows ? rows : (mini ? 3 : 8) %}
+{% set areaClass = 'textarea-mini' %}
+{% set areaRows = rows ? rows : 3 %}
+{% set value = old(name, value, form) %}
 
-<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}"{% if not mini %} x-data="gereqTextarea"{% endif %}>
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
     {% if label %}
         <label class="g-label" for="{{ id }}">
             <span>{{ label }}{% if optional %} <span class="g-optional">({{ 'common.optional'|trans }})</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
         </label>
     {% endif %}
-    {% if mini %}
-        <textarea
-            class="{{ areaClass }}"
-            id="{{ id }}"
-            name="{{ name }}"
-            rows="{{ areaRows }}"
-            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-            {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
-            {% if required %}required{% endif %}
-            {% if err %}aria-invalid="true"{% endif %}
-            {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
-        >{{ value }}</textarea>
-    {% else %}
-        <div class="textarea-shell{% if err %} is-invalid{% endif %}">
-            <div class="textarea-shell__bar">
-                <span class="textarea-shell__hint">{{ 'ui.textarea.hint'|trans }}</span>
-                <button type="button" class="textarea-shell__action" @click="selectAll">{{ 'ui.textarea.select_all'|trans }}</button>
-            </div>
-            <textarea
-                class="{{ areaClass }}"
-                id="{{ id }}"
-                name="{{ name }}"
-                rows="{{ areaRows }}"
-                x-ref="input"
-                @input="sync"
-                @select="sync"
-                @keyup="sync"
-                @click="sync"
-                {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-                {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
-                {% if required %}required{% endif %}
-                {% if err %}aria-invalid="true"{% endif %}
-                {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
-            >{{ value }}</textarea>
-            <div class="textarea-shell__meta">
-                <span x-text="selectedLabel"></span>
-                <span x-text="countLabel"></span>
-            </div>
-        </div>
-    {% endif %}
+    <textarea
+        class="{{ areaClass }}"
+        id="{{ id }}"
+        name="{{ name }}"
+        rows="{{ areaRows }}"
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+        {% if required %}required{% endif %}
+        {% if err %}aria-invalid="true"{% endif %}
+        {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
+    >{{ value }}</textarea>
     {% if hint %}
         <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
     {% endif %}
@@ -72,3 +59,4 @@
         <p class="g-error" id="{{ id }}-error">{{ err }}</p>
     {% endif %}
 </div>
+{% endif %}

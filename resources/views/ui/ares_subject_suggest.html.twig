@@ -1,0 +1,19 @@
+{# ARES subject autocomplete — expects parent x-data="gereqAresSubject" #}
+<div class="ares-suggest" :class="listClass" role="listbox">
+    <div class="ares-suggest__status" x-show="loading">Hledám v ARES…</div>
+    <div class="ares-suggest__status is-error" x-show="error" x-text="error"></div>
+    <div class="ares-suggest__status" x-show="empty">Nic nenalezeno</div>
+    <template x-for="item in items" :key="item.ico">
+        <button
+            type="button"
+            class="ares-suggest__item"
+            role="option"
+            x-bind:data-ico="item.ico"
+            @mousedown.prevent="pick"
+            @mouseenter="highlight"
+        >
+            <strong x-text="item.name"></strong>
+            <span class="ares-suggest__meta" x-text="item.label"></span>
+        </button>
+    </template>
+</div>

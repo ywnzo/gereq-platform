@@ -11,6 +11,7 @@ use Gereq\Auth\PasswordHasher;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Security\RateLimiter;
+use Gereq\Setup\SetupState;
 use Gereq\User\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -29,6 +30,7 @@ final class AuthController extends Controller
         private readonly EntityManagerInterface $em,
         private readonly PasswordHasher $hasher,
         private readonly TranslatorInterface $translator,
+        private readonly SetupState $setup,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -65,9 +67,13 @@ final class AuthController extends Controller
         $this->limiter->clear('login:' . $ip);
         $this->forgetForm('auth.login');
 
+        if ($this->setup->isPending()) {
+            return $this->redirect('admin.setup');
+        }
+
         $intended = $request->getSession()->get('_intended');
         $request->getSession()->remove('_intended');
-        if (is_string($intended) && str_starts_with($intended, '/admin')) {
+        if (is_string($intended) && str_starts_with($intended, '/admin') && !str_starts_with($intended, '/admin/setup')) {
             return $this->redirectTo($intended);
         }
 

@@ -1,0 +1,188 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.listings'|trans, url: url('admin.listings.index') },
+        { label: 'nav.listings.properties'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+{% set pageIds = items|map(i => i.id) %}
+<div
+    class="list-shell"
+    x-data="dataTable"
+    data-table-id="listings"
+    data-actions-default="1"
+    data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
+    data-bulk-delete-confirm="{{ 'listings.bulk.confirm_delete'|trans|e('html_attr') }}"
+>
+<header class="page-header">
+    <h1>{{ 'listings.title'|trans }}</h1>
+    <div class="actions">
+        {% if user.can('listings.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.listings.create') }}">{{ icon('plus') }} {{ 'listings.action.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'listings.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'listings.all_statuses'|trans }}</option>
+            {% for s in statuses %}<option value="{{ s }}" {{ status==s?'selected':'' }}>{{ ('listings.status.'~s)|trans }}</option>{% endfor %}
+        </select>
+        <select name="offer_type" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'listings.all_offers'|trans }}</option>
+            {% for o in offers %}<option value="{{ o }}" {{ offer_type==o?'selected':'' }}>{{ ('listings.offer.'~o)|trans }}</option>{% endfor %}
+        </select>
+    </form>
+    <div class="toolbar__toggles">
+        <button
+            type="button"
+            class="toolbar__toggle"
+            :class="showActions ? 'is-on' : ''"
+            @click="toggleActions"
+            :aria-pressed="showActions ? 'true' : 'false'"
+            title="{{ 'ui.table.actions_toggle'|trans }}"
+        >
+            {{ icon('dots') }}
+            <span>{{ 'ui.table.row_actions'|trans }}</span>
+        </button>
+    </div>
+</div>
+
+{% if user.can('listings.manage') and items is not empty %}
+<form
+    class="bulk-bar"
+    method="post"
+    action="{{ url('admin.listings.bulk') }}"
+    x-show="selectedCount > 0"
+    x-cloak
+    @submit="confirmBulk"
+>
+    {{ csrf_field()|raw }}
+    <input type="hidden" name="confirmed" value="1">
+    <template x-for="id in selected" :key="id">
+        <input type="hidden" name="ids[]" :value="id">
+    </template>
+    <div class="bulk-bar__meta">
+        <strong x-text="selectedCount"></strong>
+        <span>{{ 'listings.bulk.selected'|trans }}</span>
+        <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'listings.bulk.clear'|trans }}</button>
+    </div>
+    <div class="bulk-bar__actions">
+        <select class="input" name="action" x-model="bulkAction" required>
+            <option value="">{{ 'listings.bulk.choose'|trans }}</option>
+            <option value="publish">{{ 'listings.bulk.action.publish'|trans }}</option>
+            <option value="draft">{{ 'listings.bulk.action.draft'|trans }}</option>
+            <option value="archive">{{ 'listings.bulk.action.archive'|trans }}</option>
+            <option value="feature">{{ 'listings.bulk.action.feature'|trans }}</option>
+            <option value="unfeature">{{ 'listings.bulk.action.unfeature'|trans }}</option>
+            <option value="delete">{{ 'listings.bulk.action.delete'|trans }}</option>
+        </select>
+        <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'listings.bulk.apply'|trans }}</button>
+    </div>
+</form>
+{% endif %}
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead>
+<tr>
+    {% if user.can('listings.manage') %}
+    <th class="table__check">
+        <label class="table-check">
+            <input
+                type="checkbox"
+                x-ref="selectAll"
+                @change="toggleAll"
+                :checked="allSelected"
+            >
+            <span class="sr-only">{{ 'listings.bulk.select_all'|trans }}</span>
+        </label>
+    </th>
+    {% endif %}
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.title'|trans, column: 'title', query: { status: status, offer_type: offer_type } } %}
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.city'|trans, column: 'city', query: { status: status, offer_type: offer_type } } %}
+    <th>{{ 'listings.field.type'|trans }}</th>
+    <th>{{ 'listings.field.offer'|trans }}</th>
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.price'|trans, column: 'price', query: { status: status, offer_type: offer_type }, class: 'is-num' } %}
+    <th>{{ 'listings.field.market_status'|trans }}</th>
+    {% include 'ui/sort_th.html.twig' with { label: 'listings.field.status'|trans, column: 'status', query: { status: status, offer_type: offer_type } } %}
+    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+</tr>
+</thead>
+<tbody>
+{% for item in items %}
+{% set statusTone = item.status() == 'published' ? 'ok' : (item.status() == 'draft' ? 'warn' : 'muted') %}
+{% set marketTone = item.marketStatus() == 'available' ? 'ok' : (item.marketStatus() in ['sold', 'rented'] ? 'danger' : (item.marketStatus() == 'reserved' ? 'warn' : 'muted')) %}
+<tr :class="isSelected('{{ item.id() }}') ? 'is-selected' : ''">
+    {% if user.can('listings.manage') %}
+    <td class="table__check">
+        <label class="table-check">
+            <input
+                type="checkbox"
+                value="{{ item.id() }}"
+                @change="toggleId('{{ item.id() }}')"
+                :checked="isSelected('{{ item.id() }}')"
+            >
+            <span class="sr-only">{{ item.title() }}</span>
+        </label>
+    </td>
+    {% endif %}
+    <td>
+        <div class="table__title">
+            <a href="{{ url('admin.listings.show', {id: item.id()}) }}">{{ item.title() }}</a>
+            <span class="table__meta"><code>{{ item.slug() }}</code></span>
+            {% if item.featured() %}
+                <div class="table__chips" style="margin-top:4px"><span class="badge badge--signal">TOP</span></div>
+            {% endif %}
+        </div>
+    </td>
+    <td>
+        {{ item.city() ?: '—' }}
+        {% if item.cityPart() %}<div class="muted">{{ item.cityPart() }}</div>{% endif %}
+    </td>
+    <td>{{ ('listings.type.' ~ item.propertyType())|trans }}</td>
+    <td><span class="badge badge--info">{{ ('listings.offer.' ~ item.offerType())|trans }}</span></td>
+    <td class="is-num">{{ item.price()|number_format(0, ',', ' ') }}&nbsp;{{ item.currency() }}</td>
+    <td><span class="badge badge--{{ marketTone }}">{{ ('listings.market.' ~ item.marketStatus())|trans }}</span></td>
+    <td><span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span></td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            <a href="{{ url('admin.listings.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+            {% if user.can('listings.manage') %}
+                <a href="{{ url('admin.listings.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.listings.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'listings.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr>
+    <td colspan="9">
+        <div class="empty">
+            <h2>{{ 'listings.empty'|trans }}</h2>
+            <p>{{ 'listings.empty.hint'|trans }}</p>
+            {% if user.can('listings.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.listings.create') }}">{{ icon('plus') }} {{ 'listings.action.new'|trans }}</a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

@@ -8,13 +8,13 @@
             <p class="muted" style="margin:8px 0 0">{{ 'admin.dashboard.subtitle'|trans|default('Přehled platformy a rychlé akce.') }}</p>
         </div>
         <div class="dash-hero__actions">
-            {% if user and user.can('orders.manage') %}
+            {% if user and user.can('orders.manage') and route_exists('admin.orders.create') %}
                 <a class="btn btn--primary" href="{{ url('admin.orders.create') }}">{{ 'nav.orders.create'|trans|default('Nová objednávka') }}</a>
             {% endif %}
-            {% if user and user.can('products.manage') %}
+            {% if user and user.can('products.manage') and route_exists('admin.products.create') %}
                 <a class="btn btn--ghost" href="{{ url('admin.products.create') }}">{{ 'nav.products.create'|trans|default('Nový produkt') }}</a>
             {% endif %}
-            {% if user and user.can('customers.edit') %}
+            {% if user and user.can('customers.edit') and route_exists('admin.customers.create') %}
                 <a class="btn btn--ghost" href="{{ url('admin.customers.create') }}">{{ 'admin.customers.new'|trans|default('Nový zákazník') }}</a>
             {% endif %}
             <button type="button" class="btn btn--ghost" @click="openPalette">{{ icon('search') }} {{ 'common.search'|trans }}</button>

@@ -72,6 +72,7 @@ final class TwigFactory
         );
 
         $twig->addFunction(new TwigFunction('url', [$runtime, 'url']));
+        $twig->addFunction(new TwigFunction('route_exists', [$runtime, 'routeExists']));
         $twig->addFunction(new TwigFunction('csrf_field', [$runtime, 'csrfField'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('csrf_token', [$runtime, 'csrfToken']));
         $twig->addFunction(new TwigFunction('asset', [$runtime, 'asset']));

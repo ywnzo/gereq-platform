@@ -10,14 +10,16 @@ use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
 use Modules\Customers\Application\StoreAuthService;
+use Modules\Customers\Application\StoreCookieBridge;
 use Modules\Customers\Application\StoreTokenService;
 use Modules\Customers\Domain\CustomerAccount;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
 
-/** Storefront customer auth (generic — any shop FE). */
+/** Storefront customer auth — Bearer + HttpOnly cookie bridge. */
 final class StoreAuthApiController extends Controller
 {
     public function __construct(
@@ -26,12 +28,13 @@ final class StoreAuthApiController extends Controller
         RequestStack $requestStack,
         private readonly StoreAuthService $auth,
         private readonly StoreTokenService $tokens,
+        private readonly StoreCookieBridge $cookies,
         private readonly EntityManagerInterface $em,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
 
-    public function register(Request $request): JsonResponse
+    public function register(Request $request): Response
     {
         $data = gereq()->make(ValidationRegistry::class)->validate('customers.store.register', $this->body($request));
         try {
@@ -45,10 +48,7 @@ final class StoreAuthApiController extends Controller
             return ApiResponse::error('validation_error', $e->getMessage(), [], 422);
         }
 
-        return ApiResponse::data(array_merge(
-            $this->auth->serialize($account),
-            $this->tokens->issue($account),
-        ), 201);
+        return $this->authedResponse($account, 201);
     }
 
     public function softRegister(Request $request): JsonResponse
@@ -60,13 +60,15 @@ final class StoreAuthApiController extends Controller
             isset($data['phone']) ? (string) $data['phone'] : null,
         );
 
-        return ApiResponse::data(array_merge(
-            $this->auth->serialize($account),
-            $account->isActive() ? $this->tokens->issue($account) : [],
-        ), 201);
+        $payload = $this->auth->serialize($account);
+        if ($account->isActive()) {
+            $payload = array_merge($payload, $this->tokens->issue($account));
+        }
+
+        return ApiResponse::data($payload, 201);
     }
 
-    public function complete(Request $request): JsonResponse
+    public function complete(Request $request): Response
     {
         $data = gereq()->make(ValidationRegistry::class)->validate('customers.store.complete', $this->body($request));
         $account = $this->auth->findAccountByEmail((string) $data['email']);
@@ -79,13 +81,10 @@ final class StoreAuthApiController extends Controller
             isset($data['name']) ? (string) $data['name'] : null,
         );
 
-        return ApiResponse::data(array_merge(
-            $this->auth->serialize($account),
-            $this->tokens->issue($account),
-        ));
+        return $this->authedResponse($account);
     }
 
-    public function login(Request $request): JsonResponse
+    public function login(Request $request): Response
     {
         $data = gereq()->make(ValidationRegistry::class)->validate('customers.store.login', $this->body($request));
         $account = $this->auth->attempt((string) $data['email'], (string) $data['password']);
@@ -93,17 +92,21 @@ final class StoreAuthApiController extends Controller
             return ApiResponse::error('auth_failed', 'Invalid credentials', [], 401);
         }
 
-        return ApiResponse::data(array_merge(
-            $this->auth->serialize($account),
-            $this->tokens->issue($account),
-        ));
+        return $this->authedResponse($account);
+    }
+
+    public function logout(): Response
+    {
+        $response = ApiResponse::data(['ok' => true]);
+
+        return $this->cookies->clear($response);
     }
 
     public function me(Request $request): JsonResponse
     {
-        $token = $this->bearer($request);
+        $token = $this->cookies->tokenFromRequest($request);
         if ($token === null) {
-            return ApiResponse::error('unauthorized', 'Missing bearer token', [], 401);
+            return ApiResponse::error('unauthorized', 'Missing bearer/cookie token', [], 401);
         }
         $claims = $this->tokens->parse($token);
         if ($claims === null) {
@@ -120,6 +123,16 @@ final class StoreAuthApiController extends Controller
         return ApiResponse::data($this->auth->serialize($account));
     }
 
+    private function authedResponse(CustomerAccount $account, int $status = 200): Response
+    {
+        $response = ApiResponse::data(array_merge(
+            $this->auth->serialize($account),
+            $this->tokens->issue($account),
+        ), $status);
+
+        return $this->cookies->attach($response, $account);
+    }
+
     /** @return array<string, mixed> */
     private function body(Request $request): array
     {
@@ -133,15 +146,5 @@ final class StoreAuthApiController extends Controller
         }
 
         return $data;
-    }
-
-    private function bearer(Request $request): ?string
-    {
-        $header = (string) $request->headers->get('Authorization', '');
-        if (preg_match('/^Bearer\s+(\S+)/i', $header, $m)) {
-            return $m[1];
-        }
-
-        return null;
     }
 }

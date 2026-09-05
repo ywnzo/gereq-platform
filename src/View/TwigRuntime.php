@@ -40,6 +40,11 @@ final class TwigRuntime
         return $this->router->url($name, $params, $this->requestStack->getCurrentRequest());
     }
 
+    public function routeExists(string $name): bool
+    {
+        return $this->router->has($name);
+    }
+
     public function csrfField(): string
     {
         return $this->csrf->field();

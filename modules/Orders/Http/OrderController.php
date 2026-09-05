@@ -114,6 +114,9 @@ final class OrderController extends Controller
         $lines = $this->em->getRepository(OrderLine::class)->findBy(['orderId' => $id], ['title' => 'ASC']);
         $customer = $this->em->find(Customer::class, $order->customerId());
         $invoices = $this->em->getRepository(\Modules\Orders\Domain\Invoice::class)->findBy(['orderId' => $id], ['createdAt' => 'DESC']);
+        $shipments = class_exists(\Modules\Shop\Domain\Shipment::class)
+            ? $this->em->getRepository(\Modules\Shop\Domain\Shipment::class)->findBy(['orderId' => $id], ['createdAt' => 'DESC'])
+            : [];
 
         return $this->page('@orders/orders/show.html.twig', [
             'pageTitle' => $order->number(),
@@ -121,6 +124,7 @@ final class OrderController extends Controller
             'lines' => $lines,
             'customer' => $customer instanceof Customer ? $customer : null,
             'invoices' => $invoices,
+            'shipments' => $shipments,
             'productOptions' => $this->productOptions(),
         ]);
     }

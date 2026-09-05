@@ -62,6 +62,10 @@ export function registerTabs(alpine: typeof Alpine): void {
             root.querySelectorAll<HTMLElement>('.design-panel[data-panel]').forEach((el) => {
                 el.classList.toggle('is-active', el.dataset.panel === this.current);
             });
+            const tabInput = root.querySelector<HTMLInputElement>('input[name="settings_tab"]');
+            if (tabInput) {
+                tabInput.value = this.current;
+            }
         },
     }));
 }

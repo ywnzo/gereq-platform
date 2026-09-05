@@ -12,6 +12,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Security\HtmlSanitizer;
 use Modules\Cms\Domain\Events\BlockCreated;
 use Modules\Cms\Domain\Events\BlockDeleted;
 use Modules\Cms\Domain\Events\BlockUpdated;
@@ -37,6 +38,7 @@ final class BlockController extends Controller
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
         private readonly CapabilityRegistry $capabilities,
+        private readonly HtmlSanitizer $html,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -197,7 +199,7 @@ final class BlockController extends Controller
                 'level' => (int) ($data['level'] ?? 2),
             ],
             'text' => [
-                'body' => (string) ($data['body'] ?? ''),
+                'body' => $this->html->sanitize((string) ($data['body'] ?? '')),
             ],
             'image' => [
                 'media_id' => trim((string) ($data['media_id'] ?? '')),
@@ -206,7 +208,7 @@ final class BlockController extends Controller
                 'caption' => trim((string) ($data['caption'] ?? '')),
             ],
             'html' => [
-                'html' => (string) ($data['html'] ?? ''),
+                'html' => $this->html->sanitize((string) ($data['html'] ?? '')),
             ],
             'cta' => [
                 'label' => trim((string) ($data['label'] ?? '')),
@@ -214,8 +216,8 @@ final class BlockController extends Controller
                 'style' => trim((string) ($data['style'] ?? 'primary')),
             ],
             'columns' => [
-                'left' => (string) ($data['left'] ?? ''),
-                'right' => (string) ($data['right'] ?? ''),
+                'left' => $this->html->sanitize((string) ($data['left'] ?? '')),
+                'right' => $this->html->sanitize((string) ($data['right'] ?? '')),
             ],
             'divider' => [
                 'style' => trim((string) ($data['style'] ?? 'solid')),

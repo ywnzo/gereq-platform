@@ -23,7 +23,9 @@ use Modules\Products\Domain\Events\ProductUpdated;
 use Modules\Products\Domain\Product;
 use Modules\Products\Domain\ProductCategory;
 use Modules\Products\Domain\ProductImage;
+use Modules\Products\Domain\ProductOptionGroup;
 use Modules\Products\Domain\ProductPrice;
+use Modules\Products\Domain\ProductVariant;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -143,12 +145,22 @@ final class ProductController extends Controller
             ['productId' => $product->id()],
             ['isPrimary' => 'DESC', 'sortOrder' => 'ASC', 'createdAt' => 'ASC'],
         );
+        $variants = $this->em->getRepository(ProductVariant::class)->findBy(
+            ['productId' => $product->id()],
+            ['sku' => 'ASC'],
+        );
+        $optionGroups = $this->em->getRepository(ProductOptionGroup::class)->findBy(
+            ['productId' => $product->id()],
+            ['sortOrder' => 'ASC'],
+        );
 
         return $this->page('@products/products/show.html.twig', [
             'pageTitle' => $product->name(),
             'item' => $product,
             'prices' => $prices,
             'images' => $images,
+            'variants' => $variants,
+            'optionGroups' => $optionGroups,
             'imageAssets' => $this->resolveImageAssets($images),
             'libraryImages' => $this->libraryImageOptions($images),
             'hasMedia' => $this->capabilities->has('media') && class_exists(\Modules\Media\Domain\MediaAsset::class),
@@ -332,6 +344,64 @@ final class ProductController extends Controller
         return $this->redirect('admin.products.show', ['id' => $id]);
     }
 
+    public function storeVariant(Request $request, string $id): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+
+        $data = $this->validate($request, 'products.variant.save');
+        $sku = strtoupper(trim((string) $data['sku']));
+        $existing = $this->em->getRepository(ProductVariant::class)->findOneBy(['sku' => $sku]);
+        if ($existing instanceof ProductVariant) {
+            $this->flash('error', $this->translator->trans('products.error.sku_exists'));
+
+            return $this->redirect('admin.products.show', ['id' => $id]);
+        }
+
+        $variant = new ProductVariant($product->id(), $sku);
+        $variant->setName(isset($data['name']) ? trim((string) $data['name']) : null);
+        if (isset($data['price_amount']) && trim((string) $data['price_amount']) !== '') {
+            $variant->setPrice(
+                (string) $data['price_amount'],
+                isset($data['price_currency']) ? (string) $data['price_currency'] : 'CZK',
+            );
+        }
+        if (isset($data['stock_qty']) && $data['stock_qty'] !== '') {
+            $variant->setStockQty((int) $data['stock_qty']);
+        }
+        if (isset($data['ean'])) {
+            $variant->setEan((string) $data['ean']);
+        }
+        $active = $data['active'] ?? true;
+        $variant->setActive($active === true || $active === '1' || $active === 1 || $active === 'on');
+        $this->em->persist($variant);
+        $this->em->flush();
+        $this->auditor->log('product.variant_created', 'product', $product->id(), null, ['sku' => $sku]);
+        $this->flash('success', 'Varianta uložena.');
+
+        return $this->redirect('admin.products.show', ['id' => $id]);
+    }
+
+    public function destroyVariant(string $id, string $variantId): Response
+    {
+        $product = $this->find($id);
+        if ($product === null) {
+            $this->abort(404, $this->translator->trans('products.error.not_found'));
+        }
+        $variant = $this->em->find(ProductVariant::class, $variantId);
+        if (!$variant instanceof ProductVariant || $variant->productId() !== $product->id()) {
+            $this->abort(404);
+        }
+        $this->em->remove($variant);
+        $this->em->flush();
+        $this->auditor->log('product.variant_deleted', 'product', $product->id(), ['sku' => $variant->sku()], null);
+        $this->flash('success', 'Varianta smazána.');
+
+        return $this->redirect('admin.products.show', ['id' => $id]);
+    }
+
     public function storeImage(Request $request, string $id): Response
     {
         $product = $this->find($id);
@@ -372,7 +442,7 @@ final class ProductController extends Controller
             $title = $product->name() . ' — ' . $stored->originalName();
         }
         $alt = trim((string) ($data['alt'] ?? ''));
-        [$width, $height] = $this->imageDimensions($uploaded, $stored->mime());
+        [$width, $height] = $this->imageDimensions($uploaded, $stored);
 
         $asset = new \Modules\Media\Domain\MediaAsset(
             $title,
@@ -617,10 +687,15 @@ final class ProductController extends Controller
     /**
      * @return array{0: ?int, 1: ?int}
      */
-    private function imageDimensions(UploadedFile $uploaded, string $mime): array
+    private function imageDimensions(UploadedFile $uploaded, \Gereq\File\StoredFile $stored): array
     {
-        if (!str_starts_with($mime, 'image/')) {
+        if (!str_starts_with($stored->mime(), 'image/')) {
             return [null, null];
+        }
+
+        $meta = $stored->metadata();
+        if (is_array($meta) && isset($meta['width'], $meta['height'])) {
+            return [(int) $meta['width'], (int) $meta['height']];
         }
 
         $info = @getimagesize($uploaded->getPathname());

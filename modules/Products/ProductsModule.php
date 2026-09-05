@@ -68,6 +68,12 @@ final class ProductsModule implements ModuleInterface
             $routes->post('/{id}/prices/{priceId}/delete', [ProductController::class, 'destroyPrice'])
                 ->name('admin.products.prices.destroy')
                 ->permission('products.manage');
+            $routes->post('/{id}/variants', [ProductController::class, 'storeVariant'])
+                ->name('admin.products.variants.store')
+                ->permission('products.manage');
+            $routes->post('/{id}/variants/{variantId}/delete', [ProductController::class, 'destroyVariant'])
+                ->name('admin.products.variants.destroy')
+                ->permission('products.manage');
             $routes->post('/{id}/images', [ProductController::class, 'storeImage'])
                 ->name('admin.products.images.store')
                 ->permission('products.manage');

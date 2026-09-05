@@ -124,7 +124,7 @@ final class DebugBarTest extends TestCase
             $redactor,
             new Renderer($base),
             $router ?? new Router(),
-            new EventBus(),
+            new EventBus(new \Gereq\Hook\HookManager()),
             $base,
         );
     }

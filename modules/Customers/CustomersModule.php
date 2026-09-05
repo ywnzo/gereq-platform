@@ -91,6 +91,7 @@ final class CustomersModule implements ModuleInterface
             $routes->post('/soft-register', [StoreAuthApiController::class, 'softRegister'])->name('api.store.auth.soft_register');
             $routes->post('/complete', [StoreAuthApiController::class, 'complete'])->name('api.store.auth.complete');
             $routes->post('/login', [StoreAuthApiController::class, 'login'])->name('api.store.auth.login');
+            $routes->post('/logout', [StoreAuthApiController::class, 'logout'])->name('api.store.auth.logout');
             $routes->get('/me', [StoreAuthApiController::class, 'me'])->name('api.store.auth.me');
         });
 

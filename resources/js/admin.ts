@@ -213,6 +213,92 @@ Alpine.data('rowMenu', () => ({
     },
 }));
 
+Alpine.data('dataTable', () => ({
+    showActions: true,
+    selected: [] as string[],
+    pageIds: [] as string[],
+    bulkAction: '',
+    init() {
+        const el = this.$el as HTMLElement;
+        try {
+            this.pageIds = JSON.parse(el.dataset.pageIds || '[]') as string[];
+        } catch {
+            this.pageIds = [];
+        }
+        const key = this.storageKey();
+        const saved = localStorage.getItem(key);
+        if (saved === '0' || saved === '1') {
+            this.showActions = saved === '1';
+        } else {
+            const def = el.dataset.actionsDefault;
+            this.showActions = def !== '0';
+        }
+        this.syncClass();
+        this.$watch('selected', () => this.syncSelectAll());
+        this.$nextTick(() => this.syncSelectAll());
+    },
+    storageKey(): string {
+        const el = this.$el as HTMLElement;
+        return 'gereq-table-actions:' + (el.dataset.tableId || el.id || location.pathname);
+    },
+    toggleActions() {
+        this.showActions = !this.showActions;
+        localStorage.setItem(this.storageKey(), this.showActions ? '1' : '0');
+        this.syncClass();
+    },
+    syncClass() {
+        const wrap = (this.$el as HTMLElement).querySelector('.table-wrap');
+        if (!(wrap instanceof HTMLElement)) {
+            return;
+        }
+        wrap.classList.toggle('is-actions-off', !this.showActions);
+    },
+    get selectedCount(): number {
+        return this.selected.length;
+    },
+    get allSelected(): boolean {
+        return this.pageIds.length > 0 && this.pageIds.every((id) => this.selected.includes(id));
+    },
+    get someSelected(): boolean {
+        return this.selected.length > 0 && !this.allSelected;
+    },
+    isSelected(id: string): boolean {
+        return this.selected.includes(id);
+    },
+    syncSelectAll() {
+        const el = this.$refs.selectAll as HTMLInputElement | undefined;
+        if (!el) {
+            return;
+        }
+        el.indeterminate = this.someSelected;
+    },
+    toggleId(id: string) {
+        this.selected = this.isSelected(id)
+            ? this.selected.filter((item) => item !== id)
+            : [...this.selected, id];
+    },
+    toggleAll() {
+        this.selected = this.allSelected ? [] : [...this.pageIds];
+    },
+    clearSelection() {
+        this.selected = [];
+        this.bulkAction = '';
+    },
+    confirmBulk(event: Event) {
+        if (this.selected.length === 0) {
+            event.preventDefault();
+            return;
+        }
+        if (this.bulkAction === 'delete') {
+            const message = (this.$el as HTMLElement).dataset.bulkDeleteConfirm
+                || 'Delete selected items?';
+            if (!window.confirm(message)) {
+                event.preventDefault();
+            }
+        }
+    },
+}));
+
 registerUi(Alpine);
 
 Alpine.start();

@@ -27,6 +27,10 @@ final class SecurityHeadersMiddleware implements MiddlewareInterface
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set('Content-Security-Policy', $this->csp->header($nonce));
 
+        if ($request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
+
         return $response;
     }
 }

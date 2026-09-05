@@ -1,0 +1,65 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.listings'|trans, url: url('admin.listings.index') },
+        { label: 'nav.listings.brokers'|trans, url: url('admin.listings.brokers.index') },
+        { label: item.fullName() },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>{{ item.fullName() }}</h1>
+    <div class="actions">
+        {% if user.can('listings.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.listings.brokers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endif %}
+        <a class="btn btn--ghost" href="{{ url('admin.listings.brokers.index') }}">{{ 'common.back'|trans }}</a>
+    </div>
+</header>
+
+<section class="panel">
+    <div class="meta-list">
+        {% if item.photoUrl() %}
+            <div class="meta-list__full">
+                <dt>{{ 'listings.brokers.field.photo_url'|trans }}</dt>
+                <dd><img src="{{ item.photoUrl() }}" alt="{{ item.fullName() }}" style="max-width:160px;border-radius:8px"></dd>
+            </div>
+        {% endif %}
+        <div>
+            <dt>{{ 'listings.brokers.field.email'|trans }}</dt>
+            <dd><a href="mailto:{{ item.email() }}">{{ item.email() }}</a></dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.brokers.field.phone'|trans }}</dt>
+            <dd>{{ item.phone() ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.brokers.field.position'|trans }}</dt>
+            <dd>{{ item.position() ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.brokers.field.active'|trans }}</dt>
+            <dd>
+                <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                    {{ item.active() ? 'listings.brokers.status.active'|trans : 'listings.brokers.status.inactive'|trans }}
+                </span>
+            </dd>
+        </div>
+        <div class="meta-list__full">
+            <dt>{{ 'listings.brokers.field.skills'|trans }}</dt>
+            <dd>{{ item.skills() ?: '—' }}</dd>
+        </div>
+        <div class="meta-list__full">
+            <dt>{{ 'listings.brokers.field.description'|trans }}</dt>
+            <dd>{{ item.description() ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.brokers.field.created'|trans }}</dt>
+            <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+        </div>
+    </div>
+</section>
+{% endblock %}

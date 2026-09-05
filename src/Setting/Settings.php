@@ -102,18 +102,36 @@ final class Settings
             throw new \RuntimeException('APP_KEY není nastavený. Šifrované nastavení nelze uložit.');
         }
 
-        $iv = random_bytes(16);
-        $cipher = openssl_encrypt($value, 'aes-256-cbc', hash('sha256', $key, true), OPENSSL_RAW_DATA, $iv);
-        if ($cipher === false) {
+        $binaryKey = hash('sha256', $key, true);
+        $iv = random_bytes(12);
+        $tag = '';
+        $cipher = openssl_encrypt($value, 'aes-256-gcm', $binaryKey, OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+        if ($cipher === false || $tag === '') {
             throw new \RuntimeException('Šifrování nastavení selhalo.');
         }
 
-        return base64_encode($iv . $cipher);
+        return 'gcm:' . base64_encode($iv . $tag . $cipher);
     }
 
     private function decrypt(string $payload): string
     {
         $key = (string) $this->config->get('app.key', '');
+        $binaryKey = hash('sha256', $key, true);
+
+        if (str_starts_with($payload, 'gcm:')) {
+            $raw = base64_decode(substr($payload, 4), true);
+            if ($raw === false || strlen($raw) < 29) {
+                return '';
+            }
+            $iv = substr($raw, 0, 12);
+            $tag = substr($raw, 12, 16);
+            $cipher = substr($raw, 28);
+            $plain = openssl_decrypt($cipher, 'aes-256-gcm', $binaryKey, OPENSSL_RAW_DATA, $iv, $tag);
+
+            return $plain === false ? '' : $plain;
+        }
+
+        // Legacy AES-CBC payloads (pre-GCM).
         $raw = base64_decode($payload, true);
         if ($raw === false || strlen($raw) < 17) {
             return '';
@@ -121,7 +139,7 @@ final class Settings
 
         $iv = substr($raw, 0, 16);
         $cipher = substr($raw, 16);
-        $plain = openssl_decrypt($cipher, 'aes-256-cbc', hash('sha256', $key, true), OPENSSL_RAW_DATA, $iv);
+        $plain = openssl_decrypt($cipher, 'aes-256-cbc', $binaryKey, OPENSSL_RAW_DATA, $iv);
 
         return $plain === false ? '' : $plain;
     }

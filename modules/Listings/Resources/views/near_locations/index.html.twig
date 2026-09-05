@@ -1,0 +1,88 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.listings'|trans, url: url('admin.listings.index') },
+        { label: 'nav.listings.near'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'listings.near.title'|trans }}</h1>
+    <div class="actions">
+        {% if user.can('listings.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.listings.near.create') }}">{{ icon('plus') }} {{ 'listings.near.action.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<form class="toolbar" method="get">
+    <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'listings.near.search'|trans }}">
+    <select class="input" name="category" onchange="this.form.submit()">
+        <option value="">{{ 'listings.near.all_categories'|trans }}</option>
+        {% for cat in categories %}
+            <option value="{{ cat }}" {{ category == cat ? 'selected' : '' }}>{{ ('listings.near.category.' ~ cat)|trans }}</option>
+        {% endfor %}
+    </select>
+    <select class="input" name="active" onchange="this.form.submit()">
+        <option value="">{{ 'listings.near.all'|trans }}</option>
+        <option value="1" {{ active == '1' ? 'selected' : '' }}>{{ 'listings.near.active_only'|trans }}</option>
+        <option value="0" {{ active == '0' ? 'selected' : '' }}>{{ 'listings.near.inactive_only'|trans }}</option>
+    </select>
+</form>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+<th>{{ 'listings.near.field.name'|trans }}</th>
+<th>{{ 'listings.near.field.category'|trans }}</th>
+<th>{{ 'listings.near.field.city'|trans }}</th>
+<th>{{ 'listings.near.field.active'|trans }}</th>
+<th></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td>
+        <div class="table__title">
+            <a href="{{ url('admin.listings.near.show', {id: item.id()}) }}">{{ item.name() }}</a>
+            {% if item.address() %}<span class="table__meta">{{ item.address() }}</span>{% endif %}
+        </div>
+    </td>
+    <td><span class="badge badge--info">{{ ('listings.near.category.' ~ item.category())|trans }}</span></td>
+    <td class="is-mute">{{ item.city() ?: '—' }}</td>
+    <td>
+        <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+            {{ item.active() ? 'listings.near.status.active'|trans : 'listings.near.status.inactive'|trans }}
+        </span>
+    </td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            <a href="{{ url('admin.listings.near.show', {id: item.id()}) }}">{{ 'common.view'|trans }}</a>
+            {% if user.can('listings.manage') %}
+                <a href="{{ url('admin.listings.near.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.listings.near.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'listings.near.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr>
+<td colspan="5">
+<div class="empty">
+<h2>{{ 'listings.near.empty'|trans }}</h2>
+<p>{{ 'listings.near.empty.hint'|trans }}</p>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% include 'ui/table_footer.html.twig' %}
+{% endblock %}

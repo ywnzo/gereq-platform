@@ -10,12 +10,18 @@ return [
         'image/jpeg',
         'image/png',
         'image/webp',
+        'image/avif',
         'image/gif',
         'application/pdf',
         'text/plain',
         'text/csv',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+    'image_convert' => [
+        'enabled' => filter_var(env_value('FILE_IMAGE_CONVERT', '1'), FILTER_VALIDATE_BOOL),
+        'avif_quality' => (int) env_value('FILE_AVIF_QUALITY', '55'),
+        'webp_quality' => (int) env_value('FILE_WEBP_QUALITY', '82'),
     ],
     's3' => [
         'bucket' => env_value('S3_BUCKET', ''),

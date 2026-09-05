@@ -1,0 +1,395 @@
+#!/usr/bin/env bash
+# GEREQ Platform — TUI instalátor pro nového klienta (čistá DB).
+# Použití: ./bin/install   |   bash bin/install
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+# ── barvy / UI ──────────────────────────────────────────────────────────────
+if [[ -t 1 ]]; then
+  C_RESET=$'\033[0m'
+  C_BOLD=$'\033[1m'
+  C_DIM=$'\033[2m'
+  C_GREEN=$'\033[32m'
+  C_YELLOW=$'\033[33m'
+  C_CYAN=$'\033[36m'
+  C_RED=$'\033[31m'
+  C_BG=$'\033[44m'
+else
+  C_RESET= C_BOLD= C_DIM= C_GREEN= C_YELLOW= C_CYAN= C_RED= C_BG=
+fi
+
+ok()   { printf '%s✓%s %s\n' "$C_GREEN" "$C_RESET" "$*"; }
+warn() { printf '%s!%s %s\n' "$C_YELLOW" "$C_RESET" "$*"; }
+err()  { printf '%s✗%s %s\n' "$C_RED" "$C_RESET" "$*" >&2; }
+info() { printf '%s→%s %s\n' "$C_CYAN" "$C_RESET" "$*"; }
+hr()   { printf '%s%s%s\n' "$C_DIM" "$(printf '─%.0s' {1..56})" "$C_RESET"; }
+
+banner() {
+  clear 2>/dev/null || true
+  printf '\n'
+  printf '%s%s GEREQ Platform%s\n' "$C_BOLD" "$C_CYAN" "$C_RESET"
+  printf '%s  Instalace pro nového klienta · čistá databáze%s\n\n' "$C_DIM" "$C_RESET"
+}
+
+ask() {
+  # ask "Otázka" "default" → nastaví REPLY
+  local prompt="$1"
+  local def="${2-}"
+  if [[ -n "$def" ]]; then
+    read -r -p "$(printf '%s [%s]: ' "$prompt" "$def")" REPLY || true
+    REPLY="${REPLY:-$def}"
+  else
+    read -r -p "$(printf '%s: ' "$prompt")" REPLY || true
+  fi
+}
+
+ask_secret() {
+  local prompt="$1"
+  local def="${2-}"
+  if [[ -n "$def" ]]; then
+    read -r -s -p "$(printf '%s [%s]: ' "$prompt" "••••")" REPLY || true
+    printf '\n'
+    REPLY="${REPLY:-$def}"
+  else
+    read -r -s -p "$(printf '%s: ' "$prompt")" REPLY || true
+    printf '\n'
+  fi
+}
+
+choose() {
+  # choose "Nadpis" "a|Popis A" "b|Popis B" … → REPLY=kód
+  local title="$1"; shift
+  printf '%s%s%s\n' "$C_BOLD" "$title" "$C_RESET"
+  local i=1
+  local -a codes=()
+  local item code label
+  for item in "$@"; do
+    code="${item%%|*}"
+    label="${item#*|}"
+    codes+=("$code")
+    printf '  %s%d)%s %s\n' "$C_CYAN" "$i" "$C_RESET" "$label"
+    i=$((i + 1))
+  done
+  local sel
+  while true; do
+    read -r -p "Volba [1]: " sel || true
+    sel="${sel:-1}"
+    if [[ "$sel" =~ ^[0-9]+$ ]] && (( sel >= 1 && sel <= ${#codes[@]} )); then
+      REPLY="${codes[$((sel - 1))]}"
+      return 0
+    fi
+    warn "Neplatná volba."
+  done
+}
+
+yesno() {
+  local prompt="$1"
+  local def="${2:-n}"
+  local hint="y/N"
+  [[ "$def" == "y" ]] && hint="Y/n"
+  read -r -p "$(printf '%s [%s]: ' "$prompt" "$hint")" REPLY || true
+  REPLY="${REPLY:-$def}"
+  [[ "$REPLY" =~ ^[Yy] ]]
+}
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || { err "Chybí příkaz: $1"; return 1; }
+}
+
+php_ok() {
+  php -r 'exit(version_compare(PHP_VERSION, "8.4.0", ">=") ? 0 : 1);' 2>/dev/null
+}
+
+write_env() {
+  local file="$1"
+  cat > "$file" <<EOF
+# GEREQ Platform — vygenerováno bin/install ($(date -Iseconds 2>/dev/null || date))
+
+APP_NAME="${APP_NAME}"
+APP_ENV=${APP_ENV}
+APP_DEBUG=${APP_DEBUG}
+APP_URL=${APP_URL}
+APP_KEY=${APP_KEY}
+
+DB_CONNECTION=${DB_CONNECTION}
+DB_DATABASE=${DB_DATABASE}
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT}
+DB_DATABASE_NAME=${DB_DATABASE_NAME}
+DB_USERNAME=${DB_USERNAME}
+DB_PASSWORD=${DB_PASSWORD}
+
+CACHE_DRIVER=${CACHE_DRIVER}
+QUEUE_DRIVER=${QUEUE_DRIVER}
+FILE_DRIVER=local
+
+REDIS_HOST=${REDIS_HOST}
+REDIS_PORT=${REDIS_PORT}
+REDIS_PASSWORD=
+
+MAIL_DSN=${MAIL_DSN}
+
+ADMIN_NAME="${ADMIN_NAME}"
+ADMIN_EMAIL=${ADMIN_EMAIL}
+ADMIN_PASSWORD=${ADMIN_PASSWORD}
+
+SESSION_DRIVER=${SESSION_DRIVER}
+SESSION_LIFETIME=120
+SESSION_SAME_SITE=lax
+
+WEBHOOKS_ALLOW_PRIVATE_URLS=${WEBHOOKS_ALLOW_PRIVATE}
+EOF
+}
+
+# ── defaults ────────────────────────────────────────────────────────────────
+APP_NAME="GEREQ Platform"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL="http://127.0.0.1:8080"
+APP_KEY=""
+DB_CONNECTION=sqlite
+DB_DATABASE=storage/database.sqlite
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE_NAME=gereq
+DB_USERNAME=gereq
+DB_PASSWORD=""
+CACHE_DRIVER=file
+QUEUE_DRIVER=sync
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+SESSION_DRIVER=file
+MAIL_DSN="null://null"
+ADMIN_NAME="Administrátor"
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="change-me"
+WEBHOOKS_ALLOW_PRIVATE=false
+USE_DOCKER=n
+WITH_DEMO=n
+WITH_SAMPLE=n
+RUN_SERVE=n
+JS_PKG=""
+
+banner
+hr
+info "Kořen projektu: $ROOT"
+hr
+printf '\n'
+
+# ── prerequisites ───────────────────────────────────────────────────────────
+info "Kontrola závislostí…"
+need_cmd php || exit 1
+php_ok || { err "Potřebujete PHP 8.4+ (máte $(php -r 'echo PHP_VERSION;'))"; exit 1; }
+ok "PHP $(php -r 'echo PHP_VERSION;')"
+need_cmd composer || exit 1
+ok "Composer $(composer -V 2>/dev/null | head -1)"
+
+if command -v bun >/dev/null 2>&1; then
+  JS_PKG=bun
+  ok "bun"
+elif command -v npm >/dev/null 2>&1; then
+  JS_PKG=npm
+  ok "npm"
+else
+  err "Chybí bun nebo npm (frontend build)."
+  exit 1
+fi
+
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  ok "Docker Compose"
+  HAS_DOCKER=1
+else
+  warn "Docker není k dispozici (volitelný)."
+  HAS_DOCKER=0
+fi
+
+printf '\n'
+hr
+printf '%s%s 1) Klient & admin%s\n' "$C_BOLD" "$C_BG" "$C_RESET"
+printf '\n'
+
+ask "Název aplikace / klienta" "$APP_NAME"; APP_NAME="$REPLY"
+ask "Veřejná URL (APP_URL)" "$APP_URL"; APP_URL="$REPLY"
+ask "Admin jméno" "$ADMIN_NAME"; ADMIN_NAME="$REPLY"
+ask "Admin e-mail" "$ADMIN_EMAIL"; ADMIN_EMAIL="$REPLY"
+ask_secret "Admin heslo" "$ADMIN_PASSWORD"; ADMIN_PASSWORD="$REPLY"
+
+printf '\n'
+choose "Prostředí" \
+  "local|local (vývoj, debug zapnutý)" \
+  "production|production (debug vypnutý)"
+APP_ENV="$REPLY"
+if [[ "$APP_ENV" == "production" ]]; then
+  APP_DEBUG=false
+else
+  APP_DEBUG=true
+fi
+
+printf '\n'
+hr
+printf '%s%s 2) Databáze%s\n' "$C_BOLD" "$C_BG" "$C_RESET"
+printf '\n'
+
+choose "Typ databáze" \
+  "sqlite|SQLite (soubor, ideální pro rychlý start)" \
+  "mysql|MySQL / MariaDB" \
+  "pgsql|PostgreSQL"
+DB_CONNECTION="$REPLY"
+
+if [[ "$DB_CONNECTION" == "sqlite" ]]; then
+  ask "Cesta k SQLite souboru" "$DB_DATABASE"; DB_DATABASE="$REPLY"
+else
+  ask "DB host" "$DB_HOST"; DB_HOST="$REPLY"
+  ask "DB port" "$DB_PORT"; DB_PORT="$REPLY"
+  ask "DB název" "$DB_DATABASE_NAME"; DB_DATABASE_NAME="$REPLY"
+  ask "DB uživatel" "$DB_USERNAME"; DB_USERNAME="$REPLY"
+  ask_secret "DB heslo" ""; DB_PASSWORD="$REPLY"
+fi
+
+printf '\n'
+hr
+printf '%s%s 3) Runtime%s\n' "$C_BOLD" "$C_BG" "$C_RESET"
+printf '\n'
+
+if (( HAS_DOCKER )); then
+  if yesno "Spustit přes Docker (nginx + PHP-FPM + Redis + queue)?" "y"; then
+    USE_DOCKER=y
+    QUEUE_DRIVER=redis
+    SESSION_DRIVER=redis
+    CACHE_DRIVER=file
+    REDIS_HOST=redis
+    WEBHOOKS_ALLOW_PRIVATE=true
+  fi
+fi
+
+if [[ "$USE_DOCKER" != "y" ]]; then
+  choose "Fronta (QUEUE_DRIVER)" \
+    "sync|sync (joby ihned, bez workeru)" \
+    "redis|redis (vyžaduje Redis + queue:work)" \
+    "file|file (souborová fronta)"
+  QUEUE_DRIVER="$REPLY"
+  if [[ "$QUEUE_DRIVER" == "redis" ]]; then
+    ask "Redis host" "$REDIS_HOST"; REDIS_HOST="$REPLY"
+    SESSION_DRIVER=redis
+  fi
+fi
+
+if yesno "Povolit webhooky na privátní URL (localhost / LAN)?" "n"; then
+  WEBHOOKS_ALLOW_PRIVATE=true
+fi
+
+printf '\n'
+hr
+printf '%s%s 4) Data%s\n' "$C_BOLD" "$C_BG" "$C_RESET"
+printf '\n'
+info "Výchozí je čistá instalace (jen admin, role, zapnuté moduly)."
+if yesno "Přesto načíst demo obchodní data?" "n"; then
+  WITH_DEMO=y
+fi
+if yesno "Vytvořit ukázkové zákazníky?" "n"; then
+  WITH_SAMPLE=y
+fi
+
+printf '\n'
+hr
+printf '%s%s Souhrn%s\n' "$C_BOLD" "$C_BG" "$C_RESET"
+printf '\n'
+printf '  App:      %s\n' "$APP_NAME"
+printf '  URL:      %s\n' "$APP_URL"
+printf '  Env:      %s (debug=%s)\n' "$APP_ENV" "$APP_DEBUG"
+printf '  DB:       %s\n' "$DB_CONNECTION"
+printf '  Admin:    %s <%s>\n' "$ADMIN_NAME" "$ADMIN_EMAIL"
+printf '  Queue:    %s\n' "$QUEUE_DRIVER"
+printf '  Docker:   %s\n' "$USE_DOCKER"
+printf '  Demo:     %s | Sample: %s\n' "$WITH_DEMO" "$WITH_SAMPLE"
+printf '\n'
+
+if ! yesno "Pokračovat v instalaci?" "y"; then
+  warn "Zrušeno."
+  exit 0
+fi
+
+# ── APP_KEY ─────────────────────────────────────────────────────────────────
+APP_KEY="$(php -r 'echo bin2hex(random_bytes(32));')"
+
+# ── composer ────────────────────────────────────────────────────────────────
+printf '\n'
+hr
+info "composer install…"
+composer install --no-interaction --prefer-dist
+ok "PHP závislosti"
+
+# ── .env ────────────────────────────────────────────────────────────────────
+if [[ -f .env ]]; then
+  cp .env ".env.bak.$(date +%Y%m%d%H%M%S)"
+  warn "Existující .env zálohován."
+fi
+write_env .env
+ok ".env zapsán"
+
+# ── storage ─────────────────────────────────────────────────────────────────
+mkdir -p storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}
+chmod -R a+rwX storage 2>/dev/null || true
+if [[ "$DB_CONNECTION" == "sqlite" ]]; then
+  mkdir -p "$(dirname "$DB_DATABASE")"
+  : > "$DB_DATABASE"
+  ok "Prázdný SQLite: $DB_DATABASE"
+fi
+
+# ── frontend ────────────────────────────────────────────────────────────────
+info "Frontend závislosti ($JS_PKG)…"
+if [[ "$JS_PKG" == "bun" ]]; then
+  bun install
+  bun run build
+else
+  npm install
+  npm run build
+fi
+ok "Assets v public/build"
+
+# ── migrate fresh ───────────────────────────────────────────────────────────
+info "Migrace + seed (čistá DB)…"
+MIG_ARGS=(migrate --fresh --no-interaction)
+[[ "$WITH_DEMO" != "y" ]] && MIG_ARGS+=(--no-demo)
+[[ "$WITH_SAMPLE" != "y" ]] && MIG_ARGS+=(--no-sample)
+php gereq "${MIG_ARGS[@]}"
+ok "Databáze připravena"
+
+# ── docker ──────────────────────────────────────────────────────────────────
+if [[ "$USE_DOCKER" == "y" ]]; then
+  info "Docker compose up…"
+  PORT="$(php -r '$u=parse_url($argv[1]); echo $u["port"] ?? 8080;' "$APP_URL")"
+  export GEREQ_PORT="$PORT"
+  export APP_URL
+  docker compose up -d --build
+  ok "Docker stack běží (port $PORT)"
+  info "Logy queue: docker compose logs -f queue"
+else
+  if yesno "Spustit vestavěný PHP server teď?" "n"; then
+    RUN_SERVE=y
+  fi
+fi
+
+# ── hotovo ──────────────────────────────────────────────────────────────────
+printf '\n'
+hr
+printf '%s%s Hotovo%s\n\n' "$C_BOLD" "$C_GREEN" "$C_RESET"
+printf '  Admin:   %s/admin\n' "${APP_URL%/}"
+printf '  Průvodce:%s/admin/setup (po přihlášení)\n' "${APP_URL%/}"
+printf '  E-mail:  %s\n' "$ADMIN_EMAIL"
+printf '  Heslo:   (zadali jste při instalaci)\n'
+printf '\n'
+printf '  Užitečné příkazy:\n'
+printf '    php gereq about\n'
+printf '    php gereq migrate --fresh --no-demo --no-sample\n'
+printf '    php gereq install\n'
+printf '    php gereq serve-docker -d\n'
+printf '    php gereq queue:work\n'
+printf '\n'
+
+if [[ "$RUN_SERVE" == "y" ]]; then
+  info "Spouštím php gereq serve…"
+  exec php gereq serve --port="$(php -r '$u=parse_url("'"$APP_URL"'"); echo $u["port"]??8080;')"
+fi

@@ -24,8 +24,12 @@
             </select>
         </label>
         <label class="field field--full">
+            <span>{{ 'profile.password.current'|trans }}</span>
+            <input type="password" name="current_password" autocomplete="current-password" placeholder="{{ 'profile.password.current.hint'|trans }}">
+        </label>
+        <label class="field field--full">
             <span>{{ 'profile.password'|trans }}</span>
-            <input type="password" name="password" minlength="10" placeholder="{{ 'profile.password.hint'|trans }}">
+            <input type="password" name="password" minlength="10" autocomplete="new-password" placeholder="{{ 'profile.password.hint'|trans }}">
         </label>
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'profile.save'|trans }}</button>

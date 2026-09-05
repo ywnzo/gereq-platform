@@ -18,7 +18,7 @@ final class EventBus
     private mixed $tracer = null;
 
     public function __construct(
-        private readonly ?HookManager $hooks = null,
+        private readonly HookManager $hooks,
         private readonly ?RequestStack $requestStack = null,
     ) {
     }
@@ -58,7 +58,7 @@ final class EventBus
 
         if ($event instanceof PlatformEvent) {
             $envelope = $event->envelope();
-            $this->hooks?->doAction('platform.event.dispatched', $envelope, $event);
+            $this->hooks->doAction('platform.event.dispatched', $envelope, $event);
         }
 
         if (is_callable($this->tracer)) {
@@ -100,7 +100,7 @@ final class EventBus
             correlationId: $correlation,
         );
 
-        $this->hooks?->doAction('platform.event.dispatched', $envelope, null);
+        $this->hooks->doAction('platform.event.dispatched', $envelope, null);
 
         return $envelope;
     }

@@ -13,13 +13,12 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
-use Gereq\Setting\Settings;
+use Modules\Cms\Application\CmsProvider;
 use Modules\Cms\Domain\Events\PagePublished;
 use Modules\Cms\Domain\Events\PageUpdated;
 use Modules\Cms\Domain\Page;
 use Modules\Cms\Domain\PageBlock;
-use Modules\Cms\Domain\SiteMenu;
-use Modules\Cms\Domain\SiteMenuItem;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +39,7 @@ final class PageController extends Controller
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
         private readonly CapabilityRegistry $capabilities,
-        private readonly Settings $settings,
+        private readonly CmsProvider $cms,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -209,21 +208,9 @@ final class PageController extends Controller
             $this->abort(404, $this->translator->trans('cms.error.page_not_found'));
         }
 
-        $blocks = $this->em->getRepository(PageBlock::class)->findBy(
-            ['pageId' => $id],
-            ['sortOrder' => 'ASC'],
-        );
-
-        return $this->render('@cms/pages/preview.html.twig', [
-            'pageTitle' => $item->title(),
-            'item' => $item,
-            'blocks' => $blocks,
-            'siteTitle' => (string) $this->settings->get('cms.site_title', 'GEREQ Site'),
-            'menus' => $this->menusForRender(),
-            'preview' => true,
-            'user' => $this->auth->user(),
-            'products' => $this->resolveProducts($blocks),
-            'hasMedia' => $this->capabilities->has('media'),
+        // Admin "náhled" = stejný JSON, jaký dostane FE (žádný HTML render).
+        return new JsonResponse(['data' => $this->cms->serializePage($item, true)], 200, [
+            'Content-Type' => 'application/json; charset=UTF-8',
         ]);
     }
 
@@ -274,77 +261,6 @@ final class PageController extends Controller
         }
 
         return $options;
-    }
-
-    /**
-     * @param list<PageBlock> $blocks
-     * @return array<string, object>
-     */
-    private function resolveProducts(array $blocks): array
-    {
-        if (!$this->capabilities->has('products')) {
-            return [];
-        }
-        $provider = $this->capabilities->get('products');
-        if (!method_exists($provider, 'find')) {
-            return [];
-        }
-
-        $map = [];
-        foreach ($blocks as $block) {
-            if ($block->type() !== 'products') {
-                continue;
-            }
-            $ids = $this->parseIdList((string) ($block->payload()['product_ids'] ?? ''));
-            foreach ($ids as $pid) {
-                if (isset($map[$pid])) {
-                    continue;
-                }
-                $ref = $provider->find($pid);
-                if ($ref !== null) {
-                    $map[$pid] = $ref;
-                }
-            }
-        }
-
-        return $map;
-    }
-
-    /** @return list<string> */
-    private function parseIdList(string $raw): array
-    {
-        $parts = preg_split('~[\s,;]+~', $raw) ?: [];
-
-        return array_values(array_filter(array_map('trim', $parts), static fn (string $v): bool => $v !== ''));
-    }
-
-    /**
-     * @return list<array{menu: SiteMenu, items: list<array{item: SiteMenuItem, href: string}>}>
-     */
-    private function menusForRender(): array
-    {
-        $menus = $this->em->getRepository(SiteMenu::class)->findBy([], ['name' => 'ASC']);
-        $result = [];
-        foreach ($menus as $menu) {
-            $items = $this->em->getRepository(SiteMenuItem::class)->findBy(
-                ['menuId' => $menu->id()],
-                ['sortOrder' => 'ASC'],
-            );
-            $mapped = [];
-            foreach ($items as $item) {
-                $href = $item->url() ?? '#';
-                if ($item->pageId() !== null) {
-                    $page = $this->em->find(Page::class, $item->pageId());
-                    if ($page instanceof Page) {
-                        $href = '/p/' . $page->slug();
-                    }
-                }
-                $mapped[] = ['item' => $item, 'href' => $href];
-            }
-            $result[] = ['menu' => $menu, 'items' => $mapped];
-        }
-
-        return $result;
     }
 
     /** @return array<string, mixed> */

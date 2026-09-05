@@ -24,7 +24,7 @@ final class Renderer
         $nonceAttr = $nonce !== '' ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"' : '';
 
         return '<div id="gereq-debug" class="gdb" hidden></div>'
-            . '<style id="gereq-debug-css">' . $css . '</style>'
+            . '<style id="gereq-debug-css"' . $nonceAttr . '>' . $css . '</style>'
             . '<script type="application/json" id="gereq-debug-data"' . $nonceAttr . '>' . $json . '</script>'
             . '<script' . $nonceAttr . '>' . $js . '</script>';
     }

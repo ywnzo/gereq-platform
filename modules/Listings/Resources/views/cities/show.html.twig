@@ -1,0 +1,112 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.listings'|trans, url: url('admin.listings.index') },
+        { label: 'nav.listings.cities'|trans, url: url('admin.listings.cities.index') },
+        { label: item.name() },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>{{ item.name() }}</h1>
+    <div class="actions">
+        {% if user.can('listings.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.listings.cities.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endif %}
+        <a class="btn btn--ghost" href="{{ url('admin.listings.cities.index') }}">{{ 'common.back'|trans }}</a>
+    </div>
+</header>
+
+<section class="panel">
+    <div class="meta-list">
+        {% if item.imageUrl() %}
+            <div class="meta-list__full">
+                <dt>{{ 'listings.cities.field.image_url'|trans }}</dt>
+                <dd><img src="{{ item.imageUrl() }}" alt="{{ item.name() }}" style="max-width:320px;border-radius:8px"></dd>
+            </div>
+        {% endif %}
+        <div>
+            <dt>{{ 'listings.cities.field.sort_order'|trans }}</dt>
+            <dd>{{ item.sortOrder() }}</dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.cities.field.active'|trans }}</dt>
+            <dd>
+                <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                    {{ item.active() ? 'listings.cities.status.active'|trans : 'listings.cities.status.inactive'|trans }}
+                </span>
+            </dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.cities.field.created'|trans }}</dt>
+            <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <h2>{{ 'listings.cities.listings'|trans }}{% if listings %}<span class="module-tab-count">{{ listings|length }}</span>{% endif %}</h2>
+        {% if user.can('listings.manage') %}
+            <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.create') }}">{{ 'listings.action.new'|trans }}</a>
+        {% endif %}
+    </header>
+
+    {% if listings is empty %}
+        <div class="empty">
+            <p>{{ 'listings.cities.listings.empty'|trans }}</p>
+            {% if user.can('listings.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.listings.create') }}">{{ icon('plus') }} {{ 'listings.action.new'|trans }}</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'listings.field.title'|trans }}</th>
+                        <th>{{ 'listings.field.type'|trans }}</th>
+                        <th>{{ 'listings.field.offer'|trans }}</th>
+                        <th class="is-num">{{ 'listings.field.price'|trans }}</th>
+                        <th>{{ 'listings.field.market_status'|trans }}</th>
+                        <th>{{ 'listings.field.status'|trans }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for listing in listings %}
+                        {% set statusTone = listing.status() == 'published' ? 'ok' : (listing.status() == 'draft' ? 'warn' : 'muted') %}
+                        {% set marketTone = listing.marketStatus() == 'available' ? 'ok' : (listing.marketStatus() in ['sold', 'rented'] ? 'danger' : (listing.marketStatus() == 'reserved' ? 'warn' : 'muted')) %}
+                        <tr>
+                            <td>
+                                <div class="table__title">
+                                    <a href="{{ url('admin.listings.show', {id: listing.id()}) }}">{{ listing.title() }}</a>
+                                    <span class="table__meta"><code>{{ listing.slug() }}</code></span>
+                                    {% if listing.cityPart() %}<div class="muted">{{ listing.cityPart() }}</div>{% endif %}
+                                    {% if listing.featured() %}
+                                        <div class="table__chips" style="margin-top:4px"><span class="badge badge--signal">TOP</span></div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>{{ ('listings.type.' ~ listing.propertyType())|trans }}</td>
+                            <td><span class="badge badge--info">{{ ('listings.offer.' ~ listing.offerType())|trans }}</span></td>
+                            <td class="is-num">{{ listing.price()|number_format(0, ',', ' ') }}&nbsp;{{ listing.currency() }}</td>
+                            <td><span class="badge badge--{{ marketTone }}">{{ ('listings.market.' ~ listing.marketStatus())|trans }}</span></td>
+                            <td><span class="badge badge--{{ statusTone }}">{{ listing.statusLabel()|trans }}</span></td>
+                            <td>
+                                <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.show', {id: listing.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                {% if user.can('listings.manage') %}
+                                    <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.edit', {id: listing.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

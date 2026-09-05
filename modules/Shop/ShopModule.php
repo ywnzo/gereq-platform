@@ -15,6 +15,7 @@ use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
 use Modules\Shop\Application\Carriers\ManualCarrier;
 use Modules\Shop\Application\Carriers\PacketaCarrier;
+use Modules\Shop\Application\Carriers\PplCarrier;
 use Modules\Shop\Application\ShippingCarrierRegistry;
 use Modules\Shop\Application\ShopProvider;
 use Modules\Shop\Http\Api\CartApiController;
@@ -48,6 +49,7 @@ final class ShopModule implements ModuleInterface
         $packeta = $context->get(PacketaCarrier::class);
         $carriers->register($packeta);
         $carriers->registerAlias('zasilkovna', $packeta);
+        $carriers->register($context->get(PplCarrier::class));
         $context->capabilities()->register('shipping_carriers', $this->id(), $carriers);
 
         $context->settings()->define('shop.store_name', SettingRecord::TYPE_STRING, 'shop.settings.store_name', 'GEREQ Shop', $this->id());
@@ -57,6 +59,7 @@ final class ShopModule implements ModuleInterface
         $context->settings()->define('shop.packeta_api_key', SettingRecord::TYPE_STRING, 'shop.settings.packeta_api_key', '', $this->id());
         $context->settings()->define('shop.packeta_eshop', SettingRecord::TYPE_STRING, 'shop.settings.packeta_eshop', '', $this->id());
         $context->settings()->define('shop.packeta_address_carrier_id', SettingRecord::TYPE_STRING, 'shop.settings.packeta_address_carrier_id', '106', $this->id());
+        $context->settings()->define('shop.ppl_api_token', SettingRecord::TYPE_STRING, 'shop.settings.ppl_api_token', '', $this->id());
 
         $context->router()->get('/api/v1/shipping/packeta/widget', [PacketaApiController::class, 'widget'])
             ->name('api.shipping.packeta.widget');

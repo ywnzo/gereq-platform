@@ -28,6 +28,27 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 
 ## Instalace
 
+### Nový klient (doporučeno)
+
+Interaktivní TUI — Composer, `.env`, assets, **čistá DB**, admin účet:
+
+```bash
+./bin/install
+```
+
+Nebo non-interactive po ručním `.env`:
+
+```bash
+composer install
+cp .env.example .env   # doplňte APP_KEY, ADMIN_*
+php gereq migrate --fresh --no-demo --no-sample
+bun install && bun run build   # nebo npm
+```
+
+`php gereq install` — interaktivní fresh seed (když už běží vendor).
+
+### Ruční (klasika)
+
 ```bash
 composer install
 cp .env.example .env
@@ -36,7 +57,7 @@ cp .env.example .env
 Do `.env` doplňte `APP_KEY` (náhodný 64znakový hex) a přístupové údaje.
 
 ```bash
-php gereq migrate
+php gereq migrate --fresh --no-demo --no-sample
 npm install
 npm run build
 php gereq serve
@@ -44,12 +65,15 @@ php gereq serve
 
 Administrace: [http://127.0.0.1:8080/admin](http://127.0.0.1:8080/admin)
 
-Výchozí účet z `.env`:
+Účet z `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). Heslo ihned změňte.
 
-- e-mail: `jiri.novak@gereq.cz`
-- heslo: `change-me`
+Migrace:
 
-Heslo ihned změňte.
+| Příkaz | Význam |
+| --- | --- |
+| `php gereq migrate` | update schema + seed (včetně dema) |
+| `php gereq migrate --fresh --no-demo --no-sample` | čistý klient |
+| `php gereq seed:demo` | dodatečně demo data |
 
 ## Environment
 
@@ -91,8 +115,13 @@ php gereq serve-docker --port=8080
 php gereq serve-docker --build          # první start / po změně Dockerfile
 php gereq serve-docker --queue          # + worker (queue profil)
 php gereq serve-docker -d               # na pozadí
+php gereq serve-docker --raw            # surové compose logy
+php gereq serve-docker --dashboard      # fullscreen TUI (volitelné)
+php gereq serve-docker --keep           # ukončení logů neshodí stack
 php gereq serve-docker --down           # zastavit stack
 ```
+
+Ve výchozím režimu běží compact log stream (HTTP řádky, filtry assetů/php/nginx šumu). Klávesy: `q` `a` `p` `n` `space`.
 
 Pro Redis frontu v aplikaci nastavte v `.env` `QUEUE_DRIVER=redis` (v Dockeru je `REDIS_HOST=redis`). Session v Dockeru běží přes Redis (`SESSION_DRIVER=redis`).
 
@@ -106,6 +135,8 @@ npm run build
 
 ```bash
 php gereq about
+php gereq install
+php gereq migrate --fresh --no-demo --no-sample
 php gereq module:list
 php gereq module:enable customers
 php gereq module:disable customers
@@ -120,6 +151,7 @@ php gereq serve-docker
 php gereq user:create
 ```
 
+Shell instalátor: `./bin/install`
 ## Moduly
 
 Každý modul je samostatný balík v `modules/`:

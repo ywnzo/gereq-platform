@@ -6,15 +6,18 @@ namespace Gereq\Foundation;
 
 use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\CommandPalette\PaletteCommand;
+use Gereq\Admin\Http\AresController;
 use Gereq\Admin\Http\AuditController;
 use Gereq\Admin\Http\AuthController;
 use Gereq\Admin\Http\DashboardController;
+use Gereq\Api\PublicAresController;
 use Gereq\Admin\Http\Developer\ApiTokenController;
 use Gereq\Admin\Http\Developer\DeveloperController;
 use Gereq\Admin\Http\ModuleController;
 use Gereq\Admin\Http\ProfileController;
 use Gereq\Admin\Http\RoleController;
 use Gereq\Admin\Http\SettingsController;
+use Gereq\Admin\Http\SetupController;
 use Gereq\Admin\Http\UserController;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Menu\MenuItem;
@@ -85,7 +88,18 @@ final class CoreRegistrar
             null,
             $this->locales->all(),
         );
-        $this->settings->define('admin.theme', SettingRecord::TYPE_STRING, 'settings.admin.theme', 'system');
+        $this->settings->define(
+            'admin.theme',
+            SettingRecord::TYPE_STRING,
+            'settings.admin.theme',
+            'system',
+            null,
+            [
+                'system' => 'settings.theme.system',
+                'light' => 'settings.theme.light',
+                'dark' => 'settings.theme.dark',
+            ],
+        );
     }
 
     private function validation(): void
@@ -117,6 +131,14 @@ final class CoreRegistrar
             $router->get('/login', [AuthController::class, 'show'])->name('admin.login')->middleware('guest');
             $router->post('/login', [AuthController::class, 'login'])->name('admin.login.submit')->middleware('guest');
             $router->post('/logout', [AuthController::class, 'logout'])->name('admin.logout')->middleware('auth');
+
+            $router->get('/setup', [SetupController::class, 'show'])->name('admin.setup')->middleware('auth');
+            $router->get('/setup/{step}', [SetupController::class, 'show'])->name('admin.setup.step')->middleware('auth');
+            $router->post('/setup/welcome', [SetupController::class, 'saveWelcome'])->name('admin.setup.welcome')->middleware('auth');
+            $router->post('/setup/account', [SetupController::class, 'saveAccount'])->name('admin.setup.account')->middleware('auth');
+            $router->post('/setup/company', [SetupController::class, 'saveCompany'])->name('admin.setup.company')->middleware('auth');
+            $router->post('/setup/shop', [SetupController::class, 'saveShop'])->name('admin.setup.shop')->middleware('auth');
+            $router->post('/setup/finish', [SetupController::class, 'finish'])->name('admin.setup.finish')->middleware('auth');
 
             $router->get('/forgot-password', [AuthController::class, 'forgot'])->name('admin.password.forgot')->middleware('guest');
             $router->post('/forgot-password', [AuthController::class, 'sendReset'])->name('admin.password.email')->middleware('guest');
@@ -154,10 +176,18 @@ final class CoreRegistrar
             $router->get('/developer/tokens/create', [ApiTokenController::class, 'create'])->name('admin.developer.tokens.create')->middleware('auth')->permission('developer.tokens.manage');
             $router->post('/developer/tokens', [ApiTokenController::class, 'store'])->name('admin.developer.tokens.store')->middleware('auth')->permission('developer.tokens.manage');
             $router->post('/developer/tokens/{id}/revoke', [ApiTokenController::class, 'revoke'])->name('admin.developer.tokens.revoke')->middleware('auth')->permission('developer.tokens.manage');
+
+            $router->get('/ares/subjects', [AresController::class, 'subjects'])->name('admin.ares.subjects')->middleware('auth');
+            $router->get('/ares/addresses', [AresController::class, 'addresses'])->name('admin.ares.addresses')->middleware('auth');
         });
 
         $this->router->get('/api/v1/health', [HealthController::class, 'show'])->name('api.health');
         $this->router->get('/api/openapi.json', [OpenApiController::class, 'show'])->name('api.openapi');
+
+        $this->router->add('/api/public/ares/addresses', ['OPTIONS'], [PublicAresController::class, 'options'])
+            ->name('api.public.ares.addresses.options');
+        $this->router->get('/api/public/ares/addresses', [PublicAresController::class, 'addresses'])
+            ->name('api.public.ares.addresses');
     }
 
     private function menu(): void

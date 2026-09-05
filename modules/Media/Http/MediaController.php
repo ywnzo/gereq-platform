@@ -114,7 +114,7 @@ final class MediaController extends Controller
             $title = $stored->originalName();
         }
 
-        [$width, $height] = $this->imageDimensions($uploaded, $stored->mime());
+        [$width, $height] = $this->imageDimensions($uploaded, $stored);
 
         $asset = new MediaAsset(
             $title,
@@ -221,37 +221,64 @@ final class MediaController extends Controller
         return $this->redirect('admin.media.index');
     }
 
-    public function file(string $id): Response
-    {
-        return $this->serveFile($id);
-    }
-
     public function publicFile(string $id): Response
-    {
-        return $this->serveFile($id);
-    }
-
-    private function serveFile(string $id): Response
     {
         $asset = $this->find($id);
         if ($asset === null) {
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
+        // Public route may only serve images (listings/CMS/city photos). Documents stay behind auth.
+        if (!str_starts_with($asset->mime(), 'image/')) {
+            $this->abort(404, $this->translator->trans('media.error.not_found'));
+        }
+
+        return $this->serveFile($asset);
+    }
+
+    public function file(string $id): Response
+    {
+        $asset = $this->find($id);
+        if ($asset === null) {
+            $this->abort(404, $this->translator->trans('media.error.not_found'));
+        }
+
+        return $this->serveFile($asset);
+    }
+
+    private function serveFile(MediaAsset $asset): Response
+    {
         $absolute = $this->absolutePath($asset->path());
-        if (!is_file($absolute)) {
+        if ($absolute === null || !is_file($absolute)) {
             $this->abort(404, $this->translator->trans('media.error.file_missing'));
         }
 
         $response = new BinaryFileResponse($absolute);
         $response->headers->set('Content-Type', $asset->mime());
-        $disposition = $response->headers->makeDisposition(
-            ResponseHeaderBag::DISPOSITION_INLINE,
-            $asset->title(),
-        );
-        $response->headers->set('Content-Disposition', $disposition);
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        // Content-Disposition u inline obrázků není potřeba a UTF-8 názvy dřív shazovaly odpověď.
+        if (!str_starts_with($asset->mime(), 'image/')) {
+            $filename = $this->safeDownloadName($asset->title(), $asset->path());
+            $disposition = $response->headers->makeDisposition(
+                ResponseHeaderBag::DISPOSITION_INLINE,
+                $filename,
+            );
+            $response->headers->set('Content-Disposition', $disposition);
+        }
 
         return $response;
+    }
+
+    private function safeDownloadName(string $title, string $path): string
+    {
+        $ext = pathinfo($path, PATHINFO_EXTENSION);
+        $ascii = preg_replace('/[^A-Za-z0-9._-]+/', '-', $title) ?? 'file';
+        $ascii = trim($ascii, '-._') ?: 'file';
+        if ($ext !== '' && !str_ends_with(strtolower($ascii), '.' . strtolower($ext))) {
+            $ascii .= '.' . $ext;
+        }
+
+        return $ascii;
     }
 
     private function find(string $id): ?MediaAsset
@@ -261,23 +288,47 @@ final class MediaController extends Controller
         return $asset instanceof MediaAsset ? $asset : null;
     }
 
-    private function absolutePath(string $relative): string
+    private function absolutePath(string $relative): ?string
     {
-        $root = $this->basePath . '/' . trim((string) $this->config->get('files.local_path', 'storage/uploads'), '/');
+        $root = realpath($this->basePath . '/' . trim((string) $this->config->get('files.local_path', 'storage/uploads'), '/'));
+        if ($root === false) {
+            return null;
+        }
+        if ($relative === '' || str_contains($relative, "\0") || str_contains($relative, '..')) {
+            return null;
+        }
 
-        return $root . '/' . ltrim($relative, '/');
+        $candidate = $root . DIRECTORY_SEPARATOR . ltrim(str_replace(['\\'], '/', $relative), '/');
+        $real = realpath($candidate);
+        if ($real === false) {
+            return null;
+        }
+        if ($real !== $root && !str_starts_with($real, $root . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $real;
     }
 
     /**
      * @return array{0: ?int, 1: ?int}
      */
-    private function imageDimensions(UploadedFile $uploaded, string $mime): array
+    private function imageDimensions(UploadedFile $uploaded, \Gereq\File\StoredFile $stored): array
     {
-        if (!str_starts_with($mime, 'image/')) {
+        if (!str_starts_with($stored->mime(), 'image/')) {
             return [null, null];
         }
 
+        $meta = $stored->metadata();
+        if (is_array($meta) && isset($meta['width'], $meta['height'])) {
+            return [(int) $meta['width'], (int) $meta['height']];
+        }
+
         $info = @getimagesize($uploaded->getPathname());
+        if ($info === false) {
+            $resolved = $this->absolutePath($stored->path());
+            $info = $resolved !== null ? @getimagesize($resolved) : false;
+        }
         if ($info === false) {
             return [null, null];
         }

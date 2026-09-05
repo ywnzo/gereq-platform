@@ -13,6 +13,7 @@ use Gereq\Event\EventBus;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Security\HtmlSanitizer;
 use Modules\Customers\Domain\Customer;
 use Modules\Customers\Domain\CustomerCreated;
 use Modules\Customers\Domain\Events\CustomerArchived;
@@ -39,6 +40,7 @@ final class CustomerController extends Controller
         private readonly EventBus $events,
         private readonly HookManager $hooks,
         private readonly TranslatorInterface $translator,
+        private readonly HtmlSanitizer $html,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -126,6 +128,7 @@ final class CustomerController extends Controller
         return $this->page('@customers/show.html.twig', [
             'pageTitle' => $customer->name(),
             'item' => $customer,
+            'noteHtml' => $this->html->sanitize($customer->note()),
             'hookActions' => $actions,
             'hookSections' => $sections,
         ]);
@@ -216,7 +219,7 @@ final class CustomerController extends Controller
 
         $phone = trim((string) ($data['phone'] ?? ''));
         $company = trim((string) ($data['company'] ?? ''));
-        $note = trim((string) ($data['note'] ?? ''));
+        $note = $this->html->sanitizeNullable((string) ($data['note'] ?? ''));
         $status = (string) ($data['status'] ?? 'active');
         if (!in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
             $status = 'active';
@@ -227,7 +230,7 @@ final class CustomerController extends Controller
             'email' => strtolower(trim((string) $data['email'])),
             'phone' => $phone !== '' ? $phone : null,
             'company' => $company !== '' ? $company : null,
-            'note' => $note !== '' ? $note : null,
+            'note' => $note,
             'status' => $status,
         ];
     }

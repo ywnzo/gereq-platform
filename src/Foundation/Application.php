@@ -46,6 +46,7 @@ use Gereq\Security\ContentSecurityPolicy;
 use Gereq\Security\Csrf;
 use Gereq\Security\RateLimiter;
 use Gereq\Setting\Settings;
+use Gereq\Setup\SetupState;
 use Gereq\User\PermissionRegistry;
 use Gereq\Validation\ValidationRegistry;
 use Gereq\Validation\Validator;
@@ -161,6 +162,7 @@ final class Application
             ValidationRegistry::class => \DI\autowire(),
             Validator::class => \DI\autowire(),
             FormState::class => \DI\autowire(),
+            SetupState::class => \DI\autowire(),
             EventBus::class => \DI\autowire(),
             EventRegistry::class => \DI\create(EventRegistry::class),
             ApiRegistry::class => \DI\autowire(),
@@ -194,6 +196,7 @@ final class Application
             Csrf::class => \DI\autowire(),
             Authenticator::class => \DI\autowire(),
             Auditor::class => \DI\autowire(),
+            \Gereq\Security\HtmlSanitizer::class => \DI\autowire(),
             Settings::class => \DI\autowire(),
             LocaleCatalog::class => \DI\autowire(),
             LocaleResolver::class => \DI\autowire(),
@@ -229,12 +232,15 @@ final class Application
             ControllerDispatcher::class => \DI\autowire(),
             ContainerInterface::class => \DI\get(Container::class),
             ModuleContext::class => \DI\autowire(),
+            \Gereq\Console\Command\InstallCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\CacheClearCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\MakeModuleCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\MakeResourceCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ServeCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ServeDockerCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\TwigTypesCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Ares\AresClient::class => \DI\autowire(),
+            \Gereq\Ares\AresService::class => \DI\autowire(),
             \Modules\Currency\Application\RateProviderInterface::class => \DI\get(\Modules\Currency\Infrastructure\CnbRateProvider::class),
             \Modules\Currency\Infrastructure\CnbRateProvider::class => \DI\autowire(),
             \Modules\Currency\Application\SyncExchangeRates::class => \DI\autowire(),
@@ -262,8 +268,14 @@ final class Application
             \Modules\Coupons\Application\CouponsProvider::class => \DI\autowire(),
             \Modules\Customers\Application\StoreAuthService::class => \DI\autowire(),
             \Modules\Customers\Application\StoreTokenService::class => \DI\autowire(),
+            \Modules\Customers\Application\StoreCookieBridge::class => \DI\autowire(),
             \Modules\Orders\Application\InvoiceIssuingService::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
+            \Modules\Orders\Application\OrderMailer::class => \DI\autowire(),
+            \Modules\Payments\Application\ImapBankMatcher::class => \DI\autowire(),
+            \Modules\Payments\Application\Gateways\GoPayGateway::class => \DI\autowire(),
+            \Modules\Payments\Application\Gateways\StripeGateway::class => \DI\autowire(),
+            \Modules\Shop\Application\Carriers\PplCarrier::class => \DI\autowire(),
             \Modules\CustomerUploads\Application\CustomerUploadService::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
             \Modules\Bundles\Application\BundlesProvider::class => \DI\autowire(),

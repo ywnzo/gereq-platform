@@ -20,7 +20,7 @@ use Modules\Cms\Http\Api\PageApiController;
 use Modules\Cms\Http\BlockController;
 use Modules\Cms\Http\MenuController;
 use Modules\Cms\Http\PageController;
-use Modules\Cms\Http\PublicPageController;
+use Modules\Cms\Http\Public\PublicCmsController;
 
 final class CmsModule implements ModuleInterface
 {
@@ -77,8 +77,21 @@ final class CmsModule implements ModuleInterface
             $routes->post('/{id}/items/{itemId}/delete', [MenuController::class, 'destroyItem'])->name('admin.cms.menus.items.destroy')->permission('cms.manage');
         }, ['middleware' => ['auth']]);
 
-        $context->router()->get('/p/{slug}', [PublicPageController::class, 'show'])
-            ->name('cms.public.page');
+        // Public storefront: JSON only — React FE renders blocks, CMS never outputs HTML.
+        $cmsPublic = [PublicCmsController::class, 'options'];
+        $context->router()->add('/api/public/pages', ['OPTIONS'], $cmsPublic)->name('api.public.cms.pages.options');
+        $context->router()->add('/api/public/pages/{slug}', ['OPTIONS'], $cmsPublic)->name('api.public.cms.pages.slug.options');
+        $context->router()->add('/api/public/menus', ['OPTIONS'], $cmsPublic)->name('api.public.cms.menus.options');
+        $context->router()->add('/api/public/menus/{location}', ['OPTIONS'], $cmsPublic)->name('api.public.cms.menus.location.options');
+
+        $context->router()->get('/api/public/pages', [PublicCmsController::class, 'pages'])
+            ->name('api.public.cms.pages.index');
+        $context->router()->get('/api/public/pages/{slug}', [PublicCmsController::class, 'page'])
+            ->name('api.public.cms.pages.show');
+        $context->router()->get('/api/public/menus', [PublicCmsController::class, 'menus'])
+            ->name('api.public.cms.menus.index');
+        $context->router()->get('/api/public/menus/{location}', [PublicCmsController::class, 'menu'])
+            ->name('api.public.cms.menus.show');
 
         $this->registerApi($context);
         $this->registerPlatformEvents($context);

@@ -17,6 +17,31 @@ final class Migrator
     }
 
     /**
+     * Drop all mapped tables and recreate schema from metadata + module migrations.
+     *
+     * @return list<string>
+     */
+    public function fresh(): array
+    {
+        $messages = [];
+        $tool = new SchemaTool($this->em);
+        $metadata = $this->em->getMetadataFactory()->getAllMetadata();
+        if ($metadata !== []) {
+            $tool->dropSchema($metadata);
+            $messages[] = 'Schéma smazáno (' . count($metadata) . ' entit).';
+        }
+
+        $conn = $this->em->getConnection();
+        $sm = $conn->createSchemaManager();
+        if ($sm->tablesExist(['schema_migrations'])) {
+            $conn->executeStatement('DELETE FROM schema_migrations');
+            $messages[] = 'Tabulka schema_migrations vyčištěna.';
+        }
+
+        return array_merge($messages, $this->migrate());
+    }
+
+    /**
      * @return list<string>
      */
     public function migrate(): array

@@ -1,6 +1,14 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'admin.modules.title'|trans },
+    ] } %}
+{% endblock %}
+
 {% block content %}
+<div class="list-shell" x-data="moduleTable">
     <header class="page-header">
         <div>
             <h1>{{ 'admin.modules.title'|trans }}</h1>
@@ -23,37 +31,117 @@
         </div>
     </div>
 
-    <div class="module-grid">
-        {% for row in items %}
-            {% set manifest = row.manifest %}
-            {% set counts = row.counts %}
-            <a class="module-tile" href="{{ url('admin.modules.show', {id: manifest.id}) }}">
-                <div class="module-tile__top">
-                    <div>
-                        <h2>{{ manifest.name }}</h2>
-                        <p class="module-tile__id"><code>{{ manifest.id }}</code> · v{{ manifest.version }}</p>
-                    </div>
-                    {% if row.enabled %}
-                        <span class="badge badge--ok">{{ 'common.enabled'|trans }}</span>
-                    {% else %}
-                        <span class="badge badge--muted">{{ 'common.disabled'|trans }}</span>
-                    {% endif %}
-                </div>
-                <p class="module-tile__desc">{{ (manifest.description ?: 'common.no_description')|trans }}</p>
-                <div class="module-tile__meta">
-                    <span>{{ counts.api }} API</span>
-                    <span>{{ counts.routes }} {{ 'admin.modules.meta.routes'|trans }}</span>
-                    <span>{{ counts.migrations }} {{ 'admin.modules.meta.migrations'|trans }}{% if counts.migrations_pending %} · {{ 'admin.modules.meta.pending'|trans({'%count%': counts.migrations_pending}) }}{% endif %}</span>
-                    {% if row.health_issues %}
-                        <span class="module-tile__warn">{{ row.health_issues }} {{ 'admin.modules.meta.health'|trans }}</span>
-                    {% endif %}
-                </div>
-                {% if row.missing is not empty %}
-                    <p class="module-tile__deps">{{ 'admin.modules.missing'|trans({'%list%': row.missing|join(', ')}) }}</p>
-                {% endif %}
-            </a>
-        {% else %}
-            <div class="empty"><h2>{{ 'empty.modules'|trans }}</h2><p>{{ 'empty.modules_hint'|trans }}</p></div>
-        {% endfor %}
+    <div class="toolbar--table">
+        <form class="toolbar" method="get" @submit.prevent>
+            <input
+                class="input"
+                type="search"
+                name="q"
+                x-model="query"
+                placeholder="{{ 'admin.modules.search'|trans }}"
+                autocomplete="off"
+            >
+            <select class="input" x-model="status">
+                <option value="">{{ 'admin.modules.filter.all'|trans }}</option>
+                <option value="on">{{ 'common.enabled'|trans }}</option>
+                <option value="off">{{ 'common.disabled'|trans }}</option>
+                <option value="warn">{{ 'common.warnings'|trans }}</option>
+            </select>
+        </form>
     </div>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'admin.modules.col.name'|trans }}</th>
+                    <th>{{ 'admin.modules.col.description'|trans }}</th>
+                    <th>{{ 'admin.modules.col.status'|trans }}</th>
+                    <th class="is-num">API</th>
+                    <th class="is-num">{{ 'admin.modules.meta.routes'|trans }}</th>
+                    <th class="is-num">{{ 'admin.modules.meta.migrations'|trans }}</th>
+                    <th>{{ 'admin.modules.col.health'|trans }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in items %}
+                    {% set manifest = row.manifest %}
+                    {% set counts = row.counts %}
+                    {% set searchBlob = (manifest.name ~ ' ' ~ manifest.id ~ ' ' ~ (manifest.description|trans))|lower %}
+                    <tr
+                        data-enabled="{{ row.enabled ? '1' : '0' }}"
+                        data-warn="{{ (row.health_issues or row.missing is not empty) ? '1' : '0' }}"
+                        data-search="{{ searchBlob|e('html_attr') }}"
+                    >
+                        <td>
+                            <div class="table__title">
+                                <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
+                                <span class="table__meta"><code>{{ manifest.id }}</code> · v{{ manifest.version }}</span>
+                            </div>
+                        </td>
+                        <td class="is-mute">{{ (manifest.description ?: 'common.no_description')|trans }}</td>
+                        <td>
+                            {% if row.enabled %}
+                                <span class="badge badge--ok">{{ 'common.enabled'|trans }}</span>
+                            {% else %}
+                                <span class="badge badge--muted">{{ 'common.disabled'|trans }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="is-num is-mute">{{ counts.api }}</td>
+                        <td class="is-num is-mute">{{ counts.routes }}</td>
+                        <td class="is-num is-mute">
+                            {{ counts.migrations }}
+                            {% if counts.migrations_pending %}
+                                <div class="muted">{{ 'admin.modules.meta.pending'|trans({'%count%': counts.migrations_pending}) }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.missing is not empty %}
+                                <span class="badge badge--danger">{{ 'admin.modules.missing'|trans({'%list%': row.missing|join(', ')}) }}</span>
+                            {% elseif row.health_issues %}
+                                <span class="badge badge--warn">{{ row.health_issues }} {{ 'admin.modules.meta.health'|trans }}</span>
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="table__actions" x-data="rowMenu" @click.outside="close">
+                            <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
+                            <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+                                <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ 'common.detail'|trans }}</a>
+                                {% if row.enabled %}
+                                    <form method="post" action="{{ url('admin.modules.disable', {id: manifest.id}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ 'common.deactivate'|trans }}</button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit">{{ 'common.activate'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty">
+                                <h2>{{ 'empty.modules'|trans }}</h2>
+                                <p>{{ 'empty.modules_hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                <tr x-show="empty" x-cloak>
+                    <td colspan="8">
+                        <div class="empty">
+                            <h2>{{ 'admin.modules.filter.empty'|trans }}</h2>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

@@ -1,0 +1,302 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.listings'|trans, url: url('admin.listings.index') },
+        { label: 'nav.listings.properties'|trans, url: url('admin.listings.index') },
+        { label: listing.title() },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ listing.title() }}</h1>
+            <p class="muted">
+                <code>{{ listing.slug() }}</code>
+                · <span class="status-chip"><span class="status-chip__dot"></span>{{ listing.statusLabel()|trans }}</span>
+                · {{ ('listings.market.' ~ listing.marketStatus())|trans }}
+                · {{ ('listings.offer.' ~ listing.offerType())|trans }}
+                {% if listing.featured() %}· <span class="badge badge--signal">TOP</span>{% endif %}
+            </p>
+            {% if listing.city() %}
+                <p class="module-lead">{{ listing.city() }}{% if listing.cityPart() %}, {{ listing.cityPart() }}{% endif %}{% if listing.street() %} · {{ listing.street() }}{% endif %}</p>
+            {% endif %}
+        </div>
+        <div class="actions">
+            {% if user.can('listings.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.listings.edit', {id: listing.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.listings.destroy', {id: listing.id()}) }}" onsubmit="return confirm('{{ 'listings.confirm_delete'|trans|e('js') }}');">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-hub" x-data="gereqTabs" data-initial="overview">
+        <div class="design-tabs detail-tabs" role="tablist">
+            <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="nearby">{{ 'listings.tab.nearby'|trans }}{% if nearLinks %}<span class="module-tab-count">{{ nearLinks|length }}</span>{% endif %}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="images">{{ 'listings.tab.images'|trans }}{% if images %}<span class="module-tab-count">{{ images|length }}</span>{% endif %}</button>
+        </div>
+
+        <section class="design-panel" data-panel="overview" role="tabpanel">
+            {% set statusTone = listing.status() == 'published' ? 'ok' : (listing.status() == 'draft' ? 'warn' : 'muted') %}
+            {% set marketTone = listing.marketStatus() == 'available' ? 'ok' : (listing.marketStatus() in ['sold', 'rented'] ? 'danger' : (listing.marketStatus() == 'reserved' ? 'warn' : 'muted')) %}
+            <div class="detail-stack">
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'listings.section.basic'|trans }}</h2>
+                    </header>
+                    <div class="meta-grid">
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.status'|trans }}</span>
+                            <strong><span class="badge badge--{{ statusTone }}">{{ listing.statusLabel()|trans }}</span></strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.market_status'|trans }}</span>
+                            <strong><span class="badge badge--{{ marketTone }}">{{ ('listings.market.' ~ listing.marketStatus())|trans }}</span></strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.offer'|trans }}</span>
+                            <strong><span class="badge badge--info">{{ ('listings.offer.' ~ listing.offerType())|trans }}</span></strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.type'|trans }}</span>
+                            <strong>{{ ('listings.type.' ~ listing.propertyType())|trans }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.featured'|trans }}</span>
+                            <strong>{% if listing.featured() %}<span class="badge badge--signal">TOP</span>{% else %}{{ 'common.no'|trans }}{% endif %}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.price'|trans }}</span>
+                            <strong class="meta-tile__price">{{ listing.price()|number_format(0, ',', ' ') }}&nbsp;{{ listing.currency() }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.area'|trans }}</span>
+                            <strong>{{ listing.areaM2() is not null ? listing.areaM2() : '—' }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.rooms'|trans }}</span>
+                            <strong>{{ listing.rooms() is not null ? listing.rooms() : '—' }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.floor'|trans }}</span>
+                            <strong>{{ listing.floor() is not null ? listing.floor() : '—' }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.floors'|trans }}</span>
+                            <strong>{{ listing.floors() is not null ? listing.floors() : '—' }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.energy'|trans }}</span>
+                            <strong>{{ listing.energyRating() ?: '—' }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.created'|trans }}</span>
+                            <strong>{{ listing.createdAt().format('d. m. Y H:i') }}</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'listings.section.location'|trans }}</h2>
+                    </header>
+                    <div class="meta-grid">
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.city'|trans }}</span>
+                            <strong>{{ listing.city() ?: '—' }}{% if listing.cityPart() %}<span class="muted"> · {{ listing.cityPart() }}</span>{% endif %}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'listings.field.street'|trans }}</span>
+                            <strong>{{ listing.street() ?: '—' }}{% if listing.zip() %}<span class="muted"> · {{ listing.zip() }}</span>{% endif %}</strong>
+                        </div>
+                        <div class="meta-tile meta-tile--wide">
+                            <span>{{ 'listings.field.address'|trans }}</span>
+                            <strong>{{ listing.address() ?: '—' }}</strong>
+                        </div>
+                        {% if listing.latitude() is not null and listing.longitude() is not null %}
+                            <div class="meta-tile meta-tile--wide">
+                                <span>{{ 'listings.field.map'|trans }}</span>
+                                <strong>
+                                    <a href="https://www.openstreetmap.org/?mlat={{ listing.latitude() }}&mlon={{ listing.longitude() }}#map=16/{{ listing.latitude() }}/{{ listing.longitude() }}" target="_blank" rel="noopener">
+                                        {{ listing.latitude() }}, {{ listing.longitude() }}
+                                    </a>
+                                </strong>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'listings.section.amenities'|trans }}</h2>
+                    </header>
+                    <div class="module-chip-row" style="padding:4px 0 8px">
+                        {% set amenities = listing.amenityLabels() %}
+                        {% if amenities is empty %}
+                            <span class="muted">—</span>
+                        {% else %}
+                            {% for key in amenities %}
+                                {% if key == 'parking' %}
+                                    <span class="badge badge--info">{{ 'listings.field.parking'|trans }}{% if listing.parkingLots() %} ({{ listing.parkingLots() }}){% endif %}</span>
+                                {% else %}
+                                    <span class="badge badge--info">{{ ('listings.amenity.' ~ key)|trans }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'listings.section.broker'|trans }}</h2>
+                        {% if listing.brokerId() and user.can('listings.view') %}
+                            <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.brokers.show', {id: listing.brokerId()}) }}">{{ 'common.detail'|trans }}</a>
+                        {% endif %}
+                    </header>
+                    {% if listing.brokerId() or listing.brokerName() %}
+                        <div class="meta-grid">
+                            <div class="meta-tile">
+                                <span>{{ 'listings.field.broker_name'|trans }}</span>
+                                <strong>
+                                    {% if listing.brokerId() %}
+                                        <a href="{{ url('admin.listings.brokers.show', {id: listing.brokerId()}) }}">{{ listing.brokerName() ?: '—' }}</a>
+                                    {% else %}
+                                        {{ listing.brokerName() ?: '—' }}
+                                    {% endif %}
+                                </strong>
+                            </div>
+                            <div class="meta-tile">
+                                <span>{{ 'listings.field.broker_position'|trans }}</span>
+                                <strong>{{ listing.brokerPosition() ?: '—' }}</strong>
+                            </div>
+                            <div class="meta-tile">
+                                <span>{{ 'listings.field.broker_email'|trans }}</span>
+                                <strong>{% if listing.brokerEmail() %}<a href="mailto:{{ listing.brokerEmail() }}">{{ listing.brokerEmail() }}</a>{% else %}—{% endif %}</strong>
+                            </div>
+                            <div class="meta-tile">
+                                <span>{{ 'listings.field.broker_phone'|trans }}</span>
+                                <strong>{% if listing.brokerPhone() %}<a href="tel:{{ listing.brokerPhone() }}">{{ listing.brokerPhone() }}</a>{% else %}—{% endif %}</strong>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="muted" style="margin:0;padding:4px 0 8px">—</p>
+                    {% endif %}
+                </section>
+
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'listings.field.description'|trans }}</h2>
+                    </header>
+                    <div class="listing-desc">
+                        {{ listing.description() ?: '—' }}
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="design-panel" data-panel="nearby" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'listings.section.nearby'|trans }}</h2>
+                    {% if user.can('listings.manage') %}
+                        <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.edit', {id: listing.id()}) }}#nearby">{{ 'common.edit'|trans }}</a>
+                    {% endif %}
+                </header>
+
+                {% if nearLinks is empty %}
+                    <div class="empty">
+                        <p>{{ 'listings.near_links.empty'|trans }}</p>
+                        {% if user.can('listings.manage') %}
+                            <a class="btn btn--primary" href="{{ url('admin.listings.edit', {id: listing.id()}) }}#nearby">{{ 'listings.near_links.attach'|trans }}</a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'listings.near.field.name'|trans }}</th>
+                                    <th>{{ 'listings.near.field.category'|trans }}</th>
+                                    <th>{{ 'listings.near_links.field.distance'|trans }}</th>
+                                    <th>{{ 'listings.near_links.field.walk'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for link in nearLinks %}
+                                    {% set place = nearPlaces[link.id()]|default(null) %}
+                                    <tr>
+                                        <td>
+                                            {% if place %}
+                                                <a href="{{ url('admin.listings.near.show', {id: place.id()}) }}"><strong>{{ place.name() }}</strong></a>
+                                                {% if place.address() %}<div class="muted">{{ place.address() }}</div>{% endif %}
+                                            {% else %}
+                                                <span class="muted">{{ 'listings.near.error.not_found'|trans }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{% if place %}<span class="badge badge--info">{{ ('listings.near.category.' ~ place.category())|trans }}</span>{% else %}—{% endif %}</td>
+                                        <td class="is-mute">{{ link.distanceM() is not null ? link.distanceM() ~ ' m' : '—' }}</td>
+                                        <td class="is-mute">{{ link.walkMinutes() is not null ? link.walkMinutes() ~ ' min' : '—' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </section>
+        </section>
+
+        <section class="design-panel" data-panel="images" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'listings.images.title'|trans }}</h2>
+                    {% if user.can('listings.manage') %}
+                        <a class="btn btn--ghost btn-sm" href="{{ url('admin.listings.edit', {id: listing.id()}) }}#images">{{ 'listings.images.manage'|trans }}</a>
+                    {% endif %}
+                </header>
+
+                {% if images is empty %}
+                    <div class="empty">
+                        <p>{{ 'listings.images.empty'|trans }}</p>
+                        {% if user.can('listings.manage') %}
+                            <a class="btn btn--primary" href="{{ url('admin.listings.edit', {id: listing.id()}) }}#images">{{ 'listings.images.manage'|trans }}</a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="product-gallery">
+                        {% for image in images %}
+                            {% set asset = imageAssets[image.id()]|default(null) %}
+                            {% set preview = imageUrls[image.id()]|default(null) %}
+                            <figure class="product-gallery__item{{ image.isPrimary() ? ' is-primary' : '' }}">
+                                <div class="product-gallery__media">
+                                    {% if preview %}
+                                        <a href="{{ preview }}" target="_blank" rel="noopener">
+                                            <img src="{{ preview }}" alt="{{ image.alt()|default(listing.title()) }}">
+                                        </a>
+                                    {% else %}
+                                        <div class="product-gallery__missing muted">{{ 'listings.images.missing_asset'|trans }}</div>
+                                    {% endif %}
+                                    <div class="product-gallery__badges">
+                                        {% if image.isExternal() %}
+                                            <span class="badge badge--muted">{{ 'listings.images.external'|trans }}</span>
+                                        {% elseif asset %}
+                                            <span class="badge badge--muted">{{ 'listings.images.from_media'|trans }}</span>
+                                        {% endif %}
+                                        {% if image.isPrimary() %}
+                                            <span class="badge badge--ok">{{ 'listings.images.primary'|trans }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </figure>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+        </section>
+    </div>
+{% endblock %}

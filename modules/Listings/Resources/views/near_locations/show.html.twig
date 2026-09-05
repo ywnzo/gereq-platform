@@ -1,0 +1,59 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.listings'|trans, url: url('admin.listings.index') },
+        { label: 'nav.listings.near'|trans, url: url('admin.listings.near.index') },
+        { label: item.name() },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>{{ item.name() }}</h1>
+    <div class="actions">
+        {% if user.can('listings.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.listings.near.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endif %}
+        <a class="btn btn--ghost" href="{{ url('admin.listings.near.index') }}">{{ 'common.back'|trans }}</a>
+    </div>
+</header>
+
+<section class="panel">
+    <div class="meta-list">
+        <div>
+            <dt>{{ 'listings.near.field.category'|trans }}</dt>
+            <dd><span class="badge badge--info">{{ ('listings.near.category.' ~ item.category())|trans }}</span></dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.near.field.city'|trans }}</dt>
+            <dd>{{ item.city() ?: '—' }}</dd>
+        </div>
+        <div class="meta-list__full">
+            <dt>{{ 'listings.near.field.address'|trans }}</dt>
+            <dd>{{ item.address() ?: '—' }}</dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.near.field.latitude'|trans }}</dt>
+            <dd>{{ item.latitude() is not null ? item.latitude() : '—' }}</dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.near.field.longitude'|trans }}</dt>
+            <dd>{{ item.longitude() is not null ? item.longitude() : '—' }}</dd>
+        </div>
+        <div>
+            <dt>{{ 'listings.near.field.active'|trans }}</dt>
+            <dd>
+                <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">
+                    {{ item.active() ? 'listings.near.status.active'|trans : 'listings.near.status.inactive'|trans }}
+                </span>
+            </dd>
+        </div>
+        <div class="meta-list__full">
+            <dt>{{ 'listings.near.field.description'|trans }}</dt>
+            <dd>{{ item.description() ?: '—' }}</dd>
+        </div>
+    </div>
+</section>
+{% endblock %}

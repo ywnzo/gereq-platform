@@ -8,6 +8,7 @@ return [
     'rate_limit' => [
         'standard' => (int) env_value('API_RATE_LIMIT', 600),
         'write' => (int) env_value('API_RATE_LIMIT_WRITE', 120),
+        'store' => (int) env_value('API_RATE_LIMIT_STORE', 60),
         'window' => 60,
     ],
     'token_prefix_live' => 'grq_live_',

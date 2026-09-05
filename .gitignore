@@ -1,4 +1,8 @@
 /.env
+/.env.bak
+/.env.bak*
+*.bak
+/frontend/.env
 /vendor/
 /node_modules/
 /public/build/

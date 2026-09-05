@@ -126,8 +126,9 @@ final class UserController extends Controller
             $user->setPasswordHash($this->hasher->hash($password));
         }
 
+        $wasAdministrator = $user->hasRole('administrator');
         $user->roles()->clear();
-        $this->assignRoles($user, $request->request->all('roles') ?: []);
+        $this->assignRoles($user, $request->request->all('roles') ?: [], keepAdministrator: $wasAdministrator);
         $this->em->flush();
         $this->auditor->log('user.updated', 'user', $user->id(), $old, [
             'name' => $user->name(),
@@ -161,12 +162,27 @@ final class UserController extends Controller
     }
 
     /** @param list<string> $roleIds */
-    private function assignRoles(User $user, array $roleIds): void
+    private function assignRoles(User $user, array $roleIds, bool $keepAdministrator = false): void
     {
+        $actor = $this->auth->user();
+        $actorIsAdmin = $actor instanceof User && $actor->hasRole('administrator');
+        $preserveAdministrator = $keepAdministrator && !$actorIsAdmin;
+
         foreach ($roleIds as $roleId) {
             $role = $this->em->find(Role::class, (string) $roleId);
-            if ($role instanceof Role) {
-                $user->assignRole($role);
+            if (!$role instanceof Role) {
+                continue;
+            }
+            if ($role->name() === 'administrator' && !$actorIsAdmin) {
+                continue;
+            }
+            $user->assignRole($role);
+        }
+
+        if ($preserveAdministrator) {
+            $admin = $this->em->getRepository(Role::class)->findOneBy(['name' => 'administrator']);
+            if ($admin instanceof Role) {
+                $user->assignRole($admin);
             }
         }
     }

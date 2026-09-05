@@ -6,6 +6,8 @@ namespace Gereq\Console;
 
 use Gereq\Console\Command\AboutCommand;
 use Gereq\Console\Command\CacheClearCommand;
+use Gereq\Console\Command\ImportLaravelCommand;
+use Gereq\Console\Command\InstallCommand;
 use Gereq\Console\Command\MakeModuleCommand;
 use Gereq\Console\Command\MakeResourceCommand;
 use Gereq\Console\Command\MigrateCommand;
@@ -20,6 +22,9 @@ use Gereq\Console\Command\ServeDockerCommand;
 use Gereq\Console\Command\TwigTypesCommand;
 use Gereq\Console\Command\UserCreateCommand;
 use Modules\Currency\Console\SyncRatesCommand;
+use Modules\CustomerUploads\Console\PurgeUploadsCommand;
+use Modules\Payments\Console\ImapMatchCommand;
+use Modules\Products\Console\ImportProductsCsvCommand;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
@@ -49,6 +54,7 @@ final class ConsoleKernel
     {
         return [
             AboutCommand::class,
+            InstallCommand::class,
             ModuleListCommand::class,
             ModuleEnableCommand::class,
             ModuleDisableCommand::class,
@@ -64,6 +70,10 @@ final class ConsoleKernel
             ServeDockerCommand::class,
             TwigTypesCommand::class,
             SyncRatesCommand::class,
+            ImportLaravelCommand::class,
+            ImportProductsCsvCommand::class,
+            ImapMatchCommand::class,
+            PurgeUploadsCommand::class,
         ];
     }
 }

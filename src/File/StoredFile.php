@@ -84,6 +84,12 @@ class StoredFile
         return $this->size;
     }
 
+    /** @return array<string, mixed>|null */
+    public function metadata(): ?array
+    {
+        return $this->metadata;
+    }
+
     public function disk(): string
     {
         return $this->disk;

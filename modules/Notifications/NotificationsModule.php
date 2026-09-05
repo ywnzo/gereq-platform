@@ -76,15 +76,6 @@ final class NotificationsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
-        $context->menu()->add(new MenuItem(
-            id: 'notifications',
-            label: 'nav.notifications',
-            icon: 'bell',
-            route: 'admin.notifications.index',
-            permission: 'notifications.view',
-            order: 15,
-            group: 'Hlavní',
-        ));
         $context->commandPalette()->add(new PaletteCommand(
             id: 'notifications.index',
             label: 'palette.notifications.index',
@@ -135,9 +126,10 @@ final class NotificationsModule implements ModuleInterface
             $count = $bridge->unreadCount($user->id());
             $url = $context->router()->url('admin.notifications.index');
             $badge = $count > 0 ? '<span class="nav-item__badge">' . $count . '</span>' : '';
+            $icon = $context->get(\Gereq\Admin\Ui\Icons::class)->svg('bell');
 
             return $html . '<a class="icon-btn" href="' . htmlspecialchars($url) . '" title="Notifications">'
-                . '<span aria-hidden="true">🔔</span>' . $badge . '</a>';
+                . $icon . $badge . '</a>';
         });
     }
 }

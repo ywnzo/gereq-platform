@@ -81,6 +81,7 @@ final class Authenticator
         }
 
         if ($user !== null) {
+            $this->revokeRememberTokens($user);
             $this->auditor->log('auth.logout', 'user', $user->id());
         }
     }
@@ -180,17 +181,37 @@ final class Authenticator
         $token = $this->em->getRepository(RememberToken::class)->findOneBy(['tokenHash' => $hash]);
 
         if (!$token instanceof RememberToken || $token->isExpired() || $token->user()->id() !== $userId) {
+            $request->attributes->set('_clear_remember', true);
+
             return;
         }
 
         $user = $token->user();
         if (!$user->isActive()) {
+            $this->em->remove($token);
+            $this->em->flush();
+            $request->attributes->set('_clear_remember', true);
+
             return;
         }
+
+        // Rotate remember token on each use.
+        $this->em->remove($token);
+        $this->em->flush();
+        $this->queueRememberCookie($user);
 
         $session = $request->getSession();
         $session->migrate(true);
         $session->set(self::SESSION_KEY, $user->id());
         $this->user = $user;
+    }
+
+    public function revokeRememberTokens(User $user): void
+    {
+        $tokens = $this->em->getRepository(RememberToken::class)->findBy(['user' => $user]);
+        foreach ($tokens as $token) {
+            $this->em->remove($token);
+        }
+        $this->em->flush();
     }
 }

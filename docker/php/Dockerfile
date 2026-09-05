@@ -7,8 +7,19 @@ RUN apt-get update \
         libsqlite3-dev \
         libpq-dev \
         libzip-dev \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
+        libwebp-dev \
+        libavif-dev \
         $PHPIZE_DEPS \
+    && docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
+        --with-webp \
+        --with-avif \
     && docker-php-ext-install -j$(nproc) \
+        gd \
         pdo_sqlite \
         pdo_mysql \
         pdo_pgsql \

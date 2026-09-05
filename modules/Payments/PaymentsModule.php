@@ -15,7 +15,9 @@ use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
 use Modules\Payments\Application\ComgateInboundProvider;
 use Modules\Payments\Application\Gateways\ComgateGateway;
+use Modules\Payments\Application\Gateways\GoPayGateway;
 use Modules\Payments\Application\Gateways\ManualBankGateway;
+use Modules\Payments\Application\Gateways\StripeGateway;
 use Modules\Payments\Application\PaymentGatewayRegistry;
 use Modules\Payments\Application\PaymentService;
 use Modules\Payments\Application\PaymentsProvider;
@@ -50,6 +52,8 @@ final class PaymentsModule implements ModuleInterface
         $registry = $context->get(PaymentGatewayRegistry::class);
         $registry->register($context->get(ManualBankGateway::class));
         $registry->register($context->get(ComgateGateway::class));
+        $registry->register($context->get(GoPayGateway::class));
+        $registry->register($context->get(StripeGateway::class));
         $context->capabilities()->register('payment_gateways', $this->id(), $registry);
 
         $context->get(InboundWebhookRegistry::class)
@@ -62,6 +66,11 @@ final class PaymentsModule implements ModuleInterface
         $context->settings()->define('payments.comgate_merchant', SettingRecord::TYPE_STRING, 'payments.settings.comgate_merchant', '', $this->id());
         $context->settings()->define('payments.comgate_secret', SettingRecord::TYPE_STRING, 'payments.settings.comgate_secret', '', $this->id());
         $context->settings()->define('payments.comgate_test', SettingRecord::TYPE_BOOLEAN, 'payments.settings.comgate_test', true, $this->id());
+        $context->settings()->define('payments.gopay_goid', SettingRecord::TYPE_STRING, 'payments.settings.gopay_goid', '', $this->id());
+        $context->settings()->define('payments.stripe_secret', SettingRecord::TYPE_STRING, 'payments.settings.stripe_secret', '', $this->id());
+        $context->settings()->define('payments.imap_mailbox', SettingRecord::TYPE_STRING, 'payments.settings.imap_mailbox', '', $this->id());
+        $context->settings()->define('payments.imap_user', SettingRecord::TYPE_STRING, 'payments.settings.imap_user', '', $this->id());
+        $context->settings()->define('payments.imap_password', SettingRecord::TYPE_STRING, 'payments.settings.imap_password', '', $this->id());
 
         $context->router()->group('/admin/payments/methods', function (Router $routes): void {
             $routes->get('', [PaymentMethodController::class, 'index'])

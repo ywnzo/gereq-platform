@@ -2,31 +2,67 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>{{ 'settings.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'settings.title'|trans }}</h1>
+            <p class="muted">{{ 'settings.intro'|trans }}</p>
+        </div>
+        <div class="actions">
+            <button class="btn btn--primary" type="submit" form="settings-form">{{ 'settings.save'|trans }}</button>
+        </div>
     </header>
-    <form method="post" action="{{ url('admin.settings.update') }}" class="stack">
+
+    {% set firstGroup = groups|keys|first %}
+    <form id="settings-form" method="post" action="{{ url('admin.settings.update') }}" class="settings-page" autocomplete="off">
         {{ csrf_field()|raw }}
-        {% for key, definition in definitions %}
-            {% set field = key|replace({'.': '__'}) %}
-            <label class="field">
-                <span>{{ definition.label|trans }}</span>
-                {% if definition.type == 'boolean' %}
-                    <select name="{{ field }}">
-                        <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
-                        <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
-                    </select>
-                {% elseif definition.options is defined and definition.options is not empty %}
-                    <select name="{{ field }}">
-                        {% for optionValue, optionLabel in definition.options %}
-                            <option value="{{ optionValue }}" {{ values[key] == optionValue ? 'selected' : '' }}>{{ optionLabel }}</option>
-                        {% endfor %}
-                    </select>
-                {% else %}
-                    <input type="text" name="{{ field }}" value="{{ values[key] }}">
-                {% endif %}
-                <small class="muted">{{ key }}</small>
-            </label>
-        {% endfor %}
-        <button class="btn btn--primary" type="submit">{{ 'settings.save'|trans }}</button>
+
+        <div class="detail-hub settings-hub" x-data="gereqTabs" data-initial="{{ activeTab|default(firstGroup) }}">
+            <input type="hidden" name="settings_tab" value="{{ activeTab|default(firstGroup) }}">
+            <div class="design-tabs detail-tabs settings-tabs" role="tablist">
+                {% for groupId, group in groups %}
+                    <button type="button" class="design-tab" role="tab" data-tab="{{ groupId }}">
+                        {{ group.label|trans }}
+                    </button>
+                {% endfor %}
+            </div>
+
+            {% for groupId, group in groups %}
+                <section class="design-panel" data-panel="{{ groupId }}" role="tabpanel">
+                    <section class="panel settings-panel">
+                        <div class="settings-fields">
+                            {% for item in group.items %}
+                                {% set key = item.key %}
+                                {% set definition = item.definition %}
+                                {% set field = key|replace({'.': '__'}) %}
+                                {% set helpKey = definition.label ~ '.help' %}
+                                <label class="settings-field">
+                                    <span class="settings-field__label">{{ definition.label|trans }}</span>
+                                    <div class="settings-field__control">
+                                        {% if definition.type == 'boolean' %}
+                                            <select class="input" name="{{ field }}">
+                                                <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                                                <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                                            </select>
+                                        {% elseif definition.options is defined and definition.options is not empty %}
+                                            <select class="input" name="{{ field }}">
+                                                {% for optionValue, optionLabel in definition.options %}
+                                                    <option value="{{ optionValue }}" {{ values[key] == optionValue ? 'selected' : '' }}>{{ optionLabel|trans }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        {% elseif item.secret %}
+                                            <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
+                                        {% else %}
+                                            <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}">
+                                        {% endif %}
+                                        {% if helpKey|trans != helpKey %}
+                                            <span class="settings-field__help muted">{{ helpKey|trans }}</span>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </section>
+            {% endfor %}
+        </div>
     </form>
 {% endblock %}

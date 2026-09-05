@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Console\Docker\ServeLogTui;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,7 +26,10 @@ final class ServeDockerCommand extends Command
             ->addOption('queue', null, InputOption::VALUE_NONE, 'Spustit i queue worker (profil queue)')
             ->addOption('build', null, InputOption::VALUE_NONE, 'Přestavět Docker image před startem')
             ->addOption('detach', 'd', InputOption::VALUE_NONE, 'Běžet na pozadí (docker compose up -d)')
-            ->addOption('down', null, InputOption::VALUE_NONE, 'Zastavit Docker stack a ukončit');
+            ->addOption('down', null, InputOption::VALUE_NONE, 'Zastavit Docker stack a ukončit')
+            ->addOption('raw', null, InputOption::VALUE_NONE, 'Surové docker compose logy (bez formátování)')
+            ->addOption('dashboard', null, InputOption::VALUE_NONE, 'Fullscreen TUI dashboard (místo scroll streamu)')
+            ->addOption('keep', null, InputOption::VALUE_NONE, 'Při ukončení logů nenechat stack padnout (compose down přeskočit)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -70,41 +74,114 @@ final class ServeDockerCommand extends Command
         $withQueue = (bool) $input->getOption('queue');
         $detach = (bool) $input->getOption('detach');
         $build = (bool) $input->getOption('build');
+        $raw = (bool) $input->getOption('raw');
+        $keep = (bool) $input->getOption('keep');
+        $dashboard = (bool) $input->getOption('dashboard');
 
         $lanIp = $this->lanIp();
-        $output->writeln('GEREQ Platform (Docker): nginx + PHP-FPM + Redis');
-        $output->writeln(sprintf('V Cursoru / na VM:     <info>http://127.0.0.1:%d/admin</info>', $port));
-        if ($lanIp !== null) {
-            $output->writeln(sprintf('Z Windows přes IP VM: <info>http://%s:%d/admin</info>', $lanIp, $port));
-        }
-        $output->writeln('Použijte 127.0.0.1, ne localhost.');
-        if ($withQueue) {
-            $output->writeln('<comment>Queue worker běží (QUEUE_DRIVER=redis uvnitř workeru).</comment>');
-            $output->writeln('Pro frontu v aplikaci nastavte v .env: QUEUE_DRIVER=redis');
-        } else {
-            $output->writeln('Queue worker: php gereq serve-docker --queue');
-        }
-        $output->writeln('Zastavení: Ctrl+C' . ($detach ? ' (nebo php gereq serve-docker --down)' : ' / php gereq serve-docker --down'));
-        $output->writeln('');
 
         putenv('GEREQ_PORT=' . $port);
         putenv('APP_URL=http://127.0.0.1:' . $port);
+        putenv('TRUSTED_PROXIES=*');
         $_ENV['GEREQ_PORT'] = (string) $port;
         $_ENV['APP_URL'] = 'http://127.0.0.1:' . $port;
+        $_ENV['TRUSTED_PROXIES'] = '*';
 
-        $args = ['up'];
-        if ($detach) {
-            $args[] = '-d';
+        $origins = [
+            'http://127.0.0.1:5173',
+            'http://localhost:5173',
+        ];
+        if ($lanIp !== null && $lanIp !== '') {
+            $origins[] = 'http://' . $lanIp . ':5173';
         }
-        if ($build) {
-            $args[] = '--build';
+        $existing = trim((string) (getenv('FRONTEND_ORIGIN') ?: ($_ENV['FRONTEND_ORIGIN'] ?? '')));
+        if ($existing !== '' && $existing !== '*') {
+            foreach (explode(',', $existing) as $part) {
+                $part = trim($part);
+                if ($part !== '' && !in_array($part, $origins, true)) {
+                    $origins[] = $part;
+                }
+            }
         }
+        $frontendOrigin = implode(',', $origins);
+        putenv('FRONTEND_ORIGIN=' . $frontendOrigin);
+        $_ENV['FRONTEND_ORIGIN'] = $frontendOrigin;
+
+        if ($detach || $raw) {
+            $output->writeln('GEREQ Platform (Docker): nginx + PHP-FPM + Redis + queue worker');
+            $output->writeln(sprintf('V Cursoru / na VM:     <info>http://127.0.0.1:%d/admin</info>', $port));
+            if ($lanIp !== null) {
+                $output->writeln(sprintf('Z Windows přes IP VM: <info>http://%s:%d/admin</info>', $lanIp, $port));
+            }
+            $output->writeln('Použijte 127.0.0.1, ne localhost.');
+            $output->writeln('<comment>Queue worker běží automaticky (QUEUE_DRIVER=redis).</comment>');
+            if ($withQueue) {
+                $output->writeln('<comment>--queue je legacy; worker je součástí výchozího stacku.</comment>');
+            }
+            $output->writeln('Zastavení: Ctrl+C' . ($detach ? ' (nebo php gereq serve-docker --down)' : ' / php gereq serve-docker --down'));
+            $output->writeln('');
+
+            $args = ['up'];
+            if ($detach) {
+                $args[] = '-d';
+            }
+            if ($build) {
+                $args[] = '--build';
+            }
+
+            return $this->runCompose($output, $args);
+        }
+
+        // Interactive TUI: start detached, then pretty-follow logs.
+        $output->writeln($this->banner($port, $lanIp));
         if ($withQueue) {
-            $args[] = '--profile';
-            $args[] = 'queue';
+            $output->writeln('<comment>--queue je legacy; worker je součástí výchozího stacku.</comment>');
         }
 
-        return $this->runCompose($output, $args);
+        $upArgs = ['up', '-d'];
+        if ($build) {
+            $upArgs[] = '--build';
+        }
+        $code = $this->runCompose($output, $upArgs);
+        if ($code !== Command::SUCCESS) {
+            return $code;
+        }
+
+        $output->writeln('<info>Stack běží.</info> ' . ($dashboard ? 'Otevírám dashboard…' : 'Otevírám log stream…'));
+        $output->writeln($this->cDim('  [q] ukončit  [a] assety  [p] php  [n]oise  [space] pause'));
+        $output->writeln('');
+
+        // Small delay so containers emit first ready lines.
+        usleep(400_000);
+
+        $tui = new ServeLogTui(
+            basePath: $this->basePath,
+            port: $port,
+            lanIp: $lanIp,
+            bringDownOnExit: !$keep,
+            dashboard: $dashboard,
+        );
+
+        return $tui->run() === 0 ? Command::SUCCESS : Command::FAILURE;
+    }
+
+    private function banner(int $port, ?string $lanIp): string
+    {
+        $lines = [
+            '<fg=green;options=bold>GEREQ</> <fg=gray>·</> Docker stack',
+            sprintf('  local   <info>http://127.0.0.1:%d/admin</info>', $port),
+        ];
+        if ($lanIp !== null) {
+            $lines[] = sprintf('  lan     <info>http://%s:%d/admin</info>', $lanIp, $port);
+        }
+        $lines[] = '  <fg=gray>Použijte 127.0.0.1, ne localhost. Queue + Redis jsou součástí stacku.</>';
+
+        return implode("\n", $lines);
+    }
+
+    private function cDim(string $text): string
+    {
+        return '<fg=gray>' . $text . '</>';
     }
 
     /** @param list<string> $args */

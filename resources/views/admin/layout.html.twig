@@ -106,9 +106,14 @@
                     </button>
                     <nav class="breadcrumbs" aria-label="{{ 'ui.breadcrumbs'|trans }}">
                         {% block breadcrumb %}
-                            <a href="{{ url('admin.dashboard') }}" class="breadcrumbs__root">{{ 'nav.overview'|trans }}</a>
-                            <span class="breadcrumbs__sep" aria-hidden="true">/</span>
-                            <span class="breadcrumbs__current">{{ pageTitle|default('admin.title'|trans) }}</span>
+                            {% if breadcrumbs is defined and breadcrumbs %}
+                                {% include 'ui/breadcrumbs.html.twig' with { items: breadcrumbs } %}
+                            {% else %}
+                                {% include 'ui/breadcrumbs.html.twig' with { items: [
+                                    { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+                                    { label: pageTitle|default('admin.title'|trans) },
+                                ] } %}
+                            {% endif %}
                         {% endblock %}
                     </nav>
                 </div>

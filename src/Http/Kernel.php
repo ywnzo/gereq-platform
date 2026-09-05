@@ -36,6 +36,7 @@ final class Kernel
 
     public function handle(Request $request): Response
     {
+        TrustedProxies::configure($request);
         $this->requestStack->push($request);
         $this->debugBar->mark('request');
 
@@ -80,6 +81,7 @@ final class Kernel
             SecurityHeadersMiddleware::class,
             CsrfMiddleware::class,
             \Gereq\Api\Http\CorrelationIdMiddleware::class,
+            \Gereq\Http\Middleware\SetupMiddleware::class,
         ];
 
         $isApi = str_starts_with((string) $route->getPath(), '/api/');

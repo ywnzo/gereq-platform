@@ -1,0 +1,70 @@
+{#
+  Single-image media box: preview + upload + library pick + optional URL.
+  Params: name, file_name, library_name, clear_name, label, hint, form, value, optional, has_media, library
+#}
+{% set name = name|default('image_url') %}
+{% set file_name = file_name|default('file') %}
+{% set library_name = library_name|default('media_asset_id') %}
+{% set clear_name = clear_name|default('clear_image') %}
+{% set label = label|default('ui.media_box.label'|trans) %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set value = value|default('') %}
+{% set optional = optional|default(true) %}
+{% set has_media = has_media|default(false) %}
+{% set library = library|default([]) %}
+{% set id = id|default('f-' ~ name) %}
+
+<div class="media-box field--full" data-field="{{ name }}">
+    {% if label %}
+        <div class="g-label" style="margin-bottom:8px">
+            <span>{{ label }}{% if optional %} <span class="g-optional">({{ 'common.optional'|trans }})</span>{% endif %}</span>
+        </div>
+    {% endif %}
+
+    {% if value %}
+        <div class="media-box__preview" style="margin-bottom:12px">
+            <img src="{{ value }}" alt="" style="max-width:min(320px,100%);max-height:180px;object-fit:cover;border-radius:8px;display:block;border:1px solid var(--gereq-line, #e5e7eb)">
+        </div>
+    {% endif %}
+
+    {% if has_media %}
+        <label class="g-file" for="{{ id }}-file" style="margin-bottom:12px;display:block">
+            <input class="g-file__input" id="{{ id }}-file" type="file" name="{{ file_name }}" accept="image/*">
+            <span class="g-file__box">
+                <span class="g-file__title">{{ 'ui.media_box.upload'|trans }}</span>
+                <span class="g-file__meta">{{ 'ui.media_box.upload_hint'|trans }}</span>
+            </span>
+        </label>
+
+        {% if library is not empty %}
+            {% include 'ui/select.html.twig' with {
+                name: library_name,
+                label: 'ui.media_box.library'|trans,
+                optional: true,
+                form: form,
+                value: '',
+                options: [{ value: '', label: 'ui.media_box.library_none'|trans }]|merge(library),
+                extra: 'field--full'
+            } %}
+        {% endif %}
+    {% endif %}
+
+    {% include 'ui/input.html.twig' with {
+        name: name,
+        id: id,
+        label: 'ui.media_box.url'|trans,
+        optional: true,
+        form: form,
+        value: value,
+        hint: hint,
+        extra: 'field--full'
+    } %}
+
+    {% if value %}
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
+            <input type="checkbox" name="{{ clear_name }}" value="1">
+            <span>{{ 'ui.media_box.clear'|trans }}</span>
+        </label>
+    {% endif %}
+</div>

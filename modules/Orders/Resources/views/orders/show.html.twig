@@ -104,6 +104,27 @@
                     <div class="meta-tile"><span>{{ 'orders.field.parcel_point'|trans|default('Výdejní místo') }}</span><strong>{{ item.parcelPointLabel() ?: item.parcelPointId() ?: '—' }}</strong></div>
                     <div class="meta-tile"><span>{{ 'orders.field.tracking'|trans|default('Tracking') }}</span><strong>{{ item.trackingNumber() ?: '—' }}</strong></div>
                 </div>
+                {% if user.can('orders.manage') %}
+                    <div class="actions" style="margin-top:1rem">
+                        <form method="post" action="{{ url('admin.orders.shipment.create', {id: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--primary btn-sm" type="submit">Vytvořit zásilku (Packeta/PPL)</button></form>
+                        <form method="post" action="{{ url('admin.orders.shipment.sync', {id: item.id()}) }}">{{ csrf_field()|raw }}<button class="btn btn--ghost btn-sm" type="submit">Sync stavu zásilky</button></form>
+                    </div>
+                {% endif %}
+                {% if shipments is defined and shipments is not empty %}
+                    <div class="table-wrap" style="margin-top:1rem"><table class="table">
+                        <thead><tr><th>Dopravce</th><th>Stav</th><th>Tracking</th><th>Štítek</th></tr></thead>
+                        <tbody>
+                        {% for s in shipments %}
+                            <tr>
+                                <td>{{ s.carrier() }}</td>
+                                <td>{{ s.status() }}</td>
+                                <td>{{ s.trackingNumber() ?: '—' }}</td>
+                                <td>{% if s.labelUrl() %}<a href="{{ s.labelUrl() }}" target="_blank" rel="noopener">PDF</a>{% else %}—{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table></div>
+                {% endif %}
                 {% set ship = item.shippingAddress() %}
                 {% if ship %}
                     <div class="meta-tile" style="grid-column:1/-1"><span>{{ 'orders.field.shipping_address'|trans|default('Doručovací adresa') }}</span><strong>{{ ship.name|default('') }}{% if ship.street %}, {{ ship.street }}{% endif %}{% if ship.city %}, {{ ship.zip|default('') }} {{ ship.city }}{% endif %}{% if ship.country %}, {{ ship.country }}{% endif %}</strong></div>

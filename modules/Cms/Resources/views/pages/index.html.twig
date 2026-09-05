@@ -34,15 +34,15 @@
                 {% for item in items %}
                     <tr>
                         <td><a href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ item.title() }}</a></td>
-                        <td><code>/p/{{ item.slug() }}</code></td>
-                        <td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+                        <td><code>/api/public/pages/{{ item.slug() }}</code></td>
+                        <td><span class="badge badge--{{ item.status() == 'published' ? 'info' : (item.status() == 'draft' ? 'muted' : 'ok') }}">{{ item.statusLabel()|trans }}</span></td>
                         <td>{{ item.templateLabel()|trans }}</td>
                         <td>{{ item.updatedAt().format('d. m. Y H:i') }}</td>
                         <td class="table__actions" x-data="rowMenu" @click.outside="close">
                             <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open">{{ icon('dots') }}</button>
                             <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
                                 <a href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
-                                <a href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank">{{ 'cms.pages.preview'|trans }}</a>
+                                <a href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank">{{ 'cms.pages.preview_json'|trans }}</a>
                                 {% if user.can('cms.manage') %}
                                     <a href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                                     <form method="post" action="{{ url('admin.cms.pages.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'cms.confirm_delete_page'|trans|e('js') }}');">

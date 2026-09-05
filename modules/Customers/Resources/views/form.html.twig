@@ -32,13 +32,22 @@
             form: 'customers.save',
             value: item ? item.phone() : ''
         } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'company',
-            label: 'customers.field.company'|trans,
-            optional: true,
-            form: 'customers.save',
-            value: item ? item.company() : ''
-        } %}
+        <div class="field ares-field" x-data="gereqAresSubject">
+            <span>{{ 'customers.field.company'|trans }} · ARES</span>
+            <input
+                class="input"
+                name="company"
+                data-ares-query
+                data-ares-fill="company"
+                autocomplete="off"
+                placeholder="IČO nebo název firmy"
+                value="{{ item ? item.company() : '' }}"
+                @input="onInput"
+                @keydown="onKeydown"
+                x-ref="query"
+            >
+            {% include 'ui/ares_subject_suggest.html.twig' %}
+        </div>
         {% include 'ui/select.html.twig' with {
             name: 'status',
             label: 'customers.field.status'|trans,

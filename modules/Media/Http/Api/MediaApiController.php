@@ -95,10 +95,16 @@ final class MediaApiController extends Controller
         $width = null;
         $height = null;
         if (str_starts_with($stored->mime(), 'image/')) {
-            $info = @getimagesize($uploaded->getPathname());
-            if ($info !== false) {
-                $width = (int) $info[0];
-                $height = (int) $info[1];
+            $meta = $stored->metadata();
+            if (is_array($meta) && isset($meta['width'], $meta['height'])) {
+                $width = (int) $meta['width'];
+                $height = (int) $meta['height'];
+            } else {
+                $info = @getimagesize($uploaded->getPathname());
+                if ($info !== false) {
+                    $width = (int) $info[0];
+                    $height = (int) $info[1];
+                }
             }
         }
 

@@ -1,21 +1,29 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'admin.modules.title'|trans, url: url('admin.modules.index') },
+        { label: manifest.name },
+    ] } %}
+{% endblock %}
+
 {% block content %}
     {% set overview = report.overview %}
     {% set counts = report.counts %}
 
     <header class="page-header">
         <div>
-            <p class="eyebrow"><a href="{{ url('admin.modules.index') }}">{{ 'admin.modules.title'|trans }}</a> · <code>{{ manifest.id }}</code></p>
+            <p class="eyebrow"><a href="{{ url('admin.modules.index') }}">{{ 'admin.modules.title'|trans }}</a></p>
             <h1>{{ manifest.name }}</h1>
-            <p class="muted">{{ (manifest.description ?: 'common.no_description')|trans }}</p>
+            <p class="muted">
+                <code>{{ manifest.id }}</code>
+                · v{{ manifest.version }}
+                · <span class="status-chip{% if not enabled %} status-chip--muted{% endif %}"><span class="status-chip__dot"></span>{{ enabled ? 'common.enabled'|trans : 'common.disabled'|trans }}</span>
+            </p>
+            <p class="module-lead">{{ (manifest.description ?: 'common.no_description')|trans }}</p>
         </div>
         <div class="module-header-actions">
-            {% if enabled %}
-                <span class="badge badge--ok">{{ 'common.active'|trans }}</span>
-            {% else %}
-                <span class="badge badge--muted">{{ 'common.disabled'|trans }}</span>
-            {% endif %}
             <form method="post" action="{{ enabled ? url('admin.modules.disable', {id: manifest.id}) : url('admin.modules.enable', {id: manifest.id}) }}">
                 {{ csrf_field()|raw }}
                 <button class="btn {{ enabled ? 'btn--ghost' : 'btn--primary' }}" type="submit">
@@ -29,8 +37,8 @@
         <div class="alert alert--danger">{{ 'admin.modules.missing_deps'|trans({'%list%': missing|join(', ')}) }}</div>
     {% endif %}
 
-    <div class="module-hub" x-data="gereqTabs" data-initial="overview">
-        <div class="design-tabs module-tabs" role="tablist" aria-label="{{ 'admin.modules.sections'|trans }}">
+    <div class="detail-hub module-hub" x-data="gereqTabs" data-initial="overview">
+        <div class="design-tabs detail-tabs module-tabs" role="tablist" aria-label="{{ 'admin.modules.sections'|trans }}">
             <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'admin.modules.tab.overview'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="migrations">
                 {{ 'admin.modules.tab.migrations'|trans }}{% if counts.migrations %}<span class="module-tab-count">{{ counts.migrations }}</span>{% endif %}
@@ -56,76 +64,130 @@
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
-            <div class="module-panel">
-                <div class="module-panel__grid">
-                    <dl class="meta-list meta-list--flush">
-                        <div><dt>{{ 'common.version'|trans }}</dt><dd>v{{ manifest.version }}{% if overview.installed_version and overview.installed_version != manifest.version %} <span class="muted">{{ 'admin.modules.installed_version'|trans({'%version%': overview.installed_version}) }}</span>{% endif %}</dd></div>
-                        <div><dt>{{ 'common.author'|trans }}</dt><dd>{{ manifest.author }}</dd></div>
-                        <div><dt>{{ 'common.class'|trans }}</dt><dd><code>{{ manifest.moduleClass }}</code></dd></div>
-                        <div><dt>{{ 'common.path'|trans }}</dt><dd><code>{{ manifest.path }}</code></dd></div>
-                        <div>
-                            <dt>{{ 'common.activated_at'|trans }}</dt>
-                            <dd>{{ overview.enabled_at ?: 'common.none'|trans }}</dd>
+            <div class="detail-stack">
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'admin.modules.tab.overview'|trans }}</h2>
+                    </header>
+                    <div class="meta-grid">
+                        <div class="meta-tile">
+                            <span>{{ 'common.version'|trans }}</span>
+                            <strong>v{{ manifest.version }}{% if overview.installed_version and overview.installed_version != manifest.version %} <span class="muted">{{ 'admin.modules.installed_version'|trans({'%version%': overview.installed_version}) }}</span>{% endif %}</strong>
                         </div>
-                        <div class="meta-list__full">
-                            <dt>{{ 'common.dependencies'|trans }}</dt>
-                            <dd class="module-chip-row">
-                                {% if manifest.requires is empty %}{{ 'common.none'|trans }}{% else %}
+                        <div class="meta-tile">
+                            <span>{{ 'common.author'|trans }}</span>
+                            <strong>{{ manifest.author }}</strong>
+                        </div>
+                        <div class="meta-tile">
+                            <span>{{ 'common.activated_at'|trans }}</span>
+                            <strong>{{ overview.enabled_at ?: 'common.none'|trans }}</strong>
+                        </div>
+                        <div class="meta-tile meta-tile--wide">
+                            <span>{{ 'common.class'|trans }}</span>
+                            <strong><code>{{ manifest.moduleClass }}</code></strong>
+                        </div>
+                        <div class="meta-tile meta-tile--wide">
+                            <span>{{ 'common.path'|trans }}</span>
+                            <strong><code class="module-code-soft">{{ manifest.path }}</code></strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'admin.modules.summary.title'|trans }}</h2>
+                    </header>
+                    <div class="module-summary-cards">
+                        <div class="module-summary-card">
+                            <strong>{{ counts.api }}</strong>
+                            <span>{{ 'admin.modules.summary.api'|trans }}</span>
+                        </div>
+                        <div class="module-summary-card">
+                            <strong>{{ counts.routes }}</strong>
+                            <span>{{ 'admin.modules.summary.routes'|trans }}</span>
+                        </div>
+                        <div class="module-summary-card">
+                            <strong>{{ counts.migrations }}</strong>
+                            <span>{{ 'admin.modules.summary.migrations'|trans }}</span>
+                        </div>
+                        <div class="module-summary-card">
+                            <strong>{{ counts.events }}</strong>
+                            <span>{{ 'admin.modules.summary.events'|trans }}</span>
+                        </div>
+                        <div class="module-summary-card">
+                            <strong>{{ counts.hooks }}</strong>
+                            <span>{{ 'admin.modules.summary.hooks'|trans }}</span>
+                        </div>
+                        <div class="module-summary-card{% if counts.health_issues %} module-summary-card--warn{% endif %}">
+                            <strong>{{ counts.health_issues }}</strong>
+                            <span>{{ 'admin.modules.summary.health'|trans }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'common.dependencies'|trans }}</h2>
+                    </header>
+                    <div class="module-deps">
+                        <div class="module-deps__group">
+                            <h3>{{ 'common.dependencies'|trans }}</h3>
+                            <div class="module-chip-row">
+                                {% if manifest.requires is empty %}
+                                    <span class="muted">{{ 'common.none'|trans }}</span>
+                                {% else %}
                                     {% for dep, constraint in manifest.requires %}
-                                        <span class="badge{% if dep in missing %} badge--danger{% endif %}">{{ dep }} {{ constraint }}</span>
+                                        <span class="badge{% if dep in missing %} badge--danger{% else %} badge--info{% endif %}">{{ dep }} {{ constraint }}</span>
                                     {% endfor %}
                                 {% endif %}
-                            </dd>
+                            </div>
                         </div>
                         {% if manifest.optional is not empty %}
-                            <div class="meta-list__full">
-                                <dt>{{ 'common.optional_deps'|trans }}</dt>
-                                <dd class="module-chip-row">
+                            <div class="module-deps__group">
+                                <h3>{{ 'common.optional_deps'|trans }}</h3>
+                                <div class="module-chip-row">
                                     {% for dep, constraint in manifest.optional %}
                                         <span class="badge badge--muted">{{ dep }} {{ constraint }}</span>
                                     {% endfor %}
-                                </dd>
+                                </div>
                             </div>
                         {% endif %}
-                        <div class="meta-list__full">
-                            <dt>{{ 'common.capabilities'|trans }}</dt>
-                            <dd class="module-chip-row">
-                                {% if manifest.capabilities is empty %}{{ 'common.none'|trans }}{% else %}
+                        <div class="module-deps__group">
+                            <h3>{{ 'common.capabilities'|trans }}</h3>
+                            <div class="module-chip-row">
+                                {% if manifest.capabilities is empty %}
+                                    <span class="muted">{{ 'common.none'|trans }}</span>
+                                {% else %}
                                     {% for cap in manifest.capabilities %}
-                                        <span class="badge">{{ cap }}{% if overview.capability_providers[cap] is defined and overview.capability_providers[cap] is not empty %} · {{ overview.capability_providers[cap]|join(', ') }}{% endif %}</span>
+                                        <span class="badge badge--ok">{{ cap }}{% if overview.capability_providers[cap] is defined and overview.capability_providers[cap] is not empty %} · {{ overview.capability_providers[cap]|join(', ') }}{% endif %}</span>
                                     {% endfor %}
                                 {% endif %}
-                            </dd>
+                            </div>
                         </div>
-                        <div class="meta-list__full">
-                            <dt>{{ 'common.permissions'|trans }}</dt>
-                            <dd class="module-chip-row">
-                                {% if manifest.permissions is empty %}{{ 'common.none'|trans }}{% else %}
+                        <div class="module-deps__group">
+                            <h3>{{ 'common.permissions'|trans }}</h3>
+                            <div class="module-chip-row">
+                                {% if manifest.permissions is empty %}
+                                    <span class="muted">{{ 'common.none'|trans }}</span>
+                                {% else %}
                                     {% for permission in manifest.permissions %}
-                                        <code title="{{ permission.label|trans }}">{{ permission.name }}</code>
+                                        <code class="module-perm" title="{{ permission.label|trans }}">{{ permission.name }}</code>
                                     {% endfor %}
                                 {% endif %}
-                            </dd>
+                            </div>
                         </div>
-                    </dl>
-
-                    <div class="module-summary-cards">
-                        <div class="module-summary-card"><strong>{{ counts.api }}</strong><span>{{ 'admin.modules.summary.api'|trans }}</span></div>
-                        <div class="module-summary-card"><strong>{{ counts.routes }}</strong><span>{{ 'admin.modules.summary.routes'|trans }}</span></div>
-                        <div class="module-summary-card"><strong>{{ counts.migrations }}</strong><span>{{ 'admin.modules.summary.migrations'|trans }}</span></div>
-                        <div class="module-summary-card"><strong>{{ counts.events }}</strong><span>{{ 'admin.modules.summary.events'|trans }}</span></div>
-                        <div class="module-summary-card"><strong>{{ counts.hooks }}</strong><span>{{ 'admin.modules.summary.hooks'|trans }}</span></div>
-                        <div class="module-summary-card"><strong>{{ counts.health_issues }}</strong><span>{{ 'admin.modules.summary.health'|trans }}</span></div>
                     </div>
-                </div>
+                </section>
             </div>
         </section>
 
         <section class="design-panel" data-panel="migrations" role="tabpanel">
-            <div class="module-panel">
-                <header class="module-panel__head">
-                    <h2>{{ 'admin.modules.migrations.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.migrations.hint'|trans }}</p>
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.modules.migrations.title'|trans }}</h2>
+                        <p class="muted">{{ 'admin.modules.migrations.hint'|trans }}</p>
+                    </div>
                 </header>
                 {% if report.migrations is empty %}
                     <div class="empty"><h2>{{ 'empty.migrations'|trans }}</h2><p>{{ 'empty.migrations_hint'|trans }}</p></div>
@@ -154,14 +216,16 @@
                         </table>
                     </div>
                 {% endif %}
-            </div>
+            </section>
         </section>
 
         <section class="design-panel" data-panel="api" role="tabpanel">
-            <div class="module-panel">
-                <header class="module-panel__head">
-                    <h2>{{ 'admin.modules.api.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.api.hint'|trans }}{% if not enabled %}{{ 'admin.modules.api.hint_disabled'|trans }}{% endif %}</p>
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.modules.api.title'|trans }}</h2>
+                        <p class="muted">{{ 'admin.modules.api.hint'|trans }}{% if not enabled %}{{ 'admin.modules.api.hint_disabled'|trans }}{% endif %}</p>
+                    </div>
                 </header>
                 {% if report.api is empty %}
                     <div class="empty"><h2>{{ 'empty.api'|trans }}</h2><p>{% if enabled %}{{ 'empty.api_enabled'|trans }}{% else %}{{ 'empty.api_disabled'|trans }}{% endif %}</p></div>
@@ -175,7 +239,7 @@
                                 {% for route in report.api %}
                                     {% for method in route.methods %}
                                         <tr>
-                                            <td><code>{{ method }}</code></td>
+                                            <td><span class="badge badge--info">{{ method }}</span></td>
                                             <td><code>{{ route.path }}</code></td>
                                             <td class="muted">{{ route.scopes|join(', ') ?: 'common.none'|trans }}</td>
                                             <td class="muted">{{ route.permission ?: 'common.none'|trans }}</td>
@@ -187,14 +251,16 @@
                         </table>
                     </div>
                 {% endif %}
-            </div>
+            </section>
         </section>
 
         <section class="design-panel" data-panel="routes" role="tabpanel">
-            <div class="module-panel">
-                <header class="module-panel__head">
-                    <h2>{{ 'admin.modules.routes.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.routes.hint'|trans }}</p>
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.modules.routes.title'|trans }}</h2>
+                        <p class="muted">{{ 'admin.modules.routes.hint'|trans }}</p>
+                    </div>
                 </header>
                 {% if report.routes is empty %}
                     <div class="empty"><h2>{{ 'empty.routes'|trans }}</h2><p>{% if enabled %}{{ 'empty.routes_enabled'|trans }}{% else %}{{ 'empty.routes_disabled'|trans }}{% endif %}</p></div>
@@ -218,69 +284,79 @@
                         </table>
                     </div>
                 {% endif %}
-            </div>
+            </section>
         </section>
 
         <section class="design-panel" data-panel="hooks" role="tabpanel">
-            <div class="module-panel">
-                <header class="module-panel__head">
-                    <h2>{{ 'admin.modules.events.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.events.hint'|trans }}</p>
-                </header>
-                {% if report.events is empty %}
-                    <div class="empty"><h2>{{ 'empty.events'|trans }}</h2><p>{{ 'empty.events_hint'|trans }}</p></div>
-                {% else %}
-                    <div class="table-wrap">
-                        <table class="table">
-                            <thead>
-                                <tr><th>{{ 'admin.modules.col.type'|trans }}</th><th>{{ 'common.version'|trans }}</th><th>{{ 'admin.modules.col.webhook'|trans }}</th><th>{{ 'admin.modules.col.description'|trans }}</th></tr>
-                            </thead>
-                            <tbody>
-                                {% for event in report.events %}
-                                    <tr>
-                                        <td><code>{{ event.type }}</code></td>
-                                        <td>v{{ event.version }}</td>
-                                        <td>{% if event.webhook %}<span class="badge badge--ok">{{ 'common.yes'|trans }}</span>{% else %}<span class="badge badge--muted">{{ 'common.no'|trans }}</span>{% endif %}</td>
-                                        <td>{{ event.description ?: 'common.none'|trans }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
+            <div class="detail-stack">
+                <section class="panel">
+                    <header class="panel__head">
+                        <div>
+                            <h2>{{ 'admin.modules.events.title'|trans }}</h2>
+                            <p class="muted">{{ 'admin.modules.events.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    {% if report.events is empty %}
+                        <div class="empty"><h2>{{ 'empty.events'|trans }}</h2><p>{{ 'empty.events_hint'|trans }}</p></div>
+                    {% else %}
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead>
+                                    <tr><th>{{ 'admin.modules.col.type'|trans }}</th><th>{{ 'common.version'|trans }}</th><th>{{ 'admin.modules.col.webhook'|trans }}</th><th>{{ 'admin.modules.col.description'|trans }}</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in report.events %}
+                                        <tr>
+                                            <td><code>{{ event.type }}</code></td>
+                                            <td>v{{ event.version }}</td>
+                                            <td>{% if event.webhook %}<span class="badge badge--ok">{{ 'common.yes'|trans }}</span>{% else %}<span class="badge badge--muted">{{ 'common.no'|trans }}</span>{% endif %}</td>
+                                            <td>{{ event.description ?: 'common.none'|trans }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </section>
 
-                <header class="module-panel__head module-panel__head--spaced">
-                    <h2>{{ 'admin.modules.hooks.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.hooks.hint'|trans }}</p>
-                </header>
-                {% if report.hooks is empty %}
-                    <div class="empty"><h2>{{ 'empty.hooks'|trans }}</h2><p>{% if enabled %}{{ 'empty.hooks_enabled'|trans }}{% else %}{{ 'empty.hooks_disabled'|trans }}{% endif %}</p></div>
-                {% else %}
-                    <div class="table-wrap">
-                        <table class="table">
-                            <thead>
-                                <tr><th>{{ 'admin.modules.col.hook'|trans }}</th><th>{{ 'admin.modules.col.type'|trans }}</th><th>{{ 'admin.modules.col.listeners'|trans }}</th></tr>
-                            </thead>
-                            <tbody>
-                                {% for hook in report.hooks %}
-                                    <tr>
-                                        <td><code>{{ hook.name }}</code></td>
-                                        <td><span class="badge">{{ hook.type }}</span></td>
-                                        <td>{{ hook.listeners }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
+                <section class="panel">
+                    <header class="panel__head">
+                        <div>
+                            <h2>{{ 'admin.modules.hooks.title'|trans }}</h2>
+                            <p class="muted">{{ 'admin.modules.hooks.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    {% if report.hooks is empty %}
+                        <div class="empty"><h2>{{ 'empty.hooks'|trans }}</h2><p>{% if enabled %}{{ 'empty.hooks_enabled'|trans }}{% else %}{{ 'empty.hooks_disabled'|trans }}{% endif %}</p></div>
+                    {% else %}
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead>
+                                    <tr><th>{{ 'admin.modules.col.hook'|trans }}</th><th>{{ 'admin.modules.col.type'|trans }}</th><th>{{ 'admin.modules.col.listeners'|trans }}</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for hook in report.hooks %}
+                                        <tr>
+                                            <td><code>{{ hook.name }}</code></td>
+                                            <td><span class="badge">{{ hook.type }}</span></td>
+                                            <td>{{ hook.listeners }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </section>
             </div>
         </section>
 
         <section class="design-panel" data-panel="settings" role="tabpanel">
-            <div class="module-panel">
-                <header class="module-panel__head">
-                    <h2>{{ 'admin.modules.settings.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.settings.hint'|trans({'%id%': manifest.id}) }}</p>
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.modules.settings.title'|trans }}</h2>
+                        <p class="muted">{{ 'admin.modules.settings.hint'|trans({'%id%': manifest.id}) }}</p>
+                    </div>
                 </header>
                 {% if report.settings is empty %}
                     <div class="empty"><h2>{{ 'empty.settings'|trans }}</h2><p>{{ 'empty.settings_hint'|trans }}</p></div>
@@ -303,14 +379,16 @@
                         </table>
                     </div>
                 {% endif %}
-            </div>
+            </section>
         </section>
 
         <section class="design-panel" data-panel="files" role="tabpanel">
-            <div class="module-panel">
-                <header class="module-panel__head">
-                    <h2>{{ 'admin.modules.files.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.files.hint'|trans({'%path%': manifest.path}) }}</p>
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.modules.files.title'|trans }}</h2>
+                        <p class="muted">{{ 'admin.modules.files.hint'|trans({'%path%': manifest.path}) }}</p>
+                    </div>
                 </header>
                 {% if report.files is empty %}
                     <div class="empty"><h2>{{ 'empty.files'|trans }}</h2><p>{{ 'empty.files_hint'|trans }}</p></div>
@@ -332,14 +410,16 @@
                         </table>
                     </div>
                 {% endif %}
-            </div>
+            </section>
         </section>
 
         <section class="design-panel" data-panel="health" role="tabpanel">
-            <div class="module-panel">
-                <header class="module-panel__head">
-                    <h2>{{ 'admin.modules.health.title'|trans }}</h2>
-                    <p class="muted">{{ 'admin.modules.health.hint'|trans }}</p>
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.modules.health.title'|trans }}</h2>
+                        <p class="muted">{{ 'admin.modules.health.hint'|trans }}</p>
+                    </div>
                 </header>
                 <div class="module-health-list">
                     {% for check in report.health %}
@@ -352,7 +432,7 @@
                         </article>
                     {% endfor %}
                 </div>
-            </div>
+            </section>
         </section>
     </div>
 {% endblock %}

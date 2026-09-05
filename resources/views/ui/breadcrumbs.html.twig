@@ -1,0 +1,26 @@
+{#
+  items: list of { label: string, url?: string|null }
+  Last item is current (no link) unless only one item with url.
+#}
+{% set crumbs = items|default([]) %}
+{% if crumbs is not empty %}
+<ol class="breadcrumbs__list">
+    {% for item in crumbs %}
+        {% set isLast = loop.last %}
+        <li class="breadcrumbs__item{{ isLast ? ' is-current' : '' }}">
+            {% if not isLast and item.url|default(null) %}
+                <a class="breadcrumbs__link" href="{{ item.url }}">{{ item.label }}</a>
+            {% else %}
+                <span class="breadcrumbs__current" {% if isLast %}aria-current="page"{% endif %}>{{ item.label }}</span>
+            {% endif %}
+            {% if not isLast %}
+                <span class="breadcrumbs__sep" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ol>
+{% endif %}

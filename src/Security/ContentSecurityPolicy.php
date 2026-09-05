@@ -16,9 +16,11 @@ final class ContentSecurityPolicy
         $directives = [
             "default-src 'self'",
             "script-src 'self' 'nonce-{$nonce}'",
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
+            // Inline <style> only with nonce; TipTap text-align needs style attributes.
+            "style-src 'self' 'nonce-{$nonce}' https://fonts.bunny.net",
+            "style-src-attr 'unsafe-inline'",
             "font-src 'self' https://fonts.bunny.net data:",
-            "img-src 'self' data: blob:",
+            "img-src 'self' data: blob: https:",
             "connect-src 'self'",
             "frame-ancestors 'none'",
             "base-uri 'self'",

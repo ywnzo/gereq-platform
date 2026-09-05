@@ -64,12 +64,27 @@ final class ProfileController extends Controller
 
         $password = (string) $request->request->get('password');
         if ($password !== '') {
+            $current = (string) $request->request->get('current_password', '');
+            if ($current === '' || !$this->hasher->verify($current, $user->passwordHash())) {
+                $this->flash('error', $this->translator->trans('profile.password.current_invalid'));
+
+                return $this->redirect('admin.profile');
+            }
             if (strlen($password) < 10) {
                 $this->flash('error', $this->translator->trans('profile.password.min'));
 
                 return $this->redirect('admin.profile');
             }
             $user->setPasswordHash($this->hasher->hash($password));
+            $this->auth->revokeRememberTokens($user);
+            $request->attributes->set('_clear_remember', true);
+            // Force re-login with a fresh session after password change.
+            $this->em->flush();
+            $this->auditor->log('profile.password_changed', 'user', $user->id());
+            $this->auth->logout();
+            $this->flash('success', $this->translator->trans('profile.password.changed'));
+
+            return $this->redirect('admin.login');
         }
 
         $this->em->flush();
