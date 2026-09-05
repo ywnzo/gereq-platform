@@ -12,16 +12,13 @@
             {% for s in statuses %}<option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('orders.invoice.status.' ~ s)|trans }}</option>{% endfor %}
         </select>
     </form>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
-    </div>
 </div>
 <div class="table-wrap" data-table><table class="table">
 <thead><tr>
 {% include 'ui/sort_th.html.twig' with { label: 'orders.field.number'|trans, column: 'number', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'orders.field.status'|trans, column: 'status', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'orders.field.total'|trans, column: 'total', query: { status: status }, class: 'is-num' } %}
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
+<th class="table__actions-head"></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -31,7 +28,7 @@
 <td class="is-num">{{ item.total() }}</td>
 {% embed 'ui/row_actions.html.twig' %}
     {% block items %}
-        <a href="{{ url('admin.invoices.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+        {% include 'ui/row_action.html.twig' with { href: url('admin.invoices.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
     {% endblock %}
 {% endembed %}
 </tr>

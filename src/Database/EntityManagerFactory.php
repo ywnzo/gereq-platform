@@ -45,9 +45,12 @@ final class EntityManagerFactory
         $setup->enableNativeLazyObjects(true);
         $setup->addCustomStringFunction('REPLACE', Dql\ReplaceFunction::class);
 
-        $metaCache = new FilesystemAdapter('doctrine_meta', 0, $this->basePath . '/storage/cache/doctrine');
-        $setup->setMetadataCache($metaCache);
-        $setup->setQueryCache($metaCache);
+        // V debugu necacheovat metadata na disk — jinak po změně entit zůstane stale mapa.
+        if (!$isDev) {
+            $metaCache = new FilesystemAdapter('doctrine_meta', 0, $this->basePath . '/storage/cache/doctrine');
+            $setup->setMetadataCache($metaCache);
+            $setup->setQueryCache($metaCache);
+        }
 
         if ($appCache !== null && (bool) $this->config->get('cache.doctrine_result', true)) {
             $setup->setResultCache($appCache);

@@ -13,9 +13,6 @@
             <input type="hidden" name="dir" value="{{ dir }}">
             <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.resource.search'|trans }}">
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -29,7 +26,7 @@
                             <th>{{ field.label }}</th>
                         {% endif %}
                     {% endfor %}
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -40,7 +37,7 @@
                         {% endfor %}
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
-                                <a href="{{ url('admin.' ~ definition.name ~ '.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.' ~ definition.name ~ '.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
                             {% endblock %}
                         {% endembed %}
                     </tr>

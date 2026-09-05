@@ -107,17 +107,25 @@ export function registerTableToggle(alpine: typeof Alpine): void {
                 if (!res.ok) {
                     throw new Error('toggle failed');
                 }
-                const payload = await res.json() as { data?: { on?: boolean } };
+                const payload = await res.json() as { data?: { on?: boolean; message?: string } };
                 if (typeof payload?.data?.on === 'boolean') {
                     this.on = payload.data.on;
                 }
                 el.dataset.on = this.on ? '1' : '0';
+                const message =
+                    (typeof payload?.data?.message === 'string' && payload.data.message.trim()) ||
+                    (this.on ? el.dataset.toastOn : el.dataset.toastOff) ||
+                    '';
+                if (message) {
+                    window.gereq?.toast?.(message, 'success');
+                }
                 el.dispatchEvent(new CustomEvent('gereq:table-toggle', {
                     bubbles: true,
-                    detail: { on: this.on, action },
+                    detail: { on: this.on, action, message },
                 }));
             } catch {
                 this.on = prev;
+                window.gereq?.toast?.(el.dataset.toastError || 'Uložení se nezdařilo.', 'error');
             } finally {
                 this.busy = false;
             }

@@ -11,7 +11,7 @@
         <div class="actions">
             {% if user.can('cms.manage') %}
                 <a class="btn btn--ghost" href="{{ url('admin.cms.menus.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <form method="post" action="{{ url('admin.cms.menus.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'cms.confirm_delete_menu'|trans|e('js') }}');">
+                <form method="post" action="{{ url('admin.cms.menus.destroy', {id: item.id()}) }}" data-confirm="{{ 'cms.confirm_delete_menu'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                     {{ csrf_field()|raw }}
                     <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
                 </form>
@@ -62,7 +62,7 @@
                                     <td>{{ row.pageId()|default('—') }}</td>
                                     <td>
                                         {% if user.can('cms.manage') %}
-                                            <form method="post" action="{{ url('admin.cms.menus.items.destroy', {id: item.id(), itemId: row.id()}) }}" onsubmit="return confirm('{{ 'cms.confirm_delete_menu_item'|trans|e('js') }}');">
+                                            <form method="post" action="{{ url('admin.cms.menus.items.destroy', {id: item.id(), itemId: row.id()}) }}" data-confirm="{{ 'cms.confirm_delete_menu_item'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                                                 {{ csrf_field()|raw }}
                                                 <button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button>
                                             </form>

@@ -21,9 +21,6 @@
                 <option value="application/pdf" {{ mime == 'application/pdf' ? 'selected' : '' }}>PDF</option>
             </select>
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -35,7 +32,7 @@
                     {% include 'ui/sort_th.html.twig' with { label: 'media.field.mime'|trans, column: 'mime', query: { mime: mime } } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'media.field.size'|trans, column: 'size', query: { mime: mime }, class: 'is-num' } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'media.field.created'|trans, column: 'createdAt', query: { mime: mime } } %}
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -54,13 +51,10 @@
                         <td class="is-mute">{{ item.createdAt().format('d. m. Y H:i') }}</td>
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
-                                <a href="{{ url('admin.media.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.media.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
                                 {% if user.can('media.manage') %}
-                                    <a href="{{ url('admin.media.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                                    <form method="post" action="{{ url('admin.media.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'media.confirm_delete'|trans|e('js') }}');">
-                                        {{ csrf_field()|raw }}
-                                        <button type="submit">{{ 'common.delete'|trans }}</button>
-                                    </form>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.media.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                                    {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.media.destroy', {id: item.id()}), confirm: 'media.confirm_delete'|trans } %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}

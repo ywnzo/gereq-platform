@@ -63,7 +63,6 @@
             </select>
         </form>
         <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
             {% if stats.updates > 0 %}
                 <form method="post" action="{{ url('admin.modules.bulk') }}" title="{{ 'admin.modules.update_all'|trans }}">
                     {{ csrf_field()|raw }}
@@ -130,7 +129,7 @@
                     <th class="is-num">{{ 'admin.modules.meta.routes'|trans }}</th>
                     <th class="is-num">{{ 'admin.modules.meta.migrations'|trans }}</th>
                     <th>{{ 'admin.modules.col.health'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -192,7 +191,7 @@
                         </td>
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
-                                <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ 'common.detail'|trans }}</a>
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.modules.show', {id: manifest.id}), label: 'common.detail'|trans, icon: 'eye' } %}
                                 {% if row.update_available %}
                                     <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
                                         {{ csrf_field()|raw }}

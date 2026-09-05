@@ -15,9 +15,6 @@
     <form class="toolbar" method="get">
         <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'loyalty.tiers.search'|trans }}">
     </form>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
-    </div>
 </div>
 
 <div class="table-wrap" data-table>
@@ -29,7 +26,7 @@
 <th>{{ 'loyalty.field.discount_percent'|trans }}</th>
 <th>{{ 'loyalty.field.sort_order'|trans }}</th>
 <th>{{ 'loyalty.field.active'|trans }}</th>
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
+<th class="table__actions-head"></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -47,11 +44,8 @@
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}
             {% if user.can('loyalty.manage') %}
-                <a href="{{ url('admin.loyalty.tiers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <form method="post" action="{{ url('admin.loyalty.tiers.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'loyalty.confirm_delete_tier'|trans|e('js') }}');">
-                    {{ csrf_field()|raw }}
-                    <button type="submit">{{ 'common.delete'|trans }}</button>
-                </form>
+                {% include 'ui/row_action.html.twig' with { href: url('admin.loyalty.tiers.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.loyalty.tiers.destroy', {id: item.id()}), confirm: 'loyalty.confirm_delete_tier'|trans } %}
             {% endif %}
         {% endblock %}
     {% endembed %}

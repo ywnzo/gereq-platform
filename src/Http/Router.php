@@ -23,6 +23,8 @@ final class Router
 
     private ?string $groupPermission = null;
 
+    private ?string $groupModule = null;
+
     private int $anonymous = 0;
 
     public function get(string $path, mixed $handler): Route
@@ -51,13 +53,14 @@ final class Router
     }
 
     /**
-     * @param array{middleware?: list<string>, permission?: string} $options
+     * @param array{middleware?: list<string>, permission?: string, module?: string} $options
      */
     public function group(string $prefix, callable $callback, array $options = []): void
     {
         $previousPrefix = $this->groupPrefix;
         $previousMiddleware = $this->groupMiddleware;
         $previousPermission = $this->groupPermission;
+        $previousModule = $this->groupModule;
 
         $this->groupPrefix = rtrim($previousPrefix . '/' . trim($prefix, '/'), '/');
         if (isset($options['middleware'])) {
@@ -66,12 +69,16 @@ final class Router
         if (isset($options['permission'])) {
             $this->groupPermission = $options['permission'];
         }
+        if (isset($options['module'])) {
+            $this->groupModule = $options['module'];
+        }
 
         $callback($this);
 
         $this->groupPrefix = $previousPrefix;
         $this->groupMiddleware = $previousMiddleware;
         $this->groupPermission = $previousPermission;
+        $this->groupModule = $previousModule;
     }
 
     public function add(string $path, array $methods, mixed $handler): Route
@@ -85,6 +92,10 @@ final class Router
 
         if ($this->groupPermission !== null) {
             $route->permission($this->groupPermission);
+        }
+
+        if ($this->groupModule !== null) {
+            $route->module($this->groupModule);
         }
 
         $this->routes[] = $route;

@@ -23,9 +23,6 @@
             {% endfor %}
         </select>
     </form>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
-    </div>
 </div>
 
 <div class="table-wrap" data-table>
@@ -35,7 +32,7 @@
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.status'|trans, column: 'status', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.sent_at'|trans, column: 'sentAt', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'newsletter.field.created'|trans, column: 'createdAt', query: { status: status } } %}
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
+<th class="table__actions-head"></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -46,7 +43,7 @@
     <td class="is-mute">{{ item.createdAt().format('d. m. Y') }}</td>
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}
-            <a href="{{ url('admin.newsletter.campaigns.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+            {% include 'ui/row_action.html.twig' with { href: url('admin.newsletter.campaigns.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
         {% endblock %}
     {% endembed %}
 </tr>

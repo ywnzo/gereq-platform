@@ -156,13 +156,14 @@ final class BrokerController extends Controller
 
         $item->setActive(!$item->active());
         $this->em->flush();
+        $message = $this->translator->trans(
+            $item->active() ? 'listings.brokers.flash.activated' : 'listings.brokers.flash.deactivated'
+        );
         if (!$this->wantsJson()) {
-            $this->flash('success', $this->translator->trans(
-                $item->active() ? 'listings.brokers.flash.activated' : 'listings.brokers.flash.deactivated'
-            ));
+            $this->flash('success', $message);
         }
 
-        return $this->toggleResponse($item->active(), 'admin.listings.brokers.index');
+        return $this->toggleResponse($item->active(), 'admin.listings.brokers.index', [], $message);
     }
 
     /**

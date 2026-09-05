@@ -13,9 +13,6 @@
         <form class="toolbar" method="get">
             <input type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.users.search'|trans }}" class="input">
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -26,7 +23,7 @@
                     <th>{{ 'common.email'|trans }}</th>
                     <th>{{ 'common.roles'|trans }}</th>
                     <th>{{ 'common.status'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -52,7 +49,7 @@
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
                                 {% if user.can('users.edit') %}
-                                    <a href="{{ url('admin.users.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.users.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}

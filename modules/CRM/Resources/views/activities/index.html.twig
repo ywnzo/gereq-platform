@@ -27,9 +27,6 @@
                 <input type="hidden" name="customer" value="{{ customerId }}">
             {% endif %}
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -41,7 +38,7 @@
                     <th>{{ 'crm.field.customer'|trans }}</th>
                     <th>{{ 'crm.field.due'|trans }}</th>
                     <th>{{ 'crm.field.status'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -66,15 +63,12 @@
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
                                 {% if user.can('crm.activities.manage') %}
-                                    <a href="{{ url('admin.crm.activities.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.crm.activities.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
                                     <form method="post" action="{{ url('admin.crm.activities.complete', {id: item.id()}) }}">
                                         {{ csrf_field()|raw }}
                                         <button type="submit">{{ item.isCompleted() ? 'crm.activities.reopen'|trans : 'crm.activities.complete'|trans }}</button>
                                     </form>
-                                    <form method="post" action="{{ url('admin.crm.activities.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'crm.activities.confirm_delete'|trans|e('js') }}');">
-                                        {{ csrf_field()|raw }}
-                                        <button type="submit">{{ 'common.delete'|trans }}</button>
-                                    </form>
+                                    {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.crm.activities.destroy', {id: item.id()}), confirm: 'crm.activities.confirm_delete'|trans } %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}

@@ -1,18 +1,8 @@
 {#
-  Row actions flyout (⋯ menu).
-  Parent list should use x-data="dataTable" so .table-wrap.is-actions-off can hide this column.
-  Usage:
-    {% embed 'ui/row_actions.html.twig' %}
-      {% block items %}
-        <a href="...">Detail</a>
-      {% endblock %}
-    {% endembed %}
+  Inline row action buttons (Athena-style), always visible, no ⋯ flyout.
 #}
-<td class="table__actions" x-data="rowMenu" @click.outside="close">
-    <button type="button" class="icon-btn" x-ref="button" @click="toggle" aria-haspopup="menu" :aria-expanded="open" aria-label="{{ 'common.action'|trans }}">
-        {{ icon('dots') }}
-    </button>
-    <div class="flyout flyout--right" x-ref="menu" :class="menuClass" :style="menuStyle" role="menu">
+<td class="table__actions">
+    <div class="table__action-btns">
         {% block items %}{% endblock %}
     </div>
 </td>

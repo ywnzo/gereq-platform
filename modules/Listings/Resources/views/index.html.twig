@@ -59,7 +59,6 @@
             variant: advancedFilters ? 'primary' : 'ghost',
             icon: 'filters',
         }) }}
-        {% include 'ui/table_actions_toggle.html.twig' %}
     </div>
 </div>
 
@@ -127,7 +126,7 @@
     {% else %}
     {% include 'ui/sort_th.html.twig' with { label: 'listings.field.status'|trans, column: 'status', query: filterQuery } %}
     {% endif %}
-    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+    <th class="table__actions-head"></th>
 </tr>
 </thead>
 <tbody>
@@ -176,6 +175,8 @@
             on: item.featured(),
             title_on: 'ui.table.featured.on'|trans,
             title_off: 'ui.table.featured.off'|trans,
+            toast_on: 'listings.flash.featured'|trans,
+            toast_off: 'listings.flash.unfeatured'|trans,
         } %}
     </td>
     <td class="table__toggle-cell">
@@ -184,6 +185,8 @@
             on: published,
             title_on: 'ui.table.publish.on'|trans,
             title_off: 'ui.table.publish.off'|trans,
+            toast_on: 'listings.flash.published'|trans,
+            toast_off: 'listings.flash.unpublished'|trans,
         } %}
     </td>
     {% else %}
@@ -192,13 +195,10 @@
     {% endif %}
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}
-            <a href="{{ url('admin.listings.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+            {% include 'ui/row_action.html.twig' with { href: url('admin.listings.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
             {% if user.can('listings.manage') %}
-                <a href="{{ url('admin.listings.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <form method="post" action="{{ url('admin.listings.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'listings.confirm_delete'|trans|e('js') }}');">
-                    {{ csrf_field()|raw }}
-                    <button type="submit">{{ 'common.delete'|trans }}</button>
-                </form>
+                {% include 'ui/row_action.html.twig' with { href: url('admin.listings.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.listings.destroy', {id: item.id()}), confirm: 'listings.confirm_delete'|trans } %}
             {% endif %}
         {% endblock %}
     {% endembed %}
@@ -221,7 +221,6 @@
 </div>
 
 {% include 'ui/table_footer.html.twig' %}
-</div>
 
 {% embed 'ui/drawer.html.twig' with { id: 'listings-filters', title: 'ui.drawer.filters'|trans } %}
     {% block body %}
@@ -264,4 +263,5 @@
         <button class="btn btn--primary" type="submit" form="listings-drawer-filters">{{ 'ui.drawer.apply'|trans }}</button>
     {% endblock %}
 {% endembed %}
+</div>
 {% endblock %}

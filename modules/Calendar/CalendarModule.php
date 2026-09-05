@@ -32,7 +32,7 @@ final class CalendarModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.1.0';
     }
 
     public function register(ModuleContext $context): void
@@ -43,13 +43,21 @@ final class CalendarModule implements ModuleInterface
 
         $context->router()->group('/admin/calendar', function (Router $routes): void {
             $routes->get('', [CalendarController::class, 'index'])->name('admin.calendar.index')->permission('calendar.view');
+            $routes->get('/feed', [CalendarController::class, 'feed'])->name('admin.calendar.feed')->permission('calendar.view');
+            $routes->post('/move', [CalendarController::class, 'move'])->name('admin.calendar.move')->permission('calendar.manage');
+            $routes->get('/export.ics', [CalendarController::class, 'ics'])->name('admin.calendar.ics')->permission('calendar.view');
+            $routes->get('/connections', [CalendarController::class, 'connections'])->name('admin.calendar.connections')->permission('calendar.manage');
+            $routes->post('/connections', [CalendarController::class, 'storeConnection'])->name('admin.calendar.connections.store')->permission('calendar.manage');
+            $routes->post('/connections/{id}/delete', [CalendarController::class, 'destroyConnection'])->name('admin.calendar.connections.destroy')->permission('calendar.manage');
+            $routes->get('/oauth/google', [CalendarController::class, 'connectGoogle'])->name('admin.calendar.oauth.google')->permission('calendar.manage');
+            $routes->get('/oauth/google/callback', [CalendarController::class, 'googleCallback'])->name('admin.calendar.oauth.google.callback')->permission('calendar.manage');
             $routes->get('/create', [CalendarController::class, 'create'])->name('admin.calendar.create')->permission('calendar.manage');
             $routes->post('', [CalendarController::class, 'store'])->name('admin.calendar.store')->permission('calendar.manage');
             $routes->get('/{id}', [CalendarController::class, 'show'])->name('admin.calendar.show')->permission('calendar.view');
             $routes->get('/{id}/edit', [CalendarController::class, 'edit'])->name('admin.calendar.edit')->permission('calendar.manage');
             $routes->post('/{id}', [CalendarController::class, 'update'])->name('admin.calendar.update')->permission('calendar.manage');
             $routes->post('/{id}/delete', [CalendarController::class, 'destroy'])->name('admin.calendar.destroy')->permission('calendar.manage');
-        }, ['middleware' => ['auth']]);
+        }, ['middleware' => ['auth'], 'module' => 'calendar']);
 
         $context->api()->registerKnownScope('calendar.read');
         $context->api()->registerKnownScope('calendar.write');
@@ -75,13 +83,23 @@ final class CalendarModule implements ModuleInterface
             'title' => 'required|min:2|max:190',
             'starts_at' => 'required',
             'ends_at' => 'required',
-            'type' => 'nullable|in:meeting,deadline,other',
+            'type' => 'nullable|in:meeting,deadline,call,task,other',
             'all_day' => 'nullable',
             'description' => 'nullable|max:20000',
+            'location' => 'nullable|max:255',
+            'color' => 'nullable|in:blue,green,amber,red,violet,slate',
+            'timezone' => 'nullable|max:64',
+            'rrule' => 'nullable|max:255',
+            'status' => 'nullable|in:confirmed,tentative,cancelled',
             'link_entity_type' => 'nullable|max:64',
             'link_entity_id' => 'nullable|max:36',
             'attendee_email' => 'nullable|email|max:190',
         ]);
+
+        $context->settings()->define('calendar.google.client_id', 'string', 'calendar.settings.google_client_id', '', 'calendar');
+        $context->settings()->define('calendar.google.client_secret', 'encrypted', 'calendar.settings.google_client_secret', '', 'calendar');
+        $context->settings()->define('calendar.outlook.client_id', 'string', 'calendar.settings.outlook_client_id', '', 'calendar');
+        $context->settings()->define('calendar.outlook.client_secret', 'encrypted', 'calendar.settings.outlook_client_secret', '', 'calendar');
     }
 
     public function boot(ModuleContext $context): void
@@ -109,13 +127,21 @@ final class CalendarModule implements ModuleInterface
             order: 43,
             hidden: true,
         ));
+        $context->menu()->add(new MenuItem(
+            id: 'calendar.connections',
+            label: 'nav.calendar.connections',
+            route: 'admin.calendar.connections',
+            permission: 'calendar.manage',
+            parent: 'calendar',
+            order: 44,
+        ));
         $context->commandPalette()->add(new PaletteCommand(
             id: 'calendar.index',
             label: 'palette.calendar.index',
             url: '/admin/calendar',
             icon: 'calendar',
             permission: 'calendar.view',
-            keywords: ['kalendář', 'calendar', 'schůzka', 'meeting'],
+            keywords: ['kalendář', 'calendar', 'schůzka', 'meeting', 'google'],
         ));
 
         $em = $context->get(EntityManagerInterface::class);

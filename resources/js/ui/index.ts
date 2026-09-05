@@ -6,6 +6,8 @@ import { registerDrawer } from './drawer';
 import { registerEditor } from './editor';
 import { registerForm } from './form';
 import { registerModuleTable } from './moduleTable';
+import { registerConfirm } from './confirm';
+import { registerToast } from './toast';
 import { registerModal, registerPopover } from './overlay';
 import { registerSelect } from './select';
 import { registerTabs } from './tabs';
@@ -14,12 +16,15 @@ import { registerColorField } from './colorField';
 import { registerBrandAsset } from './brandAsset';
 import { registerCssEditor } from './cssEditor';
 import { registerDashboardSettings } from './dashboardSettings';
+import { registerCalendarBoard } from './calendarBoard';
 import { registerChart } from './chart';
 
 export function registerUi(alpine: typeof Alpine): void {
     registerSelect(alpine);
     registerModal(alpine);
     registerPopover(alpine);
+    registerConfirm(alpine);
+    registerToast();
     registerDrawer(alpine);
     registerPassword(alpine);
     registerSwitch(alpine);
@@ -34,6 +39,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerCssEditor(alpine);
     registerDashboardSettings(alpine);
     registerChart(alpine);
+    registerCalendarBoard(alpine);
     registerAres(alpine);
     registerCmsBlockForm(alpine);
     registerModuleTable(alpine);

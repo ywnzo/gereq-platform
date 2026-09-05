@@ -16,9 +16,6 @@
 
     <div class="toolbar--table">
         <div class="toolbar"></div>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -28,7 +25,7 @@
                     <th>{{ 'notifications.col.title'|trans }}</th>
                     <th>{{ 'notifications.col.time'|trans }}</th>
                     <th>{{ 'common.status'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>

@@ -17,9 +17,6 @@
             {% endfor %}
         </select>
     </form>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
-    </div>
 </div>
 <div class="table-wrap" data-table>
 <table class="table">
@@ -30,7 +27,7 @@
 <th>{{ 'shop.field.items'|trans }}</th>
 <th>{{ 'shop.field.total'|trans }}</th>
 <th>{{ 'shop.field.updated'|trans }}</th>
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
+<th class="table__actions-head"></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -53,7 +50,7 @@
 <td class="muted">{{ item.updatedAt()|date('d.m.Y H:i') }}</td>
 {% embed 'ui/row_actions.html.twig' %}
     {% block items %}
-        <a href="{{ url('admin.shop.carts.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+        {% include 'ui/row_action.html.twig' with { href: url('admin.shop.carts.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
     {% endblock %}
 {% endembed %}
 </tr>

@@ -1,38 +1,172 @@
 {% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.calendar'|trans },
+    ] } %}
+{% endblock %}
+
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="calendar-events" data-actions-default="1">
-<header class="page-header"><h1>{{ 'calendar.title'|trans }}</h1>
-<div class="actions">
-<a class="btn {{ view=='month'?'btn--primary':'btn--ghost' }}" href="?view=month&date={{ anchor|date('Y-m-d') }}">{{ 'calendar.view.month'|trans }}</a>
-<a class="btn {{ view=='week'?'btn--primary':'btn--ghost' }}" href="?view=week&date={{ anchor|date('Y-m-d') }}">{{ 'calendar.view.week'|trans }}</a>
-{% if user.can('calendar.manage') %}<a class="btn btn--primary" href="{{ url('admin.calendar.create') }}">{{ icon('plus') }} {{ 'calendar.new'|trans }}</a>{% endif %}
-</div></header>
-<p class="muted">{{ from|date('d. m. Y') }} – {{ to|date_modify('-1 day')|date('d. m. Y') }}</p>
-<div class="toolbar--table">
-    <div class="toolbar"></div>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
+<div
+    class="cal-shell list-shell"
+    x-data="gereqCalendar"
+    data-feed-url="{{ feedUrl }}"
+    data-move-url="{{ moveUrl }}"
+    data-create-url="{{ createUrl }}"
+    data-can-manage="{{ canManage ? '1' : '0' }}"
+    data-view="{{ view }}"
+    data-anchor="{{ anchor|date('Y-m-d') }}"
+>
+    <header class="page-header cal-header">
+        <div>
+            <h1>{{ 'calendar.title'|trans }}</h1>
+            <p class="muted" x-text="title"></p>
+        </div>
+        <div class="actions cal-toolbar">
+            <div class="cal-nav">
+                <button type="button" class="btn btn--ghost" @click="prev" title="{{ 'common.previous'|trans }}">{{ icon('chevron-left') }}</button>
+                <button type="button" class="btn btn--ghost" @click="today">{{ 'calendar.today'|trans }}</button>
+                <button type="button" class="btn btn--ghost" @click="next" title="{{ 'common.next'|trans }}">{{ icon('chevron-right') }}</button>
+            </div>
+            <div class="cal-views">
+                <button type="button" class="btn" :class="viewClass('month')" @click="setView('month')">{{ 'calendar.view.month'|trans }}</button>
+                <button type="button" class="btn" :class="viewClass('week')" @click="setView('week')">{{ 'calendar.view.week'|trans }}</button>
+                <button type="button" class="btn" :class="viewClass('day')" @click="setView('day')">{{ 'calendar.view.day'|trans }}</button>
+                <button type="button" class="btn" :class="viewClass('agenda')" @click="setView('agenda')">{{ 'calendar.view.agenda'|trans }}</button>
+            </div>
+            <a class="btn btn--ghost" href="{{ url('admin.calendar.ics') }}">{{ icon('download') }} {{ 'calendar.export_ics'|trans }}</a>
+            {% if canManage %}
+                <a class="btn btn--ghost" href="{{ url('admin.calendar.connections') }}">{{ icon('link') }} {{ 'calendar.connections.short'|trans }}</a>
+                <a class="btn btn--primary" href="{{ url('admin.calendar.create') }}">{{ icon('plus') }} {{ 'calendar.new'|trans }}</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="cal-board" :class="boardClass()">
+        <div class="cal-loading" x-show="loading" x-cloak>{{ 'calendar.loading'|trans }}</div>
+
+        {# MONTH #}
+        <div class="cal-month" x-show="isView('month')" x-cloak>
+            <div class="cal-month__head">
+                <template x-for="d in dow" :key="d"><div class="cal-month__dow" x-text="d"></div></template>
+            </div>
+            <div class="cal-month__grid">
+                <template x-for="cell in monthCells" :key="cell.date">
+                    <div
+                        class="cal-month__cell"
+                        :class="cellOutClass(cell) + ' ' + cellTodayClass(cell)"
+                        @dblclick="createAt(cell.date)"
+                    >
+                        <button type="button" class="cal-month__day" @click="openDay(cell.date)" x-text="cell.label"></button>
+                        <div class="cal-month__events">
+                            <template x-for="ev in cell.preview" :key="ev.id">
+                                <button
+                                    type="button"
+                                    class="cal-event cal-event--chip"
+                                    :class="eventStyle(ev)"
+                                    @click.stop="openEvent(ev)"
+                                    x-text="ev.title"
+                                ></button>
+                            </template>
+                            <button
+                                type="button"
+                                class="cal-more"
+                                x-show="cell.more"
+                                @click="openDay(cell.date)"
+                                x-text="moreLabel(cell.more)"
+                            ></button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        {# WEEK #}
+        <div class="cal-week" x-show="isView('week')" x-cloak>
+            <div class="cal-week__head">
+                <div class="cal-week__gutter"></div>
+                <template x-for="day in weekDays" :key="day.date">
+                    <div class="cal-week__dayhead" :class="cellTodayClass(day)">
+                        <span x-text="dowLabel(day.date)"></span>
+                        <strong x-text="day.label"></strong>
+                    </div>
+                </template>
+            </div>
+            <div class="cal-week__body">
+                <template x-for="hour in hours" :key="hour">
+                    <div class="cal-week__row">
+                        <div class="cal-week__gutter" x-text="hourLabel(hour)"></div>
+                        <template x-for="day in weekDays" :key="day.date + '-' + hour">
+                            <div class="cal-week__slot" @dblclick="createAt(day.date, hour)">
+                                <template x-for="ev in hourEvents(day, hour)" :key="ev.id">
+                                    <button type="button" class="cal-event" :class="eventStyle(ev)" @click="openEvent(ev)">
+                                        <span x-text="timeLabel(ev.starts_at)"></span>
+                                        <strong x-text="ev.title"></strong>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        {# DAY #}
+        <div class="cal-day" x-show="isView('day')" x-cloak>
+            <template x-for="hour in hours" :key="'d'+hour">
+                <div class="cal-day__row" @dblclick="createAt(dateKey(anchor), hour)">
+                    <div class="cal-week__gutter" x-text="hourLabel(hour)"></div>
+                    <div class="cal-day__slot">
+                        <template x-for="ev in dayHourEvents(hour)" :key="ev.id">
+                            <button type="button" class="cal-event cal-event--block" :class="eventStyle(ev)" @click="openEvent(ev)">
+                                <span x-text="eventTimeText(ev)"></span>
+                                <strong x-text="ev.title"></strong>
+                                <em x-show="hasLocation(ev)" x-text="locationText(ev)"></em>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        {# AGENDA #}
+        <div class="cal-agenda" x-show="isView('agenda')" x-cloak>
+            <template x-if="agendaEvents.length === 0">
+                <div class="empty">
+                    <h2>{{ 'calendar.empty'|trans }}</h2>
+                    <p>{{ 'calendar.empty.hint'|trans }}</p>
+                </div>
+            </template>
+            <template x-for="ev in agendaEvents" :key="ev.id">
+                <button type="button" class="cal-agenda__row" @click="openEvent(ev)">
+                    <span class="cal-agenda__dot" :class="eventStyle(ev)"></span>
+                    <span class="cal-agenda__when" x-text="agendaWhen(ev)"></span>
+                    <strong x-text="ev.title"></strong>
+                    <span class="muted" x-text="locationText(ev)"></span>
+                    <span class="badge" x-show="ev.is_external">{{ 'calendar.external'|trans }}</span>
+                </button>
+            </template>
+        </div>
     </div>
-</div>
-<div class="table-wrap" data-table><table class="table"><thead><tr>
-<th>{{ 'calendar.field.title'|trans }}</th>
-<th>{{ 'calendar.field.type'|trans }}</th>
-<th>{{ 'calendar.field.starts'|trans }}</th>
-<th>{{ 'calendar.field.ends'|trans }}</th>
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
-</tr></thead>
-<tbody>{% for e in events %}
-<tr><td><a href="{{ url('admin.calendar.show',{id:e.id()}) }}">{{ e.title() }}</a></td>
-<td>{{ e.typeLabel()|trans }}</td>
-<td>{{ e.startsAt().format('d. m. Y H:i') }}</td>
-<td>{{ e.endsAt().format('d. m. Y H:i') }}</td>
-{% embed 'ui/row_actions.html.twig' %}
-    {% block items %}
-        <a href="{{ url('admin.calendar.show',{id:e.id()}) }}">{{ 'common.detail'|trans }}</a>
-    {% endblock %}
-{% endembed %}
-</tr>
-{% else %}<tr><td colspan="5"><div class="empty"><h2>{{ 'calendar.empty'|trans }}</h2><p>{{ 'calendar.empty.hint'|trans }}</p></div></td></tr>{% endfor %}
-</tbody></table></div>
+
+    {# Event popover #}
+    <div class="cal-popover" x-show="selected" x-cloak @keydown.escape.window="closeEvent">
+        <div class="cal-popover__backdrop" @click="closeEvent"></div>
+        <div class="cal-popover__panel" @click.stop>
+            <h3 x-text="selectedTitle()"></h3>
+            <p class="muted">
+                <span x-text="selectedWhen()"></span>
+            </p>
+            <p x-show="hasSelectedLocation()" x-text="selectedLocation()"></p>
+            <div class="cal-popover__actions">
+                <button type="button" class="btn btn--primary" @click="goEvent">{{ 'common.detail'|trans }}</button>
+                <template x-if="canManage && selected">
+                    <button type="button" class="btn btn--ghost" @click="shiftEvent(selected, 1)">{{ 'calendar.shift_day'|trans }}</button>
+                </template>
+                <button type="button" class="btn btn--ghost" @click="closeEvent">{{ 'common.cancel'|trans }}</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

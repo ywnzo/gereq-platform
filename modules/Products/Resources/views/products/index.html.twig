@@ -24,9 +24,6 @@
                 {% endfor %}
             </select>
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -38,7 +35,7 @@
                     {% include 'ui/sort_th.html.twig' with { label: 'products.field.unit'|trans, column: 'unit', query: { status: status } } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'products.field.status'|trans, column: 'status', query: { status: status } } %}
                     {% include 'ui/sort_th.html.twig' with { label: 'products.field.updated'|trans, column: 'updatedAt', query: { status: status } } %}
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -55,13 +52,10 @@
                         <td class="is-mute">{{ item.updatedAt().format('d. m. Y') }}</td>
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
-                                <a href="{{ url('admin.products.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.products.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
                                 {% if user.can('products.manage') %}
-                                    <a href="{{ url('admin.products.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                                    <form method="post" action="{{ url('admin.products.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'products.confirm_delete'|trans|e('js') }}');">
-                                        {{ csrf_field()|raw }}
-                                        <button type="submit">{{ 'common.delete'|trans }}</button>
-                                    </form>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.products.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                                    {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.products.destroy', {id: item.id()}), confirm: 'products.confirm_delete'|trans } %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}

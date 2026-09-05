@@ -1,0 +1,30 @@
+{#
+  Icon-only row action (Athena-style).
+  {% include 'ui/row_action.html.twig' with { href: url(...), label: 'common.view'|trans, icon: 'eye' } %}
+  Variants: eye/detail → primary, edit → success, trash → danger (or pass variant).
+#}
+{% set href = href|default(null) %}
+{% set label = label|default('') %}
+{% set icon_name = icon|default('dot') %}
+{% if variant is not defined or variant is same as('') %}
+    {% if icon_name in ['eye', 'visibility', 'detail'] %}
+        {% set variant = 'primary' %}
+    {% elseif icon_name in ['edit', 'pencil'] %}
+        {% set variant = 'success' %}
+    {% elseif icon_name in ['trash', 'delete'] %}
+        {% set variant = 'danger' %}
+    {% else %}
+        {% set variant = '' %}
+    {% endif %}
+{% endif %}
+{% if href %}
+    <a
+        class="table__action-btn{{ variant ? ' table__action-btn--' ~ variant : '' }}"
+        href="{{ href }}"
+        title="{{ label }}"
+        aria-label="{{ label }}"
+    >
+        {{ icon(icon_name) }}
+        <span class="table__action-btn__label">{{ label }}</span>
+    </a>
+{% endif %}

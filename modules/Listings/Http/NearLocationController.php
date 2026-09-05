@@ -168,13 +168,14 @@ final class NearLocationController extends Controller
 
         $item->setActive(!$item->active());
         $this->em->flush();
+        $message = $this->translator->trans(
+            $item->active() ? 'listings.near.flash.activated' : 'listings.near.flash.deactivated'
+        );
         if (!$this->wantsJson()) {
-            $this->flash('success', $this->translator->trans(
-                $item->active() ? 'listings.near.flash.activated' : 'listings.near.flash.deactivated'
-            ));
+            $this->flash('success', $message);
         }
 
-        return $this->toggleResponse($item->active(), 'admin.listings.near.index');
+        return $this->toggleResponse($item->active(), 'admin.listings.near.index', [], $message);
     }
 
     /**

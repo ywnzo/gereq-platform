@@ -24,9 +24,6 @@
                 <option value="retrying" {{ status == 'retrying' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.retrying'|trans }}</option>
             </select>
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -39,7 +36,7 @@
                     <th>{{ 'webhooks.field.http'|trans }}</th>
                     <th>{{ 'webhooks.delivery.field.attempt'|trans }}</th>
                     <th>{{ 'webhooks.delivery.field.created'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -64,7 +61,7 @@
                         <td>{{ item.createdAt().format('d. m. Y H:i:s') }}</td>
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
-                                <a href="{{ url('admin.developer.webhook-deliveries.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.developer.webhook-deliveries.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
                             {% endblock %}
                         {% endembed %}
                     </tr>

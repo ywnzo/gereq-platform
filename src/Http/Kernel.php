@@ -9,11 +9,13 @@ use Gereq\Debug\DebugBar;
 use Gereq\Http\Middleware\AuthMiddleware;
 use Gereq\Http\Middleware\CsrfMiddleware;
 use Gereq\Http\Middleware\GuestMiddleware;
+use Gereq\Http\Middleware\ModuleCurrentMiddleware;
 use Gereq\Http\Middleware\PermissionMiddleware;
 use Gereq\Http\Middleware\Pipeline;
 use Gereq\Http\Middleware\SecurityHeadersMiddleware;
 use Gereq\Http\Middleware\SetLocaleMiddleware;
 use Gereq\Http\Middleware\StartSessionMiddleware;
+use Gereq\Module\ModuleManager;
 use Gereq\Validation\ValidationException;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -97,10 +99,37 @@ final class Kernel
             $middleware[] = $this->container->get(PermissionMiddleware::class)->withPermission($route->getPermission());
         }
 
+        $moduleId = $route->getModule() ?? $this->inferModuleId($route->getName());
+        if ($moduleId !== null && !$isApi) {
+            $middleware[] = $this->container->get(ModuleCurrentMiddleware::class)->forModule($moduleId);
+        }
+
         $pipeline = new Pipeline($this->container, $middleware);
 
         return $pipeline->handle($request, function (Request $request) use ($route, $parameters): Response {
             return $this->dispatcher->dispatch($route, $request, $parameters);
         });
+    }
+
+    private function inferModuleId(?string $routeName): ?string
+    {
+        if ($routeName === null || $routeName === '') {
+            return null;
+        }
+
+        // admin.calendar.index → calendar; admin.modules.* se nebere (není v modules/)
+        if (!preg_match('/^admin\.([a-z0-9_]+)(?:\.|$)/', $routeName, $m)) {
+            return null;
+        }
+
+        $id = $m[1];
+        if ($id === 'modules' || $id === 'setup' || $id === 'auth' || $id === 'dashboard' || $id === 'account') {
+            return null;
+        }
+
+        /** @var ModuleManager $modules */
+        $modules = $this->container->get(ModuleManager::class);
+
+        return $modules->manifest($id) !== null ? $id : null;
     }
 }

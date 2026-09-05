@@ -15,9 +15,6 @@
     <form class="toolbar" method="get">
         <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'shop.shipping.search'|trans }}">
     </form>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
-    </div>
 </div>
 
 <div class="table-wrap" data-table>
@@ -30,7 +27,7 @@
     <th>{{ 'shop.field.price'|trans }}</th>
     <th>{{ 'shop.field.estimated_days'|trans }}</th>
     <th>{{ 'shop.field.active'|trans }}</th>
-    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+    <th class="table__actions-head"></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -49,11 +46,8 @@
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}
             {% if user.can('shop.manage') %}
-                <a href="{{ url('admin.shop.shipping.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <form method="post" action="{{ url('admin.shop.shipping.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'shop.shipping.confirm_delete'|trans|e('js') }}');">
-                    {{ csrf_field()|raw }}
-                    <button type="submit">{{ 'common.delete'|trans }}</button>
-                </form>
+                {% include 'ui/row_action.html.twig' with { href: url('admin.shop.shipping.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.shop.shipping.destroy', {id: item.id()}), confirm: 'shop.shipping.confirm_delete'|trans } %}
             {% endif %}
         {% endblock %}
     {% endembed %}

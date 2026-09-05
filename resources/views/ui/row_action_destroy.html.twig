@@ -1,0 +1,26 @@
+{#
+  Destroy/delete row action with confirm dialog.
+  {% include 'ui/row_action_destroy.html.twig' with {
+    action: url('…'),
+    confirm: '…'|trans,
+    confirm_title: 'ui.confirm.delete_title'|trans,
+  } %}
+#}
+{% set label = label|default('common.delete'|trans) %}
+{% set confirm = confirm|default('ui.confirm.delete_body'|trans) %}
+{% set confirm_title = confirm_title|default('ui.confirm.delete_title'|trans) %}
+<form
+    method="post"
+    action="{{ action }}"
+    class="table__action-form"
+    data-confirm="{{ confirm|e('html_attr') }}"
+    data-confirm-title="{{ confirm_title|e('html_attr') }}"
+    data-confirm-label="{{ label|e('html_attr') }}"
+    data-confirm-danger="1"
+>
+    {{ csrf_field()|raw }}
+    <button type="submit" class="table__action-btn table__action-btn--danger" title="{{ label }}" aria-label="{{ label }}">
+        {{ icon('trash') }}
+        <span class="table__action-btn__label">{{ label }}</span>
+    </button>
+</form>

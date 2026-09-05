@@ -10,9 +10,6 @@
     </header>
 
     <div class="toolbar--table">
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -21,7 +18,7 @@
                 <tr>
                     <th>{{ 'products.categories.field.name'|trans }}</th>
                     <th>{{ 'products.categories.field.slug'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -32,11 +29,8 @@
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
                                 {% if user.can('products.manage') %}
-                                    <a href="{{ url('admin.products.categories.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                                    <form method="post" action="{{ url('admin.products.categories.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'products.categories.confirm_delete'|trans|e('js') }}');">
-                                        {{ csrf_field()|raw }}
-                                        <button type="submit">{{ 'common.delete'|trans }}</button>
-                                    </form>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.products.categories.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                                    {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.products.categories.destroy', {id: item.id()}), confirm: 'products.categories.confirm_delete'|trans } %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}

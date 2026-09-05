@@ -1,0 +1,50 @@
+{#
+  Host confirm dialog (Athena-style modal). Include once in admin layout.
+  Use: window.gereq.confirm({ title, body, confirmLabel, danger })
+  Or: <form data-confirm="…" data-confirm-title="…" data-confirm-danger="1">
+#}
+<div
+    id="gereq-confirm"
+    class="g-confirm"
+    x-data="gereqConfirm"
+    x-cloak
+    data-i18n-title="{{ 'ui.confirm.title'|trans|e('html_attr') }}"
+    data-i18n-body="{{ 'ui.confirm.delete_body'|trans|e('html_attr') }}"
+    data-i18n-confirm="{{ 'ui.confirm.confirm'|trans|e('html_attr') }}"
+    data-i18n-cancel="{{ 'common.cancel'|trans|e('html_attr') }}"
+    @keydown.escape.window="onEscape"
+    role="presentation"
+>
+    <div
+        class="g-modal__backdrop"
+        :class="open ? 'is-open' : ''"
+        @click="cancel"
+    ></div>
+    <div
+        class="g-modal"
+        :class="open ? 'is-open' : ''"
+        role="dialog"
+        aria-modal="true"
+        :aria-hidden="open ? 'false' : 'true'"
+        aria-labelledby="gereq-confirm-title"
+    >
+        <div class="g-modal__panel g-confirm__panel" @click.stop>
+            <h3 class="g-modal__title" id="gereq-confirm-title" x-text="title"></h3>
+            <p class="g-modal__body" x-text="body"></p>
+            <div class="g-modal__actions">
+                <button type="button" class="btn btn--ghost" @click="cancel" x-ref="cancelBtn">
+                    <span x-text="cancelLabel"></span>
+                </button>
+                <button
+                    type="button"
+                    class="btn"
+                    :class="danger ? 'btn--danger' : 'btn--primary'"
+                    @click="accept"
+                    x-ref="confirmBtn"
+                >
+                    <span x-text="confirmLabel"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

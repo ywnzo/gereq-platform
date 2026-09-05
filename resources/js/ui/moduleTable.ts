@@ -11,7 +11,6 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         bulkAction: '',
         selectedCount: 0,
         allSelected: false,
-        showActions: true,
 
         init() {
             const el = this.$el as HTMLElement;
@@ -26,40 +25,11 @@ export function registerModuleTable(alpine: typeof Alpine): void {
                 this.updateIds = [];
             }
 
-            const key = this.storageKey();
-            const saved = localStorage.getItem(key);
-            if (saved === '0' || saved === '1') {
-                this.showActions = saved === '1';
-            } else {
-                const def = el.dataset.actionsDefault;
-                this.showActions = def !== '0';
-            }
-            this.syncActionsClass();
-
             this.apply();
             this.syncSelectionState();
             this.$watch('query', () => this.apply());
             this.$watch('status', () => this.apply());
             this.$watch('selected', () => this.syncSelectionState());
-        },
-
-        storageKey(): string {
-            const el = this.$el as HTMLElement;
-            return 'gereq-table-actions:' + (el.dataset.tableId || el.id || location.pathname);
-        },
-
-        toggleActions() {
-            this.showActions = !this.showActions;
-            localStorage.setItem(this.storageKey(), this.showActions ? '1' : '0');
-            this.syncActionsClass();
-        },
-
-        syncActionsClass() {
-            const wrap = (this.$el as HTMLElement).querySelector('.table-wrap');
-            if (!(wrap instanceof HTMLElement)) {
-                return;
-            }
-            wrap.classList.toggle('is-actions-off', !this.showActions);
         },
 
         syncSelectionState() {

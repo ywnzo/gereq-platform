@@ -1,13 +1,15 @@
 {#
   Kernel row toggle (publish / active / TOP…), Athena-style.
   Required: action (URL), on (bool)
-  Optional: title_on, title_off, label, busy_label
+  Optional: title_on, title_off, toast_on, toast_off, busy_label
 #}
 {% set on = on|default(false) %}
 {% set title_on = title_on|default('ui.table.toggle.on'|trans) %}
 {% set title_off = title_off|default('ui.table.toggle.off'|trans) %}
 {% set title = on ? title_on : title_off %}
 {% set busy = busy_label|default('ui.table.toggle.busy'|trans) %}
+{% set toast_on = toast_on|default(title_on) %}
+{% set toast_off = toast_off|default(title_off) %}
 <button
     type="button"
     class="table-switch"
@@ -16,6 +18,9 @@
     data-on="{{ on ? '1' : '0' }}"
     data-title-on="{{ title_on|e('html_attr') }}"
     data-title-off="{{ title_off|e('html_attr') }}"
+    data-toast-on="{{ toast_on|e('html_attr') }}"
+    data-toast-off="{{ toast_off|e('html_attr') }}"
+    data-toast-error="{{ 'ui.table.toggle.error'|trans|e('html_attr') }}"
     data-busy="{{ busy|e('html_attr') }}"
     x-data="gereqTableToggle"
     data-action="{{ action|e('html_attr') }}"

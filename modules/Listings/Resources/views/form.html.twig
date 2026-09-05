@@ -275,7 +275,7 @@
                                                         <input class="input" style="width:5.5rem" type="number" min="0" name="walk_minutes" value="{{ link.walkMinutes() ?? '' }}" placeholder="min">
                                                         <button class="btn btn--ghost btn-sm" type="submit">{{ 'common.save'|trans }}</button>
                                                     </form>
-                                                    <form method="post" action="{{ url('admin.listings.near_links.destroy', {id: listing.id(), linkId: link.id()}) }}" onsubmit="return confirm('{{ 'listings.near_links.confirm_remove'|trans|e('js') }}');" style="display:inline">
+                                                    <form method="post" action="{{ url('admin.listings.near_links.destroy', {id: listing.id(), linkId: link.id()}) }}" data-confirm="{{ 'listings.near_links.confirm_remove'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1" style="display:inline">
                                                         {{ csrf_field()|raw }}
                                                         <button class="btn btn--ghost btn-sm" type="submit">{{ 'common.delete'|trans }}</button>
                                                     </form>
@@ -403,7 +403,7 @@
                                                     <button class="btn btn--ghost" type="submit" title="{{ 'listings.images.set_primary'|trans }}" aria-label="{{ 'listings.images.set_primary'|trans }}">{{ icon('star') }}</button>
                                                 </form>
                                             {% endif %}
-                                            <form method="post" action="{{ url('admin.listings.images.destroy', {id: listing.id(), imageId: image.id()}) }}" onsubmit="return confirm('{{ 'listings.images.confirm_delete'|trans|e('js') }}');">
+                                            <form method="post" action="{{ url('admin.listings.images.destroy', {id: listing.id(), imageId: image.id()}) }}" data-confirm="{{ 'listings.images.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                                                 {{ csrf_field()|raw }}
                                                 <button class="btn btn--ghost btn--danger-quiet" type="submit" title="{{ 'common.delete'|trans }}" aria-label="{{ 'common.delete'|trans }}">{{ icon('trash') }}</button>
                                             </form>
@@ -481,7 +481,7 @@
     </div>
 
     {% if listing and user.can('listings.manage') %}
-        <form method="post" class="listing-danger-zone" action="{{ url('admin.listings.destroy', {id: listing.id()}) }}" onsubmit="return confirm('{{ 'listings.confirm_delete'|trans|e('js') }}');">
+        <form method="post" class="listing-danger-zone" action="{{ url('admin.listings.destroy', {id: listing.id()}) }}" data-confirm="{{ 'listings.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
             {{ csrf_field()|raw }}
             <button type="submit" class="btn btn--danger">{{ 'common.delete'|trans }}</button>
         </form>

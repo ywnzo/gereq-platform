@@ -95,7 +95,16 @@ final class Migrator
             $tool = new SchemaTool($this->em);
             $sql = array_values(array_filter(
                 $tool->getUpdateSchemaSQL($metadata),
-                static fn (string $statement): bool => !preg_match('/^\s*DROP\s+TABLE\b/i', $statement),
+                static function (string $statement) use ($managed): bool {
+                    // Povolit DROP jen pro entity tabulky / SQLite __temp__ rebuild.
+                    // Jinak SchemaTool umí smazat např. schema_migrations.
+                    if (!preg_match('/^\s*DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?["`\[]?(\w+)/i', $statement, $m)) {
+                        return true;
+                    }
+                    $name = strtolower($m[1]);
+
+                    return str_starts_with($name, '__temp__') || isset($managed[$name]);
+                },
             ));
 
             foreach ($sql as $statement) {

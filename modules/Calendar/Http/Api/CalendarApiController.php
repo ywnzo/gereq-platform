@@ -45,7 +45,7 @@ final class CalendarApiController extends Controller
         $items = $this->calendar->between($from, $to);
 
         return ApiResponse::collection(
-            array_map(fn (CalendarEvent $e): array => $this->serialize($e), $items),
+            array_map(fn (CalendarEvent $e): array => $this->calendar->serialize($e), $items),
             ['from' => $from->format(\DateTimeInterface::ATOM), 'to' => $to->format(\DateTimeInterface::ATOM), 'total' => count($items)],
         );
     }
@@ -66,9 +66,22 @@ final class CalendarApiController extends Controller
         $event = new CalendarEvent(trim((string) $data['title']), $starts, $ends, $type);
         $event->setAllDay(($data['all_day'] ?? false) === true || ($data['all_day'] ?? null) === '1');
         $event->setDescription(trim((string) ($data['description'] ?? '')) ?: null);
+        $event->setLocation(trim((string) ($data['location'] ?? '')) ?: null);
+        if (!empty($data['color'])) {
+            $event->setColor((string) $data['color']);
+        }
+        if (!empty($data['timezone'])) {
+            $event->setTimezone((string) $data['timezone']);
+        }
+        if (array_key_exists('rrule', $data)) {
+            $event->setRrule(trim((string) ($data['rrule'] ?? '')) ?: null);
+        }
+        if (!empty($data['status'])) {
+            $event->setStatus((string) $data['status']);
+        }
         $this->em->persist($event);
         $this->em->flush();
-        $payload = $this->serialize($event);
+        $payload = $this->calendar->serialize($event);
         $this->events->emit('calendar.event_created', ['type' => 'calendar_event', 'id' => $event->id()], $payload);
 
         return ApiResponse::data($payload, 201);
@@ -81,7 +94,7 @@ final class CalendarApiController extends Controller
             return ApiResponse::notFound();
         }
 
-        return ApiResponse::data($this->serialize($event));
+        return ApiResponse::data($this->calendar->serialize($event));
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -106,8 +119,23 @@ final class CalendarApiController extends Controller
         }
         $event->setAllDay(($data['all_day'] ?? $event->allDay()) === true || ($data['all_day'] ?? null) === '1');
         $event->setDescription(trim((string) ($data['description'] ?? '')) ?: null);
+        if (array_key_exists('location', $data)) {
+            $event->setLocation(trim((string) ($data['location'] ?? '')) ?: null);
+        }
+        if (!empty($data['color'])) {
+            $event->setColor((string) $data['color']);
+        }
+        if (!empty($data['timezone'])) {
+            $event->setTimezone((string) $data['timezone']);
+        }
+        if (array_key_exists('rrule', $data)) {
+            $event->setRrule(trim((string) ($data['rrule'] ?? '')) ?: null);
+        }
+        if (!empty($data['status'])) {
+            $event->setStatus((string) $data['status']);
+        }
         $this->em->flush();
-        $payload = $this->serialize($event);
+        $payload = $this->calendar->serialize($event);
         $this->events->emit('calendar.event_updated', ['type' => 'calendar_event', 'id' => $event->id()], $payload);
 
         return ApiResponse::data($payload);
@@ -130,22 +158,6 @@ final class CalendarApiController extends Controller
         $this->events->emit('calendar.event_deleted', ['type' => 'calendar_event', 'id' => $id], ['id' => $id]);
 
         return ApiResponse::data(['id' => $id, 'deleted' => true]);
-    }
-
-    /** @return array<string, mixed> */
-    private function serialize(CalendarEvent $e): array
-    {
-        return [
-            'id' => $e->id(),
-            'title' => $e->title(),
-            'starts_at' => $e->startsAt()->format(\DateTimeInterface::ATOM),
-            'ends_at' => $e->endsAt()->format(\DateTimeInterface::ATOM),
-            'all_day' => $e->allDay(),
-            'type' => $e->type(),
-            'description' => $e->description(),
-            'created_at' => $e->createdAt()->format(\DateTimeInterface::ATOM),
-            'updated_at' => $e->updatedAt()->format(\DateTimeInterface::ATOM),
-        ];
     }
 
     /** @return array<string, mixed> */

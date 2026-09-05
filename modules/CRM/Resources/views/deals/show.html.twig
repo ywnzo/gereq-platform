@@ -16,7 +16,7 @@
         <div class="actions">
             {% if user.can('crm.deals.manage') %}
                 <a class="btn btn--primary" href="{{ url('admin.crm.deals.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <form method="post" action="{{ url('admin.crm.deals.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'crm.deals.confirm_delete'|trans|e('js') }}');">
+                <form method="post" action="{{ url('admin.crm.deals.destroy', {id: item.id()}) }}" data-confirm="{{ 'crm.deals.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                     {{ csrf_field()|raw }}
                     <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
                 </form>

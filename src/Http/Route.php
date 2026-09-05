@@ -13,6 +13,8 @@ final class Route
 
     private ?string $permission = null;
 
+    private ?string $module = null;
+
     /** @var list<string> */
     private array $scopes = [];
 
@@ -46,6 +48,13 @@ final class Route
     public function permission(string $permission): self
     {
         $this->permission = $permission;
+
+        return $this;
+    }
+
+    public function module(string $moduleId): self
+    {
+        $this->module = $moduleId;
 
         return $this;
     }
@@ -90,6 +99,11 @@ final class Route
     public function getPermission(): ?string
     {
         return $this->permission;
+    }
+
+    public function getModule(): ?string
+    {
+        return $this->module;
     }
 
     /** @return list<string> */

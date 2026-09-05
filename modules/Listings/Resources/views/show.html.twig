@@ -48,7 +48,7 @@
         <div class="actions">
             {% if user.can('listings.manage') %}
                 <a class="btn btn--primary" href="{{ url('admin.listings.edit', {id: listing.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <form method="post" action="{{ url('admin.listings.destroy', {id: listing.id()}) }}" onsubmit="return confirm('{{ 'listings.confirm_delete'|trans|e('js') }}');">
+                <form method="post" action="{{ url('admin.listings.destroy', {id: listing.id()}) }}" data-confirm="{{ 'listings.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                     {{ csrf_field()|raw }}
                     <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
                 </form>

@@ -27,9 +27,6 @@
             </select>
         </form>
         {% if view == 'list' %}
-            <div class="toolbar__toggles">
-                {% include 'ui/table_actions_toggle.html.twig' %}
-            </div>
         {% endif %}
     </div>
 
@@ -80,7 +77,7 @@
                         {% include 'ui/sort_th.html.twig' with { label: 'crm.field.stage'|trans, column: 'stage', query: q } %}
                         {% include 'ui/sort_th.html.twig' with { label: 'crm.field.amount'|trans, column: 'amount', query: q, class: 'is-num' } %}
                         {% include 'ui/sort_th.html.twig' with { label: 'crm.field.due'|trans, column: 'expectedCloseAt', query: q } %}
-                        <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                        <th class="table__actions-head"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,13 +97,10 @@
                             <td>{{ deal.expectedCloseAt() ? deal.expectedCloseAt().format('d. m. Y') : '—' }}</td>
                             {% embed 'ui/row_actions.html.twig' %}
                                 {% block items %}
-                                    <a href="{{ url('admin.crm.deals.show', {id: deal.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.crm.deals.show', {id: deal.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
                                     {% if user.can('crm.deals.manage') %}
-                                        <a href="{{ url('admin.crm.deals.edit', {id: deal.id()}) }}">{{ 'common.edit'|trans }}</a>
-                                        <form method="post" action="{{ url('admin.crm.deals.destroy', {id: deal.id()}) }}" onsubmit="return confirm('{{ 'crm.deals.confirm_delete'|trans|e('js') }}');">
-                                            {{ csrf_field()|raw }}
-                                            <button type="submit">{{ 'common.delete'|trans }}</button>
-                                        </form>
+                                        {% include 'ui/row_action.html.twig' with { href: url('admin.crm.deals.edit', {id: deal.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                                        {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.crm.deals.destroy', {id: deal.id()}), confirm: 'crm.deals.confirm_delete'|trans } %}
                                     {% endif %}
                                 {% endblock %}
                             {% endembed %}

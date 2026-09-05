@@ -12,16 +12,13 @@
 <select name="status" class="input" onchange="this.form.submit()"><option value="">{{ 'returns.all_statuses'|trans }}</option>
 {% for s in statuses %}<option value="{{ s }}" {{ status==s?'selected':'' }}>{{ ('returns.status.'~s)|trans }}</option>{% endfor %}
 </select></form>
-<div class="toolbar__toggles">
-{% include 'ui/table_actions_toggle.html.twig' %}
-</div>
 </div>
 <div class="table-wrap" data-table><table class="table"><thead><tr>
 {% include 'ui/sort_th.html.twig' with { label: 'returns.field.number'|trans, column: 'number', query: { status: status } } %}
 <th>{{ 'returns.field.order'|trans }}</th>
 {% include 'ui/sort_th.html.twig' with { label: 'returns.field.status'|trans, column: 'status', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'returns.field.created'|trans, column: 'createdAt', query: { status: status } } %}
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
+<th class="table__actions-head"></th>
 </tr></thead>
 <tbody>{% for item in items %}
 <tr><td><a href="{{ url('admin.returns.show',{id:item.id()}) }}">{{ item.number() }}</a></td>
@@ -30,7 +27,7 @@
 <td class="is-mute">{{ item.createdAt().format('d. m. Y H:i') }}</td>
 {% embed 'ui/row_actions.html.twig' %}
     {% block items %}
-        <a href="{{ url('admin.returns.show',{id:item.id()}) }}">{{ 'common.detail'|trans }}</a>
+        {% include 'ui/row_action.html.twig' with { href: url('admin.returns.show',{id:item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
     {% endblock %}
 {% endembed %}
 </tr>

@@ -163,13 +163,14 @@ final class CityController extends Controller
 
         $item->setActive(!$item->active());
         $this->em->flush();
+        $message = $this->translator->trans(
+            $item->active() ? 'listings.cities.flash.activated' : 'listings.cities.flash.deactivated'
+        );
         if (!$this->wantsJson()) {
-            $this->flash('success', $this->translator->trans(
-                $item->active() ? 'listings.cities.flash.activated' : 'listings.cities.flash.deactivated'
-            ));
+            $this->flash('success', $message);
         }
 
-        return $this->toggleResponse($item->active(), 'admin.listings.cities.index');
+        return $this->toggleResponse($item->active(), 'admin.listings.cities.index', [], $message);
     }
 
     private function formPage(?City $item): Response

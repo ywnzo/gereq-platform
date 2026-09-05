@@ -259,7 +259,6 @@ Alpine.data('rowMenu', () => ({
 }));
 
 Alpine.data('dataTable', () => ({
-    showActions: true,
     selected: [] as string[],
     pageIds: [] as string[],
     bulkAction: '',
@@ -270,33 +269,40 @@ Alpine.data('dataTable', () => ({
         } catch {
             this.pageIds = [];
         }
-        const key = this.storageKey();
-        const saved = localStorage.getItem(key);
-        if (saved === '0' || saved === '1') {
-            this.showActions = saved === '1';
-        } else {
-            const def = el.dataset.actionsDefault;
-            this.showActions = def !== '0';
-        }
-        this.syncClass();
+        this.syncFit();
         this.$watch('selected', () => this.syncSelectAll());
-        this.$nextTick(() => this.syncSelectAll());
+        this.$nextTick(() => {
+            this.syncSelectAll();
+            this.syncFit();
+        });
     },
-    storageKey(): string {
-        const el = this.$el as HTMLElement;
-        return 'gereq-table-actions:' + (el.dataset.tableId || el.id || location.pathname);
-    },
-    toggleActions() {
-        this.showActions = !this.showActions;
-        localStorage.setItem(this.storageKey(), this.showActions ? '1' : '0');
-        this.syncClass();
-    },
-    syncClass() {
-        const wrap = (this.$el as HTMLElement).querySelector('.table-wrap');
+    syncFit() {
+        const shell = this.$el as HTMLElement;
+        const wrap = shell.querySelector('.table-wrap');
         if (!(wrap instanceof HTMLElement)) {
             return;
         }
-        wrap.classList.toggle('is-actions-off', !this.showActions);
+        // Real page content after the list (rates, hooks…) — not fixed drawers.
+        const siblingContent = shell.parentElement
+            ? Array.from(shell.parentElement.children).some(
+                (el) =>
+                    el !== shell &&
+                    el instanceof HTMLElement &&
+                    !el.classList.contains('g-drawer') &&
+                    !el.classList.contains('alert') &&
+                    !el.classList.contains('alert-success') &&
+                    !el.classList.contains('alert-error'),
+            )
+            : false;
+        if (siblingContent) {
+            shell.classList.add('list-shell--fit');
+            return;
+        }
+        // Stretch when there is at least one data row; hug content only when empty.
+        const dataRows = Array.from(wrap.querySelectorAll('tbody > tr')).filter(
+            (tr) => !(tr instanceof HTMLElement && tr.querySelector('.empty')),
+        );
+        shell.classList.toggle('list-shell--fit', dataRows.length === 0);
     },
     get selectedCount(): number {
         return this.selected.length;

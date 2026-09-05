@@ -13,16 +13,13 @@
         {% for s in statuses %}<option value="{{ s }}" {{ status==s?'selected':'' }}>{{ ('projects.status.'~s)|trans }}</option>{% endfor %}
         </select>
     </form>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
-    </div>
 </div>
 <div class="table-wrap" data-table><table class="table"><thead><tr>
 {% include 'ui/sort_th.html.twig' with { label: 'projects.field.name'|trans, column: 'name', query: { status: status } } %}
 <th>{{ 'projects.field.customer'|trans }}</th>
 {% include 'ui/sort_th.html.twig' with { label: 'projects.field.status'|trans, column: 'status', query: { status: status } } %}
 {% include 'ui/sort_th.html.twig' with { label: 'projects.field.due'|trans, column: 'dueAt', query: { status: status } } %}
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
+<th class="table__actions-head"></th>
 </tr></thead>
 <tbody>{% for item in items %}
 <tr><td><a href="{{ url('admin.projects.show',{id:item.id()}) }}">{{ item.name() }}</a></td>
@@ -31,7 +28,7 @@
 <td class="is-mute">{{ item.dueAt()?item.dueAt().format('d. m. Y'):'—' }}</td>
 {% embed 'ui/row_actions.html.twig' %}
     {% block items %}
-        <a href="{{ url('admin.projects.show',{id:item.id()}) }}">{{ 'common.detail'|trans }}</a>
+        {% include 'ui/row_action.html.twig' with { href: url('admin.projects.show',{id:item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
     {% endblock %}
 {% endembed %}
 </tr>

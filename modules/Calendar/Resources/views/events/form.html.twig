@@ -1,17 +1,49 @@
 {% extends 'admin/layout.html.twig' %}
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.calendar'|trans, url: url('admin.calendar.index') },
+        { label: item ? 'calendar.edit'|trans : 'calendar.new'|trans },
+    ] } %}
+{% endblock %}
 {% block content %}
-<header class="page-header"><h1>{{ item ? 'calendar.edit'|trans : 'calendar.new'|trans }}</h1></header>
+<header class="page-header">
+    <div>
+        <h1>{{ item ? 'calendar.edit'|trans : 'calendar.new'|trans }}</h1>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.calendar.index') }}">{{ 'common.back'|trans }}</a>
+    </div>
+</header>
 {% include 'ui/error-summary.html.twig' with { form: 'calendar.event.save' } %}
 <form method="post" class="form-grid" action="{{ item ? url('admin.calendar.update',{id:item.id()}) : url('admin.calendar.store') }}" data-form="calendar.event.save" x-data="gereqForm">
 {{ csrf_field()|raw }}
 {% include 'ui/input.html.twig' with { name:'title', label:'calendar.field.title'|trans, required:true, form:'calendar.event.save', value: item?item.title():'' } %}
 {% include 'ui/input.html.twig' with { name:'starts_at', type:'datetime-local', label:'calendar.field.starts'|trans, required:true, form:'calendar.event.save', value: item ? item.startsAt().format('Y-m-d\\TH:i') : defaultStarts } %}
-{% include 'ui/input.html.twig' with { name:'ends_at', type:'datetime-local', label:'calendar.field.ends'|trans, required:true, form:'calendar.event.save', value: item ? item.endsAt().format('Y-m-d\\TH:i') : '' } %}
-{% include 'ui/select.html.twig' with { name:'type', label:'calendar.field.type'|trans, form:'calendar.event.save', value: item?item.type():'meeting', options:[
-{value:'meeting',label:'calendar.type.meeting'|trans},{value:'deadline',label:'calendar.type.deadline'|trans},{value:'other',label:'calendar.type.other'|trans}
+{% include 'ui/input.html.twig' with { name:'ends_at', type:'datetime-local', label:'calendar.field.ends'|trans, required:true, form:'calendar.event.save', value: item ? item.endsAt().format('Y-m-d\\TH:i') : defaultEnds } %}
+{% include 'ui/input.html.twig' with { name:'location', label:'calendar.field.location'|trans, optional:true, form:'calendar.event.save', value: item?item.location():'' } %}
+{% set typeOptions = [] %}
+{% for t in types|default(['meeting','deadline','call','task','other']) %}
+    {% set typeOptions = typeOptions|merge([{ value: t, label: ('calendar.type.' ~ t)|trans }]) %}
+{% endfor %}
+{% include 'ui/select.html.twig' with { name:'type', label:'calendar.field.type'|trans, form:'calendar.event.save', value: item?item.type():'meeting', options: typeOptions } %}
+{% set colorOptions = [] %}
+{% for c in colors|default(['blue','green','amber','red','violet','slate']) %}
+    {% set colorOptions = colorOptions|merge([{ value: c, label: ('calendar.color.' ~ c)|trans }]) %}
+{% endfor %}
+{% include 'ui/select.html.twig' with { name:'color', label:'calendar.field.color'|trans, form:'calendar.event.save', value: item?item.color():'blue', options: colorOptions } %}
+{% include 'ui/select.html.twig' with { name:'status', label:'calendar.field.status'|trans, form:'calendar.event.save', value: item?item.status():'confirmed', options:[
+    {value:'confirmed',label:'calendar.status.confirmed'|trans},
+    {value:'tentative',label:'calendar.status.tentative'|trans},
+    {value:'cancelled',label:'calendar.status.cancelled'|trans}
 ] } %}
 <label class="field"><span class="field__label">{{ 'calendar.field.all_day'|trans }}</span>
 <input type="checkbox" name="all_day" value="1" {{ item and item.allDay() ? 'checked' : '' }}></label>
+{% include 'ui/input.html.twig' with { name:'timezone', label:'calendar.field.timezone'|trans, optional:true, form:'calendar.event.save', value: item ? (item.timezone() ?: 'Europe/Prague') : 'Europe/Prague' } %}
+{% include 'ui/input.html.twig' with { name:'rrule', label:'calendar.field.rrule'|trans, optional:true, form:'calendar.event.save', value: item?item.rrule():'', hint: 'calendar.field.rrule_hint'|trans } %}
+{% if not item %}
+{% include 'ui/input.html.twig' with { name:'attendee_email', type:'email', label:'calendar.field.attendee'|trans, optional:true, form:'calendar.event.save', value: '' } %}
+{% endif %}
 {% include 'ui/textarea.html.twig' with { name:'description', label:'calendar.field.description'|trans, optional:true, extra:'field--full', form:'calendar.event.save', value: item?item.description():'' } %}
 <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
 <a class="btn btn--ghost" href="{{ url('admin.calendar.index') }}">{{ 'common.cancel'|trans }}</a></div>

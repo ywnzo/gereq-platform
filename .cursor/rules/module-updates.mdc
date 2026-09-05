@@ -1,0 +1,28 @@
+---
+description: Změny modulů vždy jako verzovaný update (module.php + Module::version)
+globs: modules/**/*
+alwaysApply: false
+---
+
+# Module updates
+
+Při jakékoli změně kódu/migrací/UI v `modules/*` **vždy** zvyš verzi a nech admin UI, ať update proběhne přes „Aktualizovat“.
+
+## Povinné
+
+1. Bump `version` v `modules/<id>/module.php`
+2. Stejná verze v `Modules\<Id>\<Id>Module::version()`
+3. Schema/data změny jen přes `Database/Migrations/` (ne „potichu“ přes běžný request)
+4. Semver: patch = fix, minor = nová funkce/migrace, major = breaking
+
+Platforma po bumpu **zablokuje admin UI modulu**, dokud admin neklikne Aktualizovat (`ModuleCurrentMiddleware`). Nový Twig se tak neukáže na starém schématu.
+
+## Proč
+
+Installed version v DB se musí lišit od file version → UI nabídne update, spustí pending migrace a sync permissions. Bez bumpu se UI/schema rozcházejí a admin vypadá rozbitě.
+
+## Nedělat
+
+- Neměnit modul „za běhu“ bez version bump
+- Nespoléhat jen na `php gereq migrate` jako náhradu module update v adminu
+- Nenechávat `module.php` a `version()` desync

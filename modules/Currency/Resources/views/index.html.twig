@@ -22,9 +22,6 @@
         <form class="toolbar" method="get">
             <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'currency.search'|trans }}">
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -37,7 +34,7 @@
                     <th>{{ 'currency.field.decimal_places'|trans }}</th>
                     <th>{{ 'currency.field.status'|trans }}</th>
                     <th>{{ 'currency.field.default'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -67,7 +64,7 @@
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
                                 {% if user.can('currency.manage') %}
-                                    <a href="{{ url('admin.currencies.edit', {code: item.code()}) }}">{{ 'common.edit'|trans }}</a>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.currencies.edit', {code: item.code()}), label: 'common.edit'|trans, icon: 'edit' } %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}

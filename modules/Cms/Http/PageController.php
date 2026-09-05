@@ -197,11 +197,12 @@ final class PageController extends Controller
             $payload = $this->serialize($item);
             $this->events->dispatch(PageUpdated::make($item->id(), $payload));
             $this->auditor->log('page.unpublished', 'cms_page', $item->id());
+            $message = $this->translator->trans('cms.flash.page_unpublished', ['%title%' => $item->title()]);
             if (!$this->wantsJson()) {
-                $this->flash('success', $this->translator->trans('cms.flash.page_unpublished', ['%title%' => $item->title()]));
+                $this->flash('success', $message);
             }
 
-            return $this->toggleResponse(false, 'admin.cms.pages.index');
+            return $this->toggleResponse(false, 'admin.cms.pages.index', [], $message);
         }
 
         $item->setStatus('published');
@@ -210,11 +211,12 @@ final class PageController extends Controller
         $this->events->dispatch(PagePublished::make($item->id(), $payload));
         $this->events->dispatch(PageUpdated::make($item->id(), $payload));
         $this->auditor->log('page.published', 'cms_page', $item->id());
+        $message = $this->translator->trans('cms.flash.page_published', ['%title%' => $item->title()]);
         if (!$this->wantsJson()) {
-            $this->flash('success', $this->translator->trans('cms.flash.page_published', ['%title%' => $item->title()]));
+            $this->flash('success', $message);
         }
 
-        return $this->toggleResponse(true, 'admin.cms.pages.index');
+        return $this->toggleResponse(true, 'admin.cms.pages.index', [], $message);
     }
 
     public function preview(string $id): Response

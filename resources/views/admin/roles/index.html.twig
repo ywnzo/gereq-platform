@@ -8,9 +8,6 @@
 
     <div class="toolbar--table">
         <div class="toolbar"></div>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -19,7 +16,7 @@
                 <tr>
                     <th>{{ 'common.role'|trans }}</th>
                     <th>{{ 'common.description'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>

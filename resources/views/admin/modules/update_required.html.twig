@@ -1,0 +1,38 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'admin.modules.title'|trans, url: url('admin.modules.index') },
+        { label: manifest.name },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<section class="panel stack" style="max-width:36rem;margin:2rem auto;padding:1.5rem">
+    <header>
+        <p class="eyebrow">{{ 'admin.modules.update_available'|trans }}</p>
+        <h1>{{ 'admin.modules.gate.title'|trans }}</h1>
+        <p class="muted">{{ 'admin.modules.gate.body'|trans({
+            '%module%': manifest.name,
+            '%current%': manifest.version,
+            '%installed%': installedVersion|default('—')
+        }) }}</p>
+    </header>
+    <p>{{ 'admin.modules.update_hint'|trans({
+        '%current%': manifest.version,
+        '%installed%': installedVersion|default('—'),
+        '%pending%': '—'
+    }) }}</p>
+    <div class="form-actions" style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        {% if user and user.can('modules.manage') %}
+            <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
+            </form>
+        {% endif %}
+        <a class="btn btn--ghost" href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ 'admin.modules.gate.detail'|trans }}</a>
+        <a class="btn btn--ghost" href="{{ url('admin.dashboard') }}">{{ 'common.back'|trans }}</a>
+    </div>
+</section>
+{% endblock %}

@@ -64,7 +64,7 @@
                                 <td>{{ t.dueAt()?t.dueAt().format('d. m. Y'):'—' }}</td>
                                 <td>
                                     {% if user.can('projects.manage') %}
-                                        <form method="post" action="{{ url('admin.projects.tasks.destroy',{id:item.id(),taskId:t.id()}) }}" onsubmit="return confirm('{{ 'projects.tasks.confirm_delete'|trans|e('js') }}');">
+                                        <form method="post" action="{{ url('admin.projects.tasks.destroy',{id:item.id(),taskId:t.id()}) }}" data-confirm="{{ 'projects.tasks.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                                             {{ csrf_field()|raw }}
                                             <button type="submit">{{ 'common.delete'|trans }}</button>
                                         </form>

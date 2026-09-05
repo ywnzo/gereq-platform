@@ -281,19 +281,18 @@ final class ListingController extends Controller
         if ($listing->status() === 'published') {
             $listing->unpublish();
             $on = false;
-            if (!$this->wantsJson()) {
-                $this->flash('success', $this->translator->trans('listings.flash.unpublished'));
-            }
+            $message = $this->translator->trans('listings.flash.unpublished');
         } else {
             $listing->publish();
             $on = true;
-            if (!$this->wantsJson()) {
-                $this->flash('success', $this->translator->trans('listings.flash.published'));
-            }
+            $message = $this->translator->trans('listings.flash.published');
         }
         $this->em->flush();
+        if (!$this->wantsJson()) {
+            $this->flash('success', $message);
+        }
 
-        return $this->toggleResponse($on, 'admin.listings.index');
+        return $this->toggleResponse($on, 'admin.listings.index', [], $message);
     }
 
     public function toggleFeature(string $id): Response
@@ -305,13 +304,14 @@ final class ListingController extends Controller
 
         $listing->setFeatured(!$listing->featured());
         $this->em->flush();
+        $message = $this->translator->trans(
+            $listing->featured() ? 'listings.flash.featured' : 'listings.flash.unfeatured'
+        );
         if (!$this->wantsJson()) {
-            $this->flash('success', $this->translator->trans(
-                $listing->featured() ? 'listings.flash.featured' : 'listings.flash.unfeatured'
-            ));
+            $this->flash('success', $message);
         }
 
-        return $this->toggleResponse($listing->featured(), 'admin.listings.index');
+        return $this->toggleResponse($listing->featured(), 'admin.listings.index', [], $message);
     }
 
     private function deleteListing(Listing $listing): void

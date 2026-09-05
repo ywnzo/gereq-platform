@@ -19,9 +19,6 @@
                 <option value="failing" {{ status == 'failing' ? 'selected' : '' }}>{{ 'webhooks.status.failing'|trans }}</option>
             </select>
         </form>
-        <div class="toolbar__toggles">
-            {% include 'ui/table_actions_toggle.html.twig' %}
-        </div>
     </div>
 
     <div class="table-wrap" data-table>
@@ -33,7 +30,7 @@
                     <th>{{ 'webhooks.field.events'|trans }}</th>
                     <th>{{ 'webhooks.field.status'|trans }}</th>
                     <th>{{ 'webhooks.field.last_delivery'|trans }}</th>
-                    <th class="table__actions-head" x-show="showActions" x-cloak></th>
+                    <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
@@ -59,13 +56,10 @@
                         <td>{{ item.lastDeliveryAt() ? item.lastDeliveryAt().format('d. m. Y H:i') : '—' }}</td>
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
-                                <a href="{{ url('admin.developer.webhooks.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.developer.webhooks.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
                                 {% if user.can('webhooks.manage') %}
-                                    <a href="{{ url('admin.developer.webhooks.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                                    <form method="post" action="{{ url('admin.developer.webhooks.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'webhooks.confirm_delete'|trans|e('js') }}');">
-                                        {{ csrf_field()|raw }}
-                                        <button type="submit">{{ 'common.delete'|trans }}</button>
-                                    </form>
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.developer.webhooks.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                                    {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.developer.webhooks.destroy', {id: item.id()}), confirm: 'webhooks.confirm_delete'|trans } %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}

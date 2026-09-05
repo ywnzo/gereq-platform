@@ -34,9 +34,6 @@
             <option value="0" {{ active == '0' ? 'selected' : '' }}>{{ 'listings.near.inactive_only'|trans }}</option>
         </select>
     </form>
-    <div class="toolbar__toggles">
-        {% include 'ui/table_actions_toggle.html.twig' %}
-    </div>
 </div>
 
 <div class="table-wrap" data-table>
@@ -46,7 +43,7 @@
 <th>{{ 'listings.near.field.category'|trans }}</th>
 <th>{{ 'listings.near.field.city'|trans }}</th>
 <th class="table__toggle-cell">{{ 'ui.table.col.active'|trans }}</th>
-<th class="table__actions-head" x-show="showActions" x-cloak></th>
+<th class="table__actions-head"></th>
 </tr></thead>
 <tbody>
 {% for item in items %}
@@ -75,13 +72,10 @@
     </td>
     {% embed 'ui/row_actions.html.twig' %}
         {% block items %}
-            <a href="{{ url('admin.listings.near.show', {id: item.id()}) }}">{{ 'common.view'|trans }}</a>
+            {% include 'ui/row_action.html.twig' with { href: url('admin.listings.near.show', {id: item.id()}), label: 'common.view'|trans, icon: 'eye' } %}
             {% if user.can('listings.manage') %}
-                <a href="{{ url('admin.listings.near.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <form method="post" action="{{ url('admin.listings.near.destroy', {id: item.id()}) }}" onsubmit="return confirm('{{ 'listings.near.confirm_delete'|trans|e('js') }}');">
-                    {{ csrf_field()|raw }}
-                    <button type="submit">{{ 'common.delete'|trans }}</button>
-                </form>
+                {% include 'ui/row_action.html.twig' with { href: url('admin.listings.near.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.listings.near.destroy', {id: item.id()}), confirm: 'listings.near.confirm_delete'|trans } %}
             {% endif %}
         {% endblock %}
     {% endembed %}

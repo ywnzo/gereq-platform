@@ -77,10 +77,15 @@ abstract class Controller
      *
      * @param array<string, string|int> $params
      */
-    protected function toggleResponse(bool $on, string $fallbackRoute, array $params = []): Response
+    protected function toggleResponse(bool $on, string $fallbackRoute, array $params = [], ?string $message = null): Response
     {
         if ($this->wantsJson()) {
-            return $this->json(['on' => $on]);
+            $payload = ['on' => $on];
+            if ($message !== null && $message !== '') {
+                $payload['message'] = $message;
+            }
+
+            return $this->json($payload);
         }
 
         return $this->redirectBack($fallbackRoute, $params);
