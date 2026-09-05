@@ -25,6 +25,13 @@ final class ApiRateLimitMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        if ($this->isPerfBypass($request)) {
+            $response = $next($request);
+            $response->headers->set('X-Perf-Bypass', '1');
+
+            return $response;
+        }
+
         $isWrite = in_array(strtoupper($request->getMethod()), ['POST', 'PUT', 'PATCH', 'DELETE'], true);
         $path = $request->getPathInfo();
         $isStore = str_starts_with($path, '/api/v1/store/')
@@ -62,5 +69,17 @@ final class ApiRateLimitMiddleware implements MiddlewareInterface
         $response->headers->set('RateLimit-Reset', (string) (time() + $window));
 
         return $response;
+    }
+
+    private function isPerfBypass(Request $request): bool
+    {
+        $secret = (string) $this->config->get('api.rate_limit.perf_secret', '');
+        if ($secret === '') {
+            return false;
+        }
+
+        $provided = (string) $request->headers->get('X-Perf-Secret', '');
+
+        return $provided !== '' && hash_equals($secret, $provided);
     }
 }
