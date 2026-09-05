@@ -1,5 +1,105 @@
 import type Alpine from '@alpinejs/csp';
 
+const SEP_SVG =
+    '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function tabLabel(btn: HTMLElement): string {
+    const clone = btn.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.module-tab-count').forEach((el) => el.remove());
+
+    return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function ensureSeparator(item: HTMLElement): void {
+    if (item.querySelector(':scope > .breadcrumbs__sep')) {
+        return;
+    }
+
+    const sep = document.createElement('span');
+    sep.className = 'breadcrumbs__sep';
+    sep.setAttribute('aria-hidden', 'true');
+    sep.innerHTML = SEP_SVG;
+    item.appendChild(sep);
+}
+
+function promoteToLink(item: HTMLElement, href: string): void {
+    const current = item.querySelector(':scope > .breadcrumbs__current');
+    if (current) {
+        const a = document.createElement('a');
+        a.className = 'breadcrumbs__link breadcrumbs__link--tab-parent';
+        a.href = href;
+        a.textContent = current.textContent;
+        current.replaceWith(a);
+    } else {
+        const existing = item.querySelector(':scope > .breadcrumbs__link--tab-parent') as HTMLAnchorElement | null;
+        if (existing) {
+            existing.href = href;
+        }
+    }
+
+    item.classList.remove('is-current');
+    ensureSeparator(item);
+}
+
+function demoteToCurrent(item: HTMLElement): void {
+    const link = item.querySelector(':scope > .breadcrumbs__link--tab-parent');
+    if (link) {
+        const span = document.createElement('span');
+        span.className = 'breadcrumbs__current';
+        span.setAttribute('aria-current', 'page');
+        span.textContent = link.textContent;
+        link.replaceWith(span);
+    }
+
+    item.querySelector(':scope > .breadcrumbs__sep')?.remove();
+    item.classList.add('is-current');
+    const current = item.querySelector(':scope > .breadcrumbs__current');
+    current?.setAttribute('aria-current', 'page');
+}
+
+function syncBreadcrumbs(root: HTMLElement, current: string): void {
+    if (root.dataset.breadcrumbs === '0') {
+        return;
+    }
+
+    const list = document.querySelector('.topbar .breadcrumbs__list') as HTMLOListElement | null;
+    if (!list) {
+        return;
+    }
+
+    list.querySelectorAll('.breadcrumbs__item--tab').forEach((el) => el.remove());
+
+    const baseItems = [...list.querySelectorAll<HTMLElement>(':scope > .breadcrumbs__item')];
+    if (!baseItems.length) {
+        return;
+    }
+
+    const lastBase = baseItems[baseItems.length - 1];
+    const initial = root.dataset.initial || '';
+    const firstTab =
+        (root.querySelector('.design-tab[data-tab]') as HTMLElement | null)?.dataset.tab || '';
+    const homeTab = initial || firstTab;
+    const btn = root.querySelector<HTMLElement>(`.design-tab[data-tab="${CSS.escape(current)}"]`);
+    const label = btn ? tabLabel(btn) : '';
+    const showTab = Boolean(current && label && homeTab && current !== homeTab);
+
+    if (!showTab) {
+        demoteToCurrent(lastBase);
+        return;
+    }
+
+    promoteToLink(lastBase, '#' + homeTab);
+
+    const li = document.createElement('li');
+    li.className = 'breadcrumbs__item breadcrumbs__item--tab is-current';
+    const span = document.createElement('span');
+    span.className = 'breadcrumbs__current';
+    span.setAttribute('aria-current', 'page');
+    span.textContent = label;
+    li.appendChild(span);
+    list.appendChild(li);
+}
+
 export function registerTabs(alpine: typeof Alpine): void {
     alpine.data('gereqTabs', () => ({
         current: '',
@@ -66,6 +166,7 @@ export function registerTabs(alpine: typeof Alpine): void {
             if (tabInput) {
                 tabInput.value = this.current;
             }
+            syncBreadcrumbs(root, this.current);
         },
     }));
 }

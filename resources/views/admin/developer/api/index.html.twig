@@ -1,38 +1,55 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="admin-api" data-actions-default="1">
+<div class="developer-page">
     <header class="page-header">
-        <h1>{{ 'admin.api.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'admin.api.title'|trans }}</h1>
+            <p class="muted">{{ 'admin.api.auth_hint'|trans }}</p>
+        </div>
         <a class="btn btn--ghost" href="/api/openapi.json" target="_blank">{{ 'admin.api.openapi'|trans }}</a>
     </header>
-    <p class="muted">{{ 'admin.api.auth_hint'|trans }}</p>
 
-    {% for module, routes in modules %}
-        <section class="hook-section">
-            <header class="page-header page-header--compact"><h2>{{ module }}</h2></header>
-            <div class="table-wrap" data-table>
-                <table class="table">
-                    <thead>
-                        <tr><th>{{ 'admin.api.col.method'|trans }}</th><th>{{ 'admin.api.col.path'|trans }}</th><th>{{ 'admin.api.col.scopes'|trans }}</th><th>{{ 'admin.api.col.summary'|trans }}</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for route in routes %}
-                            {% for method in route.methods %}
-                                <tr>
-                                    <td><code>{{ method }}</code></td>
-                                    <td><code>/api/v1/{{ route.module }}{% if route.path != '/' %}{{ route.path }}{% endif %}</code></td>
-                                    <td class="muted">{{ route.scopes|join(', ') ?: 'common.none'|trans }}</td>
-                                    <td>{{ route.summary }}</td>
-                                </tr>
+    <div class="developer-stack">
+        {% for module, routes in modules %}
+            <section class="developer-card">
+                <header class="developer-card__head">
+                    <h2>{{ module }}</h2>
+                </header>
+                <div class="table-wrap table-wrap--flush">
+                    <table class="table table--developer table--api">
+                        <colgroup>
+                            <col class="col-method">
+                            <col class="col-path">
+                            <col class="col-scopes">
+                            <col class="col-summary">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>{{ 'admin.api.col.method'|trans }}</th>
+                                <th>{{ 'admin.api.col.path'|trans }}</th>
+                                <th>{{ 'admin.api.col.scopes'|trans }}</th>
+                                <th>{{ 'admin.api.col.summary'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in routes %}
+                                {% for method in route.methods %}
+                                    <tr>
+                                        <td><span class="method-pill method-pill--{{ method|lower }}">{{ method }}</span></td>
+                                        <td class="table__path"><code>/api/v1/{{ route.module }}{% if route.path != '/' %}{{ route.path }}{% endif %}</code></td>
+                                        <td class="table__wrap-cell muted">{{ route.scopes|join(', ') ?: 'common.none'|trans }}</td>
+                                        <td class="table__wrap-cell">{{ route.summary ?: '—' }}</td>
+                                    </tr>
+                                {% endfor %}
                             {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    {% else %}
-        <div class="empty"><h2>{{ 'empty.api_routes'|trans }}</h2><p>{{ 'empty.api_routes_hint'|trans }}</p></div>
-    {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% else %}
+            <div class="empty"><h2>{{ 'empty.api_routes'|trans }}</h2><p>{{ 'empty.api_routes_hint'|trans }}</p></div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

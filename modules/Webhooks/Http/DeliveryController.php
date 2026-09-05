@@ -44,7 +44,7 @@ final class DeliveryController extends Controller
         $webhookId = trim((string) $request->query->get('webhook', ''));
         $status = (string) $request->query->get('status', '');
         $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = 30;
+        $perPage = min(100, max(1, (int) $request->query->get('per_page', 30)));
 
         $qb = $this->em->getRepository(WebhookDelivery::class)->createQueryBuilder('d')
             ->orderBy('d.createdAt', 'DESC');

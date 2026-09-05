@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'warehouse',
     'name' => 'Warehouse',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.warehouse.description',
     'class' => Modules\Warehouse\WarehouseModule::class,
     'author' => 'GEREQ',

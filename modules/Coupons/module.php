@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'coupons',
     'name' => 'Coupons',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.coupons.description',
     'class' => Modules\Coupons\CouponsModule::class,
     'author' => 'GEREQ',

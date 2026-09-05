@@ -38,16 +38,25 @@ final class CouponController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->query->get('q', ''));
-        $qb = $this->em->getRepository(Coupon::class)->createQueryBuilder('c')
-            ->orderBy('c.code', 'ASC');
-        self_repair_search($qb, 'c', ['code', 'name'], $search);
+        $list = \Gereq\Http\ListQuery::fromRequest(
+            $request,
+            sortable: ['code', 'name', 'createdAt'],
+            defaultSort: 'code',
+            perPage: 100,
+        );
 
-        return $this->page('@coupons/index.html.twig', [
+        $qb = $this->em->getRepository(Coupon::class)->createQueryBuilder('c');
+        $list->applySearch($qb, 'c', ['code', 'name']);
+        $qb->orderBy('c.' . $list->sort, $list->direction());
+
+        $total = (int) (clone $qb)->select('COUNT(c.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        /** @var list<Coupon> $items */
+        $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+
+        return $this->page('@coupons/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('coupons.title'),
-            'items' => $qb->getQuery()->getResult(),
-            'search' => $search,
-        ]);
+            'items' => $items,
+        ]));
     }
 
     public function create(): Response

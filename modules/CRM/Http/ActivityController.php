@@ -45,7 +45,7 @@ final class ActivityController extends Controller
         $status = (string) $request->query->get('status', '');
         $customerId = (string) $request->query->get('customer', '');
         $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = 20;
+        $perPage = min(100, max(1, (int) $request->query->get('per_page', 20)));
 
         $qb = $this->em->getRepository(Activity::class)->createQueryBuilder('a')
             ->orderBy('a.dueAt', 'ASC')

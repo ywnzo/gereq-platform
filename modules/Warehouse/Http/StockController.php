@@ -41,21 +41,31 @@ final class StockController extends Controller
 
     public function index(Request $request): Response
     {
-        $warehouseId = (string) $request->query->get('warehouse', '');
-        $productId = (string) $request->query->get('product', '');
-        $qb = $this->em->getRepository(StockItem::class)->createQueryBuilder('s')
-            ->orderBy('s.updatedAt', 'DESC');
+        $list = \Gereq\Http\ListQuery::fromRequest(
+            $request,
+            sortable: ['updatedAt', 'qty'],
+            defaultSort: 'updatedAt',
+            defaultDir: 'desc',
+            perPage: 100,
+            filterKeys: ['warehouse', 'product'],
+        );
+        $warehouseId = $list->filter('warehouse');
+        $productId = $list->filter('product');
+
+        $qb = $this->em->getRepository(StockItem::class)->createQueryBuilder('s');
         if ($warehouseId !== '') {
             $qb->andWhere('s.warehouseId = :wid')->setParameter('wid', $warehouseId);
         }
         if ($productId !== '') {
             $qb->andWhere('s.productId = :pid')->setParameter('pid', $productId);
         }
+        $qb->orderBy('s.' . $list->sort, $list->direction());
 
+        $total = (int) (clone $qb)->select('COUNT(s.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
         /** @var list<StockItem> $items */
-        $items = $qb->getQuery()->getResult();
+        $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
 
-        return $this->page('@warehouse/stock/index.html.twig', [
+        return $this->page('@warehouse/stock/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('warehouse.stock.title'),
             'items' => $items,
             'warehouses' => $this->warehouseMap(),
@@ -64,7 +74,7 @@ final class StockController extends Controller
             'productId' => $productId,
             'warehouseOptions' => $this->warehouseOptions(),
             'productOptions' => $this->productOptions(),
-        ]);
+        ]));
     }
 
     public function createMovement(): Response
@@ -172,7 +182,7 @@ final class StockController extends Controller
         }
         $rows = $this->em->getRepository(Product::class)->createQueryBuilder('p')
             ->orderBy('p.name', 'ASC')
-            ->setMaxResults(500)
+            ->setMaxResults(100)
             ->getQuery()
             ->getResult();
 

@@ -51,7 +51,7 @@ final class PageController extends Controller
         $search = trim((string) $request->query->get('q', ''));
         $status = (string) $request->query->get('status', '');
         $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = 20;
+        $perPage = min(100, max(1, (int) $request->query->get('per_page', 20)));
 
         $qb = $this->em->getRepository(Page::class)->createQueryBuilder('p')
             ->orderBy('p.updatedAt', 'DESC');

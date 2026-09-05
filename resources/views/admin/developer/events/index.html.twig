@@ -1,34 +1,57 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="admin-events" data-actions-default="1">
+<div class="developer-page">
     <header class="page-header">
-        <h1>{{ 'admin.events.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'admin.events.title'|trans }}</h1>
+        </div>
     </header>
 
-    {% for module, events in groups %}
-        <section class="hook-section">
-            <header class="page-header page-header--compact"><h2>{{ module }}</h2></header>
-            <div class="table-wrap" data-table>
-                <table class="table">
-                    <thead>
-                        <tr><th>{{ 'admin.events.col.event'|trans }}</th><th>{{ 'admin.events.col.version'|trans }}</th><th>{{ 'admin.events.col.webhook'|trans }}</th><th>{{ 'admin.events.col.description'|trans }}</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for event in events %}
+    <div class="developer-stack">
+        {% for module, events in groups %}
+            <section class="developer-card">
+                <header class="developer-card__head">
+                    <h2>{{ module }}</h2>
+                </header>
+                <div class="table-wrap table-wrap--flush">
+                    <table class="table table--developer table--events">
+                        <colgroup>
+                            <col class="col-event">
+                            <col class="col-version">
+                            <col class="col-webhook">
+                            <col class="col-description">
+                        </colgroup>
+                        <thead>
                             <tr>
-                                <td><code>{{ event.type }}</code></td>
-                                <td>v{{ event.version }}</td>
-                                <td>{{ event.webhookEnabled ? 'common.yes'|trans : 'common.no'|trans }}</td>
-                                <td class="muted">{{ event.description }}</td>
+                                <th>{{ 'admin.events.col.event'|trans }}</th>
+                                <th>{{ 'admin.events.col.version'|trans }}</th>
+                                <th>{{ 'admin.events.col.webhook'|trans }}</th>
+                                <th>{{ 'admin.events.col.description'|trans }}</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    {% else %}
-        <div class="empty"><h2>{{ 'empty.events'|trans }}</h2></div>
-    {% endfor %}
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                                <tr>
+                                    <td class="table__path"><code>{{ event.type }}</code></td>
+                                    <td>v{{ event.version }}</td>
+                                    <td>
+                                        {% if event.webhookEnabled %}
+                                            <span class="badge badge--ok">{{ 'common.yes'|trans }}</span>
+                                        {% else %}
+                                            <span class="badge badge--muted">{{ 'common.no'|trans }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="table__wrap-cell muted">{{ event.description ?: '—' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% else %}
+            <div class="empty"><h2>{{ 'empty.events'|trans }}</h2></div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

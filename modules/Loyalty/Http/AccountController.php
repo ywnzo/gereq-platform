@@ -39,13 +39,21 @@ final class AccountController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->query->get('q', ''));
-        $qb = $this->em->getRepository(LoyaltyAccount::class)->createQueryBuilder('a')
-            ->orderBy('a.updatedAt', 'DESC');
-        self_repair_search($qb, 'a', ['customerId', 'id'], $search);
+        $list = \Gereq\Http\ListQuery::fromRequest(
+            $request,
+            sortable: ['updatedAt', 'points', 'lifetimeSpend'],
+            defaultSort: 'updatedAt',
+            defaultDir: 'desc',
+            perPage: 100,
+        );
 
+        $qb = $this->em->getRepository(LoyaltyAccount::class)->createQueryBuilder('a');
+        $list->applySearch($qb, 'a', ['customerId', 'id']);
+        $qb->orderBy('a.' . $list->sort, $list->direction());
+
+        $total = (int) (clone $qb)->select('COUNT(a.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
         /** @var list<LoyaltyAccount> $accounts */
-        $accounts = $qb->setMaxResults(200)->getQuery()->getResult();
+        $accounts = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
         $tiers = [];
         foreach ($this->em->getRepository(LoyaltyTier::class)->findAll() as $tier) {
             if ($tier instanceof LoyaltyTier) {
@@ -53,12 +61,11 @@ final class AccountController extends Controller
             }
         }
 
-        return $this->page('@loyalty/accounts/index.html.twig', [
+        return $this->page('@loyalty/accounts/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('loyalty.accounts.title'),
             'items' => $accounts,
             'tiers' => $tiers,
-            'search' => $search,
-        ]);
+        ]));
     }
 
     public function adjust(Request $request, string $id): Response

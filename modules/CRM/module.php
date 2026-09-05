@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'crm',
     'name' => 'CRM',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.crm.description',
     'class' => Modules\CRM\CrmModule::class,
     'author' => 'GEREQ',

@@ -38,6 +38,7 @@ final class ListQuery
         string $defaultDir = 'asc',
         int $perPage = 20,
         array $filterKeys = [],
+        int $maxPerPage = 100,
     ): self {
         $search = trim((string) $request->query->get('q', ''));
         $sort = (string) $request->query->get('sort', $defaultSort);
@@ -46,13 +47,17 @@ final class ListQuery
         }
         $dir = strtolower((string) $request->query->get('dir', $defaultDir)) === 'desc' ? 'desc' : 'asc';
         $page = max(1, (int) $request->query->get('page', 1));
+        $requested = $request->query->has('per_page')
+            ? (int) $request->query->get('per_page')
+            : $perPage;
+        $resolvedPerPage = min(max(1, $maxPerPage), max(1, $requested));
 
         $filters = [];
         foreach ($filterKeys as $key) {
             $filters[$key] = trim((string) $request->query->get($key, ''));
         }
 
-        return new self($search, $sort, $dir, $page, max(1, $perPage), $sortable, $filters);
+        return new self($search, $sort, $dir, $page, $resolvedPerPage, $sortable, $filters);
     }
 
     public function direction(): string
@@ -98,6 +103,7 @@ final class ListQuery
                 'sort' => $this->sort,
                 'dir' => $this->dir,
                 'page' => $this->page,
+                'per_page' => $this->perPage,
             ],
             $this->filters,
             $overrides,

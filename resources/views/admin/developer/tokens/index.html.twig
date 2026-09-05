@@ -1,20 +1,26 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="admin-tokens" data-actions-default="1">
+<div class="developer-page">
     <header class="page-header">
-        <h1>{{ 'admin.tokens.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'admin.tokens.title'|trans }}</h1>
+        </div>
         {% if user.can('developer.tokens.manage') %}
             <a class="btn btn--primary" href="{{ url('admin.developer.tokens.create') }}">{{ icon('plus') }} {{ 'admin.tokens.new'|trans }}</a>
         {% endif %}
     </header>
 
-    <div class="toolbar--table">
-        <div class="toolbar"></div>
-    </div>
-
-    <div class="table-wrap" data-table>
-        <table class="table">
+    <div class="table-wrap">
+        <table class="table table--developer table--tokens">
+            <colgroup>
+                <col class="col-name">
+                <col class="col-prefix">
+                <col class="col-scopes">
+                <col class="col-used">
+                <col class="col-status">
+                <col class="col-actions">
+            </colgroup>
             <thead>
                 <tr>
                     <th>{{ 'admin.tokens.name'|trans }}</th>
@@ -28,9 +34,9 @@
             <tbody>
                 {% for item in items %}
                     <tr>
-                        <td>{{ item.name() }}</td>
+                        <td><strong>{{ item.name() }}</strong></td>
                         <td><code>{{ item.tokenPrefix() }}…</code></td>
-                        <td class="muted">{{ item.scopes()|join(', ') }}</td>
+                        <td class="table__wrap-cell muted">{{ item.scopes()|join(', ') }}</td>
                         <td>{{ item.lastUsedAt() ? item.lastUsedAt().format('d. m. Y H:i') : 'common.none'|trans }}</td>
                         <td>
                             {% if item.revokedAt() %}
