@@ -11,7 +11,6 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Table(name: 'shop_cart_items')]
 #[ORM\Index(name: 'idx_shop_cart_items_cart', columns: ['cart_id'])]
 #[ORM\Index(name: 'idx_shop_cart_items_product', columns: ['product_id'])]
-#[ORM\UniqueConstraint(name: 'uniq_shop_cart_item_variant', columns: ['cart_id', 'product_id', 'variant_id'])]
 class CartItem
 {
     #[ORM\Id]
@@ -41,6 +40,12 @@ class CartItem
 
     #[ORM\Column(length: 3)]
     private string $currency = 'CZK';
+
+    #[ORM\Column(name: 'item_note', type: 'text', nullable: true)]
+    private ?string $itemNote = null;
+
+    #[ORM\Column(name: 'meta_json', type: 'text', nullable: true)]
+    private ?string $metaJson = null;
 
     public function __construct(
         string $cartId,
@@ -106,6 +111,58 @@ class CartItem
     public function currency(): string
     {
         return $this->currency;
+    }
+
+    public function itemNote(): ?string
+    {
+        return $this->itemNote;
+    }
+
+    /** @return array<string, mixed> */
+    public function meta(): array
+    {
+        if ($this->metaJson === null || $this->metaJson === '') {
+            return [];
+        }
+        $decoded = json_decode($this->metaJson, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /** @return list<string> */
+    public function uploadIds(): array
+    {
+        $ids = $this->meta()['upload_ids'] ?? [];
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('strval', $ids)));
+    }
+
+    public function isPersonalized(): bool
+    {
+        return ($this->itemNote !== null && $this->itemNote !== '') || $this->uploadIds() !== [];
+    }
+
+    public function setItemNote(?string $note): void
+    {
+        $note = $note !== null ? trim($note) : null;
+        $this->itemNote = $note !== '' ? $note : null;
+    }
+
+    /** @param array<string, mixed> $meta */
+    public function setMeta(array $meta): void
+    {
+        $this->metaJson = $meta === [] ? null : (json_encode($meta, JSON_UNESCAPED_UNICODE) ?: null);
+    }
+
+    /** @param list<string> $ids */
+    public function setUploadIds(array $ids): void
+    {
+        $meta = $this->meta();
+        $meta['upload_ids'] = array_values(array_filter(array_map('strval', $ids)));
+        $this->setMeta($meta);
     }
 
     public function setTitle(string $title): void

@@ -5,19 +5,20 @@ declare(strict_types=1);
 return [
     'id' => 'shop',
     'name' => 'Shop',
-    'version' => '1.1.1',
+    'version' => '1.2.0',
     'description' => 'module.shop.description',
     'class' => Modules\Shop\ShopModule::class,
     'author' => 'GEREQ',
     'requires' => [
         'core' => '^1.0',
-        'products' => '^1.0',
+        'products' => '^1.2',
         'currency' => '^1.0',
     ],
     'optional' => [
         'orders' => '^1.0',
         'customers' => '^1.0',
         'warehouse' => '^1.0',
+        'customer_uploads' => '^1.0',
     ],
     'provides' => ['shop'],
     'capabilities' => ['shop'],

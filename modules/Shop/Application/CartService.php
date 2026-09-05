@@ -7,8 +7,11 @@ namespace Modules\Shop\Application;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Event\EventBus;
 use Gereq\Setting\Settings;
+use Modules\Products\Application\ProductPersonalizationService;
 use Modules\Products\Domain\Product;
+use Modules\Products\Domain\ProductImage;
 use Modules\Products\Domain\ProductPrice;
+use Modules\Products\Domain\ProductVariant;
 use Modules\Shop\Domain\Cart;
 use Modules\Shop\Domain\CartItem;
 
@@ -18,6 +21,7 @@ final class CartService
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
         private readonly Settings $settings,
+        private readonly ProductPersonalizationService $personalization,
     ) {
     }
 
@@ -77,8 +81,17 @@ final class CartService
         return $this->em->getRepository(CartItem::class)->findBy(['cartId' => $cartId], ['title' => 'ASC']);
     }
 
-    public function addItem(Cart $cart, string $productId, string $qty = '1'): CartItem
-    {
+    /**
+     * @param list<string> $uploadIds
+     */
+    public function addItem(
+        Cart $cart,
+        string $productId,
+        string $qty = '1',
+        ?string $note = null,
+        array $uploadIds = [],
+        ?string $variantId = null,
+    ): CartItem {
         $this->assertOpen($cart);
         $qtyFloat = (float) $qty;
         if ($qtyFloat <= 0) {
@@ -93,30 +106,54 @@ final class CartService
             throw new \InvalidArgumentException('shop.error.product_not_active');
         }
 
-        $existing = $this->em->getRepository(CartItem::class)->findOneBy([
-            'cartId' => $cart->id(),
-            'productId' => $productId,
-        ]);
-        if ($existing instanceof CartItem) {
-            $existing->setQty((string) ((float) $existing->qty() + $qtyFloat));
-            $existing->setTitle($product->name());
-            $existing->setSku($product->sku());
-            $this->em->flush();
-            $this->emitUpdated($cart);
+        $variantId = $variantId !== null ? trim($variantId) : '';
+        $variant = $this->resolveVariant($productId, $variantId !== '' ? $variantId : null);
 
-            return $existing;
+        $note = $note !== null ? trim($note) : null;
+        $uploadIds = array_values(array_filter(array_map('strval', $uploadIds)));
+        $this->personalization->assertLinePersonalization($product, $note, $uploadIds);
+        $personalized = ($note !== null && $note !== '') || $uploadIds !== [];
+
+        $resolvedVariantId = $variant?->id() ?? '';
+        $title = $product->name();
+        if ($variant !== null && $variant->name()) {
+            $title .= ' — ' . $variant->name();
+        }
+        $sku = $variant?->sku() ?? $product->sku();
+        $unitPrice = $variant !== null && $variant->priceAmount() !== null
+            ? number_format((float) $variant->priceAmount(), 2, '.', '')
+            : $this->resolvePrice($productId, $cart->currency());
+
+        if (!$personalized) {
+            $existing = $this->em->getRepository(CartItem::class)->findOneBy([
+                'cartId' => $cart->id(),
+                'productId' => $productId,
+                'variantId' => $resolvedVariantId,
+            ]);
+            if ($existing instanceof CartItem && !$existing->isPersonalized()) {
+                $existing->setQty((string) ((float) $existing->qty() + $qtyFloat));
+                $existing->setTitle($title);
+                $existing->setSku($sku);
+                $existing->setUnitPrice($unitPrice);
+                $this->em->flush();
+                $this->emitUpdated($cart);
+
+                return $existing;
+            }
         }
 
-        $unitPrice = $this->resolvePrice($productId, $cart->currency());
         $item = new CartItem(
             $cart->id(),
             $productId,
-            $product->name(),
-            $product->sku(),
+            $title,
+            $sku,
             (string) $qtyFloat,
             $unitPrice,
             $cart->currency(),
+            $resolvedVariantId !== '' ? $resolvedVariantId : null,
         );
+        $item->setItemNote($note);
+        $item->setUploadIds($uploadIds);
         $this->em->persist($item);
         $this->em->flush();
         $this->emitUpdated($cart);
@@ -124,7 +161,39 @@ final class CartService
         return $item;
     }
 
-    public function updateItem(Cart $cart, string $itemId, string $qty): ?CartItem
+    private function resolveVariant(string $productId, ?string $variantId): ?ProductVariant
+    {
+        $active = $this->em->getRepository(ProductVariant::class)->findBy([
+            'productId' => $productId,
+            'active' => true,
+        ]);
+        $active = array_values(array_filter(
+            $active,
+            static fn ($v): bool => $v instanceof ProductVariant,
+        ));
+
+        if ($active === []) {
+            if ($variantId !== null && $variantId !== '') {
+                throw new \InvalidArgumentException('shop.error.invalid_variant');
+            }
+
+            return null;
+        }
+
+        if ($variantId === null || $variantId === '') {
+            throw new \InvalidArgumentException('shop.error.variant_required');
+        }
+
+        foreach ($active as $variant) {
+            if ($variant->id() === $variantId) {
+                return $variant;
+            }
+        }
+
+        throw new \InvalidArgumentException('shop.error.invalid_variant');
+    }
+
+    public function updateItem(Cart $cart, string $itemId, string $qty, ?string $note = null, bool $updateNote = false): ?CartItem
     {
         $this->assertOpen($cart);
         $item = $this->em->find(CartItem::class, $itemId);
@@ -142,6 +211,17 @@ final class CartService
         }
 
         $item->setQty((string) $qtyFloat);
+
+        if ($updateNote) {
+            $product = $this->em->find(Product::class, $item->productId());
+            if (!$product instanceof Product) {
+                throw new \InvalidArgumentException('shop.error.invalid_product');
+            }
+            $trimmed = $note !== null ? trim($note) : '';
+            $this->personalization->assertLinePersonalization($product, $trimmed !== '' ? $trimmed : null, $item->uploadIds());
+            $item->setItemNote($trimmed !== '' ? $trimmed : null);
+        }
+
         $this->em->flush();
         $this->emitUpdated($cart);
 
@@ -213,17 +293,36 @@ final class CartService
     /** @return array<string, mixed> */
     public function serializeItem(CartItem $item): array
     {
+        $product = $this->em->find(Product::class, $item->productId());
+
         return [
             'id' => $item->id(),
             'cart_id' => $item->cartId(),
             'product_id' => $item->productId(),
+            'variant_id' => $item->variantId(),
             'title' => $item->title(),
             'sku' => $item->sku(),
             'qty' => $item->qty(),
             'unit_price' => $item->unitPrice(),
             'currency' => $item->currency(),
             'line_total' => $item->lineTotal(),
+            'note' => $item->itemNote(),
+            'upload_ids' => $item->uploadIds(),
+            'image_url' => $this->productImageUrl($item->productId()),
+            'customer_note_mode' => $product instanceof Product ? $product->customerNoteMode() : 'optional',
         ];
+    }
+
+    private function productImageUrl(string $productId): ?string
+    {
+        $images = $this->em->getRepository(ProductImage::class)->findBy(
+            ['productId' => $productId],
+            ['isPrimary' => 'DESC', 'sortOrder' => 'ASC'],
+            1,
+        );
+        $img = $images[0] ?? null;
+
+        return $img instanceof ProductImage ? '/media/' . $img->mediaAssetId() . '/file' : null;
     }
 
     private function resolvePrice(string $productId, string $currency): string

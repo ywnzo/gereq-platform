@@ -92,4 +92,6 @@ return [
     'shop.error.shipping_not_found' => 'Shipping method not found.',
     'shop.error.shipping_code_taken' => 'Shipping method code already exists.',
     'shop.error.invalid_warehouse' => 'Invalid warehouse.',
+    'shop.error.invalid_variant' => 'Invalid product variant.',
+    'shop.error.variant_required' => 'Please select a product variant.',
 ];

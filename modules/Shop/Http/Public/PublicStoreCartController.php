@@ -68,14 +68,32 @@ final class PublicStoreCartController extends Controller
         $body = $this->body($request);
         $productId = trim((string) ($body['product_id'] ?? ''));
         $qty = (string) ($body['qty'] ?? '1');
+        $note = isset($body['note']) ? trim((string) $body['note']) : null;
+        $variantId = isset($body['variant_id']) ? trim((string) $body['variant_id']) : null;
+        $uploadIds = $body['upload_ids'] ?? [];
+        if (!is_array($uploadIds)) {
+            $uploadIds = [];
+        }
         if ($productId === '') {
             return $this->cors(ApiResponse::error('validation_error', 'product_id required', [], 422));
         }
         try {
             $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request, $body), 'CZK');
-            $this->carts->addItem($cart, $productId, $qty);
+            $this->carts->addItem(
+                $cart,
+                $productId,
+                $qty,
+                $note,
+                array_map('strval', $uploadIds),
+                $variantId !== '' ? $variantId : null,
+            );
         } catch (\Throwable $e) {
-            return $this->cors(ApiResponse::error('validation_error', $e->getMessage(), [], 422));
+            $key = $e->getMessage();
+            $message = str_starts_with($key, 'products.') || str_starts_with($key, 'shop.')
+                ? $this->translator->trans($key)
+                : $key;
+
+            return $this->cors(ApiResponse::error('validation_error', $message, [], 422));
         }
 
         return $this->cors(ApiResponse::data($this->storeCart($cart), 201));
@@ -86,9 +104,21 @@ final class PublicStoreCartController extends Controller
         $body = $this->body($request);
         try {
             $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request, $body), 'CZK');
-            $this->carts->updateItem($cart, $id, (string) ($body['qty'] ?? '0'));
+            $updateNote = array_key_exists('note', $body);
+            $this->carts->updateItem(
+                $cart,
+                $id,
+                (string) ($body['qty'] ?? '0'),
+                $updateNote ? trim((string) ($body['note'] ?? '')) : null,
+                $updateNote,
+            );
         } catch (\Throwable $e) {
-            return $this->cors(ApiResponse::error('validation_error', $e->getMessage(), [], 422));
+            $key = $e->getMessage();
+            $message = str_starts_with($key, 'products.') || str_starts_with($key, 'shop.')
+                ? $this->translator->trans($key)
+                : $key;
+
+            return $this->cors(ApiResponse::error('validation_error', $message, [], 422));
         }
 
         return $this->cors(ApiResponse::data($this->storeCart($cart)));
@@ -174,10 +204,16 @@ final class PublicStoreCartController extends Controller
             $items[] = [
                 'id' => $item['id'],
                 'product_id' => $item['product_id'],
+                'variant_id' => $item['variant_id'] ?? null,
                 'name' => $item['title'] ?? $item['sku'] ?? '',
+                'sku' => $item['sku'] ?? null,
                 'qty' => (float) ($item['qty'] ?? 0),
                 'unit_price' => $item['unit_price'],
                 'line_total' => $item['line_total'],
+                'note' => $item['note'] ?? null,
+                'upload_ids' => $item['upload_ids'] ?? [],
+                'image_url' => $item['image_url'] ?? null,
+                'customer_note_mode' => $item['customer_note_mode'] ?? 'optional',
             ];
         }
 

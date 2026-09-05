@@ -40,6 +40,12 @@ class OrderLine
     #[ORM\Column(name: 'tax_rate', type: 'decimal', precision: 6, scale: 2)]
     private string $taxRate = '0.00';
 
+    #[ORM\Column(name: 'item_note', type: 'text', nullable: true)]
+    private ?string $itemNote = null;
+
+    #[ORM\Column(name: 'meta_json', type: 'text', nullable: true)]
+    private ?string $metaJson = null;
+
     public function __construct(string $orderId, string $title, string $qty, string $unitPrice, string $taxRate = '0')
     {
         $this->id = Uuid::uuid7()->toString();
@@ -59,6 +65,17 @@ class OrderLine
     public function qty(): string { return $this->qty; }
     public function unitPrice(): string { return $this->unitPrice; }
     public function taxRate(): string { return $this->taxRate; }
+    public function itemNote(): ?string { return $this->itemNote; }
+    /** @return array<string, mixed> */
+    public function meta(): array
+    {
+        if ($this->metaJson === null || $this->metaJson === '') {
+            return [];
+        }
+        $decoded = json_decode($this->metaJson, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
 
     public function setProductId(?string $productId): void { $this->productId = $productId !== '' ? $productId : null; }
     public function setVariantId(?string $variantId): void { $this->variantId = $variantId !== '' ? $variantId : null; }
@@ -67,6 +84,16 @@ class OrderLine
     public function setQty(string $qty): void { $this->qty = number_format((float) $qty, 4, '.', ''); }
     public function setUnitPrice(string $unitPrice): void { $this->unitPrice = number_format((float) $unitPrice, 2, '.', ''); }
     public function setTaxRate(string $taxRate): void { $this->taxRate = number_format((float) $taxRate, 2, '.', ''); }
+    public function setItemNote(?string $note): void
+    {
+        $note = $note !== null ? trim($note) : null;
+        $this->itemNote = $note !== '' ? $note : null;
+    }
+    /** @param array<string, mixed> $meta */
+    public function setMeta(array $meta): void
+    {
+        $this->metaJson = $meta === [] ? null : (json_encode($meta, JSON_UNESCAPED_UNICODE) ?: null);
+    }
 
     public function lineSubtotal(): string
     {

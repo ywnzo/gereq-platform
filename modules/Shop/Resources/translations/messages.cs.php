@@ -92,4 +92,6 @@ return [
     'shop.error.shipping_not_found' => 'Způsob dopravy neexistuje.',
     'shop.error.shipping_code_taken' => 'Kód způsobu dopravy už existuje.',
     'shop.error.invalid_warehouse' => 'Neplatný sklad.',
+    'shop.error.invalid_variant' => 'Neplatná varianta produktu.',
+    'shop.error.variant_required' => 'Vyberte variantu produktu.',
 ];

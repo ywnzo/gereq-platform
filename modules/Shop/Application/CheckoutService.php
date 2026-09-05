@@ -81,6 +81,18 @@ final class CheckoutService
             throw new \RuntimeException('shop.error.cart_empty');
         }
 
+        foreach ($items as $item) {
+            $product = $this->em->find(\Modules\Products\Domain\Product::class, $item->productId());
+            if ($product instanceof \Modules\Products\Domain\Product
+                && class_exists(\Modules\Products\Application\ProductPersonalizationService::class)
+                && $this->container->has(\Modules\Products\Application\ProductPersonalizationService::class)
+            ) {
+                /** @var \Modules\Products\Application\ProductPersonalizationService $personalization */
+                $personalization = $this->container->get(\Modules\Products\Application\ProductPersonalizationService::class);
+                $personalization->assertLinePersonalization($product, $item->itemNote(), $item->uploadIds());
+            }
+        }
+
         if ($customerId !== null && $customerId !== '') {
             $cart->setCustomerId($customerId);
         } elseif (($customerEmail ?? '') !== '' && class_exists(StoreAuthService::class) && $this->container->has(StoreAuthService::class)) {
@@ -243,13 +255,19 @@ final class CheckoutService
         $this->em->persist($order);
 
         $lines = [];
+        $allUploadIds = [];
         foreach ($items as $item) {
             $line = new OrderLine($order->id(), $item->title(), $item->qty(), $item->unitPrice(), '0');
             $line->setProductId($item->productId());
             $line->setVariantId($item->variantId());
             $line->setSku($item->sku());
+            $line->setItemNote($item->itemNote());
+            $line->setMeta($item->meta());
             $this->em->persist($line);
             $lines[] = $line;
+            foreach ($item->uploadIds() as $uploadId) {
+                $allUploadIds[] = $uploadId;
+            }
         }
 
         if ((float) $shipping['price'] > 0) {
@@ -275,6 +293,21 @@ final class CheckoutService
         }
 
         $this->em->flush();
+
+        if ($allUploadIds !== []
+            && class_exists(\Modules\CustomerUploads\Application\CustomerUploadService::class)
+            && $this->container->has(\Modules\CustomerUploads\Application\CustomerUploadService::class)
+        ) {
+            /** @var \Modules\CustomerUploads\Application\CustomerUploadService $uploads */
+            $uploads = $this->container->get(\Modules\CustomerUploads\Application\CustomerUploadService::class);
+            foreach ($allUploadIds as $uploadId) {
+                $upload = $this->em->find(\Modules\CustomerUploads\Domain\CustomerUpload::class, $uploadId);
+                if ($upload instanceof \Modules\CustomerUploads\Domain\CustomerUpload) {
+                    $upload->linkToOrder($order->number());
+                }
+            }
+            $this->em->flush();
+        }
 
         $this->events->emit('order.created', ['type' => 'order', 'id' => $order->id()], [
             'id' => $order->id(),

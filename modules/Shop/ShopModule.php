@@ -39,7 +39,7 @@ final class ShopModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.1';
+        return '1.2.1';
     }
 
     public function register(ModuleContext $context): void
