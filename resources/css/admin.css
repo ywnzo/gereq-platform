@@ -1597,7 +1597,32 @@ form > .table,
     font-weight: 400;
 }
 .panel > :not(.panel__head) {
-    padding: 12px;
+    padding: 12px 14px;
+}
+.panel__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.panel__body > :first-child { margin-top: 0; }
+.panel__body > :last-child { margin-bottom: 0; }
+.panel__body h3 {
+    margin: 0;
+    font-size: .85rem;
+    font-weight: 650;
+}
+.cs-media-phase {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.panel__body .table-wrap {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: var(--radius, 4px);
+    overflow: hidden;
+}
+.panel__body .muted {
+    margin: 0;
 }
 
 .metrics {
@@ -6513,6 +6538,13 @@ html[data-theme="gereq-dark"] .sidebar {
 .cal-month__cell:hover {
     background: color-mix(in srgb, var(--accent, #0f766e) 5%, #fff);
 }
+.cal-month__cell.is-drop-target,
+.cal-week__slot.is-drop-target,
+.cal-day__slot.is-drop-target {
+    background: color-mix(in srgb, var(--accent, #0f766e) 12%, #fff) !important;
+    outline: 1px dashed color-mix(in srgb, var(--accent, #0f766e) 55%, transparent);
+    outline-offset: -2px;
+}
 .cal-month__cell.is-out {
     background: color-mix(in srgb, var(--surface-2, #f1f5f9) 70%, #fff);
     opacity: .58;
@@ -6586,6 +6618,14 @@ html[data-theme="gereq-dark"] .sidebar {
 .cal-event:hover {
     filter: brightness(.97);
     transform: translateY(-1px);
+}
+.cal-event[draggable="true"] {
+    cursor: grab;
+}
+.cal-event.is-dragging {
+    opacity: .45;
+    cursor: grabbing;
+    transform: scale(.98);
 }
 .cal-event strong {
     display: block;
@@ -6757,6 +6797,65 @@ html[data-theme="gereq-dark"] .sidebar {
     place-items: center;
     padding: 1rem;
 }
+.cal-drawer__when {
+    margin: 0;
+    font-size: .95rem;
+}
+.cal-drawer__meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem 1rem;
+    margin: 0;
+}
+.cal-drawer__meta dt {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6b7280);
+}
+.cal-drawer__meta dd {
+    margin: .2rem 0 0;
+    font-size: .95rem;
+}
+.cal-drawer__color {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+}
+.cal-drawer__swatch {
+    width: .85rem;
+    height: .85rem;
+    border-radius: 2px;
+    border-left-width: 0;
+    display: inline-block;
+    padding: 0;
+}
+.cal-drawer__section h3 {
+    margin: 0 0 .35rem;
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6b7280);
+}
+.cal-drawer__section p,
+.cal-drawer__section code {
+    margin: 0;
+    font-size: .92rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.cal-provider__uri {
+    display: block;
+    padding: .55rem .65rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: var(--radius, 4px);
+    background: color-mix(in srgb, var(--surface-2, #f8fafc) 80%, #fff);
+    font-size: .72rem;
+    word-break: break-all;
+}
 .cal-popover__backdrop {
     position: absolute;
     inset: 0;
@@ -6782,11 +6881,39 @@ html[data-theme="gereq-dark"] .sidebar {
     font-size: 1.08rem;
     letter-spacing: -.015em;
 }
+.cal-popover__meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .55rem .85rem;
+    margin: .85rem 0 0;
+}
+.cal-popover__meta dt {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6b7280);
+}
+.cal-popover__meta dd {
+    margin: .15rem 0 0;
+    font-size: .9rem;
+}
+.cal-popover__desc {
+    margin: .85rem 0 0;
+    font-size: .9rem;
+    line-height: 1.45;
+    color: var(--text, #111827);
+}
 .cal-popover__actions {
     display: flex;
     flex-wrap: wrap;
     gap: .45rem;
     margin-top: 1.05rem;
+}
+.cal-attendee-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--text, #111827);
 }
 .cal-providers__grid {
     display: grid;

@@ -8,8 +8,14 @@ type CalEvent = {
     all_day: boolean;
     type: string;
     color: string;
+    status?: string;
+    timezone?: string | null;
     location?: string | null;
+    description?: string | null;
+    rrule?: string | null;
+    external_provider?: string | null;
     url?: string;
+    edit_url?: string;
     is_external?: boolean;
 };
 
@@ -53,12 +59,40 @@ function sameDay(a: Date, b: Date): boolean {
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+function toLocalIso(d: Date): string {
+    return (
+        d.getFullYear() +
+        '-' +
+        pad(d.getMonth() + 1) +
+        '-' +
+        pad(d.getDate()) +
+        'T' +
+        pad(d.getHours()) +
+        ':' +
+        pad(d.getMinutes()) +
+        ':' +
+        pad(d.getSeconds())
+    );
+}
+
 const MONTHS_CS = [
     'leden', 'únor', 'březen', 'duben', 'květen', 'červen',
     'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec',
 ];
 const DOW = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const TYPE_LABELS: Record<string, string> = {
+    meeting: 'Schůzka',
+    deadline: 'Termín',
+    call: 'Hovor',
+    task: 'Úkol',
+    other: 'Jiné',
+};
+const STATUS_LABELS: Record<string, string> = {
+    confirmed: 'Potvrzeno',
+    tentative: 'Nejisté',
+    cancelled: 'Zrušeno',
+};
 
 export function registerCalendarBoard(alpine: typeof Alpine): void {
     alpine.data('gereqCalendar', () => ({
@@ -74,6 +108,9 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
         csrf: '',
         hours: HOURS,
         dow: DOW,
+        dragId: null as string | null,
+        dropTarget: null as string | null,
+        justDragged: false,
 
         init() {
             const el = this.$el as HTMLElement;
@@ -256,16 +293,32 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
         },
 
         openEvent(ev: CalEvent) {
+            if (this.justDragged) {
+                this.justDragged = false;
+                return;
+            }
             this.selected = ev;
+            document.body.classList.add('has-drawer');
         },
 
         closeEvent() {
             this.selected = null;
+            document.body.classList.remove('has-drawer');
         },
 
         goEvent() {
             if (this.selected?.url) {
                 window.location.href = this.selected.url;
+            }
+        },
+
+        goEdit() {
+            if (this.selected?.edit_url) {
+                window.location.href = this.selected.edit_url;
+                return;
+            }
+            if (this.selected?.url) {
+                window.location.href = this.selected.url + '/edit';
             }
         },
 
@@ -361,6 +414,69 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
             return this.selected ? this.hasLocation(this.selected) : false;
         },
 
+        selectedType(): string {
+            if (!this.selected) {
+                return '';
+            }
+            return TYPE_LABELS[this.selected.type] || this.selected.type;
+        },
+
+        selectedStatus(): string {
+            if (!this.selected?.status) {
+                return '';
+            }
+            return STATUS_LABELS[this.selected.status] || this.selected.status;
+        },
+
+        selectedDescription(): string {
+            const text = this.selected?.description || '';
+            if (text.length <= 180) {
+                return text;
+            }
+            return text.slice(0, 177) + '…';
+        },
+
+        hasSelectedDescription(): boolean {
+            return !!(this.selected?.description && this.selected.description.length > 0);
+        },
+
+        selectedColor(): string {
+            const c = this.selected?.color || '';
+            const labels: Record<string, string> = {
+                blue: 'Modrá',
+                green: 'Zelená',
+                amber: 'Jantarová',
+                red: 'Červená',
+                violet: 'Fialová',
+                slate: 'Šedá',
+            };
+            return labels[c] || c;
+        },
+
+        selectedTimezone(): string {
+            return this.selected?.timezone || '';
+        },
+
+        hasSelectedTimezone(): boolean {
+            return !!(this.selected?.timezone && this.selected.timezone.length > 0);
+        },
+
+        selectedExternal(): string {
+            return this.selected?.external_provider || '';
+        },
+
+        isSelectedExternal(): boolean {
+            return !!this.selected?.is_external;
+        },
+
+        selectedRrule(): string {
+            return this.selected?.rrule || '';
+        },
+
+        hasSelectedRrule(): boolean {
+            return !!(this.selected?.rrule && this.selected.rrule.length > 0);
+        },
+
         cellOutClass(cell: CalDay): string {
             return cell.inMonth ? '' : 'is-out';
         },
@@ -369,14 +485,137 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
             return cell.isToday ? 'is-today' : '';
         },
 
-        async shiftEvent(ev: CalEvent, days: number) {
-            if (!this.canManage || !this.moveUrl) {
+        canDrag(): boolean {
+            return this.canManage;
+        },
+
+        eventDragClass(ev: CalEvent): string {
+            return this.dragId === ev.id ? 'is-dragging' : '';
+        },
+
+        dayDropClass(date: string): string {
+            return this.dropTarget === 'day:' + date ? 'is-drop-target' : '';
+        },
+
+        slotDropClass(date: string, hour: number): string {
+            return this.dropTarget === 'slot:' + date + ':' + hour ? 'is-drop-target' : '';
+        },
+
+        onDragStart(event: DragEvent, ev: CalEvent) {
+            if (!this.canManage) {
+                event.preventDefault();
                 return;
             }
+            this.dragId = ev.id;
+            this.closeEvent();
+            if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', ev.id);
+            }
+            const target = event.currentTarget as HTMLElement | null;
+            target?.classList.add('is-dragging');
+        },
+
+        onDragEnd() {
+            this.dragId = null;
+            this.dropTarget = null;
+            this.justDragged = true;
+            window.setTimeout(() => {
+                this.justDragged = false;
+            }, 120);
+        },
+
+        onDragOverDay(event: DragEvent, date: string) {
+            if (!this.dragId) {
+                return;
+            }
+            event.preventDefault();
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'move';
+            }
+            this.dropTarget = 'day:' + date;
+        },
+
+        onDragOverSlot(event: DragEvent, date: string, hour: number) {
+            if (!this.dragId) {
+                return;
+            }
+            event.preventDefault();
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'move';
+            }
+            this.dropTarget = 'slot:' + date + ':' + hour;
+        },
+
+        onDragLeave() {
+            this.dropTarget = null;
+        },
+
+        async onDropDay(event: DragEvent, date: string) {
+            event.preventDefault();
+            const id = this.dragId || event.dataTransfer?.getData('text/plain') || '';
+            this.dropTarget = null;
+            this.dragId = null;
+            if (!id) {
+                return;
+            }
+            const ev = this.events.find((e) => e.id === id);
+            if (!ev) {
+                return;
+            }
+            const start = parseIso(ev.starts_at);
+            const end = parseIso(ev.ends_at);
+            const duration = end.getTime() - start.getTime();
+            const parts = date.split('-').map((x) => Number(x));
+            const nextStart = new Date(start);
+            nextStart.setFullYear(parts[0], parts[1] - 1, parts[2]);
+            const nextEnd = new Date(nextStart.getTime() + duration);
+            await this.moveEvent(ev, nextStart, nextEnd, ev.all_day);
+        },
+
+        async onDropSlot(event: DragEvent, date: string, hour: number) {
+            event.preventDefault();
+            const id = this.dragId || event.dataTransfer?.getData('text/plain') || '';
+            this.dropTarget = null;
+            this.dragId = null;
+            if (!id) {
+                return;
+            }
+            const ev = this.events.find((e) => e.id === id);
+            if (!ev) {
+                return;
+            }
+            const start = parseIso(ev.starts_at);
+            const end = parseIso(ev.ends_at);
+            const duration = Math.max(end.getTime() - start.getTime(), 30 * 60 * 1000);
+            const parts = date.split('-').map((x) => Number(x));
+            const nextStart = new Date(parts[0], parts[1] - 1, parts[2], hour, start.getMinutes(), 0, 0);
+            if (ev.all_day) {
+                nextStart.setMinutes(0, 0, 0);
+            }
+            const nextEnd = new Date(nextStart.getTime() + duration);
+            await this.moveEvent(ev, nextStart, nextEnd, false);
+        },
+
+        async shiftEvent(ev: CalEvent, days: number) {
             const s = parseIso(ev.starts_at);
             const e = parseIso(ev.ends_at);
             s.setDate(s.getDate() + days);
             e.setDate(e.getDate() + days);
+            await this.moveEvent(ev, s, e, ev.all_day);
+        },
+
+        async moveEvent(ev: CalEvent, starts: Date, ends: Date, allDay: boolean) {
+            if (!this.canManage || !this.moveUrl) {
+                return;
+            }
+            const same =
+                parseIso(ev.starts_at).getTime() === starts.getTime() &&
+                parseIso(ev.ends_at).getTime() === ends.getTime() &&
+                ev.all_day === allDay;
+            if (same) {
+                return;
+            }
             try {
                 const res = await fetch(this.moveUrl, {
                     method: 'POST',
@@ -389,15 +628,16 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
                     },
                     body: JSON.stringify({
                         id: ev.id,
-                        starts_at: s.toISOString(),
-                        ends_at: e.toISOString(),
-                        all_day: ev.all_day,
+                        starts_at: toLocalIso(starts),
+                        ends_at: toLocalIso(ends),
+                        all_day: allDay,
                     }),
                 });
                 if (!res.ok) {
                     throw new Error('move failed');
                 }
                 window.gereq?.toast?.('Událost přesunuta.', 'success');
+                this.closeEvent();
                 void this.load();
             } catch {
                 window.gereq?.toast?.('Přesun se nezdařil.', 'error');

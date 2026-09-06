@@ -127,7 +127,7 @@ final class CalendarController extends Controller
         ]);
     }
 
-    public function connections(): Response
+    public function connections(Request $request): Response
     {
         $user = $this->auth->user();
 
@@ -136,6 +136,8 @@ final class CalendarController extends Controller
             'connections' => $this->calendar->connections($user?->id()),
             'catalog' => $this->connections->catalog(),
             'googleReady' => $this->connections->googleConfigured(),
+            'googleRedirectUri' => $this->router->absoluteUrl('admin.calendar.oauth.google.callback', [], $request),
+            'settingsUrl' => $this->router->url('admin.settings.index', ['tab' => 'calendar']),
             'providers' => CalendarConnection::PROVIDERS,
             'colors' => CalendarEvent::COLORS,
         ]);
@@ -181,7 +183,7 @@ final class CalendarController extends Controller
 
     public function connectGoogle(Request $request): Response
     {
-        $redirect = $this->router->url('admin.calendar.oauth.google.callback', [], $request);
+        $redirect = $this->router->absoluteUrl('admin.calendar.oauth.google.callback', [], $request);
         $state = bin2hex(random_bytes(16));
         $request->getSession()->set('calendar.oauth.state', $state);
         $url = $this->connections->googleAuthUrl($redirect, $state);
@@ -229,6 +231,8 @@ final class CalendarController extends Controller
         return $this->page('@calendar/events/form.html.twig', [
             'pageTitle' => $this->translator->trans('calendar.new'),
             'item' => null,
+            'link' => null,
+            'attendees' => [],
             'defaultStarts' => $starts !== '' ? $starts : (new \DateTimeImmutable())->format('Y-m-d\TH:i'),
             'defaultEnds' => $starts !== ''
                 ? (new \DateTimeImmutable($starts))->modify('+1 hour')->format('Y-m-d\TH:i')
@@ -245,7 +249,7 @@ final class CalendarController extends Controller
         $this->applyFields($event, $data);
         $event->setCreatedBy($this->auth->user()?->id());
         $this->em->persist($event);
-        $this->persistExtras($event->id(), $data);
+        $this->syncExtras($event->id(), $data);
         $this->em->flush();
         $this->events->emit('calendar.event_created', ['type' => 'calendar_event', 'id' => $event->id()], $this->calendar->serialize($event));
         $this->auditor->log('calendar.created', 'calendar_event', $event->id());
@@ -280,6 +284,8 @@ final class CalendarController extends Controller
         return $this->page('@calendar/events/form.html.twig', [
             'pageTitle' => $this->translator->trans('calendar.edit'),
             'item' => $event,
+            'link' => $this->em->getRepository(CalendarEventLink::class)->findOneBy(['eventId' => $id]),
+            'attendees' => $this->em->getRepository(CalendarAttendee::class)->findBy(['eventId' => $id]),
             'defaultStarts' => $event->startsAt()->format('Y-m-d\TH:i'),
             'defaultEnds' => $event->endsAt()->format('Y-m-d\TH:i'),
             'colors' => CalendarEvent::COLORS,
@@ -299,6 +305,7 @@ final class CalendarController extends Controller
         $event->setEndsAt($data['ends_at']);
         $event->setType($data['type']);
         $this->applyFields($event, $data);
+        $this->syncExtras($event->id(), $data);
         $this->em->flush();
         $this->events->emit('calendar.event_updated', ['type' => 'calendar_event', 'id' => $event->id()], $this->calendar->serialize($event));
         $this->auditor->log('calendar.updated', 'calendar_event', $id);
@@ -341,14 +348,27 @@ final class CalendarController extends Controller
         $event->setStatus((string) ($data['status'] ?? 'confirmed'));
     }
 
-    /** @param array{title: string, starts_at: \DateTimeImmutable, ends_at: \DateTimeImmutable, type: string, all_day: bool, description: ?string, link_entity_type?: string, link_entity_id?: string, attendee_email?: string} $data */
-    private function persistExtras(string $eventId, array $data): void
+    /** @param array{link_entity_type?: ?string, link_entity_id?: ?string, attendee_email?: ?string} $data */
+    private function syncExtras(string $eventId, array $data): void
     {
-        if (!empty($data['link_entity_type']) && !empty($data['link_entity_id'])) {
-            $this->em->persist(new CalendarEventLink($eventId, (string) $data['link_entity_type'], (string) $data['link_entity_id']));
+        $linkType = trim((string) ($data['link_entity_type'] ?? ''));
+        $linkId = trim((string) ($data['link_entity_id'] ?? ''));
+        foreach ($this->em->getRepository(CalendarEventLink::class)->findBy(['eventId' => $eventId]) as $link) {
+            $this->em->remove($link);
         }
-        if (!empty($data['attendee_email'])) {
-            $this->em->persist(new CalendarAttendee($eventId, null, (string) $data['attendee_email']));
+        if ($linkType !== '' && $linkId !== '') {
+            $this->em->persist(new CalendarEventLink($eventId, $linkType, $linkId));
+        }
+
+        $attendeeEmail = trim((string) ($data['attendee_email'] ?? ''));
+        if ($attendeeEmail !== '') {
+            $exists = $this->em->getRepository(CalendarAttendee::class)->findOneBy([
+                'eventId' => $eventId,
+                'email' => $attendeeEmail,
+            ]);
+            if ($exists === null) {
+                $this->em->persist(new CalendarAttendee($eventId, null, $attendeeEmail));
+            }
         }
     }
 

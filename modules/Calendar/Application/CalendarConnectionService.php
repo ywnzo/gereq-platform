@@ -16,7 +16,7 @@ final class CalendarConnectionService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly ?Settings $settings = null,
+        private readonly Settings $settings,
     ) {
     }
 
@@ -124,9 +124,6 @@ final class CalendarConnectionService
 
     private function setting(string $key): string
     {
-        if ($this->settings === null) {
-            return '';
-        }
         $v = $this->settings->get($key);
 
         return is_string($v) ? trim($v) : '';

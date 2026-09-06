@@ -66,6 +66,7 @@ final class CalendarProvider
             'created_at' => $e->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $e->updatedAt()->format(\DateTimeInterface::ATOM),
             'url' => '/admin/calendar/' . $e->id(),
+            'edit_url' => '/admin/calendar/' . $e->id() . '/edit',
         ];
     }
 }

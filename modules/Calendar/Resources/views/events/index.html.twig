@@ -55,8 +55,11 @@
                 <template x-for="cell in monthCells" :key="cell.date">
                     <div
                         class="cal-month__cell"
-                        :class="cellOutClass(cell) + ' ' + cellTodayClass(cell)"
+                        :class="cellOutClass(cell) + ' ' + cellTodayClass(cell) + ' ' + dayDropClass(cell.date)"
                         @dblclick="createAt(cell.date)"
+                        @dragover="onDragOverDay($event, cell.date)"
+                        @dragleave="onDragLeave"
+                        @drop="onDropDay($event, cell.date)"
                     >
                         <button type="button" class="cal-month__day" @click="openDay(cell.date)" x-text="cell.label"></button>
                         <div class="cal-month__events">
@@ -64,7 +67,10 @@
                                 <button
                                     type="button"
                                     class="cal-event cal-event--chip"
-                                    :class="eventStyle(ev)"
+                                    :class="eventStyle(ev) + ' ' + eventDragClass(ev)"
+                                    :draggable="canDrag()"
+                                    @dragstart="onDragStart($event, ev)"
+                                    @dragend="onDragEnd"
                                     @click.stop="openEvent(ev)"
                                     x-text="ev.title"
                                 ></button>
@@ -98,9 +104,24 @@
                     <div class="cal-week__row">
                         <div class="cal-week__gutter" x-text="hourLabel(hour)"></div>
                         <template x-for="day in weekDays" :key="day.date + '-' + hour">
-                            <div class="cal-week__slot" @dblclick="createAt(day.date, hour)">
+                            <div
+                                class="cal-week__slot"
+                                :class="slotDropClass(day.date, hour)"
+                                @dblclick="createAt(day.date, hour)"
+                                @dragover="onDragOverSlot($event, day.date, hour)"
+                                @dragleave="onDragLeave"
+                                @drop="onDropSlot($event, day.date, hour)"
+                            >
                                 <template x-for="ev in hourEvents(day, hour)" :key="ev.id">
-                                    <button type="button" class="cal-event" :class="eventStyle(ev)" @click="openEvent(ev)">
+                                    <button
+                                        type="button"
+                                        class="cal-event"
+                                        :class="eventStyle(ev) + ' ' + eventDragClass(ev)"
+                                        :draggable="canDrag()"
+                                        @dragstart="onDragStart($event, ev)"
+                                        @dragend="onDragEnd"
+                                        @click="openEvent(ev)"
+                                    >
                                         <span x-text="timeLabel(ev.starts_at)"></span>
                                         <strong x-text="ev.title"></strong>
                                     </button>
@@ -115,11 +136,26 @@
         {# DAY #}
         <div class="cal-day" x-show="isView('day')" x-cloak>
             <template x-for="hour in hours" :key="'d'+hour">
-                <div class="cal-day__row" @dblclick="createAt(dateKey(anchor), hour)">
+                <div class="cal-day__row">
                     <div class="cal-week__gutter" x-text="hourLabel(hour)"></div>
-                    <div class="cal-day__slot">
+                    <div
+                        class="cal-day__slot"
+                        :class="slotDropClass(dateKey(anchor), hour)"
+                        @dblclick="createAt(dateKey(anchor), hour)"
+                        @dragover="onDragOverSlot($event, dateKey(anchor), hour)"
+                        @dragleave="onDragLeave"
+                        @drop="onDropSlot($event, dateKey(anchor), hour)"
+                    >
                         <template x-for="ev in dayHourEvents(hour)" :key="ev.id">
-                            <button type="button" class="cal-event cal-event--block" :class="eventStyle(ev)" @click="openEvent(ev)">
+                            <button
+                                type="button"
+                                class="cal-event cal-event--block"
+                                :class="eventStyle(ev) + ' ' + eventDragClass(ev)"
+                                :draggable="canDrag()"
+                                @dragstart="onDragStart($event, ev)"
+                                @dragend="onDragEnd"
+                                @click="openEvent(ev)"
+                            >
                                 <span x-text="eventTimeText(ev)"></span>
                                 <strong x-text="ev.title"></strong>
                                 <em x-show="hasLocation(ev)" x-text="locationText(ev)"></em>
@@ -150,22 +186,72 @@
         </div>
     </div>
 
-    {# Event popover #}
-    <div class="cal-popover" x-show="selected" x-cloak @keydown.escape.window="closeEvent">
-        <div class="cal-popover__backdrop" @click="closeEvent"></div>
-        <div class="cal-popover__panel" @click.stop>
-            <h3 x-text="selectedTitle()"></h3>
-            <p class="muted">
-                <span x-text="selectedWhen()"></span>
-            </p>
-            <p x-show="hasSelectedLocation()" x-text="selectedLocation()"></p>
-            <div class="cal-popover__actions">
-                <button type="button" class="btn btn--primary" @click="goEvent">{{ 'common.detail'|trans }}</button>
-                <template x-if="canManage && selected">
-                    <button type="button" class="btn btn--ghost" @click="shiftEvent(selected, 1)">{{ 'calendar.shift_day'|trans }}</button>
-                </template>
-                <button type="button" class="btn btn--ghost" @click="closeEvent">{{ 'common.cancel'|trans }}</button>
+    {# Event drawer (no popover) #}
+    <div
+        class="g-drawer g-drawer--wide cal-drawer"
+        :class="selected ? 'is-open' : ''"
+        :data-open="selected ? 'true' : 'false'"
+        @keydown.escape.window="closeEvent"
+        role="dialog"
+        aria-modal="true"
+        :aria-hidden="selected ? 'false' : 'true'"
+    >
+        <div class="g-drawer__overlay" @click="closeEvent"></div>
+        <div class="g-drawer__panel" @click.stop>
+            <header class="g-drawer__head">
+                <h2 class="g-drawer__title" x-text="selectedTitle()"></h2>
+                <button type="button" class="icon-btn g-drawer__close" @click="closeEvent" aria-label="{{ 'ui.drawer.close'|trans }}">{{ icon('close') }}</button>
+            </header>
+            <div class="g-drawer__body">
+                <p class="cal-drawer__when muted" x-text="selectedWhen()"></p>
+                <dl class="cal-drawer__meta">
+                    <div>
+                        <dt>{{ 'calendar.field.type'|trans }}</dt>
+                        <dd x-text="selectedType()"></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'calendar.field.status'|trans }}</dt>
+                        <dd x-text="selectedStatus()"></dd>
+                    </div>
+                    <div x-show="hasSelectedLocation()">
+                        <dt>{{ 'calendar.field.location'|trans }}</dt>
+                        <dd x-text="selectedLocation()"></dd>
+                    </div>
+                    <div x-show="hasSelectedTimezone()">
+                        <dt>{{ 'calendar.field.timezone'|trans }}</dt>
+                        <dd x-text="selectedTimezone()"></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'calendar.field.color'|trans }}</dt>
+                        <dd class="cal-drawer__color">
+                            <span class="cal-drawer__swatch" :class="selected ? eventStyle(selected) : ''"></span>
+                            <span x-text="selectedColor()"></span>
+                        </dd>
+                    </div>
+                    <div x-show="isSelectedExternal()">
+                        <dt>{{ 'calendar.external'|trans }}</dt>
+                        <dd x-text="selectedExternal()"></dd>
+                    </div>
+                </dl>
+                <section class="cal-drawer__section" x-show="hasSelectedDescription()">
+                    <h3>{{ 'calendar.field.description'|trans }}</h3>
+                    <p x-text="selectedDescription()"></p>
+                </section>
+                <section class="cal-drawer__section" x-show="hasSelectedRrule()">
+                    <h3>{{ 'calendar.field.rrule'|trans }}</h3>
+                    <code x-text="selectedRrule()"></code>
+                </section>
             </div>
+            <footer class="g-drawer__foot">
+                {% if canManage %}
+                    <button type="button" class="btn btn--primary" @click="goEdit">{{ 'common.edit'|trans }}</button>
+                    <template x-if="canManage && selected">
+                        <button type="button" class="btn btn--ghost" @click="shiftEvent(selected, 1)">{{ 'calendar.shift_day'|trans }}</button>
+                    </template>
+                {% endif %}
+                <button type="button" class="btn btn--ghost" @click="goEvent">{{ 'common.detail'|trans }}</button>
+                <button type="button" class="btn btn--ghost" @click="closeEvent">{{ 'common.cancel'|trans }}</button>
+            </footer>
         </div>
     </div>
 </div>

@@ -15,89 +15,156 @@
         <p class="muted">{{ 'calendar.connections.intro'|trans }}</p>
     </div>
     <div class="actions">
+        {% if settingsUrl %}
+            <a class="btn btn--ghost" href="{{ settingsUrl }}">{{ icon('settings') }} {{ 'calendar.connections.open_settings'|trans }}</a>
+        {% endif %}
         <a class="btn btn--ghost" href="{{ url('admin.calendar.index') }}">{{ 'common.back'|trans }}</a>
     </div>
 </header>
 
-<section class="panel cal-providers">
-    <header class="panel__head">
-        <h2>{{ 'calendar.connections.providers'|trans }}</h2>
-        <p class="muted">{{ 'calendar.connections.providers_hint'|trans }}</p>
-    </header>
-    <div class="cal-providers__grid">
-        <article class="cal-provider">
-            <h3>{{ 'calendar.provider.google'|trans }}</h3>
-            <p class="muted">{{ 'calendar.provider.google_hint'|trans }}</p>
-            {% if googleReady %}
-                <a class="btn btn--primary" href="{{ url('admin.calendar.oauth.google') }}">{{ 'calendar.connections.connect_google'|trans }}</a>
-            {% else %}
-                <p class="muted">{{ 'calendar.connections.google_config_needed'|trans }}</p>
-            {% endif %}
-        </article>
-        <article class="cal-provider">
-            <h3>{{ 'calendar.provider.seznam'|trans }}</h3>
-            <p class="muted">{{ 'calendar.provider.seznam_hint'|trans }}</p>
-            <form method="post" action="{{ url('admin.calendar.connections.store') }}" class="stack">
-                {{ csrf_field()|raw }}
-                <input type="hidden" name="provider" value="seznam">
-                <input type="hidden" name="caldav_url" value="https://caldav.seznam.cz/">
-                <input class="input" type="email" name="account_email" required placeholder="email@seznam.cz">
-                <button class="btn btn--primary" type="submit">{{ 'calendar.connections.add_seznam'|trans }}</button>
-            </form>
-        </article>
-        <article class="cal-provider">
-            <h3>{{ 'calendar.provider.caldav'|trans }}</h3>
-            <p class="muted">{{ 'calendar.provider.caldav_hint'|trans }}</p>
-            <form method="post" action="{{ url('admin.calendar.connections.store') }}" class="stack">
-                {{ csrf_field()|raw }}
-                <input type="hidden" name="provider" value="caldav">
-                <input class="input" type="url" name="caldav_url" required placeholder="https://…">
-                <input class="input" type="email" name="account_email" required placeholder="user@example.com">
-                <button class="btn btn--primary" type="submit">{{ 'calendar.connections.add_caldav'|trans }}</button>
-            </form>
-        </article>
-        <article class="cal-provider">
-            <h3>{{ 'calendar.provider.ics'|trans }}</h3>
-            <p class="muted">{{ 'calendar.provider.ics_hint'|trans }}</p>
-            <a class="btn btn--ghost" href="{{ url('admin.calendar.ics') }}">{{ 'calendar.export_ics'|trans }}</a>
-        </article>
-    </div>
-</section>
+<div class="detail-stack cal-connections">
+    <section class="panel cal-providers">
+        <header class="panel__head">
+            <div>
+                <h2>{{ 'calendar.connections.providers'|trans }}</h2>
+                <p class="muted">{{ 'calendar.connections.providers_hint'|trans }}</p>
+            </div>
+        </header>
+        <div class="cal-providers__grid">
+            <article class="cal-provider cal-provider--google">
+                <div class="cal-provider__head">
+                    <span class="cal-provider__mark" aria-hidden="true">{{ icon('calendar') }}</span>
+                    <div>
+                        <h3>{{ 'calendar.provider.google'|trans }}</h3>
+                        <p class="muted">{{ 'calendar.provider.google_hint'|trans }}</p>
+                    </div>
+                </div>
+                {% if googleReady %}
+                    <span class="badge badge--ok">{{ 'calendar.connections.config_ready'|trans }}</span>
+                    <a class="btn btn--primary" href="{{ url('admin.calendar.oauth.google') }}">{{ 'calendar.connections.connect_google'|trans }}</a>
+                    {% if googleRedirectUri %}
+                        <p class="cal-provider__note muted">{{ 'calendar.connections.redirect_uri_hint'|trans }}</p>
+                        <code class="cal-provider__uri">{{ googleRedirectUri }}</code>
+                    {% endif %}
+                {% else %}
+                    <span class="badge badge--warn">{{ 'calendar.connections.config_needed'|trans }}</span>
+                    <p class="cal-provider__note">{{ 'calendar.connections.google_config_needed'|trans }}</p>
+                    {% if settingsUrl %}
+                        <a class="btn btn--ghost" href="{{ settingsUrl }}">{{ icon('key') }} {{ 'calendar.connections.configure'|trans }}</a>
+                    {% endif %}
+                {% endif %}
+            </article>
 
-<section class="panel" style="margin-top:1.25rem">
-    <header class="panel__head">
-        <h2>{{ 'calendar.connections.list'|trans }}</h2>
-    </header>
-    <div class="table-wrap">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>{{ 'calendar.connections.provider'|trans }}</th>
-                    <th>{{ 'calendar.connections.account'|trans }}</th>
-                    <th>{{ 'common.status'|trans }}</th>
-                    <th>{{ 'calendar.connections.last_sync'|trans }}</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
+            <article class="cal-provider cal-provider--seznam">
+                <div class="cal-provider__head">
+                    <span class="cal-provider__mark" aria-hidden="true">{{ icon('mail') }}</span>
+                    <div>
+                        <h3>{{ 'calendar.provider.seznam'|trans }}</h3>
+                        <p class="muted">{{ 'calendar.provider.seznam_hint'|trans }}</p>
+                    </div>
+                </div>
+                <form method="post" action="{{ url('admin.calendar.connections.store') }}" class="cal-provider__form">
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="provider" value="seznam">
+                    <input type="hidden" name="caldav_url" value="https://caldav.seznam.cz/">
+                    <label class="field">
+                        <span class="field__label">{{ 'calendar.connections.account'|trans }}</span>
+                        <input class="input" type="email" name="account_email" required placeholder="email@seznam.cz" autocomplete="email">
+                    </label>
+                    <button class="btn btn--primary" type="submit">{{ 'calendar.connections.add_seznam'|trans }}</button>
+                </form>
+            </article>
+
+            <article class="cal-provider cal-provider--caldav">
+                <div class="cal-provider__head">
+                    <span class="cal-provider__mark" aria-hidden="true">{{ icon('link') }}</span>
+                    <div>
+                        <h3>{{ 'calendar.provider.caldav'|trans }}</h3>
+                        <p class="muted">{{ 'calendar.provider.caldav_hint'|trans }}</p>
+                    </div>
+                </div>
+                <form method="post" action="{{ url('admin.calendar.connections.store') }}" class="cal-provider__form">
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="provider" value="caldav">
+                    <label class="field">
+                        <span class="field__label">{{ 'calendar.connections.caldav_url'|trans }}</span>
+                        <input class="input" type="url" name="caldav_url" required placeholder="https://…">
+                    </label>
+                    <label class="field">
+                        <span class="field__label">{{ 'calendar.connections.account'|trans }}</span>
+                        <input class="input" type="email" name="account_email" required placeholder="user@example.com" autocomplete="email">
+                    </label>
+                    <button class="btn btn--primary" type="submit">{{ 'calendar.connections.add_caldav'|trans }}</button>
+                </form>
+            </article>
+
+            <article class="cal-provider cal-provider--ics">
+                <div class="cal-provider__head">
+                    <span class="cal-provider__mark" aria-hidden="true">{{ icon('download') }}</span>
+                    <div>
+                        <h3>{{ 'calendar.provider.ics'|trans }}</h3>
+                        <p class="muted">{{ 'calendar.provider.ics_hint'|trans }}</p>
+                    </div>
+                </div>
+                <a class="btn btn--ghost" href="{{ url('admin.calendar.ics') }}">{{ icon('download') }} {{ 'calendar.export_ics'|trans }}</a>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel">
+        <header class="panel__head">
+            <div>
+                <h2>{{ 'calendar.connections.list'|trans }}</h2>
+                <p class="muted">{{ 'calendar.connections.list_hint'|trans }}</p>
+            </div>
+        </header>
+
+        {% if connections is empty %}
+            <div class="empty cal-connections__empty">
+                <h2>{{ 'calendar.connections.empty'|trans }}</h2>
+                <p>{{ 'calendar.connections.empty_hint'|trans }}</p>
+            </div>
+        {% else %}
+            <div class="cal-connections__list">
                 {% for c in connections %}
-                    <tr>
-                        <td>{{ ('calendar.provider.' ~ c.provider())|trans }}</td>
-                        <td>{{ c.accountEmail() }}{% if c.displayName() %} <span class="muted">({{ c.displayName() }})</span>{% endif %}</td>
-                        <td><span class="badge">{{ c.statusLabel()|trans }}</span></td>
-                        <td class="muted">{{ c.lastSyncedAt() ? c.lastSyncedAt().format('d. m. Y H:i') : '—' }}</td>
-                        <td class="table__actions">
+                    <article class="cal-connection">
+                        <div class="cal-connection__mark cal-connection__mark--{{ c.provider() }}" aria-hidden="true">
+                            {% if c.provider() == 'google' %}
+                                {{ icon('calendar') }}
+                            {% elseif c.provider() == 'seznam' %}
+                                {{ icon('mail') }}
+                            {% elseif c.provider() == 'outlook' %}
+                                {{ icon('briefcase') }}
+                            {% else %}
+                                {{ icon('link') }}
+                            {% endif %}
+                        </div>
+                        <div class="cal-connection__body">
+                            <div class="cal-connection__title">
+                                <strong>{{ ('calendar.provider.' ~ c.provider())|trans }}</strong>
+                                <span class="badge badge--{{ c.status() == 'connected' ? 'ok' : (c.status() == 'error' ? 'danger' : (c.status() == 'pending' ? 'warn' : 'muted')) }}">
+                                    {{ c.statusLabel()|trans }}
+                                </span>
+                            </div>
+                            <p class="cal-connection__account">
+                                {{ c.accountEmail() }}
+                                {% if c.displayName() %}<span class="muted">· {{ c.displayName() }}</span>{% endif %}
+                            </p>
+                            <p class="muted cal-connection__meta">
+                                {{ 'calendar.connections.last_sync'|trans }}:
+                                {{ c.lastSyncedAt() ? c.lastSyncedAt().format('d. m. Y H:i') : '—' }}
+                            </p>
+                        </div>
+                        <div class="cal-connection__actions">
                             <form method="post" action="{{ url('admin.calendar.connections.destroy', {id: c.id()}) }}" data-confirm="{{ 'calendar.connections.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                                 {{ csrf_field()|raw }}
-                                <button type="submit" class="table__action-btn table__action-btn--danger" title="{{ 'common.delete'|trans }}">{{ icon('trash') }}</button>
+                                <button type="submit" class="btn btn--ghost btn--danger" title="{{ 'common.delete'|trans }}">{{ icon('trash') }} {{ 'common.delete'|trans }}</button>
                             </form>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr><td colspan="5"><div class="empty"><h2>{{ 'calendar.connections.empty'|trans }}</h2></div></td></tr>
+                        </div>
+                    </article>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+            </div>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}
