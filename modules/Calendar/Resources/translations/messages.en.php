@@ -18,6 +18,8 @@ return [
     'calendar.empty.hint' => 'Create an event or connect Google / Seznam.',
     'calendar.confirm_delete' => 'Delete event?',
     'calendar.today' => 'Today',
+    'calendar.nav' => 'Calendar navigation',
+    'calendar.views' => 'Calendar views',
     'calendar.loading' => 'Loading…',
     'calendar.export_ics' => 'Export ICS',
     'calendar.external' => 'External',

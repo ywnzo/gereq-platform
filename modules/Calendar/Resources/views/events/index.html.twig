@@ -24,12 +24,12 @@
             <p class="muted" x-text="title"></p>
         </div>
         <div class="actions cal-toolbar">
-            <div class="cal-nav">
+            <div class="cal-nav" role="group" aria-label="{{ 'calendar.nav'|trans }}">
                 <button type="button" class="btn btn--ghost" @click="prev" title="{{ 'common.previous'|trans }}">{{ icon('chevron-left') }}</button>
                 <button type="button" class="btn btn--ghost" @click="today">{{ 'calendar.today'|trans }}</button>
                 <button type="button" class="btn btn--ghost" @click="next" title="{{ 'common.next'|trans }}">{{ icon('chevron-right') }}</button>
             </div>
-            <div class="cal-views">
+            <div class="cal-views" role="group" aria-label="{{ 'calendar.views'|trans }}">
                 <button type="button" class="btn" :class="viewClass('month')" @click="setView('month')">{{ 'calendar.view.month'|trans }}</button>
                 <button type="button" class="btn" :class="viewClass('week')" @click="setView('week')">{{ 'calendar.view.week'|trans }}</button>
                 <button type="button" class="btn" :class="viewClass('day')" @click="setView('day')">{{ 'calendar.view.day'|trans }}</button>

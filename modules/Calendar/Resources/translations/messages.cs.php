@@ -18,6 +18,8 @@ return [
     'calendar.empty.hint' => 'Vytvořte událost, nebo propojte Google / Seznam.',
     'calendar.confirm_delete' => 'Smazat událost?',
     'calendar.today' => 'Dnes',
+    'calendar.nav' => 'Navigace kalendáře',
+    'calendar.views' => 'Zobrazení kalendáře',
     'calendar.loading' => 'Načítám…',
     'calendar.export_ics' => 'Export ICS',
     'calendar.external' => 'Externí',
