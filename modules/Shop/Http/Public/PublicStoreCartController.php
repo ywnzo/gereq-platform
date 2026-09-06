@@ -143,8 +143,16 @@ final class PublicStoreCartController extends Controller
         if ($cartId === '') {
             return $this->cors(ApiResponse::error('validation_error', 'cart_id required', [], 422));
         }
+        $sessionKey = $this->sessionKey($request, $body);
+        if ($sessionKey === null || $sessionKey === '') {
+            return $this->cors(ApiResponse::error('unauthorized', 'session_key required', [], 401));
+        }
         $cart = $this->carts->find($cartId);
         if ($cart === null) {
+            return $this->cors(ApiResponse::notFound());
+        }
+        $cartSession = $cart->sessionKey();
+        if ($cartSession === null || $cartSession === '' || !hash_equals($cartSession, $sessionKey)) {
             return $this->cors(ApiResponse::notFound());
         }
 
