@@ -28,16 +28,20 @@ class ServiceTeamSwitch
     #[ORM\Column(name: 'user_id', length: 36, nullable: true)]
     private ?string $userId = null;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $note = null;
+
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
 
-    public function __construct(string $orderId, ?string $fromTeam, string $toTeam, ?string $userId = null)
+    public function __construct(string $orderId, ?string $fromTeam, string $toTeam, ?string $userId = null, ?string $note = null)
     {
         $this->id = Uuid::uuid7()->toString();
         $this->orderId = $orderId;
         $this->fromTeam = $fromTeam;
         $this->toTeam = $toTeam;
         $this->userId = $userId !== null && $userId !== '' ? $userId : null;
+        $this->note = $note !== null && $note !== '' ? $note : null;
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -64,6 +68,11 @@ class ServiceTeamSwitch
     public function userId(): ?string
     {
         return $this->userId;
+    }
+
+    public function note(): ?string
+    {
+        return $this->note;
     }
 
     public function createdAt(): \DateTimeImmutable

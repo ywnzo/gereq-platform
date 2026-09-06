@@ -13,8 +13,23 @@
 
 <section class="panel" style="text-align:center">
     <img src="{{ qrDataUri }}" alt="QR" width="160" height="160">
-    <p><code>{{ item.trackerToken() }}</code></p>
+    <p class="muted" style="word-break:break-all;font-size:.75rem">{{ trackerUrl }}</p>
 </section>
+
+{% if teamQueue is not empty %}
+<section class="panel">
+    <header class="panel__head"><h2>{{ 'carservice.tracker.team_queue'|trans }}</h2></header>
+    <ul class="meta-list">
+        {% for o in teamQueue %}
+            <li>
+                <a href="{{ url('admin.carservice.tracker.show',{id:o.id()}) }}">#{{ o.id()|slice(0,8) }}</a>
+                — {{ o.statusLabel()|trans }}
+                {% if o.serviceInfo() %}<span class="muted">{{ o.serviceInfo()|slice(0,60) }}</span>{% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
 
 <section class="panel">
     {% if running %}

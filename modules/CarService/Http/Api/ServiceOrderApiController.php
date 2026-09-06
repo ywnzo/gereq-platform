@@ -12,6 +12,7 @@ use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
 use Modules\CarService\Application\CarServiceProvider;
+use Modules\CarService\Domain\ServiceBranch;
 use Modules\CarService\Domain\ServiceOrder;
 use Modules\Fleet\Domain\Vehicle;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -63,11 +64,15 @@ final class ServiceOrderApiController extends Controller
         if (!$this->em->find(Vehicle::class, $vehicleId) instanceof Vehicle) {
             return ApiResponse::error('validation_error', 'Invalid vehicle', [], 422);
         }
+        $branchId = trim((string) ($data['branch_id'] ?? ''));
+        if ($branchId !== '' && !$this->em->find(ServiceBranch::class, $branchId) instanceof ServiceBranch) {
+            return ApiResponse::error('validation_error', 'Invalid branch', [], 422);
+        }
         try {
             $order = $this->carservice->createOrder($vehicleId, trim((string) ($data['customer_id'] ?? '')) ?: null, [
                 'type' => $data['type'] ?? null,
                 'team' => $data['team'] ?? null,
-                'branch_id' => $data['branch_id'] ?? null,
+                'branch_id' => $branchId !== '' ? $branchId : null,
                 'note' => $data['note'] ?? null,
                 'link_type' => $this->body($request)['link_type'] ?? null,
                 'link_id' => $this->body($request)['link_id'] ?? null,

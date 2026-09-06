@@ -20,11 +20,13 @@ use Modules\CarService\Application\CarServiceProvider;
 use Modules\CarService\Application\Widgets\CarServiceShortcutWidget;
 use Modules\CarService\Http\Api\ServiceOrderApiController;
 use Modules\CarService\Http\Api\TrackerApiController;
+use Modules\CarService\Http\BranchController;
 use Modules\CarService\Http\CostController;
 use Modules\CarService\Http\ServiceOrderController;
 use Modules\CarService\Http\SettingsController;
 use Modules\CarService\Http\TrackerController;
 use Modules\Customers\Domain\Customer;
+use Modules\Fleet\Application\FleetProvider;
 use Modules\Fleet\Domain\Vehicle;
 use Modules\iDoklad\Application\iDokladService;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -39,7 +41,7 @@ final class CarServiceModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.3.1';
     }
 
     public function register(ModuleContext $context): void
@@ -51,6 +53,7 @@ final class CarServiceModule implements ModuleInterface
         $provider = new CarServiceProvider(
             $context->get(EntityManagerInterface::class),
             $context->settings(),
+            $context->get(FleetProvider::class),
         );
         $context->capabilities()->register('carservice', $this->id(), $provider);
 
@@ -66,6 +69,13 @@ final class CarServiceModule implements ModuleInterface
             $routes->get('/costs', [CostController::class, 'index'])->name('admin.carservice.costs')->permission('carservice.view');
             $routes->post('/costs', [CostController::class, 'store'])->name('admin.carservice.costs.store')->permission('carservice.manage');
             $routes->post('/costs/{id}/delete', [CostController::class, 'destroy'])->name('admin.carservice.costs.destroy')->permission('carservice.manage');
+            $routes->get('/branches', [BranchController::class, 'index'])->name('admin.carservice.branches')->permission('carservice.view');
+            $routes->get('/branches/create', [BranchController::class, 'create'])->name('admin.carservice.branches.create')->permission('carservice.manage');
+            $routes->post('/branches', [BranchController::class, 'store'])->name('admin.carservice.branches.store')->permission('carservice.manage');
+            $routes->get('/branches/{id}/edit', [BranchController::class, 'edit'])->name('admin.carservice.branches.edit')->permission('carservice.manage');
+            $routes->get('/branches/{id}/logo', [BranchController::class, 'logo'])->name('admin.carservice.branches.logo')->permission('carservice.view');
+            $routes->post('/branches/{id}', [BranchController::class, 'update'])->name('admin.carservice.branches.update')->permission('carservice.manage');
+            $routes->post('/branches/{id}/delete', [BranchController::class, 'destroy'])->name('admin.carservice.branches.destroy')->permission('carservice.manage');
             $routes->get('/settings', [SettingsController::class, 'edit'])->name('admin.carservice.settings')->permission('carservice.view');
             $routes->post('/settings', [SettingsController::class, 'update'])->name('admin.carservice.settings.update')->permission('carservice.manage');
             $routes->get('/tracker', [TrackerController::class, 'index'])->name('admin.carservice.tracker')->permission('carservice.tracker');
@@ -126,8 +136,24 @@ final class CarServiceModule implements ModuleInterface
             'team' => 'nullable|in:body_shop,paint_shop',
             'branch_id' => 'nullable|max:36',
             'note' => 'nullable|max:5000',
+            'service_info' => 'nullable|max:5000',
+            'payment_type' => 'nullable|in:online,cash',
+            'internal_cost' => 'nullable',
+            'external_cost' => 'nullable',
+            'intake_mileage' => 'nullable|integer',
+            'intake_fuel_level' => 'nullable|max:16',
             'intake_at' => 'nullable',
             'handover_at' => 'nullable',
+        ]);
+        $v->ruleset('carservice.finish', [
+            'payment_type' => 'nullable|in:online,cash',
+            'internal_cost' => 'nullable',
+            'external_cost' => 'nullable',
+            'service_info' => 'nullable|max:5000',
+            'intake_mileage' => 'nullable|integer',
+            'intake_fuel_level' => 'nullable|max:16',
+            'note' => 'nullable|max:5000',
+            'signature' => 'nullable|max:100',
         ]);
         $v->ruleset('carservice.job', [
             'type' => 'nullable|max:64',
@@ -139,6 +165,18 @@ final class CarServiceModule implements ModuleInterface
             'category' => 'nullable|max:64',
             'amount' => 'required',
             'note' => 'nullable|max:2000',
+        ]);
+        $v->ruleset('carservice.branch', [
+            'name' => 'required|max:120',
+            'street' => 'nullable|max:190',
+            'city' => 'nullable|max:120',
+            'zip' => 'nullable|max:32',
+            'country' => 'nullable|max:2',
+            'phone' => 'nullable|max:40',
+            'email' => 'nullable|max:190',
+            'employee_count' => 'nullable|integer',
+            'note' => 'nullable|max:5000',
+            'active' => 'nullable',
         ]);
         $v->ruleset('carservice.settings', [
             'job_soft_limit_hours' => 'required',
@@ -171,6 +209,14 @@ final class CarServiceModule implements ModuleInterface
             route: 'admin.carservice.tracker',
             permission: 'carservice.tracker',
             parent: 'carservice',
+            order: 36,
+        ));
+        $context->menu()->add(new MenuItem(
+            id: 'carservice.branches',
+            label: 'nav.carservice.branches',
+            route: 'admin.carservice.branches',
+            permission: 'carservice.view',
+            parent: 'carservice',
             order: 37,
         ));
         $context->menu()->add(new MenuItem(
@@ -186,8 +232,8 @@ final class CarServiceModule implements ModuleInterface
             label: 'nav.carservice.settings',
             route: 'admin.carservice.settings',
             permission: 'carservice.view',
-            parent: 'carservice',
-            order: 39,
+            parent: 'settings',
+            order: 20,
         ));
         $context->commandPalette()->add(new PaletteCommand(
             id: 'carservice.index',
@@ -205,11 +251,87 @@ final class CarServiceModule implements ModuleInterface
             permission: 'carservice.tracker',
             keywords: ['tracker', 'qr', 'spz', 'dílna'],
         ));
+        $context->commandPalette()->add(new PaletteCommand(
+            id: 'carservice.branches',
+            label: 'palette.carservice.branches',
+            url: '/admin/carservice/branches',
+            icon: 'build',
+            permission: 'carservice.view',
+            keywords: ['pobočka', 'pobočky', 'branch', 'servis'],
+        ));
 
         $em = $context->get(EntityManagerInterface::class);
         $twig = $context->get(Environment::class);
         $auth = $context->get(Authenticator::class);
-        $provider = new CarServiceProvider($em, $context->settings());
+        $fleet = null;
+        if ($context->capabilities()->has('fleet')) {
+            $cap = $context->capabilities()->get('fleet');
+            $fleet = $cap instanceof FleetProvider ? $cap : null;
+        }
+        $provider = new CarServiceProvider($em, $context->settings(), $fleet);
+
+        $context->adminSearch()->add(
+            'carservice.orders',
+            'order.id, order.note, order.service_info, vehicle.plate',
+            static function (string $q, int $limit) use ($provider, $fleet): array {
+                $hits = [];
+                foreach ($provider->searchOrders($q, $limit) as $order) {
+                    $vehicleLabel = $order->vehicleId();
+                    if ($fleet instanceof FleetProvider) {
+                        $v = $fleet->find($order->vehicleId());
+                        if ($v !== null) {
+                            $vehicleLabel = $v->label();
+                        }
+                    }
+                    $hits[] = new \Gereq\Admin\Search\AdminSearchHit(
+                        id: 'carservice.order.' . $order->id(),
+                        label: $vehicleLabel,
+                        url: '/admin/carservice/' . $order->id(),
+                        group: 'carservice.title',
+                        subtitle: substr($order->id(), 0, 8) . ' · ' . $order->status(),
+                        icon: 'build',
+                        keywords: array_values(array_filter([$order->id(), $order->note(), $order->serviceInfo()])),
+                    );
+                }
+
+                return $hits;
+            },
+            permission: 'carservice.view',
+            group: 'carservice.title',
+            icon: 'build',
+        );
+
+        $context->adminSearch()->add(
+            'carservice.branches',
+            'branch.name, branch.city, branch.street',
+            static function (string $q, int $limit) use ($em): array {
+                $qb = $em->getRepository(\Modules\CarService\Domain\ServiceBranch::class)->createQueryBuilder('b');
+                $qb->where('LOWER(b.name) LIKE :q OR LOWER(COALESCE(b.city, \'\')) LIKE :q OR LOWER(COALESCE(b.street, \'\')) LIKE :q')
+                    ->setParameter('q', '%' . mb_strtolower($q) . '%')
+                    ->orderBy('b.name', 'ASC')
+                    ->setMaxResults($limit);
+                $hits = [];
+                foreach ($qb->getQuery()->getResult() as $branch) {
+                    if (!$branch instanceof \Modules\CarService\Domain\ServiceBranch) {
+                        continue;
+                    }
+                    $hits[] = new \Gereq\Admin\Search\AdminSearchHit(
+                        id: 'carservice.branch.' . $branch->id(),
+                        label: $branch->name(),
+                        url: '/admin/carservice/branches/' . $branch->id() . '/edit',
+                        group: 'carservice.branches.title',
+                        subtitle: $branch->addressLabel() ?: null,
+                        icon: 'build',
+                        keywords: array_values(array_filter([$branch->name(), $branch->city(), $branch->street()])),
+                    );
+                }
+
+                return $hits;
+            },
+            permission: 'carservice.view',
+            group: 'carservice.branches.title',
+            icon: 'build',
+        );
 
         if (class_exists(Customer::class)) {
             $context->hooks()->addFilter('customers.show.sections', static function (array $sections, Customer $customer) use ($twig, $auth, $provider): array {

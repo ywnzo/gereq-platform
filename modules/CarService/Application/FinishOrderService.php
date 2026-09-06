@@ -32,20 +32,22 @@ final class FinishOrderService
     }
 
     /**
+     * @param array<string, mixed> $finishMeta
      * @return array{order: ServiceOrder, document: ?Document}
      */
-    public function finish(string $orderId): array
+    public function finish(string $orderId, array $finishMeta = []): array
     {
-        $order = $this->carservice->finishOrder($orderId);
+        $order = $this->carservice->finishOrder($orderId, $finishMeta);
         $document = null;
         if ($this->capabilities->has('documents') && class_exists(Document::class)) {
-            $document = $this->generateWorksheet($order);
+            $document = $this->generateWorksheet($order, $finishMeta);
         }
 
         return ['order' => $order, 'document' => $document];
     }
 
-    public function generateWorksheet(ServiceOrder $order): Document
+    /** @param array<string, mixed> $extra */
+    public function generateWorksheet(ServiceOrder $order, array $extra = []): Document
     {
         $vehicle = $this->em->find(Vehicle::class, $order->vehicleId());
         $customer = $order->customerId() !== null ? $this->em->find(Customer::class, $order->customerId()) : null;
@@ -57,6 +59,7 @@ final class FinishOrderService
             'jobs' => $jobs,
             'jobSeconds' => $this->carservice->totalJobSeconds($order->id()),
             'appName' => (string) $this->config->get('app.name', 'EShop'),
+            'signature' => trim((string) ($extra['signature'] ?? '')) ?: null,
         ]);
 
         if (class_exists(\Dompdf\Dompdf::class)) {

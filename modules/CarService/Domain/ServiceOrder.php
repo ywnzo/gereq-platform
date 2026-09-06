@@ -19,6 +19,7 @@ class ServiceOrder
     public const TYPES = ['internal_fleet', 'external_customer', 'linked'];
     public const STATUSES = ['intake', 'in_progress', 'waiting', 'ready', 'done', 'cancelled'];
     public const TEAMS = ['body_shop', 'paint_shop'];
+    public const PAYMENT_TYPES = ['online', 'cash'];
 
     #[ORM\Id]
     #[ORM\Column(length: 36)]
@@ -44,6 +45,25 @@ class ServiceOrder
 
     #[ORM\Column(name: 'tracker_token', length: 64)]
     private string $trackerToken;
+
+    /** Objednané práce (RPS serviceInfo). */
+    #[ORM\Column(name: 'service_info', type: 'text', nullable: true)]
+    private ?string $serviceInfo = null;
+
+    #[ORM\Column(name: 'payment_type', length: 16, nullable: true)]
+    private ?string $paymentType = null;
+
+    #[ORM\Column(name: 'internal_cost', type: 'decimal', precision: 12, scale: 2, nullable: true)]
+    private ?string $internalCost = null;
+
+    #[ORM\Column(name: 'external_cost', type: 'decimal', precision: 12, scale: 2, nullable: true)]
+    private ?string $externalCost = null;
+
+    #[ORM\Column(name: 'intake_mileage', type: 'integer', nullable: true)]
+    private ?int $intakeMileage = null;
+
+    #[ORM\Column(name: 'intake_fuel_level', length: 16, nullable: true)]
+    private ?string $intakeFuelLevel = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $note = null;
@@ -111,6 +131,36 @@ class ServiceOrder
     public function trackerToken(): string
     {
         return $this->trackerToken;
+    }
+
+    public function serviceInfo(): ?string
+    {
+        return $this->serviceInfo;
+    }
+
+    public function paymentType(): ?string
+    {
+        return $this->paymentType;
+    }
+
+    public function internalCost(): ?string
+    {
+        return $this->internalCost;
+    }
+
+    public function externalCost(): ?string
+    {
+        return $this->externalCost;
+    }
+
+    public function intakeMileage(): ?int
+    {
+        return $this->intakeMileage;
+    }
+
+    public function intakeFuelLevel(): ?string
+    {
+        return $this->intakeFuelLevel;
     }
 
     public function note(): ?string
@@ -208,6 +258,53 @@ class ServiceOrder
     public function setBranchId(?string $v): void
     {
         $this->branchId = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
+    public function setServiceInfo(?string $v): void
+    {
+        $this->serviceInfo = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
+    public function setPaymentType(?string $v): void
+    {
+        if ($v !== null && $v !== '' && !in_array($v, self::PAYMENT_TYPES, true)) {
+            throw new \InvalidArgumentException('carservice.error.invalid_payment');
+        }
+        $this->paymentType = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
+    public function setInternalCost(null|float|string $v): void
+    {
+        if ($v === null || $v === '') {
+            $this->internalCost = null;
+        } else {
+            $this->internalCost = number_format((float) $v, 2, '.', '');
+        }
+        $this->touch();
+    }
+
+    public function setExternalCost(null|float|string $v): void
+    {
+        if ($v === null || $v === '') {
+            $this->externalCost = null;
+        } else {
+            $this->externalCost = number_format((float) $v, 2, '.', '');
+        }
+        $this->touch();
+    }
+
+    public function setIntakeMileage(?int $v): void
+    {
+        $this->intakeMileage = $v;
+        $this->touch();
+    }
+
+    public function setIntakeFuelLevel(?string $v): void
+    {
+        $this->intakeFuelLevel = $v !== null && $v !== '' ? $v : null;
         $this->touch();
     }
 

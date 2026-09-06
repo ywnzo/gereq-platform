@@ -10,6 +10,7 @@ use Modules\CarService\Domain\ServiceJob;
 use Modules\CarService\Domain\ServiceOrder;
 use Modules\CarService\Domain\ServiceOrderLink;
 use Modules\CarService\Domain\ServiceTeamSwitch;
+use Modules\Fleet\Application\FleetProvider;
 use Modules\Fleet\Domain\Vehicle;
 
 final class CarServiceProvider
@@ -17,6 +18,7 @@ final class CarServiceProvider
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ?Settings $settings = null,
+        private readonly ?FleetProvider $fleet = null,
     ) {}
 
     public function getOrder(string $id): ?ServiceOrder
@@ -27,7 +29,24 @@ final class CarServiceProvider
     }
 
     /**
-     * @param array{type?: string, customer_id?: ?string, branch_id?: ?string, team?: string, note?: ?string, link_type?: ?string, link_id?: ?string} $meta
+     * @param array{
+     *   type?: string,
+     *   customer_id?: ?string,
+     *   branch_id?: ?string,
+     *   team?: string,
+     *   note?: ?string,
+     *   service_info?: ?string,
+     *   payment_type?: ?string,
+     *   internal_cost?: null|float|string,
+     *   external_cost?: null|float|string,
+     *   intake_mileage?: ?int,
+     *   intake_fuel_level?: ?string,
+     *   link_type?: ?string,
+     *   link_id?: ?string,
+     *   intake_at?: ?\DateTimeImmutable,
+     *   handover_at?: ?\DateTimeImmutable,
+     *   sync_fleet?: bool
+     * } $meta
      */
     public function createOrder(string $vehicleId, ?string $customerId = null, array $meta = []): ServiceOrder
     {
@@ -46,6 +65,24 @@ final class CarServiceProvider
         if (array_key_exists('note', $meta)) {
             $order->setNote($meta['note'] !== null ? (string) $meta['note'] : null);
         }
+        if (array_key_exists('service_info', $meta)) {
+            $order->setServiceInfo($meta['service_info'] !== null ? (string) $meta['service_info'] : null);
+        }
+        if (array_key_exists('payment_type', $meta)) {
+            $order->setPaymentType($meta['payment_type'] !== null ? (string) $meta['payment_type'] : null);
+        }
+        if (array_key_exists('internal_cost', $meta)) {
+            $order->setInternalCost($meta['internal_cost']);
+        }
+        if (array_key_exists('external_cost', $meta)) {
+            $order->setExternalCost($meta['external_cost']);
+        }
+        if (array_key_exists('intake_mileage', $meta)) {
+            $order->setIntakeMileage($meta['intake_mileage'] !== null ? (int) $meta['intake_mileage'] : null);
+        }
+        if (array_key_exists('intake_fuel_level', $meta)) {
+            $order->setIntakeFuelLevel($meta['intake_fuel_level'] !== null ? (string) $meta['intake_fuel_level'] : null);
+        }
         if (!empty($meta['intake_at']) && $meta['intake_at'] instanceof \DateTimeImmutable) {
             $order->setIntakeAt($meta['intake_at']);
         }
@@ -61,6 +98,11 @@ final class CarServiceProvider
             }
         }
         $this->em->flush();
+
+        if (($meta['sync_fleet'] ?? true) === true) {
+            $this->syncFleetStatus($vehicleId, 'in_service', 'carservice_created');
+            $this->applyIntakeSnapshotToVehicle($order);
+        }
 
         return $order;
     }
@@ -83,6 +125,42 @@ final class CarServiceProvider
             ['updatedAt' => 'DESC'],
             $limit,
         );
+    }
+
+    /**
+     * Hledání zakázek pro admin search (id, poznámka, service info, SPZ vozidla).
+     *
+     * @return list<ServiceOrder>
+     */
+    public function searchOrders(string $query, int $limit = 8): array
+    {
+        $query = trim($query);
+        if ($query === '') {
+            return [];
+        }
+
+        $vehicleIds = [];
+        if ($this->fleet !== null) {
+            foreach ($this->fleet->list(['q' => $query], min(20, $limit * 2)) as $vehicle) {
+                $vehicleIds[] = $vehicle->id();
+            }
+        }
+
+        $qb = $this->em->getRepository(ServiceOrder::class)->createQueryBuilder('o')
+            ->orderBy('o.updatedAt', 'DESC')
+            ->setMaxResults($limit);
+        $like = '%' . mb_strtolower($query) . '%';
+        if ($vehicleIds !== []) {
+            $qb->andWhere(
+                'LOWER(o.id) LIKE :q OR LOWER(COALESCE(o.note, \'\')) LIKE :q OR LOWER(COALESCE(o.serviceInfo, \'\')) LIKE :q OR o.vehicleId IN (:vids)'
+            )->setParameter('q', $like)->setParameter('vids', $vehicleIds);
+        } else {
+            $qb->andWhere(
+                'LOWER(o.id) LIKE :q OR LOWER(COALESCE(o.note, \'\')) LIKE :q OR LOWER(COALESCE(o.serviceInfo, \'\')) LIKE :q OR LOWER(o.vehicleId) LIKE :q'
+            )->setParameter('q', $like);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     /**
@@ -110,7 +188,28 @@ final class CarServiceProvider
         return $qb->setMaxResults($limit)->getQuery()->getResult();
     }
 
-    public function switchTeam(string $orderId, string $team, ?string $userId = null): ServiceOrder
+    /** Fronta týmu pro tracker (RPS getOpenServicesForTeam). */
+    /** @return list<ServiceOrder> */
+    public function teamQueue(string $team, ?string $excludeOrderId = null, int $limit = 20): array
+    {
+        if (!in_array($team, ServiceOrder::TEAMS, true)) {
+            return [];
+        }
+        $qb = $this->em->getRepository(ServiceOrder::class)->createQueryBuilder('o')
+            ->andWhere('o.team = :team')
+            ->andWhere('o.status NOT IN (:closed)')
+            ->setParameter('team', $team)
+            ->setParameter('closed', ['done', 'cancelled'])
+            ->orderBy('o.updatedAt', 'ASC')
+            ->setMaxResults($limit);
+        if ($excludeOrderId !== null && $excludeOrderId !== '') {
+            $qb->andWhere('o.id != :ex')->setParameter('ex', $excludeOrderId);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function switchTeam(string $orderId, string $team, ?string $userId = null, ?string $note = null): ServiceOrder
     {
         $order = $this->requireOrder($orderId);
         if (!$order->isOpen()) {
@@ -121,7 +220,7 @@ final class CarServiceProvider
             return $order;
         }
         $order->setTeam($team);
-        $this->em->persist(new ServiceTeamSwitch($orderId, $from, $team, $userId));
+        $this->em->persist(new ServiceTeamSwitch($orderId, $from, $team, $userId, $note));
         $this->em->flush();
 
         return $order;
@@ -132,6 +231,10 @@ final class CarServiceProvider
         $order = $this->requireOrder($orderId);
         if (!$order->isOpen()) {
             throw new \InvalidArgumentException('carservice.error.order_closed');
+        }
+        // RPS: auto-stop běžící job zaměstnance na jiné zakázce
+        if ($employeeUserId !== null && $employeeUserId !== '') {
+            $this->stopEmployeeRunningJobs($employeeUserId, $orderId);
         }
         $running = $this->em->getRepository(ServiceJob::class)->findOneBy(['orderId' => $orderId, 'endedAt' => null]);
         if ($running instanceof ServiceJob) {
@@ -154,7 +257,9 @@ final class CarServiceProvider
         if (!$job instanceof ServiceJob) {
             throw new \InvalidArgumentException('carservice.error.job_not_found');
         }
-        $job->complete();
+        // RPS hard cap: clamp délky na soft limit hodin
+        $maxSeconds = (int) round($this->jobSoftLimitHours() * 3600);
+        $job->complete(null, $maxSeconds > 0 ? $maxSeconds : null);
         $this->em->flush();
 
         return $job;
@@ -165,7 +270,7 @@ final class CarServiceProvider
         $limitHours = $this->jobSoftLimitHours();
         $seconds = $job->durationSeconds() ?? 0;
 
-        return $limitHours > 0 && $seconds > $limitHours * 3600;
+        return $limitHours > 0 && $seconds >= $limitHours * 3600 - 1;
     }
 
     /** @return list<string> */
@@ -190,7 +295,38 @@ final class CarServiceProvider
         return $default;
     }
 
-    public function finishOrder(string $orderId): ServiceOrder
+    /**
+     * @param array{
+     *   payment_type?: ?string,
+     *   internal_cost?: null|float|string,
+     *   external_cost?: null|float|string,
+     *   service_info?: ?string,
+     *   intake_mileage?: ?int,
+     *   intake_fuel_level?: ?string,
+     *   note?: ?string
+     * } $finishMeta
+     */
+    public function finishOrder(string $orderId, array $finishMeta = []): ServiceOrder
+    {
+        $order = $this->requireOrder($orderId);
+        if (!$order->isOpen()) {
+            throw new \InvalidArgumentException('carservice.error.order_closed');
+        }
+        foreach ($this->em->getRepository(ServiceJob::class)->findBy(['orderId' => $orderId, 'endedAt' => null]) as $job) {
+            if ($job instanceof ServiceJob) {
+                $maxSeconds = (int) round($this->jobSoftLimitHours() * 3600);
+                $job->complete(null, $maxSeconds > 0 ? $maxSeconds : null);
+            }
+        }
+        $this->applyFinishMeta($order, $finishMeta);
+        $order->setStatus('done');
+        $this->em->flush();
+        $this->syncFleetStatus($order->vehicleId(), 'available', 'carservice_finished');
+
+        return $order;
+    }
+
+    public function cancelOrder(string $orderId): ServiceOrder
     {
         $order = $this->requireOrder($orderId);
         if (!$order->isOpen()) {
@@ -201,8 +337,9 @@ final class CarServiceProvider
                 $job->complete();
             }
         }
-        $order->setStatus('done');
+        $order->setStatus('cancelled');
         $this->em->flush();
+        $this->syncFleetStatus($order->vehicleId(), 'available', 'carservice_cancelled');
 
         return $order;
     }
@@ -212,6 +349,11 @@ final class CarServiceProvider
         $token = trim($token);
         if ($token === '') {
             return null;
+        }
+        // Deep-link URL může obsahovat celou cestu s ?token=
+        if (str_contains($token, 'token=')) {
+            parse_str((string) parse_url($token, PHP_URL_QUERY), $q);
+            $token = (string) ($q['token'] ?? $token);
         }
         $o = $this->em->getRepository(ServiceOrder::class)->findOneBy(['trackerToken' => $token]);
 
@@ -267,6 +409,12 @@ final class CarServiceProvider
             'customer_id' => $o->customerId(),
             'branch_id' => $o->branchId(),
             'tracker_token' => $o->trackerToken(),
+            'service_info' => $o->serviceInfo(),
+            'payment_type' => $o->paymentType(),
+            'internal_cost' => $o->internalCost(),
+            'external_cost' => $o->externalCost(),
+            'intake_mileage' => $o->intakeMileage(),
+            'intake_fuel_level' => $o->intakeFuelLevel(),
             'note' => $o->note(),
             'intake_at' => $o->intakeAt()?->format('Y-m-d'),
             'handover_at' => $o->handoverAt()?->format('Y-m-d'),
@@ -291,6 +439,85 @@ final class CarServiceProvider
             'duration_seconds' => $j->durationSeconds(),
             'running' => $j->isRunning(),
         ];
+    }
+
+    private function stopEmployeeRunningJobs(string $employeeUserId, string $exceptOrderId): void
+    {
+        $running = $this->em->getRepository(ServiceJob::class)->findBy([
+            'employeeUserId' => $employeeUserId,
+            'endedAt' => null,
+        ]);
+        $maxSeconds = (int) round($this->jobSoftLimitHours() * 3600);
+        foreach ($running as $job) {
+            if (!$job instanceof ServiceJob || $job->orderId() === $exceptOrderId) {
+                continue;
+            }
+            $job->complete(null, $maxSeconds > 0 ? $maxSeconds : null);
+        }
+    }
+
+    private function syncFleetStatus(string $vehicleId, string $status, string $reason): void
+    {
+        if ($this->fleet === null) {
+            return;
+        }
+        $vehicle = $this->fleet->find($vehicleId);
+        if ($vehicle === null) {
+            return;
+        }
+        // Nepřepisovat rented / out_of_service při finish
+        if ($status === 'available' && !in_array($vehicle->status(), ['in_service', 'repair_wait'], true)) {
+            return;
+        }
+        if ($status === 'in_service' && $vehicle->status() === 'rented') {
+            return;
+        }
+        try {
+            $this->fleet->setStatus($vehicleId, $status, $reason);
+        } catch (\InvalidArgumentException) {
+            // ignore invalid transitions
+        }
+    }
+
+    private function applyIntakeSnapshotToVehicle(ServiceOrder $order): void
+    {
+        $vehicle = $this->em->find(Vehicle::class, $order->vehicleId());
+        if (!$vehicle instanceof Vehicle) {
+            return;
+        }
+        if ($order->intakeMileage() !== null) {
+            $vehicle->setMileage($order->intakeMileage());
+        }
+        if ($order->intakeFuelLevel() !== null) {
+            $vehicle->setFuelLevel($order->intakeFuelLevel());
+        }
+        $this->em->flush();
+    }
+
+    /** @param array<string, mixed> $meta */
+    private function applyFinishMeta(ServiceOrder $order, array $meta): void
+    {
+        if (array_key_exists('payment_type', $meta)) {
+            $order->setPaymentType($meta['payment_type'] !== null && $meta['payment_type'] !== '' ? (string) $meta['payment_type'] : null);
+        }
+        if (array_key_exists('internal_cost', $meta)) {
+            $order->setInternalCost($meta['internal_cost']);
+        }
+        if (array_key_exists('external_cost', $meta)) {
+            $order->setExternalCost($meta['external_cost']);
+        }
+        if (array_key_exists('service_info', $meta)) {
+            $order->setServiceInfo($meta['service_info'] !== null ? (string) $meta['service_info'] : null);
+        }
+        if (array_key_exists('intake_mileage', $meta)) {
+            $order->setIntakeMileage($meta['intake_mileage'] !== null && $meta['intake_mileage'] !== '' ? (int) $meta['intake_mileage'] : null);
+        }
+        if (array_key_exists('intake_fuel_level', $meta)) {
+            $order->setIntakeFuelLevel($meta['intake_fuel_level'] !== null ? (string) $meta['intake_fuel_level'] : null);
+        }
+        if (array_key_exists('note', $meta) && $meta['note'] !== null) {
+            $order->setNote((string) $meta['note']);
+        }
     }
 
     private function requireOrder(string $id): ServiceOrder

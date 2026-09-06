@@ -126,12 +126,19 @@ class ServiceJob
         $this->touch();
     }
 
-    public function complete(?\DateTimeImmutable $at = null): void
+    public function complete(?\DateTimeImmutable $at = null, ?int $maxDurationSeconds = null): void
     {
         if ($this->endedAt !== null) {
             return;
         }
-        $this->endedAt = $at ?? new \DateTimeImmutable();
+        $end = $at ?? new \DateTimeImmutable();
+        if ($maxDurationSeconds !== null && $maxDurationSeconds > 0) {
+            $maxEnd = $this->startedAt->modify('+' . $maxDurationSeconds . ' seconds');
+            if ($end > $maxEnd) {
+                $end = $maxEnd;
+            }
+        }
+        $this->endedAt = $end;
         $this->touch();
     }
 

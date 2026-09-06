@@ -1,0 +1,108 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow"><a href="{{ url('admin.carservice.branches') }}">{{ 'carservice.branches.title'|trans }}</a></p>
+        <h1>{{ item ? 'carservice.branches.edit'|trans : 'carservice.branches.new'|trans }}</h1>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.carservice.branches') }}">{{ 'common.cancel'|trans }}</a>
+        <button class="btn btn--primary" type="submit" form="carservice-branch-form">{{ 'common.save'|trans }}</button>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'carservice.branch' } %}
+
+<form method="post" id="carservice-branch-form" class="detail-stack" enctype="multipart/form-data" action="{{ item ? url('admin.carservice.branches.update',{id:item.id()}) : url('admin.carservice.branches.store') }}" data-form="carservice.branch" x-data="gereqForm">
+{{ csrf_field()|raw }}
+
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'carservice.branches.section.basic'|trans }}</h2>
+        </div>
+    </header>
+    <div class="form-grid">
+        {% include 'ui/input.html.twig' with { name:'name', label:'carservice.field.branch'|trans, required:true, form:'carservice.branch', value: item?item.name():'' } %}
+        {% include 'ui/input.html.twig' with { name:'employee_count', type:'number', label:'carservice.branches.field.employees'|trans, optional:true, form:'carservice.branch', value: item?item.employeeCount():0, min:0 } %}
+        {% include 'ui/checkbox.html.twig' with { name:'active', label:'carservice.branches.field.active'|trans, form:'carservice.branch', checked: item?item.isActive():true } %}
+        {% include 'ui/input.html.twig' with { name:'phone', label:'carservice.branches.field.phone'|trans, optional:true, form:'carservice.branch', value: item?item.phone():'' } %}
+        {% include 'ui/input.html.twig' with { name:'email', type:'email', label:'carservice.branches.field.email'|trans, optional:true, form:'carservice.branch', value: item?item.email():'' } %}
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'carservice.branches.section.address'|trans }}</h2>
+            <p class="muted">{{ 'carservice.branches.address_hint'|trans }}</p>
+        </div>
+    </header>
+    <div class="form-grid" x-data="gereqAresAddress">
+        <div class="g-field field--full ares-field" data-field="street">
+            <label class="g-label" for="f-street">
+                <span>{{ 'carservice.branches.field.street'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+            </label>
+            <div class="ares-field__control">
+                <input
+                    class="g-control"
+                    type="text"
+                    id="f-street"
+                    name="street"
+                    data-ares-query
+                    data-ares-fill="street"
+                    autocomplete="off"
+                    placeholder="{{ 'carservice.branches.address_placeholder'|trans }}"
+                    value="{{ item ? item.street() : '' }}"
+                    @input="onInput"
+                    @keydown="onKeydown"
+                    x-ref="query"
+                >
+                {% include 'ui/ares_address_suggest.html.twig' %}
+            </div>
+        </div>
+        <div class="g-field" data-field="city">
+            <label class="g-label" for="f-city">
+                <span>{{ 'carservice.branches.field.city'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+            </label>
+            <input class="g-control" type="text" id="f-city" name="city" data-ares-fill="city" value="{{ item ? item.city() : '' }}">
+        </div>
+        <div class="g-field" data-field="zip">
+            <label class="g-label" for="f-zip">
+                <span>{{ 'carservice.branches.field.zip'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+            </label>
+            <input class="g-control" type="text" id="f-zip" name="zip" data-ares-fill="zip" value="{{ item ? item.zip() : '' }}">
+        </div>
+        <div class="g-field" data-field="country">
+            <label class="g-label" for="f-country">
+                <span>{{ 'carservice.branches.field.country'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+            </label>
+            <input class="g-control" type="text" id="f-country" name="country" data-ares-fill="country" value="{{ item ? item.country() : 'CZ' }}">
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'carservice.branches.section.logo'|trans }}</h2>
+            <p class="muted">{{ 'carservice.branches.logo_hint'|trans }}</p>
+        </div>
+    </header>
+    <div class="form-grid">
+        {% if item and item.logoFileId() %}
+            <div class="field field--full">
+                <img class="avatar avatar--lg" src="{{ url('admin.carservice.branches.logo',{id:item.id()}) }}" alt="{{ item.name() }}">
+            </div>
+        {% endif %}
+        <div class="g-field field--full" data-field="logo">
+            <label class="g-label" for="f-logo">
+                <span>{{ 'carservice.branches.field.logo'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+            </label>
+            <input class="input" id="f-logo" type="file" name="logo" accept="image/*">
+        </div>
+        {% include 'ui/textarea.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, form:'carservice.branch', value: item?item.note():'', extra:'field--full', rows:3 } %}
+    </div>
+</section>
+</form>
+{% endblock %}

@@ -6,10 +6,12 @@
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; }
         h1 { font-size: 18px; margin: 0 0 8px; }
+        h2 { font-size: 14px; margin: 18px 0 6px; }
         .meta { color: #555; margin-bottom: 16px; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
         th { background: #f3f3f3; }
+        .sig { margin-top: 28px; border-top: 1px solid #999; padding-top: 8px; width: 45%; }
     </style>
 </head>
 <body>
@@ -24,9 +26,16 @@
         <strong>Vozidlo:</strong>
         {% if vehicle %}{{ vehicle.plate() }} {{ vehicle.brand() }} {{ vehicle.model() }}{% else %}{{ order.vehicleId() }}{% endif %}<br>
         <strong>Zákazník:</strong> {% if customer %}{{ customer.name() }}{% else %}—{% endif %}<br>
-        <strong>Odpracováno:</strong> {{ (jobSeconds / 3600)|number_format(2) }} h
+        <strong>Odpracováno:</strong> {{ (jobSeconds / 3600)|number_format(2) }} h<br>
+        {% if order.intakeMileage() is not null %}<strong>Stav km při příjmu:</strong> {{ order.intakeMileage() }} km<br>{% endif %}
+        {% if order.intakeFuelLevel() %}<strong>Stav nádrže:</strong> {{ order.intakeFuelLevel() }}<br>{% endif %}
+        {% if order.paymentType() %}<strong>Platba:</strong> {{ order.paymentType() }}<br>{% endif %}
+        {% if order.internalCost() %}<strong>Interní náklad:</strong> {{ order.internalCost() }}<br>{% endif %}
+        {% if order.externalCost() %}<strong>Externí náklad:</strong> {{ order.externalCost() }}<br>{% endif %}
     </p>
+    {% if order.serviceInfo() %}<p><strong>Objednané práce:</strong><br>{{ order.serviceInfo()|nl2br }}</p>{% endif %}
     {% if order.note() %}<p><strong>Poznámka:</strong> {{ order.note() }}</p>{% endif %}
+    <h2>Evidence práce</h2>
     <table>
         <thead>
             <tr><th>Práce</th><th>Od</th><th>Do</th><th>Hodiny</th></tr>
@@ -44,5 +53,11 @@
         {% endfor %}
         </tbody>
     </table>
+    {% if signature %}
+    <div class="sig">
+        <strong>Podpis převzetí:</strong> {{ signature }}<br>
+        <span style="color:#666">Datum: {{ 'now'|date('d.m.Y H:i') }}</span>
+    </div>
+    {% endif %}
 </body>
 </html>

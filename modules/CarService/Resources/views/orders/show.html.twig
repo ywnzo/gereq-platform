@@ -6,15 +6,13 @@
         <p class="muted detail-layout__meta">
             <span class="badge">{{ item.statusLabel()|trans }}</span>
             <span>{{ item.teamLabel()|trans }}</span>
+            {% if branch %}<span>{{ branch.name() }}</span>{% endif %}
             {% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% endif %}
         </p>
     </div>
     <div class="actions">
         {% if user.can('carservice.manage') and item.isOpen() %}
-            <form method="post" action="{{ url('admin.carservice.finish',{id:item.id()}) }}">
-                {{ csrf_field()|raw }}
-                <button class="btn btn--primary" type="submit">{{ 'carservice.finish'|trans }}</button>
-            </form>
+            <button class="btn btn--primary" type="button" onclick="document.getElementById('finish-dialog').showModal()">{{ 'carservice.finish'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.carservice.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
         {% endif %}
         {% if user.can('carservice.tracker') and item.isOpen() %}
@@ -22,6 +20,30 @@
         {% endif %}
     </div>
 </header>
+
+{% if user.can('carservice.manage') and item.isOpen() %}
+<dialog id="finish-dialog" class="panel" style="max-width:28rem;padding:1.25rem">
+    <form method="post" action="{{ url('admin.carservice.finish',{id:item.id()}) }}" class="form-grid">
+        {{ csrf_field()|raw }}
+        <h2>{{ 'carservice.finish.dialog_title'|trans }}</h2>
+        {% include 'ui/textarea.html.twig' with { name:'service_info', label:'carservice.field.service_info'|trans, optional:true, value: item.serviceInfo() ?: '' } %}
+        {% include 'ui/select.html.twig' with { name:'payment_type', label:'carservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
+        {value:'',label:'—'},{value:'online',label:'carservice.payment.online'|trans},{value:'cash',label:'carservice.payment.cash'|trans}
+        ] } %}
+        {% include 'ui/input.html.twig' with { name:'internal_cost', type:'number', label:'carservice.field.internal_cost'|trans, optional:true, value: item.internalCost() ?: '', step:'0.01' } %}
+        {% include 'ui/input.html.twig' with { name:'external_cost', type:'number', label:'carservice.field.external_cost'|trans, optional:true, value: item.externalCost() ?: '', step:'0.01' } %}
+        {% include 'ui/input.html.twig' with { name:'intake_mileage', type:'number', label:'carservice.field.intake_mileage'|trans, optional:true, value: item.intakeMileage() ?: '' } %}
+        {% include 'ui/select.html.twig' with { name:'intake_fuel_level', label:'carservice.field.intake_fuel'|trans, optional:true, value: item.intakeFuelLevel() ?: '', options:[
+        {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
+        ] } %}
+        {% include 'ui/input.html.twig' with { name:'signature', label:'carservice.finish.signature'|trans, optional:true, value:'' } %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'carservice.finish.confirm'|trans }}</button>
+            <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">{{ 'common.cancel'|trans }}</button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
 
 <div class="detail-layout">
     <div class="detail-layout__main">
@@ -143,6 +165,13 @@
         </section>
         {% endif %}
 
+        {% if sections is defined and sections is not empty %}
+            {% set orderedSections = sections|sort((a, b) => (a.order|default(100)) <=> (b.order|default(100))) %}
+            {% for section in orderedSections %}
+                {{ section.html|raw }}
+            {% endfor %}
+        {% endif %}
+
         {% if documents is defined and documents is not empty %}
         <section class="panel">
             <header class="panel__head"><h2>{{ 'carservice.documents.title'|trans }}</h2></header>
@@ -162,17 +191,24 @@
                 <img src="{{ qrDataUri }}" alt="QR" width="180" height="180">
             </div>
             <p><code>{{ item.trackerToken() }}</code></p>
-            <p class="muted"><a href="{{ trackerUrl }}">{{ 'carservice.tracker.open'|trans }}</a></p>
+            <p class="muted"><a href="{{ trackerDeepLink }}">{{ 'carservice.tracker.open'|trans }}</a></p>
+            <p class="muted" style="word-break:break-all;font-size:.75rem">{{ trackerUrl }}</p>
         </section>
         <section class="panel">
             <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
             <dl class="meta-list meta-list--flush detail-layout__specs">
                 <div><dt>{{ 'carservice.field.type'|trans }}</dt><dd>{{ item.typeLabel()|trans }}</dd></div>
                 <div><dt>{{ 'carservice.field.team'|trans }}</dt><dd>{{ item.teamLabel()|trans }}</dd></div>
+                <div><dt>{{ 'carservice.field.payment_type'|trans }}</dt><dd>{% if item.paymentType() %}{{ ('carservice.payment.'~item.paymentType())|trans }}{% else %}—{% endif %}</dd></div>
+                <div><dt>{{ 'carservice.field.internal_cost'|trans }}</dt><dd>{{ item.internalCost() ?: '—' }}</dd></div>
+                <div><dt>{{ 'carservice.field.external_cost'|trans }}</dt><dd>{{ item.externalCost() ?: '—' }}</dd></div>
+                <div><dt>{{ 'carservice.field.intake_mileage'|trans }}</dt><dd>{{ item.intakeMileage() is not null ? item.intakeMileage() : '—' }}</dd></div>
+                <div><dt>{{ 'carservice.field.intake_fuel'|trans }}</dt><dd>{% if item.intakeFuelLevel() %}{{ ('fleet.fuel_level.'~item.intakeFuelLevel())|trans }}{% else %}—{% endif %}</dd></div>
                 <div><dt>{{ 'carservice.field.intake'|trans }}</dt><dd>{{ item.intakeAt()?item.intakeAt().format('d. m. Y'):'—' }}</dd></div>
                 <div><dt>{{ 'carservice.field.handover'|trans }}</dt><dd>{{ item.handoverAt()?item.handoverAt().format('d. m. Y'):'—' }}</dd></div>
                 <div class="meta-list__full"><dt>{{ 'carservice.field.customer'|trans }}</dt>
                     <dd>{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% else %}—{% endif %}</dd></div>
+                {% if item.serviceInfo() %}<div class="meta-list__full"><dt>{{ 'carservice.field.service_info'|trans }}</dt><dd>{{ item.serviceInfo() }}</dd></div>{% endif %}
                 {% if item.note() %}<div class="meta-list__full"><dt>{{ 'carservice.field.note'|trans }}</dt><dd>{{ item.note() }}</dd></div>{% endif %}
                 {% if links is not empty %}
                     <div class="meta-list__full"><dt>{{ 'carservice.field.links'|trans }}</dt>
@@ -186,7 +222,9 @@
             <ul class="meta-list meta-list--flush">
                 {% for s in switches %}
                     <li>{% if s.fromTeam() %}{{ ('carservice.team.'~s.fromTeam())|trans }} → {% endif %}{{ ('carservice.team.'~s.toTeam())|trans }}
-                        <span class="muted">{{ s.createdAt().format('d. m. H:i') }}</span></li>
+                        <span class="muted">{{ s.createdAt().format('d. m. H:i') }}</span>
+                        {% if s.note() %}<div class="muted">{{ s.note() }}</div>{% endif %}
+                    </li>
                 {% endfor %}
             </ul>
         </section>

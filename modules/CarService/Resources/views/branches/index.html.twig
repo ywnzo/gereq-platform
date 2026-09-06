@@ -1,0 +1,61 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow"><a href="{{ url('admin.carservice.index') }}">{{ 'nav.carservice'|trans }}</a></p>
+        <h1>{{ 'carservice.branches.title'|trans }}</h1>
+        <p class="muted">{{ 'carservice.branches.intro'|trans }}</p>
+    </div>
+    {% if user.can('carservice.manage') %}
+    <div class="actions">
+        <a class="btn btn--primary" href="{{ url('admin.carservice.branches.create') }}">{{ 'carservice.branches.new'|trans }}</a>
+    </div>
+    {% endif %}
+</header>
+
+<section class="panel">
+    <div class="table-wrap"><table class="table">
+        <thead>
+            <tr>
+                <th>{{ 'carservice.field.branch'|trans }}</th>
+                <th>{{ 'carservice.branches.field.address'|trans }}</th>
+                <th>{{ 'carservice.branches.field.employees'|trans }}</th>
+                <th>{{ 'carservice.field.status'|trans }}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <td>
+                    {% if item.logoFileId() %}
+                        <img src="{{ url('admin.carservice.branches.logo',{id:item.id()}) }}" alt="" width="28" height="28" style="object-fit:contain;vertical-align:middle;margin-right:.4rem">
+                    {% endif %}
+                    <strong>{{ item.name() }}</strong>
+                </td>
+                <td>{{ item.addressLabel() ?: '—' }}</td>
+                <td>{{ item.employeeCount() }}</td>
+                <td>
+                    {% if item.isActive() %}
+                        <span class="badge">{{ 'carservice.branches.active'|trans }}</span>
+                    {% else %}
+                        <span class="muted">{{ 'carservice.branches.inactive'|trans }}</span>
+                    {% endif %}
+                </td>
+                <td class="actions">
+                    {% if user.can('carservice.manage') %}
+                        <a class="btn btn--ghost" href="{{ url('admin.carservice.branches.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                        <form method="post" action="{{ url('admin.carservice.branches.destroy',{id:item.id()}) }}" data-confirm="{{ 'carservice.branches.confirm_delete'|trans }}">
+                            {{ csrf_field()|raw }}
+                            <button type="submit" class="btn btn--ghost">{{ 'common.delete'|trans }}</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" class="muted">{{ 'carservice.branches.empty'|trans }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table></div>
+</section>
+{% endblock %}

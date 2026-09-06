@@ -13,6 +13,7 @@ return new class {
     public function down(Schema $schema): void
     {
         foreach ([
+            'carservice_branches',
             'carservice_costs',
             'carservice_order_links',
             'carservice_team_switches',

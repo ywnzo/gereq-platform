@@ -15,7 +15,9 @@ use Modules\CarService\Application\CarServiceProvider;
 use Modules\CarService\Application\OrderMediaService;
 use Modules\CarService\Application\QrCodeService;
 use Modules\CarService\Domain\ServiceOrder;
+use Modules\Fleet\Application\VehicleMediaService;
 use Modules\Fleet\Domain\Vehicle;
+use Modules\Media\Domain\MediaAsset;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -38,15 +40,28 @@ final class TrackerController extends Controller
         private readonly CarServiceProvider $carservice,
         private readonly OrderMediaService $orderMedia,
         private readonly QrCodeService $qr,
+        private readonly VehicleMediaService $vehicleMedia,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $token = trim((string) $request->query->get('token', ''));
+        if ($token !== '') {
+            $order = $this->carservice->resolveByTrackerToken($token);
+            if ($order !== null && $order->isOpen()) {
+                return $this->redirect('admin.carservice.tracker.show', ['id' => $order->id()]);
+            }
+            $this->flash('error', $this->translator->trans('carservice.tracker.not_found'));
+        }
+
+        $openOrders = $this->carservice->listOpen(['open_only' => true], 30);
+
         return $this->page('@carservice/tracker/index.html.twig', [
             'pageTitle' => $this->translator->trans('carservice.tracker.title'),
-            'openOrders' => $this->carservice->listOpen(['open_only' => true], 30),
+            'openOrders' => $openOrders,
+            'orderCards' => $this->buildOrderCards($openOrders),
         ]);
     }
 
@@ -94,13 +109,15 @@ final class TrackerController extends Controller
             'jobs' => $jobs,
             'running' => $running,
             'teams' => ServiceOrder::TEAMS,
+            'teamQueue' => $this->carservice->teamQueue($order->team(), $id),
             'mediaPhases' => $this->carservice->mediaPhases(),
             'mediaByPhase' => array_combine(
                 $this->carservice->mediaPhases(),
                 array_map(fn (string $p) => $this->orderMedia->forOrder($id, $p), $this->carservice->mediaPhases()),
             ) ?: [],
             'mediaAvailable' => $this->orderMedia->available(),
-            'qrDataUri' => $this->qr->dataUri($order->trackerToken()),
+            'qrDataUri' => $this->qr->dataUriForOrder($order->trackerToken()),
+            'trackerUrl' => $this->qr->trackerUrl($order->trackerToken()),
         ]);
     }
 
@@ -171,6 +188,68 @@ final class TrackerController extends Controller
         $this->flash('success', $this->translator->trans('carservice.flash.media_uploaded'));
 
         return $this->redirect('admin.carservice.tracker.show', ['id' => $id]);
+    }
+
+    /**
+     * @param list<ServiceOrder> $orders
+     * @return list<array{
+     *   order: ServiceOrder,
+     *   plate: string,
+     *   label: string,
+     *   subject: string,
+     *   photo_url: ?string,
+     *   href: string
+     * }>
+     */
+    private function buildOrderCards(array $orders): array
+    {
+        $cards = [];
+        foreach ($orders as $order) {
+            $vehicle = $this->em->find(Vehicle::class, $order->vehicleId());
+            $plate = $vehicle instanceof Vehicle ? $vehicle->plate() : $order->vehicleId();
+            $label = '';
+            if ($vehicle instanceof Vehicle) {
+                $label = trim(($vehicle->brand() ?? '') . ' ' . ($vehicle->model() ?? ''));
+                if ($vehicle->modelYear()) {
+                    $label = trim($label . ' · ' . $vehicle->modelYear());
+                }
+            }
+            $subject = trim((string) ($order->serviceInfo() ?? $order->note() ?? ''));
+            $cards[] = [
+                'order' => $order,
+                'plate' => $plate,
+                'label' => $label,
+                'subject' => $subject,
+                'photo_url' => $vehicle instanceof Vehicle ? $this->vehiclePhotoUrl($vehicle->id()) : null,
+                'href' => $this->router->url('admin.carservice.tracker.show', ['id' => $order->id()]),
+            ];
+        }
+
+        return $cards;
+    }
+
+    private function vehiclePhotoUrl(string $vehicleId): ?string
+    {
+        if ($vehicleId === '' || !$this->vehicleMedia->available()) {
+            return null;
+        }
+        try {
+            $items = $this->vehicleMedia->forVehicle($vehicleId);
+        } catch (\Throwable) {
+            return null;
+        }
+        foreach ($items as $row) {
+            $asset = $row['asset'] ?? null;
+            if ($asset instanceof MediaAsset && $asset->isImage()) {
+                try {
+                    return $this->router->url('admin.media.file', ['id' => $asset->id()]);
+                } catch (\Throwable) {
+                    return null;
+                }
+            }
+        }
+
+        return null;
     }
 
     /** @param array<string, mixed> $data */
