@@ -1058,7 +1058,7 @@ button.icon-btn.topbar__menu { display: none; }
 .sidebar .icon-btn:hover { background: var(--hover-strong); }
 
 .input,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]):not([type="color"]):not(.color-picker__hex-input),
 textarea,
 select,
 select.input {
@@ -1671,6 +1671,12 @@ form > .table,
     font-size: 12px;
     font-weight: 400;
 }
+.panel__head--actions {
+    align-items: center;
+}
+.panel__head--actions .btn {
+    flex-shrink: 0;
+}
 .panel > :not(.panel__head) {
     padding: 12px 14px;
 }
@@ -2031,22 +2037,25 @@ a.package-row__mod:hover {
 }
 .module-hub { margin-top: 4px; }
 .module-tabs {
-    position: sticky;
-    top: var(--topbar-h);
-    z-index: 15;
+    /* keep with detail-tabs — no sticky overlay over content */
+    position: relative;
+    top: auto;
+    z-index: 2;
 }
 .module-tab-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 1.25rem;
-    margin-left: 0.4rem;
-    padding: 0 0.35rem;
-    border-radius: var(--radius);
+    margin: 0;
+    padding: 0.05rem 0.35rem;
+    height: 1.2rem;
+    border-radius: 999px;
     background: color-mix(in srgb, var(--border) 70%, transparent);
     color: var(--text-muted);
     font-size: 0.7rem;
     font-weight: 650;
+    line-height: 1;
 }
 .module-tab-count--warn {
     background: color-mix(in srgb, var(--warning, #fbbf24) 28%, transparent);
@@ -5015,37 +5024,58 @@ html[data-theme="gereq-dark"] .sidebar {
 }
 .detail-hub > .design-tabs,
 .detail-tabs {
-    position: sticky;
-    top: var(--topbar-h);
-    z-index: 15;
+    position: relative;
+    top: auto;
+    z-index: 2;
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 4px;
     margin: 0 0 1.25rem;
-    padding: 6px;
+    padding: 5px;
     border: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     border-radius: var(--radius);
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
-    backdrop-filter: blur(8px);
+    background: var(--surface);
+    backdrop-filter: none;
+    box-shadow: none;
 }
 .detail-hub .design-tab,
 .detail-tabs .design-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
     margin: 0;
-    padding: 8px 12px;
+    padding: 0.4rem 0.75rem;
+    min-height: 2.125rem;
     border: 0;
-    border-radius: var(--radius);
+    border-radius: calc(var(--radius) - 2px);
     background: transparent;
+    box-shadow: none;
     color: var(--text-muted);
     font-size: 13px;
     font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 .detail-hub .design-tab:hover,
-.detail-tabs .design-tab:hover { color: var(--text); background: var(--hover-strong); }
+.detail-tabs .design-tab:hover {
+    color: var(--text);
+    background: var(--hover-strong);
+    box-shadow: none;
+}
 .detail-hub .design-tab.is-active,
 .detail-tabs .design-tab.is-active {
     color: var(--primary-fg);
     background: var(--primary);
     border-color: transparent;
+    box-shadow: none;
+}
+.detail-hub .design-tab.is-active .module-tab-count,
+.detail-tabs .design-tab.is-active .module-tab-count {
+    background: color-mix(in srgb, var(--primary-fg) 18%, transparent);
+    color: var(--primary-fg);
 }
 .detail-hub .design-panel {
     display: none;
@@ -5373,6 +5403,20 @@ html[data-theme="gereq-dark"] .sidebar {
     color: var(--text-muted);
     font-weight: 500;
 }
+.form-grid > .field,
+.form-grid > .settings-row {
+    align-self: stretch;
+}
+.form-grid > .field > .input,
+.form-grid > .field > select,
+.form-grid > .settings-row > .color-picker,
+.form-grid > .settings-row > .brand-asset {
+    width: 100%;
+}
+.form-grid > .field > .field__hint,
+.form-grid > .settings-row > .field__hint {
+    min-height: 1.35em;
+}
 
 .dash-settings {
     display: grid;
@@ -5577,7 +5621,7 @@ html[data-theme="gereq-dark"] .sidebar {
 .color-picker {
     position: relative;
     width: 100%;
-    max-width: 22rem;
+    max-width: none;
 }
 .color-picker__row {
     display: flex;
@@ -5635,8 +5679,14 @@ html[data-theme="gereq-dark"] .sidebar {
 .color-picker__hex-input {
     width: 100%;
     min-width: 0;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
+    box-shadow: none;
     color: var(--text);
     font-family: var(--gereq-font-mono, ui-monospace, monospace);
     font-size: 0.95rem;
@@ -5644,6 +5694,17 @@ html[data-theme="gereq-dark"] .sidebar {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     outline: none;
+    appearance: none;
+}
+.color-picker__hex-input:focus,
+.color-picker__hex-input:focus-visible {
+    outline: none;
+    border: 0;
+    box-shadow: none;
+}
+.color-picker__hex-field:focus-within {
+    border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 .color-picker__more {
     display: grid;

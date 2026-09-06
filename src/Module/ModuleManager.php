@@ -45,28 +45,38 @@ final class ModuleManager
         }
 
         $this->discovered = [];
-        $root = $this->basePath . '/modules';
-        if (!is_dir($root)) {
-            return $this->discovered;
-        }
-
-        foreach (scandir($root) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..') {
+        foreach (['modules', 'integrations'] as $dirName) {
+            $root = $this->basePath . '/' . $dirName;
+            if (!is_dir($root)) {
                 continue;
             }
 
-            $manifestFile = $root . '/' . $entry . '/module.php';
-            if (!is_file($manifestFile)) {
-                continue;
-            }
+            foreach (scandir($root) ?: [] as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
 
-            $data = require $manifestFile;
-            if (!is_array($data)) {
-                continue;
-            }
+                $manifestFile = $root . '/' . $entry . '/module.php';
+                if (!is_file($manifestFile)) {
+                    continue;
+                }
 
-            $manifest = ModuleManifest::fromArray($data, $root . '/' . $entry);
-            $this->discovered[$manifest->id] = $manifest;
+                $data = require $manifestFile;
+                if (!is_array($data)) {
+                    continue;
+                }
+
+                $manifest = ModuleManifest::fromArray($data, $root . '/' . $entry);
+                if (isset($this->discovered[$manifest->id])) {
+                    throw new \RuntimeException(sprintf(
+                        'Duplicitní package id "%s" (%s vs %s).',
+                        $manifest->id,
+                        $this->discovered[$manifest->id]->path,
+                        $manifest->path,
+                    ));
+                }
+                $this->discovered[$manifest->id] = $manifest;
+            }
         }
 
         return $this->discovered;

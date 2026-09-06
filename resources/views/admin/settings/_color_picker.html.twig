@@ -15,7 +15,7 @@
                 class="color-picker__native"
                 value="{{ colorValue }}"
                 :value="hex"
-                @input="fromNative($event)"
+                @input="fromNative"
                 aria-label="{{ definition.label|trans }}"
             >
             <span class="color-picker__chip-face" :style="swatchStyle" style="background: {{ colorValue }}"></span>

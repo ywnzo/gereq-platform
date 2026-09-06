@@ -28,6 +28,7 @@ import { registerCustomerEdit } from '../../../modules/Customers/Resources/asset
 import { registerPcOemMarket } from '../../../modules/PartsCatalog/Resources/assets/js/pcOemMarket';
 import { registerCarserviceFinishWizard } from '../../../modules/CarService/Resources/assets/js/finishWizard';
 import { registerEsignSignaturePad } from '../../../modules/ESign/Resources/assets/js/signaturePad';
+import { registerPortalForm } from '../../../modules/Portals/Resources/assets/js/portalForm';
 
 export function registerUi(alpine: typeof Alpine): void {
     registerPageProgress();
@@ -63,4 +64,5 @@ export function registerUi(alpine: typeof Alpine): void {
     registerFleetBrandCatalog(alpine);
     registerChart(alpine);
     registerCustomerEdit(alpine);
+    registerPortalForm(alpine);
 }

@@ -47,10 +47,13 @@ final class TwigFactory
     public function create(): Environment
     {
         $loader = new FilesystemLoader($this->basePath . '/resources/views');
-        $modules = $this->basePath . '/modules';
-        if (is_dir($modules)) {
-            foreach (scandir($modules) ?: [] as $entry) {
-                $views = $modules . '/' . $entry . '/Resources/views';
+        foreach (['modules', 'integrations'] as $dirName) {
+            $root = $this->basePath . '/' . $dirName;
+            if (!is_dir($root)) {
+                continue;
+            }
+            foreach (scandir($root) ?: [] as $entry) {
+                $views = $root . '/' . $entry . '/Resources/views';
                 if (is_dir($views)) {
                     $loader->addPath($views, strtolower($entry));
                 }

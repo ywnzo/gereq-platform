@@ -70,18 +70,36 @@ final class ModuleController extends Controller
             $byId[$row['manifest']->id] = $row;
         }
 
+        $moduleItems = array_values(array_filter(
+            $items,
+            static fn (array $row): bool => !$row['manifest']->isIntegration(),
+        ));
+        $pluginGroups = $this->groups->forIndex($byId, 'plugins');
+        $pluginEnabled = 0;
+        $pluginTotal = 0;
+        foreach ($pluginGroups as $g) {
+            $pluginEnabled += $g['enabled'];
+            $pluginTotal += $g['total'];
+        }
+
         return $this->page('admin/modules/index.html.twig', [
             'pageTitle' => $this->translator->trans('admin.modules.title'),
-            'items' => $items,
-            'groups' => $this->groups->forIndex($byId),
+            'items' => $moduleItems,
+            'groups' => $this->groups->forIndex($byId, 'packages'),
+            'pluginGroups' => $pluginGroups,
             'stats' => [
-                'total' => count($items),
-                'enabled' => count(array_filter($items, static fn (array $row): bool => $row['enabled'])),
+                'total' => count($moduleItems),
+                'enabled' => count(array_filter($moduleItems, static fn (array $row): bool => $row['enabled'])),
                 'issues' => array_sum(array_map(
                     static fn (array $row): int => $row['enabled'] ? $row['health_issues'] : 0,
-                    $items
+                    $moduleItems
                 )),
-                'updates' => $updates,
+                'updates' => count(array_filter($moduleItems, static fn (array $row): bool => $row['update_available'])),
+            ],
+            'pluginStats' => [
+                'groups' => count($pluginGroups),
+                'enabled' => $pluginEnabled,
+                'total' => $pluginTotal,
             ],
         ]);
     }

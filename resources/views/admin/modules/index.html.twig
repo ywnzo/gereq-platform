@@ -45,6 +45,14 @@
                 <span class="module-tab-count">{{ groups|length }}</span>
             </button>
         {% endif %}
+        <button type="button" class="design-tab" role="tab" data-tab="plugins">
+            {{ 'admin.modules.tab.plugins'|trans }}
+            {% if pluginStats.total is defined and pluginStats.total %}
+                <span class="module-tab-count">{{ pluginStats.enabled }}/{{ pluginStats.total }}</span>
+            {% elseif pluginGroups is defined and pluginGroups is not empty %}
+                <span class="module-tab-count">{{ pluginGroups|length }}</span>
+            {% endif %}
+        </button>
     </div>
 
     <section class="design-panel" data-panel="modules" role="tabpanel">
@@ -148,10 +156,11 @@
                         {% for row in items %}
                             {% set manifest = row.manifest %}
                             {% set counts = row.counts %}
-                            {% set searchBlob = (manifest.name ~ ' ' ~ manifest.id ~ ' ' ~ (manifest.description|trans))|lower %}
+                            {% set searchBlob = (manifest.name ~ ' ' ~ manifest.id ~ ' ' ~ manifest.kind ~ ' ' ~ (manifest.description|trans))|lower %}
                             <tr
                                 data-id="{{ manifest.id }}"
                                 data-enabled="{{ row.enabled ? '1' : '0' }}"
+                                data-kind="{{ manifest.kind }}"
                                 data-warn="{{ (row.enabled and (row.health_issues or row.missing is not empty) or row.update_available) ? '1' : '0' }}"
                                 data-update="{{ row.update_available ? '1' : '0' }}"
                                 data-search="{{ searchBlob|e('html_attr') }}"
@@ -171,7 +180,12 @@
                                 <td>
                                     <div class="table__title">
                                         <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
-                                        <span class="table__meta"><code>{{ manifest.id }}</code> · v{{ manifest.version }}</span>
+                                        <span class="table__meta">
+                                            <code>{{ manifest.id }}</code> · v{{ manifest.version }}
+                                            {% if manifest.kind == 'integration' %}
+                                                · <span class="badge badge--info">{{ 'admin.modules.kind.integration'|trans }}</span>
+                                            {% endif %}
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="is-mute">{{ (manifest.description ?: 'common.no_description')|trans }}</td>
@@ -260,76 +274,36 @@
     {% if groups is defined and groups is not empty %}
     <section class="design-panel" data-panel="packages" role="tabpanel">
         <div class="list-shell__panel">
-            <div class="table-wrap" data-table>
-                <table class="table table--packages">
-                    <thead>
-                        <tr>
-                            <th>{{ 'admin.modules.col.name'|trans }}</th>
-                            <th>{{ 'admin.modules.col.description'|trans }}</th>
-                            <th>{{ 'admin.modules.col.status'|trans }}</th>
-                            <th class="is-num">{{ 'admin.modules.col.modules'|trans }}</th>
-                            <th class="table__actions-head"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for group in groups %}
-                            <tr>
-                                <td>
-                                    <div class="table__title package-row__title">
-                                        <span class="package-row__chip">{{ group.name }}</span>
-                                        <div>
-                                            <strong>{{ group.label|trans }}</strong>
-                                            <span class="table__meta"><code>{{ group.id }}</code></span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="is-mute">
-                                    <div>{{ group.description ? group.description|trans : '—' }}</div>
-                                    <div class="package-row__mods">
-                                        {% for m in group.modules %}
-                                            {% set row = m.row %}
-                                            {% if row %}
-                                                <a class="package-row__mod{% if row.enabled %} is-on{% endif %}" href="{{ url('admin.modules.show', {id: m.id}) }}">{{ row.manifest.name }}</a>
-                                            {% else %}
-                                                <span class="package-row__mod is-missing">{{ m.id }}</span>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if group.all_enabled %}
-                                        <span class="badge badge--ok">{{ 'admin.modules.group.ready'|trans }}</span>
-                                    {% elseif group.complete %}
-                                        <span class="badge badge--warn">{{ 'admin.modules.group.partial'|trans }}</span>
-                                    {% else %}
-                                        <span class="badge badge--muted">{{ 'admin.modules.group.incomplete'|trans }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="is-num">
-                                    <span class="package-row__progress">{{ group.enabled }}/{{ group.total }}</span>
-                                </td>
-                                {% embed 'ui/row_actions.html.twig' %}
-                                    {% block items %}
-                                        {% if not group.all_enabled and group.disabled_ids is not empty %}
-                                            <form method="post" action="{{ url('admin.modules.group.enable', {group: group.id}) }}">
-                                                {{ csrf_field()|raw }}
-                                                <button
-                                                    type="submit"
-                                                    onclick="return confirm('{{ 'admin.modules.group.confirm_enable'|trans({'%name%': group.name, '%count%': group.disabled_ids|length})|e('js') }}')"
-                                                >{{ 'admin.modules.group.enable_all'|trans }}</button>
-                                            </form>
-                                        {% else %}
-                                            <button type="button" disabled>{{ 'admin.modules.group.all_on'|trans }}</button>
-                                        {% endif %}
-                                    {% endblock %}
-                                {% endembed %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            {% include 'admin/modules/_group_table.html.twig' with { groups: groups } %}
         </div>
     </section>
     {% endif %}
+
+    <section class="design-panel" data-panel="plugins" role="tabpanel">
+        <div class="list-shell__panel">
+            {% if pluginStats is defined and pluginStats.total > 0 %}
+                <div class="widget-row" style="margin-bottom:1rem">
+                    <div class="stat-card">
+                        <div class="stat-card__label">{{ 'admin.plugins.stats.groups'|trans }}</div>
+                        <div class="stat-card__value">{{ pluginStats.groups }}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__label">{{ 'admin.plugins.stats.enabled'|trans }}</div>
+                        <div class="stat-card__value">{{ pluginStats.enabled }}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__label">{{ 'admin.plugins.stats.total'|trans }}</div>
+                        <div class="stat-card__value">{{ pluginStats.total }}</div>
+                    </div>
+                </div>
+            {% endif %}
+            <p class="muted" style="margin:0 0 1rem">{{ 'admin.plugins.intro'|trans }}</p>
+            {% include 'admin/modules/_group_table.html.twig' with {
+                groups: pluginGroups|default([]),
+                empty_title: 'admin.plugins.empty'|trans,
+                empty_hint: 'admin.plugins.empty.hint'|trans,
+            } %}
+        </div>
+    </section>
 </div>
 {% endblock %}

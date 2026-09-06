@@ -110,6 +110,10 @@ export function registerModuleTable(alpine: typeof Alpine): void {
                     matchesStatus = enabled;
                 } else if (status === 'off') {
                     matchesStatus = !enabled;
+                } else if (status === 'module') {
+                    matchesStatus = (row.dataset.kind || 'module') === 'module';
+                } else if (status === 'integration') {
+                    matchesStatus = row.dataset.kind === 'integration';
                 } else if (status === 'warn') {
                     matchesStatus = warn;
                 } else if (status === 'update') {

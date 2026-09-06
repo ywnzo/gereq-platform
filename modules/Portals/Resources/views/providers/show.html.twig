@@ -1,0 +1,289 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.portals'|trans, url: url('admin.portals.index') },
+        { label: 'nav.portals.providers'|trans, url: url('admin.portals.providers.index') },
+        { label: item.name() },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ item.name() }}</h1>
+        <p class="muted detail-layout__meta">
+            <code>{{ item.code() }}</code>
+            <span>{{ item.driverLabel()|trans }}</span>
+            {% if item.active() %}<span class="badge badge--ok">{{ 'portals.field.active'|trans }}</span>{% else %}<span class="badge badge--muted">{{ 'common.no'|trans }}</span>{% endif %}
+        </p>
+        {% if item.description() %}
+            <p class="muted">{{ item.description() }}</p>
+        {% endif %}
+    </div>
+    <div class="actions">
+        {% if item.openapiUrl() %}
+            <a class="btn btn--ghost" href="{{ item.openapiUrl() }}" target="_blank" rel="noopener">{{ 'portals.providers.api.open_spec'|trans }}</a>
+        {% endif %}
+        {% if user.can('portals.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.portals.providers.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="detail-hub" x-data="gereqTabs" data-initial="overview">
+    <div class="design-tabs detail-tabs" role="tablist" aria-label="{{ item.name() }}">
+        <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'portals.providers.tab.overview'|trans }}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="api">
+            {{ 'portals.providers.tab.api'|trans }}
+            {% if operationCount %}<span class="module-tab-count">{{ operationCount }}</span>{% endif %}
+        </button>
+    </div>
+
+    <section class="design-panel" data-panel="overview" role="tabpanel">
+        <div class="detail-layout">
+            <div class="detail-layout__main">
+                <section class="panel">
+                    <header class="panel__head"><h2>{{ 'portals.providers.section.fields'|trans }}</h2></header>
+                    {% if item.fields() is empty %}
+                        <p class="muted">{{ 'portals.form.no_fields'|trans }}</p>
+                    {% else %}
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'portals.providers.field.field_key'|trans }}</th>
+                                        <th>{{ 'portals.providers.field.field_label'|trans }}</th>
+                                        <th>{{ 'portals.providers.field.field_type'|trans }}</th>
+                                        <th>{{ 'portals.providers.field.field_required'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for f in item.fields() %}
+                                    <tr>
+                                        <td><code>{{ f.key }}</code></td>
+                                        <td>{{ f.label }}</td>
+                                        <td>{{ ('portals.field_type.' ~ f.type)|trans }}</td>
+                                        <td>{{ f.required ? 'common.yes'|trans : 'common.no'|trans }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </section>
+            </div>
+            <aside class="detail-layout__aside">
+                <section class="panel">
+                    <dl class="meta-list meta-list--flush">
+                        <div>
+                            <dt>{{ 'portals.providers.field.driver'|trans }}</dt>
+                            <dd>{{ item.driverLabel()|trans }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'portals.providers.field.api_base_url'|trans }}</dt>
+                            <dd>{% if item.apiBaseUrl() %}<code>{{ item.apiBaseUrl() }}</code>{% else %}—{% endif %}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'portals.providers.field.openapi_url'|trans }}</dt>
+                            <dd>{% if item.openapiUrl() %}<code class="module-code-soft">{{ item.openapiUrl() }}</code>{% else %}—{% endif %}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'portals.providers.api.codebooks'|trans }}</dt>
+                            <dd>{{ codebookCount|default(0) }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'portals.providers.field.accounts'|trans }}</dt>
+                            <dd>{{ accountCount }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'portals.providers.field.sort_order'|trans }}</dt>
+                            <dd>{{ item.sortOrder() }}</dd>
+                        </div>
+                    </dl>
+                </section>
+                {% if user.can('portals.manage') %}
+                    <div class="form-actions" style="flex-wrap:wrap">
+                        <form method="post" action="{{ url('admin.portals.providers.toggle',{id:item.id()}) }}">{{ csrf_field()|raw }}
+                            <button class="btn btn--ghost" type="submit">{{ item.active() ? 'portals.deactivate'|trans : 'portals.activate'|trans }}</button>
+                        </form>
+                        <form method="post" action="{{ url('admin.portals.providers.destroy',{id:item.id()}) }}" data-confirm="{{ 'portals.providers.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                            {{ csrf_field()|raw }}
+                            <button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </aside>
+        </div>
+    </section>
+
+    <section class="design-panel" data-panel="api" role="tabpanel">
+        <div class="developer-page" style="padding:0">
+            {% if apiSpec is not empty %}
+                <header class="page-header" style="margin-bottom:1rem">
+                    <div>
+                        <h2 style="margin:0;font-size:1.15rem">{{ 'portals.providers.api.embedded_title'|trans }}</h2>
+                        <p class="muted">
+                            {{ apiSpec.protocol|default('api')|upper }}
+                            {% if apiSpec.version %} · v{{ apiSpec.version }}{% endif %}
+                            {% if apiSpec.endpoint %} · <code>{{ apiSpec.endpoint }}</code>{% endif %}
+                        </p>
+                        {% if apiSpec.docs_url %}
+                            <p class="muted"><a href="{{ apiSpec.docs_url }}" target="_blank" rel="noopener">{{ 'portals.providers.api.docs'|trans }}</a></p>
+                        {% endif %}
+                    </div>
+                    <div class="actions">
+                        {% if methodCount %}<span class="badge">{{ 'portals.providers.api.methods'|trans }}: {{ methodCount }}</span>{% endif %}
+                        {% if codebookCount %}<span class="badge">{{ 'portals.providers.api.codebooks'|trans }}: {{ codebookCount }}</span>{% endif %}
+                    </div>
+                </header>
+
+                {% if apiSpec.methods is defined and apiSpec.methods is iterable %}
+                    <section class="developer-card" style="margin-bottom:1rem">
+                        <header class="developer-card__head"><h2>{{ 'portals.providers.api.methods'|trans }}</h2></header>
+                        <div class="table-wrap table-wrap--flush">
+                            <table class="table table--developer table--api">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'portals.providers.api.col.rpc_method'|trans }}</th>
+                                        <th>{{ 'portals.providers.api.col.params'|trans }}</th>
+                                        <th>{{ 'portals.providers.api.col.auth'|trans }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for name, meta in apiSpec.methods %}
+                                    <tr>
+                                        <td><code>{{ name }}</code></td>
+                                        <td class="table__wrap-cell muted">
+                                            {% if meta.params is defined %}{{ meta.params|join(', ') }}{% else %}—{% endif %}
+                                        </td>
+                                        <td>{{ meta.auth|default(false) ? 'common.yes'|trans : 'common.no'|trans }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if apiSpec.codebooks is defined and apiSpec.codebooks is iterable %}
+                    <section class="developer-card">
+                        <header class="developer-card__head"><h2>{{ 'portals.providers.api.codebooks'|trans }}</h2></header>
+                        <div class="portal-codebooks" style="display:grid;gap:1rem;padding:1rem">
+                            {% for bookName, items in apiSpec.codebooks %}
+                                <details class="panel" style="margin:0">
+                                    <summary style="cursor:pointer;font-weight:600">
+                                        <code>{{ bookName }}</code>
+                                        <span class="muted">({{ items|length }})</span>
+                                    </summary>
+                                    <div class="table-wrap" style="margin-top:0.75rem">
+                                        <table class="table">
+                                            <thead><tr><th>ID</th><th>{{ 'portals.providers.api.col.label'|trans }}</th></tr></thead>
+                                            <tbody>
+                                            {% for id, label in items %}
+                                                <tr>
+                                                    <td><code>{{ id }}</code></td>
+                                                    <td>
+                                                        {% if label is iterable %}
+                                                            {{ label.label|default(label|json_encode) }}
+                                                            {% if label.category is defined %}<span class="muted"> · cat {{ label.category }}</span>{% endif %}
+                                                        {% else %}
+                                                            {{ label }}
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </details>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endif %}
+            {% elseif not item.openapiUrl() %}
+                <div class="empty">
+                    <h2>{{ 'portals.providers.api.empty_title'|trans }}</h2>
+                    <p class="muted">{{ 'portals.providers.api.empty'|trans }}</p>
+                    {% if user.can('portals.manage') %}
+                        <a class="btn btn--primary" href="{{ url('admin.portals.providers.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                    {% endif %}
+                </div>
+            {% elseif not spec.ok %}
+                <div class="alert alert--warn">{{ (spec.error ?: 'portals.providers.api.fetch_failed')|trans }}</div>
+            {% elseif spec.groups is empty %}
+                <div class="empty">
+                    <h2>{{ 'portals.providers.api.no_ops'|trans }}</h2>
+                    <p class="muted">{{ 'portals.providers.api.no_ops_hint'|trans }}</p>
+                </div>
+            {% else %}
+                <header class="page-header" style="margin-bottom:1rem">
+                    <div>
+                        <h2 style="margin:0;font-size:1.15rem">{{ 'portals.providers.api.title'|trans }}</h2>
+                        <p class="muted">
+                            {% if spec.title %}
+                                {{ spec.title }}{% if spec.version %} · v{{ spec.version }}{% endif %}
+                            {% else %}
+                                {{ 'portals.providers.api.hint'|trans }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if item.openapiUrl() %}
+                        <a class="btn btn--ghost" href="{{ item.openapiUrl() }}" target="_blank" rel="noopener">{{ 'admin.api.openapi'|trans }}</a>
+                    {% endif %}
+                </header>
+                {% if spec.servers %}
+                    <p class="muted" style="margin-bottom:1rem">
+                        {{ 'portals.providers.api.servers'|trans }}:
+                        {% for s in spec.servers %}<code>{{ s }}</code>{% if not loop.last %} · {% endif %}{% endfor %}
+                    </p>
+                {% endif %}
+                <div class="developer-stack">
+                    {% for tag, routes in spec.groups %}
+                        <section class="developer-card">
+                            <header class="developer-card__head">
+                                <h2>{{ tag == 'default' ? ('portals.providers.api.default_group'|trans) : tag }}</h2>
+                            </header>
+                            <div class="table-wrap table-wrap--flush">
+                                <table class="table table--developer table--api">
+                                    <colgroup>
+                                        <col class="col-method">
+                                        <col class="col-path">
+                                        <col class="col-scopes">
+                                        <col class="col-summary">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th>{{ 'admin.api.col.method'|trans }}</th>
+                                            <th>{{ 'admin.api.col.path'|trans }}</th>
+                                            <th>{{ 'portals.providers.api.col.formats'|trans }}</th>
+                                            <th>{{ 'admin.api.col.summary'|trans }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for route in routes %}
+                                        <tr>
+                                            <td><span class="method-pill method-pill--{{ route.method|lower }}">{{ route.method }}</span></td>
+                                            <td class="table__path"><code>{{ route.path }}</code></td>
+                                            <td class="table__wrap-cell muted">
+                                                {% if route.formats %}
+                                                    {{ route.formats|join(', ') }}
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </td>
+                                            <td class="table__wrap-cell">{{ route.summary ?: '—' }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

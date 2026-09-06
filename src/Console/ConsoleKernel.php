@@ -26,6 +26,7 @@ use Modules\Currency\Console\SyncRatesCommand;
 use Modules\CustomerUploads\Console\PurgeUploadsCommand;
 use Modules\PartsCatalog\Console\SyncJamaCatalogCommand;
 use Modules\Payments\Console\ImapMatchCommand;
+use Modules\Portals\Console\SeedDemoPortalsCommand;
 use Modules\Products\Console\ImportProductsCsvCommand;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Application as ConsoleApplication;
@@ -78,6 +79,7 @@ final class ConsoleKernel
             ImportProductsCsvCommand::class,
             ImapMatchCommand::class,
             PurgeUploadsCommand::class,
+            SeedDemoPortalsCommand::class,
         ];
     }
 }

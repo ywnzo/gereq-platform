@@ -13,22 +13,13 @@ use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
-use Modules\Payments\Application\ComgateInboundProvider;
-use Modules\Payments\Application\Gateways\ComgateGateway;
-use Modules\Payments\Application\Gateways\GoPayGateway;
 use Modules\Payments\Application\Gateways\ManualBankGateway;
-use Modules\Payments\Application\Gateways\StripeGateway;
-use Modules\Payments\Application\GoPayInboundProvider;
 use Modules\Payments\Application\PaymentGatewayRegistry;
-use Modules\Payments\Application\PaymentService;
 use Modules\Payments\Application\PaymentsProvider;
-use Modules\Payments\Application\StripeInboundProvider;
 use Modules\Payments\Application\Widgets\PaymentsShortcutWidget;
 use Modules\Payments\Http\Api\PaymentIntentApiController;
 use Modules\Payments\Http\Api\PaymentMethodApiController;
-use Modules\Payments\Http\Api\PaymentNotifyController;
 use Modules\Payments\Http\PaymentMethodController;
-use Modules\Webhooks\Application\InboundWebhookRegistry;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -41,7 +32,7 @@ final class PaymentsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.2';
+        return '1.3.0';
     }
 
     public function register(ModuleContext $context): void
@@ -55,44 +46,18 @@ final class PaymentsModule implements ModuleInterface
             new PaymentsProvider($context->get(EntityManagerInterface::class)),
         );
 
+        // Built-in manual bank only — Comgate / Stripe / GoPay jsou v integrations/.
         $registry = $context->get(PaymentGatewayRegistry::class);
         $registry->register($context->get(ManualBankGateway::class));
-        $registry->register($context->get(ComgateGateway::class));
-        $registry->register($context->get(GoPayGateway::class));
-        $registry->register($context->get(StripeGateway::class));
         $context->capabilities()->register('payment_gateways', $this->id(), $registry);
-
-        $context->get(InboundWebhookRegistry::class)
-            ->register($context->get(ComgateInboundProvider::class));
-        $context->get(InboundWebhookRegistry::class)
-            ->register($context->get(GoPayInboundProvider::class));
-        $context->get(InboundWebhookRegistry::class)
-            ->register($context->get(StripeInboundProvider::class));
 
         $context->settings()->define('payments.bank_iban', SettingRecord::TYPE_STRING, 'payments.settings.bank_iban', '', $this->id());
         $context->settings()->define('payments.bank_account', SettingRecord::TYPE_STRING, 'payments.settings.bank_account', '', $this->id());
         $context->settings()->define('payments.bank_code', SettingRecord::TYPE_STRING, 'payments.settings.bank_code', '', $this->id());
         $context->settings()->define('payments.bank_recipient', SettingRecord::TYPE_STRING, 'payments.settings.bank_recipient', '', $this->id());
-        $context->settings()->define('payments.comgate_merchant', SettingRecord::TYPE_STRING, 'payments.settings.comgate_merchant', '', $this->id());
-        $context->settings()->define('payments.comgate_secret', SettingRecord::TYPE_ENCRYPTED, 'payments.settings.comgate_secret', '', $this->id());
-        $context->settings()->define('payments.comgate_test', SettingRecord::TYPE_BOOLEAN, 'payments.settings.comgate_test', true, $this->id());
-        $context->settings()->define('payments.gopay_goid', SettingRecord::TYPE_STRING, 'payments.settings.gopay_goid', '', $this->id());
-        $context->settings()->define('payments.gopay_client_id', SettingRecord::TYPE_STRING, 'payments.settings.gopay_client_id', '', $this->id());
-        $context->settings()->define('payments.gopay_client_secret', SettingRecord::TYPE_ENCRYPTED, 'payments.settings.gopay_client_secret', '', $this->id());
-        $context->settings()->define('payments.gopay_sandbox', SettingRecord::TYPE_BOOLEAN, 'payments.settings.gopay_sandbox', true, $this->id());
-        $context->settings()->define('payments.stripe_secret', SettingRecord::TYPE_ENCRYPTED, 'payments.settings.stripe_secret', '', $this->id());
-        $context->settings()->define('payments.stripe_webhook_secret', SettingRecord::TYPE_ENCRYPTED, 'payments.settings.stripe_webhook_secret', '', $this->id());
         $context->settings()->define('payments.imap_mailbox', SettingRecord::TYPE_STRING, 'payments.settings.imap_mailbox', '', $this->id());
         $context->settings()->define('payments.imap_user', SettingRecord::TYPE_STRING, 'payments.settings.imap_user', '', $this->id());
         $context->settings()->define('payments.imap_password', SettingRecord::TYPE_ENCRYPTED, 'payments.settings.imap_password', '', $this->id());
-
-        // Public notify endpoints (bez Bearer) — fungují i bez zapnutého Webhooks modulu.
-        $context->router()->add('/api/v1/payments/notify/comgate', ['GET', 'POST'], [PaymentNotifyController::class, 'comgate'])
-            ->name('api.payments.notify.comgate');
-        $context->router()->add('/api/v1/payments/notify/gopay', ['GET', 'POST'], [PaymentNotifyController::class, 'gopay'])
-            ->name('api.payments.notify.gopay');
-        $context->router()->post('/api/v1/payments/notify/stripe', [PaymentNotifyController::class, 'stripe'])
-            ->name('api.payments.notify.stripe');
 
         $context->router()->group('/admin/payments/methods', function (Router $routes): void {
             $routes->get('', [PaymentMethodController::class, 'index'])
@@ -152,7 +117,7 @@ final class PaymentsModule implements ModuleInterface
             url: '/admin/payments/methods',
             icon: 'credit-card',
             permission: 'payments.view',
-            keywords: ['platba', 'payment', 'platební', 'gopay', 'stripe'],
+            keywords: ['platba', 'payment', 'platební'],
         ));
     }
 

@@ -14,13 +14,11 @@ use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
 use Modules\Shop\Application\Carriers\ManualCarrier;
-use Modules\Shop\Application\Carriers\PacketaCarrier;
 use Modules\Shop\Application\Carriers\PplCarrier;
 use Modules\Shop\Application\ShippingCarrierRegistry;
 use Modules\Shop\Application\ShopProvider;
 use Modules\Shop\Http\Api\CartApiController;
 use Modules\Shop\Http\Api\CheckoutApiController;
-use Modules\Shop\Http\Api\PacketaApiController;
 use Modules\Shop\Http\Api\ShippingMethodApiController;
 use Modules\Shop\Http\CartController;
 use Modules\Shop\Http\Public\PublicStoreCartController;
@@ -39,7 +37,7 @@ final class ShopModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.4.7';
+        return '1.5.0';
     }
 
     public function register(ModuleContext $context): void
@@ -49,25 +47,16 @@ final class ShopModule implements ModuleInterface
 
         $context->capabilities()->register('shop', $this->id(), new ShopProvider($context->get(EntityManagerInterface::class)));
 
+        // Built-in carriers — Packeta je v integrations/Packeta.
         $carriers = $context->get(ShippingCarrierRegistry::class);
         $carriers->register($context->get(ManualCarrier::class));
-        $packeta = $context->get(PacketaCarrier::class);
-        $carriers->register($packeta);
-        $carriers->registerAlias('zasilkovna', $packeta);
         $carriers->register($context->get(PplCarrier::class));
         $context->capabilities()->register('shipping_carriers', $this->id(), $carriers);
 
         $context->settings()->define('shop.store_name', SettingRecord::TYPE_STRING, 'shop.settings.store_name', 'GEREQ Shop', $this->id());
         $context->settings()->define('shop.default_currency', SettingRecord::TYPE_STRING, 'shop.settings.default_currency', 'CZK', $this->id());
         $context->settings()->define('shop.checkout_enabled', SettingRecord::TYPE_BOOLEAN, 'shop.settings.checkout_enabled', true, $this->id());
-        $context->settings()->define('shop.packeta_api_password', SettingRecord::TYPE_STRING, 'shop.settings.packeta_api_password', '', $this->id());
-        $context->settings()->define('shop.packeta_api_key', SettingRecord::TYPE_STRING, 'shop.settings.packeta_api_key', '', $this->id());
-        $context->settings()->define('shop.packeta_eshop', SettingRecord::TYPE_STRING, 'shop.settings.packeta_eshop', '', $this->id());
-        $context->settings()->define('shop.packeta_address_carrier_id', SettingRecord::TYPE_STRING, 'shop.settings.packeta_address_carrier_id', '106', $this->id());
         $context->settings()->define('shop.ppl_api_token', SettingRecord::TYPE_STRING, 'shop.settings.ppl_api_token', '', $this->id());
-
-        $context->router()->get('/api/v1/shipping/packeta/widget', [PacketaApiController::class, 'widget'])
-            ->name('api.shipping.packeta.widget');
 
         $context->router()->group('/admin/shop/carts', function (Router $routes): void {
             $routes->get('', [CartController::class, 'index'])->name('admin.shop.carts.index')->permission('shop.view');

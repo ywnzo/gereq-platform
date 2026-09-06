@@ -28,13 +28,16 @@ final class TranslatorFactory
 
         $this->loadDirectory($translator, $this->basePath . '/resources/translations');
 
-        $modules = $this->basePath . '/modules';
-        if (is_dir($modules)) {
-            foreach (scandir($modules) ?: [] as $entry) {
+        foreach (['modules', 'integrations'] as $dirName) {
+            $root = $this->basePath . '/' . $dirName;
+            if (!is_dir($root)) {
+                continue;
+            }
+            foreach (scandir($root) ?: [] as $entry) {
                 if ($entry === '.' || $entry === '..') {
                     continue;
                 }
-                $dir = $modules . '/' . $entry . '/Resources/translations';
+                $dir = $root . '/' . $entry . '/Resources/translations';
                 if (is_dir($dir)) {
                     $this->loadDirectory($translator, $dir);
                 }

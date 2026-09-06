@@ -1,0 +1,77 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ item.number() }}</h1>
+        <p class="muted detail-layout__meta">
+            <span>{{ 'viewings.field.listing'|trans }}: <code>{{ item.listingId() }}</code></span>
+            <span class="badge">{{ item.statusLabel()|trans }}</span>
+        </p>
+    </div>
+    {% if user.can('viewings.manage') %}
+        <div class="actions">
+            <a class="btn btn--ghost" href="{{ url('admin.viewings.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+            <form method="post" action="{{ url('admin.viewings.destroy',{id:item.id()}) }}" data-confirm="{{ 'viewings.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button>
+            </form>
+        </div>
+    {% endif %}
+</header>
+
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'viewings.field.scheduled_at'|trans }}</span>
+                    <strong>{% if item.scheduledAt() %}{{ item.scheduledAt().format('d. m. Y H:i') }}{% else %}—{% endif %}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'viewings.field.contact_name'|trans }}</dt>
+                        <dd>{{ item.contactName() }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'viewings.field.contact_email'|trans }}</dt>
+                        <dd>{{ item.contactEmail()|default('—') }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'viewings.field.contact_phone'|trans }}</dt>
+                        <dd>{{ item.contactPhone()|default('—') }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'viewings.field.broker'|trans }}</dt>
+                        <dd>{% if item.brokerId() %}<code>{{ item.brokerId() }}</code>{% else %}—{% endif %}</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+        {% if item.note() %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'viewings.field.note'|trans }}</h2></header>
+            <div class="detail-prose">{{ item.note() }}</div>
+        </section>
+        {% endif %}
+    </div>
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'viewings.field.status'|trans }}</h2></header>
+            {% if user.can('viewings.manage') %}
+                <form method="post" class="form-grid" action="{{ url('admin.viewings.status',{id:item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/select.html.twig' with { name:'status', label:'viewings.field.status'|trans, value:item.status(), options:[
+                    {value:'requested',label:'viewings.status.requested'|trans},{value:'scheduled',label:'viewings.status.scheduled'|trans},
+                    {value:'confirmed',label:'viewings.status.confirmed'|trans},{value:'completed',label:'viewings.status.completed'|trans},
+                    {value:'cancelled',label:'viewings.status.cancelled'|trans},{value:'no_show',label:'viewings.status.no_show'|trans}
+                    ] } %}
+                    {% include 'ui/textarea.html.twig' with { name:'note', label:'viewings.field.note'|trans, optional:true, value:item.note()|default('') } %}
+                    <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button></div>
+                </form>
+            {% else %}
+                <span class="badge">{{ item.statusLabel()|trans }}</span>
+            {% endif %}
+        </section>
+    </aside>
+</div>
+{% endblock %}

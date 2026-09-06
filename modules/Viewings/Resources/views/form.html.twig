@@ -1,0 +1,23 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ item ? ('viewings.edit'|trans({'%number%': item.number()})) : ('viewings.new'|trans) }}</h1></header>
+{% include 'ui/error-summary.html.twig' with { form: 'viewings.save' } %}
+<form method="post" class="form-grid" action="{{ item ? url('admin.viewings.update',{id:item.id()}) : url('admin.viewings.store') }}" data-form="viewings.save" x-data="gereqForm">
+{{ csrf_field()|raw }}
+{% include 'ui/input.html.twig' with { name:'listing_id', label:'viewings.field.listing'|trans, required:true, form:'viewings.save', value: item ? item.listingId() : '' } %}
+{% include 'ui/input.html.twig' with { name:'contact_name', label:'viewings.field.contact_name'|trans, required:true, form:'viewings.save', value: item ? item.contactName() : '' } %}
+{% include 'ui/input.html.twig' with { name:'contact_email', type:'email', label:'viewings.field.contact_email'|trans, optional:true, form:'viewings.save', value: item and item.contactEmail() ? item.contactEmail() : '' } %}
+{% include 'ui/input.html.twig' with { name:'contact_phone', label:'viewings.field.contact_phone'|trans, optional:true, form:'viewings.save', value: item and item.contactPhone() ? item.contactPhone() : '' } %}
+{% include 'ui/input.html.twig' with { name:'scheduled_at', label:'viewings.field.scheduled_at'|trans, optional:true, form:'viewings.save', value: item and item.scheduledAt() ? item.scheduledAt().format('Y-m-d\\TH:i') : '', hint: 'YYYY-MM-DD HH:MM' } %}
+{% include 'ui/select.html.twig' with { name:'status', label:'viewings.field.status'|trans, form:'viewings.save', value: item ? item.status() : 'scheduled', options:[
+{value:'requested',label:'viewings.status.requested'|trans},{value:'scheduled',label:'viewings.status.scheduled'|trans},
+{value:'confirmed',label:'viewings.status.confirmed'|trans},{value:'completed',label:'viewings.status.completed'|trans},
+{value:'cancelled',label:'viewings.status.cancelled'|trans},{value:'no_show',label:'viewings.status.no_show'|trans}
+] } %}
+{% include 'ui/input.html.twig' with { name:'customer_id', label:'viewings.field.customer'|trans, optional:true, form:'viewings.save', value: item and item.customerId() ? item.customerId() : '' } %}
+{% include 'ui/input.html.twig' with { name:'broker_id', label:'viewings.field.broker'|trans, optional:true, form:'viewings.save', value: item and item.brokerId() ? item.brokerId() : '' } %}
+{% include 'ui/textarea.html.twig' with { name:'note', label:'viewings.field.note'|trans, optional:true, form:'viewings.save', value: item and item.note() ? item.note() : '' } %}
+<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+<a class="btn btn--ghost" href="{{ item ? url('admin.viewings.show',{id:item.id()}) : url('admin.viewings.index') }}">{{ 'common.cancel'|trans }}</a></div>
+</form>
+{% endblock %}

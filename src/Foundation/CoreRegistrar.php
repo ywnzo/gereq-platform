@@ -135,9 +135,9 @@ final class CoreRegistrar
         $this->settings->define('brand.color_signal', SettingRecord::TYPE_STRING, 'settings.brand.color_signal', '#d7ff45');
         $this->settings->define('brand.color_ink', SettingRecord::TYPE_STRING, 'settings.brand.color_ink', '#0a0b0a');
         $this->settings->define('brand.color_cream', SettingRecord::TYPE_STRING, 'settings.brand.color_cream', '#f5f5ef');
+        $this->settings->define('brand.site_primary', SettingRecord::TYPE_STRING, 'settings.brand.site_primary', '#17375a');
         $this->settings->define('brand.site_name', SettingRecord::TYPE_STRING, 'settings.brand.site_name', '');
         $this->settings->define('brand.site_mark', SettingRecord::TYPE_STRING, 'settings.brand.site_mark', '');
-        $this->settings->define('brand.site_primary', SettingRecord::TYPE_STRING, 'settings.brand.site_primary', '#17375a');
         $this->settings->define('brand.tagline', SettingRecord::TYPE_STRING, 'settings.brand.tagline', '');
         $this->settings->define('brand.footnote', SettingRecord::TYPE_STRING, 'settings.brand.footnote', '');
     }

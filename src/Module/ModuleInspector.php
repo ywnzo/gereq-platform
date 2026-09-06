@@ -432,7 +432,7 @@ final class ModuleInspector
     private function handlerBelongs(ModuleManifest $manifest, mixed $handler): bool
     {
         $label = $this->handlerLabel($handler);
-        $ns = 'Modules\\' . basename($manifest->path) . '\\';
+        $ns = $manifest->phpNamespace();
 
         return str_contains($label, $ns);
     }

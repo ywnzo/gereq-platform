@@ -19,6 +19,9 @@
             <p class="muted detail-layout__meta">
                 <code>{{ manifest.id }}</code>
                 <span>v{{ manifest.version }}</span>
+                {% if manifest.kind == 'integration' %}
+                    <span class="badge badge--info">{{ 'admin.modules.kind.integration'|trans }}</span>
+                {% endif %}
                 {% if overview.update_available %}
                     <span class="badge badge--warn">{{ 'admin.modules.update_available'|trans }}</span>
                 {% endif %}

@@ -1,0 +1,81 @@
+{# Shared package / plugin group rows. Expects: groups (list) #}
+<div class="table-wrap" data-table>
+    <table class="table table--packages">
+        <thead>
+            <tr>
+                <th>{{ 'admin.modules.col.name'|trans }}</th>
+                <th>{{ 'admin.modules.col.description'|trans }}</th>
+                <th>{{ 'admin.modules.col.status'|trans }}</th>
+                <th class="is-num">{{ 'admin.modules.col.modules'|trans }}</th>
+                <th class="table__actions-head"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in groups %}
+                <tr>
+                    <td>
+                        <div class="table__title package-row__title">
+                            <span class="package-row__chip">{{ group.name }}</span>
+                            <div>
+                                <strong>{{ group.label|trans }}</strong>
+                                <span class="table__meta"><code>{{ group.id }}</code></span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="is-mute">
+                        <div>{{ group.description ? group.description|trans : '—' }}</div>
+                        <div class="package-row__mods">
+                            {% for m in group.modules %}
+                                {% set row = m.row %}
+                                {% if row %}
+                                    <a class="package-row__mod{% if row.enabled %} is-on{% endif %}" href="{{ url('admin.modules.show', {id: m.id}) }}">{{ row.manifest.name }}</a>
+                                {% else %}
+                                    <span class="package-row__mod is-missing">{{ m.id }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if group.all_enabled %}
+                            <span class="badge badge--ok">{{ 'admin.modules.group.ready'|trans }}</span>
+                        {% elseif group.complete %}
+                            <span class="badge badge--warn">{{ 'admin.modules.group.partial'|trans }}</span>
+                        {% else %}
+                            <span class="badge badge--muted">{{ 'admin.modules.group.incomplete'|trans }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="is-num">
+                        <span class="package-row__progress">{{ group.enabled }}/{{ group.total }}</span>
+                        {% if group.all_enabled %}
+                            <div class="muted" style="font-size:11px">{{ 'admin.modules.group.all_on'|trans }}</div>
+                        {% endif %}
+                    </td>
+                    {% embed 'ui/row_actions.html.twig' %}
+                        {% block items %}
+                            {% if not group.all_enabled and group.disabled_ids is not empty %}
+                                <form method="post" action="{{ url('admin.modules.group.enable', {group: group.id}) }}">
+                                    {{ csrf_field()|raw }}
+                                    <button
+                                        type="submit"
+                                        onclick="return confirm('{{ 'admin.modules.group.confirm_enable'|trans({'%name%': group.name, '%count%': group.disabled_ids|length})|e('js') }}')"
+                                    >{{ 'admin.modules.group.enable_all'|trans }}</button>
+                                </form>
+                            {% else %}
+                                <button type="button" disabled>{{ 'admin.modules.group.all_on'|trans }}</button>
+                            {% endif %}
+                        {% endblock %}
+                    {% endembed %}
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty">
+                            <h2>{{ empty_title|default('admin.plugins.empty'|trans) }}</h2>
+                            <p class="muted">{{ empty_hint|default('admin.plugins.empty.hint'|trans) }}</p>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

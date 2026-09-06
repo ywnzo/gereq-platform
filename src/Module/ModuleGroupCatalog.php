@@ -19,11 +19,13 @@ final class ModuleGroupCatalog
 
     /**
      * @param array<string, array<string, mixed>> $rowsById index řádků z ModuleController::index
+     * @param 'packages'|'plugins' $surface
      * @return list<array{
      *   id: string,
      *   name: string,
      *   label: string,
      *   description: string,
+     *   surface: string,
      *   modules: list<array{id: string, role: string, row: ?array<string, mixed>, missing: bool}>,
      *   total: int,
      *   enabled: int,
@@ -32,13 +34,17 @@ final class ModuleGroupCatalog
      *   complete: bool
      * }>
      */
-    public function forIndex(array $rowsById): array
+    public function forIndex(array $rowsById, string $surface = 'packages'): array
     {
         $defs = $this->definitions();
         $membership = $this->membershipFromManifests();
 
         $groups = [];
         foreach ($defs as $id => $def) {
+            if (($def['surface'] ?? 'packages') !== $surface) {
+                continue;
+            }
+
             $moduleIds = $def['modules'];
             foreach ($membership[$id] ?? [] as $extraId) {
                 if (!in_array($extraId, $moduleIds, true)) {
@@ -78,6 +84,7 @@ final class ModuleGroupCatalog
                 'name' => $def['name'],
                 'label' => $def['label'],
                 'description' => $def['description'],
+                'surface' => $def['surface'],
                 'modules' => $modules,
                 'total' => count($modules),
                 'enabled' => $enabled,
@@ -130,7 +137,7 @@ final class ModuleGroupCatalog
     }
 
     /**
-     * @return array<string, array{name: string, label: string, description: string, order: int, modules: list<string>, required: list<string>}>
+     * @return array<string, array{name: string, label: string, description: string, surface: string, order: int, modules: list<string>, required: list<string>}>
      */
     private function definitions(): array
     {
@@ -148,18 +155,26 @@ final class ModuleGroupCatalog
                 static fn (mixed $v): string => is_string($v) ? trim($v) : '',
                 is_array($def['modules'] ?? null) ? $def['modules'] : [],
             ), static fn (string $v): bool => $v !== ''));
+            $requiredRaw = is_array($def['required'] ?? null) ? $def['required'] : null;
             $required = array_values(array_filter(array_map(
                 static fn (mixed $v): string => is_string($v) ? trim($v) : '',
-                is_array($def['required'] ?? null) ? $def['required'] : [],
+                $requiredRaw ?? $modules,
             ), static fn (string $v): bool => $v !== ''));
-            if ($required === []) {
-                $required = $modules;
+            // Explicit empty required = nothing mandatory (recommended only).
+            if ($requiredRaw === []) {
+                $required = [];
+            }
+
+            $surface = strtolower(trim((string) ($def['surface'] ?? 'packages')));
+            if (!in_array($surface, ['packages', 'plugins'], true)) {
+                $surface = 'packages';
             }
 
             $out[$id] = [
                 'name' => (string) ($def['name'] ?? $id),
                 'label' => (string) ($def['label'] ?? $def['name'] ?? $id),
                 'description' => (string) ($def['description'] ?? ''),
+                'surface' => $surface,
                 'order' => (int) ($def['order'] ?? 100),
                 'modules' => $modules,
                 'required' => $required,

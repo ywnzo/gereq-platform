@@ -30,7 +30,22 @@ final class ModuleManifest
         public readonly array $groups = [],
         /** Named route for the module's own settings UI (optional; falls back to admin.{id}.settings). */
         public readonly ?string $settingsRoute = null,
+        /** module = domain feature; integration = third-party remote adapter (Stripe, Comgate…). */
+        public readonly string $kind = 'module',
     ) {
+    }
+
+    public function isIntegration(): bool
+    {
+        return $this->kind === 'integration';
+    }
+
+    /** PSR-4 root for this package (Modules\Foo\ or Integrations\Foo\). */
+    public function phpNamespace(): string
+    {
+        $folder = basename($this->path);
+
+        return ($this->isIntegration() ? 'Integrations\\' : 'Modules\\') . $folder . '\\';
     }
 
     /** @param array<string, mixed> $data */
@@ -53,6 +68,14 @@ final class ModuleManifest
         }
 
         $settingsRoute = trim((string) ($data['settings_route'] ?? ''));
+        $kind = strtolower(trim((string) ($data['kind'] ?? 'module')));
+        if (!in_array($kind, ['module', 'integration'], true)) {
+            $kind = 'module';
+        }
+        // Packages under /integrations default to integration even without kind.
+        if ($kind === 'module' && str_contains(str_replace('\\', '/', $path), '/integrations/')) {
+            $kind = 'integration';
+        }
 
         return new self(
             id: $id,
@@ -69,6 +92,7 @@ final class ModuleManifest
             author: (string) ($data['author'] ?? 'GEREQ'),
             groups: array_values(array_unique($groups)),
             settingsRoute: $settingsRoute !== '' ? $settingsRoute : null,
+            kind: $kind,
         );
     }
 }

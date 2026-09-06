@@ -41,7 +41,8 @@
     "autoload": {
         "psr-4": {
             "Gereq\\": "src/",
-            "Modules\\": "modules/"
+            "Modules\\": "modules/",
+            "Integrations\\": "integrations/"
         },
         "files": [
             "src/Support/helpers.php"

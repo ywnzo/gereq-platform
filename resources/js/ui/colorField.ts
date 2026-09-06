@@ -15,6 +15,18 @@ const PRESETS = [
     '#ffffff',
 ];
 
+/** External apply (e.g. brand style generator) → field name → pick(). */
+const pickByField = new Map<string, (hex: string) => void>();
+
+export function applyColorField(fieldName: string, hex: string): boolean {
+    const pick = pickByField.get(fieldName);
+    if (!pick) {
+        return false;
+    }
+    pick(hex);
+    return true;
+}
+
 function expandHex(value: string): string | null {
     const raw = value.trim();
     if (/^#[0-9a-fA-F]{6}$/.test(raw)) {
@@ -47,12 +59,15 @@ type ColorFieldState = {
     hex: string;
     draft: string;
     presets: string[];
+    fieldName: string;
     init(): void;
+    destroy(): void;
     toggle(): void;
     close(): void;
     syncHidden(): void;
+    syncDom(): void;
     pick(hex: string): void;
-    fromNative(event: Event): void;
+    fromNative(): void;
     fromDraft(): void;
     swatchStyle: string;
     checkStyle: string;
@@ -68,13 +83,27 @@ export function registerColorField(alpine: typeof Alpine): void {
         hex: '#000000',
         draft: '000000',
         presets: PRESETS,
+        fieldName: '',
 
         init() {
-            const seed = this.$el.dataset.value || '#000000';
+            const hidden = this.$el.querySelector<HTMLInputElement>('input[type="hidden"]');
+            this.fieldName = hidden?.name || '';
+            const seed = this.$el.dataset.value || hidden?.value || '#000000';
             const expanded = expandHex(seed) || '#000000';
             this.hex = expanded;
             this.draft = expanded.replace('#', '');
             this.syncHidden();
+            this.syncDom();
+
+            if (this.fieldName) {
+                pickByField.set(this.fieldName, (hex: string) => this.pick(hex));
+            }
+        },
+
+        destroy() {
+            if (this.fieldName && pickByField.get(this.fieldName)) {
+                pickByField.delete(this.fieldName);
+            }
         },
 
         get swatchStyle(): string {
@@ -103,19 +132,37 @@ export function registerColorField(alpine: typeof Alpine): void {
             }
         },
 
+        syncDom() {
+            const bare = this.hex.replace('#', '');
+            const native = this.$el.querySelector<HTMLInputElement>('input[type="color"]');
+            const draft = this.$el.querySelector<HTMLInputElement>('.color-picker__hex-input');
+            const face = this.$el.querySelector<HTMLElement>('.color-picker__chip-face');
+            if (native) {
+                native.value = this.hex;
+            }
+            if (draft && draft.value.toLowerCase() !== bare.toLowerCase()) {
+                draft.value = bare;
+            }
+            if (face) {
+                face.style.background = this.hex;
+            }
+            this.$el.dataset.value = this.hex;
+        },
+
         pick(hex: string) {
             const next = expandHex(hex);
             if (!next) return;
             this.hex = next;
             this.draft = next.replace('#', '');
             this.syncHidden();
+            this.syncDom();
             this.$dispatch('color-change', { hex: next });
             this.$el.dispatchEvent(new Event('input', { bubbles: true }));
             this.$el.dispatchEvent(new Event('change', { bubbles: true }));
         },
 
-        fromNative(event: Event) {
-            const target = event.target as HTMLInputElement | null;
+        fromNative() {
+            const target = this.$el.querySelector<HTMLInputElement>('input[type="color"]');
             if (!target) return;
             this.pick(target.value);
         },
@@ -126,6 +173,7 @@ export function registerColorField(alpine: typeof Alpine): void {
                 this.pick(next);
             } else {
                 this.draft = this.hex.replace('#', '');
+                this.syncDom();
             }
         },
 

@@ -1,0 +1,185 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.portals'|trans, url: url('admin.portals.index') },
+        { label: item ? ('portals.edit'|trans({'%name%': item.name()})) : ('portals.new'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ item ? ('portals.edit'|trans({'%name%': item.name()})) : ('portals.new'|trans) }}</h1>
+        <p class="muted">{{ 'portals.form.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        <button class="btn btn--primary" type="submit" form="portal-account-form">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ item ? url('admin.portals.show',{id:item.id()}) : url('admin.portals.index') }}">{{ 'common.cancel'|trans }}</a>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'portals.account.save' } %}
+
+{% if catalog is empty %}
+    <section class="panel">
+        <div class="empty">
+            <h2>{{ 'portals.form.no_providers'|trans }}</h2>
+            <p class="muted">{{ 'portals.form.no_providers_hint'|trans }}</p>
+            {% if user.can('portals.manage') %}
+                <a class="btn btn--primary" href="{{ url('admin.portals.providers.create') }}">{{ 'portals.providers.new'|trans }}</a>
+            {% endif %}
+        </div>
+    </section>
+{% else %}
+<form
+    id="portal-account-form"
+    method="post"
+    class="portal-form"
+    action="{{ item ? url('admin.portals.update',{id:item.id()}) : url('admin.portals.store') }}"
+    data-form="portals.account.save"
+    x-data="portalAccountForm({ providerId: '{{ selectedProviderId|e('js') }}' })"
+    {% if form_errors('portals.account.save') %}data-server-state="1"{% endif %}
+>
+    {{ csrf_field()|raw }}
+    <input type="hidden" name="provider_id" :value="providerId">
+
+    <div class="detail-layout">
+        <div class="detail-layout__main">
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'portals.form.section.identity'|trans }}</h2>
+                        <p class="muted">{{ 'portals.form.section.identity_hint'|trans }}</p>
+                    </div>
+                </header>
+                <div class="form-grid form-grid--compact">
+                    {% if item %}
+                        <div class="g-field">
+                            <span class="g-label">{{ 'portals.field.code'|trans }}</span>
+                            <div class="portal-form__code"><code>{{ item.code() }}</code></div>
+                            <input type="hidden" name="code" value="{{ item.code() }}">
+                        </div>
+                    {% else %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'code',
+                            label: 'portals.field.code'|trans,
+                            required: true,
+                            form: 'portals.account.save',
+                            value: '',
+                            hint: 'portals.field.code.hint'|trans
+                        } %}
+                    {% endif %}
+                    {% include 'ui/input.html.twig' with {
+                        name: 'name',
+                        label: 'portals.field.name'|trans,
+                        required: true,
+                        form: 'portals.account.save',
+                        value: item ? item.name() : ''
+                    } %}
+                </div>
+
+                <div class="portal-form__providers" style="margin-top:1rem">
+                    <span class="g-label">{{ 'portals.field.provider'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
+                    <div class="portal-provider-grid" role="radiogroup" aria-label="{{ 'portals.field.provider'|trans }}">
+                        {% for p in catalog %}
+                            <button
+                                type="button"
+                                class="portal-provider-card"
+                                :class="cardClass('{{ p.id() }}')"
+                                role="radio"
+                                :aria-checked="checkedAttr('{{ p.id() }}')"
+                                @click="pick('{{ p.id() }}')"
+                            >
+                                <span class="portal-provider-card__name">{{ p.name() }}</span>
+                                <span class="portal-provider-card__hint">
+                                    {{ p.description() ?: (p.apiBaseUrl() ?: p.driverLabel()|trans) }}
+                                </span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            {% for p in catalog %}
+                <section class="panel" x-show="isProvider('{{ p.id() }}')" x-cloak>
+                    <header class="panel__head">
+                        <div>
+                            <h2>{{ 'portals.form.section.credentials'|trans }} — {{ p.name() }}</h2>
+                            <p class="muted">
+                                {% if p.apiBaseUrl() %}
+                                    API: <code>{{ p.apiBaseUrl() }}</code>
+                                {% else %}
+                                    {{ 'portals.form.section.credentials_hint'|trans }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </header>
+                    {% if p.fields() is empty %}
+                        <p class="muted">{{ 'portals.form.no_fields'|trans }}</p>
+                    {% else %}
+                        <div class="form-grid form-grid--compact">
+                            {% for f in p.fields() %}
+                                {% set val = fieldValues[f.key]|default('') %}
+                                {% if f.type == 'password' %}
+                                    {% include 'ui/input.html.twig' with {
+                                        name: 'fields[' ~ f.key ~ ']',
+                                        type: 'password',
+                                        label: f.label,
+                                        required: f.required,
+                                        optional: not f.required,
+                                        value: val,
+                                        hint: f.hint,
+                                        placeholder: f.placeholder
+                                    } %}
+                                {% else %}
+                                    {% include 'ui/input.html.twig' with {
+                                        name: 'fields[' ~ f.key ~ ']',
+                                        type: f.type == 'number' ? 'number' : (f.type == 'email' ? 'email' : (f.type == 'url' ? 'url' : 'text')),
+                                        label: f.label,
+                                        required: f.required,
+                                        optional: not f.required,
+                                        value: val,
+                                        hint: f.hint,
+                                        placeholder: f.placeholder
+                                    } %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </section>
+            {% endfor %}
+        </div>
+
+        <aside class="detail-layout__aside">
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'portals.form.section.status'|trans }}</h2></header>
+                {% include 'ui/switch.html.twig' with {
+                    name: 'active',
+                    label: 'portals.field.active'|trans,
+                    description: 'portals.field.active.hint'|trans,
+                    on: item is null or item.active(),
+                    form: 'portals.account.save'
+                } %}
+            </section>
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'portals.form.section.next'|trans }}</h2></header>
+                <ol class="portal-form__steps">
+                    <li>{{ 'portals.form.next.1'|trans }}</li>
+                    <li>{{ 'portals.form.next.2'|trans }}</li>
+                    <li>{{ 'portals.form.next.3'|trans }}</li>
+                </ol>
+                <p style="margin-top:0.75rem">
+                    <a href="{{ url('admin.portals.providers.index') }}">{{ 'nav.portals.providers'|trans }}</a>
+                </p>
+            </section>
+            <div class="form-actions portal-form__actions">
+                <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ item ? url('admin.portals.show',{id:item.id()}) : url('admin.portals.index') }}">{{ 'common.cancel'|trans }}</a>
+            </div>
+        </aside>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

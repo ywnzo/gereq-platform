@@ -1,0 +1,43 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="viewings" data-actions-default="1">
+<header class="page-header"><h1>{{ 'viewings.title'|trans }}</h1>
+{% if user.can('viewings.manage') %}<a class="btn btn--primary" href="{{ url('admin.viewings.create') }}">{{ icon('plus') }} {{ 'viewings.new'|trans }}</a>{% endif %}
+</header>
+<div class="toolbar--table">
+<form class="toolbar" method="get">
+<input type="hidden" name="sort" value="{{ sort }}">
+<input type="hidden" name="dir" value="{{ dir }}">
+<input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'viewings.search'|trans }}">
+<select name="status" class="input" onchange="this.form.submit()"><option value="">{{ 'viewings.all_statuses'|trans }}</option>
+{% for s in statuses %}<option value="{{ s }}" {{ status==s?'selected':'' }}>{{ ('viewings.status.'~s)|trans }}</option>{% endfor %}
+</select></form>
+</div>
+<div class="table-wrap" data-table><table class="table"><thead><tr>
+{% include 'ui/sort_th.html.twig' with { label: 'viewings.field.number'|trans, column: 'number', query: { status: status } } %}
+<th>{{ 'viewings.field.listing'|trans }}</th>
+<th>{{ 'viewings.field.contact_name'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'viewings.field.status'|trans, column: 'status', query: { status: status } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'viewings.field.scheduled_at'|trans, column: 'scheduledAt', query: { status: status } } %}
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>{% for item in items %}
+<tr><td><a href="{{ url('admin.viewings.show',{id:item.id()}) }}">{{ item.number() }}</a></td>
+<td><code>{{ item.listingId() }}</code></td>
+<td>{{ item.contactName() }}</td>
+<td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+<td class="is-mute">{% if item.scheduledAt() %}{{ item.scheduledAt().format('d. m. Y H:i') }}{% else %}—{% endif %}</td>
+{% embed 'ui/row_actions.html.twig' %}
+    {% block items %}
+        {% include 'ui/row_action.html.twig' with { href: url('admin.viewings.show',{id:item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+        {% if user.can('viewings.manage') %}
+            {% include 'ui/row_action.html.twig' with { href: url('admin.viewings.edit',{id:item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+        {% endif %}
+    {% endblock %}
+{% endembed %}
+</tr>
+{% else %}<tr><td colspan="6"><div class="empty"><h2>{{ 'viewings.empty'|trans }}</h2></div></td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

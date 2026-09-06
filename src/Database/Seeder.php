@@ -46,8 +46,23 @@ final class Seeder
         $nearPlaces = $this->seedNearLocationsForSamples($samples);
         $this->seedListings($samples, $nearPlaces, $brokers);
         $this->em->flush();
+        $this->seedPortalsDemo();
         if ($withDemo) {
             $this->demoSeeder->seed();
+        }
+    }
+
+    private function seedPortalsDemo(): void
+    {
+        if (!class_exists(\Modules\Portals\Application\PortalDemoSeeder::class)) {
+            return;
+        }
+        try {
+            /** @var \Modules\Portals\Application\PortalDemoSeeder $seeder */
+            $seeder = gereq()->make(\Modules\Portals\Application\PortalDemoSeeder::class);
+            $seeder->seed();
+        } catch (\Throwable) {
+            // Portals modul nemusí být zapnutý / DI ještě nepřipravené.
         }
     }
 

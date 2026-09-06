@@ -1,4 +1,30 @@
 import type Alpine from '@alpinejs/csp';
+import { applyColorField } from './colorField';
+
+type BrandPalette = {
+    signal: string;
+    ink: string;
+    cream: string;
+    sitePrimary: string;
+};
+
+/** Cohesive admin + public palettes (logos stay untouched). */
+const STYLE_PALETTES: BrandPalette[] = [
+    { signal: '#d7ff45', ink: '#0a0b0a', cream: '#f5f5ef', sitePrimary: '#17375a' },
+    { signal: '#1d8663', ink: '#0a0b0a', cream: '#f8f9ef', sitePrimary: '#17976c' },
+    { signal: '#0ea5e9', ink: '#0b1220', cream: '#f4f8fb', sitePrimary: '#0369a1' },
+    { signal: '#e11d48', ink: '#14080c', cream: '#fff7f8', sitePrimary: '#9f1239' },
+    { signal: '#ea580c', ink: '#1a0d06', cream: '#fff8f2', sitePrimary: '#c2410c' },
+    { signal: '#2563eb', ink: '#0b1224', cream: '#f5f7fc', sitePrimary: '#1e3a8a' },
+    { signal: '#0f766e', ink: '#071412', cream: '#f3faf8', sitePrimary: '#115e59' },
+    { signal: '#ca8a04', ink: '#141009', cream: '#fbf8ef', sitePrimary: '#854d0e' },
+    { signal: '#334155', ink: '#0f172a', cream: '#f8fafc', sitePrimary: '#0f172a' },
+    { signal: '#16a34a', ink: '#0a140e', cream: '#f4faf6', sitePrimary: '#166534' },
+    { signal: '#db2777', ink: '#160812', cream: '#fdf5f9', sitePrimary: '#9d174d' },
+    { signal: '#7c3aed', ink: '#10081c', cream: '#f7f5ff', sitePrimary: '#5b21b6' },
+    { signal: '#0891b2', ink: '#071318', cream: '#f2fafc', sitePrimary: '#155e75' },
+    { signal: '#b45309', ink: '#1a1006', cream: '#fbf6ee', sitePrimary: '#92400e' },
+];
 
 type BrandPreviewState = {
     name: string;
@@ -15,9 +41,18 @@ type BrandPreviewState = {
     btnStyle: string;
     siteBarStyle: string;
     badgeStyle: string;
+    swatchSignal: string;
+    swatchInk: string;
+    swatchCream: string;
+    swatchSite: string;
+    styleIndex: number;
     init(): void;
     touch(): void;
     read(): void;
+    paint(): void;
+    generateStyle(): void;
+    applyPalette(palette: BrandPalette): void;
+    setPickerColor(fieldName: string, hex: string): void;
     $el: HTMLElement;
 };
 
@@ -38,6 +73,16 @@ function contrastOn(hex: string): string {
     return luma > 0.55 ? '#18181b' : '#ffffff';
 }
 
+function findPaletteIndex(current: BrandPalette): number {
+    return STYLE_PALETTES.findIndex(
+        (p) =>
+            p.signal.toLowerCase() === current.signal.toLowerCase()
+            && p.ink.toLowerCase() === current.ink.toLowerCase()
+            && p.cream.toLowerCase() === current.cream.toLowerCase()
+            && p.sitePrimary.toLowerCase() === current.sitePrimary.toLowerCase(),
+    );
+}
+
 export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
     alpine.data('settingsBrandPreview', (): BrandPreviewState => ({
         name: 'GEREQ',
@@ -54,6 +99,11 @@ export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
         btnStyle: '',
         siteBarStyle: '',
         badgeStyle: '',
+        swatchSignal: 'background:#d7ff45',
+        swatchInk: 'background:#0a0b0a',
+        swatchCream: 'background:#f5f5ef',
+        swatchSite: 'background:#17375a',
+        styleIndex: 0,
 
         init() {
             this.read();
@@ -77,12 +127,73 @@ export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
             this.siteMark = (val(root, 'brand__site_mark') || this.siteName.slice(0, 2)).toUpperCase().slice(0, 3);
             this.sitePrimary = val(root, 'brand__site_primary', '#17375a');
             this.tagline = val(root, 'brand__tagline');
+            this.paint();
+        },
 
+        paint() {
             const onSignal = contrastOn(this.signal);
             this.adminStyle = `background:${this.cream};color:${this.ink};border-color:color-mix(in srgb, ${this.ink} 12%, transparent)`;
             this.btnStyle = `background:${this.signal};color:${onSignal}`;
             this.siteBarStyle = `background:${this.sitePrimary};color:#fff`;
-            this.badgeStyle = `background:rgba(255,255,255,.18);color:#fff`;
+            this.badgeStyle = 'background:rgba(255,255,255,.18);color:#fff';
+            this.swatchSignal = `background:${this.signal}`;
+            this.swatchInk = `background:${this.ink}`;
+            this.swatchCream = `background:${this.cream}`;
+            this.swatchSite = `background:${this.sitePrimary}`;
+        },
+
+        generateStyle() {
+            const current: BrandPalette = {
+                signal: this.signal,
+                ink: this.ink,
+                cream: this.cream,
+                sitePrimary: this.sitePrimary,
+            };
+            const matched = findPaletteIndex(current);
+            const from = matched >= 0 ? matched : this.styleIndex;
+            this.styleIndex = (from + 1) % STYLE_PALETTES.length;
+            this.applyPalette(STYLE_PALETTES[this.styleIndex]!);
+        },
+
+        applyPalette(palette: BrandPalette) {
+            this.setPickerColor('brand__color_signal', palette.signal);
+            this.setPickerColor('brand__color_ink', palette.ink);
+            this.setPickerColor('brand__color_cream', palette.cream);
+            this.setPickerColor('brand__site_primary', palette.sitePrimary);
+
+            this.signal = palette.signal;
+            this.ink = palette.ink;
+            this.cream = palette.cream;
+            this.sitePrimary = palette.sitePrimary;
+            this.paint();
+        },
+
+        setPickerColor(fieldName: string, hex: string) {
+            if (applyColorField(fieldName, hex)) {
+                return;
+            }
+            const hidden = this.$el.querySelector<HTMLInputElement>(`input[type="hidden"][name="${fieldName}"]`);
+            if (!hidden) {
+                return;
+            }
+            hidden.value = hex;
+            const picker = hidden.closest('.color-picker');
+            if (!picker) {
+                return;
+            }
+            const bare = hex.replace('#', '');
+            const native = picker.querySelector<HTMLInputElement>('input[type="color"]');
+            const draft = picker.querySelector<HTMLInputElement>('.color-picker__hex-input');
+            const face = picker.querySelector<HTMLElement>('.color-picker__chip-face');
+            if (native) {
+                native.value = hex;
+            }
+            if (draft) {
+                draft.value = bare;
+            }
+            if (face) {
+                face.style.background = hex;
+            }
         },
     }));
 }
