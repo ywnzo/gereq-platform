@@ -172,6 +172,7 @@ final class Seeder
         $defaultEnabled = [
             'customers', 'currency', 'media', 'cms',
             'products', 'shop', 'orders', 'payments',
+            'translate', 'partscatalog',
         ];
 
         foreach ($this->modules->discover() as $manifest) {

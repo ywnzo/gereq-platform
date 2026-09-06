@@ -1,0 +1,50 @@
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'partscatalog.partial.title'|trans }}</h2>
+            <p class="muted">{{ 'partscatalog.partial.intro'|trans }}</p>
+        </div>
+        {% if user.can('partscatalog.view') %}
+            <a class="btn btn--ghost" href="{{ browseUrl }}">{{ 'partscatalog.action.open_catalog'|trans }}</a>
+        {% endif %}
+    </header>
+    {% if parts is not empty %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>{{ 'partscatalog.col.name'|trans }}</th>
+                <th>{{ 'partscatalog.col.oem'|trans }}</th>
+                <th>{{ 'partscatalog.col.brand'|trans }}</th>
+                <th>{{ 'partscatalog.col.qty'|trans }}</th>
+                <th>{{ 'partscatalog.col.source'|trans }}</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for part in parts %}
+            <tr>
+                <td>
+                    <strong>{{ part.nameCs() }}</strong>
+                </td>
+                <td class="is-mute">{{ part.oem() ?: '—' }}</td>
+                <td class="is-mute">{{ part.brand() ?: '—' }}</td>
+                <td>{{ part.qty() }}</td>
+                <td><span class="badge">{{ part.source() }}</span></td>
+                <td>
+                    {% if user.can('partscatalog.manage') %}
+                    <form method="post" action="{{ url('admin.partscatalog.detach',{id:part.id()}) }}" data-confirm="{{ 'partscatalog.confirm.detach'|trans }}">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--ghost" type="submit">{{ 'common.delete'|trans }}</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="muted" style="padding:0 12px 12px">{{ 'partscatalog.partial.empty'|trans }}</p>
+    {% endif %}
+</section>

@@ -24,6 +24,7 @@ use Gereq\Console\Command\TwigTypesCommand;
 use Gereq\Console\Command\UserCreateCommand;
 use Modules\Currency\Console\SyncRatesCommand;
 use Modules\CustomerUploads\Console\PurgeUploadsCommand;
+use Modules\PartsCatalog\Console\SyncJamaCatalogCommand;
 use Modules\Payments\Console\ImapMatchCommand;
 use Modules\Products\Console\ImportProductsCsvCommand;
 use Psr\Container\ContainerInterface;
@@ -71,6 +72,7 @@ final class ConsoleKernel
             ServeDockerCommand::class,
             TwigTypesCommand::class,
             SyncRatesCommand::class,
+            SyncJamaCatalogCommand::class,
             ImportLaravelCommand::class,
             ImportSqliteCommand::class,
             ImportProductsCsvCommand::class,
