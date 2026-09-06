@@ -1,77 +1,182 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-    <header class="page-header">
-        <h1>{{ item ? 'customers.edit'|trans : 'customers.new'|trans }}</h1>
+{% set currentStatus = old('status', item ? item.status() : 'active', 'customers.save') %}
+{% set currentName = old('name', item ? item.name() : '', 'customers.save') %}
+{% set emptyLabel = item ? 'customers.edit'|trans : 'customers.new'|trans %}
+{% set statuses = [
+    { value: 'active', label: 'customers.status.active'|trans, hint: 'customers.form.status.hint.active'|trans, tone: 'ok' },
+    { value: 'lead', label: 'customers.status.lead'|trans, hint: 'customers.form.status.hint.lead'|trans, tone: 'warn' },
+    { value: 'inactive', label: 'customers.status.inactive'|trans, hint: 'customers.form.status.hint.inactive'|trans, tone: 'muted' },
+    { value: 'archived', label: 'customers.status.archived'|trans, hint: 'customers.form.status.hint.archived'|trans, tone: 'muted' },
+] %}
+<div
+    class="customer-edit"
+    x-data="customerEdit"
+    data-name="{{ currentName|e('html_attr') }}"
+    data-empty-label="{{ emptyLabel|e('html_attr') }}"
+    data-empty-initials="{{ (item ? item.initials() : '?')|e('html_attr') }}"
+    @input="onFormInput"
+>
+    <header class="customer-edit__header">
+        <div class="customer-edit__identity">
+            <a class="text-link customer-profile__back" href="{{ item ? url('admin.customers.show', {id: item.id()}) : url('admin.customers.index') }}">
+                ← {{ item ? item.name() : 'nav.customers'|trans }}
+            </a>
+            <div class="cell-user cell-user--lg">
+                <span class="avatar avatar--xl" x-text="initials()"></span>
+                <div>
+                    <p class="customer-edit__eyebrow">{{ emptyLabel }}</p>
+                    <h1 x-text="title()"></h1>
+                    <p class="customer-profile__sub">{{ 'customers.form.lead'|trans }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="customer-edit__header-actions">
+            {% if item %}
+                <a class="btn btn--ghost" href="{{ url('admin.customers.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+            {% endif %}
+            <button class="btn btn--primary" type="submit" form="customer-form">{{ 'common.save'|trans }}</button>
+        </div>
     </header>
 
     {% include 'ui/error-summary.html.twig' with { form: 'customers.save' } %}
 
-    <form method="post" class="form-grid" action="{{ item ? url('admin.customers.update', {id: item.id()}) : url('admin.customers.store') }}" data-form="customers.save" x-data="gereqForm"{% if form_errors('customers.save') %} data-server-state="1"{% endif %}>
+    <form
+        id="customer-form"
+        method="post"
+        class="customer-edit__form"
+        action="{{ item ? url('admin.customers.update', {id: item.id()}) : url('admin.customers.store') }}"
+        data-form="customers.save"
+        x-data="gereqForm"
+        {% if form_errors('customers.save') %}data-server-state="1"{% endif %}
+    >
         {{ csrf_field()|raw }}
-        {% include 'ui/input.html.twig' with {
-            name: 'name',
-            label: 'customers.field.name'|trans,
-            required: true,
-            form: 'customers.save',
-            value: item ? item.name() : ''
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'email',
-            type: 'email',
-            label: 'customers.field.email'|trans,
-            required: true,
-            form: 'customers.save',
-            value: item ? item.email() : ''
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'phone',
-            type: 'tel',
-            label: 'customers.field.phone'|trans,
-            optional: true,
-            form: 'customers.save',
-            value: item ? item.phone() : ''
-        } %}
-        <div class="field ares-field" x-data="gereqAresSubject">
-            <span>{{ 'customers.field.company'|trans }} · ARES</span>
-            <input
-                class="input"
-                name="company"
-                data-ares-query
-                data-ares-fill="company"
-                autocomplete="off"
-                placeholder="IČO nebo název firmy"
-                value="{{ item ? item.company() : '' }}"
-                @input="onInput"
-                @keydown="onKeydown"
-                x-ref="query"
-            >
-            {% include 'ui/ares_subject_suggest.html.twig' %}
-        </div>
-        {% include 'ui/select.html.twig' with {
-            name: 'status',
-            label: 'customers.field.status'|trans,
-            form: 'customers.save',
-            value: item ? item.status() : 'active',
-            options: [
-                { value: 'active', label: 'customers.status.active'|trans },
-                { value: 'lead', label: 'customers.status.lead'|trans },
-                { value: 'inactive', label: 'customers.status.inactive'|trans },
-                { value: 'archived', label: 'customers.status.archived'|trans }
-            ]
-        } %}
-        {% include 'ui/editor.html.twig' with {
-            name: 'note',
-            label: 'customers.field.note'|trans,
-            optional: true,
-            extra: 'field--full',
-            form: 'customers.save',
-            placeholder: 'customers.note.placeholder'|trans,
-            value: item ? item.note() : ''
-        } %}
-        <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.customers.index') }}">{{ 'common.cancel'|trans }}</a>
+
+        <div class="customer-edit__layout">
+            <div class="customer-edit__main">
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'customers.section.profile'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'customers.form.profile.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/input.html.twig' with {
+                            name: 'name',
+                            label: 'customers.field.name'|trans,
+                            required: true,
+                            form: 'customers.save',
+                            value: item ? item.name() : '',
+                            autocomplete: 'name'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'email',
+                            type: 'email',
+                            label: 'customers.field.email'|trans,
+                            required: true,
+                            form: 'customers.save',
+                            value: item ? item.email() : '',
+                            autocomplete: 'email'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'phone',
+                            type: 'tel',
+                            label: 'customers.field.phone'|trans,
+                            optional: true,
+                            form: 'customers.save',
+                            value: item ? item.phone() : '',
+                            autocomplete: 'tel'
+                        } %}
+                        <div class="g-field ares-field" x-data="gereqAresSubject">
+                            <span class="g-label">{{ 'customers.field.company'|trans }} · ARES</span>
+                            <div class="g-control-wrap">
+                                <input
+                                    class="g-control"
+                                    name="company"
+                                    data-ares-query
+                                    data-ares-fill="company"
+                                    autocomplete="organization"
+                                    placeholder="{{ 'customers.form.company.placeholder'|trans }}"
+                                    value="{{ old('company', item ? item.company() : '', 'customers.save') }}"
+                                    @input="onInput"
+                                    @keydown="onKeydown"
+                                    x-ref="query"
+                                >
+                            </div>
+                            {% include 'ui/ares_subject_suggest.html.twig' %}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'customers.field.note'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'customers.form.note.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    {% include 'ui/editor.html.twig' with {
+                        name: 'note',
+                        label: '',
+                        optional: true,
+                        form: 'customers.save',
+                        placeholder: 'customers.note.placeholder'|trans,
+                        value: item ? item.note() : ''
+                    } %}
+                </section>
+            </div>
+
+            <aside class="customer-edit__aside">
+                <section class="customer-section customer-edit__status-card">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'customers.field.status'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'customers.form.status.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-status-picks" role="radiogroup" aria-label="{{ 'customers.field.status'|trans }}">
+                        {% for s in statuses %}
+                            <label class="customer-status-pick customer-status-pick--{{ s.tone }}">
+                                <input type="radio" name="status" value="{{ s.value }}" {{ currentStatus == s.value ? 'checked' : '' }} required>
+                                <span class="customer-status-pick__dot" aria-hidden="true"></span>
+                                <span class="customer-status-pick__body">
+                                    <strong>{{ s.label }}</strong>
+                                    <small>{{ s.hint }}</small>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if error('status', 'customers.save') %}
+                        <p class="g-error">{{ error('status', 'customers.save') }}</p>
+                    {% endif %}
+                </section>
+
+                {% if item %}
+                    <section class="customer-section customer-edit__meta">
+                        <header class="customer-section__head">
+                            <h2>{{ 'customers.form.meta'|trans }}</h2>
+                        </header>
+                        <dl class="customer-edit__meta-list">
+                            <div>
+                                <dt>{{ 'customers.field.created'|trans }}</dt>
+                                <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'customers.field.updated'|trans }}</dt>
+                                <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                    </section>
+                {% endif %}
+
+                <div class="customer-edit__aside-actions">
+                    <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ item ? url('admin.customers.show', {id: item.id()}) : url('admin.customers.index') }}">{{ 'common.cancel'|trans }}</a>
+                </div>
+            </aside>
         </div>
     </form>
+</div>
 {% endblock %}

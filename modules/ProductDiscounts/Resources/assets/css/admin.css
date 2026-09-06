@@ -1,0 +1,62 @@
+/* Product / category discount add form */
+.discount-panel__empty {
+    margin: 0 0 1rem;
+}
+.discount-panel > .table-wrap + .discount-form,
+.discount-panel > .discount-panel__empty + .discount-form {
+    margin-top: 4px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+.discount-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+.discount-form__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px 14px;
+    align-items: start;
+}
+.discount-form__grid > .g-field {
+    min-width: 0;
+}
+.discount-form__span-2 {
+    grid-column: span 2;
+}
+.discount-form__active {
+    min-width: 0;
+}
+.discount-form__check {
+    min-height: calc(1rem * 1.45 + 1.5rem + 2px);
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-field, var(--radius));
+    background: var(--surface);
+    box-sizing: border-box;
+}
+.discount-form__hint {
+    margin: 0;
+}
+.discount-form__actions {
+    display: flex;
+    gap: 8px;
+}
+@media (max-width: 1100px) {
+    .discount-form__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .discount-form__span-2 {
+        grid-column: span 2;
+    }
+}
+@media (max-width: 640px) {
+    .discount-form__grid {
+        grid-template-columns: 1fr;
+    }
+    .discount-form__span-2 {
+        grid-column: auto;
+    }
+}

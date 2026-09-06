@@ -16,7 +16,11 @@ use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
+use Modules\CarService\Application\BranchContext;
 use Modules\CarService\Application\CarServiceProvider;
+use Modules\CarService\Application\IdokladFinishHandler;
+use Modules\CarService\Application\LaborRateCatalog;
+use Modules\CarService\Application\PdfTemplateCatalog;
 use Modules\CarService\Application\Widgets\CarServiceShortcutWidget;
 use Modules\CarService\Http\Api\ServiceOrderApiController;
 use Modules\CarService\Http\Api\TrackerApiController;
@@ -26,9 +30,11 @@ use Modules\CarService\Http\ServiceOrderController;
 use Modules\CarService\Http\SettingsController;
 use Modules\CarService\Http\TrackerController;
 use Modules\Customers\Domain\Customer;
+use Modules\Documents\Application\DocumentsProvider;
+use Modules\Documents\Application\Pdf\PdfDocumentGenerator;
 use Modules\Fleet\Application\FleetProvider;
 use Modules\Fleet\Domain\Vehicle;
-use Modules\iDoklad\Application\iDokladService;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -41,7 +47,7 @@ final class CarServiceModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.1';
+        return '1.10.1';
     }
 
     public function register(ModuleContext $context): void
@@ -56,16 +62,52 @@ final class CarServiceModule implements ModuleInterface
             $context->get(FleetProvider::class),
         );
         $context->capabilities()->register('carservice', $this->id(), $provider);
+        $context->capabilities()->register(
+            'carservice.branch_context',
+            $this->id(),
+            $context->get(BranchContext::class),
+        );
 
         $context->settings()->define('carservice.job_soft_limit_hours', SettingRecord::TYPE_STRING, 'carservice.settings.job_soft_limit', '8', $this->id());
         $context->settings()->define('carservice.default_team', SettingRecord::TYPE_STRING, 'carservice.settings.default_team', 'body_shop', $this->id());
         $context->settings()->define('carservice.media_phases', SettingRecord::TYPE_STRING, 'carservice.settings.media_phases', 'before,progress,paint,after', $this->id());
+        $context->settings()->define('carservice.margin_percent', SettingRecord::TYPE_STRING, 'carservice.settings.margin_percent', '30', $this->id());
+        foreach (LaborRateCatalog::definitions() as $rate) {
+            $context->settings()->define(
+                $rate['setting'],
+                SettingRecord::TYPE_STRING,
+                $rate['label'],
+                $rate['default'],
+                $this->id(),
+            );
+        }
         $context->settings()->define('carservice.auto_idoklad', SettingRecord::TYPE_BOOLEAN, 'carservice.settings.auto_idoklad', false, $this->id());
+        $context->settings()->define(
+            'carservice.market_sources',
+            SettingRecord::TYPE_STRING,
+            'carservice.settings.market_sources',
+            'heureka,seznam,hledejceny,jama,autodilypro,autokelly',
+            $this->id(),
+        );
+
+        foreach (PdfTemplateCatalog::allSettingKeys() as $pdfKey) {
+            $label = str_contains($pdfKey, '.header')
+                ? 'carservice.settings.pdf.header'
+                : 'carservice.settings.pdf.footer';
+            $context->settings()->define(
+                $pdfKey,
+                SettingRecord::TYPE_STRING,
+                $label,
+                PdfTemplateCatalog::defaultValueForKey($pdfKey),
+                $this->id(),
+            );
+        }
 
         $context->router()->group('/admin/carservice', function (Router $routes): void {
             $routes->get('', [ServiceOrderController::class, 'index'])->name('admin.carservice.index')->permission('carservice.view');
             $routes->get('/create', [ServiceOrderController::class, 'create'])->name('admin.carservice.create')->permission('carservice.manage');
             $routes->post('', [ServiceOrderController::class, 'store'])->name('admin.carservice.store')->permission('carservice.manage');
+            $routes->post('/bulk', [ServiceOrderController::class, 'bulk'])->name('admin.carservice.bulk')->permission('carservice.manage');
             $routes->get('/costs', [CostController::class, 'index'])->name('admin.carservice.costs')->permission('carservice.view');
             $routes->post('/costs', [CostController::class, 'store'])->name('admin.carservice.costs.store')->permission('carservice.manage');
             $routes->post('/costs/{id}/delete', [CostController::class, 'destroy'])->name('admin.carservice.costs.destroy')->permission('carservice.manage');
@@ -76,8 +118,10 @@ final class CarServiceModule implements ModuleInterface
             $routes->get('/branches/{id}/logo', [BranchController::class, 'logo'])->name('admin.carservice.branches.logo')->permission('carservice.view');
             $routes->post('/branches/{id}', [BranchController::class, 'update'])->name('admin.carservice.branches.update')->permission('carservice.manage');
             $routes->post('/branches/{id}/delete', [BranchController::class, 'destroy'])->name('admin.carservice.branches.destroy')->permission('carservice.manage');
+            $routes->post('/branch-context', [BranchController::class, 'select'])->name('admin.carservice.branch_context')->permission('carservice.view');
             $routes->get('/settings', [SettingsController::class, 'edit'])->name('admin.carservice.settings')->permission('carservice.view');
             $routes->post('/settings', [SettingsController::class, 'update'])->name('admin.carservice.settings.update')->permission('carservice.manage');
+            $routes->post('/settings/pdf-preview', [SettingsController::class, 'previewPdf'])->name('admin.carservice.settings.pdf_preview')->permission('carservice.manage');
             $routes->get('/tracker', [TrackerController::class, 'index'])->name('admin.carservice.tracker')->permission('carservice.tracker');
             $routes->post('/tracker/resolve', [TrackerController::class, 'resolve'])->name('admin.carservice.tracker.resolve')->permission('carservice.tracker');
             $routes->get('/tracker/{id}', [TrackerController::class, 'show'])->name('admin.carservice.tracker.show')->permission('carservice.tracker');
@@ -93,6 +137,8 @@ final class CarServiceModule implements ModuleInterface
             $routes->post('/{id}/jobs/{jobId}/complete', [ServiceOrderController::class, 'completeJob'])->name('admin.carservice.jobs.complete')->permission('carservice.manage');
             $routes->post('/{id}/media', [ServiceOrderController::class, 'uploadMedia'])->name('admin.carservice.media')->permission('carservice.manage');
             $routes->post('/{id}/finish', [ServiceOrderController::class, 'finish'])->name('admin.carservice.finish')->permission('carservice.manage');
+            $routes->post('/{id}/documents', [ServiceOrderController::class, 'generateDocument'])->name('admin.carservice.documents.generate')->permission('carservice.manage');
+            $routes->post('/{id}/intake-protocol', [ServiceOrderController::class, 'updateIntakeProtocol'])->name('admin.carservice.intake_protocol')->permission('carservice.manage');
             $routes->post('/{id}/delete', [ServiceOrderController::class, 'destroy'])->name('admin.carservice.destroy')->permission('carservice.manage');
         }, ['middleware' => ['auth']]);
 
@@ -155,6 +201,14 @@ final class CarServiceModule implements ModuleInterface
             'note' => 'nullable|max:5000',
             'signature' => 'nullable|max:100',
         ]);
+        $v->ruleset('carservice.document', [
+            'type' => 'required|in:' . implode(',', PdfTemplateCatalog::types()),
+            'signature' => 'nullable|max:100',
+        ]);
+        $v->ruleset('carservice.bulk', [
+            'action' => 'required|in:delete',
+            'confirmed' => 'nullable',
+        ]);
         $v->ruleset('carservice.job', [
             'type' => 'nullable|max:64',
             'note' => 'nullable|max:2000',
@@ -178,12 +232,40 @@ final class CarServiceModule implements ModuleInterface
             'note' => 'nullable|max:5000',
             'active' => 'nullable',
         ]);
-        $v->ruleset('carservice.settings', [
+        $v->ruleset('carservice.settings', array_merge([
             'job_soft_limit_hours' => 'required',
             'default_team' => 'required|in:body_shop,paint_shop',
             'media_phases' => 'required|max:255',
+            'margin_percent' => 'required',
+            'labor_rate_default' => 'required',
+            'labor_rate_body_shop' => 'nullable',
+            'labor_rate_paint_shop' => 'nullable',
             'auto_idoklad' => 'nullable',
-        ]);
+            'market_sources' => 'nullable',
+        ], $this->pdfTemplateValidationRules()));
+        $v->ruleset('carservice.pdf_preview', array_merge([
+            'pdf_preview_type' => 'required|in:' . implode(',', PdfTemplateCatalog::types()),
+            'job_soft_limit_hours' => 'nullable',
+            'default_team' => 'nullable',
+            'media_phases' => 'nullable',
+            'margin_percent' => 'nullable',
+            'labor_rate_default' => 'nullable',
+            'labor_rate_body_shop' => 'nullable',
+            'labor_rate_paint_shop' => 'nullable',
+            'auto_idoklad' => 'nullable',
+            'market_sources' => 'nullable',
+        ], $this->pdfTemplateValidationRules()));
+    }
+
+    /** @return array<string, string> */
+    private function pdfTemplateValidationRules(): array
+    {
+        $rules = [];
+        foreach (PdfTemplateCatalog::allSettingKeys() as $key) {
+            $rules[PdfTemplateCatalog::formField($key)] = 'nullable|max:20000';
+        }
+
+        return $rules;
     }
 
     public function boot(ModuleContext $context): void
@@ -194,13 +276,97 @@ final class CarServiceModule implements ModuleInterface
             $context->get(Router::class),
         ));
 
+        $context->hooks()->addFilter('admin.topbar.context', function (string $html) use ($context): string {
+            $auth = $context->get(\Gereq\Auth\Authenticator::class);
+            $user = $auth->user();
+            if (!$user instanceof \Gereq\User\Entity\User || !$user->can('carservice.view')) {
+                return $html;
+            }
+            $branchContext = $context->get(BranchContext::class);
+            if (!$branchContext->hasBranches()) {
+                return $html;
+            }
+            $request = $context->get(\Symfony\Component\HttpFoundation\RequestStack::class)->getCurrentRequest();
+            $redirectUrl = $request instanceof \Symfony\Component\HttpFoundation\Request
+                ? $request->getRequestUri()
+                : '';
+            $fragment = $context->get(Environment::class)->render('@carservice/partials/topbar_branch.html.twig', [
+                'branchOptions' => $branchContext->selectOptions(
+                    $context->get(TranslatorInterface::class)->trans('carservice.branch_switch.all'),
+                ),
+                'selectedBranchId' => $branchContext->branchId() ?? '',
+                'selectUrl' => $context->router()->url('admin.carservice.branch_context'),
+                'redirectUrl' => $redirectUrl,
+            ]);
+
+            return $html . $fragment;
+        });
+
+        $renderDefaultBranchField = static function (?\Gereq\User\Entity\User $targetUser, string $fieldId) use ($context): string {
+            $branchContext = $context->get(BranchContext::class);
+            if (!$branchContext->hasBranches()) {
+                return '';
+            }
+            $translator = $context->get(TranslatorInterface::class);
+
+            return $context->get(Environment::class)->render('@carservice/partials/user_default_branch.html.twig', [
+                'branchOptions' => $branchContext->selectOptions(
+                    $translator->trans('carservice.user.default_branch.none'),
+                ),
+                'selectedDefaultBranchId' => $targetUser instanceof \Gereq\User\Entity\User
+                    ? ($branchContext->defaultBranchId($targetUser) ?? '')
+                    : '',
+                'fieldId' => $fieldId,
+            ]);
+        };
+
+        $context->hooks()->addFilter('admin.profile.form_fields', function (string $html) use ($context, $renderDefaultBranchField): string {
+            $user = $context->get(\Gereq\Auth\Authenticator::class)->user();
+            if (!$user instanceof \Gereq\User\Entity\User || !$user->can('carservice.view')) {
+                return $html;
+            }
+
+            return $html . $renderDefaultBranchField($user, 'profile-carservice-default-branch');
+        });
+
+        $context->hooks()->addAction('admin.profile.saving', function (\Gereq\User\Entity\User $user, \Symfony\Component\HttpFoundation\Request $request) use ($context): void {
+            $branchContext = $context->get(BranchContext::class);
+            if (!$branchContext->hasBranches() || !$request->request->has('carservice_default_branch_id')) {
+                return;
+            }
+            $branchId = trim((string) $request->request->get('carservice_default_branch_id', ''));
+            $branchContext->setDefaultBranchId($user, $branchId !== '' ? $branchId : null);
+        });
+
+        $context->hooks()->addFilter('admin.users.form_fields', function (string $html, mixed $item = null) use ($context, $renderDefaultBranchField): string {
+            $actor = $context->get(\Gereq\Auth\Authenticator::class)->user();
+            if (!$actor instanceof \Gereq\User\Entity\User || !$actor->can('users.edit')) {
+                return $html;
+            }
+            $target = $item instanceof \Gereq\User\Entity\User ? $item : null;
+
+            return $html . $renderDefaultBranchField($target, 'user-carservice-default-branch');
+        });
+
+        $context->hooks()->addAction('admin.users.saving', function (\Gereq\User\Entity\User $user, \Symfony\Component\HttpFoundation\Request $request) use ($context): void {
+            $branchContext = $context->get(BranchContext::class);
+            if (!$branchContext->hasBranches()) {
+                return;
+            }
+            if (!$request->request->has('carservice_default_branch_id')) {
+                return;
+            }
+            $branchId = trim((string) $request->request->get('carservice_default_branch_id', ''));
+            $branchContext->setDefaultBranchId($user, $branchId !== '' ? $branchId : null);
+        });
+
         $context->menu()->add(new MenuItem(
             id: 'carservice',
             label: 'nav.carservice',
             icon: 'build',
             route: 'admin.carservice.index',
             permission: 'carservice.view',
-            order: 36,
+            order: 35,
             group: 'Provoz',
         ));
         $context->menu()->add(new MenuItem(
@@ -334,9 +500,28 @@ final class CarServiceModule implements ModuleInterface
         );
 
         if (class_exists(Customer::class)) {
-            $context->hooks()->addFilter('customers.show.sections', static function (array $sections, Customer $customer) use ($twig, $auth, $provider): array {
+            $context->hooks()->addFilter('customers.show.sections', static function (array $sections, Customer $customer) use ($twig, $auth, $provider, $em, $fleet): array {
                 if ($auth->user() === null || !$auth->user()->can('carservice.view')) {
                     return $sections;
+                }
+                $orders = $provider->listForCustomer($customer->id());
+                $vehicles = [];
+                foreach ($orders as $order) {
+                    $vid = $order->vehicleId();
+                    if (isset($vehicles[$vid])) {
+                        continue;
+                    }
+                    if ($fleet instanceof FleetProvider) {
+                        $v = $fleet->find($vid);
+                        if ($v !== null) {
+                            $vehicles[$vid] = $v;
+                        }
+                    } elseif (class_exists(Vehicle::class)) {
+                        $v = $em->find(Vehicle::class, $vid);
+                        if ($v instanceof Vehicle) {
+                            $vehicles[$vid] = $v;
+                        }
+                    }
                 }
                 $sections[] = [
                     'id' => 'carservice.orders',
@@ -344,7 +529,8 @@ final class CarServiceModule implements ModuleInterface
                     'order' => 46,
                     'html' => $twig->render('@carservice/partials/customer_orders.html.twig', [
                         'customer' => $customer,
-                        'orders' => $provider->listForCustomer($customer->id()),
+                        'orders' => $orders,
+                        'vehicles' => $vehicles,
                         'user' => $auth->user(),
                     ]),
                 ];
@@ -354,9 +540,23 @@ final class CarServiceModule implements ModuleInterface
         }
 
         if (class_exists(Vehicle::class)) {
-            $context->hooks()->addFilter('fleet.vehicle.show.sections', static function (array $sections, Vehicle $vehicle) use ($twig, $auth, $provider): array {
+            $context->hooks()->addFilter('fleet.vehicle.show.sections', static function (array $sections, Vehicle $vehicle) use ($twig, $auth, $provider, $em): array {
                 if ($auth->user() === null || !$auth->user()->can('carservice.view')) {
                     return $sections;
+                }
+                $orders = $provider->listForVehicle($vehicle->id());
+                $customers = [];
+                if (class_exists(Customer::class)) {
+                    foreach ($orders as $order) {
+                        $cid = $order->customerId();
+                        if ($cid === null || isset($customers[$cid])) {
+                            continue;
+                        }
+                        $c = $em->find(Customer::class, $cid);
+                        if ($c instanceof Customer) {
+                            $customers[$cid] = $c;
+                        }
+                    }
                 }
                 $sections[] = [
                     'id' => 'carservice.orders',
@@ -364,7 +564,8 @@ final class CarServiceModule implements ModuleInterface
                     'order' => 20,
                     'html' => $twig->render('@carservice/partials/vehicle_orders.html.twig', [
                         'vehicle' => $vehicle,
-                        'orders' => $provider->listForVehicle($vehicle->id()),
+                        'orders' => $orders,
+                        'customers' => $customers,
                         'user' => $auth->user(),
                     ]),
                 ];
@@ -373,52 +574,41 @@ final class CarServiceModule implements ModuleInterface
             }, HookPriority::NORMAL);
         }
 
-        $settings = $context->settings();
-        $context->hooks()->addAction('platform.event.dispatched', static function (EventEnvelope $envelope) use ($context, $settings): void {
+        $context->hooks()->addAction('platform.event.dispatched', static function (EventEnvelope $envelope) use ($context): void {
             if ($envelope->type !== 'carservice.order_finished') {
                 return;
             }
-            if (!(bool) $settings->get('carservice.auto_idoklad', false)) {
-                return;
-            }
-            if (!$context->capabilities()->has('idoklad') || !class_exists(iDokladService::class)) {
-                return;
-            }
-            /** @var iDokladService $idoklad */
-            $idoklad = $context->capabilities()->get('idoklad');
-            if (!$idoklad->isEnabled()) {
-                return;
-            }
-            $orderId = (string) ($envelope->resource['id'] ?? '');
-            if ($orderId === '' || $idoklad->findLink('carservice_order', $orderId, 'invoice') !== null) {
-                return;
-            }
-            $customerId = (string) ($envelope->data['customer_id'] ?? '');
-            $partnerId = 0;
-            if ($customerId !== '') {
-                $contactLink = $idoklad->findLink('customer', $customerId, 'contact');
-                if ($contactLink !== null) {
-                    $partnerId = (int) $contactLink->iDokladId();
+
+            $pdfGenerator = null;
+            $documents = null;
+            if ($context->capabilities()->has('documents') && class_exists(PdfDocumentGenerator::class)) {
+                try {
+                    $pdfGenerator = $context->get(PdfDocumentGenerator::class);
+                } catch (\Throwable) {
+                    $pdfGenerator = null;
                 }
             }
-            if ($partnerId <= 0) {
+            if ($context->capabilities()->has('documents') && class_exists(DocumentsProvider::class)) {
+                $cap = $context->capabilities()->get('documents');
+                $documents = $cap instanceof DocumentsProvider ? $cap : null;
+            }
+
+            $carservice = $context->capabilities()->get('carservice');
+            if (!$carservice instanceof CarServiceProvider) {
                 return;
             }
-            $hours = max(1, (int) ceil(((int) ($envelope->data['job_seconds'] ?? 0)) / 3600));
-            $result = $idoklad->setDocument([
-                'documentType' => 'invoice',
-                'Description' => 'Servisní zakázka ' . substr($orderId, 0, 8),
-                'Items' => [[
-                    'Name' => 'Servisní práce',
-                    'Amount' => $hours,
-                    'UnitPrice' => 0,
-                ]],
-            ], $partnerId);
-            if (!empty($result['isSucceed']) && isset($result['data']['Id'])) {
-                $idoklad->rememberLink('carservice_order', $orderId, (string) $result['data']['Id'], 'invoice', [
-                    'source' => 'carservice.order_finished',
-                ]);
-            }
+
+            $handler = new IdokladFinishHandler(
+                $context->settings(),
+                $context->capabilities(),
+                $carservice,
+                $context->hooks(),
+                $context->get(RequestStack::class),
+                $context->get(TranslatorInterface::class),
+                $pdfGenerator instanceof PdfDocumentGenerator ? $pdfGenerator : null,
+                $documents,
+            );
+            $handler->handle($envelope);
         }, HookPriority::NORMAL);
     }
 }

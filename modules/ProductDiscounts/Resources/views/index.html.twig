@@ -56,7 +56,7 @@
         {% if item.kind() == 'percent' %}
             {{ item.value() }} %
         {% else %}
-            {{ item.value() }} Kč
+            {{ item.value()|money }}
         {% endif %}
     </td>
     <td>

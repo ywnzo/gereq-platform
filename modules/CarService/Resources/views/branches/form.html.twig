@@ -95,12 +95,16 @@
                 <img class="avatar avatar--lg" src="{{ url('admin.carservice.branches.logo',{id:item.id()}) }}" alt="{{ item.name() }}">
             </div>
         {% endif %}
-        <div class="g-field field--full" data-field="logo">
-            <label class="g-label" for="f-logo">
-                <span>{{ 'carservice.branches.field.logo'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
-            </label>
-            <input class="input" id="f-logo" type="file" name="logo" accept="image/*">
-        </div>
+        {% include 'ui/file.html.twig' with {
+            name: 'logo',
+            id: 'f-logo',
+            label: 'carservice.branches.field.logo'|trans,
+            optional: true,
+            hint: 'carservice.branches.field.logo.hint'|trans,
+            accept: 'image/*',
+            compact: true,
+            extra: 'field--full'
+        } %}
         {% include 'ui/textarea.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, form:'carservice.branch', value: item?item.note():'', extra:'field--full', rows:3 } %}
     </div>
 </section>

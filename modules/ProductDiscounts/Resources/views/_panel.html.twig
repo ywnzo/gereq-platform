@@ -38,7 +38,7 @@
                     {% for d in discounts %}
                         <tr>
                             <td>{{ ('product_discounts.kind.' ~ d.kind())|trans }}</td>
-                            <td>{% if d.kind() == 'percent' %}{{ d.value() }} %{% else %}{{ d.value() }} Kč{% endif %}</td>
+                            <td>{% if d.kind() == 'percent' %}{{ d.value() }} %{% else %}{{ d.value()|money }}{% endif %}</td>
                             <td>
                                 {{ ('product_discounts.condition.' ~ d.conditionType())|trans }}
                                 {% if d.conditionValue() is not null %}<span class="muted">({{ d.conditionValue() }})</span>{% endif %}

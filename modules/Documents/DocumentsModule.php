@@ -33,7 +33,7 @@ final class DocumentsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.3.2';
     }
 
     public function register(ModuleContext $context): void
@@ -54,8 +54,14 @@ final class DocumentsModule implements ModuleInterface
             $routes->post('', [DocumentController::class, 'store'])
                 ->name('admin.documents.store')
                 ->permission('documents.manage');
+            $routes->post('/bulk', [DocumentController::class, 'bulk'])
+                ->name('admin.documents.bulk')
+                ->permission('documents.manage');
             $routes->get('/{id}', [DocumentController::class, 'show'])
                 ->name('admin.documents.show')
+                ->permission('documents.view');
+            $routes->get('/{id}/file', [DocumentController::class, 'file'])
+                ->name('admin.documents.file')
                 ->permission('documents.view');
             $routes->post('/{id}/link', [DocumentController::class, 'link'])
                 ->name('admin.documents.link')
@@ -159,6 +165,11 @@ final class DocumentsModule implements ModuleInterface
         $validation->ruleset('documents.link', [
             'entity_type' => 'required|max:80',
             'entity_id' => 'required|max:36',
+        ]);
+
+        $validation->ruleset('documents.bulk', [
+            'action' => 'required|in:delete',
+            'confirmed' => 'nullable',
         ]);
     }
 

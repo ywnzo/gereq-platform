@@ -12,8 +12,72 @@ use Modules\PartsCatalog\Domain\CatalogApiCache;
  */
 final class CatalogApiCacheStore
 {
+    /** @var array<string, CatalogApiCache|false> false = known miss in this request */
+    private array $rowByCacheKey = [];
+
     public function __construct(private readonly EntityManagerInterface $em)
     {
+    }
+
+    /**
+     * Přednačte řádky cache jedním IN dotazem (pro N preloadů bez N SELECT).
+     *
+     * @param list<string> $logicalKeys
+     */
+    public function prefetch(string $provider, array $logicalKeys): void
+    {
+        $wanted = [];
+        foreach ($logicalKeys as $key) {
+            $cacheKey = $this->cacheKey($provider, $key);
+            if (!array_key_exists($cacheKey, $this->rowByCacheKey)) {
+                $wanted[$cacheKey] = true;
+            }
+        }
+        if ($wanted === []) {
+            return;
+        }
+
+        /** @var list<CatalogApiCache> $rows */
+        $rows = $this->em->createQueryBuilder()
+            ->select('c')
+            ->from(CatalogApiCache::class, 'c')
+            ->where('c.cacheKey IN (:keys)')
+            ->setParameter('keys', array_keys($wanted))
+            ->getQuery()
+            ->getResult();
+
+        foreach ($rows as $row) {
+            if (!$row instanceof CatalogApiCache) {
+                continue;
+            }
+            $this->rowByCacheKey[$row->cacheKey()] = $row;
+            unset($wanted[$row->cacheKey()]);
+        }
+        foreach (array_keys($wanted) as $cacheKey) {
+            $this->rowByCacheKey[$cacheKey] = false;
+        }
+    }
+
+    /**
+     * Vrátí dekódovaný payload nebo null (miss / expired / invalid) — bez remote fetche.
+     */
+    public function getDecoded(string $provider, string $key, ?int $ttlSeconds = null): mixed
+    {
+        $row = $this->findRow($provider, $key);
+        if (!$row instanceof CatalogApiCache) {
+            return null;
+        }
+
+        $age = time() - $row->fetchedAt()->getTimestamp();
+        if ($ttlSeconds !== null && $age >= $ttlSeconds) {
+            return null;
+        }
+
+        try {
+            return json_decode($row->payloadJson(), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
     }
 
     /**
@@ -27,8 +91,7 @@ final class CatalogApiCacheStore
         ?int $ttlSeconds = null,
         bool $cacheEmpty = true,
     ): array {
-        $cacheKey = hash('sha256', $provider . '|' . $key);
-        $row = $this->em->getRepository(CatalogApiCache::class)->findOneBy(['cacheKey' => $cacheKey]);
+        $row = $this->findRow($provider, $key);
 
         if ($row instanceof CatalogApiCache) {
             $age = time() - $row->fetchedAt()->getTimestamp();
@@ -61,12 +124,15 @@ final class CatalogApiCacheStore
         }
 
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $cacheKey = $this->cacheKey($provider, $key);
         if ($row instanceof CatalogApiCache) {
             $row->refresh($json);
         } else {
-            $this->em->persist(new CatalogApiCache($provider, $cacheKey, $key, $json));
+            $row = new CatalogApiCache($provider, $cacheKey, $key, $json);
+            $this->em->persist($row);
         }
         $this->em->flush();
+        $this->rowByCacheKey[$cacheKey] = $row;
         CatalogCallLogger::log('cache.store', [
             'provider' => $provider,
             'key' => mb_substr($key, 0, 160),
@@ -74,6 +140,32 @@ final class CatalogApiCacheStore
         ]);
 
         return ['data' => $data, 'fromCache' => false];
+    }
+
+    private function findRow(string $provider, string $key): ?CatalogApiCache
+    {
+        $cacheKey = $this->cacheKey($provider, $key);
+        if (array_key_exists($cacheKey, $this->rowByCacheKey)) {
+            $cached = $this->rowByCacheKey[$cacheKey];
+
+            return $cached instanceof CatalogApiCache ? $cached : null;
+        }
+
+        $row = $this->em->getRepository(CatalogApiCache::class)->findOneBy(['cacheKey' => $cacheKey]);
+        if ($row instanceof CatalogApiCache) {
+            $this->rowByCacheKey[$cacheKey] = $row;
+
+            return $row;
+        }
+
+        $this->rowByCacheKey[$cacheKey] = false;
+
+        return null;
+    }
+
+    private function cacheKey(string $provider, string $key): string
+    {
+        return hash('sha256', $provider . '|' . $key);
     }
 
     private function isEmptyPayload(mixed $data): bool

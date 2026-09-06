@@ -1,6 +1,18 @@
 import Alpine from '@alpinejs/csp';
 import { registerUi } from './ui';
 import '../css/admin.css';
+import '../../modules/BikeService/Resources/assets/css/admin.css';
+import '../../modules/CarService/Resources/assets/css/admin.css';
+import '../../modules/SearchEngines/Resources/assets/css/admin.css';
+import '../../modules/Fleet/Resources/assets/css/admin.css';
+import '../../modules/Calendar/Resources/assets/css/admin.css';
+import '../../modules/Customers/Resources/assets/css/admin.css';
+import '../../modules/PartsCatalog/Resources/assets/css/admin.css';
+import '../../modules/Cms/Resources/assets/css/admin.css';
+import '../../modules/CRM/Resources/assets/css/admin.css';
+import '../../modules/Products/Resources/assets/css/admin.css';
+import '../../modules/ProductDiscounts/Resources/assets/css/admin.css';
+import '../../modules/Vitality/Resources/assets/css/admin.css';
 
 type PaletteCommand = {
     id: string;
@@ -345,8 +357,10 @@ Alpine.data('dataTable', () => ({
     selected: [] as string[],
     pageIds: [] as string[],
     bulkAction: '',
+    query: '',
     init() {
         const el = this.$el as HTMLElement;
+        this.query = el.dataset.initialQuery || '';
         try {
             this.pageIds = JSON.parse(el.dataset.pageIds || '[]') as string[];
         } catch {
@@ -359,33 +373,52 @@ Alpine.data('dataTable', () => ({
             this.syncFit();
         });
     },
+    matchText(text: string): boolean {
+        const q = this.query.trim().toLowerCase();
+        if (q === '') {
+            return true;
+        }
+
+        return String(text).toLowerCase().includes(q);
+    },
     syncFit() {
         const shell = this.$el as HTMLElement;
         const wrap = shell.querySelector('.table-wrap');
         if (!(wrap instanceof HTMLElement)) {
             return;
         }
-        // Real page content after the list (rates, hooks…) — not fixed drawers.
+        // Real page content after the list (rates, hooks…) — not fixed drawers / scripts.
         const siblingContent = shell.parentElement
-            ? Array.from(shell.parentElement.children).some(
-                (el) =>
-                    el !== shell &&
-                    el instanceof HTMLElement &&
-                    !el.classList.contains('g-drawer') &&
-                    !el.classList.contains('alert') &&
-                    !el.classList.contains('alert-success') &&
-                    !el.classList.contains('alert-error'),
-            )
+            ? Array.from(shell.parentElement.children).some((el) => {
+                if (el === shell || !(el instanceof HTMLElement)) {
+                    return false;
+                }
+                const tag = el.tagName;
+                if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEMPLATE' || tag === 'LINK') {
+                    return false;
+                }
+                if (
+                    el.classList.contains('g-drawer')
+                    || el.classList.contains('alert')
+                    || el.classList.contains('alert-success')
+                    || el.classList.contains('alert-error')
+                ) {
+                    return false;
+                }
+
+                return true;
+            })
             : false;
         if (siblingContent) {
             shell.classList.add('list-shell--fit');
             return;
         }
-        // Stretch when there is at least one data row; hug content only when empty.
+        // Stretch when there is at least one data row / card; hug content only when empty.
         const dataRows = Array.from(wrap.querySelectorAll('tbody > tr')).filter(
             (tr) => !(tr instanceof HTMLElement && tr.querySelector('.empty')),
         );
-        shell.classList.toggle('list-shell--fit', dataRows.length === 0);
+        const hasCards = wrap.querySelector('.bs-catalog__card, .bs-catalog__grid') !== null;
+        shell.classList.toggle('list-shell--fit', dataRows.length === 0 && !hasCards);
     },
     get selectedCount(): number {
         return this.selected.length;

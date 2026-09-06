@@ -1,0 +1,27 @@
+{# Společná patička CarService PDF — styl F04 (razítko + podpis).
+   Očekává: company, appName, preparedBy, signature (optional), pageLabel (optional) #}
+<div class="pdf-footer pdf-footer--stamp">
+    <table class="w-100">
+        <tr>
+            <td style="width:35%;vertical-align:top">
+                <div class="pdf-footer__lbl">Razítko servisu</div>
+                <div class="pdf-footer__stamp">
+                    {{ company.short|default(appName|slice(0, 8)) }}<br>
+                    {{ company.name|default(appName)|slice(0, 28) }}
+                    {% if company.city %}<br>{{ company.city }}{% endif %}
+                </div>
+            </td>
+            <td style="width:40%;vertical-align:top">
+                <div class="pdf-footer__lbl">Podpis oprávněné osoby</div>
+                {% if signature or preparedBy %}
+                    <div class="pdf-footer__name">{{ signature|default(preparedBy) }}</div>
+                {% endif %}
+                <div class="pdf-footer__line"></div>
+                <div class="pdf-footer__hint">jméno hůlkovým písmem</div>
+            </td>
+            <td style="width:25%;vertical-align:bottom;text-align:right">
+                <div class="pdf-footer__page">{{ pageLabel|default('Strana 1 / 1') }}</div>
+            </td>
+        </tr>
+    </table>
+</div>

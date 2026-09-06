@@ -52,7 +52,7 @@
         </div>
     {% endif %}
 
-    {% if missing is not empty %}
+    {% if enabled and missing is not empty %}
         <div class="alert alert--danger">{{ 'admin.modules.missing_deps'|trans({'%list%': missing|join(', ')}) }}</div>
     {% endif %}
 
@@ -157,7 +157,7 @@
                                             <span class="muted">{{ 'common.none'|trans }}</span>
                                         {% else %}
                                             {% for dep, constraint in manifest.requires %}
-                                                <span class="badge{% if dep in missing %} badge--danger{% else %} badge--info{% endif %}">{{ dep }} {{ constraint }}</span>
+                                                <span class="badge{% if enabled and dep in missing %} badge--danger{% else %} badge--info{% endif %}">{{ dep }} {{ constraint }}</span>
                                             {% endfor %}
                                         {% endif %}
                                     </div>
@@ -437,7 +437,17 @@
                                         <td><code>{{ setting.key }}</code></td>
                                         <td>{{ setting.type }}</td>
                                         <td>{{ setting.label|trans }}</td>
-                                        <td class="muted">{{ setting.default is same as(null) ? 'common.none'|trans : setting.default }}</td>
+                                        <td class="muted">
+                                            {% if setting.default is same as(null) %}
+                                                {{ 'common.none'|trans }}
+                                            {% elseif setting.default is iterable %}
+                                                <code>{{ setting.default|json_encode }}</code>
+                                            {% elseif setting.default is same as(true) or setting.default is same as(false) %}
+                                                {{ setting.default ? 'common.yes'|trans : 'common.no'|trans }}
+                                            {% else %}
+                                                {{ setting.default }}
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

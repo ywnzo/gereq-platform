@@ -37,10 +37,11 @@
             :class="triggerClass"
             aria-haspopup="listbox"
             :aria-expanded="expandedAttr"
-            aria-labelledby="{{ id }}-label"
+            {% if label %}aria-labelledby="{{ id }}-label"{% else %}aria-label="{{ placeholder }}"{% endif %}
             {% if err %}aria-invalid="true"{% endif %}
             {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
         >
+            <span class="g-select__dot" :class="dotClass" aria-hidden="true"></span>
             <span class="g-select__label" x-text="label"></span>
             <span class="g-select__chevron" aria-hidden="true"></span>
         </button>
@@ -60,6 +61,7 @@
                     {% set optValue = option.value is defined ? option.value : option %}
                     {% set optLabel = option.label is defined ? option.label : option %}
                     {% set optDesc = option.description|default('') %}
+                    {% set optTone = option.tone|default('') %}
                     {% set optSearch = option.search|default(optLabel ~ ' ' ~ optDesc) %}
                     <li
                         class="g-select__option{% if optValue == value %} is-selected{% endif %}"
@@ -67,8 +69,12 @@
                         data-value="{{ optValue }}"
                         data-label="{{ optLabel }}"
                         data-search="{{ optSearch }}"
+                        {% if optTone %}data-tone="{{ optTone }}"{% endif %}
                         {% if optValue == value %}data-selected="1"{% endif %}
                     >
+                        {% if optTone %}
+                            <span class="g-select__dot g-select__dot--{{ optTone }}" aria-hidden="true"></span>
+                        {% endif %}
                         <span class="g-select__option-text">
                             <span>{{ optLabel }}</span>
                             {% if optDesc %}<span class="g-select__option-desc">{{ optDesc }}</span>{% endif %}

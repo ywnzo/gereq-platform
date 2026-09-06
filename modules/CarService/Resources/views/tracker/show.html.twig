@@ -54,14 +54,26 @@
     <header class="panel__head"><h2>{{ 'carservice.media.title'|trans }}</h2></header>
     <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.tracker.media',{id:item.id()}) }}">
         {{ csrf_field()|raw }}
-        <label class="field"><span>{{ 'carservice.media.phase_label'|trans }}</span>
-            <select name="phase" class="input">
-                {% for phase in mediaPhases %}<option value="{{ phase }}">{{ ('carservice.media.phase.'~phase)|trans }}</option>{% endfor %}
-            </select>
-        </label>
-        <label class="field"><span>{{ 'carservice.media.file'|trans }}</span>
-            <input class="input" type="file" name="file" accept="image/*" capture="environment" required>
-        </label>
+        {% set phaseOptions = [] %}
+        {% for phase in mediaPhases %}
+            {% set phaseOptions = phaseOptions|merge([{ value: phase, label: ('carservice.media.phase.'~phase)|trans }]) %}
+        {% endfor %}
+        {% include 'ui/select.html.twig' with {
+            name: 'phase',
+            label: 'carservice.media.phase_label'|trans,
+            value: mediaPhases[0]|default('before'),
+            options: phaseOptions
+        } %}
+        {% include 'ui/file.html.twig' with {
+            name: 'file',
+            label: 'carservice.media.file'|trans,
+            hint: 'carservice.media.file.hint'|trans,
+            accept: 'image/*',
+            capture: 'environment',
+            required: true,
+            compact: true,
+            extra: 'field--full'
+        } %}
         <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
     </form>
     {% for phase in mediaPhases %}

@@ -44,7 +44,7 @@
             {value:'body_shop',label:'carservice.team.body_shop'|trans},
             {value:'paint_shop',label:'carservice.team.paint_shop'|trans}
         ] } %}
-        {% include 'ui/select.html.twig' with { name:'branch_id', label:'carservice.field.branch'|trans, optional:true, form:'carservice.save', value: item?item.branchId():'', options:branchOptions } %}
+        {% include 'ui/select.html.twig' with { name:'branch_id', label:'carservice.field.branch'|trans, optional:true, form:'carservice.save', value: item ? item.branchId() : defaultBranchId|default(''), options:branchOptions, searchable: true } %}
     </div>
 </section>
 

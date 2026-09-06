@@ -26,6 +26,17 @@
     <div class="form-grid">
         {% include 'ui/input.html.twig' with { name:'plate', label:'fleet.field.plate'|trans, required:true, form:'fleet.save', value: item?item.plate():'' } %}
         {% include 'ui/input.html.twig' with { name:'vin', label:'fleet.field.vin'|trans, optional:true, form:'fleet.save', value: item?item.vin():'' } %}
+        {% if branchOptions is defined and branchOptions is not empty %}
+            {% include 'ui/select.html.twig' with {
+                name: 'branch_id',
+                label: 'fleet.field.branch'|trans,
+                optional: true,
+                form: 'fleet.save',
+                value: item ? item.branchId() : defaultBranchId|default(''),
+                options: branchOptions,
+                searchable: true
+            } %}
+        {% endif %}
         <div class="g-field field--full" data-field="orv_id">
             <label class="g-label" for="orv_id">
                 <span>{{ 'fleet.field.orv'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
@@ -51,9 +62,11 @@
         <div><h2>{{ 'fleet.form.section.vehicle'|trans }}</h2></div>
     </header>
     <div class="form-grid">
+        {% set tech = item ? (item.techJson() ?? {}) : {} %}
         {% include 'ui/input.html.twig' with { name:'brand', label:'fleet.field.brand'|trans, optional:true, form:'fleet.save', value: item?item.brand():'', list:'fleet-brands' } %}
         {% if brandOptions %}<datalist id="fleet-brands">{% for b in brandOptions %}<option value="{{ b }}">{% endfor %}</datalist>{% endif %}
         {% include 'ui/input.html.twig' with { name:'model', label:'fleet.field.model'|trans, optional:true, form:'fleet.save', value: item?item.model():'' } %}
+        {% include 'ui/input.html.twig' with { name:'generation', label:'fleet.field.generation'|trans, optional:true, form:'fleet.save', value: tech.generation|default(item ? item.generation() : ''), hint:'fleet.field.generation_hint'|trans } %}
         {% include 'ui/input.html.twig' with { name:'model_year', type:'number', label:'fleet.field.year'|trans, optional:true, form:'fleet.save', value: item and item.modelYear()?item.modelYear():'' } %}
         {% include 'ui/input.html.twig' with { name:'color', label:'fleet.field.color'|trans, optional:true, form:'fleet.save', value: item?item.color():'' } %}
         {% include 'ui/select.html.twig' with { name:'fuel', label:'fleet.field.fuel'|trans, optional:true, form:'fleet.save', value: item?item.fuel():'', options: fuelOptions } %}
@@ -72,7 +85,6 @@
         </div>
     </header>
     <div class="form-grid">
-        {% set tech = item ? (item.techJson() ?? {}) : {} %}
         {% include 'ui/input.html.twig' with { name:'vehicle_kind', label:'fleet.field.vehicle_kind'|trans, optional:true, form:'fleet.save', value: tech.vehicle_kind|default('') } %}
         {% include 'ui/input.html.twig' with { name:'body_type', label:'fleet.field.body_type'|trans, optional:true, form:'fleet.save', value: tech.body_type|default('') } %}
         {% include 'ui/input.html.twig' with { name:'category', label:'fleet.field.category'|trans, optional:true, form:'fleet.save', value: tech.category|default('') } %}
@@ -89,6 +101,7 @@
         {% include 'ui/input.html.twig' with { name:'first_registered_at', type:'date', label:'fleet.field.first_registered_at'|trans, optional:true, form:'fleet.save', value: tech.first_registered_at|default('') } %}
         {% include 'ui/input.html.twig' with { name:'homologation', label:'fleet.field.homologation'|trans, optional:true, form:'fleet.save', value: tech.homologation|default(''), extra:'field--full' } %}
         {% include 'ui/input.html.twig' with { name:'version_code', label:'fleet.field.version_code'|trans, optional:true, form:'fleet.save', value: tech.version_code|default(''), extra:'field--full' } %}
+        {% include 'ui/textarea.html.twig' with { name:'orv_notes', label:'fleet.field.orv_notes'|trans, optional:true, form:'fleet.save', value: tech.orv_notes|default(''), size:'mini', rows:5, extra:'field--full', hint:'fleet.field.orv_notes_hint'|trans } %}
     </div>
 </section>
 
@@ -102,7 +115,7 @@
         {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
         ] } %}
         {% include 'ui/select.html.twig' with { name:'status', label:'fleet.field.status'|trans, form:'fleet.save', value: item?item.status():'available', options:[
-        {value:'available',label:'fleet.status.available'|trans},{value:'rented',label:'fleet.status.rented'|trans},{value:'in_service',label:'fleet.status.in_service'|trans},{value:'repair_wait',label:'fleet.status.repair_wait'|trans},{value:'out_of_service',label:'fleet.status.out_of_service'|trans}
+        {value:'available',label:'fleet.status.available'|trans,tone:'available'},{value:'rented',label:'fleet.status.rented'|trans,tone:'rented'},{value:'in_service',label:'fleet.status.in_service'|trans,tone:'in_service'},{value:'repair_wait',label:'fleet.status.repair_wait'|trans,tone:'repair_wait'},{value:'out_of_service',label:'fleet.status.out_of_service'|trans,tone:'out_of_service'},{value:'returned_to_client',label:'fleet.status.returned_to_client'|trans,tone:'returned_to_client'}
         ] } %}
         {% include 'ui/select.html.twig' with { name:'ownership', label:'fleet.field.ownership'|trans, form:'fleet.save', value: item?item.ownership():'owned', options:[
         {value:'owned',label:'fleet.ownership.owned'|trans},{value:'external',label:'fleet.ownership.external'|trans}
@@ -239,6 +252,7 @@
         set('vin', f.vin),
         set('brand', f.brand),
         set('model', f.model),
+        set('generation', f.generation),
         set('model_year', f.model_year),
         set('color', f.color),
         set('fuel', f.fuel),
@@ -261,6 +275,7 @@
         set('first_registered_at', f.first_registered_at),
         set('homologation', f.homologation),
         set('version_code', f.version_code),
+        set('orv_notes', f.orv_notes),
       ].filter(Boolean).length;
       markField('orv_id');
       status.classList.add('g-hint--ok');

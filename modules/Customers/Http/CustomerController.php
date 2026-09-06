@@ -341,6 +341,99 @@ final class CustomerController extends Controller
         return $this->redirect('admin.customers.index');
     }
 
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'customers.bulk');
+        $action = (string) $data['action'];
+        $user = $this->auth->user();
+        $canEdit = $user !== null && $user->can('customers.edit');
+        $canDelete = $user !== null && $user->can('customers.delete');
+
+        if ($action === 'delete') {
+            if (!$canDelete) {
+                $this->abort(403);
+            }
+        } elseif (!$canEdit) {
+            $this->abort(403);
+        }
+
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('customers.bulk.error.empty'));
+
+            return $this->redirect('admin.customers.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('customers.bulk.error.confirm'));
+
+            return $this->redirect('admin.customers.index');
+        }
+
+        $statusMap = [
+            'activate' => 'active',
+            'lead' => 'lead',
+            'deactivate' => 'inactive',
+            'archive' => 'archived',
+        ];
+
+        $affected = 0;
+        foreach ($ids as $id) {
+            $customer = $this->find($id);
+            if ($customer === null) {
+                continue;
+            }
+
+            if ($action === 'delete') {
+                $name = $customer->name();
+                $payload = $this->publicCustomer($customer);
+                $this->hooks->doAction('customers.deleting', $customer);
+                $this->em->remove($customer);
+                $this->events->dispatch(CustomerDeleted::make($id, $payload));
+                $this->hooks->doAction('customers.deleted', $id, $name);
+                $this->auditor->log('customer.deleted', 'customer', $id);
+                $affected++;
+                continue;
+            }
+
+            $newStatus = $statusMap[$action] ?? null;
+            if ($newStatus === null || $customer->status() === $newStatus) {
+                continue;
+            }
+
+            $previousStatus = $customer->status();
+            $customer->setStatus($newStatus);
+            $payload = $this->publicCustomer($customer);
+            $this->events->dispatch(CustomerUpdated::make($customer->id(), $payload));
+            if ($previousStatus !== 'archived' && $newStatus === 'archived') {
+                $this->events->dispatch(CustomerArchived::make($customer->id(), $payload));
+            }
+            if ($previousStatus === 'archived' && $newStatus !== 'archived') {
+                $this->events->dispatch(CustomerRestored::make($customer->id(), $payload));
+            }
+            $this->auditor->log('customer.updated', 'customer', $customer->id(), [
+                'status' => $previousStatus,
+            ], [
+                'status' => $newStatus,
+            ]);
+            $affected++;
+        }
+
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('customers.bulk.flash.' . $action, [
+            '%count%' => (string) $affected,
+        ]));
+
+        return $this->redirect('admin.customers.index');
+    }
+
     private function find(string $id): ?Customer
     {
         $customer = $this->em->find(Customer::class, $id);

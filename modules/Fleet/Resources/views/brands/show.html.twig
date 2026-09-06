@@ -3,7 +3,7 @@
 <div class="list-shell" x-data="dataTable" data-table-id="fleet-brand-models" data-actions-default="1">
 <header class="page-header">
     <div class="fleet-brand-detail__title">
-        <p class="eyebrow"><a href="{{ url('admin.fleet.settings') }}">{{ 'fleet.settings.title'|trans }}</a> · {{ 'fleet.brands.title'|trans }}</p>
+        <p class="eyebrow"><a href="{{ url('admin.fleet.brands') }}">{{ 'fleet.catalog.title'|trans }}</a></p>
         <div class="fleet-brand-detail__identity">
             {% if logo %}
                 <img class="fleet-brand-logo" src="{{ logo }}" alt="{{ brand.name() }}" loading="lazy" onerror="this.style.display='none'">
@@ -25,7 +25,7 @@
                 <button type="submit" class="btn btn--ghost">{{ 'common.delete'|trans }}</button>
             </form>
         {% endif %}
-        <a class="btn btn--ghost" href="{{ url('admin.fleet.settings') }}">{{ 'common.back'|trans }}</a>
+        <a class="btn btn--ghost" href="{{ url('admin.fleet.brands') }}">{{ 'common.back'|trans }}</a>
     </div>
 </header>
 

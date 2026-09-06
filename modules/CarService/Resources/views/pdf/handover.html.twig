@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <title>Protokol o předání a převzetí {{ docNumber }}</title>
+    <style>{% include '@carservice/pdf/_styles.html.twig' %}</style>
+</head>
+<body>
+{% if isPreview|default(false) %}<div class="preview-banner">Náhled · neukládá se do Dokumentů</div>{% endif %}
+
+{% include '@carservice/pdf/_header.html.twig' %}
+
+<table class="w-100" style="margin-bottom:10px">
+    <tr>
+        <td style="width:50%;padding-right:10px;vertical-align:top">
+            <div class="lbl">Zákazník / přebírající</div>
+            {% if customer %}
+                <div class="company-name" style="margin-top:4px">{{ customer.name() }}</div>
+                {% if customer.company() %}<div class="small">{{ customer.company() }}</div>{% endif %}
+                <div class="small">
+                    {% if customer.phone() %}{{ customer.phone() }}{% endif %}
+                    {% if customer.phone() and customer.email() %} · {% endif %}
+                    {% if customer.email() %}{{ customer.email() }}{% endif %}
+                </div>
+            {% else %}
+                <div class="muted">—</div>
+            {% endif %}
+        </td>
+        <td style="width:50%;padding-left:10px;vertical-align:top;border-left:2px solid #1a1a1a">
+            <div class="lbl">Vozidlo</div>
+            <div class="company-name" style="margin-top:4px">
+                {% if vehicle %}{{ vehicle.plate() }} · {{ vehicle.brand() }} {{ vehicle.displayModel() }}{% else %}—{% endif %}
+            </div>
+            <div class="small">
+                {% if vehicle and vehicle.vin() %}VIN {{ vehicle.vin() }}{% endif %}
+                {% if order.intakeMileage() is not null %}{% if vehicle and vehicle.vin() %} · {% endif %}{{ order.intakeMileage()|number_format(0, ',', ' ') }} km{% endif %}
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div class="box" style="margin-bottom:8px">
+    <div class="section-num" style="margin-top:0">1. Předmět předání</div>
+    <div class="small">
+        Vozidlo {% if vehicle %}<strong>{{ vehicle.plate() }}</strong>{% else %}—{% endif %}
+        · zakázka <strong>{{ docNumber }}</strong>
+        · odpracováno {{ (jobSeconds / 3600)|number_format(2, ',', ' ') }} h
+    </div>
+    {% if order.serviceInfo() %}
+        <div class="small mt-1">{{ order.serviceInfo()|nl2br }}</div>
+    {% endif %}
+
+    <div class="section-num">2. Na základě zakázky</div>
+    <div class="small">
+        Servisní zakázka č. <strong>{{ docNumber }}</strong>
+        {% if order.intakeAt() %} · příjem {{ order.intakeAt().format('d.m.Y') }}{% endif %}
+        {% if order.handoverAt() %} · předání {{ order.handoverAt().format('d.m.Y') }}{% endif %}
+    </div>
+
+    <div class="section-num">3. Zahájení přebíracího řízení</div>
+    <div class="small">{{ handoverDate|default(issuedAt) }}</div>
+
+    <div class="section-num">4. Nedostatky</div>
+    {% if defects|default([]) %}
+        <ul class="small" style="margin:4px 0 0 16px;padding:0">
+            {% for d in defects %}<li>{{ d }}</li>{% endfor %}
+        </ul>
+    {% elseif order.note() %}
+        <div class="small">{{ order.note()|nl2br }}</div>
+    {% else %}
+        <div class="small muted">Nebyly zjištěny / bez výhrad</div>
+    {% endif %}
+
+    <div class="section-num">5. Termín odstranění</div>
+    <div class="small">{{ defectDeadline|default('—') }}</div>
+</div>
+
+{% if jobs is not empty %}
+<div class="bar">Evidence provedené práce</div>
+<table class="items">
+    <thead>
+        <tr>
+            <th style="width:50%">Práce</th>
+            <th style="width:30%">Termín</th>
+            <th class="num" style="width:20%">Hodiny</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for j in jobs %}
+        <tr>
+            <td>{{ j.type() }}{% if j.note() %}<br><span class="muted">{{ j.note() }}</span>{% endif %}</td>
+            <td>{{ j.startedAt().format('d.m.Y') }}{% if j.endedAt() %} – {{ j.endedAt().format('d.m.Y') }}{% endif %}</td>
+            <td class="num">{{ j.durationSeconds() is not null ? ((j.durationSeconds() / 3600)|number_format(2, ',', ' ')) : '—' }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div class="mt-2 small">V {{ handoverPlace|default('……………………') }}, dne {{ handoverDate|default(issuedAt) }}</div>
+
+{% include '@carservice/pdf/_footer.html.twig' %}
+</body>
+</html>

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Modules\iDoklad\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Debug\FullServiceLogger;
+use Gereq\Module\CapabilityRegistry;
 use Gereq\Setting\Settings;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\iDoklad\Domain\iDokladLink;
 
 /**
@@ -17,6 +20,7 @@ final class iDokladService
         private readonly iDokladApiClient $api,
         private readonly Settings $settings,
         private readonly EntityManagerInterface $em,
+        private readonly CapabilityRegistry $capabilities,
     ) {
     }
 
@@ -87,6 +91,11 @@ final class iDokladService
         }
 
         $company = trim((string) ($userData['company'] ?? ''));
+        $countryId = (int) ($userData['country_id'] ?? 0);
+        if ($countryId <= 0) {
+            $countryId = $this->resolveCountryId((string) ($userData['country'] ?? 'CZ')) ?? 2;
+        }
+
         $contact = [
             'Firstname' => $first,
             'Surname' => $surname !== '' ? $surname : $first,
@@ -98,17 +107,29 @@ final class iDokladService
             'Street' => (string) ($userData['street'] ?? ''),
             'City' => (string) ($userData['city'] ?? ''),
             'PostalCode' => (string) ($userData['zip'] ?? ''),
+            'CountryId' => $countryId,
         ];
-
-        if (isset($userData['country_id']) && $userData['country_id'] !== null && (int) $userData['country_id'] > 0) {
-            $contact['CountryId'] = (int) $userData['country_id'];
-        }
 
         if ($iDokladId !== null && $iDokladId > 0) {
             $contact['Id'] = $iDokladId;
         }
 
-        return $this->api->setContact($contact, $iDokladId);
+        FullServiceLogger::log('idoklad.contact.set', [
+            'idoklad_id' => $iDokladId,
+            'company' => $contact['CompanyName'] ?? null,
+            'email' => $contact['Email'] ?? null,
+            'country_id' => $countryId,
+        ]);
+        $result = $this->api->setContact($contact, $iDokladId);
+        FullServiceLogger::log('idoklad.contact.result', [
+            'idoklad_id' => $iDokladId,
+            'isSucceed' => !empty($result['isSucceed']),
+            'code' => $result['code'] ?? null,
+            'message' => $result['message'] ?? null,
+            'data_id' => $result['data']['Id'] ?? null,
+        ]);
+
+        return $result;
     }
 
     /** @return array<string, mixed> */
@@ -124,8 +145,15 @@ final class iDokladService
     public function setDocument(array $documentData, int $partnerId, ?int $iDokladId = null): array
     {
         $type = (string) ($documentData['documentType'] ?? $documentData['document_type'] ?? 'invoice');
+        FullServiceLogger::log('idoklad.document.set', [
+            'type' => $type,
+            'partner_id' => $partnerId,
+            'idoklad_id' => $iDokladId,
+            'items_count' => is_array($documentData['Items'] ?? null) ? count($documentData['Items']) : 0,
+            'description' => $documentData['Description'] ?? null,
+        ]);
 
-        return match ($type) {
+        $result = match ($type) {
             'invoice' => $this->api->setInvoice($this->normalizeIssuedDocument($documentData, $partnerId, $iDokladId), $iDokladId),
             'creditNote', 'credit_note' => $this->api->setCreditNote($this->normalizeCreditNote($documentData, $partnerId, $iDokladId), $iDokladId),
             'cashVoucher', 'cash_voucher' => $this->api->setCashVoucher($this->normalizeCashVoucher($documentData, $partnerId, $iDokladId), $iDokladId),
@@ -139,6 +167,17 @@ final class iDokladService
                 'totalPages' => 0,
             ],
         };
+
+        FullServiceLogger::log('idoklad.document.result', [
+            'type' => $type,
+            'partner_id' => $partnerId,
+            'isSucceed' => !empty($result['isSucceed']),
+            'code' => $result['code'] ?? null,
+            'message' => $result['message'] ?? null,
+            'data_id' => $result['data']['Id'] ?? null,
+        ]);
+
+        return $result;
     }
 
     /** @return array<string, mixed> */
@@ -185,6 +224,27 @@ final class iDokladService
         return $this->api->getReport($iDokladId, $apiType);
     }
 
+    public function downloadDocumentPdf(int $iDokladId, string $documentType = 'invoice'): ?string
+    {
+        $apiType = match ($documentType) {
+            'invoice' => 'IssuedInvoice',
+            'creditNote', 'credit_note' => 'CreditNote',
+            'cashVoucher', 'cash_voucher' => 'CashVoucher',
+            default => null,
+        };
+
+        if ($apiType === null) {
+            FullServiceLogger::log('idoklad.pdf.unknown_type', [
+                'idoklad_id' => $iDokladId,
+                'document_type' => $documentType,
+            ]);
+
+            return null;
+        }
+
+        return $this->api->getReportPdf($iDokladId, $apiType);
+    }
+
     public function findLink(string $entityType, string $entityId, string $documentType = 'contact'): ?iDokladLink
     {
         $link = $this->em->getRepository(iDokladLink::class)->findOneBy([
@@ -215,7 +275,160 @@ final class iDokladService
         }
         $this->em->flush();
 
+        FullServiceLogger::log('idoklad.link.remembered', [
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'idoklad_id' => $iDokladId,
+            'document_type' => $documentType,
+            'meta' => $meta,
+        ]);
+
         return $link;
+    }
+
+    public function forgetLink(string $entityType, string $entityId, string $documentType = 'contact'): bool
+    {
+        $link = $this->findLink($entityType, $entityId, $documentType);
+        if ($link === null) {
+            return false;
+        }
+
+        FullServiceLogger::log('idoklad.link.forgotten', [
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'idoklad_id' => $link->iDokladId(),
+            'document_type' => $documentType,
+        ]);
+        $this->em->remove($link);
+        $this->em->flush();
+
+        return true;
+    }
+
+    /**
+     * Vyhledá CountryId v lokálním číselníku podle ISO kódu (např. CZ).
+     * Fallback: CZ = 2 (standardní ID v iDoklad číselníku).
+     */
+    public function resolveCountryId(?string $countryCode): ?int
+    {
+        $code = strtoupper(trim((string) $countryCode));
+        if ($code === '') {
+            $code = 'CZ';
+        }
+
+        foreach ($this->cachedList('countries') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $rowCode = strtoupper((string) ($row['Code'] ?? $row['IsoCode'] ?? $row['code'] ?? ''));
+            if ($rowCode !== $code) {
+                continue;
+            }
+            $id = (int) ($row['Id'] ?? $row['id'] ?? 0);
+
+            return $id > 0 ? $id : null;
+        }
+
+        return $code === 'CZ' ? 2 : null;
+    }
+
+    /**
+     * Vyhledá CurrencyId — přes CurrencyBuilder (currency modul), jinak lokální číselník.
+     * Fallback: CZK = 1.
+     */
+    public function resolveCurrencyId(?string $currencyCode = 'CZK'): int
+    {
+        $money = $this->currency();
+        if ($money instanceof CurrencyBuilder) {
+            return $money->iDokladId($currencyCode);
+        }
+
+        $code = strtoupper(trim((string) $currencyCode));
+        if ($code === '') {
+            $code = 'CZK';
+        }
+
+        foreach ($this->cachedList('currencies') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $rowCode = strtoupper((string) ($row['Code'] ?? $row['code'] ?? ''));
+            if ($rowCode !== $code) {
+                continue;
+            }
+            $id = (int) ($row['Id'] ?? $row['id'] ?? 0);
+            if ($id > 0) {
+                return $id;
+            }
+        }
+
+        return 1;
+    }
+
+    private function currency(): ?CurrencyBuilder
+    {
+        if (!$this->capabilities->has('currency')) {
+            return null;
+        }
+        $cap = $this->capabilities->get('currency');
+
+        return $cap instanceof CurrencyBuilder ? $cap : null;
+    }
+
+    /**
+     * Výchozí platební metoda (IsDefault), jinak první z číselníku.
+     * Fallback: 1 = Bank transfer.
+     */
+    public function resolveDefaultPaymentOptionId(): int
+    {
+        $fallback = 1;
+        $first = null;
+        foreach ($this->cachedList('paymentOptions') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = (int) ($row['Id'] ?? $row['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $first ??= $id;
+            if (!empty($row['IsDefault']) || !empty($row['isDefault'])) {
+                return $id;
+            }
+        }
+
+        return $first ?? $fallback;
+    }
+
+    /**
+     * Výchozí číselná řada pro typ dokladu (0 = faktura, 3 = dobropis).
+     *
+     * @return array{id: int, last_number: int}|null
+     */
+    public function resolveDefaultNumericSequence(int $documentType = 0): ?array
+    {
+        $fallback = null;
+        foreach ($this->cachedList('numericSequences') as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $type = (int) ($row['DocumentType'] ?? $row['documentType'] ?? -1);
+            if ($type !== $documentType) {
+                continue;
+            }
+            $id = (int) ($row['Id'] ?? $row['id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $last = (int) ($row['LastNumber'] ?? $row['lastNumber'] ?? 0);
+            $candidate = ['id' => $id, 'last_number' => $last];
+            $fallback ??= $candidate;
+            if (!empty($row['IsDefault']) || !empty($row['isDefault'])) {
+                return $candidate;
+            }
+        }
+
+        return $fallback;
     }
 
     /**
@@ -247,6 +460,14 @@ final class iDokladService
             }
             $lists[$name] = $response['items'] ?? [];
             $this->settings->set('idoklad.lists', $lists, \Gereq\Setting\SettingRecord::TYPE_JSON, 'idoklad');
+
+            if ($name === 'currencies') {
+                $money = $this->currency();
+                if ($money instanceof CurrencyBuilder) {
+                    $items = $response['items'] ?? [];
+                    $money->syncIDokladIds(is_array($items) ? array_values($items) : []);
+                }
+            }
         }
 
         return $response;
@@ -270,7 +491,7 @@ final class iDokladService
      */
     private function normalizeIssuedDocument(array $documentData, int $partnerId, ?int $iDokladId): array
     {
-        $payload = $this->baseDocumentPayload($documentData, $partnerId);
+        $payload = $this->baseDocumentPayload($documentData, $partnerId, 0);
         if ($iDokladId !== null && $iDokladId > 0) {
             $payload['Id'] = $iDokladId;
         }
@@ -284,7 +505,7 @@ final class iDokladService
      */
     private function normalizeCreditNote(array $documentData, int $partnerId, ?int $iDokladId): array
     {
-        $payload = $this->baseDocumentPayload($documentData, $partnerId);
+        $payload = $this->baseDocumentPayload($documentData, $partnerId, 3);
         $payload['CreditNoteReason'] = (string) ($documentData['creditNoteReason'] ?? $documentData['credit_note_reason'] ?? 'Dobropis');
         if (!empty($documentData['creditedInvoiceId'] ?? $documentData['credited_invoice_id'] ?? null)) {
             $payload['CreditedInvoiceId'] = (int) ($documentData['creditedInvoiceId'] ?? $documentData['credited_invoice_id']);
@@ -331,14 +552,14 @@ final class iDokladService
      * @param array<string, mixed> $documentData
      * @return array<string, mixed>
      */
-    private function baseDocumentPayload(array $documentData, int $partnerId): array
+    private function baseDocumentPayload(array $documentData, int $partnerId, int $documentType = 0): array
     {
         $isTaxEnabled = (bool) ($documentData['taxEnabled'] ?? $documentData['tax_enabled'] ?? true);
         $payload = [
             'DateOfIssue' => (string) ($documentData['issueDate'] ?? $documentData['issue_date'] ?? date('c')),
             'DateOfMaturity' => (string) ($documentData['dueDate'] ?? $documentData['due_date'] ?? date('c', strtotime('+14 days'))),
             'DateOfTaxing' => (string) ($documentData['issueDate'] ?? $documentData['issue_date'] ?? date('c')),
-            'Description' => (string) ($documentData['description'] ?? 'GEREQ'),
+            'Description' => (string) ($documentData['description'] ?? $documentData['Description'] ?? 'GEREQ'),
             'Note' => (string) ($documentData['internalNote'] ?? $documentData['internal_note'] ?? ''),
             'ItemsTextSuffix' => (string) ($documentData['note'] ?? ''),
             'PartnerId' => $partnerId,
@@ -348,10 +569,11 @@ final class iDokladService
         ];
 
         foreach ([
-            'CurrencyId' => ['currencyId', 'currency_id'],
-            'PaymentOptionId' => ['paymentOptionId', 'payment_option_id'],
-            'NumericSequenceId' => ['numericSequenceId', 'numeric_sequence_id'],
-            'VariableSymbol' => ['variableSymbol', 'variable_symbol'],
+            'CurrencyId' => ['currencyId', 'currency_id', 'CurrencyId'],
+            'PaymentOptionId' => ['paymentOptionId', 'payment_option_id', 'PaymentOptionId'],
+            'NumericSequenceId' => ['numericSequenceId', 'numeric_sequence_id', 'NumericSequenceId'],
+            'VariableSymbol' => ['variableSymbol', 'variable_symbol', 'VariableSymbol'],
+            'DocumentSerialNumber' => ['documentSerialNumber', 'document_serial_number', 'DocumentSerialNumber', 'documentNumber', 'document_number'],
         ] as $target => $keys) {
             foreach ($keys as $key) {
                 if (isset($documentData[$key]) && $documentData[$key] !== '' && $documentData[$key] !== null) {
@@ -361,8 +583,27 @@ final class iDokladService
             }
         }
 
-        if (!empty($documentData['documentNumber'] ?? $documentData['document_number'] ?? null)) {
-            $payload['DocumentSerialNumber'] = (int) substr((string) ($documentData['documentNumber'] ?? $documentData['document_number']), -4);
+        if (!isset($payload['CurrencyId'])) {
+            $currencyCode = (string) ($documentData['currency'] ?? $documentData['Currency'] ?? '');
+            $money = $this->currency();
+            if ($currencyCode === '' && $money instanceof CurrencyBuilder) {
+                $currencyCode = $money->defaultCode();
+            }
+            $payload['CurrencyId'] = $this->resolveCurrencyId($currencyCode !== '' ? $currencyCode : 'CZK');
+        }
+        if (!isset($payload['PaymentOptionId'])) {
+            $payload['PaymentOptionId'] = $this->resolveDefaultPaymentOptionId();
+        }
+
+        $sequence = $this->resolveDefaultNumericSequence($documentType);
+        if (!isset($payload['NumericSequenceId']) && $sequence !== null) {
+            $payload['NumericSequenceId'] = $sequence['id'];
+        }
+        if (!isset($payload['DocumentSerialNumber']) && $sequence !== null) {
+            $payload['DocumentSerialNumber'] = $sequence['last_number'] + 1;
+        }
+        if (!isset($payload['DocumentSerialNumber'])) {
+            $payload['DocumentSerialNumber'] = 1;
         }
 
         return $payload;
@@ -374,7 +615,7 @@ final class iDokladService
      */
     private function mapInvoiceItems(array $documentData, bool $isTaxEnabled): array
     {
-        $raw = $documentData['items'] ?? [];
+        $raw = $documentData['items'] ?? $documentData['Items'] ?? [];
         if (is_string($raw)) {
             $decoded = json_decode($raw, true);
             $raw = is_array($decoded) ? $decoded : [];
@@ -409,7 +650,7 @@ final class iDokladService
      */
     private function mapCashItems(array $documentData): array
     {
-        $raw = $documentData['items'] ?? [];
+        $raw = $documentData['items'] ?? $documentData['Items'] ?? [];
         if (is_string($raw)) {
             $decoded = json_decode($raw, true);
             $raw = is_array($decoded) ? $decoded : [];
@@ -425,7 +666,7 @@ final class iDokladService
             }
             $items[] = [
                 'Name' => (string) ($item['description'] ?? $item['name'] ?? $item['Name'] ?? ''),
-                'Price' => (float) ($item['unitPrice'] ?? $item['unit_price'] ?? $item['Price'] ?? 0),
+                'Price' => (float) ($item['unitPrice'] ?? $item['unit_price'] ?? $item['Price'] ?? $item['UnitPrice'] ?? 0),
                 'PriceType' => (int) ($item['priceType'] ?? $item['PriceType'] ?? 1),
                 'VatRateType' => (int) ($item['vatRateType'] ?? $item['VatRateType'] ?? 1),
             ];

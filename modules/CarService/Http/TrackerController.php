@@ -11,13 +11,13 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\CarService\Application\BranchContext;
 use Modules\CarService\Application\CarServiceProvider;
 use Modules\CarService\Application\OrderMediaService;
 use Modules\CarService\Application\QrCodeService;
 use Modules\CarService\Domain\ServiceOrder;
 use Modules\Fleet\Application\VehicleMediaService;
 use Modules\Fleet\Domain\Vehicle;
-use Modules\Media\Domain\MediaAsset;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -41,6 +41,7 @@ final class TrackerController extends Controller
         private readonly OrderMediaService $orderMedia,
         private readonly QrCodeService $qr,
         private readonly VehicleMediaService $vehicleMedia,
+        private readonly BranchContext $branchContext,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -51,12 +52,23 @@ final class TrackerController extends Controller
         if ($token !== '') {
             $order = $this->carservice->resolveByTrackerToken($token);
             if ($order !== null && $order->isOpen()) {
+                if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+                    $this->flash('error', $this->translator->trans('carservice.error.branch_forbidden'));
+
+                    return $this->redirect('admin.carservice.tracker');
+                }
+
                 return $this->redirect('admin.carservice.tracker.show', ['id' => $order->id()]);
             }
             $this->flash('error', $this->translator->trans('carservice.tracker.not_found'));
         }
 
         $openOrders = $this->carservice->listOpen(['open_only' => true], 30);
+        $user = $this->auth->user();
+        $openOrders = array_values(array_filter(
+            $openOrders,
+            fn (ServiceOrder $order): bool => $this->branchContext->canMutateOrder($user, $order),
+        ));
 
         return $this->page('@carservice/tracker/index.html.twig', [
             'pageTitle' => $this->translator->trans('carservice.tracker.title'),
@@ -82,6 +94,11 @@ final class TrackerController extends Controller
 
             return $this->redirect('admin.carservice.tracker');
         }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            $this->flash('error', $this->translator->trans('carservice.error.branch_forbidden'));
+
+            return $this->redirect('admin.carservice.tracker');
+        }
 
         return $this->redirect('admin.carservice.tracker.show', ['id' => $order->id()]);
     }
@@ -92,6 +109,9 @@ final class TrackerController extends Controller
         if ($order === null || !$order->isOpen()) {
             $this->abort(404, $this->translator->trans('carservice.error.not_found'));
         }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            $this->abort(403, $this->translator->trans('carservice.error.branch_forbidden'));
+        }
         $vehicle = $this->em->find(Vehicle::class, $order->vehicleId());
         $jobs = $this->carservice->jobsForOrder($id);
         $running = null;
@@ -101,6 +121,7 @@ final class TrackerController extends Controller
                 break;
             }
         }
+        $mediaPhases = $this->carservice->mediaPhases();
 
         return $this->page('@carservice/tracker/show.html.twig', [
             'pageTitle' => $vehicle instanceof Vehicle ? $vehicle->plate() : $this->translator->trans('carservice.tracker.title'),
@@ -110,11 +131,8 @@ final class TrackerController extends Controller
             'running' => $running,
             'teams' => ServiceOrder::TEAMS,
             'teamQueue' => $this->carservice->teamQueue($order->team(), $id),
-            'mediaPhases' => $this->carservice->mediaPhases(),
-            'mediaByPhase' => array_combine(
-                $this->carservice->mediaPhases(),
-                array_map(fn (string $p) => $this->orderMedia->forOrder($id, $p), $this->carservice->mediaPhases()),
-            ) ?: [],
+            'mediaPhases' => $mediaPhases,
+            'mediaByPhase' => $this->orderMedia->forOrderByPhases($id, $mediaPhases),
             'mediaAvailable' => $this->orderMedia->available(),
             'qrDataUri' => $this->qr->dataUriForOrder($order->trackerToken()),
             'trackerUrl' => $this->qr->trackerUrl($order->trackerToken()),
@@ -123,6 +141,13 @@ final class TrackerController extends Controller
 
     public function startJob(Request $request, string $id): Response
     {
+        $order = $this->carservice->getOrder($id);
+        if ($order === null || !$order->isOpen()) {
+            $this->abort(404, $this->translator->trans('carservice.error.not_found'));
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            $this->abort(403, $this->translator->trans('carservice.error.branch_forbidden'));
+        }
         $type = trim((string) $request->request->get('type', 'work')) ?: 'work';
         $note = trim((string) $request->request->get('note', '')) ?: null;
         try {
@@ -140,6 +165,13 @@ final class TrackerController extends Controller
 
     public function stopJob(string $id, string $jobId): Response
     {
+        $order = $this->carservice->getOrder($id);
+        if ($order === null || !$order->isOpen()) {
+            $this->abort(404, $this->translator->trans('carservice.error.not_found'));
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            $this->abort(403, $this->translator->trans('carservice.error.branch_forbidden'));
+        }
         try {
             $job = $this->carservice->completeJob($jobId);
             if ($job->orderId() !== $id) {
@@ -167,6 +199,9 @@ final class TrackerController extends Controller
         $order = $this->carservice->getOrder($id);
         if ($order === null || !$order->isOpen()) {
             $this->abort(404, $this->translator->trans('carservice.error.not_found'));
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            $this->abort(403, $this->translator->trans('carservice.error.branch_forbidden'));
         }
         $phase = trim((string) $request->request->get('phase', 'progress'));
         if (!in_array($phase, $this->carservice->mediaPhases(), true)) {
@@ -209,7 +244,7 @@ final class TrackerController extends Controller
             $plate = $vehicle instanceof Vehicle ? $vehicle->plate() : $order->vehicleId();
             $label = '';
             if ($vehicle instanceof Vehicle) {
-                $label = trim(($vehicle->brand() ?? '') . ' ' . ($vehicle->model() ?? ''));
+                $label = trim(($vehicle->brand() ?? '') . ' ' . $vehicle->displayModel());
                 if ($vehicle->modelYear()) {
                     $label = trim($label . ' · ' . $vehicle->modelYear());
                 }
@@ -230,26 +265,15 @@ final class TrackerController extends Controller
 
     private function vehiclePhotoUrl(string $vehicleId): ?string
     {
-        if ($vehicleId === '' || !$this->vehicleMedia->available()) {
+        $asset = $this->vehicleMedia->coverPhoto($vehicleId);
+        if ($asset === null) {
             return null;
         }
         try {
-            $items = $this->vehicleMedia->forVehicle($vehicleId);
+            return $this->router->url('admin.media.file', ['id' => $asset->id()]);
         } catch (\Throwable) {
             return null;
         }
-        foreach ($items as $row) {
-            $asset = $row['asset'] ?? null;
-            if ($asset instanceof MediaAsset && $asset->isImage()) {
-                try {
-                    return $this->router->url('admin.media.file', ['id' => $asset->id()]);
-                } catch (\Throwable) {
-                    return null;
-                }
-            }
-        }
-
-        return null;
     }
 
     /** @param array<string, mixed> $data */

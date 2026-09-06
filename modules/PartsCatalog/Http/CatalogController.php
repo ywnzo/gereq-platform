@@ -11,16 +11,20 @@ use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Module\ModuleManager;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 use Modules\PartsCatalog\Application\CatalogApiCacheStore;
 use Modules\PartsCatalog\Application\CatalogCallLogger;
+use Modules\PartsCatalog\Application\CategoryTaxonomy;
 use Modules\PartsCatalog\Application\Dto\CatalogArticle;
+use Modules\PartsCatalog\Application\Dto\CatalogNode;
 use Modules\PartsCatalog\Application\PartsCatalogFacade;
 use Modules\PartsCatalog\Domain\CatalogPart;
 use Modules\PartsCatalog\Domain\CatalogVehicle;
 use Modules\PartsCatalog\Domain\CatalogVehiclePart;
 use Modules\PartsCatalog\Domain\OrderPart;
+use Modules\SearchEngines\Application\SearchEnginesProvider;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -48,6 +52,7 @@ final class CatalogController extends Controller
         private readonly EntityManagerInterface $em,
         private readonly CatalogApiCacheStore $apiCache,
         private readonly CapabilityRegistry $capabilities,
+        private readonly ModuleManager $modules,
         private readonly \Modules\Fleet\Application\VehicleCatalogClient $vehicleCatalog,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -81,7 +86,7 @@ final class CatalogController extends Controller
         }
 
         $catalogBrands = $this->loadFleetCatalogBrands();
-        $allCatalogCars = $this->loadFleetCatalogCars();
+        $allCatalogCars = $this->loadFleetCatalogCars($catalogBrands);
 
         $selectedBrand = $this->findCatalogBrand($catalogBrands, $brandId);
         if ($selectedBrand === null) {
@@ -277,15 +282,12 @@ final class CatalogController extends Controller
                 // Skupiny vždy při vybraném vozidle (i při fulltextu) — filtr v UI.
                 if ($nodeId === '') {
                     $nodes = $this->catalog->tree($vehicleId, $parentId !== '' ? $parentId : null);
+                    $nodes = $this->preloadGroupChildren($vehicleId, $nodes);
+                    $nodes = $this->localizeGroupTree($nodes);
                     $groupQuery = trim((string) $request->query->get('gq', ''));
                     if ($groupQuery !== '') {
                         $groupTokens = $this->searchTokens($groupQuery);
-                        $nodes = array_values(array_filter(
-                            $nodes,
-                            function ($n) use ($groupTokens): bool {
-                                return $this->tokensMatch(mb_strtolower((string) ($n->name ?? '')), $groupTokens);
-                            },
-                        ));
+                        $nodes = $this->filterGroupTree($nodes, $groupTokens);
                     }
                 }
             }
@@ -399,6 +401,7 @@ final class CatalogController extends Controller
             'year' => $modelYear,
             'error' => $error,
             'orderId' => $orderId,
+            'market' => $this->oemMarketContext(),
             'breadcrumbs' => $this->buildCatalogBreadcrumbs(
                 selectedFleet: $selectedFleet,
                 fleetId: $fleetId,
@@ -514,15 +517,18 @@ final class CatalogController extends Controller
 
             return $this->redirectToReferer($request);
         }
+        $qtyRaw = (int) round((float) str_replace(',', '.', trim((string) $request->request->get('qty', '1'))));
+        $qty = (string) max(1, min(9999, $qtyRaw > 0 ? $qtyRaw : 1));
         $part = new OrderPart(
             orderId: $orderId,
             nameCs: $name,
-            source: trim((string) $request->request->get('source', $this->catalog->activeProviderId())),
+            source: trim((string) $request->request->get('source', '')),
             oem: trim((string) $request->request->get('oem', '')) ?: null,
             brand: trim((string) $request->request->get('brand', '')) ?: null,
             nameOriginal: trim((string) $request->request->get('name_original', '')) ?: null,
-            qty: trim((string) $request->request->get('qty', '1')) ?: '1',
+            qty: $qty,
             externalId: trim((string) $request->request->get('external_id', '')) ?: null,
+            unitPrice: trim((string) $request->request->get('unit_price', $request->request->get('price', ''))) ?: null,
         );
         $this->em->persist($part);
         $this->em->flush();
@@ -962,9 +968,10 @@ final class CatalogController extends Controller
     /**
      * Modely z katalogu Fleet settings (značka + model).
      *
+     * @param list<array{id: string, name: string}>|null $brands už načtené značky (bez druhého SELECT)
      * @return list<array{id: string, brand_id: string, brand: string, model: string, label: string}>
      */
-    private function loadFleetCatalogCars(): array
+    private function loadFleetCatalogCars(?array $brands = null): array
     {
         if (!class_exists(\Modules\Fleet\Domain\VehicleBrand::class)
             || !class_exists(\Modules\Fleet\Domain\VehicleModel::class)) {
@@ -972,8 +979,17 @@ final class CatalogController extends Controller
         }
 
         try {
-            /** @var list<\Modules\Fleet\Domain\VehicleBrand> $brands */
-            $brands = $this->em->getRepository(\Modules\Fleet\Domain\VehicleBrand::class)->findBy([], ['name' => 'ASC']);
+            if ($brands === null) {
+                /** @var list<\Modules\Fleet\Domain\VehicleBrand> $brandEntities */
+                $brandEntities = $this->em->getRepository(\Modules\Fleet\Domain\VehicleBrand::class)->findBy([], ['name' => 'ASC']);
+                $brands = [];
+                foreach ($brandEntities as $brand) {
+                    $brands[] = [
+                        'id' => $brand->id(),
+                        'name' => $brand->name(),
+                    ];
+                }
+            }
             /** @var list<\Modules\Fleet\Domain\VehicleModel> $models */
             $models = $this->em->getRepository(\Modules\Fleet\Domain\VehicleModel::class)->findBy([], ['name' => 'ASC']);
         } catch (\Throwable) {
@@ -982,7 +998,7 @@ final class CatalogController extends Controller
 
         $brandNames = [];
         foreach ($brands as $brand) {
-            $brandNames[$brand->id()] = $brand->name();
+            $brandNames[$brand['id']] = $brand['name'];
         }
 
         $out = [];
@@ -1578,7 +1594,7 @@ final class CatalogController extends Controller
             $accum = $accum === '' ? $part : $accum . '/' . $part;
             $out[] = [
                 'id' => $accum,
-                'label' => $this->humanizeSlug($part),
+                'label' => CategoryTaxonomy::resolve($this->translator, $part, $this->humanizeSlug($part))['label'],
             ];
         }
 
@@ -1600,6 +1616,165 @@ final class CatalogController extends Controller
         $s = preg_replace('/\s+/', ' ', $s) ?? $s;
 
         return mb_convert_case(trim($s), MB_CASE_TITLE, 'UTF-8');
+    }
+
+    /**
+     * Preload one level of subgroups for expandable category rows.
+     * Jen DB / api_cache — bez N× remote fetch při cold cache.
+     *
+     * @param list<CatalogNode> $nodes
+     * @return list<CatalogNode>
+     */
+    private function preloadGroupChildren(string $vehicleId, array $nodes): array
+    {
+        $parentIds = [];
+        foreach ($nodes as $node) {
+            if ($node->hasChildren) {
+                $parentIds[] = $node->id;
+            }
+        }
+
+        $trees = [];
+        if ($parentIds !== []) {
+            try {
+                $trees = $this->catalog->treesLocal($vehicleId, $parentIds);
+            } catch (\Throwable) {
+                $trees = [];
+            }
+        }
+
+        $out = [];
+        foreach ($nodes as $node) {
+            if (!$node->hasChildren) {
+                $out[] = $node;
+                continue;
+            }
+            $out[] = $node->withChildren($trees[$node->id] ?? []);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Apply Czech/English labels + icons from taxonomy map.
+     *
+     * @param list<CatalogNode> $nodes
+     * @return list<CatalogNode>
+     */
+    private function localizeGroupTree(array $nodes): array
+    {
+        $out = [];
+        foreach ($nodes as $node) {
+            $meta = CategoryTaxonomy::resolve($this->translator, $node->id, $node->name);
+            $children = [];
+            foreach ($node->children as $child) {
+                $childMeta = CategoryTaxonomy::resolve($this->translator, $child->id, $child->name);
+                $children[] = $child->withPresentation($childMeta['label'], $childMeta['icon']);
+            }
+            $out[] = $node->withPresentation($meta['label'], $meta['icon'])->withChildren($children);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Keep groups that match the filter, or have a matching subgroup.
+     *
+     * @param list<CatalogNode> $nodes
+     * @param list<string> $tokens
+     * @return list<CatalogNode>
+     */
+    private function filterGroupTree(array $nodes, array $tokens): array
+    {
+        $out = [];
+        foreach ($nodes as $node) {
+            $hay = mb_strtolower($node->name . ' ' . CategoryTaxonomy::leafSlug($node->id));
+            $selfMatch = $this->tokensMatch($hay, $tokens);
+            $matchedChildren = [];
+            foreach ($node->children as $child) {
+                $childHay = mb_strtolower($child->name . ' ' . CategoryTaxonomy::leafSlug($child->id));
+                if ($this->tokensMatch($childHay, $tokens)) {
+                    $matchedChildren[] = $child;
+                }
+            }
+            if ($selfMatch) {
+                $out[] = $node;
+                continue;
+            }
+            if ($matchedChildren !== []) {
+                $out[] = $node->withChildren($matchedChildren);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return array{enabled: bool, search_url: string, offers_url: string, sources: list<string>}
+     */
+    private function oemMarketContext(): array
+    {
+        $empty = [
+            'enabled' => false,
+            'search_url' => '',
+            'offers_url' => '',
+            'sources' => [],
+        ];
+
+        if (!$this->modules->isEnabled('searchengines') || !$this->capabilities->has('searchengines')) {
+            return $empty;
+        }
+
+        $user = $this->auth->user();
+        if ($user === null || !$user->can('searchengines.view')) {
+            return $empty;
+        }
+
+        $cap = $this->capabilities->get('searchengines');
+        if (!$cap instanceof SearchEnginesProvider) {
+            return $empty;
+        }
+
+        $sources = $cap->availableSourceIds();
+        $allowed = $this->configuredMarketSources();
+        if ($allowed !== []) {
+            $sources = array_values(array_filter(
+                $sources,
+                static fn (string $id): bool => in_array($id, $allowed, true),
+            ));
+        }
+        if ($sources === []) {
+            return $empty;
+        }
+
+        try {
+            return [
+                'enabled' => true,
+                'search_url' => $this->router->url('admin.searchengines.search'),
+                'offers_url' => $this->router->url('admin.searchengines.offers'),
+                'sources' => $sources,
+            ];
+        } catch (\Throwable) {
+            return $empty;
+        }
+    }
+
+    /**
+     * Poskytovatelé porovnání cen z nastavení CarService (bez cyklistických zdrojů ve výchozím stavu).
+     *
+     * @return list<string>
+     */
+    private function configuredMarketSources(): array
+    {
+        $raw = trim((string) $this->settings->get('carservice.market_sources', 'heureka,seznam,hledejceny,jama,autodilypro,autokelly'));
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            static fn (string $id): string => trim($id),
+            explode(',', $raw),
+        ), static fn (string $id): bool => $id !== ''));
     }
 
     /** @param array<string, mixed> $data */

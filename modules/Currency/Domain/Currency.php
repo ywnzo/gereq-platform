@@ -29,6 +29,9 @@ class Currency
     #[ORM\Column(name: 'is_default', type: 'boolean')]
     private bool $isDefault = false;
 
+    #[ORM\Column(name: 'idoklad_id', type: 'integer', nullable: true)]
+    private ?int $iDokladId = null;
+
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
 
@@ -78,6 +81,17 @@ class Currency
     public function isDefault(): bool
     {
         return $this->isDefault;
+    }
+
+    public function iDokladId(): ?int
+    {
+        return $this->iDokladId;
+    }
+
+    public function setIDokladId(?int $iDokladId): void
+    {
+        $this->iDokladId = $iDokladId !== null && $iDokladId > 0 ? $iDokladId : null;
+        $this->touch();
     }
 
     public function createdAt(): \DateTimeImmutable

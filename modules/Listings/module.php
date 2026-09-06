@@ -5,12 +5,13 @@ declare(strict_types=1);
 return [
     'id' => 'listings',
     'name' => 'Listings',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.listings.description',
     'class' => Modules\Listings\ListingsModule::class,
     'author' => 'RealEstates',
     'requires' => [
         'core' => '^1.0',
+        'currency' => '^1.1',
     ],
     'optional' => [
         'customers' => '^1.0',

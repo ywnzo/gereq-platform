@@ -13,6 +13,7 @@
     {% include 'partials/brand-overrides.html.twig' %}
 </head>
 <body class="admin-body" data-sidebar="expanded">
+    <div id="g-page-progress" class="g-page-progress" role="progressbar" aria-hidden="true" aria-valuemin="0" aria-valuemax="100"></div>
     <div class="app-shell" x-data="gereqAdmin" x-cloak>
         <div class="sidebar-backdrop" @click="closeSidebar" :class="backdropClass"></div>
 
@@ -38,6 +39,7 @@
                     </nav>
                 </div>
                 <div class="topbar__right">
+                    {{ apply_filters('admin.topbar.context', '')|raw }}
                     <button type="button" class="search-trigger" @click="openPalette">
                         {{ icon('search') }}
                         <span>{{ 'common.search'|trans }}</span>

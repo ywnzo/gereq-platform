@@ -12,7 +12,7 @@
 {value:'store_credit',label:'returns.resolution.store_credit'|trans},{value:'none',label:'returns.resolution.none'|trans}
 ] } %}
 {% include 'ui/input.html.twig' with { name:'refund_amount', label:'returns.field.refund_amount'|trans, optional:true, form:'returns.save', value:'' } %}
-{% include 'ui/input.html.twig' with { name:'currency', label:'returns.field.currency'|trans, optional:true, form:'returns.save', value:'CZK' } %}
+{% include 'ui/input.html.twig' with { name:'currency', label:'returns.field.currency'|trans, optional:true, form:'returns.save', value: currency_code() } %}
 {% include 'ui/textarea.html.twig' with { name:'note', label:'returns.field.note'|trans, optional:true, form:'returns.save', value:'' } %}
 
 <div class="field field--full">

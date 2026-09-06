@@ -296,8 +296,14 @@ final class ModuleInspector
         $checks[] = [
             'id' => 'dependencies',
             'label' => 'modules.health.deps.label',
-            'status' => $missing === [] ? 'ok' : 'fail',
-            'detail' => $missing === [] ? 'modules.health.deps.ok' : 'modules.health.deps.missing',
+            'status' => $missing === []
+                ? 'ok'
+                : ($enabled ? 'fail' : 'info'),
+            'detail' => $missing === []
+                ? 'modules.health.deps.ok'
+                : ($enabled
+                    ? 'modules.health.deps.missing'
+                    : 'modules.health.deps.pending'),
             'detail_params' => ['%deps%' => implode(', ', $missing)],
         ];
 

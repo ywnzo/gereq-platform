@@ -36,7 +36,7 @@
             label: 'crm.field.currency'|trans,
             optional: true,
             form: 'crm.deal.save',
-            value: item ? item.currency() : 'CZK'
+            value: item ? item.currency() : currency_code()
         } %}
         {% include 'ui/select.html.twig' with {
             name: 'stage',

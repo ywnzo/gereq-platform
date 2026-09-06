@@ -32,7 +32,7 @@ final class ProductsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.7.2';
+        return '1.7.4';
     }
 
     public function register(ModuleContext $context): void

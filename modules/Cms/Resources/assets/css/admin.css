@@ -1,0 +1,111 @@
+/* ——— CMS page blocks ——— */
+.cms-block-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0 8px;
+}
+.cms-block-card {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface) 88%, var(--surface-2));
+}
+.cms-block-card__index {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-content: center;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.cms-block-card__body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.cms-block-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.cms-block-card__preview {
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--text);
+}
+.cms-block-card__preview p {
+    margin: 0;
+    color: var(--text-muted);
+}
+.cms-block-card__heading {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 650;
+    margin-bottom: 2px;
+}
+.cms-block-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-end;
+}
+.cms-block-card__actions form {
+    display: inline;
+    margin: 0;
+}
+.cms-block-form__fields {
+    display: grid;
+    gap: 12px;
+    margin-top: 4px;
+    padding: 14px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+}
+.cms-block-form__fields.form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+@media (max-width: 840px) {
+    .cms-block-card {
+        grid-template-columns: 36px minmax(0, 1fr);
+    }
+    .cms-block-card__actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+    }
+}
+
+.panel {
+    border-radius: var(--radius);
+}
+.panel__head {
+    min-height: 44px;
+    padding: 10px 14px;
+}
+.panel__head .panel__actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+@media (max-width: 960px) {
+    .dash-grid { grid-template-columns: 1fr; }
+    .dash-cell--full,
+    .dash-cell--two_thirds,
+    .dash-cell--half,
+    .dash-cell--third {
+        grid-column: 1 / -1;
+    }
+    .dash-hero { flex-direction: column; align-items: stretch; }
+}

@@ -39,7 +39,7 @@ final class PublicStoreCartController extends Controller
     public function show(Request $request): JsonResponse
     {
         try {
-            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request), 'CZK');
+            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request));
         } catch (\Throwable $e) {
             return $this->cors(ApiResponse::error('error', $e->getMessage(), [], 422));
         }
@@ -54,7 +54,7 @@ final class PublicStoreCartController extends Controller
             $cart = $this->carts->resolveOrCreate(
                 null,
                 isset($body['session_key']) ? (string) $body['session_key'] : $this->sessionKey($request),
-                isset($body['currency']) ? (string) $body['currency'] : 'CZK',
+                isset($body['currency']) ? (string) $body['currency'] : null,
             );
         } catch (\Throwable $e) {
             return $this->cors(ApiResponse::error('error', $e->getMessage(), [], 422));
@@ -78,7 +78,7 @@ final class PublicStoreCartController extends Controller
             return $this->cors(ApiResponse::error('validation_error', 'product_id required', [], 422));
         }
         try {
-            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request, $body), 'CZK');
+            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request, $body));
             $this->carts->addItem(
                 $cart,
                 $productId,
@@ -103,7 +103,7 @@ final class PublicStoreCartController extends Controller
     {
         $body = $this->body($request);
         try {
-            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request, $body), 'CZK');
+            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request, $body));
             $updateNote = array_key_exists('note', $body);
             $this->carts->updateItem(
                 $cart,
@@ -127,7 +127,7 @@ final class PublicStoreCartController extends Controller
     public function removeItem(Request $request, string $id): JsonResponse
     {
         try {
-            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request), 'CZK');
+            $cart = $this->carts->resolveOrCreate(null, $this->sessionKey($request));
             $this->carts->removeItem($cart, $id);
         } catch (\Throwable $e) {
             return $this->cors(ApiResponse::error('validation_error', $e->getMessage(), [], 422));

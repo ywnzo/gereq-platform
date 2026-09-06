@@ -11,6 +11,7 @@ function gereqDev(): Plugin {
   const twigGlobs = [
     'resources/views/**/*.twig',
     'modules/*/Resources/views/**/*.twig',
+    'modules/*/Resources/assets/**/*.{css,ts,js}',
   ];
 
   return {

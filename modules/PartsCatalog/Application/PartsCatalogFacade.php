@@ -15,6 +15,7 @@ final class PartsCatalogFacade
 {
     public function __construct(
         private readonly JamaCatalogProvider $jama,
+        private readonly CategoryTreeStore $categoryTree,
     ) {
     }
 
@@ -45,7 +46,52 @@ final class PartsCatalogFacade
     /** @return list<CatalogNode> */
     public function tree(string $vehicleId, ?string $parentNodeId = null): array
     {
-        return $this->jama->tree($vehicleId, $parentNodeId);
+        $fromDb = $this->categoryTree->tryLoad($vehicleId, $parentNodeId);
+        if ($fromDb !== null) {
+            return $fromDb;
+        }
+
+        $nodes = $this->jama->tree($vehicleId, $parentNodeId);
+        $this->categoryTree->remember($vehicleId, $parentNodeId, $nodes);
+
+        return $nodes;
+    }
+
+    /**
+     * Podstromy z category DB + api_cache (bez remote) — preload skupin bez N× HTTP.
+     *
+     * @param list<string> $parentNodeIds
+     * @return array<string, list<CatalogNode>>
+     */
+    public function treesLocal(string $vehicleId, array $parentNodeIds): array
+    {
+        if ($parentNodeIds === []) {
+            return [];
+        }
+
+        $fromDb = $this->categoryTree->tryLoadMany($vehicleId, $parentNodeIds);
+        $out = [];
+        $missing = [];
+        foreach ($parentNodeIds as $parentNodeId) {
+            $normalized = trim($parentNodeId, '/');
+            $loaded = $fromDb[$normalized] ?? null;
+            if ($loaded !== null) {
+                $out[$parentNodeId] = $loaded;
+            } else {
+                $missing[] = $parentNodeId;
+            }
+        }
+
+        if ($missing === []) {
+            return $out;
+        }
+
+        foreach ($this->jama->treesFromCache($vehicleId, $missing) as $parentNodeId => $nodes) {
+            $this->categoryTree->remember($vehicleId, $parentNodeId, $nodes);
+            $out[$parentNodeId] = $nodes;
+        }
+
+        return $out;
     }
 
     /** @return list<CatalogArticle> */

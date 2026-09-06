@@ -2,62 +2,122 @@
 <html lang="cs">
 <head>
     <meta charset="utf-8">
-    <title>Zakázkový list</title>
-    <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; }
-        h1 { font-size: 18px; margin: 0 0 8px; }
-        h2 { font-size: 14px; margin: 18px 0 6px; }
-        .meta { color: #555; margin-bottom: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-        th { background: #f3f3f3; }
-        .sig { margin-top: 28px; border-top: 1px solid #999; padding-top: 8px; width: 45%; }
-    </style>
+    <title>Zakázkový list {{ docNumber }}</title>
+    <style>{% include '@carservice/pdf/_styles.html.twig' %}</style>
 </head>
 <body>
-    <h1>{{ appName }} — Zakázkový list</h1>
-    <p class="meta">
-        Zakázka: {{ order.id()|slice(0, 8) }} ·
-        Stav: {{ order.status() }} ·
-        Tým: {{ order.team() }} ·
-        Dokončeno: {{ order.finishedAt() ? order.finishedAt().format('d.m.Y H:i') : '—' }}
-    </p>
-    <p>
-        <strong>Vozidlo:</strong>
-        {% if vehicle %}{{ vehicle.plate() }} {{ vehicle.brand() }} {{ vehicle.model() }}{% else %}{{ order.vehicleId() }}{% endif %}<br>
-        <strong>Zákazník:</strong> {% if customer %}{{ customer.name() }}{% else %}—{% endif %}<br>
-        <strong>Odpracováno:</strong> {{ (jobSeconds / 3600)|number_format(2) }} h<br>
-        {% if order.intakeMileage() is not null %}<strong>Stav km při příjmu:</strong> {{ order.intakeMileage() }} km<br>{% endif %}
-        {% if order.intakeFuelLevel() %}<strong>Stav nádrže:</strong> {{ order.intakeFuelLevel() }}<br>{% endif %}
-        {% if order.paymentType() %}<strong>Platba:</strong> {{ order.paymentType() }}<br>{% endif %}
-        {% if order.internalCost() %}<strong>Interní náklad:</strong> {{ order.internalCost() }}<br>{% endif %}
-        {% if order.externalCost() %}<strong>Externí náklad:</strong> {{ order.externalCost() }}<br>{% endif %}
-    </p>
-    {% if order.serviceInfo() %}<p><strong>Objednané práce:</strong><br>{{ order.serviceInfo()|nl2br }}</p>{% endif %}
-    {% if order.note() %}<p><strong>Poznámka:</strong> {{ order.note() }}</p>{% endif %}
-    <h2>Evidence práce</h2>
-    <table>
-        <thead>
-            <tr><th>Práce</th><th>Od</th><th>Do</th><th>Hodiny</th></tr>
-        </thead>
-        <tbody>
-        {% for j in jobs %}
-            <tr>
-                <td>{{ j.type() }}{% if j.note() %} — {{ j.note() }}{% endif %}</td>
-                <td>{{ j.startedAt().format('d.m.Y H:i') }}</td>
-                <td>{{ j.endedAt() ? j.endedAt().format('d.m.Y H:i') : '—' }}</td>
-                <td>{{ j.durationSeconds() is not null ? ((j.durationSeconds() / 3600)|number_format(2)) : '—' }}</td>
-            </tr>
-        {% else %}
-            <tr><td colspan="4">Bez zaznamenané práce</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% if signature %}
-    <div class="sig">
-        <strong>Podpis převzetí:</strong> {{ signature }}<br>
-        <span style="color:#666">Datum: {{ 'now'|date('d.m.Y H:i') }}</span>
-    </div>
+{% if isPreview|default(false) %}<div class="preview-banner">Náhled · neukládá se do Dokumentů</div>{% endif %}
+
+{% include '@carservice/pdf/_header.html.twig' %}
+
+<table class="w-100" style="margin-bottom:10px">
+    <tr>
+        <td style="width:50%;padding-right:10px;vertical-align:top">
+            <div class="lbl">Zákazník</div>
+            {% if customer %}
+                <div class="company-name" style="margin-top:4px">{{ customer.name() }}</div>
+                {% if customer.company() %}<div class="small">{{ customer.company() }}</div>{% endif %}
+                <div class="small">
+                    {% if customer.phone() %}{{ customer.phone() }}{% endif %}
+                    {% if customer.phone() and customer.email() %} · {% endif %}
+                    {% if customer.email() %}{{ customer.email() }}{% endif %}
+                </div>
+            {% else %}
+                <div class="muted">—</div>
+            {% endif %}
+        </td>
+        <td style="width:50%;padding-left:10px;vertical-align:top;border-left:2px solid #1a1a1a">
+            <div class="lbl">Vozidlo</div>
+            <div class="company-name" style="margin-top:4px">
+                {% if vehicle %}{{ vehicle.plate() }} · {{ vehicle.brand() }} {{ vehicle.displayModel() }}{% else %}—{% endif %}
+            </div>
+            <div class="small">
+                {% if vehicle and vehicle.vin() %}VIN {{ vehicle.vin() }}{% endif %}
+                {% if order.intakeMileage() is not null %}{% if vehicle and vehicle.vin() %} · {% endif %}{{ order.intakeMileage()|number_format(0, ',', ' ') }} km{% endif %}
+                {% if vehicle and vehicle.fuel() %} · {{ vehicle.fuel() }}{% endif %}
+            </div>
+        </td>
+    </tr>
+</table>
+
+<table class="w-100" style="margin-bottom:8px">
+    <tr>
+        <td style="width:50%;padding-right:6px;vertical-align:top">
+            <table class="kv">
+                <tr><td class="k">Datum vystavení</td><td class="v">{{ issuedAt }}</td></tr>
+                <tr><td class="k">Značka</td><td class="v">{% if vehicle %}{{ vehicle.brand()|default('—') }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Stav nádrže</td><td class="v">{% if order.intakeFuelLevel() %}{{ ('fleet.fuel_level.' ~ order.intakeFuelLevel())|trans }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">VIN</td><td class="v">{% if vehicle and vehicle.vin() %}{{ vehicle.vin() }}{% else %}—{% endif %}</td></tr>
+            </table>
+        </td>
+        <td style="width:50%;padding-left:6px;vertical-align:top">
+            <table class="kv">
+                <tr><td class="k">EČV / SPZ</td><td class="v">{% if vehicle %}{{ vehicle.plate() }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Model</td><td class="v">{% if vehicle %}{{ vehicle.displayModel() }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Stav km</td><td class="v">{% if order.intakeMileage() is not null %}{{ order.intakeMileage()|number_format(0, ',', ' ') }} km{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Palivo</td><td class="v">{% if vehicle and vehicle.fuel() %}{{ vehicle.fuel() }}{% else %}—{% endif %}</td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div class="bar">{{ serviceHeading|default('Servisní práce na vozidle') }}</div>
+
+<table class="items">
+    <thead>
+        <tr>
+            <th style="width:36%">Popis položky</th>
+            <th class="ctr" style="width:10%">Množství</th>
+            <th class="ctr" style="width:8%">MJ</th>
+            <th class="num" style="width:12%">Cena / MJ</th>
+            <th class="num" style="width:12%">Bez DPH</th>
+            <th class="ctr" style="width:8%">DPH</th>
+            <th class="num" style="width:14%">S DPH</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for line in lines %}
+        <tr>
+            <td>{{ line.description }}{% if line.note %}<br><span class="muted">{{ line.note }}</span>{% endif %}</td>
+            <td class="ctr">{{ line.qty }}</td>
+            <td class="ctr">{{ line.unit }}</td>
+            <td class="num">{% if line.unit_price is not null %}{{ line.unit_price|number_format(2, ',', ' ') }}{% else %}—{% endif %}</td>
+            <td class="num">{% if line.net is not null %}{{ line.net|number_format(2, ',', ' ') }}{% else %}—{% endif %}</td>
+            <td class="ctr">{% if line.vat_rate is not null %}{{ line.vat_rate }} %{% else %}—{% endif %}</td>
+            <td class="num">{% if line.gross is not null %}{{ line.gross|number_format(2, ',', ' ') }}{% else %}—{% endif %}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="7" class="muted">Bez položek — doplňte náklady / práci na zakázce.</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if totals.net is not null %}
+    <tfoot>
+        <tr>
+            <td colspan="4" style="text-align:right">Celkem:</td>
+            <td class="num">{{ totals.net|number_format(2, ',', ' ') }}</td>
+            <td class="ctr">{{ totals.vat|number_format(2, ',', ' ') }}</td>
+            <td class="num">{{ totals.gross|number_format(2, ',', ' ') }}</td>
+        </tr>
+    </tfoot>
     {% endif %}
+</table>
+
+{% if order.serviceInfo() or order.note() %}
+<div class="mt-2 small">
+    {% if order.serviceInfo() %}<div><strong>Objednané práce:</strong> {{ order.serviceInfo()|nl2br }}</div>{% endif %}
+    {% if order.note() %}<div class="mt-1"><strong>Poznámka:</strong> {{ order.note()|nl2br }}</div>{% endif %}
+</div>
+{% endif %}
+
+{% if totals.net is not null %}
+<table class="totals-box mt-2" style="width:45%;margin-left:auto">
+    <tr><td>Bez DPH</td><td style="text-align:right">{{ totals.net|money }}</td></tr>
+    <tr><td>DPH</td><td style="text-align:right">{{ totals.vat|money }}</td></tr>
+    <tr class="grand"><td>Celkem</td><td style="text-align:right">{{ totals.gross|money }}</td></tr>
+</table>
+{% if totals.words %}<div class="words" style="text-align:right">{{ totals.words }}</div>{% endif %}
+{% endif %}
+
+{% include '@carservice/pdf/_footer.html.twig' %}
 </body>
 </html>

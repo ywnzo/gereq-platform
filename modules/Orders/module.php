@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'orders',
     'name' => 'Orders',
-    'version' => '1.2.1',
+    'version' => '1.2.2',
     'description' => 'module.orders.description',
     'class' => Modules\Orders\OrdersModule::class,
     'author' => 'GEREQ',
@@ -13,7 +13,7 @@ return [
         'core' => '^1.0',
         'customers' => '^1.0',
         'products' => '^1.0',
-        'currency' => '^1.0',
+        'currency' => '^1.1',
     ],
     'optional' => [
         'documents' => '^1.0',

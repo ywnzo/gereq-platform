@@ -14,6 +14,7 @@ use Gereq\Http\ListQuery;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
 use Gereq\Security\HtmlSanitizer;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Listings\Application\BrokersProvider;
 use Modules\Listings\Application\ListingsProvider;
 use Modules\Listings\Application\NearLocationsProvider;
@@ -46,6 +47,7 @@ final class ListingController extends Controller
         private readonly FileManager $files,
         private readonly CapabilityRegistry $capabilities,
         private readonly HtmlSanitizer $html,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -892,7 +894,7 @@ final class ListingController extends Controller
             'property_type' => (string) $request->request->get('property_type', 'apartment'),
             'featured' => $request->request->getBoolean('featured'),
             'price' => (string) $request->request->get('price', '0'),
-            'currency' => (string) $request->request->get('currency', 'CZK'),
+            'currency' => $this->money->code((string) $request->request->get('currency', '')),
             'area_m2' => $request->request->get('area_m2'),
             'rooms' => $request->request->get('rooms'),
             'floor' => $request->request->get('floor'),

@@ -1,0 +1,427 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+{% set canManage = user.can('bikeservice.manage') %}
+<div class="list-shell list-shell--fit bs-catalog">
+<header class="page-header">
+    <div>
+        <h1>{{ 'bikeservice.catalog.title'|trans }}</h1>
+        <p class="muted">{{ 'bikeservice.catalog.intro'|trans }}</p>
+    </div>
+    {% if canManage %}
+        <a class="btn btn--primary" href="{{ url('admin.bikeservice.bikes.create') }}">{{ icon('plus') }} {{ 'bikeservice.bikes.new'|trans }}</a>
+    {% endif %}
+</header>
+
+<nav class="bs-catalog__tabs" aria-label="{{ 'bikeservice.catalog.title'|trans }}">
+    {% for t, label in {
+        parts: 'bikeservice.catalog.tab.parts',
+        specs: 'bikeservice.catalog.tab.specs'
+    } %}
+        <a class="btn {{ tab == t ? 'btn--primary' : 'btn--ghost' }} btn-sm" href="{{ url('admin.bikeservice.catalog') }}?tab={{ t }}">{{ label|trans }}</a>
+    {% endfor %}
+    <a class="btn btn--ghost btn-sm" href="{{ url('admin.bikeservice.manufacturers') }}">{{ 'nav.bikeservice.manufacturers'|trans }}</a>
+</nav>
+
+<div class="table-wrap bs-catalog__scroll">
+{% if tab == 'parts' %}
+{% set marketReady = q != '' and partsResult %}
+{% set selectedBrands = selectedBrands|default([]) %}
+{% set selectedPrice = selectedPrice|default('') %}
+{% set filterQs = '' %}
+{% if selectedBrands is not empty %}{% set filterQs = filterQs ~ '&brands=' ~ selectedBrands|join(',')|url_encode %}{% endif %}
+{% if selectedPrice != '' %}{% set filterQs = filterQs ~ '&price=' ~ selectedPrice|url_encode %}{% endif %}
+<div class="bs-catalog__layout"
+    x-data="bsMarket"
+    data-query="{{ q|e('html_attr') }}"
+    data-taxonomy="{{ taxonomyId|e('html_attr') }}"
+    data-endpoint="{{ marketReady ? url('admin.bikeservice.catalog.market_source')|e('html_attr') : '' }}"
+    data-offers-endpoint="{{ url('admin.searchengines.offers')|e('html_attr') }}"
+    data-items="{{ marketReady ? partsResult.market|json_encode|e('html_attr') : '[]' }}"
+    data-sources="{{ marketReady ? partsResult.market_sources|default([])|json_encode|e('html_attr') : '[]' }}"
+    data-pending="{{ marketReady ? partsResult.market_pending_sources|default([])|json_encode|e('html_attr') : '[]' }}"
+    data-all-sources="{{ marketReady ? partsResult.market_all_sources|default([])|json_encode|e('html_attr') : '[]' }}"
+    data-force-fresh="{{ marketReady and partsResult.market_async and partsResult.market is empty ? '1' : '0' }}"
+    data-seed-brands="{{ filterBrands|default([])|json_encode|e('html_attr') }}"
+    data-selected-brands="{{ selectedBrands|json_encode|e('html_attr') }}"
+    data-selected-price="{{ selectedPrice|e('html_attr') }}"
+    data-label-loading="{{ 'bikeservice.catalog.market_loading'|trans|e('html_attr') }}"
+    data-label-empty="{{ 'bikeservice.explore.no_results'|trans|e('html_attr') }}"
+    data-label-in-stock="{{ 'bikeservice.catalog.in_stock'|trans|e('html_attr') }}"
+    data-label-offer="{{ 'bikeservice.catalog.offer'|trans|e('html_attr') }}"
+    data-label-detail="{{ 'bikeservice.catalog.product_detail'|trans|e('html_attr') }}"
+    data-label-hide="{{ 'bikeservice.catalog.hide_detail'|trans|e('html_attr') }}"
+    data-label-refresh="{{ 'bikeservice.catalog.market_refresh'|trans|e('html_attr') }}"
+    data-label-more="{{ 'bikeservice.catalog.market_more'|trans|e('html_attr') }}"
+    data-label-brand-all="{{ 'bikeservice.catalog.filter.brand_all'|trans|e('html_attr') }}"
+    data-label-brand-more="{{ 'bikeservice.catalog.filter.brand_more'|trans|e('html_attr') }}"
+    data-label-brand-selected="{{ 'bikeservice.catalog.filter.brand_selected'|trans|e('html_attr') }}"
+    data-label-brand-search="{{ 'ui.select.search'|trans|e('html_attr') }}"
+    data-label-price-all="{{ 'bikeservice.catalog.filter.price_all'|trans|e('html_attr') }}"
+    data-label-price-0="{{ 'bikeservice.catalog.filter.price_0'|trans|e('html_attr') }}"
+    data-label-price-1="{{ 'bikeservice.catalog.filter.price_1'|trans|e('html_attr') }}"
+    data-label-price-2="{{ 'bikeservice.catalog.filter.price_2'|trans|e('html_attr') }}"
+    data-label-price-3="{{ 'bikeservice.catalog.filter.price_3'|trans|e('html_attr') }}"
+    data-label-price-4="{{ 'bikeservice.catalog.filter.price_4'|trans|e('html_attr') }}"
+    data-currency-code="{{ currency_code()|e('html_attr') }}"
+    data-currency-symbol="{{ currency_symbol()|e('html_attr') }}"
+>
+    <aside class="bs-catalog__aside panel">
+        <header class="panel__head bs-catalog__aside-section"><h2>{{ 'bikeservice.catalog.taxonomy'|trans }}</h2></header>
+        <nav class="bs-catalog__nav">
+            <a class="{{ taxonomyId == '' ? 'is-active' : '' }}" href="{{ url('admin.bikeservice.catalog') }}?tab=parts{% if q %}&q={{ q|url_encode }}{% endif %}{{ filterQs }}&fresh=1" @click="keepFiltersNavigate">{{ 'bikeservice.catalog.all_groups'|trans }}</a>
+            {% for g in taxonomy %}
+                <a class="{{ taxonomyId == g.id ? 'is-active' : '' }}" href="{{ url('admin.bikeservice.catalog') }}?tab=parts&taxonomy={{ g.id }}&q={{ g.query|url_encode }}{{ filterQs }}&fresh=1" @click="keepFiltersNavigate">{{ g.label|trans }}</a>
+            {% endfor %}
+        </nav>
+
+        <header class="panel__head bs-catalog__aside-section"><h2>{{ 'bikeservice.catalog.filter.by_brand'|trans }}</h2></header>
+        <nav class="bs-catalog__nav" aria-label="{{ 'bikeservice.catalog.filter.by_brand'|trans }}">
+            <button type="button" :class="brandAllClass" @click="clearBrands" x-text="labels.brandAll"></button>
+            <template x-for="b in topBrands" :key="'brand-top-' + b">
+                <button type="button" :class="brandNavClass(b)" @click="toggleBrand(b)" x-text="b"></button>
+            </template>
+        </nav>
+        <div class="bs-catalog__brand-select g-select g-select--search" x-show="hasMoreBrands" x-cloak>
+            <button
+                type="button"
+                :class="brandSelectClass"
+                @click.stop="toggleBrandSelect"
+                aria-haspopup="listbox"
+                :aria-expanded="brandSelectExpanded"
+            >
+                <span class="g-select__label" x-text="brandSelectLabel"></span>
+                <span class="g-select__chevron" aria-hidden="true"></span>
+            </button>
+            <div class="g-select__list" :class="brandListClass" role="listbox">
+                <div class="g-select__search">
+                    <input
+                        type="search"
+                        class="g-select__search-input bs-catalog__brand-search"
+                        :placeholder="labels.brandSearch"
+                        autocomplete="off"
+                        @input="onBrandSearch"
+                        @keyup="onBrandSearch"
+                        @search="onBrandSearch"
+                    >
+                </div>
+                <ul class="g-select__options">
+                    <template x-for="b in filteredMoreBrands" :key="'brand-more-' + b">
+                        <li
+                            class="g-select__option"
+                            :class="brandOptionClass(b)"
+                            role="option"
+                            @click="toggleBrand(b)"
+                        >
+                            <span class="bs-catalog__brand-check" :class="brandCheckClass(b)" aria-hidden="true"></span>
+                            <span class="g-select__option-text" x-text="b"></span>
+                        </li>
+                    </template>
+                    <li class="g-select__option g-select__option--empty" x-show="showBrandSelectEmpty" x-cloak>
+                        <span class="g-select__option-text muted" x-text="labels.empty"></span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <header class="panel__head bs-catalog__aside-section"><h2>{{ 'bikeservice.catalog.filter.by_price'|trans }}</h2></header>
+        <nav class="bs-catalog__nav" aria-label="{{ 'bikeservice.catalog.filter.by_price'|trans }}">
+            <template x-for="range in priceRanges" :key="'price-' + range.id">
+                <button type="button" :class="priceNavClass(range.id)" @click="setPrice(range.id)" x-text="range.label"></button>
+            </template>
+        </nav>
+    </aside>
+    <div class="bs-catalog__main">
+        <form method="get" class="bs-catalog__search-hero" role="search">
+            <input type="hidden" name="tab" value="parts">
+            {% if taxonomyId %}<input type="hidden" name="taxonomy" value="{{ taxonomyId }}">{% endif %}
+            <input type="hidden" name="brands" value="{{ selectedBrands|join(',') }}" x-ref="brandsField">
+            <input type="hidden" name="price" value="{{ selectedPrice }}" x-ref="priceField">
+            <div class="bs-catalog__search-bar">
+                <input class="input bs-catalog__search-q" type="search" name="q" value="{{ q }}" placeholder="{{ 'bikeservice.catalog.parts_search_hint'|trans }}" autocomplete="off" autofocus>
+                <select class="input bs-catalog__search-group" name="group" onchange="this.form.submit()" aria-label="{{ 'bikeservice.catalog.all_groups'|trans }}">
+                    <option value="">{{ 'bikeservice.catalog.all_groups'|trans }}</option>
+                    {% for g in componentGroups %}
+                        <option value="{{ g.value }}" {{ group == g.value ? 'selected' : '' }}>{{ g.label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn--primary bs-catalog__search-btn" type="submit">{{ 'bikeservice.catalog.search_prices'|trans }}</button>
+            </div>
+        </form>
+
+        {% if partsResult %}
+        <div class="bs-catalog__parts-list" style="margin:.75rem 0 1rem">
+            {% set quickChips = activeTaxonomy ? activeTaxonomy.parts : partsResult.quick %}
+            {% for chip in quickChips %}
+                <a class="chip" href="{{ url('admin.bikeservice.catalog') }}?tab=parts&q={{ chip|url_encode }}{% if taxonomyId %}&taxonomy={{ taxonomyId }}{% endif %}{{ filterQs }}&fresh=1" @click="keepFiltersNavigate">{{ chip }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if activeTaxonomy and q == '' %}
+            <section class="panel" style="margin-bottom:1rem">
+                <header class="panel__head"><h2>{{ activeTaxonomy.label|trans }}</h2></header>
+                <p class="muted" style="margin:0 0 .5rem">{{ 'bikeservice.catalog.popular_brands'|trans }}</p>
+                <div class="bs-catalog__parts-list" style="margin-bottom:.85rem">
+                    {% for b in activeTaxonomy.brands %}
+                        <a class="chip" href="{{ url('admin.bikeservice.catalog') }}?tab=parts&taxonomy={{ activeTaxonomy.id }}&q={{ activeTaxonomy.query|url_encode }}&brands={{ b|url_encode }}{% if selectedPrice %}&price={{ selectedPrice|url_encode }}{% endif %}&fresh=1">{{ b }}</a>
+                    {% endfor %}
+                </div>
+                <div class="bs-catalog__parts-list">
+                    {% for p in activeTaxonomy.parts %}
+                        <a class="badge badge--muted" href="{{ url('admin.bikeservice.catalog') }}?tab=parts&q={{ p|url_encode }}&taxonomy={{ activeTaxonomy.id }}{{ filterQs }}&fresh=1" @click="keepFiltersNavigate">{{ p }}</a>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {% if marketReady %}
+            <section class="panel" style="margin-bottom:1rem">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'bikeservice.catalog.market_prices'|trans }}</h2>
+                        <p class="muted bs-market__loading-line" x-show="loading" x-cloak>
+                            <span class="bs-market__loading">
+                                <span class="bs-market__spinner" aria-hidden="true"></span>
+                                <span x-text="labels.loading"></span>
+                            </span>
+                        </p>
+                    </div>
+                    <div class="bs-market__actions">
+                        <button type="button" class="btn btn--ghost btn-sm" @click="refresh" :disabled="loading" x-text="labels.refresh"></button>
+                        <a class="btn btn--ghost btn-sm" href="{{ partsResult.heureka_url }}" target="_blank" rel="noopener">{{ 'bikeservice.catalog.open_heureka'|trans }}</a>
+                    </div>
+                </header>
+                <div class="bs-market" :class="marketClass">
+                    <template x-for="n in skeletons" :key="'sk-' + n">
+                        <div class="bs-market__item bs-market__item--skeleton" x-show="showSkeletons" x-cloak aria-hidden="true">
+                            <div class="bs-market__media bs-market__shimmer"></div>
+                            <div class="bs-market__body">
+                                <div class="bs-market__skel-line bs-market__shimmer"></div>
+                                <div class="bs-market__skel-line bs-market__shimmer bs-market__skel-line--wide"></div>
+                                <div class="bs-market__skel-line bs-market__shimmer bs-market__skel-line--narrow"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-for="(item, index) in filteredItems" :key="itemKey(item, index)">
+                        <article
+                            :class="itemClass(item, index)"
+                            @animationend="clearEnter(item, index)"
+                        >
+                            <a class="bs-market__media" :href="item.url" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
+                                <img x-show="hasImage(item)" :src="item.image" alt="" loading="lazy" width="96" height="96" @error="hideBrokenImage">
+                                <span class="bs-market__ph" x-show="!hasImage(item)" aria-hidden="true" x-text="initial(item)"></span>
+                            </a>
+                            <div class="bs-market__body">
+                                <div class="bs-market__top">
+                                    <div class="bs-market__title-block">
+                                        <p class="bs-market__brand muted" x-show="hasBrand(item)" x-text="item.brand"></p>
+                                        <h3 class="bs-market__name">
+                                            <a :href="item.url" target="_blank" rel="noopener" x-text="item.name"></a>
+                                        </h3>
+                                        <div class="bs-market__meta">
+                                            <span class="badge badge--muted" x-text="sourceLabel(item)"></span>
+                                            <span
+                                                class="se-offers-hover"
+                                                x-show="hasOffersHover(item)"
+                                                x-cloak
+                                                x-data="seOffersHover"
+                                                data-label-empty="{{ 'searchengines.offers.empty'|trans|e('html_attr') }}"
+                                                data-label-loading="{{ 'searchengines.offers.loading'|trans|e('html_attr') }}"
+                                                data-label-currency="{{ currency_symbol() }}"
+                                                data-label-open="{{ 'searchengines.open'|trans|e('html_attr') }}"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class="se-offers-hover__trigger"
+                                                    x-ref="trigger"
+                                                    @mouseenter="showFor(item, offersEndpoint)"
+                                                    @mouseleave="hide"
+                                                    @focus="showFor(item, offersEndpoint)"
+                                                    @blur="hide"
+                                                    x-text="shopLabel(item)"
+                                                ></button>
+                                                <div
+                                                    class="se-offers-hover__panel"
+                                                    x-ref="panel"
+                                                    x-show="visible"
+                                                    x-cloak
+                                                    :style="panelStyle()"
+                                                    @mouseenter="keep"
+                                                    @mouseleave="hide"
+                                                    role="dialog"
+                                                >
+                                                    <div class="se-offers-hover__head"><strong x-text="label"></strong></div>
+                                                    <div class="se-offers-hover__body">
+                                                        <p class="muted" x-show="showLoading" x-text="loadingLabel"></p>
+                                                        <p class="muted" x-show="showError" x-text="error"></p>
+                                                        <ul class="se-offers-hover__list" x-show="showList">
+                                                            <template x-for="offer in offers" :key="offerKey(offer)">
+                                                                <li class="se-offers-hover__row">
+                                                                    <div class="se-offers-hover__shop">
+                                                                        <span class="se-offers-hover__shop-line">
+                                                                            <span x-text="offer.shop"></span>
+                                                                            <span class="badge badge--ok se-offers-hover__free" x-show="offer.free_shipping" x-cloak>FREE</span>
+                                                                        </span>
+                                                                        <span class="muted" x-show="offer.availability" x-text="offer.availability"></span>
+                                                                    </div>
+                                                                    <div class="se-offers-hover__price" x-text="offer.price_label"></div>
+                                                                    <a class="btn btn--ghost btn-sm" :href="offer.open_href" target="_blank" rel="noopener" x-text="offer.open_label"></a>
+                                                                </li>
+                                                            </template>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </span>
+                                            <span class="muted" x-show="hasShop(item) && !hasOffersHover(item)" x-text="item.shop"></span>
+                                            <span class="badge badge--muted" x-show="isInStock(item)" x-text="labels.inStock"></span>
+                                            <span class="muted" x-show="hasRating(item)" x-text="formatRating(item)"></span>
+                                        </div>
+                                    </div>
+                                    <div class="bs-market__price">
+                                        <strong x-text="formatPrice(item)"></strong>
+                                        <span class="muted" x-show="hasMaxPrice(item)" x-text="formatMaxPrice(item)"></span>
+                                        <a class="btn btn--primary btn-sm" :href="item.url" target="_blank" rel="noopener" x-text="labels.offer"></a>
+                                    </div>
+                                </div>
+                                <div x-show="hasDetail(item)">
+                                    <p class="bs-market__desc muted" x-show="isClosed(item, index)" x-cloak>
+                                        <span x-text="descPreview(item)"></span>
+                                        <button type="button" class="bs-market__more" @click="toggle(item, index)" x-text="labels.detail"></button>
+                                    </p>
+                                    <div class="bs-market__detail" x-show="isOpen(item, index)" x-cloak>
+                                        <p x-show="hasDescription(item)" x-text="item.description"></p>
+                                        <div class="bs-catalog__tags" x-show="hasParameters(item)">
+                                            <template x-for="p in item.parameters" :key="p">
+                                                <span class="badge badge--muted" x-text="p"></span>
+                                            </template>
+                                        </div>
+                                        <button type="button" class="bs-market__more" @click="toggle(item, index)" x-text="labels.hide"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                    </template>
+
+                    <p class="muted" x-show="showEmpty" x-cloak x-text="labels.empty"></p>
+                </div>
+                {% if partsResult.shop_links is defined and partsResult.shop_links is not empty %}
+                    <p class="muted" style="margin:1rem 0 .4rem">{{ 'bikeservice.catalog.shop_links'|trans }}</p>
+                    <div class="bs-catalog__parts-list">
+                        {% for shop in partsResult.shop_links %}
+                            <a class="chip" href="{{ shop.url }}" target="_blank" rel="noopener">{{ shop.name }} <span class="muted">{{ shop.region }}</span></a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <div class="bs-market__footer" x-show="query" x-cloak>
+                    <button
+                        type="button"
+                        class="btn btn--secondary"
+                        @click="loadMore"
+                        :disabled="!canLoadMore"
+                        x-text="labels.more"
+                    ></button>
+                </div>
+            </section>
+
+            {% if partsResult.products is not empty %}
+            <section class="panel" style="margin-bottom:1rem">
+                <header class="panel__head"><h2>{{ 'bikeservice.catalog.local_products'|trans }}</h2></header>
+                <div class="table-wrap">
+                    <table class="table table--bs-catalog">
+                        <thead>
+                        <tr>
+                            <th>{{ 'bikeservice.catalog.part_name'|trans }}</th>
+                            <th>SKU</th>
+                            <th class="table__num">{{ 'bikeservice.catalog.price'|trans }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in partsResult.products %}
+                            <tr>
+                                <td><a href="{{ item.url }}"><strong>{{ item.name }}</strong></a></td>
+                                <td class="muted">{{ item.sku }}</td>
+                                <td class="table__num">
+                                    {% if item.price is not null %}
+                                        <strong>{{ item.price|number_format(2, ',', ' ') }} {{ item.currency }}</strong>
+                                    {% else %}—{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+        {% endif %}
+
+        {% if partsResult %}
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'bikeservice.catalog.tab.parts'|trans }}</h2>
+                        <p class="muted">{{ 'bikeservice.catalog.parts.hint'|trans }}</p>
+                    </div>
+                </header>
+                <p class="bs-catalog__meta muted">{{ 'bikeservice.catalog.count'|trans({'%count%': partsResult.types|length}) }}</p>
+                <div class="table-wrap">
+                    <table class="table table--bs-catalog">
+                        <thead>
+                        <tr>
+                            <th>{{ 'bikeservice.catalog.part_name'|trans }}</th>
+                            <th>{{ 'bikeservice.catalog.part_alias'|trans }}</th>
+                            <th>{{ 'bikeservice.catalog.bike_data_groups'|trans }}</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in partsResult.types %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.name_cs }}</strong>
+                                    <div class="muted" style="font-size:.8rem">{{ item.name_en }}</div>
+                                </td>
+                                <td class="muted">{{ item.alias ?: '—' }}</td>
+                                <td><span class="badge badge--muted">{{ item.group_cs }}</span></td>
+                                <td>
+                                    <a class="btn btn--ghost btn-sm" href="{{ url('admin.bikeservice.catalog') }}?tab=parts&q={{ item.name_cs|url_encode }}{% if taxonomyId %}&taxonomy={{ taxonomyId }}{% endif %}{{ filterQs }}&fresh=1" @click="keepFiltersNavigate">{{ 'bikeservice.catalog.search_prices'|trans }}</a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="muted">{{ 'bikeservice.explore.no_results'|trans }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if tab == 'specs' %}
+<div class="bs-catalog__grid bs-catalog__grid--specs">
+    {% for key, label in {
+        brakes: 'bikeservice.catalog.specs.brakes',
+        wheels: 'bikeservice.catalog.specs.wheels',
+        handlebars: 'bikeservice.catalog.specs.handlebars'
+    } %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ label|trans }}</h2></header>
+            {% if specs and specs[key].ok %}
+                <ul class="bs-catalog__spec-list">
+                    {% for item in specs[key].items %}
+                        <li>{{ item.name }}{% if item.name_en is defined and item.name_en and item.name_en != item.name %} <span class="muted">({{ item.name_en }})</span>{% endif %}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="muted">{{ specs[key].error|default('bikeservice.error.catalog_fetch')|trans }}</p>
+            {% endif %}
+        </section>
+    {% endfor %}
+</div>
+<p class="bs-catalog__meta muted">{{ 'bikeservice.catalog.source'|trans }}</p>
+{% endif %}
+</div>
+</div>
+{% endblock %}

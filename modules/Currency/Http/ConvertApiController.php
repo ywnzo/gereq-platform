@@ -8,6 +8,7 @@ use Gereq\Api\ApiResponse;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Currency\Application\CurrencyConverter;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,6 +22,7 @@ final class ConvertApiController extends Controller
         Router $router,
         RequestStack $requestStack,
         private readonly CurrencyConverter $converter,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -30,18 +32,19 @@ final class ConvertApiController extends Controller
         $data = gereq()->make(ValidationRegistry::class)->validate('currency.convert', $this->body($request));
 
         try {
-            $result = $this->converter->convert(
-                $data['amount'],
-                (string) $data['currency'],
-                (string) $data['target_currency'],
-            );
+            $from = (string) $data['currency'];
+            $to = (string) $data['target_currency'];
+            $result = $this->converter->convert($data['amount'], $from, $to);
+            $value = $this->money->make($data['amount'], $from, $to);
         } catch (\InvalidArgumentException $e) {
             return ApiResponse::error('validation_error', $e->getMessage(), [], 422);
         } catch (\RuntimeException $e) {
             return ApiResponse::error('conversion_failed', $e->getMessage(), [], 422);
         }
 
-        return ApiResponse::data($result);
+        return ApiResponse::data(array_merge($result, [
+            'money' => $value,
+        ]));
     }
 
     /** @return array<string, mixed> */

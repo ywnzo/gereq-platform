@@ -79,12 +79,34 @@ final class MediaProvider
         if ($label !== null && $label !== '') {
             $qb->andWhere('l.label = :label')->setParameter('label', $label);
         }
+
+        /** @var list<MediaLink> $links */
+        $links = array_values(array_filter(
+            $qb->getQuery()->getResult(),
+            static fn (mixed $link): bool => $link instanceof MediaLink,
+        ));
+        if ($links === []) {
+            return [];
+        }
+
+        $assetIds = array_values(array_unique(array_map(
+            static fn (MediaLink $link): string => $link->mediaAssetId(),
+            $links,
+        )));
+        /** @var list<MediaAsset> $assets */
+        $assets = $this->em->getRepository(MediaAsset::class)
+            ->createQueryBuilder('a')
+            ->andWhere('a.id IN (:ids)')->setParameter('ids', $assetIds)
+            ->getQuery()
+            ->getResult();
+        $assetsById = [];
+        foreach ($assets as $asset) {
+            $assetsById[$asset->id()] = $asset;
+        }
+
         $out = [];
-        foreach ($qb->getQuery()->getResult() as $link) {
-            if (!$link instanceof MediaLink) {
-                continue;
-            }
-            $asset = $this->find($link->mediaAssetId());
+        foreach ($links as $link) {
+            $asset = $assetsById[$link->mediaAssetId()] ?? null;
             if ($asset instanceof MediaAsset) {
                 $out[] = ['link' => $link, 'asset' => $asset];
             }

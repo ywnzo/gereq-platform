@@ -1,0 +1,153 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="fleet-brands" data-actions-default="2" data-initial-query="{{ search|default('')|e('html_attr') }}">
+    <script>window.__GEREQ_FLEET_BRAND_CATALOG__ = {{ url('admin.fleet.brands.catalog')|json_encode|raw }};</script>
+    <header class="page-header">
+        <div>
+            <h1>{{ 'fleet.catalog.title'|trans }}</h1>
+            <p class="muted">{{ 'fleet.catalog.intro'|trans }}</p>
+        </div>
+        {% if user.can('fleet.manage') %}
+        <div class="actions">
+            {{ ui_render('drawer_trigger', {
+                drawer_id: 'fleet-brand-create',
+                label: 'fleet.brands.add'|trans,
+                variant: 'primary',
+                icon: 'plus',
+            }) }}
+        </div>
+        {% endif %}
+    </header>
+
+    <div class="toolbar--table">
+        <form class="toolbar" method="get" @submit.prevent>
+            <input
+                class="input"
+                type="search"
+                name="q"
+                x-model="query"
+                placeholder="{{ 'fleet.catalog.search'|trans }}"
+                autocomplete="off"
+            >
+        </form>
+    </div>
+
+    <div class="table-wrap" data-table>
+        <table class="table table--fleet table--brands">
+            <thead>
+            <tr>
+                <th>{{ 'fleet.field.brand'|trans }}</th>
+                <th>{{ 'fleet.brands.col.preview'|trans }}</th>
+                <th class="table__num">{{ 'fleet.brands.col.models'|trans }}</th>
+                <th class="table__num">{{ 'fleet.brands.col.catalog'|trans }}</th>
+                <th class="table__actions-head"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for brand in brands %}
+                {% set count = modelCounts[brand.id()]|default(0) %}
+                {% set logo = logos[brand.id()]|default(null) %}
+                {% set catalogCount = catalogCounts[brand.id()]|default(0) %}
+                {% set preview = modelPreviews[brand.id()]|default([]) %}
+                <tr class="fleet-row" data-brand="{{ brand.name()|e('html_attr') }}" x-show="matchText($el.dataset.brand)">
+                    <td>
+                        <a class="fleet-brand-row" href="{{ url('admin.fleet.brands.show',{id:brand.id()}) }}">
+                            {% if logo %}
+                                <img class="fleet-brand-logo fleet-brand-logo--row" src="{{ logo }}" alt="" loading="lazy" onerror="this.style.display='none'">
+                            {% else %}
+                                <span class="fleet-brand-logo fleet-brand-logo--row fleet-brand-logo--empty" aria-hidden="true">{{ brand.name()|slice(0,1)|upper }}</span>
+                            {% endif %}
+                            <span class="fleet-brand-row__name">{{ brand.name() }}</span>
+                        </a>
+                    </td>
+                    <td class="fleet-brand-preview">
+                        {% if preview is not empty %}
+                            <div class="fleet-brand-preview__chips">
+                                {% for name in preview %}
+                                    <span class="fleet-model-chip fleet-model-chip--mute">{{ name }}</span>
+                                {% endfor %}
+                                {% if count > preview|length %}
+                                    <span class="fleet-model-chip fleet-model-chip--more">+{{ count - preview|length }}</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <span class="is-mute">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="table__num"><span class="fleet-brand-count">{{ count }}</span></td>
+                    <td class="table__num is-mute">{% if catalogCount > 0 %}{{ catalogCount }}{% else %}—{% endif %}</td>
+                    {% embed 'ui/row_actions.html.twig' %}
+                        {% block items %}
+                            {% include 'ui/row_action.html.twig' with { href: url('admin.fleet.brands.show',{id:brand.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+                        {% endblock %}
+                    {% endembed %}
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty">
+                            <h2>{{ 'fleet.brands.empty'|trans }}</h2>
+                            <p class="muted">{{ 'fleet.catalog.empty_hint'|trans }}</p>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-footer">
+        <p class="fleet-brands-attr muted">{{ 'fleet.brands.attribution'|trans|raw }}</p>
+    </div>
+</div>
+
+{% if user.can('fleet.manage') %}
+{% embed 'ui/drawer.html.twig' with { id: 'fleet-brand-create', title: 'fleet.brands.add'|trans, wide: true } %}
+    {% block body %}
+        <form method="post" action="{{ url('admin.fleet.brands.store') }}" class="g-drawer__form stack" id="fleet-brand-create-form" x-data="fleetBrandCatalog">
+            {{ csrf_field()|raw }}
+            <div class="g-drawer__field ares-field" data-field="name">
+                <label class="g-drawer__label" for="f-brand-name">{{ 'fleet.field.brand'|trans }}</label>
+                <div class="ares-field__control">
+                    <input
+                        class="input"
+                        type="text"
+                        id="f-brand-name"
+                        name="name"
+                        required
+                        autocomplete="off"
+                        placeholder="{{ 'fleet.brands.search_placeholder'|trans }}"
+                        x-model="query"
+                        @input="onInput"
+                        @keydown="onKeydown"
+                        x-ref="query"
+                    >
+                    <div class="ares-suggest" :class="listClass" role="listbox">
+                        <div class="ares-suggest__status" x-show="loading">{{ 'fleet.brands.searching'|trans }}</div>
+                        <div class="ares-suggest__status" x-show="empty">{{ 'fleet.brands.no_catalog'|trans }}</div>
+                        <template x-for="item in items" :key="item.slug">
+                            <button type="button" class="ares-suggest__item" @click="pick(item)" @mouseenter="activeSlug = item.slug" :class="activeSlug === item.slug ? 'is-active' : ''">
+                                <template x-if="item.logo">
+                                    <img class="fleet-brand-logo fleet-brand-logo--sm" :src="item.logo" :alt="item.name" loading="lazy" @error="$el.remove()">
+                                </template>
+                                <strong x-text="item.name"></strong>
+                                <span class="ares-suggest__meta" x-text="item.model_count + ' {{ 'fleet.brands.models'|trans }}'"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <p class="muted g-hint">{{ 'fleet.brands.catalog_hint'|trans }}</p>
+            </div>
+            <label class="fleet-brands-toolbar__check">
+                <input type="checkbox" name="import_models" value="1" checked>
+                <span>{{ 'fleet.brands.import_with_create'|trans }}</span>
+            </label>
+        </form>
+    {% endblock %}
+    {% block footer %}
+        <button type="button" class="btn btn--ghost" data-drawer-close>{{ 'common.cancel'|trans }}</button>
+        <button class="btn btn--primary" type="submit" form="fleet-brand-create-form">{{ 'fleet.brands.add'|trans }}</button>
+    {% endblock %}
+{% endembed %}
+{% endif %}
+{% endblock %}

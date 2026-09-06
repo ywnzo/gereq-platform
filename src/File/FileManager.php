@@ -102,6 +102,29 @@ final class FileManager
         return $this->converter;
     }
 
+    /** Absolute path under the uploads root, or null if missing/unsafe. */
+    public function absolutePath(string $relative): ?string
+    {
+        $root = realpath($this->basePath . '/' . trim((string) $this->config->get('files.local_path', 'storage/uploads'), '/'));
+        if ($root === false) {
+            return null;
+        }
+        if ($relative === '' || str_contains($relative, "\0") || str_contains($relative, '..')) {
+            return null;
+        }
+
+        $candidate = $root . DIRECTORY_SEPARATOR . ltrim(str_replace('\\', '/', $relative), '/');
+        $real = realpath($candidate);
+        if ($real === false) {
+            return null;
+        }
+        if ($real !== $root && !str_starts_with($real, $root . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $real;
+    }
+
     private function shouldConvertImages(): bool
     {
         return (bool) $this->config->get('files.image_convert.enabled', true);

@@ -100,12 +100,19 @@ final class iDokladSettingsController extends Controller
 
     public function sync(Request $request): Response
     {
-        $name = (string) $request->request->get('list', '');
+        /** @var list<string> $allowed */
         $allowed = ['countries', 'currencies', 'paymentOptions', 'cashRegisters', 'numericSequences'];
-        if (!in_array($name, $allowed, true)) {
-            $this->flash('error', $this->translator->trans('idoklad.error.unknown_list'));
+        $name = trim((string) $request->request->get('list', ''));
+        $targets = $name === '' || $name === 'all'
+            ? $allowed
+            : [$name];
 
-            return $this->redirect('admin.idoklad.settings');
+        foreach ($targets as $list) {
+            if (!in_array($list, $allowed, true)) {
+                $this->flash('error', $this->translator->trans('idoklad.error.unknown_list'));
+
+                return $this->redirect('admin.idoklad.settings');
+            }
         }
 
         if (!$this->iDoklad->api()->isConfigured()) {
@@ -114,19 +121,43 @@ final class iDokladSettingsController extends Controller
             return $this->redirect('admin.idoklad.settings');
         }
 
-        $response = $this->iDoklad->syncList($name);
-        if ($response['isSucceed'] ?? false) {
-            $this->auditor->log('idoklad.list.synced', 'idoklad', $name);
-            $this->flash('success', $this->translator->trans('idoklad.sync.success', [
-                '%list%' => $this->translator->trans('idoklad.list.' . $name),
-                '%count%' => (string) count($response['items'] ?? []),
-            ]));
-        } else {
+        $ok = 0;
+        $failed = [];
+        $totalItems = 0;
+        foreach ($targets as $list) {
+            $response = $this->iDoklad->syncList($list);
+            if ($response['isSucceed'] ?? false) {
+                ++$ok;
+                $totalItems += count($response['items'] ?? []);
+                $this->auditor->log('idoklad.list.synced', 'idoklad', $list);
+                continue;
+            }
+
             $message = (string) ($response['message'] ?? 'idoklad.sync.failed');
             if (str_starts_with($message, 'idoklad.')) {
                 $message = $this->translator->trans($message);
             }
-            $this->flash('error', $message);
+            $failed[] = $this->translator->trans('idoklad.list.' . $list)
+                . ($message !== '' ? ': ' . $message : '');
+        }
+
+        if ($failed === [] && count($targets) > 1) {
+            $this->flash('success', $this->translator->trans('idoklad.sync.all_success', [
+                '%count%' => (string) $ok,
+                '%items%' => (string) $totalItems,
+            ]));
+        } elseif ($failed === [] && isset($targets[0])) {
+            $this->flash('success', $this->translator->trans('idoklad.sync.success', [
+                '%list%' => $this->translator->trans('idoklad.list.' . $targets[0]),
+                '%count%' => (string) $totalItems,
+            ]));
+        } elseif ($ok > 0) {
+            $this->flash('error', $this->translator->trans('idoklad.sync.partial', [
+                '%ok%' => (string) $ok,
+                '%failed%' => implode(', ', $failed),
+            ]));
+        } else {
+            $this->flash('error', $failed[0] ?? $this->translator->trans('idoklad.sync.failed'));
         }
 
         return $this->redirect('admin.idoklad.settings');

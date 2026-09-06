@@ -1,0 +1,107 @@
+/* Vitality API health indicator — beating heart */
+.nav-item__badge:has(.vitality-heart) {
+    background: transparent !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+    height: auto !important;
+    margin-left: auto;
+    color: inherit;
+}
+.vitality-endpoint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+}
+.vitality-endpoint__path {
+    min-width: 0;
+    line-height: 1.35;
+}
+.vitality-endpoint .method-pill {
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-weight: 700;
+}
+.vitality-heart {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 11px;
+    height: 11px;
+    line-height: 0;
+    transform-origin: center center;
+    animation: vitality-beat 1.1s ease-in-out infinite;
+}
+.vitality-heart--sm {
+    width: 11px;
+    height: 11px;
+}
+.vitality-heart--md {
+    width: 14px;
+    height: 14px;
+}
+.vitality-heart--lg {
+    width: 16px;
+    height: 16px;
+}
+.vitality-heart--green {
+    color: #22c55e;
+}
+.vitality-heart--orange {
+    color: #f59e0b;
+    animation-duration: 0.85s;
+}
+.vitality-heart--red {
+    color: #ef4444;
+    animation-duration: 0.65s;
+}
+.vitality-heart__svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+.vitality-heart__svg path {
+    transform-origin: center;
+}
+.vitality-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+}
+.vitality-status .vitality-heart {
+    margin-top: 0;
+}
+@keyframes vitality-beat {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    12% {
+        transform: scale(1.35);
+    }
+    24% {
+        transform: scale(1);
+    }
+    36% {
+        transform: scale(1.22);
+    }
+    48% {
+        transform: scale(1);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .vitality-heart {
+        animation: none;
+    }
+}
+.vitality-sql {
+    display: block;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    max-width: 70ch;
+}

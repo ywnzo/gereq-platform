@@ -65,6 +65,10 @@ class ServiceOrder
     #[ORM\Column(name: 'intake_fuel_level', length: 16, nullable: true)]
     private ?string $intakeFuelLevel = null;
 
+    /** Checklist protokolu příjmu (výbava, kontrola, zóny…). */
+    #[ORM\Column(name: 'intake_protocol_json', type: 'json', nullable: true)]
+    private ?array $intakeProtocol = null;
+
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $note = null;
 
@@ -161,6 +165,14 @@ class ServiceOrder
     public function intakeFuelLevel(): ?string
     {
         return $this->intakeFuelLevel;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function intakeProtocol(): ?array
+    {
+        return $this->intakeProtocol;
     }
 
     public function note(): ?string
@@ -305,6 +317,15 @@ class ServiceOrder
     public function setIntakeFuelLevel(?string $v): void
     {
         $this->intakeFuelLevel = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
+    /**
+     * @param array<string, mixed>|null $v
+     */
+    public function setIntakeProtocol(?array $v): void
+    {
+        $this->intakeProtocol = $v !== null && $v !== [] ? $v : null;
         $this->touch();
     }
 

@@ -12,6 +12,7 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Customers\Domain\Customer;
 use Modules\Orders\Application\NumberSequencer;
 use Modules\Orders\Application\OrderTotals;
@@ -38,6 +39,7 @@ final class OrderController extends Controller
         private readonly EventBus $events,
         private readonly NumberSequencer $numbers,
         private readonly TranslatorInterface $translator,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -107,7 +109,7 @@ final class OrderController extends Controller
             'payment_status' => $paymentStatus,
             'currency' => $currency,
             'statuses' => Order::STATUSES,
-            'currencies' => $currencies !== [] ? $currencies : ['CZK', 'EUR'],
+            'currencies' => $currencies !== [] ? $currencies : $this->money->activeCodes(),
             'paymentStatuses' => $paymentStatuses,
             'customerFilterOptions' => $this->customerOptions(),
         ]));
@@ -422,7 +424,7 @@ final class OrderController extends Controller
 
         return [
             'customer_id' => $customerId,
-            'currency' => strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK',
+            'currency' => $this->money->code(isset($data['currency']) ? (string) $data['currency'] : null),
             'note' => trim((string) ($data['note'] ?? '')) ?: null,
         ];
     }

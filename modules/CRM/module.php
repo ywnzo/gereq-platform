@@ -5,13 +5,14 @@ declare(strict_types=1);
 return [
     'id' => 'crm',
     'name' => 'CRM',
-    'version' => '1.0.1',
+    'version' => '1.0.3',
     'description' => 'module.crm.description',
     'class' => Modules\CRM\CrmModule::class,
     'author' => 'GEREQ',
     'requires' => [
         'core' => '^1.0',
         'customers' => '^1.0',
+        'currency' => '^1.1',
     ],
     'optional' => [],
     'groups' => ['ecs'],

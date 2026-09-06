@@ -9,6 +9,8 @@ use Gereq\Api\ApiResponse;
 use Gereq\Http\Controller;
 use Gereq\Http\PublicCors;
 use Gereq\Http\Router;
+use Gereq\Module\CapabilityRegistry;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Products\Application\ProductPersonalizationService;
 use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\Product;
@@ -33,7 +35,8 @@ final class PublicStoreCatalogController extends Controller
         private readonly EntityManagerInterface $em,
         private readonly ProductPersonalizationService $personalization,
         private readonly ProductVariantOptionsService $variantOptions,
-        private readonly \Gereq\Module\CapabilityRegistry $capabilities,
+        private readonly CapabilityRegistry $capabilities,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -122,7 +125,7 @@ final class PublicStoreCatalogController extends Controller
         $ids = array_map(static fn (Product $p): string => $p->id(), $products);
         $this->warmCategories($ids);
 
-        $prices = $this->currentPricesByProductIds($ids, 'CZK');
+        $prices = $this->currentPricesByProductIds($ids, $this->money->defaultCode());
         $images = $this->primaryImageUrlsByProductIds($ids);
         $variantFlags = $this->productIdsWithActiveVariants($ids);
         $allCategoryIds = $this->categoryIdsFromProducts($products);
@@ -174,10 +177,10 @@ final class PublicStoreCatalogController extends Controller
                 'unit' => $product->unit(),
                 'price' => [
                     'amount' => $priced['price'],
-                    'currency_code' => 'CZK',
+                    'currency_code' => $this->money->defaultCode(),
                 ],
                 'original_price' => $priced['original_price'] !== null
-                    ? ['amount' => $priced['original_price'], 'currency_code' => 'CZK']
+                    ? ['amount' => $priced['original_price'], 'currency_code' => $this->money->defaultCode()]
                     : null,
                 'discount' => $priced['discount'],
                 'image_url' => $images[$id] ?? null,
@@ -206,7 +209,7 @@ final class PublicStoreCatalogController extends Controller
     /** @return array<string, mixed> */
     private function serializeStore(Product $product, bool $detail = false): array
     {
-        $basePrice = $this->currentPrice($product->id(), 'CZK');
+        $basePrice = $this->currentPrice($product->id(), $this->money->defaultCode());
         $categoryIds = [];
         foreach ($product->categories() as $category) {
             if ($category instanceof ProductCategory) {
@@ -224,10 +227,10 @@ final class PublicStoreCatalogController extends Controller
             'unit' => $product->unit(),
             'price' => [
                 'amount' => $priced['price'],
-                'currency_code' => 'CZK',
+                'currency_code' => $this->money->defaultCode(),
             ],
             'original_price' => $priced['original_price'] !== null
-                ? ['amount' => $priced['original_price'], 'currency_code' => 'CZK']
+                ? ['amount' => $priced['original_price'], 'currency_code' => $this->money->defaultCode()]
                 : null,
             'discount' => $priced['discount'],
             'image_url' => $image,
@@ -266,7 +269,7 @@ final class PublicStoreCatalogController extends Controller
             ['productId' => $product->id(), 'active' => true],
             ['sku' => 'ASC'],
         );
-        $productBase = $this->currentPrice($product->id(), 'CZK');
+        $productBase = $this->currentPrice($product->id(), $this->money->defaultCode());
         $out = [];
         foreach ($variants as $variant) {
             if (!$variant instanceof ProductVariant) {
@@ -289,7 +292,7 @@ final class PublicStoreCatalogController extends Controller
                 'attributes' => $variant->attributes(),
                 'price' => [
                     'amount' => $priced['price'],
-                    'currency_code' => $variant->priceCurrency() ?: 'CZK',
+                    'currency_code' => $variant->priceCurrency() ?: $this->money->defaultCode(),
                     'original_amount' => $priced['original_price'],
                 ],
                 'stock_qty' => $variant->stockQty(),

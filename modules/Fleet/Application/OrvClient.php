@@ -107,6 +107,14 @@ final class OrvClient
         if ($year !== null) {
             $out['model_year'] = $year;
         }
+        $generation = VehicleGeneration::resolve(
+            isset($out['brand']) ? (string) $out['brand'] : null,
+            isset($out['model']) ? (string) $out['model'] : null,
+            $year,
+        );
+        if ($generation !== null) {
+            $out['generation'] = $generation;
+        }
         $color = $this->pick($data, ['VozidloKaroserieBarva', 'vozidloKaroserieBarva', 'Barva', 'barva', 'Color', 'color']);
         if ($color !== null) {
             $out['color'] = (string) $color;
@@ -204,8 +212,151 @@ final class OrvClient
         if ($ver !== null) {
             $out['version_code'] = (string) $ver;
         }
+        $notes = $this->pick($data, ['DalsiZaznamy', 'dalsiZaznamy']);
+        if ($notes !== null) {
+            $normalized = self::formatOrvNotes((string) $notes);
+            if ($normalized !== '') {
+                $out['orv_notes'] = $normalized;
+            }
+        }
 
         return $out;
+    }
+
+    /**
+     * Pipe-separated ORV DalsiZaznamy → čitelný text (odřádkovaný).
+     */
+    public static function formatOrvNotes(string $raw): string
+    {
+        return implode("\n", self::formatOrvNotesLines($raw));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function formatOrvNotesLines(string $raw): array
+    {
+        $raw = trim(str_replace(["\r\n", "\r"], "\n", $raw));
+        if ($raw === '') {
+            return [];
+        }
+
+        // Už převedené (bez pipe) — jen vyčistit prázdné řádky.
+        if (!str_contains($raw, '|')) {
+            $lines = [];
+            foreach (preg_split('/\n+/', $raw) ?: [] as $line) {
+                $line = trim($line);
+                if ($line !== '') {
+                    $lines[] = $line;
+                }
+            }
+
+            return $lines;
+        }
+
+        $parts = preg_split('/\|+/', $raw) ?: [];
+        $out = [];
+        $tires = [];
+        $inTires = false;
+        $flushTires = static function () use (&$out, &$tires, &$inTires): void {
+            if ($tires === []) {
+                $inTires = false;
+
+                return;
+            }
+            $out[] = 'Povolené disky a pneumatiky:';
+            foreach ($tires as $tire) {
+                $out[] = '• ' . $tire;
+            }
+            $tires = [];
+            $inTires = false;
+        };
+
+        foreach ($parts as $part) {
+            $line = trim(preg_replace('/\s+/u', ' ', $part) ?? $part);
+            $line = rtrim($line, " \t,;");
+            if ($line === '') {
+                continue;
+            }
+
+            if (preg_match('/^#20(?:-21)?\s*:?\s*(.*)$/iu', $line, $m) === 1) {
+                $inTires = true;
+                $rest = trim($m[1] ?? '');
+                if ($rest !== '') {
+                    $tires[] = self::formatTireLine($rest);
+                }
+                continue;
+            }
+
+            if ($inTires && self::looksLikeTireLine($line)) {
+                $tires[] = self::formatTireLine($line);
+                continue;
+            }
+            if ($inTires || $tires !== []) {
+                $flushTires();
+            }
+
+            if (preg_match('/^ROZCHOD\s*:\s*(.+)$/iu', $line, $m) === 1) {
+                $track = trim(str_replace('/', ' / ', $m[1]));
+                $track = preg_replace('/\s+/', ' ', $track) ?? $track;
+                $out[] = 'Rozchod: ' . $track;
+                continue;
+            }
+
+            if (preg_match('/^#D2\s+úplné znění verze\s*:\s*(.+)$/iu', $line, $m) === 1
+                || preg_match('/^#D2\s*:?\s*(.+)$/iu', $line, $m) === 1) {
+                $out[] = 'Úplné znění verze: ' . rtrim(trim($m[1]), ',');
+                continue;
+            }
+
+            if (preg_match('/^#12\s*:\s*max\s*(.+)$/iu', $line, $m) === 1) {
+                $out[] = 'Max. délka: ' . trim($m[1]) . ' mm';
+                continue;
+            }
+
+            if (preg_match('/^#14\s*:\s*min\s*(.+)$/iu', $line, $m) === 1) {
+                $out[] = 'Min. výška: ' . trim($m[1]) . ' mm';
+                continue;
+            }
+
+            if (preg_match('/^Variabilní provedení vozidla\s*:?\s*$/iu', $line) === 1) {
+                $out[] = 'Variabilní provedení vozidla';
+                continue;
+            }
+
+            if (preg_match('/^DNE\s+(\d{1,2})\.(\d{1,2})\.(\d{4})\s+BYL VYSTAVEN DRUHOPIS TP ZA POPSAN[YÝ]\.?$/iu', $line, $m) === 1) {
+                $out[] = sprintf(
+                    'Dne %02d. %02d. %s byl vystaven druhopis technického průkazu za popsaný.',
+                    (int) $m[1],
+                    (int) $m[2],
+                    $m[3],
+                );
+                continue;
+            }
+
+            $out[] = $line;
+        }
+
+        $flushTires();
+
+        return $out;
+    }
+
+    private static function looksLikeTireLine(string $line): bool
+    {
+        return preg_match('/^\d+(?:\.\d+)?J\s*x\s*\d+/iu', $line) === 1
+            || preg_match('/\d+\/\d+\s*R\d+/iu', $line) === 1;
+    }
+
+    private static function formatTireLine(string $line): string
+    {
+        $line = trim($line);
+        // "6J x 15 ET47 ; 195/65 R15 91H" → "6J × 15 ET47 · 195/65 R15 91H"
+        $line = str_replace([' x ', ' X '], ' × ', $line);
+        $line = preg_replace('/\s*;\s*/', ' · ', $line) ?? $line;
+        $line = preg_replace('/\s+/', ' ', $line) ?? $line;
+
+        return rtrim($line, ' .');
     }
 
     private function apiKey(): string

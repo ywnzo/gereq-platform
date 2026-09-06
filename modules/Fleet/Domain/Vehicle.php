@@ -14,7 +14,7 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_fleet_vehicles_customer', columns: ['customer_id'])]
 class Vehicle
 {
-    public const STATUSES = ['available', 'rented', 'in_service', 'repair_wait', 'out_of_service'];
+    public const STATUSES = ['available', 'rented', 'in_service', 'repair_wait', 'out_of_service', 'returned_to_client'];
     public const OWNERSHIPS = ['owned', 'external'];
     public const FUELS = ['petrol', 'diesel', 'lpg', 'cng', 'hybrid', 'electric', 'other'];
     public const GEARBOXES = ['manual', 'automatic'];
@@ -279,9 +279,25 @@ class Vehicle
 
     public function label(): string
     {
-        $parts = array_filter([$this->brand, $this->model, $this->plate]);
+        $model = $this->displayModel();
+        $parts = array_filter([$this->brand, $model !== '' ? $model : null, $this->plate], static fn ($v) => $v !== null && $v !== '');
 
         return implode(' ', $parts) ?: $this->plate;
+    }
+
+    public function generation(): ?string
+    {
+        $stored = $this->tech('generation');
+        if (is_string($stored) && trim($stored) !== '') {
+            return trim($stored);
+        }
+
+        return \Modules\Fleet\Application\VehicleGeneration::resolve($this->brand, $this->model, $this->modelYear);
+    }
+
+    public function displayModel(): string
+    {
+        return \Modules\Fleet\Application\VehicleGeneration::formatModel($this->model, $this->generation());
     }
 
     public function statusLabel(): string

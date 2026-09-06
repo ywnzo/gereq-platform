@@ -260,7 +260,7 @@
                     {% include 'ui/error-summary.html.twig' with { form: 'products.price.save' } %}
                     <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.products.prices.store', {id: item.id()}) }}" data-form="products.price.save" x-data="gereqForm"{% if form_errors('products.price.save') %} data-server-state="1"{% endif %}>
                         {{ csrf_field()|raw }}
-                        {% include 'ui/select.html.twig' with { name: 'currency_code', label: 'products.prices.currency'|trans, required: true, form: 'products.price.save', value: 'CZK', options: currencyOptions } %}
+                        {% include 'ui/select.html.twig' with { name: 'currency_code', label: 'products.prices.currency'|trans, required: true, form: 'products.price.save', value: currency_code(), options: currencyOptions } %}
                         {% include 'ui/input.html.twig' with { name: 'amount', label: 'products.prices.amount'|trans, required: true, form: 'products.price.save', value: '' } %}
                         {% include 'ui/input.html.twig' with { name: 'valid_from', type: 'date', label: 'products.prices.valid_from'|trans, optional: true, form: 'products.price.save', value: '' } %}
                         {% include 'ui/input.html.twig' with { name: 'valid_to', type: 'date', label: 'products.prices.valid_to'|trans, optional: true, form: 'products.price.save', value: '' } %}
@@ -449,7 +449,7 @@
                                             {% if user.can('products.manage') %}
                                                 <form id="{{ formId }}" class="table--variants__shell" method="post" action="{{ url('admin.products.variants.update', {id: item.id(), variantId: v.id()}) }}">
                                                     {{ csrf_field()|raw }}
-                                                    <input type="hidden" name="price_currency" value="{{ v.priceCurrency() ?: 'CZK' }}">
+                                                    <input type="hidden" name="price_currency" value="{{ v.priceCurrency() ?: currency_code() }}">
                                                     <input type="hidden" name="name" value="{{ v.name() }}">
                                                 </form>
                                             {% endif %}

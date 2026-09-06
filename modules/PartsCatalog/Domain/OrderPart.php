@@ -34,6 +34,9 @@ class OrderPart
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private string $qty = '1';
 
+    #[ORM\Column(name: 'unit_price', type: 'decimal', precision: 12, scale: 2, nullable: true)]
+    private ?string $unitPrice = null;
+
     #[ORM\Column(length: 32)]
     private string $source;
 
@@ -46,22 +49,24 @@ class OrderPart
     public function __construct(
         string $orderId,
         string $nameCs,
-        string $source,
+        string $source = '',
         ?string $oem = null,
         ?string $brand = null,
         ?string $nameOriginal = null,
         string $qty = '1',
         ?string $externalId = null,
+        ?string $unitPrice = null,
     ) {
         $this->id = Uuid::uuid7()->toString();
         $this->orderId = $orderId;
         $this->nameCs = trim($nameCs);
-        $this->source = $source;
+        $this->source = trim($source);
         $this->oem = $oem !== null && $oem !== '' ? trim($oem) : null;
         $this->brand = $brand !== null && $brand !== '' ? trim($brand) : null;
         $this->nameOriginal = $nameOriginal !== null && $nameOriginal !== '' ? trim($nameOriginal) : null;
         $this->qty = $qty !== '' ? $qty : '1';
         $this->externalId = $externalId;
+        $this->unitPrice = self::normalizePrice($unitPrice);
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -100,6 +105,26 @@ class OrderPart
         return $this->qty;
     }
 
+    public function unitPrice(): ?string
+    {
+        return $this->unitPrice;
+    }
+
+    /** Celková cena řádku = qty × unit_price. */
+    public function lineTotal(): ?string
+    {
+        if ($this->unitPrice === null) {
+            return null;
+        }
+        $qty = (float) $this->qty;
+        $unit = (float) $this->unitPrice;
+        if ($qty <= 0) {
+            return null;
+        }
+
+        return number_format($qty * $unit, 2, '.', '');
+    }
+
     public function source(): string
     {
         return $this->source;
@@ -113,5 +138,18 @@ class OrderPart
     public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    private static function normalizePrice(?string $unitPrice): ?string
+    {
+        if ($unitPrice === null) {
+            return null;
+        }
+        $raw = trim(str_replace([' ', "\xc2\xa0", ','], ['', '', '.'], $unitPrice));
+        if ($raw === '' || !is_numeric($raw)) {
+            return null;
+        }
+
+        return number_format((float) $raw, 2, '.', '');
     }
 }

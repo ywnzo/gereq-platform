@@ -7,6 +7,7 @@ namespace Modules\Orders\Application\Widgets;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\Dashboard\DashboardWidget;
 use Gereq\Admin\Dashboard\TwigDashboardWidget;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Orders\Domain\Order;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -17,6 +18,7 @@ final class OrderRevenueWidget extends TwigDashboardWidget
         Environment $twig,
         private readonly EntityManagerInterface $em,
         private readonly TranslatorInterface $translator,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig);
     }
@@ -65,8 +67,8 @@ final class OrderRevenueWidget extends TwigDashboardWidget
 
         return [
             'label' => $this->translator->trans('admin.dashboard.revenue'),
-            'value' => number_format($revenue, 0, ',', ' '),
-            'hint' => 'CZK',
+            'value' => $this->money->format($revenue),
+            'hint' => $this->money->defaultCode(),
         ];
     }
 }

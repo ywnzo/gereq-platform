@@ -3,6 +3,7 @@ import type Alpine from '@alpinejs/csp';
 type GereqSelectCtx = {
     open: boolean;
     label: string;
+    tone: string;
     query: string;
     searchable: boolean;
     $el: HTMLElement;
@@ -20,6 +21,7 @@ export function registerSelect(alpine: typeof Alpine): void {
     alpine.data('gereqSelect', () => ({
         open: false,
         label: '',
+        tone: '',
         query: '',
         searchable: false,
         _onPointer: null as ((event: PointerEvent) => void) | null,
@@ -32,6 +34,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             this.searchable = root.dataset.searchable === '1' || root.dataset.searchable === 'true';
             const selected = root.querySelector('[data-selected="1"]') as HTMLElement | null;
             this.label = selected?.dataset.label || root.dataset.placeholder || 'Vyberte';
+            this.tone = selected?.dataset.tone || '';
 
             // Nativní click — Alpine CSP @click na option/trigger je nespolehlivý.
             const onRootClick = (event: MouseEvent) => {
@@ -131,6 +134,10 @@ export function registerSelect(alpine: typeof Alpine): void {
             return this.open ? 'true' : 'false';
         },
 
+        get dotClass(): string {
+            return this.tone ? `is-visible g-select__dot--${this.tone}` : '';
+        },
+
         toggle(this: GereqSelectCtx) {
             this.open = !this.open;
             if (this.open && this.searchable) {
@@ -214,6 +221,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             const changed = input.value !== next;
             input.value = next;
             this.label = option.dataset.label || '';
+            this.tone = option.dataset.tone || '';
             this.open = false;
             this.query = '';
             const search = root.querySelector<HTMLInputElement>('.g-select__search-input');
@@ -226,11 +234,20 @@ export function registerSelect(alpine: typeof Alpine): void {
             input.dispatchEvent(new Event('input', { bubbles: true }));
             input.dispatchEvent(new Event('change', { bubbles: true }));
 
-            if (root.dataset.autosubmit === '1' && next !== '') {
+            if (root.dataset.autosubmit === '1' && changed) {
                 const form = root.closest('form');
-                if (form && changed) {
+                if (form) {
                     // Po microtasku — ať stihne Alpine přepsat label před navigací.
-                    queueMicrotask(() => form.submit());
+                    // requestSubmit() spustí submit event (nativní submit() ne) → loading bar.
+                    // Prázdná hodnota (např. „Všechny pobočky“) musí submitnout taky.
+                    queueMicrotask(() => {
+                        window.gereq?.pageProgress?.start?.();
+                        if (typeof form.requestSubmit === 'function') {
+                            form.requestSubmit();
+                        } else {
+                            form.submit();
+                        }
+                    });
                 }
             }
         },

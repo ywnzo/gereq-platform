@@ -13,15 +13,18 @@ use Gereq\Event\EventBus;
 use Gereq\File\FileManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Module\CapabilityRegistry;
 use Modules\Documents\Domain\Document;
 use Modules\Documents\Domain\DocumentLink;
 use Modules\Documents\Domain\Events\DocumentDeleted;
 use Modules\Documents\Domain\Events\DocumentLinked;
 use Modules\Documents\Domain\Events\DocumentUploaded;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -39,6 +42,7 @@ final class DocumentController extends Controller
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
         private readonly FileManager $files,
+        private readonly CapabilityRegistry $capabilities,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -50,20 +54,42 @@ final class DocumentController extends Controller
             sortable: ['title', 'mime', 'size', 'createdAt'],
             defaultSort: 'createdAt',
             defaultDir: 'desc',
+            filterKeys: ['mime', 'vehicle', 'order'],
         );
+
+        $mime = $list->filter('mime');
+        $vehicleId = $list->filter('vehicle');
+        $orderId = $list->filter('order');
+        $serviceFilters = $this->serviceFiltersEnabled();
 
         $qb = $this->em->getRepository(Document::class)->createQueryBuilder('d');
 
         $list->applySearch($qb, 'd', ['title', 'originalName', 'mime']);
+        $this->applyMimeFilter($qb, $mime);
+
+        if ($serviceFilters && ($vehicleId !== '' || $orderId !== '')) {
+            $this->applyServiceLinkFilter($qb, $vehicleId, $orderId);
+        }
 
         $qb->orderBy('d.' . $list->sort, $list->direction());
 
         $total = (int) (clone $qb)->select('COUNT(d.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
         $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
 
+        $serviceOptions = $serviceFilters ? $this->serviceFilterOptions() : [
+            'plateOptions' => [],
+            'orderOptions' => [],
+        ];
+
         return $this->page('@documents/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('documents.title'),
             'items' => $items,
+            'mime' => $mime,
+            'vehicle' => $serviceFilters ? $vehicleId : '',
+            'order' => $serviceFilters ? $orderId : '',
+            'serviceFilters' => $serviceFilters,
+            'plateOptions' => $serviceOptions['plateOptions'],
+            'orderOptions' => $serviceOptions['orderOptions'],
         ]));
     }
 
@@ -176,6 +202,53 @@ final class DocumentController extends Controller
         return $this->redirect('admin.documents.show', ['id' => $id]);
     }
 
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'documents.bulk');
+        $action = (string) $data['action'];
+        $ids = $this->normalizeIds($request->request->all('ids'));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('documents.bulk.error.empty'));
+
+            return $this->redirect('admin.documents.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('documents.bulk.error.confirm'));
+
+            return $this->redirect('admin.documents.index');
+        }
+
+        $affected = 0;
+        foreach ($ids as $id) {
+            $document = $this->find($id);
+            if ($document === null) {
+                continue;
+            }
+
+            if ($action !== 'delete') {
+                continue;
+            }
+
+            $payload = $this->publicDocument($document);
+            $links = $this->em->getRepository(DocumentLink::class)->findBy(['documentId' => $id]);
+            foreach ($links as $link) {
+                $this->em->remove($link);
+            }
+            $this->em->remove($document);
+            $this->em->flush();
+            $this->events->dispatch(DocumentDeleted::make($id, $payload));
+            $this->auditor->log('document.deleted', 'document', $id);
+            $affected++;
+        }
+
+        $this->flash('success', $this->translator->trans('documents.bulk.flash.delete', [
+            '%count%' => (string) $affected,
+        ]));
+
+        return $this->redirect('admin.documents.index');
+    }
+
     public function destroy(string $id): Response
     {
         $document = $this->find($id);
@@ -198,6 +271,40 @@ final class DocumentController extends Controller
         $this->flash('success', $this->translator->trans('documents.flash.deleted', ['%title%' => $title]));
 
         return $this->redirect('admin.documents.index');
+    }
+
+    public function file(Request $request, string $id): Response
+    {
+        $document = $this->find($id);
+        if ($document === null) {
+            $this->abort(404, $this->translator->trans('documents.error.not_found'));
+        }
+
+        $absolute = $this->files->absolutePath($document->path());
+        if ($absolute === null || !is_file($absolute)) {
+            $this->abort(404, $this->translator->trans('documents.error.file_missing'));
+        }
+
+        $response = new BinaryFileResponse($absolute);
+        $response->headers->set('Content-Type', $document->mime());
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->setAutoLastModified();
+        $response->setAutoEtag();
+        $response->setPrivate();
+        $response->headers->set('Cache-Control', 'private, max-age=300');
+
+        $filename = $this->safeDownloadName($document->originalName(), $document->path());
+        $disposition = $response->headers->makeDisposition(
+            ResponseHeaderBag::DISPOSITION_INLINE,
+            $filename,
+        );
+        $response->headers->set('Content-Disposition', $disposition);
+
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+
+        return $response;
     }
 
     private function attachLink(Document $document, string $entityType, string $entityId): void
@@ -225,6 +332,18 @@ final class DocumentController extends Controller
         return $document instanceof Document ? $document : null;
     }
 
+    private function safeDownloadName(string $title, string $path): string
+    {
+        $ext = pathinfo($path, PATHINFO_EXTENSION);
+        $ascii = preg_replace('/[^A-Za-z0-9._-]+/', '-', $title) ?? 'file';
+        $ascii = trim($ascii, '-._') ?: 'file';
+        if ($ext !== '' && !str_ends_with(strtolower($ascii), '.' . strtolower($ext))) {
+            $ascii .= '.' . $ext;
+        }
+
+        return $ascii;
+    }
+
     /** @return array<string, mixed> */
     private function publicDocument(Document $document): array
     {
@@ -250,5 +369,155 @@ final class DocumentController extends Controller
             'commands' => $this->palette->all($user),
             'user' => $user,
         ]));
+    }
+
+    /**
+     * @param list<mixed>|mixed $ids
+     * @return list<string>
+     */
+    private function normalizeIds(mixed $ids): array
+    {
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+    }
+
+    private function serviceFiltersEnabled(): bool
+    {
+        return $this->capabilities->has('carservice')
+            && class_exists(\Modules\CarService\Domain\ServiceOrder::class)
+            && class_exists(\Modules\Fleet\Domain\Vehicle::class);
+    }
+
+    private function applyMimeFilter(\Doctrine\ORM\QueryBuilder $qb, string $mime): void
+    {
+        if ($mime === '') {
+            return;
+        }
+
+        if (str_ends_with($mime, '/*')) {
+            $qb->andWhere('d.mime LIKE :mime')->setParameter('mime', substr($mime, 0, -1) . '%');
+
+            return;
+        }
+
+        $qb->andWhere('d.mime = :mime')->setParameter('mime', $mime);
+    }
+
+    private function applyServiceLinkFilter(\Doctrine\ORM\QueryBuilder $qb, string $vehicleId, string $orderId): void
+    {
+        $orderEntity = \Modules\CarService\Domain\ServiceOrder::class;
+        $orderIds = null;
+
+        if ($vehicleId !== '') {
+            /** @var list<string> $orderIds */
+            $orderIds = $this->em->createQueryBuilder()
+                ->select('o.id')
+                ->from($orderEntity, 'o')
+                ->where('o.vehicleId = :vid')
+                ->setParameter('vid', $vehicleId)
+                ->getQuery()
+                ->getSingleColumnResult();
+        }
+
+        if ($orderId !== '') {
+            if ($orderIds !== null && !in_array($orderId, $orderIds, true)) {
+                $orderIds = [];
+            } else {
+                $orderIds = [$orderId];
+            }
+        }
+
+        if ($orderIds === null) {
+            return;
+        }
+
+        if ($orderIds === []) {
+            $qb->andWhere('1 = 0');
+
+            return;
+        }
+
+        $qb->andWhere(
+            'd.id IN (
+                SELECT dl.documentId FROM ' . DocumentLink::class . ' dl
+                WHERE dl.entityType = :svcEntity AND dl.entityId IN (:svcOrderIds)
+            )'
+        )
+            ->setParameter('svcEntity', 'carservice_order')
+            ->setParameter('svcOrderIds', $orderIds);
+    }
+
+    /**
+     * @return array{plateOptions: list<array{value: string, label: string, description?: string, search: string}>, orderOptions: list<array{value: string, label: string, description?: string, search: string}>}
+     */
+    private function serviceFilterOptions(): array
+    {
+        $vehicleEntity = \Modules\Fleet\Domain\Vehicle::class;
+        $orderEntity = \Modules\CarService\Domain\ServiceOrder::class;
+
+        /** @var list<\Modules\Fleet\Domain\Vehicle> $vehicles */
+        $vehicles = $this->em->getRepository($vehicleEntity)
+            ->createQueryBuilder('v')
+            ->orderBy('v.plate', 'ASC')
+            ->setMaxResults(500)
+            ->getQuery()
+            ->getResult();
+
+        $plateOptions = [[
+            'value' => '',
+            'label' => $this->translator->trans('documents.filter.plate_any'),
+            'search' => '',
+        ]];
+        foreach ($vehicles as $vehicle) {
+            $desc = trim(($vehicle->brand() ?? '') . ' ' . $vehicle->displayModel());
+            $plateOptions[] = [
+                'value' => $vehicle->id(),
+                'label' => $vehicle->plate(),
+                'description' => $desc !== '' ? $desc : '',
+                'search' => $vehicle->plate() . ' ' . $desc . ' ' . ($vehicle->vin() ?? ''),
+            ];
+        }
+
+        /** @var list<\Modules\CarService\Domain\ServiceOrder> $orders */
+        $orders = $this->em->getRepository($orderEntity)
+            ->createQueryBuilder('o')
+            ->orderBy('o.updatedAt', 'DESC')
+            ->setMaxResults(500)
+            ->getQuery()
+            ->getResult();
+
+        $vehicleMap = [];
+        foreach ($vehicles as $vehicle) {
+            $vehicleMap[$vehicle->id()] = $vehicle;
+        }
+
+        $orderOptions = [[
+            'value' => '',
+            'label' => $this->translator->trans('documents.filter.order_any'),
+            'search' => '',
+        ]];
+        foreach ($orders as $order) {
+            $short = substr($order->id(), 0, 8);
+            $vehicle = $vehicleMap[$order->vehicleId()] ?? null;
+            $plate = $vehicle?->plate() ?? '';
+            $status = $this->translator->trans('carservice.status.' . $order->status());
+            $orderOptions[] = [
+                'value' => $order->id(),
+                'label' => '#' . $short,
+                'description' => trim($plate . ($plate !== '' ? ' · ' : '') . $status),
+                'search' => $short . ' ' . $order->id() . ' ' . $plate . ' ' . $status,
+            ];
+        }
+
+        return [
+            'plateOptions' => $plateOptions,
+            'orderOptions' => $orderOptions,
+        ];
     }
 }

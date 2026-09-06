@@ -1,0 +1,31 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'bikeservice.settings.title'|trans }}</h1>
+        <p class="muted">{{ 'bikeservice.settings.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        <button class="btn btn--primary" type="submit" form="bikeservice-settings-form">{{ 'common.save'|trans }}</button>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'bikeservice.settings' } %}
+
+<form method="post" id="bikeservice-settings-form" class="detail-stack" action="{{ url('admin.bikeservice.settings.update') }}" data-form="bikeservice.settings" x-data="gereqForm">
+{{ csrf_field()|raw }}
+<section class="panel">
+    <div class="form-grid">
+        {% include 'ui/select.html.twig' with { name:'default_team', label:'bikeservice.settings.default_team'|trans, form:'bikeservice.settings', value: values.default_team, options:[
+            {value:'mechanics', label:'bikeservice.team.mechanics'|trans},
+            {value:'electric', label:'bikeservice.team.electric'|trans}
+        ] } %}
+        {% include 'ui/input.html.twig' with { name:'media_phases', label:'bikeservice.settings.media_phases'|trans, form:'bikeservice.settings', value: values.media_phases } %}
+        {% include 'ui/input.html.twig' with { name:'default_city', label:'bikeservice.settings.default_city'|trans, form:'bikeservice.settings', value: values.default_city } %}
+        {% include 'ui/input.html.twig' with { name:'default_citybikes_network', label:'bikeservice.settings.default_network'|trans, form:'bikeservice.settings', value: values.default_citybikes_network } %}
+        {% include 'ui/input.html.twig' with { name:'default_lat', label:'bikeservice.settings.default_lat'|trans, form:'bikeservice.settings', value: values.default_lat } %}
+        {% include 'ui/input.html.twig' with { name:'default_lon', label:'bikeservice.settings.default_lon'|trans, form:'bikeservice.settings', value: values.default_lon } %}
+    </div>
+</section>
+</form>
+{% endblock %}

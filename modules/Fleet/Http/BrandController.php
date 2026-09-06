@@ -36,9 +36,50 @@ final class BrandController extends Controller
         parent::__construct($twig, $router, $requestStack);
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return $this->redirect('admin.fleet.settings');
+        $search = trim((string) $request->query->get('q', ''));
+        /** @var list<VehicleBrand> $brands */
+        $brands = $this->em->getRepository(VehicleBrand::class)->findBy([], ['name' => 'ASC']);
+
+        $modelCounts = [];
+        foreach ($this->em->getRepository(VehicleModel::class)->createQueryBuilder('m')
+            ->select('m.brandId AS brandId, COUNT(m.id) AS cnt')
+            ->groupBy('m.brandId')
+            ->getQuery()->getArrayResult() as $row) {
+            $modelCounts[(string) $row['brandId']] = (int) $row['cnt'];
+        }
+
+        $modelPreviews = [];
+        foreach ($this->em->getRepository(VehicleModel::class)->createQueryBuilder('m')
+            ->select('m.brandId AS brandId, m.name AS name')
+            ->orderBy('m.name', 'ASC')
+            ->getQuery()->getArrayResult() as $row) {
+            $brandId = (string) $row['brandId'];
+            if (!isset($modelPreviews[$brandId])) {
+                $modelPreviews[$brandId] = [];
+            }
+            if (count($modelPreviews[$brandId]) < 6) {
+                $modelPreviews[$brandId][] = (string) $row['name'];
+            }
+        }
+
+        $logos = [];
+        $catalogCounts = [];
+        foreach ($brands as $brand) {
+            $logos[$brand->id()] = $this->catalog->logoUrl($brand->name());
+            $catalogCounts[$brand->id()] = count($this->catalog->modelsForBrand($brand->name()));
+        }
+
+        return $this->page('@fleet/brands/index.html.twig', [
+            'pageTitle' => $this->translator->trans('fleet.catalog.title'),
+            'brands' => $brands,
+            'modelCounts' => $modelCounts,
+            'modelPreviews' => $modelPreviews,
+            'logos' => $logos,
+            'catalogCounts' => $catalogCounts,
+            'search' => $search,
+        ]);
     }
 
     public function show(string $id): Response
@@ -78,7 +119,7 @@ final class BrandController extends Controller
         if ($name === '') {
             $this->flash('error', $this->translator->trans('fleet.error.brand_required'));
 
-            return $this->redirect('admin.fleet.settings');
+            return $this->redirect('admin.fleet.brands');
         }
         $canonical = $this->catalog->resolveCanonicalName($name);
         if ($canonical !== null) {
@@ -87,7 +128,7 @@ final class BrandController extends Controller
         if ($this->em->getRepository(VehicleBrand::class)->findOneBy(['name' => $name]) instanceof VehicleBrand) {
             $this->flash('error', $this->translator->trans('fleet.error.brand_exists'));
 
-            return $this->redirect('admin.fleet.settings');
+            return $this->redirect('admin.fleet.brands');
         }
         $brand = new VehicleBrand($name);
         $this->em->persist($brand);
@@ -113,7 +154,7 @@ final class BrandController extends Controller
         if (!$this->em->find(VehicleBrand::class, $brandId) instanceof VehicleBrand || $name === '') {
             $this->flash('error', $this->translator->trans('fleet.error.model_invalid'));
 
-            return $this->redirect('admin.fleet.settings');
+            return $this->redirect('admin.fleet.brands');
         }
         if ($this->em->getRepository(VehicleModel::class)->findOneBy(['brandId' => $brandId, 'name' => $name]) instanceof VehicleModel) {
             $this->flash('error', $this->translator->trans('fleet.error.model_exists'));
@@ -156,7 +197,7 @@ final class BrandController extends Controller
         }
         $this->flash('success', $this->translator->trans('fleet.flash.brand_deleted'));
 
-        return $this->redirect('admin.fleet.settings');
+        return $this->redirect('admin.fleet.brands');
     }
 
     public function destroyModel(string $id): Response
@@ -171,7 +212,7 @@ final class BrandController extends Controller
 
         return $brandId !== null
             ? $this->redirect('admin.fleet.brands.show', ['id' => $brandId])
-            : $this->redirect('admin.fleet.settings');
+            : $this->redirect('admin.fleet.brands');
     }
 
     private function importModelsForBrand(VehicleBrand $brand): int

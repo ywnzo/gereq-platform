@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="{{ locale|default('cs') }}">
+<head>
+    <meta charset="utf-8">
+    <title>{{ title|default('Document') }}</title>
+    <style>
+        @page { margin: 18mm 16mm 18mm 16mm; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 11px;
+            color: #1c1917;
+            line-height: 1.45;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 12px;
+            color: #0c0a09;
+        }
+        .muted { color: #78716c; font-size: 10px; }
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        table.data th,
+        table.data td {
+            border: 1px solid #d6d3d1;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.data th {
+            background: #f5f5f4;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #57534e;
+        }
+        .pdf-header { margin: 0 0 16px; }
+        .pdf-footer {
+            margin-top: 24px;
+            padding-top: 10px;
+            border-top: 1px solid #e7e5e4;
+            font-size: 9px;
+            color: #78716c;
+        }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    {% block header %}{% endblock %}
+    {% block body %}{% endblock %}
+    {% block footer %}{% endblock %}
+</body>
+</html>

@@ -34,7 +34,7 @@ final class FleetModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.4.0';
+        return '1.7.6';
     }
 
     public function register(ModuleContext $context): void
@@ -61,11 +61,13 @@ final class FleetModule implements ModuleInterface
             $routes->post('/orv-lookup', [VehicleController::class, 'orvLookup'])->name('admin.fleet.orv_lookup')->permission('fleet.manage');
             $routes->get('/create', [VehicleController::class, 'create'])->name('admin.fleet.create')->permission('fleet.manage');
             $routes->post('', [VehicleController::class, 'store'])->name('admin.fleet.store')->permission('fleet.manage');
+            $routes->post('/bulk', [VehicleController::class, 'bulk'])->name('admin.fleet.bulk')->permission('fleet.manage');
             $routes->get('/{id}', [VehicleController::class, 'show'])->name('admin.fleet.show')->permission('fleet.view');
             $routes->get('/{id}/edit', [VehicleController::class, 'edit'])->name('admin.fleet.edit')->permission('fleet.manage');
             $routes->post('/{id}', [VehicleController::class, 'update'])->name('admin.fleet.update')->permission('fleet.manage');
             $routes->post('/{id}/status', [VehicleController::class, 'updateStatus'])->name('admin.fleet.status')->permission('fleet.manage');
             $routes->post('/{id}/media', [VehicleController::class, 'uploadMedia'])->name('admin.fleet.media')->permission('fleet.manage');
+            $routes->post('/{id}/media/{linkId}/cover', [VehicleController::class, 'setMediaCover'])->name('admin.fleet.media.cover')->permission('fleet.manage');
             $routes->post('/{id}/delete', [VehicleController::class, 'destroy'])->name('admin.fleet.destroy')->permission('fleet.manage');
         }, ['middleware' => ['auth']]);
 
@@ -105,9 +107,10 @@ final class FleetModule implements ModuleInterface
             'motorization' => 'nullable|max:160',
             'mileage' => 'nullable|integer',
             'fuel_level' => 'nullable|max:16',
-            'status' => 'nullable|in:available,rented,in_service,repair_wait,out_of_service',
+            'status' => 'nullable|in:available,rented,in_service,repair_wait,out_of_service,returned_to_client',
             'ownership' => 'nullable|in:owned,external',
             'customer_id' => 'nullable|max:36',
+            'branch_id' => 'nullable|max:36',
             'stk_at' => 'nullable',
             'insurance_until' => 'nullable',
             'vignette_until' => 'nullable',
@@ -133,12 +136,18 @@ final class FleetModule implements ModuleInterface
             'first_registered_at' => 'nullable',
             'homologation' => 'nullable|max:80',
             'version_code' => 'nullable|max:80',
+            'generation' => 'nullable|max:20',
+            'orv_notes' => 'nullable|max:4000',
         ]);
         $v->ruleset('fleet.settings', [
             'orv_api_key' => 'nullable|max:255',
         ]);
         $v->ruleset('fleet.orv', [
             'orv_id' => 'required|max:64',
+        ]);
+        $v->ruleset('fleet.bulk', [
+            'action' => 'required|in:delete',
+            'confirmed' => 'nullable',
         ]);
     }
 
@@ -156,34 +165,35 @@ final class FleetModule implements ModuleInterface
             icon: 'car',
             route: 'admin.fleet.index',
             permission: 'fleet.view',
-            order: 35,
-            group: 'Provoz',
+            parent: 'carservice',
+            order: 50,
+        ));
+        $context->menu()->add(new MenuItem(
+            id: 'fleet.list',
+            label: 'nav.fleet.list',
+            route: 'admin.fleet.index',
+            permission: 'fleet.view',
+            parent: 'carservice',
+            order: 51,
+            hidden: true,
+        ));
+        $context->menu()->add(new MenuItem(
+            id: 'fleet.brands',
+            label: 'nav.fleet.catalog',
+            route: 'admin.fleet.brands',
+            permission: 'fleet.view',
+            parent: 'carservice',
+            order: 52,
+            hidden: true,
         ));
         $context->menu()->add(new MenuItem(
             id: 'fleet.create',
             label: 'nav.fleet.create',
             route: 'admin.fleet.create',
             permission: 'fleet.manage',
-            parent: 'fleet',
-            order: 36,
+            parent: 'carservice',
+            order: 53,
             hidden: true,
-        ));
-        $context->menu()->add(new MenuItem(
-            id: 'fleet.brands',
-            label: 'nav.fleet.brands',
-            route: 'admin.fleet.brands',
-            permission: 'fleet.view',
-            parent: 'fleet',
-            order: 37,
-            hidden: true,
-        ));
-        $context->menu()->add(new MenuItem(
-            id: 'fleet.settings',
-            label: 'nav.fleet.settings',
-            route: 'admin.fleet.settings',
-            permission: 'fleet.view',
-            parent: 'fleet',
-            order: 38,
         ));
         $context->commandPalette()->add(new PaletteCommand(
             id: 'fleet.index',
@@ -214,6 +224,8 @@ final class FleetModule implements ModuleInterface
                             $vehicle->vin(),
                             $vehicle->brand(),
                             $vehicle->model(),
+                            $vehicle->displayModel(),
+                            $vehicle->generation(),
                             $vehicle->orvId(),
                         ])),
                     );

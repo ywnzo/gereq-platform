@@ -27,6 +27,7 @@ use Modules\Orders\Http\OrderController;
 use Modules\Orders\Http\OrderShipmentController;
 use Modules\Orders\Application\OrderMailer;
 use Modules\Orders\Application\Widgets\InvoicesShortcutWidget;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Orders\Application\Widgets\OrderCreateHeroWidget;
 use Modules\Orders\Application\Widgets\OrderRevenueChartWidget;
 use Modules\Orders\Application\Widgets\OrderRevenueWidget;
@@ -45,7 +46,7 @@ final class OrdersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.1';
+        return '1.2.2';
     }
 
     public function register(ModuleContext $context): void
@@ -111,8 +112,14 @@ final class OrdersModule implements ModuleInterface
         $translator = $context->get(TranslatorInterface::class);
         $router = $context->get(Router::class);
         $context->dashboard()->addWidget(new OrderStatsWidget($twig, $em, $translator, $router));
-        $context->dashboard()->addWidget(new OrderRevenueWidget($twig, $em, $translator));
-        $context->dashboard()->addWidget(new OrderRevenueChartWidget($twig, $em, $translator, $router));
+        $context->dashboard()->addWidget(new OrderRevenueWidget($twig, $em, $translator, $context->get(CurrencyBuilder::class)));
+        $context->dashboard()->addWidget(new OrderRevenueChartWidget(
+            $twig,
+            $em,
+            $translator,
+            $router,
+            $context->get(CurrencyBuilder::class),
+        ));
         $context->dashboard()->addWidget(new OrderStatusChartWidget($twig, $em, $translator, $router));
         $context->dashboard()->addWidget(new OrderCreateHeroWidget($twig, $translator, $router));
         $context->dashboard()->addWidget(new OrdersShortcutWidget($twig, $translator, $router));

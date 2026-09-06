@@ -13,6 +13,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\ListQuery;
 use Gereq\Http\Router;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Returns\Application\ReturnsProvider;
 use Modules\Returns\Domain\ReturnItem;
 use Modules\Returns\Domain\ReturnRequest;
@@ -36,6 +37,7 @@ final class ReturnController extends Controller
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
         private readonly ReturnsProvider $provider,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -196,7 +198,7 @@ final class ReturnController extends Controller
                 ? (string) $data['resolution']
                 : null,
             'refund_amount' => trim((string) ($data['refund_amount'] ?? '')) ?: null,
-            'currency' => strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK',
+            'currency' => $this->money->code(isset($data['currency']) ? (string) $data['currency'] : null),
             'note' => trim((string) ($data['note'] ?? '')) ?: null,
         ];
     }

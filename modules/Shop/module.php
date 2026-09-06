@@ -5,14 +5,14 @@ declare(strict_types=1);
 return [
     'id' => 'shop',
     'name' => 'Shop',
-    'version' => '1.4.6',
+    'version' => '1.4.7',
     'description' => 'module.shop.description',
     'class' => Modules\Shop\ShopModule::class,
     'author' => 'GEREQ',
     'requires' => [
         'core' => '^1.0',
         'products' => '^1.2',
-        'currency' => '^1.0',
+        'currency' => '^1.1',
     ],
     'optional' => [
         'orders' => '^1.0',

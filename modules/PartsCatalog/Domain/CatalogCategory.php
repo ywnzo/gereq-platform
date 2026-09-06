@@ -95,6 +95,11 @@ class CatalogCategory
         return $this->hasProducts;
     }
 
+    public function syncedAt(): ?\DateTimeImmutable
+    {
+        return $this->syncedAt;
+    }
+
     public function updateFlags(string $name, bool $hasChildren, bool $hasProducts): void
     {
         $this->name = mb_substr($name, 0, 220);

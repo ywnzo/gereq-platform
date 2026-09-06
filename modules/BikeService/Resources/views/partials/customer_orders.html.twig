@@ -1,0 +1,46 @@
+{% if orders is empty %}
+    <div class="bs-orders-empty">
+        {{ icon('bike') }}
+        <p>{{ 'bikeservice.partial.empty_orders'|trans }}</p>
+    </div>
+{% else %}
+<div class="table-wrap">
+<table class="table table--bs-orders">
+<thead>
+<tr>
+    <th>{{ 'bikeservice.field.bike'|trans }}</th>
+    <th>{{ 'bikeservice.field.status'|trans }}</th>
+    <th>{{ 'bikeservice.field.team'|trans }}</th>
+    <th>{{ 'bikeservice.field.updated'|trans }}</th>
+</tr>
+</thead>
+<tbody>
+{% for order in orders %}
+{% set bike = bikes[order.bikeId()]|default(null) %}
+<tr class="bs-row">
+    <td>
+        <a class="bs-row__primary" href="{{ url('admin.bikeservice.orders.show', {id: order.id()}) }}">
+            <span class="bs-row__plate">{{ bike ? bike.label() : order.bikeId()|slice(0, 8) }}</span>
+            <span class="bs-row__meta">#{{ order.id()|slice(0, 8) }}</span>
+        </a>
+    </td>
+    <td>
+        <span class="status-chip status-chip--bs-{{ order.status() }}">
+            <span class="status-chip__dot" aria-hidden="true"></span>
+            {{ order.statusLabel()|trans }}
+        </span>
+    </td>
+    <td><span class="badge badge--bs-{{ order.team() }}">{{ order.teamLabel()|trans }}</span></td>
+    <td><time class="bs-row__when">{{ order.updatedAt().format('d. m. Y') }}</time></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endif %}
+{% if user.can('bikeservice.manage') %}
+    <p class="bs-orders-foot">
+        <a class="btn btn--ghost btn-sm" href="{{ url('admin.bikeservice.orders.create') }}?customer={{ customer.id() }}">{{ icon('plus') }} {{ 'bikeservice.orders.new'|trans }}</a>
+        <a class="btn btn--ghost btn-sm" href="{{ url('admin.bikeservice.bikes.create') }}?customer={{ customer.id() }}">{{ 'bikeservice.bikes.new'|trans }}</a>
+    </p>
+{% endif %}

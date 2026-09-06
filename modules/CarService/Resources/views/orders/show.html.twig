@@ -1,5 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+{% set canFinish = user.can('carservice.manage') and item.isOpen() %}
+<div{% if canFinish %} x-data="gereqModal"{% endif %}>
 <header class="page-header">
     <div>
         <h1>{{ vehicle ? vehicle.label() : ('carservice.order'|trans({'%id%': item.id()|slice(0,8)})) }}</h1>
@@ -11,8 +13,8 @@
         </p>
     </div>
     <div class="actions">
-        {% if user.can('carservice.manage') and item.isOpen() %}
-            <button class="btn btn--primary" type="button" onclick="document.getElementById('finish-dialog').showModal()">{{ 'carservice.finish'|trans }}</button>
+        {% if canFinish %}
+            <button class="btn btn--primary" type="button" @click="show">{{ 'carservice.finish'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.carservice.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
         {% endif %}
         {% if user.can('carservice.tracker') and item.isOpen() %}
@@ -21,28 +23,47 @@
     </div>
 </header>
 
-{% if user.can('carservice.manage') and item.isOpen() %}
-<dialog id="finish-dialog" class="panel" style="max-width:28rem;padding:1.25rem">
-    <form method="post" action="{{ url('admin.carservice.finish',{id:item.id()}) }}" class="form-grid">
-        {{ csrf_field()|raw }}
-        <h2>{{ 'carservice.finish.dialog_title'|trans }}</h2>
-        {% include 'ui/textarea.html.twig' with { name:'service_info', label:'carservice.field.service_info'|trans, optional:true, value: item.serviceInfo() ?: '' } %}
-        {% include 'ui/select.html.twig' with { name:'payment_type', label:'carservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
-        {value:'',label:'—'},{value:'online',label:'carservice.payment.online'|trans},{value:'cash',label:'carservice.payment.cash'|trans}
-        ] } %}
-        {% include 'ui/input.html.twig' with { name:'internal_cost', type:'number', label:'carservice.field.internal_cost'|trans, optional:true, value: item.internalCost() ?: '', step:'0.01' } %}
-        {% include 'ui/input.html.twig' with { name:'external_cost', type:'number', label:'carservice.field.external_cost'|trans, optional:true, value: item.externalCost() ?: '', step:'0.01' } %}
-        {% include 'ui/input.html.twig' with { name:'intake_mileage', type:'number', label:'carservice.field.intake_mileage'|trans, optional:true, value: item.intakeMileage() ?: '' } %}
-        {% include 'ui/select.html.twig' with { name:'intake_fuel_level', label:'carservice.field.intake_fuel'|trans, optional:true, value: item.intakeFuelLevel() ?: '', options:[
-        {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
-        ] } %}
-        {% include 'ui/input.html.twig' with { name:'signature', label:'carservice.finish.signature'|trans, optional:true, value:'' } %}
-        <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'carservice.finish.confirm'|trans }}</button>
-            <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">{{ 'common.cancel'|trans }}</button>
-        </div>
-    </form>
-</dialog>
+{% if canFinish %}
+<div class="g-modal__backdrop" :class="backdropClass" @click="close"></div>
+<div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-labelledby="finish-dialog-title">
+    <div class="g-modal__panel g-modal__panel--finish" @click.stop>
+        <form method="post" action="{{ url('admin.carservice.finish',{id:item.id()}) }}" class="cs-finish">
+            {{ csrf_field()|raw }}
+            <header class="cs-finish__head">
+                <h2 class="g-modal__title" id="finish-dialog-title">{{ 'carservice.finish.dialog_title'|trans }}</h2>
+                <p class="muted">{{ 'carservice.finish.hint'|trans }}</p>
+            </header>
+
+            {% include 'ui/textarea.html.twig' with {
+                name: 'service_info',
+                label: 'carservice.field.service_info'|trans,
+                optional: true,
+                value: item.serviceInfo() ?: '',
+                size: 'mini',
+                rows: 3,
+                extra: 'cs-finish__notes'
+            } %}
+
+            <div class="cs-finish__grid">
+                {% include 'ui/select.html.twig' with { name:'payment_type', label:'carservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
+                    {value:'',label:'—'},{value:'online',label:'carservice.payment.online'|trans},{value:'cash',label:'carservice.payment.cash'|trans}
+                ] } %}
+                {% include 'ui/input.html.twig' with { name:'signature', label:'carservice.finish.signature'|trans, optional:true, value:'' } %}
+                {% include 'ui/input.html.twig' with { name:'internal_cost', type:'number', label:'carservice.field.internal_cost'|trans, optional:true, value: item.internalCost() ?: '', step:'0.01' } %}
+                {% include 'ui/input.html.twig' with { name:'external_cost', type:'number', label:'carservice.field.external_cost'|trans, optional:true, value: item.externalCost() ?: '', step:'0.01' } %}
+                {% include 'ui/input.html.twig' with { name:'intake_mileage', type:'number', label:'carservice.field.intake_mileage'|trans, optional:true, value: item.intakeMileage() ?: '' } %}
+                {% include 'ui/select.html.twig' with { name:'intake_fuel_level', label:'carservice.field.intake_fuel'|trans, optional:true, value: item.intakeFuelLevel() ?: '', options:[
+                    {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
+                ] } %}
+            </div>
+
+            <div class="g-modal__actions cs-finish__actions">
+                <button class="btn btn--ghost" type="button" @click="close" x-ref="close">{{ 'common.cancel'|trans }}</button>
+                <button class="btn btn--primary" type="submit">{{ 'carservice.finish.confirm'|trans }}</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endif %}
 
 <div class="detail-layout">
@@ -77,7 +98,7 @@
                 <form method="post" action="{{ url('admin.carservice.status',{id:item.id()}) }}">
                     {{ csrf_field()|raw }}
                     <label class="field"><span>{{ 'carservice.field.status'|trans }}</span>
-                        <select name="status" class="input" onchange="this.form.submit()">
+                        <select name="status" class="input" data-autosubmit>
                             {% for s in statuses %}<option value="{{ s }}" {{ item.status()==s?'selected':'' }}>{{ ('carservice.status.'~s)|trans }}</option>{% endfor %}
                         </select>
                     </label>
@@ -85,7 +106,7 @@
                 <form method="post" action="{{ url('admin.carservice.team',{id:item.id()}) }}">
                     {{ csrf_field()|raw }}
                     <label class="field"><span>{{ 'carservice.field.team'|trans }}</span>
-                        <select name="team" class="input" onchange="this.form.submit()">
+                        <select name="team" class="input" data-autosubmit>
                             {% for t in teams %}<option value="{{ t }}" {{ item.team()==t?'selected':'' }}>{{ ('carservice.team.'~t)|trans }}</option>{% endfor %}
                         </select>
                     </label>
@@ -154,14 +175,25 @@
                 {% if user.can('carservice.manage') %}
                     <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.media',{id:item.id()}) }}">
                         {{ csrf_field()|raw }}
-                        <label class="field"><span>{{ 'carservice.media.phase_label'|trans }}</span>
-                            <select name="phase" class="input">
-                                {% for phase in mediaPhases %}<option value="{{ phase }}">{{ ('carservice.media.phase.'~phase)|trans }}</option>{% endfor %}
-                            </select>
-                        </label>
-                        <label class="field"><span>{{ 'carservice.media.file'|trans }}</span>
-                            <input class="input" type="file" name="file" accept="image/*,application/pdf" required>
-                        </label>
+                        {% set phaseOptions = [] %}
+                        {% for phase in mediaPhases %}
+                            {% set phaseOptions = phaseOptions|merge([{ value: phase, label: ('carservice.media.phase.'~phase)|trans }]) %}
+                        {% endfor %}
+                        {% include 'ui/select.html.twig' with {
+                            name: 'phase',
+                            label: 'carservice.media.phase_label'|trans,
+                            value: mediaPhases[0]|default('before'),
+                            options: phaseOptions
+                        } %}
+                        {% include 'ui/file.html.twig' with {
+                            name: 'file',
+                            label: 'carservice.media.file'|trans,
+                            hint: 'carservice.media.file.hint'|trans,
+                            accept: 'image/*,application/pdf',
+                            required: true,
+                            compact: true,
+                            extra: 'field--full'
+                        } %}
                         <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
                     </form>
                 {% endif %}
@@ -176,14 +208,32 @@
             {% endfor %}
         {% endif %}
 
+        {% if user.can('carservice.manage') and showIntakeProtocolForm %}
+            {% include '@carservice/partials/intake_protocol_form.html.twig' %}
+        {% endif %}
+
+        {% if documentsAvailable|default(false) and user.can('carservice.manage') %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.documents.generate'|trans }}</h2></header>
+            <div class="panel__body">
+                <p class="muted" style="margin-bottom:12px">{{ 'carservice.documents.generate.hint'|trans }}</p>
+                <div class="actions" style="flex-wrap:wrap;gap:8px">
+                    {% for pdf in pdfTypes|default([]) %}
+                        <form method="post" action="{{ url('admin.carservice.documents.generate',{id:item.id()}) }}" style="display:inline">
+                            {{ csrf_field()|raw }}
+                            <input type="hidden" name="type" value="{{ pdf.type }}">
+                            <button class="btn btn--ghost" type="submit">{{ pdf.label|trans }}</button>
+                        </form>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
         {% if documents is defined and documents is not empty %}
         <section class="panel">
             <header class="panel__head"><h2>{{ 'carservice.documents.title'|trans }}</h2></header>
-            <ul class="meta-list">
-                {% for d in documents %}
-                    <li><a href="{{ url('admin.documents.show',{id:d.id()}) }}">{{ d.title() }}</a></li>
-                {% endfor %}
-            </ul>
+            {% include '@documents/partials/document_list.html.twig' with { documents: documents } %}
         </section>
         {% endif %}
     </div>
@@ -235,4 +285,13 @@
         {% endif %}
     </aside>
 </div>
+</div>
+
+<script nonce="{{ csp_nonce() }}">
+(() => {
+    document.querySelectorAll('select[data-autosubmit]').forEach((el) => {
+        el.addEventListener('change', () => el.form?.submit());
+    });
+})();
+</script>
 {% endblock %}

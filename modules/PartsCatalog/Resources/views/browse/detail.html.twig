@@ -46,14 +46,18 @@
 
     <section class="pc-detail__info">
         {% if orderId and user.can('partscatalog.manage') %}
-        <form method="post" action="{{ url('admin.partscatalog.attach') }}" class="pc-detail__attach">
+        <form method="post" action="{{ url('admin.partscatalog.attach') }}" class="pc-detail__attach pc-attach-form">
             {{ csrf_field()|raw }}
             <input type="hidden" name="order_id" value="{{ orderId }}">
             <input type="hidden" name="name" value="{{ detail.name }}">
             <input type="hidden" name="oem" value="{{ detail.oem }}">
             <input type="hidden" name="brand" value="{{ detail.brand }}">
-            <input type="hidden" name="source" value="{{ providerId }}">
+            <input type="hidden" name="source" value="">
             <input type="hidden" name="external_id" value="{{ detail.id }}">
+            <label class="pc-attach-form__qty">
+                <span class="visually-hidden">{{ 'partscatalog.col.qty'|trans }}</span>
+                <input class="input" type="number" name="qty" value="1" min="1" max="9999" step="1" title="{{ 'partscatalog.col.qty'|trans }}">
+            </label>
             <button class="btn btn--primary" type="submit">{{ 'partscatalog.action.attach'|trans }}</button>
         </form>
         {% endif %}

@@ -9,6 +9,7 @@ use Gereq\Admin\Dashboard\ChartSeries;
 use Gereq\Admin\Dashboard\DashboardWidget;
 use Gereq\Admin\Dashboard\TwigDashboardWidget;
 use Gereq\Http\Router;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Orders\Domain\Order;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -22,6 +23,7 @@ final class OrderRevenueChartWidget extends TwigDashboardWidget
         private readonly EntityManagerInterface $em,
         private readonly TranslatorInterface $translator,
         private readonly Router $router,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig);
     }
@@ -92,7 +94,7 @@ final class OrderRevenueChartWidget extends TwigDashboardWidget
             'stats' => [
                 [
                     'label' => $this->translator->trans('admin.dashboard.chart.revenue_sum'),
-                    'value' => number_format($sum, 0, ',', ' ') . ' Kč',
+                    'value' => $this->money->format($sum),
                 ],
                 [
                     'label' => $this->translator->trans('admin.dashboard.chart.orders_count'),
@@ -100,7 +102,7 @@ final class OrderRevenueChartWidget extends TwigDashboardWidget
                 ],
                 [
                     'label' => $this->translator->trans('admin.dashboard.chart.avg_day'),
-                    'value' => number_format($avg, 0, ',', ' ') . ' Kč',
+                    'value' => $this->money->format($avg),
                 ],
             ],
             'config' => [

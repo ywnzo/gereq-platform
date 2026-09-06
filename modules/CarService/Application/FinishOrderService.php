@@ -4,93 +4,137 @@ declare(strict_types=1);
 
 namespace Modules\CarService\Application;
 
-use Doctrine\ORM\EntityManagerInterface;
-use Gereq\Auth\Authenticator;
-use Gereq\Config\Repository as Config;
-use Gereq\File\FileManager;
+use Gereq\Debug\FullServiceLogger;
 use Gereq\Module\CapabilityRegistry;
 use Modules\CarService\Domain\ServiceOrder;
-use Modules\Customers\Domain\Customer;
 use Modules\Documents\Domain\Document;
-use Modules\Documents\Domain\DocumentLink;
-use Modules\Fleet\Domain\Vehicle;
-use Twig\Environment;
 
 final class FinishOrderService
 {
-    public const DOCUMENT_ENTITY = 'carservice_order';
+    public const DOCUMENT_ENTITY = ServiceDocumentService::DOCUMENT_ENTITY;
 
     public function __construct(
-        private readonly EntityManagerInterface $em,
         private readonly CarServiceProvider $carservice,
         private readonly CapabilityRegistry $capabilities,
-        private readonly Environment $twig,
-        private readonly Config $config,
-        private readonly Authenticator $auth,
-        private readonly FileManager $files,
+        private readonly ServiceDocumentService $documents,
     ) {
     }
 
     /**
      * @param array<string, mixed> $finishMeta
-     * @return array{order: ServiceOrder, document: ?Document}
+     * @return array{order: ServiceOrder, document: ?Document, documents: list<Document>}
      */
     public function finish(string $orderId, array $finishMeta = []): array
     {
-        $order = $this->carservice->finishOrder($orderId, $finishMeta);
-        $document = null;
-        if ($this->capabilities->has('documents') && class_exists(Document::class)) {
-            $document = $this->generateWorksheet($order, $finishMeta);
+        FullServiceLogger::log('carservice.finish.start', [
+            'order_id' => $orderId,
+            'meta_keys' => array_keys($finishMeta),
+            'documents_capability' => $this->capabilities->has('documents'),
+        ]);
+
+        try {
+            $order = $this->carservice->finishOrder($orderId, $finishMeta);
+            $documents = [];
+            if ($this->capabilities->has('documents') && class_exists(Document::class)) {
+                $documents = $this->generateFinishDocuments($order, $finishMeta);
+            } else {
+                FullServiceLogger::log('carservice.finish.documents.skip', [
+                    'order_id' => $order->id(),
+                    'reason' => 'documents_unavailable',
+                ]);
+            }
+
+            $primary = $documents[0] ?? null;
+            FullServiceLogger::log('carservice.finish.done', [
+                'order_id' => $order->id(),
+                'status' => $order->status(),
+                'document_id' => $primary?->id(),
+                'document_count' => count($documents),
+                'document_ids' => array_map(static fn (Document $d): string => $d->id(), $documents),
+            ]);
+
+            return ['order' => $order, 'document' => $primary, 'documents' => $documents];
+        } catch (\Throwable $e) {
+            FullServiceLogger::log('carservice.finish.error', [
+                'order_id' => $orderId,
+                'error' => $e,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Zakázkový list, předávací protokol, nákladový list; nabídka oprav jen pokud ještě není.
+     *
+     * @param array<string, mixed> $extra
+     * @return list<Document>
+     */
+    public function generateFinishDocuments(ServiceOrder $order, array $extra = []): array
+    {
+        $types = [
+            PdfTemplateCatalog::TYPE_WORKSHEET,
+            PdfTemplateCatalog::TYPE_HANDOVER,
+            PdfTemplateCatalog::TYPE_COST_SHEET,
+        ];
+
+        $out = [];
+        foreach ($types as $type) {
+            FullServiceLogger::log('carservice.finish.document.start', [
+                'order_id' => $order->id(),
+                'type' => $type,
+            ]);
+            try {
+                $document = $this->documents->generate($order, $type, $extra);
+                $out[] = $document;
+                FullServiceLogger::log('carservice.finish.document.done', [
+                    'order_id' => $order->id(),
+                    'type' => $type,
+                    'document_id' => $document->id(),
+                    'title' => $document->title(),
+                    'path' => $document->path(),
+                ]);
+            } catch (\Throwable $e) {
+                FullServiceLogger::log('carservice.finish.document.error', [
+                    'order_id' => $order->id(),
+                    'type' => $type,
+                    'error' => $e,
+                ]);
+                if ($type === PdfTemplateCatalog::TYPE_WORKSHEET) {
+                    throw $e;
+                }
+            }
         }
 
-        return ['order' => $order, 'document' => $document];
+        if (!$this->documents->orderHasDocumentType($order->id(), PdfTemplateCatalog::TYPE_QUOTE)) {
+            FullServiceLogger::log('carservice.finish.quote.start', [
+                'order_id' => $order->id(),
+            ]);
+            try {
+                $quote = $this->documents->generate($order, PdfTemplateCatalog::TYPE_QUOTE, $extra);
+                $out[] = $quote;
+                FullServiceLogger::log('carservice.finish.quote.done', [
+                    'order_id' => $order->id(),
+                    'document_id' => $quote->id(),
+                ]);
+            } catch (\Throwable $e) {
+                FullServiceLogger::log('carservice.finish.quote.error', [
+                    'order_id' => $order->id(),
+                    'error' => $e,
+                ]);
+            }
+        } else {
+            FullServiceLogger::log('carservice.finish.quote.skip', [
+                'order_id' => $order->id(),
+                'reason' => 'already_exists',
+            ]);
+        }
+
+        return $out;
     }
 
     /** @param array<string, mixed> $extra */
     public function generateWorksheet(ServiceOrder $order, array $extra = []): Document
     {
-        $vehicle = $this->em->find(Vehicle::class, $order->vehicleId());
-        $customer = $order->customerId() !== null ? $this->em->find(Customer::class, $order->customerId()) : null;
-        $jobs = $this->carservice->jobsForOrder($order->id());
-        $html = $this->twig->render('@carservice/pdf/worksheet.html.twig', [
-            'order' => $order,
-            'vehicle' => $vehicle instanceof Vehicle ? $vehicle : null,
-            'customer' => $customer instanceof Customer ? $customer : null,
-            'jobs' => $jobs,
-            'jobSeconds' => $this->carservice->totalJobSeconds($order->id()),
-            'appName' => (string) $this->config->get('app.name', 'EShop'),
-            'signature' => trim((string) ($extra['signature'] ?? '')) ?: null,
-        ]);
-
-        if (class_exists(\Dompdf\Dompdf::class)) {
-            $dompdf = new \Dompdf\Dompdf(['isRemoteEnabled' => false]);
-            $dompdf->loadHtml($html);
-            $dompdf->setPaper('A4');
-            $dompdf->render();
-            $binary = $dompdf->output();
-            $mime = 'application/pdf';
-            $ext = 'pdf';
-        } else {
-            $binary = $html;
-            $mime = 'text/html';
-            $ext = 'html';
-        }
-
-        $path = 'carservice/' . date('Y/m') . '/zakazka-' . substr($order->id(), 0, 8) . '-' . bin2hex(random_bytes(4)) . '.' . $ext;
-        $this->files->filesystem()->write($path, $binary);
-
-        $document = new Document(
-            'Zakázkový list ' . substr($order->id(), 0, 8),
-            $path,
-            'zakazkovy-list-' . substr($order->id(), 0, 8) . '.' . $ext,
-            $mime,
-            strlen($binary),
-            $this->auth->user()?->id(),
-        );
-        $this->em->persist($document);
-        $this->em->persist(new DocumentLink($document->id(), self::DOCUMENT_ENTITY, $order->id()));
-        $this->em->flush();
-
-        return $document;
+        return $this->documents->generate($order, PdfTemplateCatalog::TYPE_WORKSHEET, $extra);
     }
 }

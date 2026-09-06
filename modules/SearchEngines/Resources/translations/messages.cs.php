@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'module.searchengines.description' => 'Srovnávače a e-shopy: Seznam Zboží, Heureka, Hledejceny, Autodíly Jama, Autodílypro, AutoKelly, Mojekolo.',
+    'nav.searchengines' => 'Vyhledávače',
+    'palette.searchengines.index' => 'Otevřít vyhledávače',
+    'perm.group.searchengines' => 'Vyhledávače',
+    'perm.searchengines.view' => 'Prohlížet vyhledávače',
+    'perm.searchengines.manage' => 'Spravovat vyhledávače',
+    'searchengines.title' => 'Vyhledávače',
+    'searchengines.intro' => 'Veřejné hledání nabídek přes ověřené zdroje (scrape / TLS).',
+    'searchengines.search' => 'Hledat',
+    'searchengines.search_placeholder' => 'např. přesmykač Shimano…',
+    'searchengines.source.all' => 'Všechny zdroje',
+    'searchengines.results' => 'Výsledky',
+    'searchengines.loading' => 'Načítám zdroje…',
+    'searchengines.empty' => 'Nic nenalezeno',
+    'searchengines.start' => 'Zadejte hledání',
+    'searchengines.start_hint' => 'Dostupné zdroje:',
+    'searchengines.unavailable' => 'nedostupné',
+    'searchengines.open' => 'Otevřít',
+    'searchengines.col.name' => 'Produkt',
+    'searchengines.col.source' => 'Zdroj',
+    'searchengines.col.price' => 'Cena',
+    'searchengines.offers.loading' => 'Načítám nabídky…',
+    'searchengines.offers.empty' => 'Nabídky se nepodařilo načíst.',
+    'searchengines.error.query_required' => 'Zadejte hledaný výraz.',
+    'searchengines.error.request_failed' => 'Požadavek na zdroj selhal.',
+    'searchengines.error.invalid' => 'Neplatná odpověď zdroje.',
+    'searchengines.error.no_results' => 'Žádné výsledky.',
+    'searchengines.error.unknown_source' => 'Neznámý zdroj.',
+    'searchengines.error.heureka_unavailable' => 'Heureka není dostupná (chybí Python curl_cffi).',
+];

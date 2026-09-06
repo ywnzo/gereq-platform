@@ -28,7 +28,7 @@ final class PartsCatalogModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.9.1';
+        return '1.13.7';
     }
 
     public function register(ModuleContext $context): void
@@ -56,8 +56,8 @@ final class PartsCatalogModule implements ModuleInterface
             icon: 'package',
             route: 'admin.partscatalog.browse',
             permission: 'partscatalog.view',
-            order: 39,
-            group: 'Provoz',
+            parent: 'carservice',
+            order: 54,
         ));
 
         $context->commandPalette()->add(new PaletteCommand(
@@ -106,6 +106,41 @@ final class PartsCatalogModule implements ModuleInterface
                 ];
 
                 return $sections;
+            },
+            HookPriority::NORMAL,
+        );
+
+        $context->hooks()->addFilter(
+            'carservice.idoklad.invoice_items',
+            static function (array $items, string $orderId) use ($em): array {
+                if ($orderId === '') {
+                    return $items;
+                }
+                /** @var list<OrderPart> $parts */
+                $parts = $em->getRepository(OrderPart::class)->findBy(
+                    ['orderId' => $orderId],
+                    ['createdAt' => 'ASC'],
+                );
+                foreach ($parts as $part) {
+                    if (!$part instanceof OrderPart) {
+                        continue;
+                    }
+                    $name = trim($part->nameCs());
+                    if ($part->oem()) {
+                        $name .= ' · ' . $part->oem();
+                    }
+                    if ($part->brand()) {
+                        $name .= ' (' . $part->brand() . ')';
+                    }
+                    $items[] = [
+                        'Name' => $name !== '' ? $name : 'Náhradní díl',
+                        'Amount' => max(0.01, (float) $part->qty()),
+                        'Unit' => 'ks',
+                        'UnitPrice' => (float) ($part->unitPrice() ?? 0),
+                    ];
+                }
+
+                return $items;
             },
             HookPriority::NORMAL,
         );

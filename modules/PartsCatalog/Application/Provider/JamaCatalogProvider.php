@@ -295,15 +295,113 @@ final class JamaCatalogProvider implements CatalogProviderInterface
         $motorPath = $parsed['path'];
         $parent = trim((string) $parentNodeId, '/');
         $pagePath = $parent === '' ? $motorPath : rtrim($motorPath, '/') . '/' . $parent . '/';
+        $cacheKey = 'tree:' . $pagePath;
+        $remembered = $this->apiCache->remember(
+            'jama',
+            $cacheKey,
+            function () use ($motorPath, $parent, $pagePath): array {
+                return $this->fetchTreePayload($motorPath, $parent, $pagePath);
+            },
+            7 * 24 * 3600,
+            cacheEmpty: true,
+        );
+
+        $out = [];
+        foreach ($remembered['data']['nodes'] ?? [] as $row) {
+            if (!is_array($row) || !isset($row['id'], $row['name'])) {
+                continue;
+            }
+            $out[] = new CatalogNode(
+                id: (string) $row['id'],
+                name: (string) $row['name'],
+                nameOriginal: isset($row['name_original']) ? (string) $row['name_original'] : null,
+                hasChildren: (bool) ($row['has_children'] ?? false),
+                hasProducts: (bool) ($row['has_products'] ?? false),
+            );
+        }
+
+        CatalogCallLogger::log('jama.tree.out', [
+            'path' => $pagePath,
+            'count' => count($out),
+            'fromCache' => (bool) ($remembered['fromCache'] ?? false),
+            'hasProductsHere' => (bool) ($remembered['data']['has_products_here'] ?? false),
+        ]);
+
+        return $out;
+    }
+
+    /**
+     * Podstromy jen z DB api_cache (bez remote) — pro preload skupin bez N+1 HTTP.
+     *
+     * @param list<string> $parentNodeIds
+     * @return array<string, list<CatalogNode>>
+     */
+    public function treesFromCache(string $vehicleId, array $parentNodeIds): array
+    {
+        $parsed = $this->parseVehicleId($vehicleId);
+        if ($parsed === null || $parentNodeIds === []) {
+            return [];
+        }
+
+        $motorPath = $parsed['path'];
+        $ttl = 7 * 24 * 3600;
+        $logicalKeys = [];
+        $keyByParent = [];
+        foreach ($parentNodeIds as $parentNodeId) {
+            $parent = trim($parentNodeId, '/');
+            $pagePath = $parent === '' ? $motorPath : rtrim($motorPath, '/') . '/' . $parent . '/';
+            $logicalKey = 'tree:' . $pagePath;
+            $logicalKeys[] = $logicalKey;
+            $keyByParent[$parentNodeId] = $logicalKey;
+        }
+
+        $this->apiCache->prefetch('jama', $logicalKeys);
+
+        $out = [];
+        foreach ($keyByParent as $parentNodeId => $logicalKey) {
+            $data = $this->apiCache->getDecoded('jama', $logicalKey, $ttl);
+            if (!is_array($data) || !isset($data['nodes']) || !is_array($data['nodes'])) {
+                continue;
+            }
+            $nodes = [];
+            foreach ($data['nodes'] as $row) {
+                if (!is_array($row) || !isset($row['id'], $row['name'])) {
+                    continue;
+                }
+                $nodes[] = new CatalogNode(
+                    id: (string) $row['id'],
+                    name: (string) $row['name'],
+                    nameOriginal: isset($row['name_original']) ? (string) $row['name_original'] : null,
+                    hasChildren: (bool) ($row['has_children'] ?? false),
+                    hasProducts: (bool) ($row['has_products'] ?? false),
+                );
+            }
+            $out[$parentNodeId] = $nodes;
+        }
+
+        CatalogCallLogger::log('jama.trees_from_cache', [
+            'vehicleId' => mb_substr($vehicleId, 0, 120),
+            'wanted' => count($parentNodeIds),
+            'hits' => count($out),
+        ]);
+
+        return $out;
+    }
+
+    /**
+     * @return array{nodes: list<array<string, mixed>>, has_products_here: bool}
+     */
+    private function fetchTreePayload(string $motorPath, string $parent, string $pagePath): array
+    {
         $html = $this->fetchHtml($this->base() . $pagePath);
         if ($html === null) {
-            return [];
+            return ['nodes' => [], 'has_products_here' => false];
         }
 
         $prefix = rtrim($pagePath, '/') . '/';
         $children = [];
         if (preg_match_all('/href="(' . preg_quote($prefix, '/') . '([^"\/?#]+)\\/?)"/i', $html, $m)) {
-            foreach ($m[2] as $i => $seg) {
+            foreach ($m[2] as $seg) {
                 $seg = rawurldecode((string) $seg);
                 if ($seg === '' || str_contains($seg, '.')) {
                     continue;
@@ -313,40 +411,30 @@ final class JamaCatalogProvider implements CatalogProviderInterface
             }
         }
 
-        // Má stránka produkty? (listový uzel)
         $hasProductsHere = str_contains($html, 'ajax-filters-placeholder')
             || str_contains($html, 'product-card-title-link')
             || str_contains($html, 'js-product-holder');
 
-        $out = [];
+        $nodes = [];
         foreach ($children as $rel => $name) {
             $childPrefix = rtrim($motorPath, '/') . '/' . $rel . '/';
             $hasKids = preg_match(
                 '/href="' . preg_quote($childPrefix, '/') . '[^"\/?#]+/i',
                 $html,
             ) === 1;
-            // Heuristika: když aktuální stránka nemá produkty a dítě existuje v menu, ber jako složku.
-            $out[] = new CatalogNode(
-                id: $rel,
-                name: $name,
-                nameOriginal: $rel,
-                hasChildren: $hasKids || (!$hasProductsHere && $parent === ''),
-                hasProducts: !$hasKids,
-            );
+            $nodes[] = [
+                'id' => $rel,
+                'name' => $name,
+                'name_original' => $rel,
+                'has_children' => $hasKids || (!$hasProductsHere && $parent === ''),
+                'has_products' => !$hasKids,
+            ];
         }
 
-        // Když jsme v listu a děti jsou jen „hlubší“ SEO, pořád nabídni list jako produkty přes parent odkaz z UI.
-        if ($out === [] && $hasProductsHere && $parent !== '') {
-            // prázdný strom = UI půjde do products přes node=parent (už vybraný)
-        }
-
-        CatalogCallLogger::log('jama.tree.out', [
-            'path' => $pagePath,
-            'count' => count($out),
-            'hasProductsHere' => $hasProductsHere,
-        ]);
-
-        return $out;
+        return [
+            'nodes' => $nodes,
+            'has_products_here' => $hasProductsHere,
+        ];
     }
 
     public function products(string $vehicleId, string $nodeId): array

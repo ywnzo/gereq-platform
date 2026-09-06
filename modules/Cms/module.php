@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'cms',
     'name' => 'CMS',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'description' => 'module.cms.description',
     'class' => Modules\Cms\CmsModule::class,
     'author' => 'GEREQ',

@@ -171,7 +171,7 @@
                 {% endif %}
             </div>
             {% if catalogBrands is empty %}
-                <p class="muted pc-picker__hint">{{ 'partscatalog.browse.car_hint'|trans({ '%url%': url('admin.fleet.settings') })|raw }}</p>
+                <p class="muted pc-picker__hint">{{ 'partscatalog.browse.car_hint'|trans({ '%url%': url('admin.fleet.brands') })|raw }}</p>
             {% elseif brandId is empty %}
                 <p class="muted pc-picker__hint">{{ 'partscatalog.browse.brand_hint'|trans }}</p>
             {% elseif carId is empty %}
@@ -206,34 +206,117 @@
 </section>
 </div>
 
-{% if not fleetMode and searchResults is empty and fleetVehicles is not empty %}
-<section class="pc-fleet">
-    <header class="pc-section-head">
-        <h2>{{ 'partscatalog.browse.fleet_title'|trans }}</h2>
-        <p class="muted">{{ 'partscatalog.browse.fleet_intro'|trans }}</p>
-    </header>
-    <div class="pc-fleet__grid">
-        {% for car in fleetVehicles %}
-            <a class="pc-fleet-card" href="{{ url('admin.partscatalog.browse') }}?fleet={{ car.id|url_encode }}{% if orderId %}&order_id={{ orderId|url_encode }}{% endif %}">
-                <span class="pc-fleet-card__media">
-                    {% if car.photo_url %}
-                        <img src="{{ car.photo_url }}" alt="{{ car.plate }}" loading="lazy">
-                    {% else %}
-                        <span class="pc-fleet-card__placeholder" aria-hidden="true">{{ icon('car') }}</span>
-                    {% endif %}
-                </span>
-                <span class="pc-fleet-card__body">
-                    <span class="pc-fleet-card__plate">{{ car.plate }}</span>
-                    <span class="pc-fleet-card__name">{{ car.label }}{% if car.year %} · {{ car.year }}{% endif %}</span>
-                    <span class="status-chip status-chip--{{ car.status }}">
-                        <span class="status-chip__dot" aria-hidden="true"></span>
-                        {{ ('fleet.status.' ~ car.status)|trans }}
-                    </span>
-                </span>
-            </a>
-        {% endfor %}
+{% if not fleetMode and searchResults is empty and (fleetVehicles is not empty or (searchHistory is not empty and not vehicleScopedSearch|default(false))) %}
+<details class="pc-shortcuts">
+    <summary class="pc-shortcuts__summary">
+        <span class="pc-shortcuts__summary-main">
+            <span class="pc-shortcuts__chevron" aria-hidden="true"></span>
+            <span>
+                <strong>{{ 'partscatalog.browse.shortcuts_title'|trans }}</strong>
+                <span class="muted">{{ 'partscatalog.browse.shortcuts_intro'|trans }}</span>
+            </span>
+        </span>
+        <span class="badge badge--muted">{{ (fleetVehicles|default([])|length) + (searchHistory|default([])|length) }}</span>
+    </summary>
+    <div class="pc-shortcuts__body">
+        {% if fleetVehicles is not empty %}
+        <section class="pc-fleet">
+            <header class="pc-section-head">
+                <h2>{{ 'partscatalog.browse.fleet_title'|trans }}</h2>
+                <p class="muted">{{ 'partscatalog.browse.fleet_intro'|trans }}</p>
+            </header>
+            <div class="pc-fleet__grid">
+                {% for car in fleetVehicles %}
+                    <a class="pc-fleet-card" href="{{ url('admin.partscatalog.browse') }}?fleet={{ car.id|url_encode }}{% if orderId %}&order_id={{ orderId|url_encode }}{% endif %}">
+                        <span class="pc-fleet-card__media">
+                            {% if car.photo_url %}
+                                <img src="{{ car.photo_url }}" alt="{{ car.plate }}" loading="lazy">
+                            {% else %}
+                                <span class="pc-fleet-card__placeholder" aria-hidden="true">{{ icon('car') }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="pc-fleet-card__body">
+                            <span class="pc-fleet-card__plate">{{ car.plate }}</span>
+                            <span class="pc-fleet-card__name">{{ car.label }}{% if car.year %} · {{ car.year }}{% endif %}</span>
+                            <span class="status-chip status-chip--{{ car.status }}">
+                                <span class="status-chip__dot" aria-hidden="true"></span>
+                                {{ ('fleet.status.' ~ car.status)|trans }}
+                            </span>
+                        </span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if not vehicleScopedSearch|default(false) %}
+        <section class="pc-history">
+            <header class="pc-section-head">
+                <h2>{{ 'partscatalog.browse.history_title'|trans }}</h2>
+                <p class="muted">{{ 'partscatalog.browse.history_intro'|trans }}</p>
+            </header>
+            {% if searchHistory is empty %}
+                <div class="empty"><h2>{{ 'partscatalog.browse.history_empty'|trans }}</h2></div>
+            {% else %}
+                <div class="pc-fleet__grid">
+                    {% for hit in searchHistory %}
+                        {% set qs = [] %}
+                        {% if hit.brand_id %}{% set qs = qs|merge(['brand=' ~ hit.brand_id|url_encode]) %}{% endif %}
+                        {% if hit.car %}{% set qs = qs|merge(['car=' ~ hit.car|url_encode]) %}{% endif %}
+                        {% if hit.year %}{% set qs = qs|merge(['year=' ~ hit.year|url_encode]) %}{% endif %}
+                        {% if hit.vehicle %}{% set qs = qs|merge(['vehicle=' ~ hit.vehicle|url_encode]) %}{% endif %}
+                        {% if hit.q %}{% set qs = qs|merge(['q=' ~ hit.q|url_encode]) %}{% endif %}
+                        {% if orderId %}{% set qs = qs|merge(['order_id=' ~ orderId|url_encode]) %}{% endif %}
+                        {% set forgetQs = ['history_forget=' ~ hit.id|url_encode] %}
+                        {% if brandId %}{% set forgetQs = forgetQs|merge(['brand=' ~ brandId|url_encode]) %}{% endif %}
+                        {% if carId %}{% set forgetQs = forgetQs|merge(['car=' ~ carId|url_encode]) %}{% endif %}
+                        {% if year %}{% set forgetQs = forgetQs|merge(['year=' ~ year|url_encode]) %}{% endif %}
+                        {% if vehicleId %}{% set forgetQs = forgetQs|merge(['vehicle=' ~ vehicleId|url_encode]) %}{% endif %}
+                        {% if orderId %}{% set forgetQs = forgetQs|merge(['order_id=' ~ orderId|url_encode]) %}{% endif %}
+                        <div class="pc-car pc-car--history">
+                            <span class="pc-car__brand">
+                                {% if hit.logo_url %}
+                                    <img src="{{ hit.logo_url }}" alt="" loading="lazy" onerror="const p=this.parentElement;this.remove();p.classList.add('pc-car__brand--fallback')">
+                                {% endif %}
+                                {% if hit.brand or hit.logo_url %}
+                                    <span class="pc-car__brand-fallback" aria-hidden="true">{{ icon('car') }}</span>
+                                {% endif %}
+                            </span>
+                            <a
+                                class="pc-car__forget"
+                                href="{{ url('admin.partscatalog.browse') }}?{{ forgetQs|join('&') }}"
+                                title="{{ 'partscatalog.browse.history_remove'|trans }}"
+                                aria-label="{{ 'partscatalog.browse.history_remove'|trans }}"
+                            >{{ icon('close') }}</a>
+                            <a class="pc-car__link" href="{{ url('admin.partscatalog.browse') }}{% if qs %}?{{ qs|join('&') }}{% endif %}">
+                                <span class="pc-car__plate">{{ hit.type ?: (hit.q ?: hit.label) }}</span>
+                                <span class="pc-car__name">
+                                    {% if hit.brand or hit.model %}
+                                        {{ hit.label }}{% if hit.year %} · {{ hit.year }}{% endif %}
+                                    {% elseif hit.year %}
+                                        {{ hit.year }}
+                                    {% elseif hit.q %}
+                                        {{ 'partscatalog.browse.history_oem'|trans }}
+                                    {% else %}
+                                        {{ hit.vehicle_label ?: '—' }}
+                                    {% endif %}
+                                </span>
+                                {% if hit.q and (hit.brand or hit.model) %}
+                                    <span class="pc-car__vin">{{ hit.q }}</span>
+                                {% endif %}
+                            </a>
+                            {% if hit.fuel %}
+                                {% set fuelIcon = hit.fuel == 'electric' ? 'fuel-electric' : (hit.fuel == 'hybrid' ? 'fuel-hybrid' : 'fuel') %}
+                                <span class="pc-car__fuel" title="{{ ('fleet.fuel.' ~ hit.fuel)|trans }}">{{ icon(fuelIcon) }}</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+        {% endif %}
     </div>
-</section>
+</details>
 {% endif %}
 
 {% if searchResults is not empty %}
@@ -255,7 +338,28 @@
                 <th class="table__actions-head"></th>
             </tr>
             </thead>
-            <tbody>
+            <tbody
+                {% if market.enabled|default(false) %}
+                x-data="pcOemMarket"
+                data-endpoint="{{ market.search_url|e('html_attr') }}"
+                data-offers-endpoint="{{ market.offers_url|e('html_attr') }}"
+                data-sources="{{ market.sources|json_encode|e('html_attr') }}"
+                {% if orderId %}
+                data-order-id="{{ orderId|e('html_attr') }}"
+                data-attach-url="{{ url('admin.partscatalog.attach')|e('html_attr') }}"
+                data-can-attach="{{ user.can('partscatalog.manage') ? '1' : '0' }}"
+                {% endif %}
+                data-label-loading="{{ 'searchengines.loading'|trans|e('html_attr') }}"
+                data-label-empty="{{ 'searchengines.empty'|trans|e('html_attr') }}"
+                data-label-open="{{ 'searchengines.open'|trans|e('html_attr') }}"
+                data-label-title="{{ 'partscatalog.oem_market.title'|trans|e('html_attr') }}"
+                data-label-close="{{ 'partscatalog.oem_market.close'|trans|e('html_attr') }}"
+                data-label-attach="{{ 'partscatalog.action.attach'|trans|e('html_attr') }}"
+                data-label-attached="{{ 'partscatalog.action.attached'|trans|e('html_attr') }}"
+                data-currency-code="{{ currency_code()|e('html_attr') }}"
+                data-currency-symbol="{{ currency_symbol()|e('html_attr') }}"
+                {% endif %}
+            >
             {% for p in searchResults %}
             {% set detailUrl = url('admin.partscatalog.detail') ~ '?p=' ~ p.id|url_encode ~ (orderId ? '&order_id=' ~ orderId|url_encode : '') %}
             <tr>
@@ -269,25 +373,58 @@
                 <td>
                     <a href="{{ detailUrl }}"><strong>{{ p.name }}</strong></a>
                 </td>
-                <td class="is-mute"><code>{{ p.oem ?: '—' }}</code></td>
+                <td class="is-mute">
+                    {% if p.oem %}
+                        <span class="pc-oem-cell">
+                            <code>{{ p.oem }}</code>
+                            {% if market.enabled|default(false) %}
+                                <button
+                                    type="button"
+                                    class="pc-oem-lupa"
+                                    :class="lupaClass('{{ p.oem|e('js') }}')"
+                                    data-oem="{{ p.oem|e('html_attr') }}"
+                                    data-name="{{ p.name|e('html_attr') }}"
+                                    data-brand="{{ p.brand|e('html_attr') }}"
+                                    title="{{ 'partscatalog.action.oem_market'|trans({'%oem%': p.oem}) }}"
+                                    aria-label="{{ 'partscatalog.action.oem_market'|trans({'%oem%': p.oem}) }}"
+                                    :aria-expanded="isOpen('{{ p.oem|e('js') }}') ? 'true' : 'false'"
+                                    @click.stop.prevent="toggleFromBtn($event)"
+                                >{{ icon('search') }}</button>
+                            {% endif %}
+                        </span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
                 <td class="is-mute">{{ p.brand ?: '—' }}</td>
-                <td>
+                <td class="pc-row-actions">
                     <a class="btn btn--ghost" href="{{ detailUrl }}">{{ 'partscatalog.action.detail'|trans }}</a>
                     {% if orderId and user.can('partscatalog.manage') %}
-                    <form method="post" action="{{ url('admin.partscatalog.attach') }}" style="display:inline">
+                    <form method="post" action="{{ url('admin.partscatalog.attach') }}" class="pc-attach-form">
                         {{ csrf_field()|raw }}
                         <input type="hidden" name="order_id" value="{{ orderId }}">
                         <input type="hidden" name="name" value="{{ p.name }}">
                         <input type="hidden" name="name_original" value="{{ p.nameOriginal }}">
                         <input type="hidden" name="oem" value="{{ p.oem }}">
                         <input type="hidden" name="brand" value="{{ p.brand }}">
-                        <input type="hidden" name="source" value="{{ providerId }}">
+                        <input type="hidden" name="source" value="">
                         <input type="hidden" name="external_id" value="{{ p.id }}">
+                        <label class="pc-attach-form__qty">
+                            <span class="visually-hidden">{{ 'partscatalog.col.qty'|trans }}</span>
+                            <input class="input input--sm" type="number" name="qty" value="1" min="1" max="9999" step="1" title="{{ 'partscatalog.col.qty'|trans }}">
+                        </label>
                         <button class="btn btn--ghost" type="submit">{{ 'partscatalog.action.attach'|trans }}</button>
                     </form>
                     {% endif %}
                 </td>
             </tr>
+            {% if market.enabled|default(false) and p.oem %}
+            <tr class="pc-oem-market-row" x-show="isOpen('{{ p.oem|e('js') }}')" x-cloak>
+                <td colspan="5">
+                    {% include '@partscatalog/partials/oem_market.html.twig' %}
+                </td>
+            </tr>
+            {% endif %}
             {% endfor %}
             </tbody>
         </table>
@@ -339,73 +476,6 @@
 </section>
 {% endif %}
 
-{% if not fleetMode and searchResults is empty and not vehicleScopedSearch|default(false) %}
-<section class="pc-history">
-    <header class="pc-section-head">
-        <h2>{{ 'partscatalog.browse.history_title'|trans }}</h2>
-        <p class="muted">{{ 'partscatalog.browse.history_intro'|trans }}</p>
-    </header>
-    {% if searchHistory is empty %}
-        <div class="empty"><h2>{{ 'partscatalog.browse.history_empty'|trans }}</h2></div>
-    {% else %}
-        <div class="pc-fleet__grid">
-            {% for hit in searchHistory %}
-                {% set qs = [] %}
-                {% if hit.brand_id %}{% set qs = qs|merge(['brand=' ~ hit.brand_id|url_encode]) %}{% endif %}
-                {% if hit.car %}{% set qs = qs|merge(['car=' ~ hit.car|url_encode]) %}{% endif %}
-                {% if hit.year %}{% set qs = qs|merge(['year=' ~ hit.year|url_encode]) %}{% endif %}
-                {% if hit.vehicle %}{% set qs = qs|merge(['vehicle=' ~ hit.vehicle|url_encode]) %}{% endif %}
-                {% if hit.q %}{% set qs = qs|merge(['q=' ~ hit.q|url_encode]) %}{% endif %}
-                {% if orderId %}{% set qs = qs|merge(['order_id=' ~ orderId|url_encode]) %}{% endif %}
-                {% set forgetQs = ['history_forget=' ~ hit.id|url_encode] %}
-                {% if brandId %}{% set forgetQs = forgetQs|merge(['brand=' ~ brandId|url_encode]) %}{% endif %}
-                {% if carId %}{% set forgetQs = forgetQs|merge(['car=' ~ carId|url_encode]) %}{% endif %}
-                {% if year %}{% set forgetQs = forgetQs|merge(['year=' ~ year|url_encode]) %}{% endif %}
-                {% if vehicleId %}{% set forgetQs = forgetQs|merge(['vehicle=' ~ vehicleId|url_encode]) %}{% endif %}
-                {% if orderId %}{% set forgetQs = forgetQs|merge(['order_id=' ~ orderId|url_encode]) %}{% endif %}
-                <div class="pc-car pc-car--history">
-                    <span class="pc-car__brand">
-                        {% if hit.logo_url %}
-                            <img src="{{ hit.logo_url }}" alt="" loading="lazy" onerror="const p=this.parentElement;this.remove();p.classList.add('pc-car__brand--fallback')">
-                        {% endif %}
-                        {% if hit.brand or hit.logo_url %}
-                            <span class="pc-car__brand-fallback" aria-hidden="true">{{ icon('car') }}</span>
-                        {% endif %}
-                    </span>
-                    <a
-                        class="pc-car__forget"
-                        href="{{ url('admin.partscatalog.browse') }}?{{ forgetQs|join('&') }}"
-                        title="{{ 'partscatalog.browse.history_remove'|trans }}"
-                        aria-label="{{ 'partscatalog.browse.history_remove'|trans }}"
-                    >{{ icon('close') }}</a>
-                    <a class="pc-car__link" href="{{ url('admin.partscatalog.browse') }}{% if qs %}?{{ qs|join('&') }}{% endif %}">
-                        <span class="pc-car__plate">{{ hit.type ?: (hit.q ?: hit.label) }}</span>
-                        <span class="pc-car__name">
-                            {% if hit.brand or hit.model %}
-                                {{ hit.label }}{% if hit.year %} · {{ hit.year }}{% endif %}
-                            {% elseif hit.year %}
-                                {{ hit.year }}
-                            {% elseif hit.q %}
-                                {{ 'partscatalog.browse.history_oem'|trans }}
-                            {% else %}
-                                {{ hit.vehicle_label ?: '—' }}
-                            {% endif %}
-                        </span>
-                        {% if hit.q and (hit.brand or hit.model) %}
-                            <span class="pc-car__vin">{{ hit.q }}</span>
-                        {% endif %}
-                    </a>
-                    {% if hit.fuel %}
-                        {% set fuelIcon = hit.fuel == 'electric' ? 'fuel-electric' : (hit.fuel == 'hybrid' ? 'fuel-hybrid' : 'fuel') %}
-                        <span class="pc-car__fuel" title="{{ ('fleet.fuel.' ~ hit.fuel)|trans }}">{{ icon(fuelIcon) }}</span>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-</section>
-{% endif %}
-
 {% if (fleetId or (canSearch and vehicleId)) and (searchResults is empty or vehicleScopedSearch|default(false)) %}
 <div class="pc-workspace">
     <div class="pc-workspace__main">
@@ -421,7 +491,28 @@
                     <th class="table__actions-head"></th>
                 </tr>
                 </thead>
-                <tbody>
+                <tbody
+                    {% if market.enabled|default(false) %}
+                    x-data="pcOemMarket"
+                    data-endpoint="{{ market.search_url|e('html_attr') }}"
+                    data-offers-endpoint="{{ market.offers_url|e('html_attr') }}"
+                    data-sources="{{ market.sources|json_encode|e('html_attr') }}"
+                    {% if orderId %}
+                    data-order-id="{{ orderId|e('html_attr') }}"
+                    data-attach-url="{{ url('admin.partscatalog.attach')|e('html_attr') }}"
+                    data-can-attach="{{ user.can('partscatalog.manage') ? '1' : '0' }}"
+                    {% endif %}
+                    data-label-loading="{{ 'searchengines.loading'|trans|e('html_attr') }}"
+                    data-label-empty="{{ 'searchengines.empty'|trans|e('html_attr') }}"
+                    data-label-open="{{ 'searchengines.open'|trans|e('html_attr') }}"
+                    data-label-title="{{ 'partscatalog.oem_market.title'|trans|e('html_attr') }}"
+                    data-label-close="{{ 'partscatalog.oem_market.close'|trans|e('html_attr') }}"
+                    data-label-attach="{{ 'partscatalog.action.attach'|trans|e('html_attr') }}"
+                    data-label-attached="{{ 'partscatalog.action.attached'|trans|e('html_attr') }}"
+                    data-currency-code="{{ currency_code()|e('html_attr') }}"
+                    data-currency-symbol="{{ currency_symbol()|e('html_attr') }}"
+                    {% endif %}
+                >
                 {% for p in products %}
                 {% set detailUrl = url('admin.partscatalog.detail') ~ '?p=' ~ p.id|url_encode ~ (vehicleId ? '&vehicle=' ~ vehicleId|url_encode : '') ~ (nodeId ? '&node=' ~ nodeId|url_encode : '') ~ (parentId ? '&parent=' ~ parentId|url_encode : '') ~ (fleetId ? '&fleet=' ~ fleetId|url_encode : '') ~ (brandId ? '&brand=' ~ brandId|url_encode : '') ~ (carId ? '&car=' ~ carId|url_encode : '') ~ (year ? '&year=' ~ year|url_encode : '') ~ (orderId ? '&order_id=' ~ orderId|url_encode : '') %}
                 <tr class="pc-row-link">
@@ -435,25 +526,58 @@
                     <td>
                         <a href="{{ detailUrl }}"><strong>{{ p.name }}</strong></a>
                     </td>
-                    <td class="is-mute"><code>{{ p.oem ?: '—' }}</code></td>
+                    <td class="is-mute">
+                        {% if p.oem %}
+                            <span class="pc-oem-cell">
+                                <code>{{ p.oem }}</code>
+                                {% if market.enabled|default(false) %}
+                                    <button
+                                        type="button"
+                                        class="pc-oem-lupa"
+                                        :class="lupaClass('{{ p.oem|e('js') }}')"
+                                        data-oem="{{ p.oem|e('html_attr') }}"
+                                        data-name="{{ p.name|e('html_attr') }}"
+                                        data-brand="{{ p.brand|e('html_attr') }}"
+                                        title="{{ 'partscatalog.action.oem_market'|trans({'%oem%': p.oem}) }}"
+                                        aria-label="{{ 'partscatalog.action.oem_market'|trans({'%oem%': p.oem}) }}"
+                                        :aria-expanded="isOpen('{{ p.oem|e('js') }}') ? 'true' : 'false'"
+                                        @click.stop.prevent="toggleFromBtn($event)"
+                                    >{{ icon('search') }}</button>
+                                {% endif %}
+                            </span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                     <td class="is-mute">{{ p.brand ?: '—' }}</td>
-                    <td>
+                    <td class="pc-row-actions">
                         <a class="btn btn--ghost" href="{{ detailUrl }}">{{ 'partscatalog.action.detail'|trans }}</a>
                         {% if orderId and user.can('partscatalog.manage') %}
-                        <form method="post" action="{{ url('admin.partscatalog.attach') }}" style="display:inline">
+                        <form method="post" action="{{ url('admin.partscatalog.attach') }}" class="pc-attach-form">
                             {{ csrf_field()|raw }}
                             <input type="hidden" name="order_id" value="{{ orderId }}">
                             <input type="hidden" name="name" value="{{ p.name }}">
                             <input type="hidden" name="name_original" value="{{ p.nameOriginal }}">
                             <input type="hidden" name="oem" value="{{ p.oem }}">
                             <input type="hidden" name="brand" value="{{ p.brand }}">
-                            <input type="hidden" name="source" value="{{ providerId }}">
+                            <input type="hidden" name="source" value="">
                             <input type="hidden" name="external_id" value="{{ p.id }}">
+                            <label class="pc-attach-form__qty">
+                                <span class="visually-hidden">{{ 'partscatalog.col.qty'|trans }}</span>
+                                <input class="input input--sm" type="number" name="qty" value="1" min="1" max="9999" step="1" title="{{ 'partscatalog.col.qty'|trans }}">
+                            </label>
                             <button class="btn btn--ghost" type="submit">{{ 'partscatalog.action.attach'|trans }}</button>
                         </form>
                         {% endif %}
                     </td>
                 </tr>
+                {% if market.enabled|default(false) and p.oem %}
+                <tr class="pc-oem-market-row" x-show="isOpen('{{ p.oem|e('js') }}')" x-cloak>
+                    <td colspan="5">
+                        {% include '@partscatalog/partials/oem_market.html.twig' %}
+                    </td>
+                </tr>
+                {% endif %}
                 {% else %}
                 <tr><td colspan="5"><div class="empty"><h2>{{ 'partscatalog.browse.no_products'|trans }}</h2></div></td></tr>
                 {% endfor %}
@@ -485,51 +609,70 @@
                     </div>
                 </label>
             </form>
-            <div class="table-wrap" data-table>
-                <table class="table table--pc">
-                    <thead>
-                    <tr>
-                        <th>{{ 'partscatalog.col.name'|trans }}</th>
-                        <th class="table__actions-head"></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for n in nodes %}
-                    <tr>
-                        <td>
-                            {% set groupUrl = n.hasChildren
-                                ? (url('admin.partscatalog.browse') ~ '?vehicle=' ~ vehicleId|url_encode ~ '&parent=' ~ n.id|url_encode)
-                                : (url('admin.partscatalog.browse') ~ '?vehicle=' ~ vehicleId|url_encode ~ '&node=' ~ n.id|url_encode ~ (parentId ? '&parent=' ~ parentId|url_encode : ''))
-                            %}
-                            {% if fleetId %}{% set groupUrl = groupUrl ~ '&fleet=' ~ fleetId|url_encode %}{% endif %}
-                            {% if brandId %}{% set groupUrl = groupUrl ~ '&brand=' ~ brandId|url_encode %}{% endif %}
-                            {% if carId %}{% set groupUrl = groupUrl ~ '&car=' ~ carId|url_encode %}{% endif %}
-                            {% if year %}{% set groupUrl = groupUrl ~ '&year=' ~ year|url_encode %}{% endif %}
-                            {% if orderId %}{% set groupUrl = groupUrl ~ '&order_id=' ~ orderId|url_encode %}{% endif %}
-                            {% if q %}{% set groupUrl = groupUrl ~ '&q=' ~ q|url_encode %}{% endif %}
-                            <a href="{{ groupUrl }}">
-                                <strong>{{ n.name }}</strong>
-                            </a>
-                        </td>
-                        <td class="is-mute">
-                            <a href="{{ groupUrl }}">{{ n.hasChildren ? '→' : ('partscatalog.browse.open_parts'|trans) }}</a>
-                        </td>
-                    </tr>
+            {% if nodes is empty %}
+                <div class="empty">
+                    {% if groupQuery|default('') %}
+                        <h2>{{ 'partscatalog.browse.groups_empty'|trans }}</h2>
                     {% else %}
-                    <tr><td colspan="2">
-                        <div class="empty">
-                            {% if groupQuery|default('') %}
-                                <h2>{{ 'partscatalog.browse.groups_empty'|trans }}</h2>
-                            {% else %}
-                                <h2>{{ 'partscatalog.browse.no_groups'|trans }}</h2>
-                                <p class="muted">{{ 'partscatalog.browse.no_groups_hint'|trans }}</p>
+                        <h2>{{ 'partscatalog.browse.no_groups'|trans }}</h2>
+                        <p class="muted">{{ 'partscatalog.browse.no_groups_hint'|trans }}</p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <ul class="pc-groups">
+                    {% for n in nodes %}
+                        {% set groupUrl = n.hasChildren
+                            ? (url('admin.partscatalog.browse') ~ '?vehicle=' ~ vehicleId|url_encode ~ '&parent=' ~ n.id|url_encode)
+                            : (url('admin.partscatalog.browse') ~ '?vehicle=' ~ vehicleId|url_encode ~ '&node=' ~ n.id|url_encode ~ (parentId ? '&parent=' ~ parentId|url_encode : ''))
+                        %}
+                        {% if fleetId %}{% set groupUrl = groupUrl ~ '&fleet=' ~ fleetId|url_encode %}{% endif %}
+                        {% if brandId %}{% set groupUrl = groupUrl ~ '&brand=' ~ brandId|url_encode %}{% endif %}
+                        {% if carId %}{% set groupUrl = groupUrl ~ '&car=' ~ carId|url_encode %}{% endif %}
+                        {% if year %}{% set groupUrl = groupUrl ~ '&year=' ~ year|url_encode %}{% endif %}
+                        {% if orderId %}{% set groupUrl = groupUrl ~ '&order_id=' ~ orderId|url_encode %}{% endif %}
+                        {% if q %}{% set groupUrl = groupUrl ~ '&q=' ~ q|url_encode %}{% endif %}
+                        <li class="pc-groups__item{% if n.children is not empty %} pc-groups__item--branch{% endif %}">
+                            <div class="pc-groups__row">
+                                <span class="pc-groups__icon" data-icon="{{ n.icon }}" aria-hidden="true">{{ icon(n.icon) }}</span>
+                                <a class="pc-groups__link" href="{{ groupUrl }}">
+                                    <strong>{{ n.name }}</strong>
+                                    {% if n.children is not empty %}
+                                        <span class="badge badge--muted">{{ n.children|length }}</span>
+                                    {% endif %}
+                                </a>
+                                <a class="pc-groups__action" href="{{ groupUrl }}">
+                                    {{ n.hasChildren ? ('partscatalog.browse.open_group'|trans) : ('partscatalog.browse.open_parts'|trans) }}
+                                </a>
+                            </div>
+                            {% if n.children is not empty %}
+                                <ul class="pc-groups__sub">
+                                    {% for child in n.children %}
+                                        {% set childUrl = child.hasChildren
+                                            ? (url('admin.partscatalog.browse') ~ '?vehicle=' ~ vehicleId|url_encode ~ '&parent=' ~ child.id|url_encode)
+                                            : (url('admin.partscatalog.browse') ~ '?vehicle=' ~ vehicleId|url_encode ~ '&node=' ~ child.id|url_encode ~ '&parent=' ~ n.id|url_encode)
+                                        %}
+                                        {% if fleetId %}{% set childUrl = childUrl ~ '&fleet=' ~ fleetId|url_encode %}{% endif %}
+                                        {% if brandId %}{% set childUrl = childUrl ~ '&brand=' ~ brandId|url_encode %}{% endif %}
+                                        {% if carId %}{% set childUrl = childUrl ~ '&car=' ~ carId|url_encode %}{% endif %}
+                                        {% if year %}{% set childUrl = childUrl ~ '&year=' ~ year|url_encode %}{% endif %}
+                                        {% if orderId %}{% set childUrl = childUrl ~ '&order_id=' ~ orderId|url_encode %}{% endif %}
+                                        {% if q %}{% set childUrl = childUrl ~ '&q=' ~ q|url_encode %}{% endif %}
+                                        <li class="pc-groups__sub-item">
+                                            <a class="pc-groups__sub-link" href="{{ childUrl }}">
+                                                <span class="pc-groups__sub-main">
+                                                    <span class="pc-groups__sub-icon" aria-hidden="true">{{ icon(child.icon) }}</span>
+                                                    <span>{{ child.name }}</span>
+                                                </span>
+                                                <span class="pc-groups__sub-meta">{{ child.hasChildren ? '→' : ('partscatalog.browse.open_parts'|trans) }}</span>
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
                             {% endif %}
-                        </div>
-                    </td></tr>
+                        </li>
                     {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                </ul>
+            {% endif %}
         </div>
         {% elseif fleetId or canSearch %}
             <div class="empty"><h2>{{ 'partscatalog.browse.pick_catalog_vehicle'|trans }}</h2></div>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\CarService\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Debug\FullServiceLogger;
 use Gereq\Setting\Settings;
 use Modules\CarService\Domain\ServiceJob;
 use Modules\CarService\Domain\ServiceOrder;
@@ -103,6 +104,17 @@ final class CarServiceProvider
             $this->syncFleetStatus($vehicleId, 'in_service', 'carservice_created');
             $this->applyIntakeSnapshotToVehicle($order);
         }
+
+        FullServiceLogger::log('carservice.order.created', [
+            'order_id' => $order->id(),
+            'vehicle_id' => $vehicleId,
+            'customer_id' => $order->customerId(),
+            'branch_id' => $order->branchId(),
+            'type' => $order->type(),
+            'status' => $order->status(),
+            'team' => $order->team(),
+            'sync_fleet' => ($meta['sync_fleet'] ?? true) === true,
+        ]);
 
         return $order;
     }
@@ -223,6 +235,14 @@ final class CarServiceProvider
         $this->em->persist(new ServiceTeamSwitch($orderId, $from, $team, $userId, $note));
         $this->em->flush();
 
+        FullServiceLogger::log('carservice.team.switched', [
+            'order_id' => $orderId,
+            'from' => $from,
+            'to' => $team,
+            'user_id' => $userId,
+            'note' => $note,
+        ]);
+
         return $order;
     }
 
@@ -240,6 +260,7 @@ final class CarServiceProvider
         if ($running instanceof ServiceJob) {
             throw new \InvalidArgumentException('carservice.error.job_running');
         }
+        $prevStatus = $order->status();
         $job = new ServiceJob($orderId, $type, $employeeUserId);
         $job->setNote($note);
         if ($order->status() === 'intake') {
@@ -247,6 +268,15 @@ final class CarServiceProvider
         }
         $this->em->persist($job);
         $this->em->flush();
+
+        FullServiceLogger::log('carservice.job.started', [
+            'order_id' => $orderId,
+            'job_id' => $job->id(),
+            'type' => $type,
+            'employee_user_id' => $employeeUserId,
+            'status_from' => $prevStatus,
+            'status_to' => $order->status(),
+        ]);
 
         return $job;
     }
@@ -261,6 +291,15 @@ final class CarServiceProvider
         $maxSeconds = (int) round($this->jobSoftLimitHours() * 3600);
         $job->complete(null, $maxSeconds > 0 ? $maxSeconds : null);
         $this->em->flush();
+
+        FullServiceLogger::log('carservice.job.completed', [
+            'order_id' => $job->orderId(),
+            'job_id' => $job->id(),
+            'type' => $job->type(),
+            'duration_seconds' => $job->durationSeconds(),
+            'soft_limit_hours' => $this->jobSoftLimitHours(),
+            'exceeded_soft_limit' => $this->jobExceededSoftLimit($job),
+        ]);
 
         return $job;
     }
@@ -312,16 +351,33 @@ final class CarServiceProvider
         if (!$order->isOpen()) {
             throw new \InvalidArgumentException('carservice.error.order_closed');
         }
+        $prevStatus = $order->status();
+        $stoppedJobs = 0;
         foreach ($this->em->getRepository(ServiceJob::class)->findBy(['orderId' => $orderId, 'endedAt' => null]) as $job) {
             if ($job instanceof ServiceJob) {
                 $maxSeconds = (int) round($this->jobSoftLimitHours() * 3600);
                 $job->complete(null, $maxSeconds > 0 ? $maxSeconds : null);
+                $stoppedJobs++;
             }
         }
         $this->applyFinishMeta($order, $finishMeta);
         $order->setStatus('done');
         $this->em->flush();
         $this->syncFleetStatus($order->vehicleId(), 'available', 'carservice_finished');
+
+        FullServiceLogger::log('carservice.order.finished', [
+            'order_id' => $orderId,
+            'status_from' => $prevStatus,
+            'status_to' => $order->status(),
+            'vehicle_id' => $order->vehicleId(),
+            'customer_id' => $order->customerId(),
+            'stopped_running_jobs' => $stoppedJobs,
+            'job_seconds' => $this->totalJobSeconds($orderId),
+            'payment_type' => $order->paymentType(),
+            'internal_cost' => $order->internalCost(),
+            'external_cost' => $order->externalCost(),
+            'finish_meta_keys' => array_keys($finishMeta),
+        ]);
 
         return $order;
     }
@@ -332,6 +388,7 @@ final class CarServiceProvider
         if (!$order->isOpen()) {
             throw new \InvalidArgumentException('carservice.error.order_closed');
         }
+        $prevStatus = $order->status();
         foreach ($this->em->getRepository(ServiceJob::class)->findBy(['orderId' => $orderId, 'endedAt' => null]) as $job) {
             if ($job instanceof ServiceJob) {
                 $job->complete();
@@ -340,6 +397,13 @@ final class CarServiceProvider
         $order->setStatus('cancelled');
         $this->em->flush();
         $this->syncFleetStatus($order->vehicleId(), 'available', 'carservice_cancelled');
+
+        FullServiceLogger::log('carservice.order.cancelled', [
+            'order_id' => $orderId,
+            'status_from' => $prevStatus,
+            'status_to' => $order->status(),
+            'vehicle_id' => $order->vehicleId(),
+        ]);
 
         return $order;
     }
@@ -377,10 +441,11 @@ final class CarServiceProvider
         return $this->em->getRepository(ServiceJob::class)->findBy(['orderId' => $orderId], ['startedAt' => 'DESC']);
     }
 
-    public function totalJobSeconds(string $orderId): int
+    /** @param list<ServiceJob>|null $jobs */
+    public function totalJobSeconds(string $orderId, ?array $jobs = null): int
     {
         $total = 0;
-        foreach ($this->jobsForOrder($orderId) as $job) {
+        foreach ($jobs ?? $this->jobsForOrder($orderId) as $job) {
             $total += $job->durationSeconds() ?? 0;
         }
 
@@ -397,8 +462,10 @@ final class CarServiceProvider
         return is_numeric($raw) ? (float) $raw : 8.0;
     }
 
-    /** @return array<string, mixed> */
-    public function serialize(ServiceOrder $o): array
+    /** @param list<ServiceJob>|null $jobs
+     * @return array<string, mixed>
+     */
+    public function serialize(ServiceOrder $o, ?array $jobs = null): array
     {
         return [
             'id' => $o->id(),
@@ -415,11 +482,12 @@ final class CarServiceProvider
             'external_cost' => $o->externalCost(),
             'intake_mileage' => $o->intakeMileage(),
             'intake_fuel_level' => $o->intakeFuelLevel(),
+            'intake_protocol' => $o->intakeProtocol(),
             'note' => $o->note(),
             'intake_at' => $o->intakeAt()?->format('Y-m-d'),
             'handover_at' => $o->handoverAt()?->format('Y-m-d'),
             'finished_at' => $o->finishedAt()?->format(\DateTimeInterface::ATOM),
-            'job_seconds' => $this->totalJobSeconds($o->id()),
+            'job_seconds' => $this->totalJobSeconds($o->id(), $jobs),
             'created_at' => $o->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $o->updatedAt()->format(\DateTimeInterface::ATOM),
         ];

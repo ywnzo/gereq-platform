@@ -46,4 +46,28 @@ class Document
     public function uploadedBy(): ?string { return $this->uploadedBy; }
     public function createdAt(): \DateTimeImmutable { return $this->createdAt; }
     public function setTitle(string $title): void { $this->title = $title; }
+
+    public function isImage(): bool
+    {
+        return str_starts_with($this->mime, 'image/');
+    }
+
+    public function isPdf(): bool
+    {
+        return $this->mime === 'application/pdf'
+            || str_ends_with(strtolower($this->originalName), '.pdf');
+    }
+
+    /** Icon key for non-image files (see Gereq\Admin\Ui\Icons). */
+    public function fileIcon(): string
+    {
+        if ($this->isPdf()) {
+            return 'pdf';
+        }
+        if (str_starts_with($this->mime, 'text/') || str_contains($this->mime, 'html')) {
+            return 'file';
+        }
+
+        return 'file';
+    }
 }

@@ -11,6 +11,7 @@ use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Customers\Domain\Customer;
 use Modules\Shop\Application\CartService;
 use Modules\Shop\Domain\Cart;
@@ -33,6 +34,7 @@ final class CartController extends Controller
         private readonly Auditor $auditor,
         private readonly CartService $carts,
         private readonly TranslatorInterface $translator,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -90,7 +92,7 @@ final class CartController extends Controller
             'statuses' => Cart::STATUSES,
             'has_customer' => $hasCustomer,
             'currency' => $currency,
-            'currencies' => $currencies !== [] ? $currencies : ['CZK', 'EUR'],
+            'currencies' => $currencies !== [] ? $currencies : $this->money->activeCodes(),
         ]));
     }
 

@@ -13,6 +13,7 @@ use Gereq\Event\EventBus;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Module\CapabilityRegistry;
 use Modules\Customers\Domain\Customer;
 use Modules\Fleet\Application\FleetProvider;
 use Modules\Fleet\Application\OrvClient;
@@ -47,6 +48,7 @@ final class VehicleController extends Controller
         private readonly VehicleMediaService $vehicleMedia,
         private readonly VehicleCalendarService $vehicleCalendar,
         private readonly OrvClient $orv,
+        private readonly CapabilityRegistry $capabilities,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -75,15 +77,28 @@ final class VehicleController extends Controller
         if ($customerId !== '') {
             $qb->andWhere('v.customerId = :c')->setParameter('c', $customerId);
         }
+        $branchId = $this->selectedBranchId();
+        if ($branchId !== null) {
+            $qb->andWhere('v.branchId = :branch')->setParameter('branch', $branchId);
+        }
         $qb->orderBy('v.' . $list->sort, $list->direction());
 
         $total = (int) (clone $qb)->select('COUNT(v.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
         $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+        $covers = $this->vehicleMedia->coversForVehicles($items);
+        $thumbs = [];
+        foreach ($covers as $vehicleId => $asset) {
+            $thumbs[$vehicleId] = $this->router->url('admin.media.file', ['id' => $asset->id()]);
+        }
+        $showBranchColumn = $branchId === null && $this->capabilities->has('carservice.branch_context');
 
         return $this->page('@fleet/vehicles/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('fleet.title'),
             'items' => $items,
+            'thumbs' => $thumbs,
             'customers' => $this->customerMap($items),
+            'branches' => $showBranchColumn ? $this->branchMap($items) : [],
+            'showBranchColumn' => $showBranchColumn,
             'status' => $status,
             'ownership' => $ownership,
             'statuses' => Vehicle::STATUSES,
@@ -106,6 +121,8 @@ final class VehicleController extends Controller
             'fuelOptions' => $this->fuelOptions(),
             'orvConfigured' => $this->orv->configured(),
             'brandOptions' => $this->brandNames(),
+            'branchOptions' => $this->branchOptions(),
+            'defaultBranchId' => $this->selectedBranchId() ?? '',
         ]);
     }
 
@@ -136,10 +153,7 @@ final class VehicleController extends Controller
 
     public function show(string $id): Response
     {
-        $vehicle = $this->find($id);
-        if ($vehicle === null) {
-            $this->abort(404, $this->translator->trans('fleet.error.not_found'));
-        }
+        $vehicle = $this->findInBranchScope($id);
         $logs = $this->em->getRepository(VehicleStatusLog::class)->findBy(
             ['vehicleId' => $id],
             ['createdAt' => 'DESC'],
@@ -154,6 +168,13 @@ final class VehicleController extends Controller
         }
         usort($sections, static fn (array $a, array $b): int => ($a['order'] ?? 100) <=> ($b['order'] ?? 100));
 
+        $mediaItems = $this->vehicleMedia->forVehicle($id);
+        $tech = $vehicle->techJson() ?? [];
+        $orvNotesRaw = (string) ($tech['orv_notes'] ?? '');
+        $orvNoteLines = $orvNotesRaw !== ''
+            ? \Modules\Fleet\Application\OrvClient::formatOrvNotesLines($orvNotesRaw)
+            : [];
+
         return $this->page('@fleet/vehicles/show.html.twig', [
             'pageTitle' => $vehicle->label(),
             'item' => $vehicle,
@@ -162,16 +183,15 @@ final class VehicleController extends Controller
             'statuses' => Vehicle::STATUSES,
             'hookSections' => $sections,
             'mediaAvailable' => $this->vehicleMedia->available(),
-            'mediaItems' => $this->vehicleMedia->forVehicle($id),
+            'mediaItems' => $mediaItems,
+            'mediaCoverLinkId' => $this->vehicleMedia->coverLinkId($id),
+            'orvNoteLines' => $orvNoteLines,
         ]);
     }
 
     public function edit(string $id): Response
     {
-        $vehicle = $this->find($id);
-        if ($vehicle === null) {
-            $this->abort(404, $this->translator->trans('fleet.error.not_found'));
-        }
+        $vehicle = $this->findInBranchScope($id);
 
         return $this->page('@fleet/vehicles/form.html.twig', [
             'pageTitle' => $this->translator->trans('fleet.edit'),
@@ -186,15 +206,14 @@ final class VehicleController extends Controller
             'fuelOptions' => $this->fuelOptions(),
             'orvConfigured' => $this->orv->configured(),
             'brandOptions' => $this->brandNames(),
+            'branchOptions' => $this->branchOptions($vehicle->branchId()),
+            'defaultBranchId' => $vehicle->branchId() ?? '',
         ]);
     }
 
     public function update(Request $request, string $id): Response
     {
-        $vehicle = $this->find($id);
-        if ($vehicle === null) {
-            $this->abort(404, $this->translator->trans('fleet.error.not_found'));
-        }
+        $vehicle = $this->findInBranchScope($id);
         $data = $this->validated($request);
         $other = $this->fleet->findByPlate($data['plate']);
         if ($other !== null && $other->id() !== $id) {
@@ -224,10 +243,7 @@ final class VehicleController extends Controller
 
     public function updateStatus(Request $request, string $id): Response
     {
-        $vehicle = $this->find($id);
-        if ($vehicle === null) {
-            $this->abort(404, $this->translator->trans('fleet.error.not_found'));
-        }
+        $vehicle = $this->findInBranchScope($id);
         $status = (string) $request->request->get('status', '');
         $reason = trim((string) $request->request->get('reason', '')) ?: null;
         if (!in_array($status, Vehicle::STATUSES, true)) {
@@ -246,45 +262,135 @@ final class VehicleController extends Controller
 
     public function uploadMedia(Request $request, string $id): Response
     {
-        $vehicle = $this->find($id);
-        if ($vehicle === null) {
-            $this->abort(404, $this->translator->trans('fleet.error.not_found'));
+        $this->findInBranchScope($id);
+        $label = trim((string) $request->request->get('label', ''));
+        $rawFiles = $request->files->get('files');
+        if (!is_array($rawFiles)) {
+            $single = $request->files->get('file');
+            $rawFiles = $single instanceof UploadedFile ? [$single] : [];
         }
-        $label = trim((string) $request->request->get('label', 'photo')) ?: 'photo';
-        $file = $request->files->get('file');
-        if (!$file instanceof UploadedFile || !$file->isValid()) {
+        $files = array_values(array_filter(
+            $rawFiles,
+            static fn ($f) => $f instanceof UploadedFile && $f->isValid(),
+        ));
+        if ($files === []) {
             $this->flash('error', $this->translator->trans('fleet.error.file_required'));
 
             return $this->redirect('admin.fleet.show', ['id' => $id]);
         }
         try {
-            $this->vehicleMedia->upload($id, $file, $label);
+            $count = $label !== ''
+                ? $this->vehicleMedia->uploadMany($id, $files, $label)
+                : $this->vehicleMedia->uploadManyGuessed($id, $files);
         } catch (\Throwable $e) {
             $this->flash('error', $this->translator->trans($e->getMessage()));
 
             return $this->redirect('admin.fleet.show', ['id' => $id]);
         }
-        $this->flash('success', $this->translator->trans('fleet.flash.media_uploaded'));
+        if ($count === 0) {
+            $this->flash('error', $this->translator->trans('fleet.error.file_required'));
+        } else {
+            $this->flash('success', $this->translator->trans(
+                $count === 1 ? 'fleet.flash.media_uploaded' : 'fleet.flash.media_uploaded_many',
+                ['%count%' => (string) $count],
+            ));
+        }
+
+        return $this->redirect('admin.fleet.show', ['id' => $id]);
+    }
+
+    public function setMediaCover(string $id, string $linkId): Response
+    {
+        $this->findInBranchScope($id);
+        try {
+            $this->vehicleMedia->setCover($id, $linkId);
+        } catch (\Throwable $e) {
+            $this->flash('error', $this->translator->trans($e->getMessage()));
+
+            return $this->redirect('admin.fleet.show', ['id' => $id]);
+        }
+        $this->flash('success', $this->translator->trans('fleet.flash.media_cover'));
 
         return $this->redirect('admin.fleet.show', ['id' => $id]);
     }
 
     public function destroy(string $id): Response
     {
-        $vehicle = $this->find($id);
-        if ($vehicle === null) {
-            $this->abort(404, $this->translator->trans('fleet.error.not_found'));
-        }
+        $vehicle = $this->findInBranchScope($id);
         $plate = $vehicle->plate();
-        foreach ($this->em->getRepository(VehicleStatusLog::class)->findBy(['vehicleId' => $id]) as $log) {
-            $this->em->remove($log);
-        }
-        $this->em->remove($vehicle);
+        $this->deleteVehicle($vehicle);
         $this->em->flush();
         $this->events->emit('fleet.vehicle_deleted', ['type' => 'fleet_vehicle', 'id' => $id], ['id' => $id, 'plate' => $plate]);
         $this->flash('success', $this->translator->trans('fleet.flash.deleted', ['%plate%' => $plate]));
 
         return $this->redirect('admin.fleet.index');
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'fleet.bulk');
+        $action = (string) ($data['action'] ?? '');
+        $ids = $this->normalizeIds($request->request->all('ids'));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('fleet.bulk.error.empty'));
+
+            return $this->redirect('admin.fleet.index');
+        }
+        if ($action === 'delete' && !$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('fleet.bulk.error.confirm'));
+
+            return $this->redirect('admin.fleet.index');
+        }
+        if ($action !== 'delete') {
+            $this->flash('error', $this->translator->trans('fleet.bulk.error.empty'));
+
+            return $this->redirect('admin.fleet.index');
+        }
+
+        $affected = 0;
+        foreach ($ids as $id) {
+            $vehicle = $this->find($id);
+            if ($vehicle === null || !$this->isVehicleInBranchScope($vehicle)) {
+                continue;
+            }
+            $plate = $vehicle->plate();
+            $this->deleteVehicle($vehicle);
+            $this->events->emit('fleet.vehicle_deleted', ['type' => 'fleet_vehicle', 'id' => $id], [
+                'id' => $id,
+                'plate' => $plate,
+                'bulk' => true,
+            ]);
+            $affected++;
+        }
+        $this->em->flush();
+        $this->flash('success', $this->translator->trans('fleet.bulk.flash.delete', [
+            '%count%' => (string) $affected,
+        ]));
+
+        return $this->redirect('admin.fleet.index');
+    }
+
+    private function deleteVehicle(Vehicle $vehicle): void
+    {
+        $id = $vehicle->id();
+        foreach ($this->em->getRepository(VehicleStatusLog::class)->findBy(['vehicleId' => $id]) as $log) {
+            $this->em->remove($log);
+        }
+        $this->em->remove($vehicle);
+    }
+
+    /** @return list<string> */
+    private function normalizeIds(mixed $ids): array
+    {
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
     }
 
     public function orvLookup(Request $request): Response
@@ -312,6 +418,37 @@ final class VehicleController extends Controller
         return $this->fleet->find($id);
     }
 
+    private function findInBranchScope(string $id): Vehicle
+    {
+        $vehicle = $this->find($id);
+        if ($vehicle === null) {
+            $this->abort(404, $this->translator->trans('fleet.error.not_found'));
+        }
+        $this->assertBranchScope($vehicle);
+
+        return $vehicle;
+    }
+
+    private function assertBranchScope(Vehicle $vehicle): void
+    {
+        if (!$this->isVehicleInBranchScope($vehicle)) {
+            $this->abort(403, $this->translator->trans('fleet.error.branch_forbidden'));
+        }
+    }
+
+    private function isVehicleInBranchScope(Vehicle $vehicle): bool
+    {
+        if (!$this->capabilities->has('carservice.branch_context')) {
+            return true;
+        }
+        $ctx = $this->capabilities->get('carservice.branch_context');
+        if (!is_object($ctx) || !method_exists($ctx, 'canAccessScoped')) {
+            return true;
+        }
+
+        return (bool) $ctx->canAccessScoped($vehicle->branchId());
+    }
+
     /** @param array<string, mixed> $data */
     private function apply(Vehicle $vehicle, array $data): void
     {
@@ -331,6 +468,7 @@ final class VehicleController extends Controller
         $vehicle->setStatus($data['status']);
         $vehicle->setOwnership($data['ownership']);
         $vehicle->setCustomerId($data['customer_id']);
+        $vehicle->setBranchId($data['branch_id']);
         $vehicle->setStkAt($data['stk_at']);
         $vehicle->setInsuranceUntil($data['insurance_until']);
         $vehicle->setVignetteUntil($data['vignette_until']);
@@ -347,6 +485,17 @@ final class VehicleController extends Controller
         $customerId = trim((string) ($data['customer_id'] ?? ''));
         if ($customerId !== '' && class_exists(Customer::class) && !$this->em->find(Customer::class, $customerId) instanceof Customer) {
             $this->abort(422, $this->translator->trans('fleet.error.invalid_customer'));
+        }
+        $branchId = trim((string) ($data['branch_id'] ?? ''));
+        if ($branchId === '') {
+            $branchId = (string) ($this->selectedBranchId() ?? '');
+        }
+        $scope = $this->selectedBranchId();
+        if ($scope !== null) {
+            $branchId = $scope;
+        }
+        if ($branchId !== '' && !$this->isValidBranchId($branchId)) {
+            $this->abort(422, $this->translator->trans('fleet.error.invalid_branch'));
         }
         $year = trim((string) ($data['model_year'] ?? ''));
         $mileage = trim((string) ($data['mileage'] ?? ''));
@@ -367,7 +516,7 @@ final class VehicleController extends Controller
             'vehicle_kind', 'body_type', 'category', 'emission', 'engine_code',
             'power_kw', 'displacement_cc', 'weight_kg', 'seats', 'max_speed',
             'consumption', 'tire_size', 'tp_number', 'first_registered_at',
-            'homologation', 'version_code',
+            'homologation', 'version_code', 'generation', 'orv_notes',
         ];
         $tech = [];
         foreach ($techKeys as $key) {
@@ -377,8 +526,20 @@ final class VehicleController extends Controller
             }
             if (in_array($key, ['power_kw', 'displacement_cc', 'weight_kg', 'seats', 'max_speed'], true)) {
                 $tech[$key] = (int) $raw;
+            } elseif ($key === 'orv_notes') {
+                $tech[$key] = \Modules\Fleet\Application\OrvClient::formatOrvNotes((string) $raw);
             } else {
                 $tech[$key] = trim((string) $raw);
+            }
+        }
+        if (!isset($tech['generation'])) {
+            $guess = \Modules\Fleet\Application\VehicleGeneration::resolve(
+                isset($data['brand']) ? (string) $data['brand'] : null,
+                isset($data['model']) ? (string) $data['model'] : null,
+                isset($data['model_year']) && $data['model_year'] !== '' && $data['model_year'] !== null ? (int) $data['model_year'] : null,
+            );
+            if ($guess !== null) {
+                $tech['generation'] = $guess;
             }
         }
 
@@ -399,6 +560,7 @@ final class VehicleController extends Controller
             'status' => in_array(($data['status'] ?? 'available'), Vehicle::STATUSES, true) ? (string) $data['status'] : 'available',
             'ownership' => in_array(($data['ownership'] ?? 'owned'), Vehicle::OWNERSHIPS, true) ? (string) $data['ownership'] : 'owned',
             'customer_id' => $customerId !== '' ? $customerId : null,
+            'branch_id' => $branchId !== '' ? $branchId : null,
             'stk_at' => $stk !== '' ? new \DateTimeImmutable($stk) : null,
             'insurance_until' => $ins !== '' ? new \DateTimeImmutable($ins) : null,
             'vignette_until' => $vig !== '' ? new \DateTimeImmutable($vig) : null,
@@ -463,6 +625,89 @@ final class VehicleController extends Controller
         }
 
         return $opts;
+    }
+
+    private function selectedBranchId(): ?string
+    {
+        if (!$this->capabilities->has('carservice.branch_context')) {
+            return null;
+        }
+        $ctx = $this->capabilities->get('carservice.branch_context');
+        if (!is_object($ctx) || !method_exists($ctx, 'branchId')) {
+            return null;
+        }
+        $id = $ctx->branchId();
+
+        return is_string($id) && $id !== '' ? $id : null;
+    }
+
+    private function isValidBranchId(string $id): bool
+    {
+        if (!class_exists(\Modules\CarService\Domain\ServiceBranch::class)) {
+            return false;
+        }
+
+        return $this->em->find(\Modules\CarService\Domain\ServiceBranch::class, $id) instanceof \Modules\CarService\Domain\ServiceBranch;
+    }
+
+    /**
+     * @param list<Vehicle> $items
+     * @return array<string, \Modules\CarService\Domain\ServiceBranch>
+     */
+    private function branchMap(array $items): array
+    {
+        if (!class_exists(\Modules\CarService\Domain\ServiceBranch::class)) {
+            return [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn (Vehicle $v): ?string => $v->branchId(),
+            $items,
+        ))));
+        if ($ids === []) {
+            return [];
+        }
+        $map = [];
+        foreach (
+            $this->em->getRepository(\Modules\CarService\Domain\ServiceBranch::class)
+                ->createQueryBuilder('b')
+                ->where('b.id IN (:ids)')
+                ->setParameter('ids', $ids)
+                ->getQuery()
+                ->getResult() as $branch
+        ) {
+            if ($branch instanceof \Modules\CarService\Domain\ServiceBranch) {
+                $map[$branch->id()] = $branch;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function branchOptions(?string $selectedId = null): array
+    {
+        if (!class_exists(\Modules\CarService\Domain\ServiceBranch::class)) {
+            return [];
+        }
+        /** @var list<\Modules\CarService\Domain\ServiceBranch> $branches */
+        $branches = $this->em->getRepository(\Modules\CarService\Domain\ServiceBranch::class)
+            ->findBy(['active' => true], ['name' => 'ASC']);
+        $options = [];
+        $seen = [];
+        foreach ($branches as $branch) {
+            $options[] = ['value' => $branch->id(), 'label' => $branch->selectLabel()];
+            $seen[$branch->id()] = true;
+        }
+        if ($selectedId !== null && $selectedId !== '' && !isset($seen[$selectedId])) {
+            $current = $this->em->find(\Modules\CarService\Domain\ServiceBranch::class, $selectedId);
+            if ($current instanceof \Modules\CarService\Domain\ServiceBranch) {
+                array_unshift($options, ['value' => $current->id(), 'label' => $current->selectLabel()]);
+            }
+        }
+
+        return $options;
     }
 
     /** @param array<string, mixed> $data */

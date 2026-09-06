@@ -18,7 +18,7 @@
                     <th>{{ 'partscatalog.col.oem'|trans }}</th>
                     <th>{{ 'partscatalog.col.brand'|trans }}</th>
                     <th>{{ 'partscatalog.col.qty'|trans }}</th>
-                    <th>{{ 'partscatalog.col.source'|trans }}</th>
+                    <th>{{ 'partscatalog.col.price'|trans }}</th>
                     <th></th>
                 </tr>
                 </thead>
@@ -30,8 +30,17 @@
                     </td>
                     <td class="is-mute">{{ part.oem() ?: '—' }}</td>
                     <td class="is-mute">{{ part.brand() ?: '—' }}</td>
-                    <td>{{ part.qty() }}</td>
-                    <td><span class="badge">{{ part.source() }}</span></td>
+                    <td class="is-num">{{ part.qty() + 0 }}</td>
+                    <td class="is-num">
+                        {% if part.lineTotal() is not null %}
+                            <strong>{{ part.lineTotal()|money }}</strong>
+                            {% if part.qty() + 0 != 1 %}
+                                <div class="muted" style="font-size:.85em">{{ part.unitPrice()|money }} × {{ part.qty() + 0 }}</div>
+                            {% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                     <td>
                         {% if user.can('partscatalog.manage') %}
                         <form method="post" action="{{ url('admin.partscatalog.detach',{id:part.id()}) }}" data-confirm="{{ 'partscatalog.confirm.detach'|trans }}">

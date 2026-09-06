@@ -1,0 +1,178 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'searchengines.title'|trans }}</h1>
+        <p class="muted">{{ 'searchengines.intro'|trans }}</p>
+    </div>
+</header>
+
+<section class="panel" style="margin-bottom:1rem">
+    <form class="toolbar" method="get" action="{{ url('admin.searchengines.index') }}">
+        <input class="input" type="search" name="q" value="{{ q }}" placeholder="{{ 'searchengines.search_placeholder'|trans }}" autofocus>
+        <select class="input" name="source">
+            <option value="all"{% if source == 'all' %} selected{% endif %}>{{ 'searchengines.source.all'|trans }}</option>
+            {% for engine in engines %}
+                <option value="{{ engine.id }}"{% if source == engine.id %} selected{% endif %}{% if not engine.available %} disabled{% endif %}>
+                    {{ engine.name }}{% if not engine.available %} ({{ 'searchengines.unavailable'|trans }}){% endif %}
+                </option>
+            {% endfor %}
+        </select>
+        <button class="btn btn--primary" type="submit">{{ icon('search') }} {{ 'searchengines.search'|trans }}</button>
+    </form>
+</section>
+
+{% if q != '' %}
+<section
+    class="panel se-search"
+    x-data="seSearch"
+    data-query="{{ q|e('html_attr') }}"
+    data-source="{{ source|e('html_attr') }}"
+    data-endpoint="{{ url('admin.searchengines.search')|e('html_attr') }}"
+    data-offers-endpoint="{{ url('admin.searchengines.offers')|e('html_attr') }}"
+    data-pending="{{ pending|json_encode|e('html_attr') }}"
+    data-label-loading="{{ 'searchengines.loading'|trans|e('html_attr') }}"
+    data-label-empty="{{ 'searchengines.empty'|trans|e('html_attr') }}"
+    data-label-open="{{ 'searchengines.open'|trans|e('html_attr') }}"
+    data-label-results="{{ 'searchengines.results'|trans|e('html_attr') }}"
+    data-currency-code="{{ currency_code()|e('html_attr') }}"
+    data-currency-symbol="{{ currency_symbol()|e('html_attr') }}"
+    :class="panelClass"
+>
+    <header class="panel__head">
+        <h2 x-text="resultsTitle">{{ 'searchengines.results'|trans }} · 0</h2>
+        <span class="muted se-search__status" x-show="loading" x-cloak x-text="labels.loading"></span>
+    </header>
+
+    <div class="empty" x-show="showLoading" x-cloak>
+        <p class="muted" x-text="labels.loading"></p>
+        <div class="se-search__skeletons" aria-hidden="true">
+            <div class="se-search__skel"></div>
+            <div class="se-search__skel"></div>
+            <div class="se-search__skel"></div>
+        </div>
+    </div>
+
+    <div class="empty" x-show="showEmpty" x-cloak>
+        <h2 x-text="labels.empty">{{ 'searchengines.empty'|trans }}</h2>
+    </div>
+
+    <div class="table-wrap" x-show="showTable" x-cloak>
+        <table class="table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>{{ 'searchengines.col.name'|trans }}</th>
+                <th>{{ 'searchengines.col.source'|trans }}</th>
+                <th>{{ 'searchengines.col.price'|trans }}</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <template x-for="(item, index) in items" :key="itemKey(item, index)">
+                <tr
+                    :class="rowClass(item, index)"
+                    @animationend="clearEnter(item, index)"
+                >
+                    <td style="width:3rem">
+                        <img
+                            x-show="hasImage(item)"
+                            :src="item.image"
+                            alt=""
+                            width="40"
+                            height="40"
+                            loading="lazy"
+                            style="object-fit:contain;border-radius:4px"
+                        >
+                    </td>
+                    <td>
+                        <strong x-text="item.name"></strong>
+                        <div class="muted" x-show="hasBrand(item)" x-text="item.brand"></div>
+                    </td>
+                    <td>
+                        <span class="badge badge--muted" x-text="sourceLabel(item)"></span>
+                        <span
+                            class="se-offers-hover"
+                            x-show="hasOffersHover(item)"
+                            x-cloak
+                            x-data="seOffersHover"
+                            data-label-empty="{{ 'searchengines.offers.empty'|trans|e('html_attr') }}"
+                            data-label-loading="{{ 'searchengines.offers.loading'|trans|e('html_attr') }}"
+                            data-label-currency="{{ currency_symbol() }}"
+                            data-label-open="{{ 'searchengines.open'|trans|e('html_attr') }}"
+                        >
+                            <button
+                                type="button"
+                                class="se-offers-hover__trigger"
+                                x-ref="trigger"
+                                @mouseenter="showFor(item, offersEndpoint)"
+                                @mouseleave="hide"
+                                @focus="showFor(item, offersEndpoint)"
+                                @blur="hide"
+                                x-text="shopLabel(item)"
+                            ></button>
+                            <div
+                                class="se-offers-hover__panel"
+                                x-ref="panel"
+                                x-show="visible"
+                                x-cloak
+                                :style="panelStyle()"
+                                @mouseenter="keep"
+                                @mouseleave="hide"
+                                role="dialog"
+                            >
+                                <div class="se-offers-hover__head"><strong x-text="label"></strong></div>
+                                <div class="se-offers-hover__body">
+                                    <p class="muted" x-show="showLoading" x-text="loadingLabel"></p>
+                                    <p class="muted" x-show="showError" x-text="error"></p>
+                                    <ul class="se-offers-hover__list" x-show="showList">
+                                        <template x-for="offer in offers" :key="offerKey(offer)">
+                                            <li class="se-offers-hover__row">
+                                                <div class="se-offers-hover__shop">
+                                                    <span class="se-offers-hover__shop-line">
+                                                        <span x-text="offer.shop"></span>
+                                                        <span class="badge badge--ok se-offers-hover__free" x-show="offer.free_shipping" x-cloak>FREE</span>
+                                                    </span>
+                                                    <span class="muted" x-show="offer.availability" x-text="offer.availability"></span>
+                                                </div>
+                                                <div class="se-offers-hover__price" x-text="offer.price_label"></div>
+                                                <a class="btn btn--ghost btn-sm" :href="offer.open_href" target="_blank" rel="noopener" x-text="offer.open_label"></a>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </div>
+                        </span>
+                        <span class="muted" x-show="hasShopPlain(item)" x-text="shopLabel(item)"></span>
+                    </td>
+                    <td x-text="formatPrice(item)"></td>
+                    <td class="table__actions">
+                        <a
+                            class="btn btn--ghost btn-sm"
+                            x-show="hasUrl(item)"
+                            :href="item.url"
+                            target="_blank"
+                            rel="noopener"
+                            x-text="labels.open"
+                        ></a>
+                    </td>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% else %}
+<section class="panel">
+    <div class="empty">
+        <h2>{{ 'searchengines.start'|trans }}</h2>
+        <p class="muted">{{ 'searchengines.start_hint'|trans }}</p>
+        <ul class="muted" style="margin-top:1rem;display:grid;gap:0.35rem">
+            {% for engine in engines %}
+                <li>{{ engine.name }} · {{ engine.region }}{% if not engine.available %} — {{ 'searchengines.unavailable'|trans }}{% endif %}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

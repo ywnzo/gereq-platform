@@ -23,6 +23,7 @@
                 {% endfor %}
             </select>
         </label>
+        {{ apply_filters('admin.profile.form_fields', '')|raw }}
         <label class="field field--full">
             <span>{{ 'profile.password.current'|trans }}</span>
             <input type="password" name="current_password" autocomplete="current-password" placeholder="{{ 'profile.password.current.hint'|trans }}">

@@ -1,0 +1,27 @@
+{# Společná hlavička CarService PDF — styl nabidka-hero.
+   Očekává: company, appName, docTitle, docNumber, issuedAt #}
+<div class="pdf-hero">
+    <table class="w-100">
+        <tr>
+            <td style="width:58%;vertical-align:bottom">
+                <div class="pdf-hero__brand">{{ company.name|default(appName) }}</div>
+                <div class="pdf-hero__sub">
+                    {% if company.address %}{{ company.address }}{% endif %}
+                    {% if company.address and (company.ico or company.dic) %} · {% endif %}
+                    {% if company.ico %}IČO {{ company.ico }}{% endif %}
+                    {% if company.dic %}{% if company.ico %} · {% endif %}DIČ {{ company.dic }}{% endif %}
+                    {% if company.phone or company.email %}
+                        <br>
+                        {% if company.phone %}{{ company.phone }}{% endif %}
+                        {% if company.phone and company.email %} · {% endif %}
+                        {% if company.email %}{{ company.email }}{% endif %}
+                    {% endif %}
+                </div>
+            </td>
+            <td style="width:42%;vertical-align:bottom;text-align:right">
+                <div class="pdf-hero__doc">{{ docTitle }}</div>
+                <div class="pdf-hero__sub pdf-hero__sub--right">č. {{ docNumber }} · {{ issuedAt }}</div>
+            </td>
+        </tr>
+    </table>
+</div>

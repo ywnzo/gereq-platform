@@ -45,7 +45,7 @@ final class ModuleController extends Controller
             $items[] = [
                 'manifest' => $manifest,
                 'enabled' => $report['overview']['enabled'],
-                'missing' => $report['overview']['missing'],
+                'missing' => $report['overview']['enabled'] ? $report['overview']['missing'] : [],
                 'counts' => $report['counts'],
                 'health_issues' => $report['counts']['health_issues'],
                 'update_available' => $report['overview']['update_available'],
@@ -76,7 +76,10 @@ final class ModuleController extends Controller
             'stats' => [
                 'total' => count($items),
                 'enabled' => count(array_filter($items, static fn (array $row): bool => $row['enabled'])),
-                'issues' => array_sum(array_map(static fn (array $row): int => $row['health_issues'], $items)),
+                'issues' => array_sum(array_map(
+                    static fn (array $row): int => $row['enabled'] ? $row['health_issues'] : 0,
+                    $items
+                )),
                 'updates' => $updates,
             ],
         ]);

@@ -1,0 +1,31 @@
+{% extends '@documents/pdf/base.html.twig' %}
+
+{% block body %}
+    <h1>{{ title|default('Document') }}</h1>
+    {% if subtitle is defined and subtitle %}
+        <p class="muted">{{ subtitle }}</p>
+    {% endif %}
+
+    {% if rows is defined and rows %}
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>{{ 'documents.pdf.label'|trans }}</th>
+                    <th>{{ 'documents.pdf.value'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.label }}</td>
+                        <td>{{ row.value|raw }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    {% if body_html is defined and body_html %}
+        <div>{{ body_html|raw }}</div>
+    {% endif %}
+{% endblock %}

@@ -132,6 +132,7 @@ class ProductBundle
         return $this->updatedAt;
     }
 
+
     public function setCode(string $code): void
     {
         $this->code = strtoupper(trim($code));

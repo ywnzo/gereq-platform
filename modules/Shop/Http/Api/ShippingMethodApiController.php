@@ -11,6 +11,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Shop\Domain\ShippingMethod;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,7 @@ final class ShippingMethodApiController extends Controller
         RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -79,7 +81,7 @@ final class ShippingMethodApiController extends Controller
             $code,
             trim((string) $data['name']),
             (string) ($data['price'] ?? '0'),
-            strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK',
+            $this->money->code(isset($data['currency']) ? (string) $data['currency'] : null),
         );
         $activeRaw = $data['active'] ?? true;
         $method->setActive($activeRaw === true || $activeRaw === '1' || $activeRaw === 1 || $activeRaw === 'on');
@@ -125,7 +127,7 @@ final class ShippingMethodApiController extends Controller
         $method->setCode($code);
         $method->setName(trim((string) $data['name']));
         $method->setPrice((string) ($data['price'] ?? '0'));
-        $method->setCurrency(strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK');
+        $method->setCurrency($this->money->code(isset($data['currency']) ? (string) $data['currency'] : null));
         $activeRaw = $data['active'] ?? $method->isActive();
         $method->setActive($activeRaw === true || $activeRaw === '1' || $activeRaw === 1 || $activeRaw === 'on');
         $days = trim((string) ($data['estimated_days'] ?? ''));

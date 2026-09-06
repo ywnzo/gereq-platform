@@ -41,51 +41,76 @@
         <p class="muted">{{ 'idoklad.status.missing'|trans }}</p>
     {% endif %}
 
-    <form id="idoklad-settings-form" method="post" action="{{ url('admin.idoklad.settings.update') }}" class="detail-stack" autocomplete="off">
-        {{ csrf_field()|raw }}
+    <div class="detail-stack">
+        <form id="idoklad-settings-form" method="post" action="{{ url('admin.idoklad.settings.update') }}" autocomplete="off">
+            {{ csrf_field()|raw }}
+
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'idoklad.settings.section.api'|trans }}</h2>
+                        <p class="muted">{{ 'idoklad.settings.section.api_hint'|trans }}</p>
+                    </div>
+                </header>
+                <div class="form-grid">
+                    {% for key in sections.api %}
+                        {% if fields[key] is defined %}
+                            <label class="field">
+                                <span>{{ fields[key].definition.label|trans }}</span>
+                                {{ ui.control(fields[key]) }}
+                            </label>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+        </form>
 
         <section class="panel">
             <header class="panel__head">
                 <div>
-                    <h2>{{ 'idoklad.settings.section.api'|trans }}</h2>
-                    <p class="muted">{{ 'idoklad.settings.section.api_hint'|trans }}</p>
+                    <h2>{{ 'idoklad.settings.section.lists'|trans }}</h2>
+                    <p class="muted">{{ 'idoklad.settings.section.lists_hint'|trans }}</p>
                 </div>
+                {% if user.can('idoklad.sync') %}
+                    <form method="post" action="{{ url('admin.idoklad.sync') }}">
+                        {{ csrf_field()|raw }}
+                        <input type="hidden" name="list" value="all">
+                        <button class="btn btn--primary btn-sm" type="submit" {{ configured ? '' : 'disabled' }}>
+                            {{ icon('refresh') }} {{ 'idoklad.action.sync'|trans }}
+                        </button>
+                    </form>
+                {% endif %}
             </header>
-            <div class="form-grid">
-                {% for key in sections.api %}
-                    {% if fields[key] is defined %}
-                        <label class="field">
-                            <span>{{ fields[key].definition.label|trans }}</span>
-                            {{ ui.control(fields[key]) }}
-                        </label>
-                    {% endif %}
-                {% endfor %}
+
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'idoklad.lists.col.name'|trans }}</th>
+                            <th>{{ 'idoklad.lists.col.items'|trans }}</th>
+                            <th>{{ 'idoklad.lists.col.status'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, count in lists %}
+                            <tr>
+                                <td>
+                                    <strong>{{ ('idoklad.list.' ~ name)|trans }}</strong>
+                                    <div class="muted">{{ name }}</div>
+                                </td>
+                                <td>{{ count }}</td>
+                                <td>
+                                    {% if count > 0 %}
+                                        <span class="badge badge--ok">{{ 'idoklad.lists.status.ready'|trans }}</span>
+                                    {% else %}
+                                        <span class="badge badge--muted">{{ 'idoklad.lists.status.empty'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </section>
-
-        <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-        </div>
-    </form>
-
-    <section class="panel">
-        <header class="panel__head">
-            <div>
-                <h2>{{ 'idoklad.settings.section.lists'|trans }}</h2>
-                <p class="muted">{{ 'idoklad.settings.section.lists_hint'|trans }}</p>
-            </div>
-        </header>
-        <div class="form-grid">
-            {% for name, count in lists %}
-                <div class="field">
-                    <span>{{ ('idoklad.list.' ~ name)|trans }} ({{ count }})</span>
-                    <form method="post" action="{{ url('admin.idoklad.sync') }}" class="inline">
-                        {{ csrf_field()|raw }}
-                        <input type="hidden" name="list" value="{{ name }}">
-                        <button class="btn btn--ghost" type="submit" {{ configured ? '' : 'disabled' }}>{{ 'idoklad.action.sync'|trans }}</button>
-                    </form>
-                </div>
-            {% endfor %}
-        </div>
-    </section>
+    </div>
 {% endblock %}

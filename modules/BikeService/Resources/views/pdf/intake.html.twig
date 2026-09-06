@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <title>{{ 'bikeservice.documents.type.intake'|trans }} {{ docNumber }}</title>
+    <style>{% include '@bikeservice/pdf/_styles.html.twig' %}</style>
+</head>
+<body>
+<div class="bar">{{ 'bikeservice.documents.type.intake'|trans }} · {{ docNumber }}</div>
+<p class="muted">{{ issuedAt }}</p>
+<table class="kv">
+    <tr><td class="k">{{ 'bikeservice.field.bike'|trans }}</td><td class="v">{% if bike %}{{ bike.label() }}{% else %}—{% endif %}</td></tr>
+    <tr><td class="k">{{ 'bikeservice.field.customer'|trans }}</td><td class="v">{% if customer %}{{ customer.name() }}{% else %}—{% endif %}</td></tr>
+    <tr><td class="k">{{ 'bikeservice.field.intake_odometer'|trans }}</td><td class="v">{{ order.intakeOdometerKm() is not null ? order.intakeOdometerKm() ~ ' km' : '—' }}</td></tr>
+    <tr><td class="k">{{ 'bikeservice.field.intake_battery'|trans }}</td><td class="v">{{ order.intakeBatteryPct() is not null ? order.intakeBatteryPct() ~ ' %' : '—' }}</td></tr>
+    <tr><td class="k">{{ 'bikeservice.field.service_info'|trans }}</td><td class="v">{{ order.serviceInfo() ?: '—' }}</td></tr>
+    <tr><td class="k">{{ 'bikeservice.field.note'|trans }}</td><td class="v">{{ order.note() ?: '—' }}</td></tr>
+</table>
+{% if signature %}<p style="margin-top:24px">{{ 'bikeservice.finish.signature'|trans }}: <strong>{{ signature }}</strong></p>{% endif %}
+</body>
+</html>

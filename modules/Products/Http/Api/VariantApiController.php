@@ -9,6 +9,7 @@ use Gereq\Api\ApiResponse;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Products\Domain\Product;
 use Modules\Products\Domain\ProductOptionGroup;
 use Modules\Products\Domain\ProductOptionValue;
@@ -26,6 +27,7 @@ final class VariantApiController extends Controller
         Router $router,
         RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -92,7 +94,7 @@ final class VariantApiController extends Controller
             $variant->setAttributes(array_map('strval', $attrs));
         }
         if (isset($data['price_amount'])) {
-            $variant->setPrice((string) $data['price_amount'], isset($data['price_currency']) ? (string) $data['price_currency'] : 'CZK');
+            $variant->setPrice((string) $data['price_amount'], isset($data['price_currency']) ? (string) $data['price_currency'] : $this->money->defaultCode());
         }
         if (isset($data['stock_qty'])) {
             $variant->setStockQty((int) $data['stock_qty']);

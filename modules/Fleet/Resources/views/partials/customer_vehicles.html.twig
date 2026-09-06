@@ -1,4 +1,75 @@
-{% if vehicles is empty %}<div class="empty"><p>{{ 'fleet.partial.empty'|trans }}</p>
-{% if user is defined and user.can('fleet.manage') %}<a class="btn btn--ghost" href="{{ url('admin.fleet.create') }}?customer={{ customer.id() }}">{{ 'fleet.partial.add'|trans }}</a>{% endif %}</div>
-{% else %}<div class="table-wrap"><table class="table"><thead><tr><th>{{ 'fleet.field.plate'|trans }}</th><th>{{ 'fleet.field.status'|trans }}</th></tr></thead>
-<tbody>{% for v in vehicles %}<tr><td><a href="{{ url('admin.fleet.show',{id:v.id()}) }}">{{ v.label() }}</a></td><td>{{ v.statusLabel()|trans }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+{#
+  Customer detail — vehicle cards with cover photo + key facts.
+  Expects: customer, vehicles, user
+  Optional: covers (map vehicleId => MediaAsset)
+#}
+{% set covers = covers|default({}) %}
+
+{% if vehicles is empty %}
+    <div class="empty fleet-customer-empty">
+        <span class="material-symbols-outlined g-icon" aria-hidden="true">directions_car</span>
+        <p>{{ 'fleet.partial.empty'|trans }}</p>
+        {% if user is defined and user.can('fleet.manage') %}
+            <a class="btn btn--ghost" href="{{ url('admin.fleet.create') }}?customer={{ customer.id() }}">{{ 'fleet.partial.add'|trans }}</a>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="fleet-vehicle-grid">
+        {% for v in vehicles %}
+            {% set cover = covers[v.id()]|default(null) %}
+            {% set stk = v.stkAt() %}
+            {% set stkSoon = stk and stk < date('+45 days') %}
+            {% set stkPast = stk and stk < date() %}
+            <article class="fleet-vehicle-card">
+                <a class="fleet-vehicle-card__media" href="{{ url('admin.fleet.show', {id: v.id()}) }}" tabindex="-1" aria-hidden="true">
+                    {% if cover %}
+                        <img src="{{ url('admin.media.file', {id: cover.id()}) }}" alt="" loading="lazy" decoding="async">
+                    {% else %}
+                        <span class="fleet-vehicle-card__placeholder">{{ icon('car') }}</span>
+                    {% endif %}
+                </a>
+                <div class="fleet-vehicle-card__body">
+                    <div class="fleet-vehicle-card__top">
+                        <a class="fleet-vehicle-card__plate" href="{{ url('admin.fleet.show', {id: v.id()}) }}">{{ v.plate() }}</a>
+                        <span class="status-chip status-chip--{{ v.status() }}">
+                            <span class="status-chip__dot" aria-hidden="true"></span>
+                            {{ v.statusLabel()|trans }}
+                        </span>
+                    </div>
+                    <p class="fleet-vehicle-card__name">
+                        {% if v.brand() or v.displayModel() %}
+                            {{ v.brand() }} {{ v.displayModel() }}{% if v.modelYear() %} · {{ v.modelYear() }}{% endif %}
+                        {% else %}
+                            <span class="muted">{{ 'fleet.row.no_model'|trans }}</span>
+                        {% endif %}
+                    </p>
+                    {% if v.vin() %}
+                        <p class="fleet-vehicle-card__vin">{{ v.vin() }}</p>
+                    {% endif %}
+                    <div class="fleet-vehicle-card__specs">
+                        {% if v.color() %}<span>{{ v.color() }}</span>{% endif %}
+                        {% if v.fuel() %}<span>{{ ('fleet.fuel.' ~ v.fuel())|trans }}</span>{% endif %}
+                        {% if v.gearbox() %}<span>{{ ('fleet.gearbox.' ~ v.gearbox())|trans }}</span>{% endif %}
+                        {% if v.mileage() is not null %}<span>{{ v.mileage()|number_format(0, ',', ' ') }} km</span>{% endif %}
+                        {% if stk %}
+                            <span class="fleet-deadline{% if stkPast %} is-past{% elseif stkSoon %} is-soon{% endif %}">
+                                STK {{ stk.format('d. m. Y') }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="fleet-vehicle-card__actions">
+                        <a class="btn btn--ghost btn-sm" href="{{ url('admin.fleet.show', {id: v.id()}) }}">{{ icon('eye') }} {{ 'common.detail'|trans }}</a>
+                        {% if user is defined and user.can('fleet.manage') %}
+                            <a class="btn btn--ghost btn-sm" href="{{ url('admin.fleet.edit', {id: v.id()}) }}">{{ icon('edit') }} {{ 'common.edit'|trans }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    {% if user is defined and user.can('fleet.manage') %}
+        <p class="fleet-customer-foot muted">
+            <a href="{{ url('admin.fleet.create') }}?customer={{ customer.id() }}">{{ icon('plus') }} {{ 'fleet.partial.add'|trans }}</a>
+        </p>
+    {% endif %}
+{% endif %}

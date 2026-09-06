@@ -5,11 +5,11 @@ declare(strict_types=1);
 return [
     'id' => 'returns',
     'name' => 'Returns',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.returns.description',
     'class' => Modules\Returns\ReturnsModule::class,
     'author' => 'GEREQ',
-    'requires' => ['core' => '^1.0'],
+    'requires' => ['core' => '^1.0', 'currency' => '^1.1'],
     'optional' => [
         'orders' => '^1.0',
         'shop' => '^1.0',

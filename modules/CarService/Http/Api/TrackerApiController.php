@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Modules\CarService\Http\Api;
 
 use Gereq\Api\ApiResponse;
+use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\CarService\Application\BranchContext;
 use Modules\CarService\Application\CarServiceProvider;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +24,8 @@ final class TrackerApiController extends Controller
         RequestStack $requestStack,
         private readonly EventBus $events,
         private readonly CarServiceProvider $carservice,
+        private readonly Authenticator $auth,
+        private readonly BranchContext $branchContext,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -44,14 +48,25 @@ final class TrackerApiController extends Controller
         if ($order === null || !$order->isOpen()) {
             return ApiResponse::notFound();
         }
-        $data = $this->carservice->serialize($order);
-        $data['jobs'] = array_map(fn ($j) => $this->carservice->serializeJob($j), $this->carservice->jobsForOrder($order->id()));
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
+        }
+        $jobs = $this->carservice->jobsForOrder($order->id());
+        $data = $this->carservice->serialize($order, $jobs);
+        $data['jobs'] = array_map(fn ($j) => $this->carservice->serializeJob($j), $jobs);
 
         return ApiResponse::data($data);
     }
 
     public function startJob(Request $request, string $id): JsonResponse
     {
+        $order = $this->carservice->getOrder($id);
+        if ($order === null || !$order->isOpen()) {
+            return ApiResponse::notFound();
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
+        }
         $body = $request->request->all();
         $raw = $request->getContent();
         if (is_string($raw) && $raw !== '') {
@@ -78,6 +93,13 @@ final class TrackerApiController extends Controller
 
     public function completeJob(string $id, string $jobId): JsonResponse
     {
+        $order = $this->carservice->getOrder($id);
+        if ($order === null || !$order->isOpen()) {
+            return ApiResponse::notFound();
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
+        }
         try {
             $job = $this->carservice->completeJob($jobId);
             if ($job->orderId() !== $id) {
@@ -98,6 +120,9 @@ final class TrackerApiController extends Controller
         $order = $this->carservice->getOrder($id);
         if ($order === null || !$order->isOpen()) {
             return ApiResponse::notFound();
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
         }
         $file = $request->files->get('file');
         if (!$file instanceof \Symfony\Component\HttpFoundation\File\UploadedFile || !$file->isValid()) {

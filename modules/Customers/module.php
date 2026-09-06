@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'customers',
     'name' => 'Customers',
-    'version' => '1.1.1',
+    'version' => '1.2.2',
     'description' => 'module.customers.description',
     'class' => Modules\Customers\CustomersModule::class,
     'author' => 'GEREQ',

@@ -10,6 +10,7 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Auth\PasswordHasher;
+use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\I18n\LocaleCatalog;
@@ -34,6 +35,7 @@ final class ProfileController extends Controller
         private readonly Auditor $auditor,
         private readonly LocaleCatalog $locales,
         private readonly TranslatorInterface $translator,
+        private readonly HookManager $hooks,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -79,6 +81,7 @@ final class ProfileController extends Controller
             $this->auth->revokeRememberTokens($user);
             $request->attributes->set('_clear_remember', true);
             // Force re-login with a fresh session after password change.
+            $this->hooks->doAction('admin.profile.saving', $user, $request);
             $this->em->flush();
             $this->auditor->log('profile.password_changed', 'user', $user->id());
             $this->auth->logout();
@@ -87,6 +90,7 @@ final class ProfileController extends Controller
             return $this->redirect('admin.login');
         }
 
+        $this->hooks->doAction('admin.profile.saving', $user, $request);
         $this->em->flush();
         $this->auditor->log('profile.updated', 'user', $user->id());
         $this->flash('success', $this->translator->trans('profile.saved'));

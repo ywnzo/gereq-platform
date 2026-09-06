@@ -41,10 +41,28 @@ final class DocumentsProvider
                 ['createdAt' => 'DESC'],
                 $limit,
             );
+        if ($links === []) {
+            return [];
+        }
+
+        $documentIds = array_values(array_unique(array_map(
+            static fn ($link): string => $link->documentId(),
+            $links,
+        )));
+        /** @var list<Document> $docs */
+        $docs = $this->em->getRepository(Document::class)
+            ->createQueryBuilder('d')
+            ->andWhere('d.id IN (:ids)')->setParameter('ids', $documentIds)
+            ->getQuery()
+            ->getResult();
+        $byId = [];
+        foreach ($docs as $doc) {
+            $byId[$doc->id()] = $doc;
+        }
 
         $documents = [];
         foreach ($links as $link) {
-            $doc = $this->em->find(Document::class, $link->documentId());
+            $doc = $byId[$link->documentId()] ?? null;
             if ($doc instanceof Document) {
                 $documents[] = $doc;
             }

@@ -49,6 +49,35 @@ final class OrderMediaService
         return $this->provider()?->forEntity(self::ENTITY_TYPE, $orderId, $phase) ?? [];
     }
 
+    /**
+     * One query for all phases (avoids N+1 per phase label).
+     *
+     * @param list<string> $phases
+     * @return array<string, list<array{link: \Modules\Media\Domain\MediaLink, asset: MediaAsset}>>
+     */
+    public function forOrderByPhases(string $orderId, array $phases): array
+    {
+        $out = [];
+        foreach ($phases as $phase) {
+            $out[$phase] = [];
+        }
+        if ($phases === []) {
+            return $out;
+        }
+
+        $limit = max(100, count($phases) * 100);
+        $items = $this->provider()?->forEntity(self::ENTITY_TYPE, $orderId, null, $limit) ?? [];
+        foreach ($items as $item) {
+            $label = $item['link']->label() ?? '';
+            if (!array_key_exists($label, $out)) {
+                continue;
+            }
+            $out[$label][] = $item;
+        }
+
+        return $out;
+    }
+
     public function upload(string $orderId, UploadedFile $file, string $phase): MediaAsset
     {
         $provider = $this->provider();

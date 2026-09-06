@@ -12,6 +12,7 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Shop\Domain\ShippingMethod;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -32,6 +33,7 @@ final class ShippingMethodController extends Controller
         private readonly Auditor $auditor,
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -300,7 +302,7 @@ final class ShippingMethodController extends Controller
             'code' => strtoupper(trim((string) $data['code'])),
             'name' => trim((string) $data['name']),
             'price' => number_format((float) ($data['price'] ?? 0), 2, '.', ''),
-            'currency' => strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK',
+            'currency' => $this->money->code(isset($data['currency']) ? (string) $data['currency'] : null),
             'active' => $activeRaw === true || $activeRaw === '1' || $activeRaw === 1 || $activeRaw === 'on',
             'estimated_days' => $daysRaw === '' ? null : (int) $daysRaw,
             'carrier' => $carrier === '' ? null : $carrier,

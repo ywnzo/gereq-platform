@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'idoklad',
     'name' => 'iDoklad',
-    'version' => '1.0.0',
+    'version' => '1.1.8',
     'description' => 'module.idoklad.description',
     'class' => Modules\iDoklad\iDokladModule::class,
     'author' => 'GEREQ',
@@ -15,6 +15,7 @@ return [
     'optional' => [
         'customers' => '^1.0',
         'orders' => '^1.0',
+        'currency' => '^1.1',
     ],
     'groups' => ['ecs'],
     'provides' => ['idoklad'],

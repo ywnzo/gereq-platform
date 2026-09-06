@@ -31,4 +31,22 @@ return [
             'carservice',
         ],
     ],
+    'ebs' => [
+        'name' => 'EBS',
+        'label' => 'admin.modules.group.ebs',
+        'description' => 'admin.modules.group.ebs.desc',
+        'order' => 15,
+        'modules' => [
+            'customers',
+            'bikeservice',
+            'searchengines',
+            'media',
+            'documents',
+            'calendar',
+        ],
+        'required' => [
+            'customers',
+            'bikeservice',
+        ],
+    ],
 ];

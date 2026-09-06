@@ -1,0 +1,118 @@
+{#
+  Customer detail — iDoklad partner (contact) link.
+  Expects: customer, user, enabled, link, remote (array|null)
+#}
+{% set partnerId = link ? link.iDokladId() : null %}
+{% set remoteData = remote.data|default(null) %}
+{% set meta = link ? link.meta() : {} %}
+{% set company = remoteData.CompanyName|default(meta.company|default(null)) %}
+{% set canManage = user is defined and user.can('idoklad.manage') %}
+
+<div class="idoklad-partner">
+    <div class="toolbar--table">
+        <div class="toolbar">
+            {% if not enabled %}
+                <span class="badge badge--muted">{{ 'idoklad.customer.status.disabled'|trans }}</span>
+            {% elseif partnerId %}
+                <span class="badge badge--ok">{{ 'idoklad.customer.status.linked'|trans }}</span>
+                <span class="muted">ID {{ partnerId }}</span>
+            {% else %}
+                <span class="badge badge--warn">{{ 'idoklad.customer.status.unlinked'|trans }}</span>
+            {% endif %}
+        </div>
+        {% if canManage and enabled %}
+            <div class="actions">
+                {% if partnerId %}
+                    <form method="post" action="{{ url('admin.idoklad.customers.sync', {id: customer.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--primary btn-sm" type="submit">{{ icon('refresh') }} {{ 'idoklad.customer.action.sync'|trans }}</button>
+                    </form>
+                    <form method="post" action="{{ url('admin.idoklad.customers.unlink', {id: customer.id()}) }}" data-confirm="{{ 'idoklad.customer.confirm_unlink'|trans }}" data-confirm-title="{{ 'ui.confirm.title'|trans }}">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--ghost btn-sm" type="submit">{{ 'idoklad.customer.action.unlink'|trans }}</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{{ url('admin.idoklad.customers.sync', {id: customer.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--primary btn-sm" type="submit">{{ icon('plus') }} {{ 'idoklad.customer.action.create'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% elseif canManage and not enabled %}
+            <div class="actions">
+                <a class="btn btn--ghost btn-sm" href="{{ url('admin.idoklad.settings') }}">{{ 'idoklad.settings.title'|trans }}</a>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if not enabled %}
+        <div class="empty">
+            <p>{{ 'idoklad.customer.disabled'|trans }}</p>
+            {% if partnerId %}
+                <p class="muted">{{ 'idoklad.customer.partner_id'|trans }}: <code>{{ partnerId }}</code></p>
+            {% endif %}
+        </div>
+    {% elseif partnerId %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'idoklad.customer.col.field'|trans }}</th>
+                        <th>{{ 'idoklad.customer.col.value'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ 'idoklad.customer.partner_id'|trans }}</td>
+                        <td><code>{{ partnerId }}</code></td>
+                    </tr>
+                    <tr>
+                        <td>{{ 'idoklad.customer.company'|trans }}</td>
+                        <td>{{ company ?: '—' }}</td>
+                    </tr>
+                    {% if remoteData.Email is defined and remoteData.Email %}
+                        <tr>
+                            <td>{{ 'customers.field.email'|trans }}</td>
+                            <td>{{ remoteData.Email }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if remoteData.Mobile is defined and remoteData.Mobile %}
+                        <tr>
+                            <td>{{ 'customers.field.phone'|trans }}</td>
+                            <td>{{ remoteData.Mobile }}</td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td>{{ 'idoklad.customer.linked_at'|trans }}</td>
+                        <td>{{ link.updatedAt().format('d. m. Y H:i') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="muted idoklad-partner__hint">{{ 'idoklad.customer.sync_hint'|trans }}</p>
+    {% else %}
+        <div class="empty">
+            <p>{{ 'idoklad.customer.not_linked'|trans }}</p>
+            <p class="muted">{{ 'idoklad.customer.not_linked_hint'|trans }}</p>
+        </div>
+
+        {% if canManage %}
+            <details class="customer-add idoklad-partner__attach">
+                <summary>{{ 'idoklad.customer.action.attach'|trans }}</summary>
+                <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.idoklad.customers.attach', {id: customer.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/input.html.twig' with {
+                        name: 'idoklad_id',
+                        label: 'idoklad.customer.partner_id'|trans,
+                        required: true,
+                        value: '',
+                        hint: 'idoklad.customer.attach_hint'|trans
+                    } %}
+                    <div class="form-actions">
+                        <button class="btn btn--primary btn-sm" type="submit">{{ 'idoklad.customer.action.link'|trans }}</button>
+                    </div>
+                </form>
+            </details>
+        {% endif %}
+    {% endif %}
+</div>

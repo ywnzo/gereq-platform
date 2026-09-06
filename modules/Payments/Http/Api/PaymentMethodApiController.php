@@ -11,6 +11,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Payments\Domain\PaymentMethod;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,7 @@ final class PaymentMethodApiController extends Controller
         RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -167,7 +169,7 @@ final class PaymentMethodApiController extends Controller
             'provider' => $provider === '' ? null : $provider,
             'fee_fixed' => number_format((float) ($data['fee_fixed'] ?? 0), 2, '.', ''),
             'fee_percent' => number_format((float) ($data['fee_percent'] ?? 0), 4, '.', ''),
-            'currency' => strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK',
+            'currency' => $this->money->code(isset($data['currency']) ? (string) $data['currency'] : null),
             'instructions' => $instructions === '' ? null : $instructions,
             'sort_order' => (int) ($data['sort_order'] ?? 0),
             'active' => $activeRaw === true || $activeRaw === '1' || $activeRaw === 1 || $activeRaw === 'on',

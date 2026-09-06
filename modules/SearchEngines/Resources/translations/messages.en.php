@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'module.searchengines.description' => 'Comparators and shops: Seznam Zboží, Heureka, Hledejceny, Autodíly Jama, Autodílypro, AutoKelly, Mojekolo.',
+    'nav.searchengines' => 'Search engines',
+    'palette.searchengines.index' => 'Open search engines',
+    'perm.group.searchengines' => 'Search engines',
+    'perm.searchengines.view' => 'View search engines',
+    'perm.searchengines.manage' => 'Manage search engines',
+    'searchengines.title' => 'Search engines',
+    'searchengines.intro' => 'Public offer search via verified sources (scrape / TLS).',
+    'searchengines.search' => 'Search',
+    'searchengines.search_placeholder' => 'e.g. Shimano front derailleur…',
+    'searchengines.source.all' => 'All sources',
+    'searchengines.results' => 'Results',
+    'searchengines.loading' => 'Loading sources…',
+    'searchengines.empty' => 'Nothing found',
+    'searchengines.start' => 'Enter a search',
+    'searchengines.start_hint' => 'Available sources:',
+    'searchengines.unavailable' => 'unavailable',
+    'searchengines.open' => 'Open',
+    'searchengines.col.name' => 'Product',
+    'searchengines.col.source' => 'Source',
+    'searchengines.col.price' => 'Price',
+    'searchengines.offers.loading' => 'Loading offers…',
+    'searchengines.offers.empty' => 'Could not load offers.',
+    'searchengines.error.query_required' => 'Enter a search query.',
+    'searchengines.error.request_failed' => 'Source request failed.',
+    'searchengines.error.invalid' => 'Invalid source response.',
+    'searchengines.error.no_results' => 'No results.',
+    'searchengines.error.unknown_source' => 'Unknown source.',
+    'searchengines.error.heureka_unavailable' => 'Heureka unavailable (Python curl_cffi missing).',
+];

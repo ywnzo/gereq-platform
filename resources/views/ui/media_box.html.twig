@@ -29,13 +29,15 @@
     {% endif %}
 
     {% if has_media %}
-        <label class="g-file" for="{{ id }}-file" style="margin-bottom:12px;display:block">
-            <input class="g-file__input" id="{{ id }}-file" type="file" name="{{ file_name }}" accept="image/*">
-            <span class="g-file__box">
-                <span class="g-file__title">{{ 'ui.media_box.upload'|trans }}</span>
-                <span class="g-file__meta">{{ 'ui.media_box.upload_hint'|trans }}</span>
-            </span>
-        </label>
+        {% include 'ui/file.html.twig' with {
+            name: file_name,
+            id: id ~ '-file',
+            label: '',
+            title: 'ui.media_box.upload'|trans,
+            hint: 'ui.media_box.upload_hint'|trans,
+            accept: 'image/*',
+            extra: 'field--full'
+        } %}
 
         {% if library is not empty %}
             {% include 'ui/select.html.twig' with {

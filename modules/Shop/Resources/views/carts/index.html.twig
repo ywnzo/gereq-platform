@@ -181,7 +181,7 @@
                 <span class="g-drawer__label">{{ 'shop.field.currency'|trans }}</span>
                 <select class="input" name="currency">
                     <option value="">{{ 'shop.carts.filter.currency_any'|trans }}</option>
-                    {% for cur in currencies|default(['CZK', 'EUR']) %}
+                    {% for cur in currencies|default(currencies()) %}
                         <option value="{{ cur }}" {{ currencyFilter == cur ? 'selected' : '' }}>{{ cur }}</option>
                     {% endfor %}
                 </select>

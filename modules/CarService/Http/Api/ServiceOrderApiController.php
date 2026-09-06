@@ -7,10 +7,12 @@ namespace Modules\CarService\Http\Api;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Api\ApiQuery;
 use Gereq\Api\ApiResponse;
+use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
+use Modules\CarService\Application\BranchContext;
 use Modules\CarService\Application\CarServiceProvider;
 use Modules\CarService\Domain\ServiceBranch;
 use Modules\CarService\Domain\ServiceOrder;
@@ -29,6 +31,8 @@ final class ServiceOrderApiController extends Controller
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
         private readonly CarServiceProvider $carservice,
+        private readonly Authenticator $auth,
+        private readonly BranchContext $branchContext,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -68,6 +72,13 @@ final class ServiceOrderApiController extends Controller
         if ($branchId !== '' && !$this->em->find(ServiceBranch::class, $branchId) instanceof ServiceBranch) {
             return ApiResponse::error('validation_error', 'Invalid branch', [], 422);
         }
+        $user = $this->auth->user();
+        if ($user instanceof \Gereq\User\Entity\User && !$user->isAdministrator()) {
+            $home = $this->branchContext->defaultBranchId($user);
+            if ($home !== null) {
+                $branchId = $home;
+            }
+        }
         try {
             $order = $this->carservice->createOrder($vehicleId, trim((string) ($data['customer_id'] ?? '')) ?: null, [
                 'type' => $data['type'] ?? null,
@@ -92,8 +103,9 @@ final class ServiceOrderApiController extends Controller
         if ($order === null) {
             return ApiResponse::notFound();
         }
-        $data = $this->carservice->serialize($order);
-        $data['jobs'] = array_map(fn ($j) => $this->carservice->serializeJob($j), $this->carservice->jobsForOrder($id));
+        $jobs = $this->carservice->jobsForOrder($id);
+        $data = $this->carservice->serialize($order, $jobs);
+        $data['jobs'] = array_map(fn ($j) => $this->carservice->serializeJob($j), $jobs);
 
         return ApiResponse::data($data);
     }
@@ -103,6 +115,9 @@ final class ServiceOrderApiController extends Controller
         $order = $this->carservice->getOrder($id);
         if ($order === null) {
             return ApiResponse::notFound();
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
         }
         $data = gereq()->make(ValidationRegistry::class)->validate('carservice.save', $this->body($request));
         $vehicleId = trim((string) $data['vehicle_id']);
@@ -132,6 +147,13 @@ final class ServiceOrderApiController extends Controller
 
     public function switchTeam(Request $request, string $id): JsonResponse
     {
+        $order = $this->carservice->getOrder($id);
+        if ($order === null) {
+            return ApiResponse::notFound();
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
+        }
         $body = $this->body($request);
         try {
             $order = $this->carservice->switchTeam($id, (string) ($body['team'] ?? ''));
@@ -146,6 +168,13 @@ final class ServiceOrderApiController extends Controller
 
     public function addJob(Request $request, string $id): JsonResponse
     {
+        $order = $this->carservice->getOrder($id);
+        if ($order === null) {
+            return ApiResponse::notFound();
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
+        }
         $data = gereq()->make(ValidationRegistry::class)->validate('carservice.job', $this->body($request));
         try {
             $job = $this->carservice->addJob(
@@ -165,6 +194,13 @@ final class ServiceOrderApiController extends Controller
 
     public function completeJob(string $id, string $jobId): JsonResponse
     {
+        $order = $this->carservice->getOrder($id);
+        if ($order === null) {
+            return ApiResponse::notFound();
+        }
+        if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
+            return ApiResponse::forbidden();
+        }
         try {
             $job = $this->carservice->completeJob($jobId);
             if ($job->orderId() !== $id) {

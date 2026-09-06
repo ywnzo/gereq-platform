@@ -1,0 +1,257 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+{% set canFinish = user.can('bikeservice.manage') and item.isOpen() %}
+<div{% if canFinish %} x-data="gereqModal"{% endif %}>
+<header class="page-header">
+    <div>
+        <h1>{{ bike ? bike.label() : ('bikeservice.orders.one'|trans({'%id%': item.id()|slice(0,8)})) }}</h1>
+        <p class="muted detail-layout__meta">
+            <span class="badge">{{ item.statusLabel()|trans }}</span>
+            <span>{{ item.teamLabel()|trans }}</span>
+            {% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% endif %}
+        </p>
+    </div>
+    <div class="actions">
+        {% if canFinish %}
+            <button class="btn btn--primary" type="button" @click="show">{{ 'bikeservice.orders.finish'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.bikeservice.orders.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+{% if canFinish %}
+<div class="g-modal__backdrop" :class="backdropClass" @click="close"></div>
+<div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-labelledby="bs-finish-title">
+    <div class="g-modal__panel g-modal__panel--finish" @click.stop>
+        <form method="post" action="{{ url('admin.bikeservice.orders.finish',{id:item.id()}) }}" class="cs-finish">
+            {{ csrf_field()|raw }}
+            <header class="cs-finish__head">
+                <h2 class="g-modal__title" id="bs-finish-title">{{ 'bikeservice.finish.dialog_title'|trans }}</h2>
+                <p class="muted">{{ 'bikeservice.finish.hint'|trans }}</p>
+            </header>
+
+            {% include 'ui/textarea.html.twig' with {
+                name: 'service_info',
+                label: 'bikeservice.field.service_info'|trans,
+                optional: true,
+                value: item.serviceInfo() ?: '',
+                size: 'mini',
+                rows: 3,
+                extra: 'cs-finish__notes'
+            } %}
+
+            <div class="cs-finish__grid">
+                {% include 'ui/select.html.twig' with { name:'payment_type', label:'bikeservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
+                    {value:'',label:'—'},{value:'online',label:'bikeservice.payment.online'|trans},{value:'cash',label:'bikeservice.payment.cash'|trans}
+                ] } %}
+                {% include 'ui/input.html.twig' with { name:'signature', label:'bikeservice.finish.signature'|trans, optional:true, value:'' } %}
+                {% include 'ui/input.html.twig' with { name:'labor_cost', type:'number', label:'bikeservice.field.labor_cost'|trans, optional:true, value: item.laborCost() ?: '', step:'0.01' } %}
+                {% include 'ui/input.html.twig' with { name:'parts_cost', type:'number', label:'bikeservice.field.parts_cost'|trans, optional:true, value: item.partsCost() ?: '', step:'0.01' } %}
+                {% include 'ui/input.html.twig' with { name:'intake_odometer_km', type:'number', label:'bikeservice.field.intake_odometer'|trans, optional:true, value: item.intakeOdometerKm() ?: '' } %}
+                {% include 'ui/input.html.twig' with { name:'intake_battery_pct', type:'number', label:'bikeservice.field.intake_battery'|trans, optional:true, value: item.intakeBatteryPct() is not null ? item.intakeBatteryPct() : '' } %}
+            </div>
+
+            <div class="g-modal__actions cs-finish__actions">
+                <button class="btn btn--ghost" type="button" @click="close" x-ref="close">{{ 'common.cancel'|trans }}</button>
+                <button class="btn btn--primary" type="submit">{{ 'bikeservice.finish.confirm'|trans }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'bikeservice.field.status'|trans }}</span>
+                    <strong>{{ item.statusLabel()|trans }}</strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'bikeservice.field.bike'|trans }}</dt>
+                        <dd>{% if bike %}<a href="{{ url('admin.bikeservice.bikes.show',{id:bike.id()}) }}">{{ bike.label() }}</a>{% else %}—{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'bikeservice.field.job_time'|trans }}</dt>
+                        <dd>{{ (jobSeconds / 3600)|number_format(1) }} h</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'bikeservice.field.tracker'|trans }}</dt>
+                        <dd><code>{{ item.trackerToken()|slice(0, 12) }}…</code></dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        {% if user.can('bikeservice.manage') and item.isOpen() %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.orders.actions'|trans }}</h2></header>
+            <div class="form-grid form-grid--compact">
+                <form method="post" action="{{ url('admin.bikeservice.orders.status',{id:item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <label class="field"><span>{{ 'bikeservice.field.status'|trans }}</span>
+                        <select name="status" class="input" data-autosubmit>
+                            {% for s in statuses %}<option value="{{ s }}" {{ item.status()==s?'selected':'' }}>{{ ('bikeservice.status.'~s)|trans }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </form>
+                <form method="post" action="{{ url('admin.bikeservice.orders.team',{id:item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <label class="field"><span>{{ 'bikeservice.field.team'|trans }}</span>
+                        <select name="team" class="input" data-autosubmit>
+                            {% for t in teams %}<option value="{{ t }}" {{ item.team()==t?'selected':'' }}>{{ ('bikeservice.team.'~t)|trans }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </form>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.orders.jobs'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>{{ 'bikeservice.field.job_type'|trans }}</th><th>{{ 'bikeservice.field.started'|trans }}</th><th>{{ 'bikeservice.field.ended'|trans }}</th><th>{{ 'bikeservice.field.duration'|trans }}</th><th></th></tr></thead>
+                    <tbody>
+                    {% for j in jobs %}
+                        <tr>
+                            <td>{{ j.type() }}{% if j.note() %}<div class="muted">{{ j.note() }}</div>{% endif %}</td>
+                            <td>{{ j.startedAt().format('d. m. Y H:i') }}</td>
+                            <td>{{ j.finishedAt() ? j.finishedAt().format('d. m. Y H:i') : ('bikeservice.orders.job_open'|trans) }}</td>
+                            <td>{{ j.durationMinutes() is not null ? ((j.durationMinutes() / 60)|number_format(2) ~ ' h') : '—' }}</td>
+                            <td>
+                                {% if user.can('bikeservice.manage') and j.isOpen() %}
+                                    <form method="post" action="{{ url('admin.bikeservice.orders.jobs.complete',{id:item.id(),jobId:j.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit" class="btn btn--ghost">{{ 'bikeservice.orders.complete_job'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="muted">{{ 'bikeservice.orders.jobs_empty'|trans }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if user.can('bikeservice.manage') and item.isOpen() %}
+                <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.bikeservice.orders.jobs.store',{id:item.id()}) }}" data-form="bikeservice.job">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/input.html.twig' with { name:'type', label:'bikeservice.field.job_type'|trans, form:'bikeservice.job', value:'work' } %}
+                    {% include 'ui/select.html.twig' with { name:'employee_user_id', label:'bikeservice.field.employee'|trans, optional:true, form:'bikeservice.job', value:user.id(), options:userOptions } %}
+                    {% include 'ui/input.html.twig' with { name:'note', label:'bikeservice.field.note'|trans, optional:true, form:'bikeservice.job', value:'' } %}
+                    <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'bikeservice.orders.start_job'|trans }}</button></div>
+                </form>
+            {% endif %}
+        </section>
+
+        {% if mediaAvailable %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.media.title'|trans }}</h2></header>
+            <div class="panel__body">
+                {% for phase in mediaPhases %}
+                    <div class="bs-media-phase">
+                        <h3>{{ ('bikeservice.media.phase.'~phase)|trans }}</h3>
+                        <div class="table-wrap"><table class="table"><tbody>
+                        {% for row in mediaByPhase[phase]|default([]) %}
+                            <tr>
+                                <td><a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">{{ row.asset.title() }}</a></td>
+                                <td class="is-mute">{{ row.asset.mime() }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td class="muted" colspan="2">{{ 'bikeservice.media.empty_phase'|trans }}</td></tr>
+                        {% endfor %}
+                        </tbody></table></div>
+                    </div>
+                {% endfor %}
+                {% if user.can('bikeservice.manage') %}
+                    <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.bikeservice.orders.media',{id:item.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        {% set phaseOptions = [] %}
+                        {% for phase in mediaPhases %}
+                            {% set phaseOptions = phaseOptions|merge([{ value: phase, label: ('bikeservice.media.phase.'~phase)|trans }]) %}
+                        {% endfor %}
+                        {% include 'ui/select.html.twig' with { name: 'phase', label: 'bikeservice.media.phase_label'|trans, value: mediaPhases[0]|default('before'), options: phaseOptions } %}
+                        {% include 'ui/file.html.twig' with { name: 'file', label: 'bikeservice.media.file'|trans, hint: 'bikeservice.media.file.hint'|trans, accept: 'image/*,application/pdf', required: true, compact: true, extra: 'field--full' } %}
+                        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'bikeservice.media.upload'|trans }}</button></div>
+                    </form>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if documentsAvailable|default(false) and user.can('bikeservice.manage') %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.documents.generate'|trans }}</h2></header>
+            <div class="panel__body">
+                <p class="muted" style="margin-bottom:12px">{{ 'bikeservice.documents.generate.hint'|trans }}</p>
+                <div class="actions" style="flex-wrap:wrap;gap:8px">
+                    {% for pdf in pdfTypes|default([]) %}
+                        <form method="post" action="{{ url('admin.bikeservice.orders.documents.generate',{id:item.id()}) }}" style="display:inline">
+                            {{ csrf_field()|raw }}
+                            <input type="hidden" name="type" value="{{ pdf.type }}">
+                            <button class="btn btn--ghost" type="submit">{{ pdf.label|trans }}</button>
+                        </form>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if documents is defined and documents is not empty %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.documents.title'|trans }}</h2></header>
+            {% include '@documents/partials/document_list.html.twig' with { documents: documents } %}
+        </section>
+        {% endif %}
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.field.tracker'|trans }}</h2></header>
+            <div style="text-align:center;margin-bottom:12px">
+                <img src="{{ qrDataUri }}" alt="QR" width="180" height="180">
+            </div>
+            <p><code>{{ item.trackerToken() }}</code></p>
+            <p class="muted" style="word-break:break-all;font-size:.75rem">{{ orderUrl }}</p>
+        </section>
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div><dt>{{ 'bikeservice.field.team'|trans }}</dt><dd>{{ item.teamLabel()|trans }}</dd></div>
+                <div><dt>{{ 'bikeservice.field.payment_type'|trans }}</dt><dd>{% if item.paymentType() %}{{ ('bikeservice.payment.'~item.paymentType())|trans }}{% else %}—{% endif %}</dd></div>
+                <div><dt>{{ 'bikeservice.field.labor_cost'|trans }}</dt><dd>{{ item.laborCost() ?: '—' }}</dd></div>
+                <div><dt>{{ 'bikeservice.field.parts_cost'|trans }}</dt><dd>{{ item.partsCost() ?: '—' }}</dd></div>
+                <div><dt>{{ 'bikeservice.field.intake_odometer'|trans }}</dt><dd>{{ item.intakeOdometerKm() is not null ? item.intakeOdometerKm() ~ ' km' : '—' }}</dd></div>
+                <div><dt>{{ 'bikeservice.field.intake_battery'|trans }}</dt><dd>{{ item.intakeBatteryPct() is not null ? item.intakeBatteryPct() ~ ' %' : '—' }}</dd></div>
+                <div><dt>{{ 'bikeservice.field.intake'|trans }}</dt><dd>{{ item.intakeAt()?item.intakeAt().format('d. m. Y'):'—' }}</dd></div>
+                <div><dt>{{ 'bikeservice.field.handover'|trans }}</dt><dd>{{ item.handoverAt()?item.handoverAt().format('d. m. Y'):'—' }}</dd></div>
+                <div class="meta-list__full"><dt>{{ 'bikeservice.field.customer'|trans }}</dt>
+                    <dd>{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% else %}—{% endif %}</dd></div>
+                {% if item.serviceInfo() %}<div class="meta-list__full"><dt>{{ 'bikeservice.field.service_info'|trans }}</dt><dd>{{ item.serviceInfo() }}</dd></div>{% endif %}
+                {% if item.note() %}<div class="meta-list__full"><dt>{{ 'bikeservice.field.note'|trans }}</dt><dd>{{ item.note() }}</dd></div>{% endif %}
+            </dl>
+        </section>
+        {% if user.can('bikeservice.manage') %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.delete'|trans }}</h2></header>
+            <form method="post" action="{{ url('admin.bikeservice.orders.destroy',{id:item.id()}) }}" onsubmit="return confirm({{ 'bikeservice.orders.confirm_delete'|trans|json_encode|raw }})">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+            </form>
+        </section>
+        {% endif %}
+    </aside>
+</div>
+</div>
+
+<script nonce="{{ csp_nonce() }}">
+(() => {
+    document.querySelectorAll('select[data-autosubmit]').forEach((el) => {
+        el.addEventListener('change', () => el.form?.submit());
+    });
+})();
+</script>
+{% endblock %}

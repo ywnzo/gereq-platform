@@ -10,6 +10,7 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Auth\PasswordHasher;
+use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\User\Entity\Role;
@@ -33,6 +34,7 @@ final class UserController extends Controller
         private readonly PasswordHasher $hasher,
         private readonly Auditor $auditor,
         private readonly TranslatorInterface $translator,
+        private readonly HookManager $hooks,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -82,6 +84,7 @@ final class UserController extends Controller
         $user = new User($name, $email, $this->hasher->hash($password));
         $this->assignRoles($user, $request->request->all('roles') ?: []);
         $this->em->persist($user);
+        $this->hooks->doAction('admin.users.saving', $user, $request);
         $this->em->flush();
         $this->auditor->log('user.created', 'user', $user->id(), null, ['email' => $email]);
         $this->flash('success', $this->translator->trans('admin.users.created'));
@@ -127,6 +130,7 @@ final class UserController extends Controller
         $wasPrivileged = $user->isAdministrator();
         $user->roles()->clear();
         $this->assignRoles($user, $request->request->all('roles') ?: [], keepPrivileged: $wasPrivileged);
+        $this->hooks->doAction('admin.users.saving', $user, $request);
         $this->em->flush();
         $this->auditor->log('user.updated', 'user', $user->id(), $old, [
             'name' => $user->name(),

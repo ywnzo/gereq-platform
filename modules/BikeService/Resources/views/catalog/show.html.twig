@@ -1,0 +1,84 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+{% set canManage = user.can('bikeservice.manage') %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow"><a href="{{ url('admin.bikeservice.manufacturers') }}">{{ 'bikeservice.manufacturers.title'|trans }}</a></p>
+        <div class="fleet-brand-detail__identity">
+            {% if manufacturer.logo_url %}
+                <img class="fleet-brand-logo" src="{{ manufacturer.logo_url }}" alt="{{ manufacturer.name }}" loading="lazy" onerror="this.style.display='none'">
+            {% endif %}
+            <div>
+                <h1>{{ manufacturer.name }}</h1>
+                <p class="muted">
+                    {{ 'bikeservice.catalog.source'|trans }}
+                    {% if manufacturer.makes_frames %} · {{ 'bikeservice.catalog.tag.frames'|trans }}{% endif %}
+                    {% if manufacturer.ebike_only %} · {{ 'bikeservice.catalog.tag.ebike'|trans }}{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        {% if canManage %}
+            <a class="btn btn--primary" href="{{ url('admin.bikeservice.bikes.create') }}?brand={{ manufacturer.name|url_encode }}">{{ icon('plus') }} {{ 'bikeservice.catalog.add_bike'|trans }}</a>
+        {% endif %}
+        <a class="btn btn--ghost" href="{{ url('admin.bikeservice.manufacturers') }}">{{ 'common.back'|trans }}</a>
+    </div>
+</header>
+
+<div class="detail-grid">
+    <div class="detail-main">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.catalog.local_bikes'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table table--bikeservice">
+                    <thead>
+                    <tr>
+                        <th>{{ 'bikeservice.field.brand'|trans }}</th>
+                        <th>{{ 'bikeservice.field.kind'|trans }}</th>
+                        <th>{{ 'bikeservice.field.serial'|trans }}</th>
+                        <th>{{ 'bikeservice.field.customer'|trans }}</th>
+                        <th>{{ 'bikeservice.field.status'|trans }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in bikes %}
+                        {% set customer = item.customerId() ? customers[item.customerId()]|default(null) : null %}
+                        <tr class="bs-row">
+                            <td>
+                                <a class="bs-row__primary" href="{{ url('admin.bikeservice.bikes.show', {id: item.id()}) }}">
+                                    <span class="bs-row__plate">{{ item.brand() }}{% if item.model() %} {{ item.model() }}{% endif %}</span>
+                                </a>
+                            </td>
+                            <td><span class="badge badge--muted">{{ ('bikeservice.kind.'~item.kind())|trans }}</span></td>
+                            <td class="muted">{{ item.serialNumber() ?: '—' }}</td>
+                            <td>{% if customer %}<a href="{{ url('admin.customers.show', {id: customer.id()}) }}">{{ customer.name() }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+                            <td><span class="chip">{{ ('bikeservice.bike_status.'~item.status())|trans }}</span></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5"><div class="bs-orders-empty"><p>{{ 'bikeservice.catalog.no_local'|trans }}</p></div></td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+    <aside class="detail-aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.catalog.manufacturer'|trans }}</h2></header>
+            <dl class="meta-list">
+                <div><dt>{{ 'bikeservice.field.manufacturer'|trans }}</dt><dd>{{ manufacturer.name }}</dd></div>
+                {% if manufacturer.alternate_name %}
+                    <div><dt>{{ 'bikeservice.catalog.short_name'|trans }}</dt><dd>{{ manufacturer.alternate_name }}</dd></div>
+                {% endif %}
+                {% if manufacturer.open_year or manufacturer.close_year %}
+                    <div><dt>{{ 'bikeservice.catalog.years'|trans }}</dt><dd>{{ manufacturer.open_year ?: '?' }} – {{ manufacturer.close_year ?: '…' }}</dd></div>
+                {% endif %}
+                {% if manufacturer.website %}
+                    <div class="meta-list__full"><dt>{{ 'bikeservice.catalog.website'|trans }}</dt><dd><a href="{{ manufacturer.website }}" target="_blank" rel="noopener">{{ manufacturer.website }}</a></dd></div>
+                {% endif %}
+            </dl>
+        </section>
+    </aside>
+</div>
+{% endblock %}

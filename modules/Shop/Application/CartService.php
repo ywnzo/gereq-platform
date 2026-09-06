@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Event\EventBus;
 use Gereq\Module\CapabilityRegistry;
 use Gereq\Setting\Settings;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Products\Application\ProductPersonalizationService;
 use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\Product;
@@ -26,6 +27,7 @@ final class CartService
         private readonly ProductPersonalizationService $personalization,
         private readonly ProductVariantOptionsService $variantOptions,
         private readonly CapabilityRegistry $capabilities,
+        private readonly CurrencyBuilder $money,
     ) {
     }
 
@@ -33,7 +35,7 @@ final class CartService
     {
         $customerId = $customerId !== null && $customerId !== '' ? $customerId : null;
         $sessionKey = $sessionKey !== null && $sessionKey !== '' ? $sessionKey : null;
-        $currency = strtoupper($currency ?: (string) $this->settings->get('shop.default_currency', 'CZK')) ?: 'CZK';
+        $currency = $this->money->code($currency);
 
         $cart = null;
         if ($customerId !== null) {

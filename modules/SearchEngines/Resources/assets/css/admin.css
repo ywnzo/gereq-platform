@@ -1,0 +1,151 @@
+/* SearchEngines — nabídky obchodů hover (jako baby-naty order preview) */
+.se-offers-hover {
+    display: inline-flex;
+    vertical-align: middle;
+}
+.se-offers-hover__trigger {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0.1rem 0.15rem;
+    margin: 0;
+    color: inherit;
+    font: inherit;
+    cursor: help;
+    text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 0.18em;
+    border-radius: 4px;
+}
+.se-offers-hover__trigger:hover,
+.se-offers-hover__trigger:focus-visible {
+    background: color-mix(in srgb, var(--primary, #2563eb) 10%, transparent);
+    outline: none;
+}
+.se-offers-hover__panel {
+    position: fixed;
+    z-index: 220;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border, #e2e8f0);
+    background: var(--surface, #fff);
+    box-shadow: 0 24px 64px -20px rgba(15, 23, 42, 0.35);
+}
+.se-offers-hover__head {
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid var(--border-soft, var(--border, #e2e8f0));
+    font-size: 0.9rem;
+}
+.se-offers-hover__body {
+    max-height: min(420px, 70vh);
+    overflow: auto;
+    padding: 0.35rem 0;
+}
+.se-offers-hover__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.se-offers-hover__row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.55rem;
+    align-items: center;
+    padding: 0.45rem 0.85rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border, #e2e8f0) 70%, transparent);
+}
+.se-offers-hover__row:last-child {
+    border-bottom: 0;
+}
+.se-offers-hover__shop {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    font-size: 0.86rem;
+}
+.se-offers-hover__shop > span:first-child {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.se-offers-hover__price {
+    font-weight: 650;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.se-offers-hover__shop-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+.se-offers-hover__shop-line > span:first-child {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.se-offers-hover__free {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.se-search .panel__head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.se-search__status {
+    font-size: 0.85rem;
+}
+.se-search__skeletons {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 1rem;
+    width: min(100%, 36rem);
+}
+.se-search__skel {
+    height: 2.6rem;
+    border-radius: 8px;
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--border, #e2e8f0) 55%, transparent) 0%,
+        color-mix(in srgb, var(--surface, #fff) 70%, var(--border, #e2e8f0)) 50%,
+        color-mix(in srgb, var(--border, #e2e8f0) 55%, transparent) 100%
+    );
+    background-size: 200% 100%;
+    animation: se-search-shimmer 1.1s ease-in-out infinite;
+}
+.se-search__row.is-enter {
+    animation: se-search-enter 0.28s ease-out both;
+}
+@keyframes se-search-enter {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes se-search-shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .se-search__row.is-enter,
+    .se-search__skel {
+        animation: none;
+    }
+}

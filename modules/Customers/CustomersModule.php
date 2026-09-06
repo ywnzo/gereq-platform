@@ -41,7 +41,7 @@ final class CustomersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.1';
+        return '1.2.2';
     }
 
     public function register(ModuleContext $context): void
@@ -66,6 +66,8 @@ final class CustomersModule implements ModuleInterface
             $routes->post('', [CustomerController::class, 'store'])
                 ->name('admin.customers.store')
                 ->permission('customers.create');
+            $routes->post('/bulk', [CustomerController::class, 'bulk'])
+                ->name('admin.customers.bulk');
             $routes->get('/{id}', [CustomerController::class, 'show'])
                 ->name('admin.customers.show')
                 ->permission('customers.view');
@@ -364,6 +366,11 @@ final class CustomersModule implements ModuleInterface
             'company' => 'nullable|max:190',
             'note' => 'nullable|max:20000',
             'status' => 'required|in:active,lead,inactive,archived',
+        ]);
+
+        $validation->ruleset('customers.bulk', [
+            'action' => 'required|in:activate,lead,deactivate,archive,delete',
+            'confirmed' => 'nullable',
         ]);
 
         $validation->ruleset('customers.address.save', [

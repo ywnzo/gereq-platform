@@ -1,0 +1,136 @@
+{# Expandable SearchEngines OEM market panel — used inside a colspan cell. #}
+<div class="pc-oem-market">
+    <header class="pc-oem-market__head">
+        <strong x-text="resultsTitle"></strong>
+        <span class="muted" x-show="loading" x-cloak x-text="labels.loading"></span>
+        <button
+            type="button"
+            class="pc-oem-market__close"
+            @click="closeOffers"
+            :title="labels.close"
+            :aria-label="labels.close"
+        >×</button>
+    </header>
+
+    <div class="pc-oem-market__empty muted" x-show="showLoading" x-cloak x-text="labels.loading"></div>
+    <div class="pc-oem-market__empty muted" x-show="showEmpty" x-cloak x-text="labels.empty"></div>
+
+    <div class="pc-oem-market__list" x-show="showTable" x-cloak>
+        <template x-for="(item, index) in items" :key="itemKey(item, index)">
+            <article class="pc-oem-market__item">
+                <div class="pc-oem-market__media">
+                    <img
+                        x-show="hasImage(item)"
+                        :src="itemImage(item)"
+                        alt=""
+                        width="40"
+                        height="40"
+                        loading="lazy"
+                    >
+                </div>
+                <div class="pc-oem-market__body">
+                    <a
+                        class="pc-oem-market__name"
+                        x-show="hasNameLink(item)"
+                        :href="itemUrl(item)"
+                        target="_blank"
+                        rel="noopener"
+                        x-text="itemName(item)"
+                    ></a>
+                    <strong x-show="hasNamePlain(item)" x-text="itemName(item)"></strong>
+                    <div class="pc-oem-market__meta">
+                        <span class="muted" x-show="hasBrand(item)" x-text="itemBrand(item)"></span>
+                        <span
+                            class="se-offers-hover"
+                            x-show="hasOffersHover(item)"
+                            x-cloak
+                            x-data="seOffersHover"
+                            data-label-empty="{{ 'searchengines.offers.empty'|trans|e('html_attr') }}"
+                            data-label-loading="{{ 'searchengines.offers.loading'|trans|e('html_attr') }}"
+                            data-label-currency="{{ currency_symbol() }}"
+                            data-label-open="{{ 'searchengines.open'|trans|e('html_attr') }}"
+                        >
+                            <button
+                                type="button"
+                                class="se-offers-hover__trigger"
+                                x-ref="trigger"
+                                @mouseenter="showFor(item, offersEndpoint)"
+                                @mouseleave="hide"
+                                @focus="showFor(item, offersEndpoint)"
+                                @blur="hide"
+                                x-text="shopLabel(item)"
+                            ></button>
+                            <div
+                                class="se-offers-hover__panel"
+                                x-ref="panel"
+                                x-show="visible"
+                                x-cloak
+                                :style="panelStyle()"
+                                @mouseenter="keep"
+                                @mouseleave="hide"
+                                role="dialog"
+                            >
+                                <div class="se-offers-hover__head"><strong x-text="label"></strong></div>
+                                <div class="se-offers-hover__body">
+                                    <p class="muted" x-show="showLoading" x-text="loadingLabel"></p>
+                                    <p class="muted" x-show="showError" x-text="error"></p>
+                                    <ul class="se-offers-hover__list" x-show="showList">
+                                        <template x-for="offer in offers" :key="offerKey(offer)">
+                                            <li class="se-offers-hover__row">
+                                                <div class="se-offers-hover__shop">
+                                                    <span class="se-offers-hover__shop-line">
+                                                        <span x-text="offer.shop"></span>
+                                                        <span class="badge badge--ok se-offers-hover__free" x-show="offer.free_shipping" x-cloak>FREE</span>
+                                                    </span>
+                                                    <span class="muted" x-show="offer.availability" x-text="offer.availability"></span>
+                                                </div>
+                                                <div class="se-offers-hover__price" x-text="offer.price_label"></div>
+                                                <a class="btn btn--ghost btn-sm" :href="offer.open_href" target="_blank" rel="noopener" x-text="offer.open_label"></a>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </div>
+                        </span>
+                        <span class="muted" x-show="hasShopPlain(item)" x-text="shopLabel(item)"></span>
+                    </div>
+                </div>
+                <div class="pc-oem-market__price" x-text="formatPrice(item)"></div>
+                <div class="pc-oem-market__action">
+                    <label class="pc-oem-market__qty" x-show="canAttach" x-cloak>
+                        <span class="visually-hidden">{{ 'partscatalog.col.qty'|trans }}</span>
+                        <input
+                            type="number"
+                            class="input input--sm"
+                            min="1"
+                            max="9999"
+                            step="1"
+                            :value="qtyFor(item, index)"
+                            :disabled="isAttaching(item, index) || isAttached(item, index)"
+                            @click.stop
+                            @input="setQty(item, index, $event.target.value)"
+                            :title="'{{ 'partscatalog.col.qty'|trans|e('js') }}'"
+                        >
+                    </label>
+                    <button
+                        type="button"
+                        class="btn btn--primary btn-sm"
+                        x-show="canAttach"
+                        x-cloak
+                        :disabled="isAttaching(item, index) || isAttached(item, index) || !hasPrice(item)"
+                        @click.stop.prevent="attachItem(item, index)"
+                        x-text="attachLabel(item, index)"
+                    ></button>
+                    <a
+                        class="btn btn--ghost btn-sm"
+                        x-show="hasUrl(item)"
+                        :href="itemUrl(item)"
+                        target="_blank"
+                        rel="noopener"
+                        x-text="labels.open"
+                    ></a>
+                </div>
+            </article>
+        </template>
+    </div>
+</div>

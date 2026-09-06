@@ -12,6 +12,7 @@ use Gereq\File\FileManager;
 use Gereq\File\StoredFile;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\CarService\Application\BranchContext;
 use Modules\CarService\Domain\ServiceBranch;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,6 +33,7 @@ final class BranchController extends Controller
         private readonly CommandPalette $palette,
         private readonly TranslatorInterface $translator,
         private readonly FileManager $files,
+        private readonly BranchContext $branchContext,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -44,6 +46,19 @@ final class BranchController extends Controller
             'pageTitle' => $this->translator->trans('carservice.branches.title'),
             'items' => $items,
         ]);
+    }
+
+    public function select(Request $request): Response
+    {
+        $branchId = trim((string) $request->request->get('branch_id', ''));
+        $this->branchContext->setBranchId($branchId !== '' ? $branchId : null);
+
+        $redirect = trim((string) $request->request->get('_redirect', ''));
+        if ($redirect !== '' && str_starts_with($redirect, '/') && !str_starts_with($redirect, '//')) {
+            return new \Symfony\Component\HttpFoundation\RedirectResponse($redirect);
+        }
+
+        return $this->redirect('admin.carservice.index');
     }
 
     public function create(): Response

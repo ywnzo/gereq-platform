@@ -9,13 +9,53 @@
         {% endif %}
     {% endfor %}
 {% endif %}
+{% set hasMotorization = item.motorization() is not empty %}
+{# Hero = identita; Přehled / Další = jen to, co v hero není. #}
+{% set overviewPairs = {
+    vehicle_kind: 'fleet.field.vehicle_kind',
+    body_type: 'fleet.field.body_type',
+    category: 'fleet.field.category',
+    seats: 'fleet.field.seats',
+    weight_kg: 'fleet.field.weight_kg',
+    consumption: 'fleet.field.consumption',
+    first_registered_at: 'fleet.field.first_registered_at'
+} %}
+{% if not hasMotorization %}
+    {% set overviewPairs = overviewPairs|merge({
+        power_kw: 'fleet.field.power_kw',
+        displacement_cc: 'fleet.field.displacement_cc'
+    }) %}
+{% endif %}
+{% set morePairs = {
+    version_code: 'fleet.field.version_code',
+    tire_size: 'fleet.field.tire_size',
+    max_speed: 'fleet.field.max_speed',
+    tp_number: 'fleet.field.tp_number',
+    homologation: 'fleet.field.homologation'
+} %}
+{% if not hasMotorization %}
+    {% set morePairs = { engine_code: 'fleet.field.engine_code' }|merge(morePairs) %}
+{% endif %}
+{% set overviewTech = overviewPairs|filter((label, key) => tech[key] is defined and tech[key]) %}
+{% set moreTech = morePairs|filter((label, key) => tech[key] is defined and tech[key]) %}
+{% set orvNoteLines = orvNoteLines|default([]) %}
+{% if tech.version_code is defined and tech.version_code and orvNoteLines|filter(l => tech.version_code in l)|length > 0 %}
+    {% set moreTech = moreTech|filter((label, key) => key != 'version_code') %}
+{% endif %}
+{% set hasOverview = overviewTech is not empty or item.note() %}
+{% set deadlines = [
+    { key: 'stk', label: 'fleet.field.stk', date: item.stkAt() },
+    { key: 'insurance', label: 'fleet.field.insurance', date: item.insuranceUntil() },
+    { key: 'vignette', label: 'fleet.field.vignette', date: item.vignetteUntil() },
+    { key: 'tires', label: 'fleet.field.tires', date: item.tiresAt() },
+    { key: 'warranty', label: 'fleet.field.warranty', date: item.warrantyUntil() }
+] %}
 
 <header class="page-header">
     <div>
         <p class="eyebrow"><a href="{{ url('admin.fleet.index') }}">{{ 'nav.fleet'|trans }}</a></p>
-        <h1>{{ item.brand() ?: '' }} {{ item.model() ?: '' }}{% if not item.brand() and not item.model() %}{{ item.plate() }}{% endif %}</h1>
+        <h1>{{ item.brand() ?: '' }} {{ item.displayModel() }}{% if not item.brand() and not item.model() %}{{ item.plate() }}{% endif %}</h1>
         <p class="muted detail-layout__meta">
-            <code class="fleet-plate-code">{{ item.plate() }}</code>
             <span class="status-chip status-chip--{{ item.status() }}">
                 <span class="status-chip__dot" aria-hidden="true"></span>
                 {{ item.statusLabel()|trans }}
@@ -27,13 +67,25 @@
     <div class="actions">
         {% if user.can('fleet.manage') %}
             <a class="btn btn--ghost" href="{{ url('admin.fleet.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
-            <form method="post" action="{{ url('admin.fleet.status',{id:item.id()}) }}" class="meta-list__action">
+            <form method="post" action="{{ url('admin.fleet.status',{id:item.id()}) }}" class="meta-list__action fleet-status-form">
                 {{ csrf_field()|raw }}
-                <select name="status" class="input" aria-label="{{ 'fleet.field.status'|trans }}" onchange="this.form.submit()">
-                    {% for s in statuses %}
-                        <option value="{{ s }}" {{ item.status()==s?'selected':'' }}>{{ ('fleet.status.'~s)|trans }}</option>
-                    {% endfor %}
-                </select>
+                {% set statusOptions = [] %}
+                {% for s in statuses %}
+                    {% set statusOptions = statusOptions|merge([{
+                        value: s,
+                        label: ('fleet.status.' ~ s)|trans,
+                        tone: s
+                    }]) %}
+                {% endfor %}
+                {% include 'ui/select.html.twig' with {
+                    name: 'status',
+                    label: '',
+                    value: item.status(),
+                    autosubmit: true,
+                    options: statusOptions,
+                    placeholder: 'fleet.field.status'|trans,
+                    extra: 'fleet-status-select'
+                } %}
             </form>
         {% endif %}
     </div>
@@ -52,26 +104,43 @@
                 </div>
             {% endif %}
             <div class="detail-hero__body">
-                <div class="detail-hero__highlight">
-                    <span>{{ 'fleet.field.plate'|trans }}</span>
-                    <strong>{{ item.plate() }}</strong>
+                <div class="detail-hero__highlight fleet-hero__plate">
+                    <div class="fleet-hero__plate-id">
+                        <span>{{ 'fleet.field.plate'|trans }}</span>
+                        <strong>{{ item.plate() }}</strong>
+                    </div>
+                    <dl class="fleet-hero__plate-facts">
+                        <div>
+                            <dt>{{ 'fleet.field.vin'|trans }}</dt>
+                            <dd>{% if item.vin() %}<code>{{ item.vin() }}</code>{% else %}—{% endif %}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'fleet.field.color'|trans }}</dt>
+                            <dd>{{ item.color() ?: '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'fleet.field.mileage'|trans }}</dt>
+                            <dd>
+                                {{ item.mileage() is not null ? item.mileage()|number_format(0, ',', ' ') ~ ' km' : '—' }}
+                                {% if item.fuelLevel() %} · {{ ('fleet.fuel_level.'~item.fuelLevel())|trans }}{% endif %}
+                            </dd>
+                        </div>
+                        {% if tech.emission is defined and tech.emission %}
+                        <div>
+                            <dt>{{ 'fleet.field.emission'|trans }}</dt>
+                            <dd>{{ tech.emission }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
                 </div>
-                <dl class="detail-hero__facts">
+                <dl class="detail-hero__facts fleet-hero__facts">
                     <div>
                         <dt>{{ 'fleet.field.brand'|trans }}</dt>
-                        <dd>{{ item.brand() ?: '—' }}{% if item.model() %} {{ item.model() }}{% endif %}{% if item.modelYear() %} · {{ item.modelYear() }}{% endif %}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ 'fleet.field.vin'|trans }}</dt>
-                        <dd>{% if item.vin() %}<code>{{ item.vin() }}</code>{% else %}—{% endif %}</dd>
+                        <dd>{{ item.brand() ?: '—' }}{% if item.displayModel() %} {{ item.displayModel() }}{% endif %}{% if item.modelYear() %} · {{ item.modelYear() }}{% endif %}</dd>
                     </div>
                     <div>
                         <dt>{{ 'fleet.field.orv'|trans }}</dt>
                         <dd>{{ item.orvId() ?: '—' }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ 'fleet.field.color'|trans }}</dt>
-                        <dd>{{ item.color() ?: '—' }}</dd>
                     </div>
                     <div>
                         <dt>{{ 'fleet.field.fuel'|trans }}</dt>
@@ -80,74 +149,68 @@
                             {% if item.gearbox() %} · {{ ('fleet.gearbox.'~item.gearbox())|trans }}{% endif %}
                         </dd>
                     </div>
-                    <div>
-                        <dt>{{ 'fleet.field.mileage'|trans }}</dt>
-                        <dd>
-                            {{ item.mileage() is not null ? item.mileage()|number_format(0, ',', ' ') ~ ' km' : '—' }}
-                            {% if item.fuelLevel() %} · {{ ('fleet.fuel_level.'~item.fuelLevel())|trans }}{% endif %}
-                        </dd>
-                    </div>
                     {% if item.motorization() %}
                     <div>
                         <dt>{{ 'fleet.field.motorization'|trans }}</dt>
                         <dd>{{ item.motorization() }}</dd>
                     </div>
                     {% endif %}
-                    {% if tech.emission is defined and tech.emission %}
-                    <div>
-                        <dt>{{ 'fleet.field.emission'|trans }}</dt>
-                        <dd>{{ tech.emission }}</dd>
-                    </div>
-                    {% endif %}
                 </dl>
             </div>
         </section>
 
-        {% if tech %}
+        {% if moreTech is not empty or orvNoteLines is not empty %}
         <section class="panel">
-            <header class="panel__head"><h2>{{ 'fleet.form.section.tech'|trans }}</h2></header>
-            <dl class="meta-list meta-list--flush fleet-tech-list">
-                {% set techPairs = {
-                    vehicle_kind: 'fleet.field.vehicle_kind',
-                    body_type: 'fleet.field.body_type',
-                    category: 'fleet.field.category',
-                    engine_code: 'fleet.field.engine_code',
-                    power_kw: 'fleet.field.power_kw',
-                    displacement_cc: 'fleet.field.displacement_cc',
-                    weight_kg: 'fleet.field.weight_kg',
-                    seats: 'fleet.field.seats',
-                    max_speed: 'fleet.field.max_speed',
-                    consumption: 'fleet.field.consumption',
-                    tire_size: 'fleet.field.tire_size',
-                    tp_number: 'fleet.field.tp_number',
-                    first_registered_at: 'fleet.field.first_registered_at',
-                    homologation: 'fleet.field.homologation'
-                } %}
-                {% for key, label in techPairs %}
-                    {% if tech[key] is defined and tech[key] %}
+            <header class="panel__head"><h2>{{ 'fleet.show.more_info'|trans }}</h2></header>
+            {% if moreTech is not empty %}
+            <dl class="fleet-more-list">
+                {% for key, label in moreTech %}
                     <div>
                         <dt>{{ label|trans }}</dt>
                         <dd>
-                            {% if key == 'first_registered_at' %}
-                                {{ tech[key]|date('d. m. Y') }}
-                            {% elseif key == 'power_kw' %}
-                                {{ tech[key] }} kW
-                            {% elseif key == 'displacement_cc' %}
-                                {{ tech[key] }} cm³
-                            {% elseif key == 'weight_kg' %}
-                                {{ tech[key] }} kg
-                            {% elseif key == 'max_speed' %}
+                            {% if key == 'max_speed' %}
                                 {{ tech[key] }} km/h
                             {% else %}
                                 {{ tech[key] }}
                             {% endif %}
                         </dd>
                     </div>
-                    {% endif %}
                 {% endfor %}
             </dl>
+            {% endif %}
+            {% if orvNoteLines is not empty %}
+            <div class="fleet-orv-notes{% if moreTech is not empty %} fleet-orv-notes--divided{% endif %}">
+                <h3 class="fleet-orv-notes__title">{{ 'fleet.field.orv_notes'|trans }}</h3>
+                <ul class="fleet-orv-notes__list">
+                    {% for line in orvNoteLines %}
+                        {% set isBullet = line starts with '•' %}
+                        {% set isHeading = line ends with ':' and not isBullet %}
+                        <li class="{% if isHeading %}is-heading{% elseif isBullet %}is-bullet{% endif %}">{{ isBullet ? line|slice(1)|trim : line }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
         </section>
         {% endif %}
+
+        <section class="panel fleet-deadlines">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'fleet.aside.deadlines'|trans }}</h2>
+                    <p class="muted">{{ 'fleet.aside.deadlines_intro'|trans }}</p>
+                </div>
+            </header>
+            <div class="fleet-deadline-list fleet-deadline-list--main">
+                {% for d in deadlines %}
+                    {% set past = d.date and d.date < date() %}
+                    {% set soon = d.date and not past and d.date < date('+45 days') %}
+                    <div class="fleet-deadline-card{% if past %} is-past{% elseif soon %} is-soon{% endif %}">
+                        <span class="fleet-deadline-card__label">{{ d.label|trans }}</span>
+                        <strong>{{ d.date ? d.date.format('d. m. Y') : '—' }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
 
         {% for section in hookSections %}
             <section class="panel" id="{{ section.id }}">
@@ -168,8 +231,10 @@
 
             {% if mediaItems %}
             <div class="product-gallery fleet-docs__gallery">
+                {% set coverLinkId = mediaCoverLinkId|default(null) %}
                 {% for row in mediaItems %}
-                <figure class="product-gallery__item fleet-doc-card">
+                {% set isCover = row.asset.isImage() and coverLinkId == row.link.id() %}
+                <figure class="product-gallery__item fleet-doc-card{{ isCover ? ' is-primary' : '' }}">
                     <div class="product-gallery__media">
                         {% if row.asset.isImage() %}
                             <a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">
@@ -183,7 +248,37 @@
                         {% endif %}
                         <div class="product-gallery__badges">
                             <span class="badge">{{ ('fleet.media.'~(row.link.label() ?: 'photo'))|trans }}</span>
+                            {% if isCover %}
+                                <span class="badge badge--ok">{{ 'fleet.media.cover'|trans }}</span>
+                            {% endif %}
                         </div>
+                        {% if row.asset.isImage() and user.can('fleet.manage') %}
+                            {% if isCover %}
+                                <span
+                                    class="fleet-doc-card__star is-active"
+                                    title="{{ 'fleet.media.cover'|trans }}"
+                                    aria-label="{{ 'fleet.media.cover'|trans }}"
+                                >{{ icon('star') }}</span>
+                            {% else %}
+                                <form method="post" action="{{ url('admin.fleet.media.cover',{id:item.id(), linkId:row.link.id()}) }}" class="fleet-doc-card__star-form">
+                                    {{ csrf_field()|raw }}
+                                    <button
+                                        type="submit"
+                                        class="fleet-doc-card__star"
+                                        title="{{ 'fleet.media.set_cover'|trans }}"
+                                        aria-label="{{ 'fleet.media.set_cover'|trans }}"
+                                    >{{ icon('star') }}</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                        <a
+                            class="fleet-doc-card__preview"
+                            href="{{ url('admin.media.file', {id: row.asset.id()}) }}"
+                            target="_blank"
+                            rel="noopener"
+                            title="{{ 'common.detail'|trans }}"
+                            aria-label="{{ 'common.detail'|trans }}"
+                        >{{ icon('eye') }}</a>
                     </div>
                     <figcaption>
                         <a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">{{ row.asset.title() }}</a>
@@ -202,17 +297,10 @@
             <form method="post" enctype="multipart/form-data" class="fleet-docs__upload" action="{{ url('admin.fleet.media',{id:item.id()}) }}">
                 {{ csrf_field()|raw }}
                 <div class="fleet-docs__upload-row">
-                    <label class="g-field">
-                        <span class="g-label">{{ 'fleet.media.label'|trans }}</span>
-                        <select name="label" class="g-control">
-                            <option value="photo">{{ 'fleet.media.photo'|trans }}</option>
-                            <option value="orv">{{ 'fleet.media.orv'|trans }}</option>
-                            <option value="stk">{{ 'fleet.media.stk'|trans }}</option>
-                        </select>
-                    </label>
                     <label class="g-field fleet-docs__file-field">
                         <span class="g-label">{{ 'fleet.media.file'|trans }}</span>
-                        <input class="g-control" type="file" name="file" accept="image/*,application/pdf" required>
+                        <input class="g-control" type="file" name="files[]" accept="image/*,application/pdf" multiple required>
+                        <span class="g-hint">{{ 'fleet.media.file.hint_multi'|trans }}</span>
                     </label>
                     <div class="fleet-docs__upload-action">
                         <button class="btn btn--primary" type="submit">{{ 'fleet.media.upload'|trans }}</button>
@@ -222,6 +310,35 @@
             {% endif %}
         </section>
         {% endif %}
+    </div>
+
+    <aside class="detail-layout__aside">
+        {% if hasOverview %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                {% for key, label in overviewTech %}
+                    <div{% if key in ['vehicle_kind', 'body_type', 'consumption', 'first_registered_at'] %} class="meta-list__full"{% endif %}>
+                        <dt>{{ label|trans }}</dt>
+                        <dd>
+                            {% if key == 'first_registered_at' %}
+                                {{ tech[key]|date('d. m. Y') }}
+                            {% elseif key == 'power_kw' %}
+                                {{ tech[key] }} kW
+                            {% elseif key == 'displacement_cc' %}
+                                {{ tech[key] }} cm³
+                            {% elseif key == 'weight_kg' %}
+                                {{ tech[key] }} kg
+                            {% else %}
+                                {{ tech[key] }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                {% endfor %}
+                {% if item.note() %}<div class="meta-list__full"><dt>{{ 'fleet.field.note'|trans }}</dt><dd>{{ item.note() }}</dd></div>{% endif %}
+            </dl>
+        </section>
+        {% endif %}
 
         <section class="panel">
             <header class="panel__head"><h2>{{ 'fleet.status_log.title'|trans }}</h2></header>
@@ -229,7 +346,9 @@
             <ol class="fleet-timeline">
                 {% for log in logs %}
                 <li class="fleet-timeline__item">
-                    <span class="fleet-timeline__dot" aria-hidden="true"></span>
+                    <span class="fleet-timeline__dot status-chip--{{ log.toStatus() }}" aria-hidden="true">
+                        <span class="status-chip__dot"></span>
+                    </span>
                     <div class="fleet-timeline__body">
                         <strong>
                             {% if log.fromStatus() %}{{ ('fleet.status.'~log.fromStatus())|trans }} → {% endif %}
@@ -244,40 +363,6 @@
             {% else %}
             <p class="muted" style="padding:12px">{{ 'fleet.status_log.empty'|trans }}</p>
             {% endif %}
-        </section>
-    </div>
-
-    <aside class="detail-layout__aside">
-        <section class="panel">
-            <header class="panel__head"><h2>{{ 'fleet.aside.deadlines'|trans }}</h2></header>
-            <div class="fleet-deadline-list">
-                {% set deadlines = [
-                    { key: 'stk', label: 'fleet.field.stk', date: item.stkAt() },
-                    { key: 'insurance', label: 'fleet.field.insurance', date: item.insuranceUntil() },
-                    { key: 'vignette', label: 'fleet.field.vignette', date: item.vignetteUntil() },
-                    { key: 'tires', label: 'fleet.field.tires', date: item.tiresAt() },
-                    { key: 'warranty', label: 'fleet.field.warranty', date: item.warrantyUntil() }
-                ] %}
-                {% for d in deadlines %}
-                    {% set past = d.date and d.date < date() %}
-                    {% set soon = d.date and not past and d.date < date('+45 days') %}
-                    <div class="fleet-deadline-card{% if past %} is-past{% elseif soon %} is-soon{% endif %}">
-                        <span class="fleet-deadline-card__label">{{ d.label|trans }}</span>
-                        <strong>{{ d.date ? d.date.format('d. m. Y') : '—' }}</strong>
-                    </div>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section class="panel">
-            <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
-            <dl class="meta-list meta-list--flush detail-layout__specs">
-                <div><dt>{{ 'fleet.field.status'|trans }}</dt><dd><span class="status-chip status-chip--{{ item.status() }}"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span></dd></div>
-                <div><dt>{{ 'fleet.field.ownership'|trans }}</dt><dd>{{ item.ownershipLabel()|trans }}</dd></div>
-                <div class="meta-list__full"><dt>{{ 'fleet.field.customer'|trans }}</dt>
-                    <dd>{% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% else %}—{% endif %}</dd></div>
-                {% if item.note() %}<div class="meta-list__full"><dt>{{ 'fleet.field.note'|trans }}</dt><dd>{{ item.note() }}</dd></div>{% endif %}
-            </dl>
         </section>
     </aside>
 </div>

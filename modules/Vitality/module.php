@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'vitality',
     'name' => 'Vitality',
-    'version' => '1.0.2',
+    'version' => '1.0.3',
     'description' => 'module.vitality.description',
     'class' => Modules\Vitality\VitalityModule::class,
     'author' => 'GEREQ',

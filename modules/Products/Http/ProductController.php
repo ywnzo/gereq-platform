@@ -14,6 +14,7 @@ use Gereq\File\FileManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Currency\Domain\Currency;
 use Modules\Products\Application\ProductPersonalizationService;
 use Modules\Products\Application\ProductVariantOptionsService;
@@ -52,6 +53,7 @@ final class ProductController extends Controller
         private readonly CapabilityRegistry $capabilities,
         private readonly ProductPersonalizationService $personalization,
         private readonly ProductVariantOptionsService $variantOptions,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -423,7 +425,7 @@ final class ProductController extends Controller
         if (isset($data['price_amount']) && trim((string) $data['price_amount']) !== '') {
             $variant->setPrice(
                 (string) $data['price_amount'],
-                isset($data['price_currency']) ? (string) $data['price_currency'] : 'CZK',
+                isset($data['price_currency']) ? (string) $data['price_currency'] : $this->money->defaultCode(),
             );
         }
         if (isset($data['stock_qty']) && $data['stock_qty'] !== '') {
@@ -470,7 +472,7 @@ final class ProductController extends Controller
         if (isset($data['price_amount']) && trim((string) $data['price_amount']) !== '') {
             $variant->setPrice(
                 (string) $data['price_amount'],
-                isset($data['price_currency']) ? (string) $data['price_currency'] : ($variant->priceCurrency() ?: 'CZK'),
+                isset($data['price_currency']) ? (string) $data['price_currency'] : ($variant->priceCurrency() ?: $this->money->defaultCode()),
             );
         } elseif (isset($data['price_amount']) && trim((string) $data['price_amount']) === '') {
             $variant->setPrice(null);
@@ -1162,7 +1164,8 @@ final class ProductController extends Controller
             $options[] = ['value' => $item->code(), 'label' => $item->code() . ' — ' . $item->name()];
         }
         if ($options === []) {
-            $options[] = ['value' => 'CZK', 'label' => 'CZK'];
+            $code = $this->money->defaultCode();
+            $options[] = ['value' => $code, 'label' => $code];
         }
 
         return $options;

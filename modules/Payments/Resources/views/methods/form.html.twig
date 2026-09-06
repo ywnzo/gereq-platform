@@ -63,7 +63,7 @@
         label: 'payments.field.currency'|trans,
         optional: true,
         form: 'payments.method.save',
-        value: item ? item.currency() : 'CZK'
+        value: item ? item.currency() : currency_code()
     } %}
     {% include 'ui/input.html.twig' with {
         name: 'sort_order',

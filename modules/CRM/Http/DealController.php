@@ -13,6 +13,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Modules\CRM\Domain\Deal;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Customers\Domain\Customer;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -33,6 +34,7 @@ final class DealController extends Controller
         private readonly Auditor $auditor,
         private readonly EventBus $events,
         private readonly TranslatorInterface $translator,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -302,10 +304,7 @@ final class DealController extends Controller
             $stage = 'lead';
         }
 
-        $currency = strtoupper(trim((string) ($data['currency'] ?? 'CZK')));
-        if ($currency === '') {
-            $currency = 'CZK';
-        }
+        $currency = $this->money->code(isset($data['currency']) ? (string) $data['currency'] : null);
 
         $note = trim((string) ($data['note'] ?? ''));
 

@@ -56,7 +56,7 @@
         label: 'shop.field.currency'|trans,
         optional: true,
         form: 'shop.shipping.save',
-        value: item ? item.currency() : 'CZK'
+        value: item ? item.currency() : currency_code()
     } %}
     {% include 'ui/input.html.twig' with {
         name: 'estimated_days',

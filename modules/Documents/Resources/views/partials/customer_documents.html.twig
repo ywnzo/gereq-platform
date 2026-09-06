@@ -6,31 +6,8 @@
         {% endif %}
     </div>
 {% else %}
-    <div class="table-wrap">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>{{ 'documents.field.title'|trans }}</th>
-                    <th>{{ 'documents.field.mime'|trans }}</th>
-                    <th>{{ 'documents.field.created'|trans }}</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for doc in documents %}
-                    <tr>
-                        <td><a href="{{ url('admin.documents.show', {id: doc.id()}) }}">{{ doc.title() }}</a></td>
-                        <td><span class="badge">{{ doc.mime() }}</span></td>
-                        <td>{{ doc.createdAt().format('d. m. Y') }}</td>
-                        <td class="table__actions">
-                            <a href="{{ url('admin.documents.show', {id: doc.id()}) }}">{{ 'common.detail'|trans }}</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <p class="muted">
+    {% include '@documents/partials/document_list.html.twig' with { documents: documents } %}
+    <p class="muted" style="padding:0 14px 12px;margin:0">
         {% if user is defined and user.can('documents.manage') %}
             <a href="{{ url('admin.documents.upload') }}?entity_type=customer&entity_id={{ customer.id() }}">{{ 'documents.partial.add'|trans }}</a>
             ·

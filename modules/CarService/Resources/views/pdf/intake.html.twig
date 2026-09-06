@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <title>Protokol příjmu {{ docNumber }}</title>
+    <style>{% include '@carservice/pdf/_styles.html.twig' %}</style>
+</head>
+<body>
+{% if isPreview|default(false) %}<div class="preview-banner">Náhled · neukládá se do Dokumentů</div>{% endif %}
+
+{% include '@carservice/pdf/_header.html.twig' %}
+
+{% set p = protocol|default({}) %}
+{% set eqChecked = p.equipment|default([]) %}
+{% set svChecked = p.services|default([]) %}
+{% set insp = p.inspection|default({}) %}
+{% set bodyMarks = p.body|default({}) %}
+{% set zonesOn = p.zones|default([]) %}
+{% set axFront = p.axles.front|default({}) %}
+{% set axRear = p.axles.rear|default({}) %}
+
+<table class="w-100" style="border:1px solid #000;margin-bottom:6px">
+    <tr>
+        <td style="width:42%;padding:6px 8px;border-right:1px solid #000;vertical-align:top">
+            <div class="lbl mb-1">Zákazník</div>
+            {% if customer %}
+                <div class="small"><strong>{{ customer.name() }}</strong></div>
+                {% if customer.company() %}<div class="small">{{ customer.company() }}</div>{% endif %}
+                <div class="small">{% if customer.phone() %}{{ customer.phone() }}{% endif %}</div>
+                <div class="small">{% if customer.email() %}{{ customer.email() }}{% endif %}</div>
+            {% else %}
+                <div class="muted">—</div>
+            {% endif %}
+            <div class="small mt-1"><strong>Tým:</strong> {{ order.teamLabel()|trans }}
+                {% if order.externalCost() %} · <strong>Předb. cena:</strong> {{ order.externalCost()|money }}{% endif %}
+            </div>
+        </td>
+        <td style="width:58%;padding:6px 8px;vertical-align:top">
+            <div class="lbl mb-1">Vozidlo</div>
+            <table class="kv">
+                <tr><td class="k">SPZ</td><td class="v">{% if vehicle %}{{ vehicle.plate() }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Značka / typ</td><td class="v">{% if vehicle %}{{ vehicle.brand() }} {{ vehicle.displayModel() }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Stav km</td><td class="v">{% if order.intakeMileage() is not null %}{{ order.intakeMileage()|number_format(0, ',', ' ') }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">VIN</td><td class="v">{% if vehicle and vehicle.vin() %}{{ vehicle.vin() }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Palivo</td><td class="v">{% if vehicle and vehicle.fuel() %}{{ vehicle.fuel() }}{% else %}—{% endif %}</td></tr>
+                <tr><td class="k">Nádrž</td><td class="v">{% if order.intakeFuelLevel() %}{{ ('fleet.fuel_level.' ~ order.intakeFuelLevel())|trans }}{% else %}—{% endif %}</td></tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<table class="w-100" style="border:1px solid #000;margin-bottom:6px">
+    <tr>
+        <td style="width:50%;padding:6px 8px;border-right:1px solid #000;vertical-align:top">
+            <div class="lbl mb-1">Výbava ve vozidle</div>
+            <table class="check-table">
+                <tr>
+                {% for item in equipment|default([]) %}
+                    <td><span class="chk{% if item in eqChecked %} on{% endif %}"></span>{{ item }}</td>
+                    {% if loop.index is even %}</tr><tr>{% endif %}
+                {% endfor %}
+                </tr>
+            </table>
+        </td>
+        <td style="width:50%;padding:6px 8px;vertical-align:top">
+            <div class="lbl mb-1">Služby</div>
+            <table class="check-table">
+                <tr>
+                {% for item in services|default([]) %}
+                    <td><span class="chk{% if item in svChecked %} on{% endif %}"></span>{{ item }}</td>
+                    {% if loop.index is even %}</tr><tr>{% endif %}
+                {% endfor %}
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div class="bar">Kontrola vozidla &nbsp; <span class="muted" style="font-weight:normal">○ kontrola &nbsp; □ udělat</span></div>
+<table class="w-100" style="border:1px solid #000;border-top:none;margin-bottom:6px">
+    <tr>
+        <td style="width:55%;padding:6px 8px;border-right:1px solid #000;vertical-align:top">
+            <table class="check-table">
+                {% for item in inspectionItems|default([]) %}
+                    {% set mark = insp[item]|default('') %}
+                    <tr>
+                        <td style="width:100%">
+                            <span class="chk-round{% if mark == 'ok' %} on{% endif %}"></span><span class="chk{% if mark == 'todo' %} on{% endif %}"></span>{{ item }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+            <div class="lbl mt-2 mb-1">Interiér / karoserie</div>
+            <table class="check-table">
+                {% for item in bodyItems|default([]) %}
+                    {% set mark = bodyMarks[item]|default('') %}
+                    <tr>
+                        <td><span class="chk-round{% if mark == 'ok' %} on{% endif %}"></span><span class="chk{% if mark == 'todo' %} on{% endif %}"></span>{{ item }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </td>
+        <td style="width:45%;padding:6px 8px;vertical-align:top">
+            <div class="lbl mb-1">Zóny poškození karoserie</div>
+            <div class="small muted mb-1">Označte číslo zóny (1–12)</div>
+            <table class="zone-grid w-100">
+                <tr>
+                {% for n, label in zoneLabels|default({}) %}
+                    <td class="{% if n in zonesOn %}on{% endif %}">{{ n }}<br>{{ label }}</td>
+                    {% if n == 6 %}</tr><tr>{% endif %}
+                {% endfor %}
+                </tr>
+            </table>
+            <div class="lbl mt-2 mb-1">Nápravy (○ / □)</div>
+            <table class="w-100 small">
+                <tr>
+                    <td style="width:50%;padding:2px 4px 2px 0;vertical-align:top">
+                        <strong>Přední L / P</strong><br>
+                        {% for key, label in axleItems|default({}) %}
+                            {% set mark = axFront[key]|default('') %}
+                            <span class="chk-round{% if mark == 'ok' %} on{% endif %}"></span><span class="chk{% if mark == 'todo' %} on{% endif %}"></span>{{ label }}<br>
+                        {% endfor %}
+                    </td>
+                    <td style="width:50%;padding:2px 0 2px 4px;vertical-align:top">
+                        <strong>Zadní L / P</strong><br>
+                        {% for key, label in axleItems|default({}) %}
+                            {% set mark = axRear[key]|default('') %}
+                            <span class="chk-round{% if mark == 'ok' %} on{% endif %}"></span><span class="chk{% if mark == 'todo' %} on{% endif %}"></span>{{ label }}<br>
+                        {% endfor %}
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div class="bar">Objednané práce / závada</div>
+<div style="border:1px solid #000;border-top:none;padding:8px;min-height:48px" class="small">
+    {{ order.serviceInfo()|default('')|nl2br }}
+    {% if not order.serviceInfo() %}
+        <div class="note-line"></div>
+        <div class="note-line"></div>
+        <div class="note-line"></div>
+    {% endif %}
+</div>
+
+{% include '@carservice/pdf/_footer.html.twig' %}
+</body>
+</html>

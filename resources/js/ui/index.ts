@@ -1,6 +1,6 @@
 import type Alpine from '@alpinejs/csp';
 import { registerAres } from './ares';
-import { registerCmsBlockForm } from './cmsBlockForm';
+import { registerCmsBlockForm } from '../../../modules/Cms/Resources/assets/js/cmsBlockForm';
 import { registerPassword, registerSwitch, registerTableToggle, registerTextarea } from './controls';
 import { registerDrawer } from './drawer';
 import { registerEditor } from './editor';
@@ -14,13 +14,21 @@ import { registerTabs } from './tabs';
 import { registerSettingsBrandPreview } from './settingsBrandPreview';
 import { registerColorField } from './colorField';
 import { registerBrandAsset } from './brandAsset';
+import { registerBsMarket } from '../../../modules/BikeService/Resources/assets/js/bsMarket';
+import { registerSeOffersHover } from '../../../modules/SearchEngines/Resources/assets/js/seOffersHover';
+import { registerSeSearch } from '../../../modules/SearchEngines/Resources/assets/js/seSearch';
 import { registerCssEditor } from './cssEditor';
 import { registerDashboardSettings } from './dashboardSettings';
-import { registerCalendarBoard } from './calendarBoard';
-import { registerFleetBrandCatalog } from './fleetBrandCatalog';
+import { registerCalendarBoard } from '../../../modules/Calendar/Resources/assets/js/calendarBoard';
+import { registerFleetBrandCatalog } from '../../../modules/Fleet/Resources/assets/js/fleetBrandCatalog';
 import { registerChart } from './chart';
+import { registerPageProgress } from './pageProgress';
+import { registerFile } from './file';
+import { registerCustomerEdit } from '../../../modules/Customers/Resources/assets/js/customerEdit';
+import { registerPcOemMarket } from '../../../modules/PartsCatalog/Resources/assets/js/pcOemMarket';
 
 export function registerUi(alpine: typeof Alpine): void {
+    registerPageProgress();
     registerSelect(alpine);
     registerModal(alpine);
     registerPopover(alpine);
@@ -37,6 +45,11 @@ export function registerUi(alpine: typeof Alpine): void {
     registerSettingsBrandPreview(alpine);
     registerColorField(alpine);
     registerBrandAsset(alpine);
+    registerBsMarket(alpine);
+    registerSeOffersHover(alpine);
+    registerSeSearch(alpine);
+    registerPcOemMarket(alpine);
+    registerFile(alpine);
     registerCssEditor(alpine);
     registerDashboardSettings(alpine);
     registerCalendarBoard(alpine);
@@ -45,4 +58,5 @@ export function registerUi(alpine: typeof Alpine): void {
     registerModuleTable(alpine);
     registerFleetBrandCatalog(alpine);
     registerChart(alpine);
+    registerCustomerEdit(alpine);
 }

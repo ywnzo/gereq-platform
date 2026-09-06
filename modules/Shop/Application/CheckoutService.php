@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Event\EventBus;
 use Gereq\Module\CapabilityRegistry;
 use Gereq\Setting\Settings;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Coupons\Application\CouponsProvider;
 use Modules\Coupons\Domain\Coupon;
 use Modules\Customers\Application\StoreAuthService;
@@ -34,6 +35,7 @@ final class CheckoutService
         private readonly CapabilityRegistry $capabilities,
         private readonly CartService $carts,
         private readonly ContainerInterface $container,
+        private readonly CurrencyBuilder $money,
     ) {
     }
 
@@ -435,7 +437,7 @@ final class CheckoutService
                 'type' => null,
                 'provider' => null,
                 'fee' => '0.00',
-                'currency' => 'CZK',
+                'currency' => $this->money->defaultCode(),
                 'instructions' => null,
             ];
         }

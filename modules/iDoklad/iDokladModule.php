@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\iDoklad;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\CommandPalette\PaletteCommand;
 use Gereq\Admin\Menu\MenuItem;
+use Gereq\Auth\Authenticator;
+use Gereq\Hook\HookPriority;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
+use Modules\Customers\Domain\Customer;
 use Modules\iDoklad\Application\Widgets\iDokladShortcutWidget;
 use Modules\iDoklad\Application\iDokladService;
+use Modules\iDoklad\Domain\iDokladLink;
+use Modules\iDoklad\Http\iDokladCustomerController;
 use Modules\iDoklad\Http\iDokladSettingsController;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -25,7 +31,7 @@ final class iDokladModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.1.8';
     }
 
     public function register(ModuleContext $context): void
@@ -51,6 +57,16 @@ final class iDokladModule implements ModuleInterface
             $routes->post('/sync', [iDokladSettingsController::class, 'sync'])
                 ->name('admin.idoklad.sync')
                 ->permission('idoklad.sync');
+
+            $routes->post('/customers/{id}/sync', [iDokladCustomerController::class, 'sync'])
+                ->name('admin.idoklad.customers.sync')
+                ->permission('idoklad.manage');
+            $routes->post('/customers/{id}/attach', [iDokladCustomerController::class, 'attach'])
+                ->name('admin.idoklad.customers.attach')
+                ->permission('idoklad.manage');
+            $routes->post('/customers/{id}/unlink', [iDokladCustomerController::class, 'unlink'])
+                ->name('admin.idoklad.customers.unlink')
+                ->permission('idoklad.manage');
         }, ['middleware' => ['auth']]);
     }
 
@@ -80,5 +96,74 @@ final class iDokladModule implements ModuleInterface
             permission: 'idoklad.view',
             keywords: ['idoklad', 'iDoklad', 'faktura', 'účetnictví', 'invoice'],
         ));
+
+        $this->registerCustomerHooks($context);
+    }
+
+    private function registerCustomerHooks(ModuleContext $context): void
+    {
+        if (!class_exists(Customer::class)) {
+            return;
+        }
+
+        $em = $context->get(EntityManagerInterface::class);
+        $twig = $context->get(Environment::class);
+        $auth = $context->get(Authenticator::class);
+        $idoklad = $context->get(iDokladService::class);
+
+        $context->hooks()->addFilter(
+            'customers.show.sections',
+            static function (array $sections, Customer $customer) use ($twig, $auth, $idoklad): array {
+                if ($auth->user() === null || !$auth->user()->can('idoklad.view')) {
+                    return $sections;
+                }
+
+                $link = $idoklad->findLink('customer', $customer->id(), 'contact');
+                $remote = null;
+                if ($link !== null && $idoklad->isEnabled()) {
+                    $partnerId = (int) $link->iDokladId();
+                    if ($partnerId > 0) {
+                        try {
+                            $remote = $idoklad->getContact($partnerId);
+                            if (empty($remote['isSucceed'])) {
+                                $remote = null;
+                            }
+                        } catch (\Throwable) {
+                            $remote = null;
+                        }
+                    }
+                }
+
+                $sections[] = [
+                    'id' => 'idoklad.partner',
+                    'label' => 'idoklad.customer.section_title',
+                    'order' => 90,
+                    'html' => $twig->render('@idoklad/partials/customer_partner.html.twig', [
+                        'customer' => $customer,
+                        'user' => $auth->user(),
+                        'enabled' => $idoklad->isEnabled(),
+                        'link' => $link,
+                        'remote' => $remote,
+                    ]),
+                ];
+
+                return $sections;
+            },
+            HookPriority::NORMAL,
+        );
+
+        $context->hooks()->addAction(
+            'customers.deleting',
+            static function (Customer $customer) use ($em): void {
+                $links = $em->getRepository(iDokladLink::class)->findBy([
+                    'entityType' => 'customer',
+                    'entityId' => $customer->id(),
+                ]);
+                foreach ($links as $link) {
+                    $em->remove($link);
+                }
+            },
+            HookPriority::EARLY,
+        );
     }
 }

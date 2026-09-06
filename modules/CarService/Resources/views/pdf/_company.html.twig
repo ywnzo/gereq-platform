@@ -1,0 +1,28 @@
+{# Dodavatel — očekává company: name, address, ico, dic, email, phone, web, iban, bank #}
+<div class="company-name">{{ company.name|default(appName) }}</div>
+<div class="small">
+    {% if company.address %}<div>{{ company.address }}</div>{% endif %}
+    {% if company.ico or company.dic %}
+        <div>
+            {% if company.ico %}<strong>IČO:</strong> {{ company.ico }}{% endif %}
+            {% if company.ico and company.dic %} &nbsp; {% endif %}
+            {% if company.dic %}<strong>DIČ:</strong> {{ company.dic }}{% endif %}
+            {% if company.vat_payer|default(true) %} &nbsp; Plátce DPH{% endif %}
+        </div>
+    {% endif %}
+    {% if company.phone or company.email or company.web %}
+        <div>
+            {% if company.phone %}<strong>Tel:</strong> {{ company.phone }}{% endif %}
+            {% if company.phone and company.email %} · {% endif %}
+            {% if company.email %}<strong>E-mail:</strong> {{ company.email }}{% endif %}
+            {% if (company.phone or company.email) and company.web %} · {% endif %}
+            {% if company.web %}<strong>Web:</strong> {{ company.web }}{% endif %}
+        </div>
+    {% endif %}
+    {% if company.iban or company.bank %}
+        <div>
+            {% if company.iban %}<strong>IBAN:</strong> {{ company.iban }}{% endif %}
+            {% if company.bank %}{% if company.iban %} · {% endif %}<strong>Banka:</strong> {{ company.bank }}{% endif %}
+        </div>
+    {% endif %}
+</div>

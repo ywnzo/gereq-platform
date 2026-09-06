@@ -6,16 +6,26 @@
         <span class="brand-asset__empty" x-show="!preview" x-cloak>{{ icon('image') }}</span>
     </div>
     <div class="brand-asset__fields">
-        <label class="brand-asset__upload btn btn--ghost">
+        <div class="g-file g-file--compact brand-asset__drop">
             <input
                 type="file"
                 name="{{ fileInput }}"
                 accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,.ico"
-                class="brand-asset__file"
+                class="g-file__input"
+                id="{{ fileInput }}"
                 @change="onFile($event)"
             >
-            <span x-text="fileName ? fileName : '{{ 'settings.brand.upload'|trans|e('js') }}'"></span>
-        </label>
+            <div class="g-file__shell" :class="fileName ? 'is-filled' : ''">
+                <label class="g-file__box" for="{{ fileInput }}">
+                    <span class="g-file__icon" aria-hidden="true">{{ icon('upload') }}</span>
+                    <span class="g-file__copy">
+                        <span class="g-file__title" x-text="fileName ? fileName : '{{ 'settings.brand.upload'|trans|e('js') }}'">{{ 'settings.brand.upload'|trans }}</span>
+                        <span class="g-file__meta">{{ 'settings.brand.upload_or_url'|trans }}</span>
+                    </span>
+                    <span class="g-file__browse" x-show="!fileName">{{ 'ui.file.browse'|trans }}</span>
+                </label>
+            </div>
+        </div>
         <input
             class="input"
             type="text"

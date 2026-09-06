@@ -32,10 +32,18 @@ final class HttpJsonClient
             $payload = $body;
         }
 
-        $headerLines = array_merge([
-            'Accept: application/json',
-            'User-Agent: ' . self::UA,
-        ], $headers);
+        $hasAccept = false;
+        foreach ($headers as $header) {
+            if (stripos($header, 'Accept:') === 0) {
+                $hasAccept = true;
+                break;
+            }
+        }
+        $headerLines = array_merge(
+            $hasAccept ? [] : ['Accept: application/json'],
+            ['User-Agent: ' . self::UA],
+            $headers,
+        );
         if ($payload !== null) {
             $headerLines[] = 'Content-Type: ' . $contentType;
         }

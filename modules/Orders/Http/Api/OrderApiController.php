@@ -11,6 +11,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
+use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Customers\Domain\Customer;
 use Modules\Orders\Application\NumberSequencer;
 use Modules\Orders\Application\OrderTotals;
@@ -30,6 +31,7 @@ final class OrderApiController extends Controller
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
         private readonly NumberSequencer $numbers,
+        private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -59,7 +61,7 @@ final class OrderApiController extends Controller
         if (!$this->em->find(Customer::class, $customerId) instanceof Customer) {
             return ApiResponse::error('validation_error', 'Invalid customer', ['customer_id' => 'not_found'], 422);
         }
-        $order = new Order($customerId, $this->numbers->nextOrderNumber(), strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK');
+        $order = new Order($customerId, $this->numbers->nextOrderNumber(), $this->money->code(isset($data['currency']) ? (string) $data['currency'] : null));
         $order->setNote(trim((string) ($data['note'] ?? '')) ?: null);
         $this->em->persist($order);
         $this->em->flush();
@@ -96,7 +98,7 @@ final class OrderApiController extends Controller
             return ApiResponse::error('validation_error', 'Invalid customer', ['customer_id' => 'not_found'], 422);
         }
         $order->setCustomerId($customerId);
-        $order->setCurrency(strtoupper(trim((string) ($data['currency'] ?? 'CZK'))) ?: 'CZK');
+        $order->setCurrency($this->money->code(isset($data['currency']) ? (string) $data['currency'] : null));
         $order->setNote(trim((string) ($data['note'] ?? '')) ?: null);
         $this->em->flush();
         $payload = $this->serialize($order);
