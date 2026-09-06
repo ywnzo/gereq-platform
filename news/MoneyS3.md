@@ -1,1 +1,0 @@
-# MoneyS3 máme
