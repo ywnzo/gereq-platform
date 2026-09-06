@@ -12,6 +12,7 @@ final class ModuleManifest
      * @param list<string> $provides
      * @param list<string> $capabilities
      * @param list<array{name: string, label: string, group: string}> $permissions
+     * @param list<string> $groups
      */
     public function __construct(
         public readonly string $id,
@@ -26,6 +27,7 @@ final class ModuleManifest
         public readonly array $capabilities = [],
         public readonly array $permissions = [],
         public readonly string $author = 'GEREQ',
+        public readonly array $groups = [],
     ) {
     }
 
@@ -37,6 +39,15 @@ final class ModuleManifest
 
         if ($id === '' || $class === '') {
             throw new \InvalidArgumentException('Manifest modulu musí obsahovat id a class.');
+        }
+
+        $groups = [];
+        if (is_array($data['groups'] ?? null)) {
+            foreach ($data['groups'] as $g) {
+                if (is_string($g) && trim($g) !== '') {
+                    $groups[] = trim($g);
+                }
+            }
         }
 
         return new self(
@@ -52,6 +63,7 @@ final class ModuleManifest
             capabilities: array_values($data['capabilities'] ?? []),
             permissions: array_values($data['permissions'] ?? []),
             author: (string) ($data['author'] ?? 'GEREQ'),
+            groups: array_values(array_unique($groups)),
         );
     }
 }

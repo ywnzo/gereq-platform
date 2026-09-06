@@ -44,6 +44,89 @@
         </div>
     </div>
 
+    {% if groups is defined and groups is not empty %}
+    <section class="module-groups" aria-label="{{ 'admin.modules.groups'|trans }}">
+        <header class="module-groups__intro">
+            <h2>{{ 'admin.modules.groups'|trans }}</h2>
+            <p class="muted">{{ 'admin.modules.groups.hint'|trans }}</p>
+        </header>
+        {% for group in groups %}
+            {% set pct = group.total > 0 ? ((group.enabled / group.total) * 100)|round : 0 %}
+            <details class="module-group{% if group.all_enabled %} is-ready{% elseif not group.complete %} is-incomplete{% endif %}">
+                <summary class="module-group__summary">
+                    <span class="module-group__lead">
+                        <span class="module-group__chevron" aria-hidden="true"></span>
+                        <span class="module-group__identity">
+                            <span class="module-group__chip">{{ group.name }}</span>
+                            <span class="module-group__copy">
+                                <span class="module-group__title">{{ group.label|trans }}</span>
+                                <span class="module-group__status">
+                                    <span class="module-group__count">{{ 'admin.modules.group.progress'|trans({'%enabled%': group.enabled, '%total%': group.total}) }}</span>
+                                    {% if group.all_enabled %}
+                                        <span class="badge badge--ok">{{ 'admin.modules.group.ready'|trans }}</span>
+                                    {% elseif group.complete %}
+                                        <span class="badge badge--warn">{{ 'admin.modules.group.partial'|trans }}</span>
+                                    {% else %}
+                                        <span class="badge badge--muted">{{ 'admin.modules.group.incomplete'|trans }}</span>
+                                    {% endif %}
+                                </span>
+                            </span>
+                        </span>
+                    </span>
+                    <span class="module-group__cta">
+                        {% if not group.all_enabled and group.disabled_ids is not empty %}
+                            <form method="post" action="{{ url('admin.modules.group.enable', {group: group.id}) }}" onclick="event.stopPropagation()">
+                                {{ csrf_field()|raw }}
+                                <button
+                                    type="submit"
+                                    class="btn btn--primary btn-sm"
+                                    onclick="event.stopPropagation(); return confirm('{{ 'admin.modules.group.confirm_enable'|trans({'%name%': group.name, '%count%': group.disabled_ids|length})|e('js') }}')"
+                                >{{ 'admin.modules.group.enable_all'|trans }}</button>
+                            </form>
+                        {% else %}
+                            <span class="module-group__cta-done">{{ 'admin.modules.group.all_on'|trans }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="module-group__meter" aria-hidden="true"><span style="width: {{ pct }}%"></span></span>
+                </summary>
+                <div class="module-group__body">
+                    {% if group.description %}
+                        <p class="module-group__desc">{{ group.description|trans }}</p>
+                    {% endif %}
+                    <ul class="module-group__list">
+                        {% for m in group.modules %}
+                            {% set row = m.row %}
+                            <li class="module-group__row{% if m.missing %} is-missing{% endif %}{% if row and row.enabled %} is-on{% endif %}">
+                                <div class="module-group__row-main">
+                                    {% if row %}
+                                        <a class="module-group__row-name" href="{{ url('admin.modules.show', {id: m.id}) }}">{{ row.manifest.name }}</a>
+                                        <code class="module-group__row-id">{{ m.id }}</code>
+                                    {% else %}
+                                        <span class="module-group__row-name">{{ m.id }}</span>
+                                        <span class="badge badge--danger">{{ 'admin.modules.group.module_missing'|trans }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="module-group__row-meta">
+                                    <span class="module-group__role{% if m.role == 'required' %} is-required{% endif %}">
+                                        {{ m.role == 'required' ? 'admin.modules.group.role.required'|trans : 'admin.modules.group.role.recommended'|trans }}
+                                    </span>
+                                    {% if row %}
+                                        {% if row.enabled %}
+                                            <span class="badge badge--ok">{{ 'common.enabled'|trans }}</span>
+                                        {% else %}
+                                            <span class="badge badge--muted">{{ 'common.disabled'|trans }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </details>
+        {% endfor %}
+    </section>
+    {% endif %}
+
     <div class="toolbar--table">
         <form class="toolbar" method="get" @submit.prevent>
             <input
@@ -116,7 +199,7 @@
                             <input
                                 type="checkbox"
                                 x-ref="selectAll"
-                                @change="toggleAll"
+                                @click.prevent="toggleAll"
                                 :checked="allSelected"
                             >
                             <span class="sr-only">{{ 'admin.modules.bulk.select_all'|trans }}</span>
@@ -150,7 +233,7 @@
                                 <input
                                     type="checkbox"
                                     value="{{ manifest.id }}"
-                                    @change="toggleId('{{ manifest.id }}')"
+                                    @click.prevent="toggleId('{{ manifest.id }}')"
                                     :checked="isSelected('{{ manifest.id }}')"
                                 >
                                 <span class="sr-only">{{ manifest.name }}</span>

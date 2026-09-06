@@ -23,11 +23,14 @@ use Gereq\Admin\Http\Developer\DeveloperController;
 use Gereq\Admin\Http\ModuleController;
 use Gereq\Admin\Http\ProfileController;
 use Gereq\Admin\Http\RoleController;
+use Gereq\Admin\Http\SearchController;
 use Gereq\Admin\Http\SettingsController;
 use Gereq\Admin\Http\SetupController;
 use Gereq\Admin\Http\UserController;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Menu\MenuItem;
+use Gereq\Admin\Search\AdminSearchHit;
+use Gereq\Admin\Search\AdminSearchRegistry;
 use Gereq\Api\HealthController;
 use Gereq\Api\OpenApiController;
 use Gereq\Api\PublicBrandingController;
@@ -53,6 +56,7 @@ final class CoreRegistrar
         private readonly PermissionRegistry $permissions,
         private readonly Settings $settings,
         private readonly CommandPalette $palette,
+        private readonly AdminSearchRegistry $adminSearch,
         private readonly ValidationRegistry $validation,
         private readonly LocaleCatalog $locales,
         private readonly Dashboard $dashboard,
@@ -72,6 +76,7 @@ final class CoreRegistrar
         $this->routes();
         $this->menu();
         $this->commands();
+        $this->adminSearch();
         $this->dashboard();
     }
 
@@ -195,6 +200,7 @@ final class CoreRegistrar
 
             $router->get('/modules', [ModuleController::class, 'index'])->name('admin.modules.index')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/bulk', [ModuleController::class, 'bulk'])->name('admin.modules.bulk')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/groups/{group}/enable', [ModuleController::class, 'enableGroup'])->name('admin.modules.group.enable')->middleware('auth')->permission('modules.manage');
             $router->get('/modules/{id}', [ModuleController::class, 'show'])->name('admin.modules.show')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/enable', [ModuleController::class, 'enable'])->name('admin.modules.enable')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/disable', [ModuleController::class, 'disable'])->name('admin.modules.disable')->middleware('auth')->permission('modules.manage');
@@ -216,6 +222,7 @@ final class CoreRegistrar
 
             $router->get('/ares/subjects', [AresController::class, 'subjects'])->name('admin.ares.subjects')->middleware('auth');
             $router->get('/ares/addresses', [AresController::class, 'addresses'])->name('admin.ares.addresses')->middleware('auth');
+            $router->get('/search', SearchController::class)->name('admin.search')->middleware('auth');
         });
 
         $this->router->get('/api/v1/health', [HealthController::class, 'show'])->name('api.health');
@@ -257,6 +264,41 @@ final class CoreRegistrar
         $this->palette->add(new PaletteCommand('go-settings', 'palette.go_settings', '/admin/settings', 'settings', 'settings.manage', keywords: ['konfigurace', 'settings']));
         $this->palette->add(new PaletteCommand('go-profile', 'palette.go_profile', '/admin/profile', 'user'));
         $this->palette->add(new PaletteCommand('logout', 'palette.logout', '/admin/logout', 'logout', group: 'Účet'));
+    }
+
+    private function adminSearch(): void
+    {
+        $em = $this->em;
+        $this->adminSearch->add(
+            'users',
+            'user.id, user.name, user.email',
+            static function (string $q, int $limit) use ($em): array {
+                $qb = $em->getRepository(\Gereq\User\Entity\User::class)
+                    ->createQueryBuilder('u')
+                    ->orderBy('u.name', 'ASC')
+                    ->setMaxResults($limit);
+                self_repair_search($qb, 'u', ['id', 'name', 'email'], $q);
+                /** @var list<\Gereq\User\Entity\User> $users */
+                $users = $qb->getQuery()->getResult();
+                $hits = [];
+                foreach ($users as $user) {
+                    $hits[] = new AdminSearchHit(
+                        id: 'user.' . $user->id(),
+                        label: $user->name(),
+                        url: '/admin/users/' . $user->id() . '/edit',
+                        group: 'nav.users',
+                        subtitle: $user->email(),
+                        icon: 'user',
+                        keywords: [$user->id(), $user->email()],
+                    );
+                }
+
+                return $hits;
+            },
+            permission: 'users.view',
+            group: 'nav.users',
+            icon: 'users',
+        );
     }
 
     private function dashboard(): void

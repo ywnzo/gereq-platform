@@ -14,6 +14,7 @@ return [
         'customers' => '^1.0',
     ],
     'optional' => [],
+    'groups' => ['ecs'],
     'provides' => [],
     'capabilities' => [],
     'permissions' => [

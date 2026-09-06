@@ -15,6 +15,7 @@ return [
     'optional' => [
         'notifications' => '^1.0',
     ],
+    'groups' => ['ecs'],
     'provides' => ['contacts'],
     'capabilities' => ['contacts'],
     'permissions' => [

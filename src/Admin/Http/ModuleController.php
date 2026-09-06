@@ -9,6 +9,7 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Module\ModuleGroupCatalog;
 use Gereq\Module\ModuleInspector;
 use Gereq\Module\ModuleManager;
 use Gereq\Module\ModuleUpdater;
@@ -30,6 +31,7 @@ final class ModuleController extends Controller
         private readonly ModuleManager $modules,
         private readonly ModuleInspector $inspector,
         private readonly ModuleUpdater $updater,
+        private readonly ModuleGroupCatalog $groups,
         private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -62,10 +64,15 @@ final class ModuleController extends Controller
         });
 
         $updates = count(array_filter($items, static fn (array $row): bool => $row['update_available']));
+        $byId = [];
+        foreach ($items as $row) {
+            $byId[$row['manifest']->id] = $row;
+        }
 
         return $this->page('admin/modules/index.html.twig', [
             'pageTitle' => $this->translator->trans('admin.modules.title'),
             'items' => $items,
+            'groups' => $this->groups->forIndex($byId),
             'stats' => [
                 'total' => count($items),
                 'enabled' => count(array_filter($items, static fn (array $row): bool => $row['enabled'])),
@@ -131,6 +138,53 @@ final class ModuleController extends Controller
         }
 
         return $this->modulesReturnRedirect($id);
+    }
+
+    public function enableGroup(string $group): Response
+    {
+        if (!$this->groups->has($group)) {
+            $this->flash('error', $this->translator->trans('admin.modules.group.not_found'));
+
+            return $this->redirect('admin.modules.index');
+        }
+
+        try {
+            $ids = $this->groups->enableOrder($group);
+        } catch (\Throwable $e) {
+            $this->flash('error', $this->translator->trans($e->getMessage()));
+
+            return $this->redirect('admin.modules.index');
+        }
+
+        $ok = 0;
+        $skipped = 0;
+        $errors = [];
+        foreach ($ids as $id) {
+            if ($this->modules->isEnabled($id)) {
+                ++$skipped;
+                continue;
+            }
+            try {
+                $this->modules->enable($id);
+                ++$ok;
+            } catch (\Throwable $e) {
+                $errors[] = $id . ': ' . $e->getMessage();
+            }
+        }
+
+        if ($ok > 0) {
+            $this->flash('success', $this->translator->trans('admin.modules.group.enabled', [
+                '%count%' => $ok,
+                '%group%' => $group,
+            ]));
+        } elseif ($skipped > 0 && $errors === []) {
+            $this->flash('success', $this->translator->trans('admin.modules.group.already_enabled'));
+        }
+        if ($errors !== []) {
+            $this->flash('error', implode(' · ', array_slice($errors, 0, 5)));
+        }
+
+        return $this->redirect('admin.modules.index');
     }
 
     public function bulk(Request $request): Response

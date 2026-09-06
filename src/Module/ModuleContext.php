@@ -8,6 +8,7 @@ use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Dashboard\Dashboard;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Resource\ResourceRegistrar;
+use Gereq\Admin\Search\AdminSearchRegistry;
 use Gereq\Api\ApiRegistry;
 use Gereq\Config\Repository;
 use Gereq\Event\EventBus;
@@ -32,6 +33,7 @@ final class ModuleContext
         private readonly Settings $settings,
         private readonly Dashboard $dashboard,
         private readonly CommandPalette $commandPalette,
+        private readonly AdminSearchRegistry $adminSearch,
         private readonly ResourceRegistrar $resources,
         private readonly Repository $config,
         private readonly ApiRegistry $api,
@@ -107,6 +109,11 @@ final class ModuleContext
     public function commandPalette(): CommandPalette
     {
         return $this->commandPalette;
+    }
+
+    public function adminSearch(): AdminSearchRegistry
+    {
+        return $this->adminSearch;
     }
 
     public function resources(): ResourceRegistrar

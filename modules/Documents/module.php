@@ -9,6 +9,7 @@ return [
     'author' => 'GEREQ',
     'requires' => ['core' => '^1.0'],
     'optional' => [],
+    'groups' => ['ecs'],
     'provides' => ['documents'],
     'capabilities' => ['documents'],
     'permissions' => [

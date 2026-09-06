@@ -9,6 +9,7 @@ return [
     'author' => 'GEREQ',
     'requires' => ['core' => '^1.0', 'crm' => '^1.0'],
     'optional' => ['projects' => '^1.0', 'notifications' => '^1.0'],
+    'groups' => ['ecs'],
     'provides' => ['calendar'],
     'capabilities' => ['calendar'],
     'permissions' => [

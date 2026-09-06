@@ -10,12 +10,15 @@ type PaletteCommand = {
     permission?: string | null;
     keywords?: string[];
     group?: string;
+    subtitle?: string | null;
+    kind?: 'command' | 'hit';
 };
 
 declare global {
     interface Window {
         __GEREQ_COMMANDS__: PaletteCommand[];
         __GEREQ_CSRF__: string;
+        __GEREQ_SEARCH_URL__?: string;
         Alpine: typeof Alpine;
     }
 }
@@ -27,7 +30,11 @@ Alpine.data('gereqAdmin', () => ({
     userOpen: false,
     query: '',
     commands: window.__GEREQ_COMMANDS__ ?? [],
+    liveHits: [] as PaletteCommand[],
+    searchLoading: false,
     visibleCommands: [] as PaletteCommand[],
+    _searchTimer: null as ReturnType<typeof setTimeout> | null,
+    _searchAbort: null as AbortController | null,
 
     init() {
         this.refreshCommands();
@@ -106,6 +113,11 @@ Alpine.data('gereqAdmin', () => ({
 
     closePalette() {
         this.paletteOpen = false;
+        this._searchAbort?.abort();
+        if (this._searchTimer) {
+            clearTimeout(this._searchTimer);
+            this._searchTimer = null;
+        }
     },
 
     toggleUserMenu() {
@@ -129,14 +141,85 @@ Alpine.data('gereqAdmin', () => ({
     refreshCommands() {
         const q = this.query.trim().toLowerCase();
         if (!q) {
+            this.liveHits = [];
+            this.searchLoading = false;
             this.visibleCommands = this.commands;
+            this._searchAbort?.abort();
+            if (this._searchTimer) {
+                clearTimeout(this._searchTimer);
+                this._searchTimer = null;
+            }
             return;
         }
 
-        this.visibleCommands = this.commands.filter((command: PaletteCommand) => {
+        const staticHits = this.commands.filter((command: PaletteCommand) => {
             const haystack = [command.label, command.group, ...(command.keywords ?? [])].join(' ').toLowerCase();
             return haystack.includes(q);
         });
+        this.visibleCommands = [...staticHits, ...this.liveHits];
+
+        if (this._searchTimer) {
+            clearTimeout(this._searchTimer);
+        }
+        this._searchTimer = setTimeout(() => {
+            void this.fetchLiveHits(q);
+        }, 220);
+    },
+
+    async fetchLiveHits(q: string) {
+        const url = window.__GEREQ_SEARCH_URL__;
+        if (!url || q.length < 2) {
+            this.liveHits = [];
+            this.mergeVisible();
+            return;
+        }
+        this._searchAbort?.abort();
+        const abort = new AbortController();
+        this._searchAbort = abort;
+        this.searchLoading = true;
+        try {
+            const res = await fetch(`${url}?q=${encodeURIComponent(q)}`, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+                signal: abort.signal,
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+            const json = await res.json();
+            const results = Array.isArray(json.results) ? json.results : [];
+            this.liveHits = results.map((row: Record<string, unknown>) => ({
+                id: String(row.id ?? ''),
+                label: String(row.label ?? ''),
+                url: String(row.url ?? '#'),
+                group: String(row.group ?? ''),
+                subtitle: row.subtitle != null ? String(row.subtitle) : null,
+                icon: row.icon != null ? String(row.icon) : null,
+                keywords: Array.isArray(row.keywords) ? (row.keywords as string[]) : [],
+                kind: 'hit' as const,
+            }));
+        } catch (err) {
+            if ((err as Error).name === 'AbortError') {
+                return;
+            }
+            this.liveHits = [];
+        } finally {
+            this.searchLoading = false;
+            this.mergeVisible();
+        }
+    },
+
+    mergeVisible() {
+        const q = this.query.trim().toLowerCase();
+        if (!q) {
+            this.visibleCommands = this.commands;
+            return;
+        }
+        const staticHits = this.commands.filter((command: PaletteCommand) => {
+            const haystack = [command.label, command.group, ...(command.keywords ?? [])].join(' ').toLowerCase();
+            return haystack.includes(q);
+        });
+        this.visibleCommands = [...staticHits, ...this.liveHits];
     },
 
     onCommandClick(event: Event) {
@@ -352,4 +435,5 @@ Alpine.data('dataTable', () => ({
 
 registerUi(Alpine);
 
+window.Alpine = Alpine;
 Alpine.start();

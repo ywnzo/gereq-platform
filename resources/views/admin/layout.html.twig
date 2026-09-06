@@ -87,16 +87,23 @@
         <div class="palette" :class="paletteClass">
             <div class="palette__backdrop" @click="closePalette"></div>
             <div class="palette__panel">
-                <input type="search" class="palette__input" placeholder="{{ 'ui.palette.placeholder'|trans }}" x-model="query" @input="refreshCommands" x-ref="paletteInput">
+                <input type="search" class="palette__input" placeholder="{{ 'ui.palette.placeholder'|trans }}" x-model="query" @input="refreshCommands" x-ref="paletteInput" autocomplete="off">
+                <p class="palette__hint" x-show="searchLoading" x-cloak>{{ 'ui.palette.searching'|trans }}</p>
                 <ul class="palette__list">
                     <template x-for="command in visibleCommands" :key="command.id">
                         <li>
-                            <a :href="command.url" class="palette__item" :data-command="command.id" @click="onCommandClick">
-                                <span x-text="command.label"></span>
+                            <a :href="command.url" class="palette__item" :class="command.kind === 'hit' ? 'is-hit' : ''" :data-command="command.id" @click="onCommandClick">
+                                <span class="palette__main">
+                                    <span class="palette__label" x-text="command.label"></span>
+                                    <span class="palette__sub" x-show="command.subtitle" x-text="command.subtitle"></span>
+                                </span>
                                 <span class="palette__group" x-text="command.group"></span>
                             </a>
                         </li>
                     </template>
+                    <li class="palette__empty" x-show="query.trim().length >= 2 && !searchLoading && visibleCommands.length === 0" x-cloak>
+                        <span>{{ 'ui.palette.empty'|trans }}</span>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -125,6 +132,7 @@
         ];
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
+        window.__GEREQ_SEARCH_URL__ = {{ url('admin.search')|json_encode|raw }};
     </script>
     {% if not vite_hot() %}
         <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>

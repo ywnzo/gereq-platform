@@ -16,6 +16,7 @@ return [
         'customers' => '^1.0',
         'orders' => '^1.0',
     ],
+    'groups' => ['ecs'],
     'provides' => ['idoklad'],
     'capabilities' => ['idoklad'],
     'permissions' => [

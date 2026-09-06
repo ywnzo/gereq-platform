@@ -198,6 +198,31 @@ final class CustomersModule implements ModuleInterface
             group: 'Akce',
         ));
 
+        $customers = new CustomersProvider($em);
+        $context->adminSearch()->add(
+            'customers',
+            'customer.id, customer.name, customer.email, customer.company',
+            static function (string $q, int $limit) use ($customers): array {
+                $hits = [];
+                foreach ($customers->search($q, $limit) as $contact) {
+                    $hits[] = new \Gereq\Admin\Search\AdminSearchHit(
+                        id: 'customer.' . $contact->id,
+                        label: $contact->name,
+                        url: '/admin/customers/' . $contact->id,
+                        group: 'nav.customers',
+                        subtitle: $contact->email ?: $contact->company,
+                        icon: 'users',
+                        keywords: array_values(array_filter([$contact->email, $contact->company])),
+                    );
+                }
+
+                return $hits;
+            },
+            permission: 'customers.view',
+            group: 'nav.customers',
+            icon: 'users',
+        );
+
         $this->registerValidation($context);
         $this->registerHooks($context);
     }
