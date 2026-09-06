@@ -103,6 +103,8 @@
                                             {% include 'admin/settings/_css_editor.html.twig' %}
                                         {% elseif key == 'admin.dashboard.layout' %}
                                             {% include 'admin/settings/_dashboard_widgets.html.twig' %}
+                                        {% elseif definition.type == 'json' %}
+                                            <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ values[key]|json_encode }}</textarea>
                                         {% else %}
                                             <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}"
                                                 {% if groupId == 'brand' %}@input="touch"{% endif %}>
