@@ -49,10 +49,11 @@ final class StripeGateway implements PaymentGatewayInterface
         $cents = max(1, (int) round(((float) $intent->amount()) * 100));
         $currency = strtolower($intent->currency());
 
+        // Browser return must not hit the signed webhook endpoint — status is applied only via Stripe-Signature.
         $params = [
             'mode' => 'payment',
-            'success_url' => $returnBase . '/api/v1/payments/notify/stripe?session_id={CHECKOUT_SESSION_ID}&result=success',
-            'cancel_url' => $returnBase . '/api/v1/payments/notify/stripe?session_id={CHECKOUT_SESSION_ID}&result=cancel',
+            'success_url' => $returnBase . '/checkout/result?provider=stripe&result=success&session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => $returnBase . '/checkout/result?provider=stripe&result=cancel&session_id={CHECKOUT_SESSION_ID}',
             'client_reference_id' => mb_substr($orderNumber, 0, 200),
             'line_items[0][quantity]' => '1',
             'line_items[0][price_data][currency]' => $currency,
@@ -108,83 +109,57 @@ final class StripeGateway implements PaymentGatewayInterface
         ];
     }
 
+    /**
+     * Map a verified Stripe webhook event to payment status.
+     * Caller must pass only payloads from parseWebhook() (signed).
+     *
+     * @param array<string, mixed> $payload
+     * @return array{ok: bool, status: ?string, external_id: ?string, message: string, ref_id?: string}
+     */
     public function handleNotify(array $payload): array
     {
-        // Prefer verified webhook event
-        if (isset($payload['type'], $payload['data']['object']) && is_array($payload['data']['object'])) {
-            $object = $payload['data']['object'];
-            $type = (string) $payload['type'];
-            $id = (string) ($object['id'] ?? '');
-            $ref = (string) ($object['client_reference_id'] ?? $object['metadata']['order_number'] ?? '');
+        if (!isset($payload['type'], $payload['data']['object']) || !is_array($payload['data']['object'])) {
+            return [
+                'ok' => false,
+                'status' => null,
+                'external_id' => null,
+                'message' => 'Expected signed Stripe event payload',
+            ];
+        }
 
-            $status = match ($type) {
-                'checkout.session.completed', 'checkout.session.async_payment_succeeded' => (
-                    (($object['payment_status'] ?? '') === 'paid' || ($object['status'] ?? '') === 'complete')
-                        ? 'paid'
-                        : 'pending'
-                ),
-                'checkout.session.expired', 'checkout.session.async_payment_failed' => 'cancelled',
-                'payment_intent.succeeded' => 'paid',
-                'payment_intent.payment_failed', 'payment_intent.canceled' => 'failed',
-                default => null,
-            };
+        $object = $payload['data']['object'];
+        $type = (string) $payload['type'];
+        $id = (string) ($object['id'] ?? '');
+        $ref = (string) ($object['client_reference_id'] ?? $object['metadata']['order_number'] ?? '');
 
-            if ($status === null) {
-                return [
-                    'ok' => true,
-                    'status' => 'pending',
-                    'external_id' => $id !== '' ? $id : null,
-                    'message' => 'Stripe event ignored: ' . $type,
-                    'ref_id' => $ref,
-                ];
-            }
+        $status = match ($type) {
+            'checkout.session.completed', 'checkout.session.async_payment_succeeded' => (
+                (($object['payment_status'] ?? '') === 'paid' || ($object['status'] ?? '') === 'complete')
+                    ? 'paid'
+                    : 'pending'
+            ),
+            'checkout.session.expired', 'checkout.session.async_payment_failed' => 'cancelled',
+            'payment_intent.succeeded' => 'paid',
+            'payment_intent.payment_failed', 'payment_intent.canceled' => 'failed',
+            default => null,
+        };
 
+        if ($status === null) {
             return [
                 'ok' => true,
-                'status' => $status,
+                'status' => 'pending',
                 'external_id' => $id !== '' ? $id : null,
-                'message' => 'Stripe event: ' . $type,
+                'message' => 'Stripe event ignored: ' . $type,
                 'ref_id' => $ref,
             ];
         }
 
-        // Browser return — poll session
-        $sessionId = (string) ($payload['session_id'] ?? $payload['id'] ?? '');
-        if ($sessionId === '') {
-            return ['ok' => false, 'status' => null, 'external_id' => null, 'message' => 'Missing Stripe session id'];
-        }
-
-        $secret = trim((string) $this->settings->get('payments.stripe_secret', ''));
-        if ($secret === '') {
-            return ['ok' => false, 'status' => null, 'external_id' => $sessionId, 'message' => 'Stripe not configured'];
-        }
-
-        $session = $this->request('GET', '/checkout/sessions/' . rawurlencode($sessionId), $secret);
-        if (($session['_http'] ?? 0) >= 400 || empty($session['id'])) {
-            return [
-                'ok' => false,
-                'status' => null,
-                'external_id' => $sessionId,
-                'message' => 'Stripe session fetch failed',
-            ];
-        }
-
-        $resultHint = strtolower((string) ($payload['result'] ?? ''));
-        $paymentStatus = (string) ($session['payment_status'] ?? '');
-        $mapped = match (true) {
-            $paymentStatus === 'paid' => 'paid',
-            $resultHint === 'cancel' => 'cancelled',
-            ($session['status'] ?? '') === 'expired' => 'cancelled',
-            default => 'pending',
-        };
-
         return [
             'ok' => true,
-            'status' => $mapped,
-            'external_id' => (string) $session['id'],
-            'message' => 'Stripe session: ' . $paymentStatus,
-            'ref_id' => (string) ($session['client_reference_id'] ?? ''),
-            'raw' => $session,
+            'status' => $status,
+            'external_id' => $id !== '' ? $id : null,
+            'message' => 'Stripe event: ' . $type,
+            'ref_id' => $ref,
         ];
     }
 

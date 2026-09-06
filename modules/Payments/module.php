@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'payments',
     'name' => 'Payments',
-    'version' => '1.1.0',
+    'version' => '1.1.1',
     'description' => 'module.payments.description',
     'class' => Modules\Payments\PaymentsModule::class,
     'author' => 'GEREQ',

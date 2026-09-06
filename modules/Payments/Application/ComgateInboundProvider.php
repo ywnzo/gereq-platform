@@ -14,7 +14,7 @@ use Modules\Payments\Domain\PaymentIntent;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/** Inbound Comgate notify + browser return callbacks. */
+/** Inbound Comgate server notify (must include merchant secret). */
 final class ComgateInboundProvider implements InboundWebhookProviderInterface
 {
     public function __construct(
@@ -32,29 +32,21 @@ final class ComgateInboundProvider implements InboundWebhookProviderInterface
 
     public function verify(Request $request): bool
     {
-        // Secret is validated inside handleNotify; allow empty GET browser returns
-        // that only carry id/refId (status poll will re-check with merchant secret).
-        return true;
+        $payload = $this->payload($request);
+        $incoming = (string) ($payload['secret'] ?? '');
+        $expected = trim((string) $this->settings->get('payments.comgate_secret', ''));
+
+        return $expected !== '' && $incoming !== '' && hash_equals($expected, $incoming);
     }
 
     public function handle(Request $request): Response
     {
-        $payload = array_merge($request->query->all(), $request->request->all());
-        $raw = $request->getContent();
-        if (is_string($raw) && $raw !== '') {
-            parse_str($raw, $parsed);
-            if (is_array($parsed)) {
-                $payload = array_merge($payload, $parsed);
-            }
+        $payload = $this->payload($request);
+        if (empty($payload['secret'])) {
+            return ApiResponse::error('invalid', 'Missing Comgate secret', [], 400);
         }
 
-        // Browser return without secret — poll status by transId
-        if (empty($payload['secret']) && !empty($payload['id'])) {
-            $payload['transId'] = (string) $payload['id'];
-            $payload['secret'] = ''; // handleNotify will fail secret unless we special-case
-        }
-
-        $result = $this->resolveStatus($payload);
+        $result = $this->gateway->handleNotify($payload);
         if (!$result['ok']) {
             return ApiResponse::error('invalid', $result['message'], [], 400);
         }
@@ -79,30 +71,19 @@ final class ComgateInboundProvider implements InboundWebhookProviderInterface
         ]);
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     * @return array{ok: bool, status: ?string, external_id: ?string, message: string, ref_id?: string}
-     */
-    private function resolveStatus(array $payload): array
+    /** @return array<string, mixed> */
+    private function payload(Request $request): array
     {
-        if (!empty($payload['secret'])) {
-            /** @var array{ok: bool, status: ?string, external_id: ?string, message: string, ref_id?: string} */
-            return $this->gateway->handleNotify($payload);
+        $payload = array_merge($request->query->all(), $request->request->all());
+        $raw = $request->getContent();
+        if (is_string($raw) && $raw !== '') {
+            parse_str($raw, $parsed);
+            if (is_array($parsed)) {
+                $payload = array_merge($payload, $parsed);
+            }
         }
 
-        // Browser redirect: trust only after live status poll (secret from settings inside gateway)
-        $transId = (string) ($payload['transId'] ?? $payload['id'] ?? '');
-        if ($transId === '') {
-            return ['ok' => false, 'status' => null, 'external_id' => null, 'message' => 'Missing transId'];
-        }
-
-        $polled = $this->gateway->handleNotify([
-            'transId' => $transId,
-            'refId' => (string) ($payload['refId'] ?? ''),
-            'secret' => (string) $this->settings->get('payments.comgate_secret', ''),
-        ]);
-
-        return $polled;
+        return $payload;
     }
 
     private function findIntent(?string $externalId, mixed $refId): ?PaymentIntent

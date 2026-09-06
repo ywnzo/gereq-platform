@@ -8,7 +8,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Api\ApiResponse;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
-use Gereq\Setting\Settings;
 use Modules\Orders\Domain\Order;
 use Modules\Payments\Application\Gateways\ComgateGateway;
 use Modules\Payments\Application\Gateways\GoPayGateway;
@@ -32,7 +31,6 @@ final class PaymentNotifyController extends Controller
         private readonly StripeGateway $stripe,
         private readonly PaymentService $payments,
         private readonly EntityManagerInterface $em,
-        private readonly Settings $settings,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -48,13 +46,9 @@ final class PaymentNotifyController extends Controller
             }
         }
 
+        // Secret must come from the provider — never inject from settings (auth bypass).
         if (empty($payload['secret'])) {
-            $transId = (string) ($payload['transId'] ?? $payload['id'] ?? '');
-            if ($transId === '') {
-                return ApiResponse::error('invalid', 'Missing transId', [], 400);
-            }
-            $payload['transId'] = $transId;
-            $payload['secret'] = (string) $this->settings->get('payments.comgate_secret', '');
+            return ApiResponse::error('invalid', 'Missing Comgate secret', [], 400);
         }
 
         $result = $this->comgate->handleNotify($payload);
@@ -115,29 +109,24 @@ final class PaymentNotifyController extends Controller
         $sig = (string) $request->headers->get('Stripe-Signature', '');
         $raw = (string) $request->getContent();
 
-        if ($sig !== '' && $raw !== '') {
-            $event = $this->stripe->parseWebhook($raw, $sig);
-            if ($event === null) {
-                return ApiResponse::error('invalid', 'Invalid Stripe signature', [], 400);
-            }
-            $result = $this->stripe->handleNotify($event);
-        } else {
-            $payload = array_merge($request->query->all(), $request->request->all());
-            $result = $this->stripe->handleNotify($payload);
+        if ($sig === '' || $raw === '') {
+            return ApiResponse::error('invalid', 'Stripe-Signature required', [], 400);
         }
 
+        $event = $this->stripe->parseWebhook($raw, $sig);
+        if ($event === null) {
+            return ApiResponse::error('invalid', 'Invalid Stripe signature', [], 400);
+        }
+
+        $result = $this->stripe->handleNotify($event);
         if (!$result['ok']) {
             return ApiResponse::error('invalid', $result['message'], [], 400);
         }
 
         $intent = $this->findIntent('stripe', $result['external_id'] ?? null, $result['ref_id'] ?? null);
         if ($intent === null) {
-            // Webhooks can arrive before we persist mapping — acknowledge to avoid retries storms for unknown events
-            if ($sig !== '') {
-                return ApiResponse::data(['ok' => true, 'ignored' => true, 'message' => 'Intent not found yet']);
-            }
-
-            return ApiResponse::error('not_found', 'Payment intent not found', [], 404);
+            // Webhooks can arrive before we persist mapping — acknowledge to avoid retries storms
+            return ApiResponse::data(['ok' => true, 'ignored' => true, 'message' => 'Intent not found yet']);
         }
 
         $this->applyStatus($intent, $result['status'] ?? null, $result['external_id'] ?? null);

@@ -41,7 +41,7 @@ final class PaymentsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.1.1';
     }
 
     public function register(ModuleContext $context): void
@@ -91,7 +91,7 @@ final class PaymentsModule implements ModuleInterface
             ->name('api.payments.notify.comgate');
         $context->router()->add('/api/v1/payments/notify/gopay', ['GET', 'POST'], [PaymentNotifyController::class, 'gopay'])
             ->name('api.payments.notify.gopay');
-        $context->router()->add('/api/v1/payments/notify/stripe', ['GET', 'POST'], [PaymentNotifyController::class, 'stripe'])
+        $context->router()->post('/api/v1/payments/notify/stripe', [PaymentNotifyController::class, 'stripe'])
             ->name('api.payments.notify.stripe');
 
         $context->router()->group('/admin/payments/methods', function (Router $routes): void {
