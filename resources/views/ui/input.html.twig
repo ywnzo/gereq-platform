@@ -20,6 +20,7 @@
 {% set max = max|default(null) %}
 {% set step = step|default(null) %}
 {% set pattern = pattern|default('') %}
+{% set list = list|default('') %}
 {% set described = [] %}
 {% if hint %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
 {% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
@@ -48,6 +49,7 @@
             {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
             {% if inputmode %}inputmode="{{ inputmode }}"{% endif %}
             {% if pattern %}pattern="{{ pattern }}"{% endif %}
+            {% if list %}list="{{ list }}"{% endif %}
             {% if min is not null %}min="{{ min }}"{% endif %}
             {% if max is not null %}max="{{ max }}"{% endif %}
             {% if step is not null %}step="{{ step }}"{% endif %}

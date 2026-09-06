@@ -38,26 +38,49 @@ final class Menu
             }
         );
 
-        usort($visible, static fn (MenuItem $a, MenuItem $b): int => $a->order <=> $b->order);
-
         $children = [];
-        $roots = [];
+        /** @var array<string, list<MenuItem>> $rootsByGroup */
+        $rootsByGroup = [];
 
         foreach ($visible as $item) {
             if ($item->parent !== null) {
                 $children[$item->parent][] = $item;
-            } else {
-                $roots[] = $item;
+                continue;
             }
+            $group = $item->group ?? 'Hlavní';
+            $rootsByGroup[$group][] = $item;
+        }
+
+        // Sidebar spojuje sousední stejné group — proto nejdřív shluknout skupiny,
+        // jinak stejná sekce (např. Provoz) spadne na více míst podle order položek.
+        $groupRanks = [];
+        foreach ($rootsByGroup as $group => $roots) {
+            usort($roots, static fn (MenuItem $a, MenuItem $b): int => $a->order <=> $b->order ?: strcmp($a->id, $b->id));
+            $rootsByGroup[$group] = $roots;
+            $groupRanks[$group] = min(array_map(static fn (MenuItem $i): int => $i->order, $roots));
+        }
+
+        uksort(
+            $rootsByGroup,
+            static function (string $a, string $b) use ($groupRanks): int {
+                return ($groupRanks[$a] <=> $groupRanks[$b]) ?: strcmp($a, $b);
+            },
+        );
+
+        foreach ($children as $parentId => $list) {
+            usort($list, static fn (MenuItem $a, MenuItem $b): int => $a->order <=> $b->order ?: strcmp($a->id, $b->id));
+            $children[$parentId] = $list;
         }
 
         $tree = [];
-        foreach ($roots as $root) {
-            $tree[] = [
-                'item' => $root,
-                'children' => $children[$root->id] ?? [],
-                'url' => $this->resolveUrl($root, $router, $request),
-            ];
+        foreach ($rootsByGroup as $roots) {
+            foreach ($roots as $root) {
+                $tree[] = [
+                    'item' => $root,
+                    'children' => $children[$root->id] ?? [],
+                    'url' => $this->resolveUrl($root, $router, $request),
+                ];
+            }
         }
 
         return $tree;

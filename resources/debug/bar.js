@@ -183,13 +183,16 @@
     },
     dumps: () => {
       const dumps = data.dumps || [];
-      if (!dumps.length) return `<div class="gdb-empty">Žádné dumpy. Použijte dump() nebo bdump().</div>`;
-      return dumps
-        .map((d) => {
+      if (!dumps.length) {
+        return `<div class="gdb-empty">Žádné dumpy. Použijte dump() nebo bdump().</div>`;
+      }
+      const cards = dumps
+        .map((d, i) => {
           const meta = d.file ? `${esc(d.file)}:${esc(d.line)}` : "dump()";
-          return `<div class="gdb-card"><div class="gdb-card__meta">${meta}</div>${d.html}</div>`;
+          return `<div class="gdb-card" data-dump-i="${i}"><div class="gdb-card__meta"><span>${meta}</span><button type="button" class="gdb-mini" data-act="dump-del" data-i="${i}" title="Smazat tento dump">×</button></div>${d.html}</div>`;
         })
         .join("");
+      return `<div class="gdb-toolbar"><span class="gdb-toolbar__label">${esc(dumps.length)} dumpů</span><button type="button" class="gdb-copybtn" data-act="dumps-clear" title="Smazat všechny dumpy v tomto requestu">Smazat dumpy</button></div>${cards}`;
     },
     config: () => {
       const cfg = data.config || {};
@@ -305,6 +308,7 @@
         ${n1Chip}
         <div class="gdb-bar__tabs">${tabBtns}</div>
         <div class="gdb-bar__actions">
+          <button type="button" class="gdb-copybtn" data-act="dumps-clear" data-dumps-clear hidden title="Smazat všechny dumpy">Smazat dumpy</button>
           <button type="button" class="gdb-copybtn" data-act="copy" title="Kopírovat aktivní sekci">Kopírovat</button>
           <kbd>Ctrl+Shift+D</kbd>
           <button type="button" class="gdb-iconbtn" data-act="close" title="Minimalizovat">▾</button>
@@ -319,6 +323,7 @@
   const dock = root.querySelector("[data-dock]");
   const panel = root.querySelector("[data-panel]");
   const copyBtn = root.querySelector('[data-act="copy"]');
+  const clearDumpsBtn = root.querySelector("[data-dumps-clear]");
   let copyResetTimer = 0;
 
   const persist = () => {
@@ -345,6 +350,38 @@
       .catch(() => flashCopy(false));
   };
 
+  const syncDumpsTabCount = () => {
+    const n = (data.dumps || []).length;
+    const tabMeta = tabs.find((t) => t.id === "dumps");
+    if (tabMeta) tabMeta.count = n;
+    root.querySelectorAll('.gdb-tab[data-tab="dumps"]').forEach((btn) => {
+      btn.textContent = "Dumpy";
+      if (n > 0) {
+        const span = document.createElement("span");
+        span.className = "gdb-tab__n";
+        span.textContent = String(n);
+        btn.appendChild(span);
+      }
+    });
+    if (clearDumpsBtn) {
+      clearDumpsBtn.hidden = tab !== "dumps" || n === 0;
+    }
+  };
+
+  const clearDumps = () => {
+    data.dumps = [];
+    syncDumpsTabCount();
+    renderPanel();
+  };
+
+  const deleteDump = (index) => {
+    const i = Number(index);
+    if (!Number.isInteger(i) || i < 0 || !(data.dumps || [])[i]) return;
+    data.dumps.splice(i, 1);
+    syncDumpsTabCount();
+    renderPanel();
+  };
+
   const renderPanel = () => {
     const fn = panels[tab] || panels.request;
     panel.innerHTML = fn();
@@ -354,6 +391,9 @@
     if (copyBtn) {
       const meta = tabs.find((t) => t.id === tab);
       copyBtn.title = meta ? `Kopírovat sekci „${meta.label}“` : "Kopírovat aktivní sekci";
+    }
+    if (clearDumpsBtn) {
+      clearDumpsBtn.hidden = tab !== "dumps" || !(data.dumps || []).length;
     }
   };
 
@@ -378,12 +418,30 @@
       }
       return;
     }
+
+    const del = e.target.closest("[data-act='dump-del']");
+    if (del && root.contains(del)) {
+      e.preventDefault();
+      e.stopPropagation();
+      deleteDump(del.getAttribute("data-i"));
+      return;
+    }
+
+    const clearBtn = e.target.closest("[data-act='dumps-clear']");
+    if (clearBtn && root.contains(clearBtn)) {
+      e.preventDefault();
+      e.stopPropagation();
+      clearDumps();
+      return;
+    }
+
     const btn = e.target.closest("[data-act], .gdb-tab");
     if (!btn || !root.contains(btn)) return;
-    if (btn.matches("[data-act=open]")) setOpen(true);
-    if (btn.matches("[data-act=close]")) setOpen(false);
-    if (btn.matches("[data-act=copy]")) copySection();
-    if (btn.matches(".gdb-tab")) {
+    const act = btn.getAttribute("data-act");
+    if (act === "open") setOpen(true);
+    if (act === "close") setOpen(false);
+    if (act === "copy") copySection();
+    if (btn.classList.contains("gdb-tab")) {
       tab = btn.getAttribute("data-tab") || "request";
       persist();
       renderPanel();

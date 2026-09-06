@@ -436,7 +436,62 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   border-radius: 12px;
   background: var(--gdb-card-bg);
 }
-#gereq-debug.gdb .gdb-card__meta { color: var(--gdb-mute); font-size: 11px; margin-bottom: 8px; font-family: var(--gdb-mono); }
+#gereq-debug.gdb .gdb-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--gdb-mute);
+  font-size: 11px;
+  margin-bottom: 8px;
+  font-family: var(--gdb-mono);
+}
+#gereq-debug.gdb .gdb-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -4px 0 10px;
+  padding: 6px 0 8px;
+  background: var(--gdb-ink-2);
+}
+#gereq-debug.gdb .gdb-toolbar__label {
+  color: var(--gdb-mute);
+  font-family: var(--gdb-mono);
+  font-size: 12px;
+}
+#gereq-debug.gdb .gdb-mini {
+  flex-shrink: 0;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid var(--gdb-line) !important;
+  border-radius: 6px !important;
+  background: var(--gdb-fill-strong) !important;
+  color: var(--gdb-paper) !important;
+  font: inherit !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  cursor: pointer;
+}
+#gereq-debug.gdb .gdb-mini:hover {
+  color: var(--gdb-err) !important;
+  border-color: color-mix(in srgb, var(--gdb-err) 45%, var(--gdb-line)) !important;
+}
+#gereq-debug.gdb .gdb-copybtn[data-dumps-clear] {
+  border-color: color-mix(in srgb, var(--gdb-err) 35%, var(--gdb-line)) !important;
+  color: var(--gdb-err) !important;
+}
+#gereq-debug.gdb .gdb-copybtn[data-dumps-clear][hidden] {
+  display: none !important;
+}
 #gereq-debug.gdb .gdb-exc {
   padding: 14px 16px;
   border-bottom: 1px solid var(--gdb-line);

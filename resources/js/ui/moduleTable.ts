@@ -9,8 +9,6 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         pageIds: [] as string[],
         updateIds: [] as string[],
         bulkAction: '',
-        selectedCount: 0,
-        allSelected: false,
 
         init() {
             const el = this.$el as HTMLElement;
@@ -26,24 +24,40 @@ export function registerModuleTable(alpine: typeof Alpine): void {
             }
 
             this.apply();
-            this.syncSelectionState();
             this.$watch('query', () => this.apply());
             this.$watch('status', () => this.apply());
-            this.$watch('selected', () => this.syncSelectionState());
+            this.$watch('selected', () => this.syncSelectAll());
+            this.$nextTick(() => this.syncSelectAll());
         },
 
-        syncSelectionState() {
-            this.selectedCount = this.selected.length;
-            const visible = this.visibleIds();
-            this.allSelected = visible.length > 0 && visible.every((id: string) => this.selected.includes(id));
+        get selectedCount(): number {
+            return this.selected.length;
+        },
+
+        get allSelected(): boolean {
+            const ids = this.selectableIds();
+            return ids.length > 0 && ids.every((id: string) => this.selected.includes(id));
+        },
+
+        get someSelected(): boolean {
+            return this.selectedCount > 0 && !this.allSelected;
+        },
+
+        syncSelectAll() {
             const el = this.$refs.selectAll as HTMLInputElement | undefined;
             if (el) {
-                el.indeterminate = this.selectedCount > 0 && !this.allSelected;
+                el.indeterminate = this.someSelected;
             }
         },
 
         isSelected(id: string): boolean {
             return this.selected.includes(id);
+        },
+
+        /** Visible row ids; falls back to pageIds if the DOM query is empty. */
+        selectableIds(): string[] {
+            const visible = this.visibleIds();
+            return visible.length > 0 ? visible : [...this.pageIds];
         },
 
         visibleIds(): string[] {
@@ -64,10 +78,13 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         },
 
         toggleAll() {
-            const visible = this.visibleIds();
+            const ids = this.selectableIds();
+            if (ids.length === 0) {
+                return;
+            }
             this.selected = this.allSelected
-                ? this.selected.filter((id: string) => !visible.includes(id))
-                : [...new Set([...this.selected, ...visible])];
+                ? this.selected.filter((id: string) => !ids.includes(id))
+                : [...new Set([...this.selected, ...ids])];
         },
 
         clearSelection() {
@@ -107,7 +124,7 @@ export function registerModuleTable(alpine: typeof Alpine): void {
             });
 
             this.empty = rows.length > 0 && visible === 0;
-            this.syncSelectionState();
+            this.syncSelectAll();
         },
     }));
 }

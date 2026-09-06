@@ -409,12 +409,15 @@ export function registerAres(alpine: typeof Alpine): void {
             fill(root, 'city_part', item.city_part || '');
             fill(root, 'zip', item.zip || '');
             fill(root, 'address', item.text || '');
+            fill(root, 'country', 'CZ');
 
             const query = this.inputEl();
             if (query) {
                 const fillKey = query.dataset.aresFill;
                 if (fillKey === 'city' || query.name === 'city') {
                     query.value = item.city || item.text || '';
+                } else if (fillKey === 'street' || query.name === 'street') {
+                    query.value = item.street || item.text || '';
                 } else {
                     query.value = item.text || '';
                 }
