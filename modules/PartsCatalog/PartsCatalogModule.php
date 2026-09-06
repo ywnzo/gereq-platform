@@ -28,7 +28,7 @@ final class PartsCatalogModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.13.7';
+        return '1.13.10';
     }
 
     public function register(ModuleContext $context): void
@@ -38,10 +38,12 @@ final class PartsCatalogModule implements ModuleInterface
 
         $context->capabilities()->register('partscatalog', $this->id(), $context->get(PartsCatalogFacade::class));
 
-        $context->settings()->define('partscatalog.jama.base_url', SettingRecord::TYPE_STRING, 'partscatalog.settings.jama_base_url', 'https://www.autodily-jama.cz', $this->id());
+        $context->settings()->define('partscatalog.jama.base_url', SettingRecord::TYPE_STRING, 'partscatalog.settings.jama_base_url', 'https://www.autodily-jama.cz', $this->id(), [], false);
 
         $context->router()->group('/admin/parts-catalog', function (Router $routes): void {
             $routes->get('', [CatalogController::class, 'browse'])->name('admin.partscatalog.browse')->permission('partscatalog.view');
+            $routes->get('/settings', [CatalogController::class, 'settings'])->name('admin.partscatalog.settings')->permission('partscatalog.manage');
+            $routes->post('/settings', [CatalogController::class, 'updateSettings'])->name('admin.partscatalog.settings.update')->permission('partscatalog.manage');
             $routes->get('/detail', [CatalogController::class, 'detail'])->name('admin.partscatalog.detail')->permission('partscatalog.view');
             $routes->post('/attach', [CatalogController::class, 'attach'])->name('admin.partscatalog.attach')->permission('partscatalog.manage');
             $routes->post('/parts/{id}/delete', [CatalogController::class, 'detach'])->name('admin.partscatalog.detach')->permission('partscatalog.manage');
@@ -58,6 +60,15 @@ final class PartsCatalogModule implements ModuleInterface
             permission: 'partscatalog.view',
             parent: 'carservice',
             order: 54,
+        ));
+        $context->menu()->add(new MenuItem(
+            id: 'partscatalog.settings',
+            label: 'nav.partscatalog.settings',
+            icon: 'settings',
+            route: 'admin.partscatalog.settings',
+            permission: 'partscatalog.manage',
+            parent: 'carservice',
+            order: 55,
         ));
 
         $context->commandPalette()->add(new PaletteCommand(
@@ -101,6 +112,7 @@ final class PartsCatalogModule implements ModuleInterface
                         'order' => $order,
                         'parts' => $parts,
                         'user' => $auth->user(),
+                        'editable' => $order->isOpen(),
                         'browseUrl' => $router->url('admin.partscatalog.browse') . '?order_id=' . rawurlencode($order->id()),
                     ]),
                 ];

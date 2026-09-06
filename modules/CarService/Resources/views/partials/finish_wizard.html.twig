@@ -1,0 +1,177 @@
+{# Finish wizard — větší modal s kroky dokumentů. Očekává: item, finishSteps, finishWizardOpen, finishWizardStep #}
+{% if canFinish and finishSteps is not empty %}
+<div
+    x-data="carserviceFinishWizard"
+    data-open="{{ finishWizardOpen ? '1' : '0' }}"
+    data-step="{{ finishWizardStep }}"
+    data-steps="{{ finishSteps|json_encode|e('html_attr') }}"
+>
+    <button class="btn btn--primary" type="button" @click="show">{{ 'carservice.finish'|trans }}</button>
+
+    <div class="g-modal__backdrop" :class="backdropClass" @click="close"></div>
+    <div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-labelledby="finish-dialog-title">
+        <div class="g-modal__panel g-modal__panel--finish-wizard" @click.stop>
+            <header class="cs-finish__head">
+                <h2 class="g-modal__title" id="finish-dialog-title">{{ 'carservice.finish.dialog_title'|trans }}</h2>
+                <p class="muted">{{ 'carservice.finish.wizard_hint'|trans }}</p>
+            </header>
+
+            <ol class="cs-finish__steps" aria-label="{{ 'carservice.finish.wizard_progress'|trans }}">
+                {% for s in finishSteps %}
+                    <li
+                        class="cs-finish__step"
+                        :class="{
+                            'is-current': step === '{{ s }}',
+                            'is-done': stepIndex > {{ loop.index0 }}
+                        }"
+                    >
+                        <span class="cs-finish__step-n">{{ loop.index }}</span>
+                        <span class="cs-finish__step-label">{{ ('carservice.finish.step.' ~ s)|trans }}</span>
+                    </li>
+                {% endfor %}
+            </ol>
+
+            {% for s in finishSteps %}
+                <form
+                    method="post"
+                    action="{{ url('admin.carservice.finish.step', {id: item.id()}) }}"
+                    class="cs-finish"
+                    x-show="step === '{{ s }}'"
+                    x-cloak
+                    {% if not loop.last %}data-not-last="1"{% endif %}
+                >
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="step" value="{{ s }}">
+
+                    <p class="muted cs-finish__step-hint">{{ ('carservice.finish.step.' ~ s ~ '.hint')|trans }}</p>
+
+                    {% if s == 'quote' %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'service_info',
+                            label: 'carservice.field.service_info'|trans,
+                            optional: true,
+                            value: item.serviceInfo() ?: '',
+                            size: 'mini',
+                            rows: 3
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'external_cost',
+                            type: 'number',
+                            label: 'carservice.field.external_cost'|trans,
+                            optional: true,
+                            value: item.externalCost() ?: '',
+                            step: '0.01'
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'note',
+                            label: 'carservice.field.note'|trans,
+                            optional: true,
+                            value: item.note() ?: '',
+                            size: 'mini',
+                            rows: 2
+                        } %}
+
+                    {% elseif s == 'worksheet' %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'service_info',
+                            label: 'carservice.field.service_info'|trans,
+                            optional: true,
+                            value: item.serviceInfo() ?: '',
+                            size: 'mini',
+                            rows: 3,
+                            extra: 'cs-finish__notes'
+                        } %}
+                        <div class="cs-finish__grid">
+                            {% include 'ui/select.html.twig' with { name:'payment_type', label:'carservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
+                                {value:'',label:'—'},{value:'online',label:'carservice.payment.online'|trans},{value:'cash',label:'carservice.payment.cash'|trans}
+                            ] } %}
+                            {% include 'ui/input.html.twig' with { name:'intake_mileage', type:'number', label:'carservice.field.intake_mileage'|trans, optional:true, value: item.intakeMileage() ?: '' } %}
+                            {% include 'ui/select.html.twig' with { name:'intake_fuel_level', label:'carservice.field.intake_fuel'|trans, optional:true, value: item.intakeFuelLevel() ?: '', options:[
+                                {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
+                            ] } %}
+                            {% include 'ui/input.html.twig' with { name:'external_cost', type:'number', label:'carservice.field.external_cost'|trans, optional:true, value: item.externalCost() ?: '', step:'0.01' } %}
+                        </div>
+
+                    {% elseif s == 'cost_sheet' %}
+                        <div class="cs-finish__grid">
+                            {% include 'ui/input.html.twig' with { name:'internal_cost', type:'number', label:'carservice.field.internal_cost'|trans, optional:true, value: item.internalCost() ?: '', step:'0.01' } %}
+                            {% include 'ui/input.html.twig' with { name:'external_cost', type:'number', label:'carservice.field.external_cost'|trans, optional:true, value: item.externalCost() ?: '', step:'0.01' } %}
+                            {% include 'ui/select.html.twig' with { name:'payment_type', label:'carservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
+                                {value:'',label:'—'},{value:'online',label:'carservice.payment.online'|trans},{value:'cash',label:'carservice.payment.cash'|trans}
+                            ] } %}
+                        </div>
+
+                    {% elseif s == 'handover' %}
+                        {% if esignAvailable|default(false) %}
+                            {% include '@esign/partials/sign_mode.html.twig' with {
+                                esignAvailable: true,
+                                customerEmail: customerEmail|default(''),
+                                defaultSignMode: 'manual'
+                            } %}
+                        {% else %}
+                            <input type="hidden" name="sign_mode" value="manual">
+                            {% include 'ui/textarea.html.twig' with {
+                                name: 'signature_service',
+                                label: 'carservice.finish.signature_service'|trans,
+                                optional: true,
+                                value: '',
+                                size: 'mini',
+                                rows: 2,
+                                hint: 'carservice.finish.signature_service.hint'|trans
+                            } %}
+                            {% include 'ui/textarea.html.twig' with {
+                                name: 'signature_customer',
+                                label: 'carservice.finish.signature_customer'|trans,
+                                optional: true,
+                                value: '',
+                                size: 'mini',
+                                rows: 2,
+                                hint: 'carservice.finish.signature_customer.hint'|trans
+                            } %}
+                        {% endif %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'defects',
+                            label: 'carservice.finish.defects'|trans,
+                            optional: true,
+                            value: '',
+                            size: 'mini',
+                            rows: 2,
+                            hint: 'carservice.finish.defects.hint'|trans
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'defect_deadline',
+                            label: 'carservice.finish.defect_deadline'|trans,
+                            optional: true,
+                            value: ''
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'note',
+                            label: 'carservice.field.note'|trans,
+                            optional: true,
+                            value: item.note() ?: '',
+                            size: 'mini',
+                            rows: 2
+                        } %}
+
+                    {% elseif s == 'idoklad' %}
+                        <div class="cs-finish__idoklad">
+                            <p>{{ 'carservice.finish.step.idoklad.body'|trans }}</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="g-modal__actions cs-finish__actions">
+                        <button class="btn btn--ghost" type="button" @click="close" x-ref="close">{{ 'common.cancel'|trans }}</button>
+                        <button class="btn btn--primary" type="submit">
+                            {% if loop.last %}
+                                {{ 'carservice.finish.confirm_close'|trans }}
+                            {% else %}
+                                {{ 'carservice.finish.next'|trans }}
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="{{ app_locale() }}" data-theme="gereq" style="{{ brand_html_style() }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{{ pageTitle }} · {{ brand('name') }}</title>
+    {% include 'partials/brand-head.html.twig' %}
+    {% include 'partials/brand-overrides.html.twig' %}
+    <style nonce="{{ csp_nonce() }}">
+        :root { --esign-ink: #0a0b0a; --esign-muted: #5c5f5c; --esign-line: #d8dbd6; --esign-bg: #f3f1ec; --esign-card: #fff; --esign-accent: #1f6b4a; }
+        * { box-sizing: border-box; }
+        body.esign-public-body { margin: 0; font-family: "Source Serif 4", Georgia, serif; background: linear-gradient(160deg, #e8ebe4 0%, var(--esign-bg) 45%, #efe8dc 100%); color: var(--esign-ink); min-height: 100vh; }
+        .esign-public { max-width: 880px; margin: 0 auto; padding: 32px 20px 64px; }
+        .esign-public h1 { font-family: "Fraunces", Georgia, serif; font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 8px; letter-spacing: -0.02em; }
+        .esign-lead { color: var(--esign-muted); margin: 0 0 20px; font-size: 1.05rem; }
+        .esign-notice-box { background: #fff8e8; border-left: 3px solid #c48a1a; padding: 12px 14px; margin-bottom: 20px; font-size: 0.95rem; }
+        .esign-doc { width: 100%; height: min(62vh, 640px); border: 1px solid var(--esign-line); background: #fff; border-radius: 2px; }
+        .esign-card { background: var(--esign-card); border: 1px solid var(--esign-line); padding: 20px; margin-top: 20px; }
+        .esign-meta { font-size: 0.88rem; color: var(--esign-muted); margin: 0 0 16px; }
+        .esign-meta code { display: inline-block; word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--esign-ink); }
+        .esign-consent { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 12px; font-size: 0.95rem; line-height: 1.4; }
+        .esign-consent input { margin-top: 3px; }
+        .esign-pad-label { font-weight: 700; margin: 18px 0 8px; }
+        .esign-pad-wrap { border: 1px dashed var(--esign-line); background: #fafafa; border-radius: 2px; overflow: hidden; }
+        #esign-pad, .esign-pad { width: 100%; height: 220px; display: block; touch-action: none; cursor: crosshair; }
+        .esign-pad-error { color: #a31212; margin: 8px 0 0; }
+        .esign-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .esign-btn { appearance: none; border: 1px solid var(--esign-line); background: #fff; color: var(--esign-ink); padding: 10px 16px; font: inherit; cursor: pointer; }
+        .esign-btn--primary { background: var(--esign-accent); border-color: var(--esign-accent); color: #fff; }
+        .esign-btn--ghost { background: transparent; }
+        .esign-footer { margin-top: 28px; font-size: 0.85rem; color: var(--esign-muted); }
+        .esign-alert { padding: 12px 14px; margin-bottom: 16px; border-radius: 2px; }
+        .esign-alert--ok { background: #e7f6ee; color: #145c38; }
+        .esign-alert--err { background: #fde8e6; color: #8a1f14; }
+        .esign-hp { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
+    </style>
+</head>
+<body class="esign-public-body">
+<main class="esign-public">
+    {% set flashes_success = flash('success') %}
+    {% set flashes_error = flash('error') %}
+    {% if flashes_success %}
+        {% for message in flashes_success %}
+            <div class="esign-alert esign-alert--ok">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% if flashes_error %}
+        {% for message in flashes_error %}
+            <div class="esign-alert esign-alert--err">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

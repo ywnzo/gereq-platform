@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\CarService\Application;
 
 use Gereq\Debug\FullServiceLogger;
-use Gereq\Event\EventEnvelope;
 use Gereq\Hook\HookManager;
 use Gereq\Module\CapabilityRegistry;
 use Gereq\Setting\Settings;
@@ -15,11 +14,10 @@ use Modules\Documents\Application\Pdf\PdfDocumentGenerator;
 use Modules\Documents\Application\Pdf\PdfPersistOptions;
 use Modules\Documents\Domain\Document;
 use Modules\iDoklad\Application\iDokladService;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Po dokončení zakázky: založí fakturu v iDokladu (nebo doplní PDF u už propojené).
+ * Založení faktury v iDokladu + stažení PDF (volané z finish wizardu, ne auto z eventu).
  */
 final class IdokladFinishHandler
 {
@@ -28,63 +26,36 @@ final class IdokladFinishHandler
         private readonly CapabilityRegistry $capabilities,
         private readonly CarServiceProvider $carservice,
         private readonly HookManager $hooks,
-        private readonly RequestStack $requests,
         private readonly TranslatorInterface $translator,
-        private readonly ?PdfDocumentGenerator $pdfGenerator = null,
-        private readonly ?DocumentsProvider $documents = null,
+        private readonly PdfDocumentGenerator $pdfGenerator,
+        private readonly DocumentsProvider $documents,
     ) {
     }
 
-    public function handle(EventEnvelope $envelope): void
+    /**
+     * @return array{ok: bool, message: string, idoklad_id?: string|null, pdf_stored?: bool}
+     */
+    public function runForOrder(string $orderId): array
     {
-        if ($envelope->type !== 'carservice.order_finished') {
-            return;
-        }
-
-        $orderId = (string) ($envelope->resource['id'] ?? '');
-        FullServiceLogger::log('carservice.idoklad.hook.start', [
+        FullServiceLogger::log('carservice.idoklad.wizard.start', [
             'order_id' => $orderId,
-            'customer_id' => $envelope->data['customer_id'] ?? null,
-            'job_seconds' => $envelope->data['job_seconds'] ?? null,
-            'document_id' => $envelope->data['document_id'] ?? null,
         ]);
 
-        if (!(bool) $this->settings->get('carservice.auto_idoklad', false)) {
-            FullServiceLogger::log('carservice.idoklad.hook.skip', [
-                'order_id' => $orderId,
-                'reason' => 'auto_idoklad_disabled',
-            ]);
-
-            return;
-        }
         if (!$this->capabilities->has('idoklad') || !class_exists(iDokladService::class)) {
-            FullServiceLogger::log('carservice.idoklad.hook.skip', [
-                'order_id' => $orderId,
-                'reason' => 'idoklad_unavailable',
-            ]);
-
-            return;
+            return $this->fail('idoklad_unavailable', 'carservice.flash.idoklad_invoice_failed');
         }
         /** @var iDokladService $idoklad */
         $idoklad = $this->capabilities->get('idoklad');
         if (!$idoklad->isEnabled()) {
-            FullServiceLogger::log('carservice.idoklad.hook.skip', [
-                'order_id' => $orderId,
-                'reason' => 'idoklad_disabled',
-            ]);
-
-            return;
+            return $this->fail('idoklad_disabled', 'carservice.flash.idoklad_invoice_failed');
         }
         if ($orderId === '') {
-            FullServiceLogger::log('carservice.idoklad.hook.skip', [
-                'order_id' => $orderId,
-                'reason' => 'empty_order_id',
-            ]);
-
-            return;
+            return $this->fail('empty_order_id', 'carservice.flash.idoklad_invoice_failed');
         }
 
-        $customerId = (string) ($envelope->data['customer_id'] ?? '');
+        $order = $this->carservice->getOrder($orderId);
+        $customerId = $order instanceof ServiceOrder ? (string) ($order->customerId() ?? '') : '';
+
         $existing = $idoklad->findLink('carservice_order', $orderId, 'invoice');
         if ($existing !== null) {
             $idokladId = (int) $existing->iDokladId();
@@ -95,15 +66,17 @@ final class IdokladFinishHandler
             ]);
             $hadPdf = $this->hasInvoicePdf($orderId);
             $stored = $this->storeInvoicePdf($idoklad, $orderId, $idokladId, $customerId, skipIfExists: true);
-            if ($stored && !$hadPdf) {
-                $this->flash('success', $this->translator->trans('carservice.flash.idoklad_pdf_stored'));
-            } else {
-                $this->flash('info', $this->translator->trans('carservice.flash.idoklad_already_linked', [
-                    '%id%' => $existing->iDokladId(),
-                ]));
-            }
 
-            return;
+            return [
+                'ok' => true,
+                'message' => $stored && !$hadPdf
+                    ? $this->translator->trans('carservice.flash.idoklad_pdf_stored')
+                    : $this->translator->trans('carservice.flash.idoklad_already_linked', [
+                        '%id%' => $existing->iDokladId(),
+                    ]),
+                'idoklad_id' => $existing->iDokladId(),
+                'pdf_stored' => $stored,
+            ];
         }
 
         $partnerId = 0;
@@ -119,13 +92,12 @@ final class IdokladFinishHandler
                 'reason' => 'partner_not_linked',
                 'customer_id' => $customerId !== '' ? $customerId : null,
             ]);
-            $this->flash('warning', $this->translator->trans('carservice.flash.idoklad_partner_missing'));
 
-            return;
+            return $this->fail('partner_not_linked', 'carservice.flash.idoklad_partner_missing');
         }
 
-        $items = $this->buildInvoiceItems($orderId, $envelope);
-        $filtered = $this->hooks->filter('carservice.idoklad.invoice_items', $items, $orderId, $envelope);
+        $items = $this->buildInvoiceItems($orderId);
+        $filtered = $this->hooks->filter('carservice.idoklad.invoice_items', $items, $orderId, null);
         if (is_array($filtered)) {
             /** @var list<array<string, mixed>> $items */
             $items = array_values($filtered);
@@ -148,7 +120,6 @@ final class IdokladFinishHandler
             'order_id' => $orderId,
             'partner_id' => $partnerId,
             'customer_id' => $customerId,
-            'hours' => ((int) ($envelope->data['job_seconds'] ?? 0)) / 3600.0,
             'items_count' => count($items),
             'payload' => $payload,
         ]);
@@ -161,9 +132,8 @@ final class IdokladFinishHandler
                 'partner_id' => $partnerId,
                 'error' => $e,
             ]);
-            $this->flash('error', $this->translator->trans('carservice.flash.idoklad_invoice_failed'));
 
-            return;
+            return $this->fail('api_error', 'carservice.flash.idoklad_invoice_failed');
         }
 
         FullServiceLogger::log('carservice.idoklad.invoice.response', [
@@ -173,57 +143,62 @@ final class IdokladFinishHandler
             'code' => $result['code'] ?? null,
             'message' => $result['message'] ?? null,
             'idoklad_id' => $result['data']['Id'] ?? null,
-            'data' => $result['data'] ?? null,
         ]);
 
         if (empty($result['isSucceed']) || !isset($result['data']['Id'])) {
-            FullServiceLogger::log('carservice.idoklad.invoice.failed', [
-                'order_id' => $orderId,
-                'code' => $result['code'] ?? null,
-                'message' => $result['message'] ?? null,
-            ]);
-            $this->flash('error', $this->translator->trans('carservice.flash.idoklad_invoice_failed'));
-
-            return;
+            return $this->fail('create_failed', 'carservice.flash.idoklad_invoice_failed');
         }
 
         $idokladId = (int) $result['data']['Id'];
         $idoklad->rememberLink('carservice_order', $orderId, (string) $idokladId, 'invoice', [
-            'source' => 'carservice.order_finished',
+            'source' => 'carservice.finish.wizard',
         ]);
         FullServiceLogger::log('carservice.idoklad.invoice.linked', [
             'order_id' => $orderId,
             'idoklad_id' => (string) $idokladId,
         ]);
 
-        // iDoklad občas potřebuje chvíli, než je PDF report připravený
         usleep(400_000);
         $stored = $this->storeInvoicePdf($idoklad, $orderId, $idokladId, $customerId, skipIfExists: false);
-        $this->flash(
-            'success',
-            $stored
-                ? $this->translator->trans('carservice.flash.idoklad_invoice_created')
-                : $this->translator->trans('carservice.flash.idoklad_invoice_created_no_pdf'),
-        );
+
+        return [
+            'ok' => true,
+            'message' => $this->translator->trans(
+                $stored
+                    ? 'carservice.flash.idoklad_invoice_created'
+                    : 'carservice.flash.idoklad_invoice_created_no_pdf',
+            ),
+            'idoklad_id' => (string) $idokladId,
+            'pdf_stored' => $stored,
+        ];
+    }
+
+    /**
+     * @return array{ok: false, message: string, idoklad_id?: null}
+     */
+    private function fail(string $reason, string $messageKey): array
+    {
+        FullServiceLogger::log('carservice.idoklad.wizard.fail', [
+            'reason' => $reason,
+        ]);
+
+        return [
+            'ok' => false,
+            'message' => $this->translator->trans($messageKey),
+            'idoklad_id' => null,
+        ];
     }
 
     /**
      * @return list<array<string, mixed>>
      */
-    private function buildInvoiceItems(string $orderId, EventEnvelope $envelope): array
+    private function buildInvoiceItems(string $orderId): array
     {
         $order = $this->carservice->getOrder($orderId);
-
-        $jobSeconds = (int) ($envelope->data['job_seconds'] ?? 0);
-        if ($jobSeconds <= 0 && $order instanceof ServiceOrder) {
-            $jobSeconds = $this->carservice->totalJobSeconds($orderId);
-        }
+        $jobSeconds = $order instanceof ServiceOrder ? $this->carservice->totalJobSeconds($orderId) : 0;
         $hours = $jobSeconds / 3600.0;
 
-        $external = $envelope->data['external_cost'] ?? null;
-        if (($external === null || $external === '') && $order instanceof ServiceOrder) {
-            $external = $order->externalCost();
-        }
+        $external = $order instanceof ServiceOrder ? $order->externalCost() : null;
         $externalAmount = is_numeric($external) ? (float) $external : null;
 
         if ($externalAmount !== null && $externalAmount > 0) {
@@ -255,9 +230,6 @@ final class IdokladFinishHandler
         return [];
     }
 
-    /**
-     * @return bool true pokud je PDF u zakázky (nově uložené nebo už existovalo)
-     */
     private function storeInvoicePdf(
         iDokladService $idoklad,
         string $orderId,
@@ -265,23 +237,7 @@ final class IdokladFinishHandler
         string $customerId,
         bool $skipIfExists,
     ): bool {
-        if ($this->pdfGenerator === null) {
-            FullServiceLogger::log('carservice.idoklad.invoice.pdf.skip', [
-                'order_id' => $orderId,
-                'idoklad_id' => (string) $idokladId,
-                'reason' => 'documents_unavailable',
-            ]);
-
-            return false;
-        }
-
         if ($skipIfExists && $this->hasInvoicePdf($orderId)) {
-            FullServiceLogger::log('carservice.idoklad.invoice.pdf.skip', [
-                'order_id' => $orderId,
-                'idoklad_id' => (string) $idokladId,
-                'reason' => 'pdf_already_stored',
-            ]);
-
             return true;
         }
 
@@ -292,11 +248,6 @@ final class IdokladFinishHandler
                 if (is_string($pdfBinary) && $pdfBinary !== '') {
                     break;
                 }
-                FullServiceLogger::log('carservice.idoklad.invoice.pdf.retry', [
-                    'order_id' => $orderId,
-                    'idoklad_id' => (string) $idokladId,
-                    'attempt' => $attempt,
-                ]);
                 usleep(500_000 * $attempt);
             }
 
@@ -333,7 +284,6 @@ final class IdokladFinishHandler
                 'document_id' => $invoiceDoc->id(),
                 'path' => $invoiceDoc->path(),
                 'bytes' => $invoiceDoc->size(),
-                'customer_id' => $customerId !== '' ? $customerId : null,
             ]);
 
             return true;
@@ -350,9 +300,6 @@ final class IdokladFinishHandler
 
     private function hasInvoicePdf(string $orderId): bool
     {
-        if ($this->documents === null) {
-            return false;
-        }
         try {
             foreach ($this->documents->forEntity('carservice_order', $orderId) as $doc) {
                 if (!$doc instanceof Document) {
@@ -363,22 +310,10 @@ final class IdokladFinishHandler
                     return true;
                 }
             }
-        } catch (\Throwable $e) {
-            FullServiceLogger::log('carservice.idoklad.invoice.pdf.exists_check_error', [
-                'order_id' => $orderId,
-                'error' => $e,
-            ]);
+        } catch (\Throwable) {
+            return false;
         }
 
         return false;
-    }
-
-    private function flash(string $type, string $message): void
-    {
-        $request = $this->requests->getCurrentRequest();
-        if ($request === null || !$request->hasSession()) {
-            return;
-        }
-        $request->getSession()->getFlashBag()->add($type, $message);
     }
 }

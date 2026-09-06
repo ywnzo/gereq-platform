@@ -131,6 +131,9 @@ final class ServiceDocumentService
             'docNumber' => strtoupper(substr($order->id(), 0, 8)),
             'issuedAt' => (new \DateTimeImmutable())->format('d. m. Y'),
             'signature' => isset($extra['signature']) ? (string) $extra['signature'] : '',
+            'signatureImage' => isset($extra['signature_image']) ? (trim((string) $extra['signature_image']) ?: null) : null,
+            'signatureServiceImage' => isset($extra['signature_service_image']) ? (trim((string) $extra['signature_service_image']) ?: null) : null,
+            'signMode' => (string) ($extra['sign_mode'] ?? 'manual'),
             'totals' => [
                 'labor' => $labor,
                 'parts' => $parts,

@@ -178,5 +178,6 @@ return [
     'partscatalog.flash.attached' => 'Díl byl přidán na zakázku.',
     'partscatalog.flash.detached' => 'Díl byl odebrán.',
     'partscatalog.error.attach_invalid' => 'Neplatná data pro připojení dílu.',
+    'partscatalog.error.order_locked' => 'Zakázka je uzamčená — díly nelze měnit.',
     'partscatalog.attribution' => 'Zdroj: Autodíly Jama. Obrázky v Media.',
 ];

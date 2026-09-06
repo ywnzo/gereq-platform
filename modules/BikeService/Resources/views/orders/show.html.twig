@@ -44,12 +44,22 @@
                 {% include 'ui/select.html.twig' with { name:'payment_type', label:'bikeservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
                     {value:'',label:'—'},{value:'online',label:'bikeservice.payment.online'|trans},{value:'cash',label:'bikeservice.payment.cash'|trans}
                 ] } %}
-                {% include 'ui/input.html.twig' with { name:'signature', label:'bikeservice.finish.signature'|trans, optional:true, value:'' } %}
                 {% include 'ui/input.html.twig' with { name:'labor_cost', type:'number', label:'bikeservice.field.labor_cost'|trans, optional:true, value: item.laborCost() ?: '', step:'0.01' } %}
                 {% include 'ui/input.html.twig' with { name:'parts_cost', type:'number', label:'bikeservice.field.parts_cost'|trans, optional:true, value: item.partsCost() ?: '', step:'0.01' } %}
                 {% include 'ui/input.html.twig' with { name:'intake_odometer_km', type:'number', label:'bikeservice.field.intake_odometer'|trans, optional:true, value: item.intakeOdometerKm() ?: '' } %}
                 {% include 'ui/input.html.twig' with { name:'intake_battery_pct', type:'number', label:'bikeservice.field.intake_battery'|trans, optional:true, value: item.intakeBatteryPct() is not null ? item.intakeBatteryPct() : '' } %}
             </div>
+
+            {% if esignAvailable|default(false) %}
+                {% include '@esign/partials/sign_mode.html.twig' with {
+                    esignAvailable: true,
+                    customerEmail: customer ? customer.email() : '',
+                    defaultSignMode: 'manual'
+                } %}
+            {% else %}
+                <input type="hidden" name="sign_mode" value="manual">
+                {% include 'ui/input.html.twig' with { name:'signature', label:'bikeservice.finish.signature'|trans, optional:true, value:'' } %}
+            {% endif %}
 
             <div class="g-modal__actions cs-finish__actions">
                 <button class="btn btn--ghost" type="button" @click="close" x-ref="close">{{ 'common.cancel'|trans }}</button>
@@ -197,6 +207,20 @@
                     {% endfor %}
                 </div>
             </div>
+        </section>
+        {% endif %}
+
+        {% if esignDocuments is defined and esignDocuments is not empty %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'bikeservice.esign.title'|trans }}</h2></header>
+            <ul class="meta-list meta-list--flush">
+                {% for doc in esignDocuments %}
+                    <li>
+                        <a href="{{ url('admin.esign.documents.show',{id:doc.id()}) }}">{{ doc.number() }} · {{ doc.title() }}</a>
+                        <span class="badge">{{ doc.statusLabel()|trans }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
         </section>
         {% endif %}
 

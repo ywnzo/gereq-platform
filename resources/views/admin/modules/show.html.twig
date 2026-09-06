@@ -27,6 +27,9 @@
             <p class="module-lead">{{ (manifest.description ?: 'common.no_description')|trans }}</p>
         </div>
         <div class="module-header-actions">
+            {% if settingsRoute %}
+                <a class="btn btn--ghost" href="{{ url(settingsRoute) }}">{{ icon('settings') }} {{ 'common.settings'|trans }}</a>
+            {% endif %}
             {% if overview.update_available %}
                 <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
                     {{ csrf_field()|raw }}
@@ -417,10 +420,16 @@
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.settings.title'|trans }}</h2>
-                        <p class="muted">{{ 'admin.modules.settings.hint'|trans({'%id%': manifest.id}) }}</p>
+                        <p class="muted">
+                            {% if settingsRoute %}
+                                {{ 'admin.modules.settings.hint_ui'|trans({'%id%': manifest.id}) }}
+                            {% else %}
+                                {{ 'admin.modules.settings.hint'|trans({'%id%': manifest.id}) }}
+                            {% endif %}
+                        </p>
                     </div>
-                    {% if manifest.id == 'reviews' %}
-                        <a class="btn btn--primary" href="{{ url('admin.reviews.settings') }}">{{ icon('settings') }} {{ 'reviews.settings.edit'|trans }}</a>
+                    {% if settingsRoute %}
+                        <a class="btn btn--primary" href="{{ url(settingsRoute) }}">{{ icon('settings') }} {{ 'admin.modules.settings.open'|trans }}</a>
                     {% endif %}
                 </header>
                 {% if report.settings is empty %}

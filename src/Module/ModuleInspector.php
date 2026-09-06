@@ -69,6 +69,7 @@ final class ModuleInspector
                 'class_exists' => class_exists($manifest->moduleClass),
                 'capability_providers' => $this->capabilityMap($manifest),
                 'update_available' => $updateAvailable,
+                'settings_route' => $this->resolveSettingsRoute($manifest),
             ],
             'migrations' => $migrations,
             'api' => $api,
@@ -216,6 +217,23 @@ final class ModuleInspector
         }
 
         return $items;
+    }
+
+    /** Named route for module settings UI, if registered. */
+    private function resolveSettingsRoute(ModuleManifest $manifest): ?string
+    {
+        $candidates = array_values(array_filter([
+            $manifest->settingsRoute,
+            'admin.' . $manifest->id . '.settings',
+        ], static fn (?string $name): bool => is_string($name) && $name !== ''));
+
+        foreach ($candidates as $name) {
+            if ($this->router->has($name)) {
+                return $name;
+            }
+        }
+
+        return null;
     }
 
     /**

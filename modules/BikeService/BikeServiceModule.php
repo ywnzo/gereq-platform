@@ -37,7 +37,7 @@ final class BikeServiceModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.10.13';
+        return '1.11.0';
     }
 
     public function register(ModuleContext $context): void
@@ -51,12 +51,12 @@ final class BikeServiceModule implements ModuleInterface
         );
         $context->capabilities()->register('bikeservice', $this->id(), $provider);
 
-        $context->settings()->define('bikeservice.default_team', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_team', 'mechanics', $this->id());
-        $context->settings()->define('bikeservice.media_phases', SettingRecord::TYPE_STRING, 'bikeservice.settings.media_phases', 'before,progress,after', $this->id());
-        $context->settings()->define('bikeservice.default_city', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_city', 'Praha', $this->id());
-        $context->settings()->define('bikeservice.default_citybikes_network', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_network', 'nextbike-praha', $this->id());
-        $context->settings()->define('bikeservice.default_lat', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_lat', '50.087', $this->id());
-        $context->settings()->define('bikeservice.default_lon', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_lon', '14.421', $this->id());
+        $context->settings()->define('bikeservice.default_team', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_team', 'mechanics', $this->id(), [], false);
+        $context->settings()->define('bikeservice.media_phases', SettingRecord::TYPE_STRING, 'bikeservice.settings.media_phases', 'before,progress,after', $this->id(), [], false);
+        $context->settings()->define('bikeservice.default_city', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_city', 'Praha', $this->id(), [], false);
+        $context->settings()->define('bikeservice.default_citybikes_network', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_network', 'nextbike-praha', $this->id(), [], false);
+        $context->settings()->define('bikeservice.default_lat', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_lat', '50.087', $this->id(), [], false);
+        $context->settings()->define('bikeservice.default_lon', SettingRecord::TYPE_STRING, 'bikeservice.settings.default_lon', '14.421', $this->id(), [], false);
         $context->router()->group('/admin/bikeservice', function (Router $routes): void {
             $routes->get('', [BikeOrderController::class, 'index'])->name('admin.bikeservice.orders')->permission('bikeservice.view');
             $routes->get('/orders', [BikeOrderController::class, 'index'])->name('admin.bikeservice.orders.index')->permission('bikeservice.view');
@@ -172,6 +172,10 @@ final class BikeServiceModule implements ModuleInterface
             'intake_odometer_km' => 'nullable|integer',
             'intake_battery_pct' => 'nullable|integer',
             'signature' => 'nullable|max:100',
+            'sign_mode' => 'nullable|in:manual,digital',
+            'signature_provider_png' => 'nullable|max:800000',
+            'signature_customer_png' => 'nullable|max:800000',
+            'esign_email' => 'nullable|email|max:190',
         ]);
         $v->ruleset('bikeservice.document', [
             'type' => 'required|in:' . implode(',', PdfTemplateCatalog::types()),

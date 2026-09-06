@@ -1,0 +1,60 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="esign-documents" data-actions-default="1">
+<header class="page-header">
+    <h1>{{ 'esign.documents.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.esign.settings') }}">{{ 'nav.esign.settings'|trans }}</a>
+        {% if user.can('esign.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.esign.documents.create') }}">{{ icon('plus') }} {{ 'esign.documents.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'esign.documents.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'esign.all_statuses'|trans }}</option>
+            {% for s in statuses %}
+                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('esign.status.' ~ s)|trans }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+{% include 'ui/sort_th.html.twig' with { label: 'esign.field.number'|trans, column: 'number', query: { status: status } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'esign.field.title'|trans, column: 'title', query: { status: status } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'esign.field.status'|trans, column: 'status', query: { status: status } } %}
+<th>{{ 'esign.field.counterparty_name'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'esign.field.created'|trans, column: 'createdAt', query: { status: status } } %}
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td><a href="{{ url('admin.esign.documents.show', {id: item.id()}) }}"><strong>{{ item.number() }}</strong></a></td>
+    <td>{{ item.title() }}</td>
+    <td><span class="badge">{{ item.statusLabel()|trans }}</span></td>
+    <td>{{ item.counterpartyName() }}</td>
+    <td class="is-mute">{{ item.createdAt().format('d. m. Y') }}</td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% include 'ui/row_action.html.twig' with { href: url('admin.esign.documents.show', {id: item.id()}), label: 'common.edit'|trans, icon: 'eye' } %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr><td colspan="6"><div class="empty"><h2>{{ 'esign.documents.empty'|trans }}</h2></div></td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

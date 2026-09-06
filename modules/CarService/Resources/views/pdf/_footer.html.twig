@@ -1,5 +1,5 @@
 {# Společná patička CarService PDF — styl F04 (razítko + podpis).
-   Očekává: company, appName, preparedBy, signature (optional), pageLabel (optional) #}
+   Očekává: company, appName, preparedBy, signature / signatureService / signatureServiceImage #}
 <div class="pdf-footer pdf-footer--stamp">
     <table class="w-100">
         <tr>
@@ -13,11 +13,18 @@
             </td>
             <td style="width:40%;vertical-align:top">
                 <div class="pdf-footer__lbl">Podpis oprávněné osoby</div>
-                {% if signature or preparedBy %}
-                    <div class="pdf-footer__name">{{ signature|default(preparedBy) }}</div>
+                {% set serviceName = signatureService|default(signature)|default(preparedBy) %}
+                {% if signatureServiceImage|default(null) %}
+                    <img src="{{ signatureServiceImage }}" alt="Podpis servisu" style="max-width:220px;max-height:70px;display:block;margin:6px 0">
+                    {% if serviceName %}<div class="pdf-footer__name">{{ serviceName }}</div>{% endif %}
+                {% elseif serviceName %}
+                    <div class="pdf-footer__name">{{ serviceName }}</div>
+                    <div class="pdf-footer__line"></div>
+                    <div class="pdf-footer__hint">jméno hůlkovým písmem</div>
+                {% else %}
+                    <div class="pdf-footer__line"></div>
+                    <div class="pdf-footer__hint">jméno hůlkovým písmem</div>
                 {% endif %}
-                <div class="pdf-footer__line"></div>
-                <div class="pdf-footer__hint">jméno hůlkovým písmem</div>
             </td>
             <td style="width:25%;vertical-align:bottom;text-align:right">
                 <div class="pdf-footer__page">{{ pageLabel|default('Strana 1 / 1') }}</div>

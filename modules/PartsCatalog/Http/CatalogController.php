@@ -14,6 +14,7 @@ use Gereq\Module\CapabilityRegistry;
 use Gereq\Module\ModuleManager;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
+use Modules\CarService\Domain\ServiceOrder;
 use Modules\PartsCatalog\Application\CatalogApiCacheStore;
 use Modules\PartsCatalog\Application\CatalogCallLogger;
 use Modules\PartsCatalog\Application\CategoryTaxonomy;
@@ -517,6 +518,11 @@ final class CatalogController extends Controller
 
             return $this->redirectToReferer($request);
         }
+        if ($this->isCarServiceOrderLocked($orderId)) {
+            $this->flash('error', $this->translator->trans('partscatalog.error.order_locked'));
+
+            return $this->redirect('admin.carservice.show', ['id' => $orderId]);
+        }
         $qtyRaw = (int) round((float) str_replace(',', '.', trim((string) $request->request->get('qty', '1'))));
         $qty = (string) max(1, min(9999, $qtyRaw > 0 ? $qtyRaw : 1));
         $part = new OrderPart(
@@ -545,6 +551,11 @@ final class CatalogController extends Controller
     {
         $part = $this->em->find(OrderPart::class, $id);
         $orderId = $part instanceof OrderPart ? $part->orderId() : null;
+        if ($orderId !== null && $this->isCarServiceOrderLocked($orderId)) {
+            $this->flash('error', $this->translator->trans('partscatalog.error.order_locked'));
+
+            return $this->redirect('admin.carservice.show', ['id' => $orderId]);
+        }
         if ($part instanceof OrderPart) {
             $this->em->remove($part);
             $this->em->flush();
@@ -554,6 +565,16 @@ final class CatalogController extends Controller
         return $orderId !== null
             ? $this->redirect('admin.carservice.show', ['id' => $orderId])
             : $this->redirect('admin.partscatalog.browse');
+    }
+
+    private function isCarServiceOrderLocked(string $orderId): bool
+    {
+        if ($orderId === '' || !class_exists(ServiceOrder::class)) {
+            return false;
+        }
+        $order = $this->em->find(ServiceOrder::class, $orderId);
+
+        return $order instanceof ServiceOrder && !$order->isOpen();
     }
 
     /**

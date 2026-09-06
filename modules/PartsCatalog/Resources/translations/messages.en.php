@@ -178,5 +178,6 @@ return [
     'partscatalog.flash.attached' => 'Part attached to order.',
     'partscatalog.flash.detached' => 'Part removed.',
     'partscatalog.error.attach_invalid' => 'Invalid data for attaching a part.',
+    'partscatalog.error.order_locked' => 'Order is locked — parts cannot be changed.',
     'partscatalog.attribution' => 'FAPI (fapi.iisis.ru). Srotas.cz AJAX + cache. Tambov = kvik.shop. TecDoc: TecAlliance.',
 ];

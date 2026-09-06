@@ -119,6 +119,9 @@ final class ServiceOrderApiController extends Controller
         if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
             return ApiResponse::forbidden();
         }
+        if (!$order->isOpen()) {
+            return ApiResponse::error('order_locked', 'carservice.error.order_locked', [], 409);
+        }
         $data = gereq()->make(ValidationRegistry::class)->validate('carservice.save', $this->body($request));
         $vehicleId = trim((string) $data['vehicle_id']);
         if (!$this->em->find(Vehicle::class, $vehicleId) instanceof Vehicle) {
@@ -200,6 +203,9 @@ final class ServiceOrderApiController extends Controller
         }
         if (!$this->branchContext->canMutateOrder($this->auth->user(), $order)) {
             return ApiResponse::forbidden();
+        }
+        if (!$order->isOpen()) {
+            return ApiResponse::error('order_locked', 'carservice.error.order_locked', [], 409);
         }
         try {
             $job = $this->carservice->completeJob($jobId);

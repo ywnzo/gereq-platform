@@ -10,7 +10,7 @@ use Gereq\Support\Json;
 
 final class Settings
 {
-    /** @var array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>}> */
+    /** @var array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}> */
     private array $definitions = [];
 
     /** @var array<string, mixed>|null null = ještě nenačteno */
@@ -22,7 +22,10 @@ final class Settings
     ) {
     }
 
-    /** @param array<string, string> $options */
+    /**
+     * @param array<string, string> $options Select options (value => label); not UI flags
+     * @param bool $global Zobrazit v globálním admin Nastavení (false = jen vlastní UI modulu)
+     */
     public function define(
         string $key,
         string $type,
@@ -30,6 +33,7 @@ final class Settings
         mixed $default = null,
         ?string $module = null,
         array $options = [],
+        bool $global = true,
     ): void {
         $this->definitions[$key] = [
             'type' => $type,
@@ -37,6 +41,7 @@ final class Settings
             'module' => $module,
             'default' => $default,
             'options' => $options,
+            'global' => $global,
         ];
     }
 
@@ -80,10 +85,23 @@ final class Settings
         $this->values[$key] = $this->cast($stored, $type);
     }
 
-    /** @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>}> */
+    /** @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}> */
     public function definitions(): array
     {
         return $this->definitions;
+    }
+
+    /**
+     * Definice viditelné v globálním admin Nastavení.
+     *
+     * @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}>
+     */
+    public function globalDefinitions(): array
+    {
+        return array_filter(
+            $this->definitions,
+            static fn (array $d): bool => ($d['global'] ?? true) === true,
+        );
     }
 
     /** Jedním SELECT * načte všechna nastavení pro request (eliminuje N+1 z find-per-key). */

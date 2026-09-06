@@ -28,6 +28,8 @@ final class ModuleManifest
         public readonly array $permissions = [],
         public readonly string $author = 'GEREQ',
         public readonly array $groups = [],
+        /** Named route for the module's own settings UI (optional; falls back to admin.{id}.settings). */
+        public readonly ?string $settingsRoute = null,
     ) {
     }
 
@@ -50,6 +52,8 @@ final class ModuleManifest
             }
         }
 
+        $settingsRoute = trim((string) ($data['settings_route'] ?? ''));
+
         return new self(
             id: $id,
             name: (string) ($data['name'] ?? $id),
@@ -64,6 +68,7 @@ final class ModuleManifest
             permissions: array_values($data['permissions'] ?? []),
             author: (string) ($data['author'] ?? 'GEREQ'),
             groups: array_values(array_unique($groups)),
+            settingsRoute: $settingsRoute !== '' ? $settingsRoute : null,
         );
     }
 }

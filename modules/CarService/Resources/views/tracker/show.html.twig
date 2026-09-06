@@ -1,95 +1,235 @@
 {% extends 'admin/layout.html.twig' %}
+{% block breadcrumb %}
+    {% set crumbParts = [] %}
+    {% if vehicle %}
+        {% set autoLabel = (vehicle.brand() ~ ' ' ~ vehicle.displayModel())|trim %}
+        {% if autoLabel != '' %}
+            {% set crumbParts = crumbParts|merge([autoLabel]) %}
+        {% endif %}
+        {% set crumbParts = crumbParts|merge([vehicle.plate()]) %}
+        {% if vehicle.motorization() %}
+            {% set crumbParts = crumbParts|merge([vehicle.motorization()]) %}
+        {% endif %}
+    {% else %}
+        {% set crumbParts = [pageTitle|default('carservice.tracker.title'|trans)] %}
+    {% endif %}
+    <div class="cs-tracker-crumbs">
+        {% include 'ui/breadcrumbs.html.twig' with { items: [
+            { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+            { label: 'nav.carservice'|trans, url: url('admin.carservice.index') },
+            { label: 'nav.carservice.tracker'|trans, url: url('admin.carservice.tracker') },
+            { label: crumbParts|join(' • ') },
+        ] } %}
+    </div>
+{% endblock %}
 {% block content %}
-<header class="page-header">
-    <div>
-        <h1>{{ vehicle ? vehicle.plate() : 'carservice.tracker.title'|trans }}</h1>
-        <p class="muted">{{ item.statusLabel()|trans }} · {{ item.teamLabel()|trans }}</p>
+{% set vehicleLabel = vehicle ? ((vehicle.brand() ~ ' ' ~ vehicle.displayModel())|trim) : '' %}
+{% set subject = (item.serviceInfo() ?? item.note() ?? '')|trim %}
+<div class="cs-tracker cs-tracker--show">
+<header class="page-header cs-tracker__header">
+    <div class="cs-tracker__header-left">
+        <div class="cs-tracker__header-main">
+            <h1>{{ vehicle ? vehicle.plate() : 'carservice.tracker.title'|trans }}</h1>
+            <p class="muted">
+                <span class="status-chip status-chip--cs-{{ item.status() }}">
+                    <span class="status-chip__dot" aria-hidden="true"></span>
+                    {{ item.statusLabel()|trans }}
+                </span>
+                <span class="badge badge--cs-{{ item.team() }}">{{ item.teamLabel()|trans }}</span>
+                {% if vehicleLabel %}<span>{{ vehicleLabel }}</span>{% endif %}
+                {% if vehicle and vehicle.motorization() %}<span class="cs-tracker__motor">{{ vehicle.motorization() }}</span>{% endif %}
+            </p>
+        </div>
+        <div class="actions cs-tracker__header-actions">
+            <a class="btn btn--ghost" href="{{ url('admin.carservice.show',{id:item.id()}) }}">{{ 'common.detail'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.carservice.tracker') }}">{{ 'carservice.tracker.back'|trans }}</a>
+        </div>
     </div>
-    <div class="actions">
-        <a class="btn btn--ghost" href="{{ url('admin.carservice.show',{id:item.id()}) }}">{{ 'common.detail'|trans }}</a>
-        <a class="btn btn--ghost" href="{{ url('admin.carservice.tracker') }}">{{ 'carservice.tracker.back'|trans }}</a>
-    </div>
+    <figure class="cs-tracker__qr-corner" title="{{ 'carservice.field.tracker'|trans }}">
+        <img src="{{ qrDataUri }}" alt="QR" width="112" height="112">
+    </figure>
 </header>
 
-<section class="panel" style="text-align:center">
-    <img src="{{ qrDataUri }}" alt="QR" width="160" height="160">
-    <p class="muted" style="word-break:break-all;font-size:.75rem">{{ trackerUrl }}</p>
-</section>
-
-{% if teamQueue is not empty %}
-<section class="panel">
-    <header class="panel__head"><h2>{{ 'carservice.tracker.team_queue'|trans }}</h2></header>
-    <ul class="meta-list">
-        {% for o in teamQueue %}
-            <li>
-                <a href="{{ url('admin.carservice.tracker.show',{id:o.id()}) }}">#{{ o.id()|slice(0,8) }}</a>
-                — {{ o.statusLabel()|trans }}
-                {% if o.serviceInfo() %}<span class="muted">{{ o.serviceInfo()|slice(0,60) }}</span>{% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-</section>
-{% endif %}
-
-<section class="panel">
-    {% if running %}
-        <p>{{ 'carservice.tracker.running'|trans }}: <strong>{{ running.type() }}</strong>
-            ({{ running.startedAt().format('H:i') }})</p>
-        <form method="post" action="{{ url('admin.carservice.tracker.job_stop',{id:item.id(),jobId:running.id()}) }}">
-            {{ csrf_field()|raw }}
-            <button class="btn btn--primary" type="submit">{{ 'carservice.jobs.stop'|trans }}</button>
-        </form>
-    {% else %}
-        <form method="post" action="{{ url('admin.carservice.tracker.job_start',{id:item.id()}) }}" class="form-grid form-grid--compact">
-            {{ csrf_field()|raw }}
-            {% include 'ui/input.html.twig' with { name:'type', label:'carservice.field.job_type'|trans, value:'work' } %}
-            {% include 'ui/input.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, value:'' } %}
-            <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.jobs.start'|trans }}</button></div>
-        </form>
-    {% endif %}
-</section>
-
-{% if mediaAvailable %}
-<section class="panel">
-    <header class="panel__head"><h2>{{ 'carservice.media.title'|trans }}</h2></header>
-    <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.tracker.media',{id:item.id()}) }}">
-        {{ csrf_field()|raw }}
-        {% set phaseOptions = [] %}
-        {% for phase in mediaPhases %}
-            {% set phaseOptions = phaseOptions|merge([{ value: phase, label: ('carservice.media.phase.'~phase)|trans }]) %}
-        {% endfor %}
-        {% include 'ui/select.html.twig' with {
-            name: 'phase',
-            label: 'carservice.media.phase_label'|trans,
-            value: mediaPhases[0]|default('before'),
-            options: phaseOptions
-        } %}
-        {% include 'ui/file.html.twig' with {
-            name: 'file',
-            label: 'carservice.media.file'|trans,
-            hint: 'carservice.media.file.hint'|trans,
-            accept: 'image/*',
-            capture: 'environment',
-            required: true,
-            compact: true,
-            extra: 'field--full'
-        } %}
-        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
-    </form>
-    {% for phase in mediaPhases %}
-        <h3>{{ ('carservice.media.phase.'~phase)|trans }} ({{ mediaByPhase[phase]|default([])|length }})</h3>
-    {% endfor %}
-</section>
-{% endif %}
-
-<section class="panel">
-    <header class="panel__head"><h2>{{ 'carservice.jobs.title'|trans }}</h2></header>
-    <ul class="meta-list">
-        {% for j in jobs %}
-            <li>{{ j.type() }} — {{ j.startedAt().format('d.m. H:i') }}{% if j.endedAt() %} → {{ j.endedAt().format('H:i') }}{% else %} ({{ 'carservice.jobs.running'|trans }}){% endif %}</li>
+<div class="cs-tracker__shell cs-tracker__shell--show">
+    {% if vehiclePhotoUrl or subject or vehicleLabel or item.intakeMileage() %}
+    <section class="cs-tracker__hero" aria-label="{{ vehicle ? vehicle.plate() : 'carservice.tracker.title'|trans }}">
+        {% if vehiclePhotoUrl %}
+            <div class="cs-tracker__hero-media">
+                <img src="{{ vehiclePhotoUrl }}" alt="{{ vehicle ? vehicle.plate() : '' }}" loading="lazy">
+            </div>
         {% else %}
-            <li class="muted">{{ 'carservice.jobs.empty'|trans }}</li>
-        {% endfor %}
-    </ul>
-</section>
+            <div class="cs-tracker__hero-media cs-tracker__hero-media--empty" aria-hidden="true">
+                {{ icon('car') }}
+            </div>
+        {% endif %}
+        <div class="cs-tracker__hero-body">
+            {% if vehicleLabel %}<p class="cs-tracker__hero-name">{{ vehicleLabel }}</p>{% endif %}
+            {% if subject %}
+                <p class="cs-tracker__hero-subject">{{ subject|nl2br }}</p>
+            {% endif %}
+            {% if item.intakeMileage() %}
+                <p class="cs-tracker__hero-meta">{{ 'carservice.field.intake_mileage'|trans }}: <strong>{{ item.intakeMileage()|number_format(0, ',', ' ') }} km</strong></p>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    <div class="cs-tracker__show-grid{{ teamQueue is empty ? ' cs-tracker__show-grid--solo' : '' }}">
+        <div class="cs-tracker__main">
+            <section class="cs-tracker__panel cs-tracker__panel--job">
+                <header class="cs-tracker__panel-head">
+                    <h2>{{ running ? 'carservice.tracker.running'|trans : 'carservice.jobs.start'|trans }}</h2>
+                </header>
+                {% if running %}
+                    <div class="cs-tracker__running-card">
+                        <div>
+                            <p class="cs-tracker__running-type">{{ running.type() }}</p>
+                            <p class="muted">
+                                {% set runningEmp = running.employeeUserId() ? employeeNames[running.employeeUserId()]|default(null) : null %}
+                                {% if runningEmp %}<strong>{{ runningEmp }}</strong> · {% endif %}
+                                {{ running.startedAt().format('d.m.Y H:i') }}{% if running.note() %} · {{ running.note() }}{% endif %}
+                            </p>
+                        </div>
+                        <form method="post" action="{{ url('admin.carservice.tracker.job_stop',{id:item.id(),jobId:running.id()}) }}">
+                            {{ csrf_field()|raw }}
+                            <button class="btn btn--primary" type="submit">{{ 'carservice.jobs.stop'|trans }}</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <form method="post" action="{{ url('admin.carservice.tracker.job_start',{id:item.id()}) }}" class="cs-tracker__job-form form-grid form-grid--compact">
+                        {{ csrf_field()|raw }}
+                        {% include 'ui/input.html.twig' with { name:'type', label:'carservice.field.job_type'|trans, value:'work' } %}
+                        {% include 'ui/select.html.twig' with {
+                            name: 'employee_user_id',
+                            label: 'carservice.field.employee'|trans,
+                            optional: true,
+                            value: user.id(),
+                            options: userOptions
+                        } %}
+                        {% include 'ui/input.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, value:'' } %}
+                        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.jobs.start'|trans }}</button></div>
+                    </form>
+                {% endif %}
+            </section>
+
+            {% if mediaAvailable %}
+            <section class="cs-tracker__panel">
+                <header class="cs-tracker__panel-head">
+                    <h2>{{ 'carservice.media.title'|trans }}</h2>
+                </header>
+                <div class="cs-tracker__phases" role="list">
+                    {% for phase in mediaPhases %}
+                        {% set count = mediaByPhase[phase]|default([])|length %}
+                        <span class="cs-tracker__phase-chip{{ count > 0 ? ' is-filled' : '' }}" role="listitem">
+                            <strong>{{ ('carservice.media.phase.'~phase)|trans }}</strong>
+                            <span>{{ count }}</span>
+                        </span>
+                    {% endfor %}
+                </div>
+
+                <form method="post" enctype="multipart/form-data" class="cs-tracker__upload form-grid form-grid--compact" action="{{ url('admin.carservice.tracker.media',{id:item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    {% set phaseOptions = [] %}
+                    {% for phase in mediaPhases %}
+                        {% set phaseOptions = phaseOptions|merge([{ value: phase, label: ('carservice.media.phase.'~phase)|trans }]) %}
+                    {% endfor %}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'phase',
+                        label: 'carservice.media.phase_label'|trans,
+                        value: mediaPhases[0]|default('before'),
+                        options: phaseOptions
+                    } %}
+                    {% include 'ui/file.html.twig' with {
+                        name: 'file',
+                        label: 'carservice.media.file'|trans,
+                        hint: 'carservice.media.file.hint'|trans,
+                        accept: 'image/*',
+                        capture: 'environment',
+                        required: true,
+                        compact: true,
+                        extra: 'field--full'
+                    } %}
+                    <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
+                </form>
+
+                {% for phase in mediaPhases %}
+                    {% set rows = mediaByPhase[phase]|default([]) %}
+                    {% if rows is not empty %}
+                        <div class="cs-tracker__phase-block">
+                            <h3>{{ ('carservice.media.phase.'~phase)|trans }}</h3>
+                            <div class="cs-tracker__thumbs">
+                                {% for row in rows %}
+                                    {% set asset = row.asset %}
+                                    <a class="cs-tracker__thumb" href="{{ url('admin.media.show',{id:asset.id()}) }}" title="{{ asset.title() }}">
+                                        {% if asset.isImage() %}
+                                            <img src="{{ url('admin.media.file',{id:asset.id()}) }}" alt="{{ asset.title() }}" loading="lazy">
+                                        {% else %}
+                                            <span class="cs-tracker__thumb-file">{{ asset.mime() }}</span>
+                                        {% endif %}
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            <section class="cs-tracker__panel">
+                <header class="cs-tracker__panel-head">
+                    <h2>{{ 'carservice.jobs.title'|trans }}</h2>
+                    {% if jobs is not empty %}<span class="muted">{{ jobs|length }}</span>{% endif %}
+                </header>
+                {% if jobs is not empty %}
+                    <ul class="cs-tracker__jobs">
+                        {% for j in jobs %}
+                            {% set empName = j.employeeUserId() ? employeeNames[j.employeeUserId()]|default(null) : null %}
+                            <li class="cs-tracker__job{{ j.isRunning() ? ' is-running' : '' }}">
+                                <div class="cs-tracker__job-main">
+                                    <strong>{{ j.type() }}</strong>
+                                    {% if empName %}<span class="cs-tracker__job-emp">{{ empName }}</span>{% endif %}
+                                    {% if j.note() %}<span class="muted">{{ j.note() }}</span>{% endif %}
+                                </div>
+                                <div class="cs-tracker__job-time">
+                                    <span>{{ j.startedAt().format('d.m. H:i') }}</span>
+                                    {% if j.endedAt() %}
+                                        <span>→ {{ j.endedAt().format('H:i') }}</span>
+                                    {% else %}
+                                        <span class="cs-tracker__job-live">{{ 'carservice.jobs.running'|trans }}</span>
+                                    {% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="muted cs-tracker__empty-inline">{{ 'carservice.jobs.empty'|trans }}</p>
+                {% endif %}
+            </section>
+        </div>
+
+        {% if teamQueue is not empty %}
+        <aside class="cs-tracker__aside">
+            <section class="cs-tracker__panel">
+                <header class="cs-tracker__panel-head">
+                    <h2>{{ 'carservice.tracker.team_queue'|trans }}</h2>
+                    <span class="muted">{{ teamQueue|length }}</span>
+                </header>
+                <ul class="cs-tracker__queue">
+                    {% for o in teamQueue %}
+                        <li>
+                            <a href="{{ url('admin.carservice.tracker.show',{id:o.id()}) }}">#{{ o.id()|slice(0,8) }}</a>
+                            <span class="status-chip status-chip--cs-{{ o.status() }}">
+                                <span class="status-chip__dot" aria-hidden="true"></span>
+                                {{ o.statusLabel()|trans }}
+                            </span>
+                            {% if o.serviceInfo() %}<span class="muted">{{ o.serviceInfo()|slice(0, 48) }}{% if o.serviceInfo()|length > 48 %}…{% endif %}</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </aside>
+        {% endif %}
+    </div>
+</div>
+</div>
 {% endblock %}

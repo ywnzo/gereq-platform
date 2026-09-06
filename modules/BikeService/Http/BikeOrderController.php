@@ -17,6 +17,7 @@ use Gereq\Module\CapabilityRegistry;
 use Gereq\User\Entity\User;
 use Modules\BikeService\Application\BikeServiceProvider;
 use Modules\BikeService\Application\FinishOrderService;
+use Modules\BikeService\Application\OrderEsignService;
 use Modules\BikeService\Application\OrderMediaService;
 use Modules\BikeService\Application\PdfTemplateCatalog;
 use Modules\BikeService\Application\QrCodeService;
@@ -52,6 +53,7 @@ final class BikeOrderController extends Controller
         private readonly FinishOrderService $finishOrder,
         private readonly QrCodeService $qr,
         private readonly CapabilityRegistry $capabilities,
+        private readonly OrderEsignService $orderEsign,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -181,6 +183,13 @@ final class BikeOrderController extends Controller
             'pdfTypes' => PdfTemplateCatalog::typeMeta(),
             'qrDataUri' => $this->qr->dataUriForOrder($order->id()),
             'orderUrl' => $this->qr->orderUrl($order->id()),
+            'esignAvailable' => $this->orderEsign->available(),
+            'esignDocuments' => $this->orderEsign->available()
+                ? ($this->orderEsign->esign()?->documentsForSource(
+                    \Modules\ESign\Application\ESignProvider::SOURCE_BIKESERVICE_ORDER,
+                    $id,
+                ) ?? [])
+                : [],
         ]);
     }
 
@@ -333,9 +342,13 @@ final class BikeOrderController extends Controller
             'intake_odometer_km' => trim((string) ($data['intake_odometer_km'] ?? '')) !== '' ? (int) $data['intake_odometer_km'] : null,
             'intake_battery_pct' => trim((string) ($data['intake_battery_pct'] ?? '')) !== '' ? (int) $data['intake_battery_pct'] : null,
             'signature' => trim((string) ($data['signature'] ?? '')),
+            'sign_mode' => trim((string) ($data['sign_mode'] ?? 'manual')),
+            'signature_provider_png' => trim((string) ($data['signature_provider_png'] ?? '')),
+            'signature_customer_png' => trim((string) ($data['signature_customer_png'] ?? '')),
+            'esign_email' => trim((string) ($data['esign_email'] ?? '')),
         ];
         try {
-            $result = $this->finishOrder->finish($id, $meta);
+            $result = $this->finishOrder->finish($id, $meta, $request);
         } catch (\Throwable $e) {
             $this->flash('error', $this->translator->trans($e->getMessage()));
 
@@ -344,6 +357,13 @@ final class BikeOrderController extends Controller
         $payload = $this->bikeservice->serializeOrder($result['order']);
         $this->auditor->log('bikeservice.order_finished', 'bikeservice_order', $result['order']->id());
         $this->events->emit('bikeservice.order_finished', ['type' => 'bikeservice_order', 'id' => $result['order']->id()], $payload);
+        if (!empty($result['esign']['message'])) {
+            $params = [];
+            if (!empty($result['esign']['signing_url'])) {
+                $params['%url%'] = (string) $result['esign']['signing_url'];
+            }
+            $this->flash('success', $this->translator->trans((string) $result['esign']['message'], $params));
+        }
         $this->flash('success', $this->translator->trans(
             $result['document'] !== null
                 ? 'bikeservice.flash.order_finished_doc'

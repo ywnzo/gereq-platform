@@ -13,12 +13,8 @@ use Gereq\Module\CapabilityRegistry;
 use Gereq\Module\ModuleManager;
 use Gereq\Setting\Settings;
 use Modules\CarService\Application\LaborRateCatalog;
-use Modules\CarService\Application\PdfTemplateCatalog;
-use Modules\CarService\Application\PdfTemplateService;
-use Modules\CarService\Application\ServiceDocumentService;
 use Modules\CarService\Domain\ServiceOrder;
 use Modules\Currency\Application\CurrencyBuilder;
-use Modules\Documents\Application\Pdf\PdfRenderer;
 use Modules\SearchEngines\Application\SearchEnginesProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -39,8 +35,6 @@ final class SettingsController extends Controller
         private readonly Settings $settings,
         private readonly ModuleManager $modules,
         private readonly CapabilityRegistry $capabilities,
-        private readonly PdfTemplateService $pdfTemplates,
-        private readonly ServiceDocumentService $serviceDocuments,
         private readonly CurrencyBuilder $money,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -60,8 +54,6 @@ final class SettingsController extends Controller
             'marketSources' => $this->selectedMarketSources(),
             'marketEngines' => $this->marketEngineOptions(),
             'teams' => ServiceOrder::TEAMS,
-            'pdfTemplates' => $this->pdfTemplateValues(),
-            'pdfTypes' => PdfTemplateCatalog::typeMeta(),
         ]);
     }
 
@@ -100,42 +92,10 @@ final class SettingsController extends Controller
         $this->settings->set('carservice.auto_idoklad', !empty($data['auto_idoklad']));
         $this->settings->set('carservice.market_sources', $this->normalizeMarketSources($data['market_sources'] ?? []));
 
-        foreach (PdfTemplateCatalog::allSettingKeys() as $key) {
-            $field = PdfTemplateCatalog::formField($key);
-            $this->settings->set($key, trim((string) ($data[$field] ?? '')));
-        }
-
         $this->forgetForm('carservice.settings');
         $this->flash('success', $this->translator->trans('carservice.flash.settings_saved'));
 
         return $this->redirect('admin.carservice.settings');
-    }
-
-    /** Zkušební PDF z aktuálních polí formuláře (bez uložení). */
-    public function previewPdf(Request $request): Response
-    {
-        $data = $this->validate($request, 'carservice.pdf_preview');
-        $type = (string) ($data['pdf_preview_type'] ?? PdfTemplateCatalog::TYPE_WORKSHEET);
-        if (!in_array($type, PdfTemplateCatalog::types(), true)) {
-            $type = PdfTemplateCatalog::TYPE_WORKSHEET;
-        }
-
-        $brand = $this->pdfTemplates->brandName();
-        $docTitle = $this->pdfTemplates->documentTitle($type);
-        $chrome = $this->pdfTemplates->chromeFromPosted($type, $data, [
-            'brand' => $brand,
-            'doc_title' => $docTitle,
-        ]);
-
-        $result = $this->serviceDocuments->preview($type, $chrome);
-        $filename = 'nahled-' . $type . '.' . $result->extension;
-        $mime = $result->isPdf() ? $result->mime : 'text/html; charset=UTF-8';
-
-        return new Response($result->binary, 200, [
-            'Content-Type' => $mime,
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
-            'Cache-Control' => 'no-store',
-        ]);
     }
 
     /**
@@ -183,28 +143,6 @@ final class SettingsController extends Controller
         }
 
         return true;
-    }
-
-    /**
-     * @return array<string, string> settingKey => html
-     */
-    private function pdfTemplateValues(): array
-    {
-        $out = [];
-        foreach (PdfTemplateCatalog::allSettingKeys() as $key) {
-            $stored = trim((string) $this->settings->get($key, ''));
-            if ($key === PdfTemplateCatalog::globalKey(PdfTemplateCatalog::PART_HEADER)) {
-                $out[$key] = PdfTemplateCatalog::effectiveTemplate($stored, PdfTemplateCatalog::PART_HEADER);
-                continue;
-            }
-            if ($key === PdfTemplateCatalog::globalKey(PdfTemplateCatalog::PART_FOOTER)) {
-                $out[$key] = PdfTemplateCatalog::effectiveTemplate($stored, PdfTemplateCatalog::PART_FOOTER);
-                continue;
-            }
-            $out[$key] = $stored;
-        }
-
-        return $out;
     }
 
     /**

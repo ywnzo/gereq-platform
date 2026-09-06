@@ -1,10 +1,11 @@
+{% set canEditParts = editable|default(true) %}
 <section class="panel">
     <header class="panel__head">
         <div>
             <h2>{{ 'partscatalog.partial.title'|trans }}</h2>
             <p class="muted">{{ 'partscatalog.partial.intro'|trans }}</p>
         </div>
-        {% if user.can('partscatalog.view') %}
+        {% if user.can('partscatalog.view') and canEditParts %}
             <a class="btn btn--ghost" href="{{ browseUrl }}">{{ 'partscatalog.action.open_catalog'|trans }}</a>
         {% endif %}
     </header>
@@ -19,7 +20,7 @@
                     <th>{{ 'partscatalog.col.brand'|trans }}</th>
                     <th>{{ 'partscatalog.col.qty'|trans }}</th>
                     <th>{{ 'partscatalog.col.price'|trans }}</th>
-                    <th></th>
+                    {% if canEditParts %}<th></th>{% endif %}
                 </tr>
                 </thead>
                 <tbody>
@@ -41,6 +42,7 @@
                             —
                         {% endif %}
                     </td>
+                    {% if canEditParts %}
                     <td>
                         {% if user.can('partscatalog.manage') %}
                         <form method="post" action="{{ url('admin.partscatalog.detach',{id:part.id()}) }}" data-confirm="{{ 'partscatalog.confirm.detach'|trans }}">
@@ -49,6 +51,7 @@
                         </form>
                         {% endif %}
                     </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
                 </tbody>

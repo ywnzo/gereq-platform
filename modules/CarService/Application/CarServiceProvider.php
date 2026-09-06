@@ -563,6 +563,16 @@ final class CarServiceProvider
     }
 
     /** @param array<string, mixed> $meta */
+    public function updateOrderMeta(string $orderId, array $meta): ServiceOrder
+    {
+        $order = $this->requireOrder($orderId);
+        $this->applyFinishMeta($order, $meta);
+        $this->em->flush();
+
+        return $order;
+    }
+
+    /** @param array<string, mixed> $meta */
     private function applyFinishMeta(ServiceOrder $order, array $meta): void
     {
         if (array_key_exists('payment_type', $meta)) {

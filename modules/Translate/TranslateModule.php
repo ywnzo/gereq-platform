@@ -22,7 +22,7 @@ final class TranslateModule implements ModuleInterface
 
     public function version(): string
     {
-        return '2.0.0';
+        return '2.0.1';
     }
 
     public function register(ModuleContext $context): void
@@ -32,11 +32,11 @@ final class TranslateModule implements ModuleInterface
 
         $context->capabilities()->register('translate', $this->id(), $context->get(TranslateService::class));
 
-        $context->settings()->define('translate.ms_api_key', SettingRecord::TYPE_ENCRYPTED, 'translate.settings.api_key', '', $this->id());
-        $context->settings()->define('translate.ms_region', SettingRecord::TYPE_STRING, 'translate.settings.region', '', $this->id());
-        $context->settings()->define('translate.ms_endpoint', SettingRecord::TYPE_STRING, 'translate.settings.endpoint', '', $this->id());
-        $context->settings()->define('translate.source_locale', SettingRecord::TYPE_STRING, 'translate.settings.source_locale', 'ru', $this->id());
-        $context->settings()->define('translate.target_locale', SettingRecord::TYPE_STRING, 'translate.settings.target_locale', 'cs', $this->id());
+        $context->settings()->define('translate.ms_api_key', SettingRecord::TYPE_ENCRYPTED, 'translate.settings.api_key', '', $this->id(), [], false);
+        $context->settings()->define('translate.ms_region', SettingRecord::TYPE_STRING, 'translate.settings.region', '', $this->id(), [], false);
+        $context->settings()->define('translate.ms_endpoint', SettingRecord::TYPE_STRING, 'translate.settings.endpoint', '', $this->id(), [], false);
+        $context->settings()->define('translate.source_locale', SettingRecord::TYPE_STRING, 'translate.settings.source_locale', 'ru', $this->id(), [], false);
+        $context->settings()->define('translate.target_locale', SettingRecord::TYPE_STRING, 'translate.settings.target_locale', 'cs', $this->id(), [], false);
 
         $context->router()->group('/admin/translate', function (Router $routes): void {
             $routes->get('/settings', [SettingsController::class, 'edit'])->name('admin.translate.settings')->permission('translate.view');

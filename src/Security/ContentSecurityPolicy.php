@@ -44,12 +44,12 @@ final class ContentSecurityPolicy
 
         $directives = [
             "default-src 'self'",
-            'script-src ' . implode(' ', array_unique($scriptSrc)),
+            'script-src ' . implode(' ', array_unique([...$scriptSrc, 'https://cdn.jsdelivr.net'])),
             'style-src ' . implode(' ', array_unique($styleSrc)),
             "style-src-attr 'unsafe-inline'",
             "font-src 'self' https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https:",
-            'connect-src ' . implode(' ', array_unique($connectSrc)),
+            'connect-src ' . implode(' ', array_unique([...$connectSrc, 'https://cdn.jsdelivr.net'])),
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",

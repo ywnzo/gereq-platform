@@ -1,0 +1,106 @@
+{% extends '@esign/public/layout.html.twig' %}
+{% block content %}
+<h1>{{ 'esign.public.title'|trans }}</h1>
+<p class="esign-lead">
+    {{ document.title() }} · {{ 'esign.public.lead'|trans({'%name%': document.counterpartyName()}) }}
+    {% if document.counterpartyCompany() %}
+        ({{ document.counterpartyCompany() }})
+    {% endif %}
+</p>
+
+<div class="esign-notice-box">{{ 'esign.notice.ses'|trans }}</div>
+
+<iframe class="esign-doc" title="Dokument" sandbox srcdoc="{{ documentHtml|e('html_attr') }}"></iframe>
+
+<form method="post" action="{{ url('esign.sign.store', {token: token}) }}" id="esign-sign-form" class="esign-card">
+    {{ csrf_field()|raw }}
+    <div class="esign-hp" aria-hidden="true">
+        <label>Web <input type="text" name="website_url" tabindex="-1" autocomplete="off"></label>
+    </div>
+
+    <p class="esign-meta">
+        {{ 'esign.public.meta'|trans({'%expires%': link.expiresAt().format('d. m. Y H:i')}) }}
+        <br>
+        {{ 'esign.public.hash'|trans }}:
+        <code>{{ lockedHash }}</code>
+    </p>
+
+    <label class="esign-consent">
+        <input type="checkbox" name="consent_read" value="1" required>
+        <span>{{ consents.read }}</span>
+    </label>
+    <label class="esign-consent">
+        <input type="checkbox" name="consent_authority" value="1" required>
+        <span>{{ consents.authority }}</span>
+    </label>
+    <label class="esign-consent">
+        <input type="checkbox" name="consent_eidas" value="1" required>
+        <span>{{ consents.eidas }}</span>
+    </label>
+
+    <p class="esign-pad-label">{{ 'esign.hint.pad'|trans }}</p>
+    <div class="esign-pad-wrap">
+        <canvas id="esign-pad" width="800" height="220"></canvas>
+    </div>
+    <input type="hidden" name="signature" id="esign-signature">
+    <p class="esign-pad-error" id="esign-pad-error" hidden>{{ 'esign.public.pad_error'|trans }}</p>
+
+    <div class="esign-actions">
+        <button type="button" id="esign-clear" class="esign-btn esign-btn--ghost">{{ 'esign.action.clear_pad'|trans }}</button>
+        <button type="submit" class="esign-btn esign-btn--primary">{{ 'esign.public.submit'|trans }}</button>
+    </div>
+</form>
+
+<footer class="esign-footer">{{ 'esign.public.footer'|trans }}</footer>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}" src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  var canvas = document.getElementById('esign-pad');
+  var hidden = document.getElementById('esign-signature');
+  var error = document.getElementById('esign-pad-error');
+  var form = document.getElementById('esign-sign-form');
+  var clearBtn = document.getElementById('esign-clear');
+  if (!canvas || typeof SignaturePad === 'undefined') return;
+
+  function resize() {
+    var ratio = Math.max(window.devicePixelRatio || 1, 1);
+    var rect = canvas.getBoundingClientRect();
+    var data = pad.toData();
+    canvas.width = Math.floor(rect.width * ratio);
+    canvas.height = Math.floor(220 * ratio);
+    canvas.getContext('2d').scale(ratio, ratio);
+    pad.clear();
+    if (data.length) pad.fromData(data);
+  }
+
+  var pad = new SignaturePad(canvas, {
+    backgroundColor: 'rgb(255,255,255)',
+    penColor: 'rgb(10,11,10)',
+    minWidth: 1.2,
+    maxWidth: 2.8
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  clearBtn && clearBtn.addEventListener('click', function () {
+    pad.clear();
+    hidden.value = '';
+    error.hidden = true;
+  });
+
+  form.addEventListener('submit', function (e) {
+    if (pad.isEmpty()) {
+      e.preventDefault();
+      error.hidden = false;
+      return;
+    }
+    hidden.value = pad.toDataURL('image/png');
+    error.hidden = true;
+  });
+})();
+</script>
+{% endblock %}

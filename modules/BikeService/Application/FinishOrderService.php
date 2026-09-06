@@ -15,14 +15,15 @@ final class FinishOrderService
         private readonly BikeServiceProvider $bikeservice,
         private readonly CapabilityRegistry $capabilities,
         private readonly ServiceDocumentService $documents,
+        private readonly OrderEsignService $esign,
     ) {
     }
 
     /**
      * @param array<string, mixed> $finishMeta
-     * @return array{order: BikeOrder, document: ?Document, documents: list<Document>}
+     * @return array{order: BikeOrder, document: ?Document, documents: list<Document>, esign: ?array{message: ?string, signing_url?: ?string}}
      */
-    public function finish(string $orderId, array $finishMeta = []): array
+    public function finish(string $orderId, array $finishMeta = [], ?\Symfony\Component\HttpFoundation\Request $request = null): array
     {
         FullServiceLogger::log('bikeservice.finish.start', [
             'order_id' => $orderId,
@@ -62,10 +63,21 @@ final class FinishOrderService
                 );
             }
 
+            try {
+                $sig = $this->esign->resolveFinishSignatures($order, $finishMeta, $request);
+            } catch (\RuntimeException $e) {
+                throw new \InvalidArgumentException($e->getMessage());
+            }
+
             $order = $this->bikeservice->finishOrder($order);
             $documents = [];
             if ($this->capabilities->has('documents') && $this->documents->available()) {
-                $documents = $this->generateFinishDocuments($order, $finishMeta);
+                $documents = $this->generateFinishDocuments($order, array_merge($finishMeta, [
+                    'signature' => $sig['signature'],
+                    'signature_image' => $sig['signature_image'],
+                    'signature_service_image' => $sig['signature_service_image'],
+                    'sign_mode' => $sig['mode'],
+                ]));
             } else {
                 FullServiceLogger::log('bikeservice.finish.documents.skip', [
                     'order_id' => $order->id(),
@@ -81,7 +93,15 @@ final class FinishOrderService
                 'document_count' => count($documents),
             ]);
 
-            return ['order' => $order, 'document' => $primary, 'documents' => $documents];
+            $esignInfo = null;
+            if ($sig['mode'] === OrderEsignService::MODE_DIGITAL) {
+                $esignInfo = [
+                    'message' => $sig['message'],
+                    'signing_url' => $sig['signing_url'],
+                ];
+            }
+
+            return ['order' => $order, 'document' => $primary, 'documents' => $documents, 'esign' => $esignInfo];
         } catch (\Throwable $e) {
             FullServiceLogger::log('bikeservice.finish.error', [
                 'order_id' => $orderId,

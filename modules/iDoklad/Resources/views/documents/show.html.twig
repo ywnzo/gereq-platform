@@ -1,0 +1,136 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.carservice'|trans, url: url('admin.carservice.index') },
+        { label: 'nav.idoklad.documents'|trans, url: url('admin.idoklad.documents') ~ '?type=' ~ type|url_encode },
+        { label: pageTitle },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow"><a href="{{ url('admin.idoklad.documents') }}?type={{ type|url_encode }}">{{ typeMeta.label|trans }}</a></p>
+        <h1>{{ pageTitle }}</h1>
+        <p class="muted detail-layout__meta">
+            ID {{ documentId }}
+            {% if document.IsPaid is defined and document.IsPaid %}
+                <span class="badge">{{ 'idoklad.documents.paid'|trans }}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="actions">
+        {% if canPdf %}
+            <a class="btn btn--ghost" href="{{ url('admin.idoklad.documents.pdf', { type: type, id: documentId }) }}" target="_blank">{{ icon('receipt') }} PDF</a>
+        {% endif %}
+        <a class="btn btn--ghost" href="{{ url('admin.idoklad.documents') }}?type={{ type|url_encode }}">{{ 'common.back'|trans }}</a>
+    </div>
+</header>
+
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        <section class="detail-hero panel">
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'idoklad.documents.col.total'|trans }}</span>
+                    <strong>
+                        {{ document.TotalWithVat|default(document.TotalAmount|default(document.Total|default(document.Price|default('—')))) }}
+                        {{ document.CurrencyCode|default('CZK') }}
+                    </strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'idoklad.documents.col.number'|trans }}</dt>
+                        <dd>{{ document.DocumentNumber|default(document.VariableSymbol|default('—')) }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'idoklad.documents.col.date'|trans }}</dt>
+                        <dd>{{ document.DateOfIssue|default(document.DateOfTransaction|default(''))|slice(0, 10) ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'idoklad.documents.col.maturity'|trans }}</dt>
+                        <dd>{{ document.DateOfMaturity|default('')|slice(0, 10) ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'idoklad.documents.col.vs'|trans }}</dt>
+                        <dd>{{ document.VariableSymbol|default('—') }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'idoklad.documents.section.items'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'idoklad.documents.col.item'|trans }}</th>
+                            <th class="is-num">{{ 'idoklad.documents.col.qty'|trans }}</th>
+                            <th class="is-num">{{ 'idoklad.documents.col.price'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set lines = document.Items|default([]) %}
+                        {% for line in lines %}
+                            <tr>
+                                <td>{{ line.Name|default(line.name|default('—')) }}</td>
+                                <td class="is-num">{{ line.Amount|default(line.amount|default('1')) }}</td>
+                                <td class="is-num">{{ line.UnitPrice|default(line.Price|default(line.unitPrice|default('—'))) }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="3" class="muted">{{ 'idoklad.documents.no_items'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <aside class="detail-layout__aside">
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'idoklad.documents.section.partner'|trans }}</h2></header>
+            <dl class="meta-list meta-list--flush">
+                {% set partner = document.Partner|default({}) %}
+                <div>
+                    <dt>{{ 'idoklad.documents.col.partner'|trans }}</dt>
+                    <dd>{{ partner.CompanyName|default(document.PartnerName|default(document.CompanyName|default('—'))) }}</dd>
+                </div>
+                {% if partner.Email is defined and partner.Email %}
+                    <div>
+                        <dt>{{ 'idoklad.customer.company'|trans }}</dt>
+                        <dd>{{ partner.Email }}</dd>
+                    </div>
+                {% endif %}
+                <div>
+                    <dt>{{ 'idoklad.documents.col.description'|trans }}</dt>
+                    <dd>{{ document.Description|default(document.Name|default('—')) }}</dd>
+                </div>
+                {% if document.Note is defined and document.Note %}
+                    <div class="meta-list__full">
+                        <dt>{{ 'idoklad.documents.col.note'|trans }}</dt>
+                        <dd>{{ document.Note }}</dd>
+                    </div>
+                {% endif %}
+            </dl>
+        </section>
+
+        {% if links is not empty %}
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'idoklad.documents.section.links'|trans }}</h2></header>
+                <ul class="meta-list meta-list--flush">
+                    {% for link in links %}
+                        <li>
+                            <strong>{{ link.entityType() }}</strong>
+                            <span class="muted">{{ link.entityId() }}</span>
+                            <span class="badge">{{ link.documentType() }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+    </aside>
+</div>
+{% endblock %}

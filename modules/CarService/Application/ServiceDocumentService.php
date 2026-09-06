@@ -37,10 +37,10 @@ final class ServiceDocumentService
         private readonly Config $config,
         private readonly Settings $settings,
         private readonly Authenticator $auth,
-        private readonly PdfTemplateService $pdfTemplates,
         private readonly PdfDocumentGenerator $pdfDocuments,
         private readonly PdfRenderer $pdfRenderer,
         private readonly CurrencyBuilder $money,
+        private readonly OrderEsignService $orderEsign,
     ) {
     }
 
@@ -78,7 +78,7 @@ final class ServiceDocumentService
         ]);
 
         try {
-            $docTitle = $this->pdfTemplates->documentTitle($type);
+            $docTitle = PdfTemplateCatalog::documentTitle($type);
             $short = substr($order->id(), 0, 8);
             $context = $this->buildContext($order, $type, $extra);
             $definition = new ArrayPdfDocument(
@@ -135,7 +135,7 @@ final class ServiceDocumentService
             return false;
         }
         $prefix = strtolower($this->filenameSlug($type) . '-');
-        $titlePrefix = mb_strtolower($this->pdfTemplates->documentTitle($type));
+        $titlePrefix = mb_strtolower(PdfTemplateCatalog::documentTitle($type));
 
         $docs = $documents;
         if ($docs === null) {
@@ -179,14 +179,11 @@ final class ServiceDocumentService
         return $this->generate($order, $type, $extra);
     }
 
-    /**
-     * @param array{header?: string, footer?: string}|null $chrome
-     */
-    public function preview(string $type, ?array $chrome = null, ?ServiceOrder $order = null): PdfRenderResult
+    public function preview(string $type, ?ServiceOrder $order = null): PdfRenderResult
     {
         $context = $order instanceof ServiceOrder
-            ? $this->buildContext($order, $type, ['isPreview' => true, 'chrome' => $chrome])
-            : $this->sampleContext($type, $chrome);
+            ? $this->buildContext($order, $type, ['isPreview' => true])
+            : $this->sampleContext($type);
 
         return $this->pdfRenderer->render($this->viewFor($type), $context);
     }
@@ -203,17 +200,9 @@ final class ServiceDocumentService
         /** @var list<ServiceJob> $jobs */
         $jobs = $this->carservice->jobsForOrder($order->id());
         $appName = (string) $this->config->get('app.name', 'EShop');
-        $docTitle = $this->pdfTemplates->documentTitle($type);
+        $docTitle = PdfTemplateCatalog::documentTitle($type);
         $company = $this->companyProfile($appName);
         $docNumber = strtoupper(substr($order->id(), 0, 8));
-
-        $chrome = $extra['chrome'] ?? null;
-        if (!is_array($chrome)) {
-            $chrome = $this->pdfTemplates->chrome($type, [
-                'brand' => $company['name'],
-                'doc_title' => $docTitle,
-            ]);
-        }
 
         $internal = $order->internalCost() !== null ? (float) $order->internalCost() : null;
         $external = $order->externalCost() !== null ? (float) $order->externalCost() : null;
@@ -230,6 +219,24 @@ final class ServiceDocumentService
         $preparedBy = $user !== null
             ? trim($user->name() ?: ($user->email() ?? ''))
             : $company['name'];
+        if ($preparedBy === '') {
+            $preparedBy = $company['name'];
+        }
+
+        $signatureService = isset($extra['signature_service'])
+            ? (trim((string) $extra['signature_service']) ?: null)
+            : (isset($extra['signature']) ? (trim((string) $extra['signature']) ?: null) : null);
+        if ($signatureService === null || $signatureService === '') {
+            $signatureService = $this->orderEsign->currentSignerName() ?? $preparedBy;
+        }
+
+        $signatureServiceImage = isset($extra['signature_service_image'])
+            ? (trim((string) $extra['signature_service_image']) ?: null)
+            : null;
+        $esignTokens = !empty($extra['esignTokens']);
+        if ($signatureServiceImage === null && !$esignTokens) {
+            $signatureServiceImage = $this->orderEsign->defaultProviderSignatureImage();
+        }
 
         return array_merge($this->formDefaults(), [
             'order' => $order,
@@ -247,15 +254,23 @@ final class ServiceDocumentService
                 ?? $order->finishedAt()?->format('d.m.Y')
                 ?? (new \DateTimeImmutable())->format('d.m.Y'),
             'handoverPlace' => $branch instanceof ServiceBranch ? $branch->name() : ($company['city'] ?: '……………………'),
-            'preparedBy' => $preparedBy !== '' ? $preparedBy : $company['name'],
+            'preparedBy' => $preparedBy,
             'serviceHeading' => $order->serviceInfo()
                 ? mb_substr(preg_replace("/\s+/u", ' ', $order->serviceInfo()) ?? '', 0, 80)
                 : 'Servisní práce na vozidle',
             'lines' => $lines,
             'totals' => $totals,
-            'pdfHeader' => (string) ($chrome['header'] ?? ''),
-            'pdfFooter' => (string) ($chrome['footer'] ?? ''),
-            'signature' => isset($extra['signature']) ? (trim((string) $extra['signature']) ?: null) : null,
+            'signature' => $signatureService,
+            'signatureService' => $signatureService,
+            'signatureCustomer' => isset($extra['signature_customer'])
+                ? (trim((string) $extra['signature_customer']) ?: null)
+                : null,
+            'signatureServiceImage' => $signatureServiceImage,
+            'signatureCustomerImage' => isset($extra['signature_customer_image'])
+                ? (trim((string) $extra['signature_customer_image']) ?: null)
+                : null,
+            'signMode' => (string) ($extra['sign_mode'] ?? 'manual'),
+            'esignTokens' => $esignTokens,
             'signatureDate' => $extra['signatureDate'] ?? null,
             'isPreview' => (bool) ($extra['isPreview'] ?? false),
             'quoteLines' => $quoteLines,
@@ -272,20 +287,30 @@ final class ServiceDocumentService
     }
 
     /**
-     * @param array{header?: string, footer?: string}|null $chrome
+     * Plný HTML předávací protokol s tokeny {{ provider_signature }} / {{ counterparty_signature }} pro eSign.
+     *
+     * @param array<string, mixed> $extra
+     */
+    public function renderHandoverHtmlForEsign(ServiceOrder $order, array $extra = []): string
+    {
+        $context = $this->buildContext($order, PdfTemplateCatalog::TYPE_HANDOVER, array_merge($extra, [
+            'sign_mode' => OrderEsignService::MODE_DIGITAL,
+            'esignTokens' => true,
+            'signature_service_image' => false,
+            'signature_customer_image' => false,
+        ]));
+
+        return $this->pdfRenderer->renderHtml($this->viewFor(PdfTemplateCatalog::TYPE_HANDOVER), $context);
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    public function sampleContext(string $type, ?array $chrome = null): array
+    public function sampleContext(string $type): array
     {
-        $appName = $this->pdfTemplates->brandName();
-        $docTitle = $this->pdfTemplates->documentTitle($type);
+        $appName = (string) $this->config->get('app.name', 'EShop');
+        $docTitle = PdfTemplateCatalog::documentTitle($type);
         $company = $this->companyProfile($appName);
-        if ($chrome === null) {
-            $chrome = $this->pdfTemplates->chrome($type, [
-                'brand' => $company['name'],
-                'doc_title' => $docTitle,
-            ]);
-        }
 
         $order = new class {
             public function id(): string
@@ -464,8 +489,6 @@ final class ServiceDocumentService
             'serviceHeading' => 'Servisní práce na vozidle',
             'lines' => $lines,
             'totals' => $this->totalsFromLines($lines),
-            'pdfHeader' => (string) ($chrome['header'] ?? ''),
-            'pdfFooter' => (string) ($chrome['footer'] ?? ''),
             'signature' => 'Jan Novák',
             'signatureDate' => (new \DateTimeImmutable())->format('d.m.Y H:i'),
             'isPreview' => true,

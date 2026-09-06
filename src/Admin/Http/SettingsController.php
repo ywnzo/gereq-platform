@@ -45,7 +45,7 @@ final class SettingsController extends Controller
 
     public function index(Request $request): Response
     {
-        $definitions = $this->settings->definitions();
+        $definitions = $this->settings->globalDefinitions();
         $values = [];
         foreach ($definitions as $key => $definition) {
             $values[$key] = $this->settings->get($key, $definition['default']);
@@ -79,7 +79,7 @@ final class SettingsController extends Controller
 
     public function update(Request $request): Response
     {
-        foreach ($this->settings->definitions() as $key => $definition) {
+        foreach ($this->settings->globalDefinitions() as $key => $definition) {
             if ($key === Dashboard::LAYOUT_SETTING) {
                 $posted = $request->request->get(str_replace('.', '__', $key));
                 $items = [];

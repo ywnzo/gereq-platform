@@ -2,6 +2,7 @@
   Icon-only row action (Athena-style).
   {% include 'ui/row_action.html.twig' with { href: url(...), label: 'common.view'|trans, icon: 'eye' } %}
   Variants: eye/detail → primary, edit → success, trash → danger (or pass variant).
+  Pass placeholder: true (without href) to reserve aligned space when the action is missing.
 #}
 {% set href = href|default(null) %}
 {% set label = label|default('') %}
@@ -23,8 +24,11 @@
         href="{{ href }}"
         title="{{ label }}"
         aria-label="{{ label }}"
+        {% if target|default(null) %}target="{{ target }}" rel="noopener"{% endif %}
     >
         {{ icon(icon_name) }}
         <span class="table__action-btn__label">{{ label }}</span>
     </a>
+{% elseif placeholder|default(false) %}
+    <span class="table__action-btn table__action-btn--spacer" aria-hidden="true"></span>
 {% endif %}

@@ -53,9 +53,9 @@ final class iDokladShortcutWidget extends TwigDashboardWidget
     protected function data(): array
     {
         return [
-            'href' => $this->router->url('admin.idoklad.settings'),
+            'href' => $this->router->url('admin.idoklad.documents'),
             'icon' => 'receipt',
-            'label' => $this->translator->trans('nav.idoklad'),
+            'label' => $this->translator->trans('nav.idoklad.documents'),
             'hint' => $this->translator->trans('admin.dashboard.hint.idoklad'),
         ];
     }

@@ -118,6 +118,15 @@ final class iDokladApiClient
     }
 
     /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListIssuedInvoices(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('IssuedInvoices', $page, $pageSize, $query);
+    }
+
+    /**
      * @param array<string, mixed> $invoiceData
      * @return array<string, mixed>
      */
@@ -139,6 +148,15 @@ final class iDokladApiClient
     }
 
     /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListCreditNotes(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('CreditNotes', $page, $pageSize, $query);
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
@@ -157,6 +175,179 @@ final class iDokladApiClient
     public function getCashVoucher(int $iDokladId): array
     {
         return $this->api('GET', 'CashVouchers/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListCashVouchers(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('CashVouchers', $page, $pageSize, $query);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function setProformaInvoice(array $data, ?int $iDokladId = null): array
+    {
+        if ($iDokladId !== null && $iDokladId > 0) {
+            $data['Id'] = $iDokladId;
+
+            return $this->api('PATCH', 'ProformaInvoices', body: $data);
+        }
+
+        return $this->api('POST', 'ProformaInvoices', body: $data);
+    }
+
+    /** @return array<string, mixed> */
+    public function getProformaInvoice(int $iDokladId): array
+    {
+        return $this->api('GET', 'ProformaInvoices/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListProformaInvoices(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('ProformaInvoices', $page, $pageSize, $query);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function setReceivedInvoice(array $data, ?int $iDokladId = null): array
+    {
+        if ($iDokladId !== null && $iDokladId > 0) {
+            $data['Id'] = $iDokladId;
+
+            return $this->api('PATCH', 'ReceivedInvoices', body: $data);
+        }
+
+        return $this->api('POST', 'ReceivedInvoices', body: $data);
+    }
+
+    /** @return array<string, mixed> */
+    public function getReceivedInvoice(int $iDokladId): array
+    {
+        return $this->api('GET', 'ReceivedInvoices/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListReceivedInvoices(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('ReceivedInvoices', $page, $pageSize, $query);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function setSalesReceipt(array $data, ?int $iDokladId = null): array
+    {
+        if ($iDokladId !== null && $iDokladId > 0) {
+            $data['Id'] = $iDokladId;
+
+            return $this->api('PATCH', 'SalesReceipts', body: $data);
+        }
+
+        return $this->api('POST', 'SalesReceipts', body: $data);
+    }
+
+    /** @return array<string, mixed> */
+    public function getSalesReceipt(int $iDokladId): array
+    {
+        return $this->api('GET', 'SalesReceipts/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListSalesReceipts(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('SalesReceipts', $page, $pageSize, $query);
+    }
+
+    /** @return array<string, mixed> */
+    public function getBankStatement(int $iDokladId): array
+    {
+        return $this->api('GET', 'BankStatements/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListBankStatements(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('BankStatements', $page, $pageSize, $query);
+    }
+
+    /** @return array<string, mixed> */
+    public function getSalesOrder(int $iDokladId): array
+    {
+        return $this->api('GET', 'SalesOrders/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListSalesOrders(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('SalesOrders', $page, $pageSize, $query);
+    }
+
+    /** @return array<string, mixed> */
+    public function getIssuedTaxDocument(int $iDokladId): array
+    {
+        return $this->api('GET', 'IssuedTaxDocuments/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListIssuedTaxDocuments(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('IssuedTaxDocuments', $page, $pageSize, $query);
+    }
+
+    /** @return array<string, mixed> */
+    public function getReceivedReceipt(int $iDokladId): array
+    {
+        return $this->api('GET', 'ReceivedReceipts/' . $iDokladId);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function getListReceivedReceipts(int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        return $this->listResource('ReceivedReceipts', $page, $pageSize, $query);
+    }
+
+    /**
+     * @param array<string, scalar|null> $query
+     * @return array<string, mixed>
+     */
+    public function listResource(string $resource, int $page = 1, int $pageSize = 20, array $query = []): array
+    {
+        $params = array_merge($query, [
+            'page' => max(1, $page),
+            'pageSize' => max(1, min(200, $pageSize)),
+        ]);
+
+        return $this->api('GET', $resource, $params);
     }
 
     /** @return array<string, mixed> */

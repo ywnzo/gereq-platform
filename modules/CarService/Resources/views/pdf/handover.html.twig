@@ -99,6 +99,47 @@
 
 <div class="mt-2 small">V {{ handoverPlace|default('……………………') }}, dne {{ handoverDate|default(issuedAt) }}</div>
 
-{% include '@carservice/pdf/_footer.html.twig' %}
+<table class="w-100 mt-2" style="margin-top:18px">
+    <tr>
+        <td style="width:48%;vertical-align:top;padding-right:12px">
+            <div class="pdf-footer__lbl">Podpis servisu</div>
+            {% if esignTokens|default(false) %}
+                {% verbatim %}{{ provider_signature }}{% endverbatim %}
+                <div class="pdf-footer__hint">digitální ePodpis</div>
+            {% else %}
+                {% set serviceName = signatureService|default(signature)|default(preparedBy) %}
+                {% if signatureServiceImage|default(null) %}
+                    <img src="{{ signatureServiceImage }}" alt="Podpis servisu" style="max-width:220px;max-height:70px;display:block;margin:6px 0">
+                    {% if serviceName %}<div class="pdf-footer__name">{{ serviceName }}</div>{% endif %}
+                {% elseif serviceName %}
+                    <div class="pdf-footer__name">{{ serviceName }}</div>
+                {% endif %}
+                {% if signMode|default('manual') == 'manual' or not signatureServiceImage|default(null) %}
+                    <div class="pdf-footer__line"></div>
+                {% endif %}
+                <div class="pdf-footer__hint">{% if signMode|default('manual') == 'digital' %}digitální ePodpis{% else %}jméno / razítko servisu{% endif %}</div>
+            {% endif %}
+        </td>
+        <td style="width:48%;vertical-align:top;padding-left:12px;border-left:1px solid #ccc">
+            <div class="pdf-footer__lbl">Podpis zákazníka</div>
+            {% if esignTokens|default(false) %}
+                {% verbatim %}{{ counterparty_signature }}{% endverbatim %}
+                <div class="pdf-footer__hint">digitální ePodpis</div>
+            {% else %}
+                {% if signatureCustomerImage|default(null) %}
+                    <img src="{{ signatureCustomerImage }}" alt="Podpis zákazníka" style="max-width:220px;max-height:70px;display:block;margin:6px 0">
+                {% elseif signatureCustomer|default(null) %}
+                    <div class="pdf-footer__name">{{ signatureCustomer }}</div>
+                {% endif %}
+                {% if signMode|default('manual') == 'manual' or not signatureCustomerImage|default(null) %}
+                    <div class="pdf-footer__line"></div>
+                {% endif %}
+                <div class="pdf-footer__hint">{% if signMode|default('manual') == 'digital' and not signatureCustomerImage|default(null) %}čeká na digitální podpis / vytištěný PDF{% elseif signMode|default('manual') == 'digital' %}digitální ePodpis{% else %}jméno přebírajícího{% endif %}</div>
+            {% endif %}
+        </td>
+    </tr>
+</table>
+
+<div class="pdf-footer__page" style="text-align:right;margin-top:10px">{{ pageLabel|default('Strana 1 / 1') }}</div>
 </body>
 </html>

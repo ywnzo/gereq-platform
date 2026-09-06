@@ -18,6 +18,7 @@ use Modules\CarService\Application\QrCodeService;
 use Modules\CarService\Domain\ServiceOrder;
 use Modules\Fleet\Application\VehicleMediaService;
 use Modules\Fleet\Domain\Vehicle;
+use Gereq\User\Entity\User;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -122,20 +123,23 @@ final class TrackerController extends Controller
             }
         }
         $mediaPhases = $this->carservice->mediaPhases();
+        $employeeNames = $this->employeeNamesForJobs($jobs);
 
         return $this->page('@carservice/tracker/show.html.twig', [
             'pageTitle' => $vehicle instanceof Vehicle ? $vehicle->plate() : $this->translator->trans('carservice.tracker.title'),
             'item' => $order,
             'vehicle' => $vehicle instanceof Vehicle ? $vehicle : null,
+            'vehiclePhotoUrl' => $vehicle instanceof Vehicle ? $this->vehiclePhotoUrl($vehicle->id()) : null,
             'jobs' => $jobs,
             'running' => $running,
+            'employeeNames' => $employeeNames,
+            'userOptions' => $this->userOptions(),
             'teams' => ServiceOrder::TEAMS,
             'teamQueue' => $this->carservice->teamQueue($order->team(), $id),
             'mediaPhases' => $mediaPhases,
             'mediaByPhase' => $this->orderMedia->forOrderByPhases($id, $mediaPhases),
             'mediaAvailable' => $this->orderMedia->available(),
             'qrDataUri' => $this->qr->dataUriForOrder($order->trackerToken()),
-            'trackerUrl' => $this->qr->trackerUrl($order->trackerToken()),
         ]);
     }
 
@@ -150,8 +154,12 @@ final class TrackerController extends Controller
         }
         $type = trim((string) $request->request->get('type', 'work')) ?: 'work';
         $note = trim((string) $request->request->get('note', '')) ?: null;
+        $employeeId = trim((string) $request->request->get('employee_user_id', ''));
+        if ($employeeId === '') {
+            $employeeId = $this->auth->user()?->id();
+        }
         try {
-            $job = $this->carservice->addJob($id, $type, $this->auth->user()?->id(), $note);
+            $job = $this->carservice->addJob($id, $type, $employeeId, $note);
         } catch (\InvalidArgumentException $e) {
             $this->flash('error', $this->translator->trans($e->getMessage()));
 
@@ -274,6 +282,44 @@ final class TrackerController extends Controller
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * @param list<\Modules\CarService\Domain\ServiceJob> $jobs
+     * @return array<string, string>
+     */
+    private function employeeNamesForJobs(array $jobs): array
+    {
+        $ids = [];
+        foreach ($jobs as $job) {
+            $id = $job->employeeUserId();
+            if ($id !== null && $id !== '') {
+                $ids[$id] = true;
+            }
+        }
+        if ($ids === []) {
+            return [];
+        }
+        $names = [];
+        foreach ($this->em->getRepository(User::class)->createQueryBuilder('u')
+            ->where('u.id IN (:ids)')
+            ->setParameter('ids', array_keys($ids))
+            ->getQuery()->getResult() as $user) {
+            if ($user instanceof User) {
+                $names[$user->id()] = $user->name() ?: $user->email();
+            }
+        }
+
+        return $names;
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    private function userOptions(): array
+    {
+        return array_map(
+            static fn (User $u): array => ['value' => $u->id(), 'label' => $u->name() ?: $u->email()],
+            $this->em->getRepository(User::class)->findBy(['status' => 'active'], ['name' => 'ASC']),
+        );
     }
 
     /** @param array<string, mixed> $data */

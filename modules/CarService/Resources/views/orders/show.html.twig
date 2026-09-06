@@ -1,12 +1,14 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
 {% set canFinish = user.can('carservice.manage') and item.isOpen() %}
-<div{% if canFinish %} x-data="gereqModal"{% endif %}>
+{% set orderLocked = not item.isOpen() %}
+<div>
 <header class="page-header">
     <div>
         <h1>{{ vehicle ? vehicle.label() : ('carservice.order'|trans({'%id%': item.id()|slice(0,8)})) }}</h1>
         <p class="muted detail-layout__meta">
             <span class="badge">{{ item.statusLabel()|trans }}</span>
+            {% if orderLocked %}<span class="badge">{{ 'carservice.locked.badge'|trans }}</span>{% endif %}
             <span>{{ item.teamLabel()|trans }}</span>
             {% if branch %}<span>{{ branch.name() }}</span>{% endif %}
             {% if customer %}<a href="{{ url('admin.customers.show',{id:customer.id()}) }}">{{ customer.name() }}</a>{% endif %}
@@ -14,8 +16,14 @@
     </div>
     <div class="actions">
         {% if canFinish %}
-            <button class="btn btn--primary" type="button" @click="show">{{ 'carservice.finish'|trans }}</button>
+            {% include '@carservice/partials/finish_wizard.html.twig' %}
             <a class="btn btn--ghost" href="{{ url('admin.carservice.edit',{id:item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% endif %}
+        {% if user.can('carservice.manage') and orderLocked %}
+            <form method="post" action="{{ url('admin.carservice.unlock',{id:item.id()}) }}" data-confirm="{{ 'carservice.confirm.unlock'|trans }}">
+                {{ csrf_field()|raw }}
+                <button class="btn btn--ghost" type="submit">{{ 'carservice.action.unlock'|trans }}</button>
+            </form>
         {% endif %}
         {% if user.can('carservice.tracker') and item.isOpen() %}
             <a class="btn btn--ghost" href="{{ url('admin.carservice.tracker.show',{id:item.id()}) }}">{{ 'carservice.tracker.open'|trans }}</a>
@@ -23,47 +31,12 @@
     </div>
 </header>
 
-{% if canFinish %}
-<div class="g-modal__backdrop" :class="backdropClass" @click="close"></div>
-<div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-labelledby="finish-dialog-title">
-    <div class="g-modal__panel g-modal__panel--finish" @click.stop>
-        <form method="post" action="{{ url('admin.carservice.finish',{id:item.id()}) }}" class="cs-finish">
-            {{ csrf_field()|raw }}
-            <header class="cs-finish__head">
-                <h2 class="g-modal__title" id="finish-dialog-title">{{ 'carservice.finish.dialog_title'|trans }}</h2>
-                <p class="muted">{{ 'carservice.finish.hint'|trans }}</p>
-            </header>
-
-            {% include 'ui/textarea.html.twig' with {
-                name: 'service_info',
-                label: 'carservice.field.service_info'|trans,
-                optional: true,
-                value: item.serviceInfo() ?: '',
-                size: 'mini',
-                rows: 3,
-                extra: 'cs-finish__notes'
-            } %}
-
-            <div class="cs-finish__grid">
-                {% include 'ui/select.html.twig' with { name:'payment_type', label:'carservice.field.payment_type'|trans, optional:true, value: item.paymentType() ?: '', options:[
-                    {value:'',label:'—'},{value:'online',label:'carservice.payment.online'|trans},{value:'cash',label:'carservice.payment.cash'|trans}
-                ] } %}
-                {% include 'ui/input.html.twig' with { name:'signature', label:'carservice.finish.signature'|trans, optional:true, value:'' } %}
-                {% include 'ui/input.html.twig' with { name:'internal_cost', type:'number', label:'carservice.field.internal_cost'|trans, optional:true, value: item.internalCost() ?: '', step:'0.01' } %}
-                {% include 'ui/input.html.twig' with { name:'external_cost', type:'number', label:'carservice.field.external_cost'|trans, optional:true, value: item.externalCost() ?: '', step:'0.01' } %}
-                {% include 'ui/input.html.twig' with { name:'intake_mileage', type:'number', label:'carservice.field.intake_mileage'|trans, optional:true, value: item.intakeMileage() ?: '' } %}
-                {% include 'ui/select.html.twig' with { name:'intake_fuel_level', label:'carservice.field.intake_fuel'|trans, optional:true, value: item.intakeFuelLevel() ?: '', options:[
-                    {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
-                ] } %}
-            </div>
-
-            <div class="g-modal__actions cs-finish__actions">
-                <button class="btn btn--ghost" type="button" @click="close" x-ref="close">{{ 'common.cancel'|trans }}</button>
-                <button class="btn btn--primary" type="submit">{{ 'carservice.finish.confirm'|trans }}</button>
-            </div>
-        </form>
+{% if orderLocked %}
+<section class="panel" style="margin-bottom:16px">
+    <div class="panel__body">
+        <p style="margin:0">{{ 'carservice.locked.notice'|trans }}</p>
     </div>
-</div>
+</section>
 {% endif %}
 
 <div class="detail-layout">
@@ -128,7 +101,7 @@
                             <td>{{ j.endedAt() ? j.endedAt().format('d. m. Y H:i') : ('carservice.jobs.running'|trans) }}</td>
                             <td>{{ j.durationSeconds() is not null ? ((j.durationSeconds() / 3600)|number_format(2) ~ ' h') : '—' }}</td>
                             <td>
-                                {% if user.can('carservice.manage') and j.isRunning() %}
+                                {% if user.can('carservice.manage') and item.isOpen() and j.isRunning() %}
                                     <form method="post" action="{{ url('admin.carservice.jobs.complete',{id:item.id(),jobId:j.id()}) }}">
                                         {{ csrf_field()|raw }}
                                         <button type="submit" class="btn btn--ghost">{{ 'carservice.jobs.stop'|trans }}</button>
@@ -153,54 +126,6 @@
             {% endif %}
         </section>
 
-        {% if mediaAvailable %}
-        <section class="panel">
-            <header class="panel__head"><h2>{{ 'carservice.media.title'|trans }}</h2></header>
-            <div class="panel__body">
-                {% for phase in mediaPhases %}
-                    <div class="cs-media-phase">
-                        <h3>{{ ('carservice.media.phase.'~phase)|trans }}</h3>
-                        <div class="table-wrap"><table class="table"><tbody>
-                        {% for row in mediaByPhase[phase]|default([]) %}
-                            <tr>
-                                <td><a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">{{ row.asset.title() }}</a></td>
-                                <td class="is-mute">{{ row.asset.mime() }}</td>
-                            </tr>
-                        {% else %}
-                            <tr><td class="muted" colspan="2">{{ 'carservice.media.empty_phase'|trans }}</td></tr>
-                        {% endfor %}
-                        </tbody></table></div>
-                    </div>
-                {% endfor %}
-                {% if user.can('carservice.manage') %}
-                    <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.media',{id:item.id()}) }}">
-                        {{ csrf_field()|raw }}
-                        {% set phaseOptions = [] %}
-                        {% for phase in mediaPhases %}
-                            {% set phaseOptions = phaseOptions|merge([{ value: phase, label: ('carservice.media.phase.'~phase)|trans }]) %}
-                        {% endfor %}
-                        {% include 'ui/select.html.twig' with {
-                            name: 'phase',
-                            label: 'carservice.media.phase_label'|trans,
-                            value: mediaPhases[0]|default('before'),
-                            options: phaseOptions
-                        } %}
-                        {% include 'ui/file.html.twig' with {
-                            name: 'file',
-                            label: 'carservice.media.file'|trans,
-                            hint: 'carservice.media.file.hint'|trans,
-                            accept: 'image/*,application/pdf',
-                            required: true,
-                            compact: true,
-                            extra: 'field--full'
-                        } %}
-                        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
-                    </form>
-                {% endif %}
-            </div>
-        </section>
-        {% endif %}
-
         {% if sections is defined and sections is not empty %}
             {% set orderedSections = sections|sort((a, b) => (a.order|default(100)) <=> (b.order|default(100))) %}
             {% for section in orderedSections %}
@@ -208,17 +133,17 @@
             {% endfor %}
         {% endif %}
 
-        {% if user.can('carservice.manage') and showIntakeProtocolForm %}
+        {% if user.can('carservice.manage') and item.isOpen() and showIntakeProtocolForm %}
             {% include '@carservice/partials/intake_protocol_form.html.twig' %}
         {% endif %}
 
-        {% if documentsAvailable|default(false) and user.can('carservice.manage') %}
+        {% if documentsAvailable|default(false) and user.can('carservice.manage') and item.isOpen() and pdfTypes|default([]) is not empty %}
         <section class="panel">
             <header class="panel__head"><h2>{{ 'carservice.documents.generate'|trans }}</h2></header>
             <div class="panel__body">
                 <p class="muted" style="margin-bottom:12px">{{ 'carservice.documents.generate.hint'|trans }}</p>
                 <div class="actions" style="flex-wrap:wrap;gap:8px">
-                    {% for pdf in pdfTypes|default([]) %}
+                    {% for pdf in pdfTypes %}
                         <form method="post" action="{{ url('admin.carservice.documents.generate',{id:item.id()}) }}" style="display:inline">
                             {{ csrf_field()|raw }}
                             <input type="hidden" name="type" value="{{ pdf.type }}">
@@ -227,6 +152,20 @@
                     {% endfor %}
                 </div>
             </div>
+        </section>
+        {% endif %}
+
+        {% if esignDocuments is defined and esignDocuments is not empty %}
+        <section class="panel">
+            <header class="panel__head"><h2>{{ 'carservice.esign.title'|trans }}</h2></header>
+            <ul class="meta-list meta-list--flush">
+                {% for doc in esignDocuments %}
+                    <li>
+                        <a href="{{ url('admin.esign.documents.show',{id:doc.id()}) }}">{{ doc.number() }} · {{ doc.title() }}</a>
+                        <span class="badge">{{ doc.statusLabel()|trans }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
         </section>
         {% endif %}
 

@@ -1,0 +1,106 @@
+.esign-notice {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    background: color-mix(in oklab, var(--color-warning, #c48a1a) 12%, transparent);
+    border-left: 3px solid var(--color-warning, #c48a1a);
+    font-size: 0.92rem;
+}
+
+.esign-meta {
+    margin-bottom: 20px;
+}
+
+.esign-hash {
+    font-family: ui-monospace, monospace;
+    font-size: 0.8rem;
+    word-break: break-all;
+    font-weight: 500;
+}
+
+.esign-panel {
+    margin: 24px 0;
+    padding: 16px 0;
+    border-top: 1px solid var(--border, #2a2d2a);
+}
+
+.esign-panel h2 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+}
+
+.esign-signature-field {
+    gap: 10px;
+}
+
+.esign-pad-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.esign-pad-wrap {
+    border: 1px dashed var(--border, #555);
+    background: #fff;
+    border-radius: 2px;
+    overflow: hidden;
+    max-width: 800px;
+}
+
+.esign-signature-preview {
+    margin: 0 0 14px;
+    max-width: 800px;
+}
+
+.esign-signature-preview__img {
+    display: block;
+    width: 100%;
+    max-width: 800px;
+    height: auto;
+    max-height: 220px;
+    object-fit: contain;
+    object-position: left center;
+    background: #fff;
+    border: 1px solid var(--border, #555);
+    border-radius: 2px;
+    padding: 8px 12px;
+}
+
+.esign-pad {
+    width: 100%;
+    height: 220px;
+    display: block;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.esign-pad-error {
+    color: var(--color-danger, #e57373);
+    margin: 8px 0 0;
+    font-size: 0.9rem;
+}
+
+.esign-preview {
+    width: 100%;
+    min-height: 480px;
+    border: 1px solid var(--border, #333);
+    background: #fff;
+}
+
+.esign-send {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    margin-top: 12px;
+}
+
+.esign-send label {
+    display: grid;
+    gap: 4px;
+    min-width: 240px;
+}
+
+.esign-send .form-actions,
+.form-actions form {
+    display: inline;
+}

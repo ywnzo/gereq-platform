@@ -25,7 +25,7 @@ final class MoneyS3Module implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.0.1';
     }
 
     public function register(ModuleContext $context): void
@@ -36,15 +36,15 @@ final class MoneyS3Module implements ModuleInterface
 
         $context->capabilities()->register('moneys3', $this->id(), $context->get(MoneyS3Service::class));
 
-        $context->settings()->define('moneys3.enabled', SettingRecord::TYPE_BOOLEAN, 'moneys3.settings.enabled', false, $this->id());
-        $context->settings()->define('moneys3.api_url', SettingRecord::TYPE_STRING, 'moneys3.settings.api_url', '', $this->id());
-        $context->settings()->define('moneys3.app_id', SettingRecord::TYPE_STRING, 'moneys3.settings.app_id', '', $this->id());
-        $context->settings()->define('moneys3.client_id', SettingRecord::TYPE_STRING, 'moneys3.settings.client_id', '', $this->id());
-        $context->settings()->define('moneys3.client_secret', SettingRecord::TYPE_ENCRYPTED, 'moneys3.settings.client_secret', '', $this->id());
-        $context->settings()->define('moneys3.username', SettingRecord::TYPE_STRING, 'moneys3.settings.username', '', $this->id());
-        $context->settings()->define('moneys3.password', SettingRecord::TYPE_ENCRYPTED, 'moneys3.settings.password', '', $this->id());
-        $context->settings()->define('moneys3.default_agenda_id', SettingRecord::TYPE_STRING, 'moneys3.settings.default_agenda_id', '', $this->id());
-        $context->settings()->define('moneys3.cache', SettingRecord::TYPE_JSON, 'moneys3.settings.cache', [], $this->id());
+        $context->settings()->define('moneys3.enabled', SettingRecord::TYPE_BOOLEAN, 'moneys3.settings.enabled', false, $this->id(), [], false);
+        $context->settings()->define('moneys3.api_url', SettingRecord::TYPE_STRING, 'moneys3.settings.api_url', '', $this->id(), [], false);
+        $context->settings()->define('moneys3.app_id', SettingRecord::TYPE_STRING, 'moneys3.settings.app_id', '', $this->id(), [], false);
+        $context->settings()->define('moneys3.client_id', SettingRecord::TYPE_STRING, 'moneys3.settings.client_id', '', $this->id(), [], false);
+        $context->settings()->define('moneys3.client_secret', SettingRecord::TYPE_ENCRYPTED, 'moneys3.settings.client_secret', '', $this->id(), [], false);
+        $context->settings()->define('moneys3.username', SettingRecord::TYPE_STRING, 'moneys3.settings.username', '', $this->id(), [], false);
+        $context->settings()->define('moneys3.password', SettingRecord::TYPE_ENCRYPTED, 'moneys3.settings.password', '', $this->id(), [], false);
+        $context->settings()->define('moneys3.default_agenda_id', SettingRecord::TYPE_STRING, 'moneys3.settings.default_agenda_id', '', $this->id(), [], false);
+        $context->settings()->define('moneys3.cache', SettingRecord::TYPE_JSON, 'moneys3.settings.cache', [], $this->id(), [], false);
 
         $context->router()->group('/admin/integrations/moneys3', function (Router $routes): void {
             $routes->get('', [MoneyS3SettingsController::class, 'edit'])

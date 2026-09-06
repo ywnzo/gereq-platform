@@ -10,7 +10,6 @@ use Gereq\Admin\Menu\MenuItem;
 use Gereq\Api\ApiModule;
 use Gereq\Auth\Authenticator;
 use Gereq\Event\EventDefinition;
-use Gereq\Event\EventEnvelope;
 use Gereq\Hook\HookPriority;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
@@ -18,7 +17,6 @@ use Gereq\Module\ModuleInterface;
 use Gereq\Setting\SettingRecord;
 use Modules\CarService\Application\BranchContext;
 use Modules\CarService\Application\CarServiceProvider;
-use Modules\CarService\Application\IdokladFinishHandler;
 use Modules\CarService\Application\LaborRateCatalog;
 use Modules\CarService\Application\PdfTemplateCatalog;
 use Modules\CarService\Application\Widgets\CarServiceShortcutWidget;
@@ -30,11 +28,8 @@ use Modules\CarService\Http\ServiceOrderController;
 use Modules\CarService\Http\SettingsController;
 use Modules\CarService\Http\TrackerController;
 use Modules\Customers\Domain\Customer;
-use Modules\Documents\Application\DocumentsProvider;
-use Modules\Documents\Application\Pdf\PdfDocumentGenerator;
 use Modules\Fleet\Application\FleetProvider;
 use Modules\Fleet\Domain\Vehicle;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -47,7 +42,7 @@ final class CarServiceModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.10.1';
+        return '1.13.4';
     }
 
     public function register(ModuleContext $context): void
@@ -68,10 +63,10 @@ final class CarServiceModule implements ModuleInterface
             $context->get(BranchContext::class),
         );
 
-        $context->settings()->define('carservice.job_soft_limit_hours', SettingRecord::TYPE_STRING, 'carservice.settings.job_soft_limit', '8', $this->id());
-        $context->settings()->define('carservice.default_team', SettingRecord::TYPE_STRING, 'carservice.settings.default_team', 'body_shop', $this->id());
-        $context->settings()->define('carservice.media_phases', SettingRecord::TYPE_STRING, 'carservice.settings.media_phases', 'before,progress,paint,after', $this->id());
-        $context->settings()->define('carservice.margin_percent', SettingRecord::TYPE_STRING, 'carservice.settings.margin_percent', '30', $this->id());
+        $context->settings()->define('carservice.job_soft_limit_hours', SettingRecord::TYPE_STRING, 'carservice.settings.job_soft_limit', '8', $this->id(), [], false);
+        $context->settings()->define('carservice.default_team', SettingRecord::TYPE_STRING, 'carservice.settings.default_team', 'body_shop', $this->id(), [], false);
+        $context->settings()->define('carservice.media_phases', SettingRecord::TYPE_STRING, 'carservice.settings.media_phases', 'before,progress,paint,after', $this->id(), [], false);
+        $context->settings()->define('carservice.margin_percent', SettingRecord::TYPE_STRING, 'carservice.settings.margin_percent', '30', $this->id(), [], false);
         foreach (LaborRateCatalog::definitions() as $rate) {
             $context->settings()->define(
                 $rate['setting'],
@@ -79,29 +74,20 @@ final class CarServiceModule implements ModuleInterface
                 $rate['label'],
                 $rate['default'],
                 $this->id(),
+                [],
+                false,
             );
         }
-        $context->settings()->define('carservice.auto_idoklad', SettingRecord::TYPE_BOOLEAN, 'carservice.settings.auto_idoklad', false, $this->id());
+        $context->settings()->define('carservice.auto_idoklad', SettingRecord::TYPE_BOOLEAN, 'carservice.settings.auto_idoklad', false, $this->id(), [], false);
         $context->settings()->define(
             'carservice.market_sources',
             SettingRecord::TYPE_STRING,
             'carservice.settings.market_sources',
             'heureka,seznam,hledejceny,jama,autodilypro,autokelly',
             $this->id(),
+            [],
+            false,
         );
-
-        foreach (PdfTemplateCatalog::allSettingKeys() as $pdfKey) {
-            $label = str_contains($pdfKey, '.header')
-                ? 'carservice.settings.pdf.header'
-                : 'carservice.settings.pdf.footer';
-            $context->settings()->define(
-                $pdfKey,
-                SettingRecord::TYPE_STRING,
-                $label,
-                PdfTemplateCatalog::defaultValueForKey($pdfKey),
-                $this->id(),
-            );
-        }
 
         $context->router()->group('/admin/carservice', function (Router $routes): void {
             $routes->get('', [ServiceOrderController::class, 'index'])->name('admin.carservice.index')->permission('carservice.view');
@@ -121,7 +107,6 @@ final class CarServiceModule implements ModuleInterface
             $routes->post('/branch-context', [BranchController::class, 'select'])->name('admin.carservice.branch_context')->permission('carservice.view');
             $routes->get('/settings', [SettingsController::class, 'edit'])->name('admin.carservice.settings')->permission('carservice.view');
             $routes->post('/settings', [SettingsController::class, 'update'])->name('admin.carservice.settings.update')->permission('carservice.manage');
-            $routes->post('/settings/pdf-preview', [SettingsController::class, 'previewPdf'])->name('admin.carservice.settings.pdf_preview')->permission('carservice.manage');
             $routes->get('/tracker', [TrackerController::class, 'index'])->name('admin.carservice.tracker')->permission('carservice.tracker');
             $routes->post('/tracker/resolve', [TrackerController::class, 'resolve'])->name('admin.carservice.tracker.resolve')->permission('carservice.tracker');
             $routes->get('/tracker/{id}', [TrackerController::class, 'show'])->name('admin.carservice.tracker.show')->permission('carservice.tracker');
@@ -132,11 +117,13 @@ final class CarServiceModule implements ModuleInterface
             $routes->get('/{id}/edit', [ServiceOrderController::class, 'edit'])->name('admin.carservice.edit')->permission('carservice.manage');
             $routes->post('/{id}', [ServiceOrderController::class, 'update'])->name('admin.carservice.update')->permission('carservice.manage');
             $routes->post('/{id}/status', [ServiceOrderController::class, 'updateStatus'])->name('admin.carservice.status')->permission('carservice.manage');
+            $routes->post('/{id}/unlock', [ServiceOrderController::class, 'unlock'])->name('admin.carservice.unlock')->permission('carservice.manage');
             $routes->post('/{id}/team', [ServiceOrderController::class, 'switchTeam'])->name('admin.carservice.team')->permission('carservice.manage');
             $routes->post('/{id}/jobs', [ServiceOrderController::class, 'storeJob'])->name('admin.carservice.jobs.store')->permission('carservice.manage');
             $routes->post('/{id}/jobs/{jobId}/complete', [ServiceOrderController::class, 'completeJob'])->name('admin.carservice.jobs.complete')->permission('carservice.manage');
             $routes->post('/{id}/media', [ServiceOrderController::class, 'uploadMedia'])->name('admin.carservice.media')->permission('carservice.manage');
             $routes->post('/{id}/finish', [ServiceOrderController::class, 'finish'])->name('admin.carservice.finish')->permission('carservice.manage');
+            $routes->post('/{id}/finish/step', [ServiceOrderController::class, 'finishStep'])->name('admin.carservice.finish.step')->permission('carservice.manage');
             $routes->post('/{id}/documents', [ServiceOrderController::class, 'generateDocument'])->name('admin.carservice.documents.generate')->permission('carservice.manage');
             $routes->post('/{id}/intake-protocol', [ServiceOrderController::class, 'updateIntakeProtocol'])->name('admin.carservice.intake_protocol')->permission('carservice.manage');
             $routes->post('/{id}/delete', [ServiceOrderController::class, 'destroy'])->name('admin.carservice.destroy')->permission('carservice.manage');
@@ -199,7 +186,16 @@ final class CarServiceModule implements ModuleInterface
             'intake_mileage' => 'nullable|integer',
             'intake_fuel_level' => 'nullable|max:16',
             'note' => 'nullable|max:5000',
-            'signature' => 'nullable|max:100',
+            'signature' => 'nullable|max:200',
+            'signature_service' => 'nullable|max:500',
+            'signature_customer' => 'nullable|max:500',
+            'sign_mode' => 'nullable|in:manual,digital',
+            'signature_provider_png' => 'nullable|max:800000',
+            'signature_customer_png' => 'nullable|max:800000',
+            'esign_email' => 'nullable|email|max:190',
+            'defects' => 'nullable|max:5000',
+            'defect_deadline' => 'nullable|max:120',
+            'step' => 'required|in:quote,worksheet,cost_sheet,handover,idoklad',
         ]);
         $v->ruleset('carservice.document', [
             'type' => 'required|in:' . implode(',', PdfTemplateCatalog::types()),
@@ -232,7 +228,7 @@ final class CarServiceModule implements ModuleInterface
             'note' => 'nullable|max:5000',
             'active' => 'nullable',
         ]);
-        $v->ruleset('carservice.settings', array_merge([
+        $v->ruleset('carservice.settings', [
             'job_soft_limit_hours' => 'required',
             'default_team' => 'required|in:body_shop,paint_shop',
             'media_phases' => 'required|max:255',
@@ -242,30 +238,7 @@ final class CarServiceModule implements ModuleInterface
             'labor_rate_paint_shop' => 'nullable',
             'auto_idoklad' => 'nullable',
             'market_sources' => 'nullable',
-        ], $this->pdfTemplateValidationRules()));
-        $v->ruleset('carservice.pdf_preview', array_merge([
-            'pdf_preview_type' => 'required|in:' . implode(',', PdfTemplateCatalog::types()),
-            'job_soft_limit_hours' => 'nullable',
-            'default_team' => 'nullable',
-            'media_phases' => 'nullable',
-            'margin_percent' => 'nullable',
-            'labor_rate_default' => 'nullable',
-            'labor_rate_body_shop' => 'nullable',
-            'labor_rate_paint_shop' => 'nullable',
-            'auto_idoklad' => 'nullable',
-            'market_sources' => 'nullable',
-        ], $this->pdfTemplateValidationRules()));
-    }
-
-    /** @return array<string, string> */
-    private function pdfTemplateValidationRules(): array
-    {
-        $rules = [];
-        foreach (PdfTemplateCatalog::allSettingKeys() as $key) {
-            $rules[PdfTemplateCatalog::formField($key)] = 'nullable|max:20000';
-        }
-
-        return $rules;
+        ]);
     }
 
     public function boot(ModuleContext $context): void
@@ -574,41 +547,6 @@ final class CarServiceModule implements ModuleInterface
             }, HookPriority::NORMAL);
         }
 
-        $context->hooks()->addAction('platform.event.dispatched', static function (EventEnvelope $envelope) use ($context): void {
-            if ($envelope->type !== 'carservice.order_finished') {
-                return;
-            }
-
-            $pdfGenerator = null;
-            $documents = null;
-            if ($context->capabilities()->has('documents') && class_exists(PdfDocumentGenerator::class)) {
-                try {
-                    $pdfGenerator = $context->get(PdfDocumentGenerator::class);
-                } catch (\Throwable) {
-                    $pdfGenerator = null;
-                }
-            }
-            if ($context->capabilities()->has('documents') && class_exists(DocumentsProvider::class)) {
-                $cap = $context->capabilities()->get('documents');
-                $documents = $cap instanceof DocumentsProvider ? $cap : null;
-            }
-
-            $carservice = $context->capabilities()->get('carservice');
-            if (!$carservice instanceof CarServiceProvider) {
-                return;
-            }
-
-            $handler = new IdokladFinishHandler(
-                $context->settings(),
-                $context->capabilities(),
-                $carservice,
-                $context->hooks(),
-                $context->get(RequestStack::class),
-                $context->get(TranslatorInterface::class),
-                $pdfGenerator instanceof PdfDocumentGenerator ? $pdfGenerator : null,
-                $documents,
-            );
-            $handler->handle($envelope);
-        }, HookPriority::NORMAL);
+        // iDoklad faktura se zakládá v finish wizardu — ne automaticky z eventu.
     }
 }

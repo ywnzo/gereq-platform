@@ -18,8 +18,10 @@ use Gereq\User\Entity\User;
 use Modules\CarService\Application\BranchContext;
 use Modules\CarService\Application\CarServiceProvider;
 use Modules\CarService\Application\FinishOrderService;
+use Modules\CarService\Application\FinishWizardService;
 use Modules\CarService\Application\IntakeProtocolCatalog;
 use Modules\CarService\Application\OrderCalendarService;
+use Modules\CarService\Application\OrderEsignService;
 use Modules\CarService\Application\OrderMediaService;
 use Modules\CarService\Application\PdfTemplateCatalog;
 use Modules\CarService\Application\QrCodeService;
@@ -56,12 +58,14 @@ final class ServiceOrderController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly CarServiceProvider $carservice,
         private readonly FinishOrderService $finishOrder,
+        private readonly FinishWizardService $finishWizard,
         private readonly ServiceDocumentService $serviceDocuments,
         private readonly OrderMediaService $orderMedia,
         private readonly OrderCalendarService $orderCalendar,
         private readonly QrCodeService $qr,
         private readonly CapabilityRegistry $capabilities,
         private readonly BranchContext $branchContext,
+        private readonly OrderEsignService $orderEsign,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -177,6 +181,7 @@ final class ServiceOrderController extends Controller
         if (!$this->branchContext->canAccessScoped($order->branchId())) {
             $this->abort(403, $this->translator->trans('carservice.error.branch_forbidden'));
         }
+        $request = $this->request();
         $vehicle = $this->em->find(Vehicle::class, $order->vehicleId());
         $customer = $order->customerId() !== null ? $this->em->find(Customer::class, $order->customerId()) : null;
         $branch = $order->branchId() !== null ? $this->em->find(ServiceBranch::class, $order->branchId()) : null;
@@ -191,6 +196,11 @@ final class ServiceOrderController extends Controller
         }
         $trackerUrl = $this->router->url('admin.carservice.tracker.show', ['id' => $id]);
         $sections = $this->hooks->filter('carservice.order.show.sections', [], $order);
+        $finishSteps = $order->isOpen() ? $this->finishWizard->stepsForOrder($id) : [];
+        $finishWizardStep = (string) $request->query->get('fs', '');
+        if ($finishWizardStep === '' || !in_array($finishWizardStep, $finishSteps, true)) {
+            $finishWizardStep = $finishSteps[0] ?? '';
+        }
 
         return $this->page('@carservice/orders/show.html.twig', [
             'pageTitle' => $this->translator->trans('carservice.order', ['%id%' => substr($id, 0, 8)]),
@@ -210,7 +220,10 @@ final class ServiceOrderController extends Controller
             'mediaByPhase' => $mediaByPhase,
             'mediaAvailable' => $this->orderMedia->available(),
             'documents' => $documents,
-            'pdfTypes' => PdfTemplateCatalog::typeMeta(),
+            'pdfTypes' => array_values(array_filter(
+                PdfTemplateCatalog::typeMeta(),
+                fn (array $pdf): bool => !$this->serviceDocuments->orderHasDocumentType($id, $pdf['type'], $documents),
+            )),
             'documentsAvailable' => $this->capabilities->has('documents'),
             'sections' => $sections,
             'qrDataUri' => $this->qr->dataUriForOrder($order->trackerToken()),
@@ -230,12 +243,26 @@ final class ServiceOrderController extends Controller
                 PdfTemplateCatalog::TYPE_INTAKE,
                 $documents,
             ),
+            'finishSteps' => $finishSteps,
+            'finishWizardOpen' => $request->query->get('fw') === '1',
+            'finishWizardStep' => $finishWizardStep,
+            'esignAvailable' => $this->orderEsign->available(),
+            'customerEmail' => $customer instanceof Customer ? $customer->email() : '',
+            'esignDocuments' => $this->orderEsign->available()
+                ? ($this->orderEsign->esign()?->documentsForSource(
+                    \Modules\ESign\Application\ESignProvider::SOURCE_CARSERVICE_ORDER,
+                    $id,
+                ) ?? [])
+                : [],
         ]);
     }
 
     public function edit(string $id): Response
     {
         $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
 
         return $this->page('@carservice/orders/form.html.twig', [
             'pageTitle' => $this->translator->trans('carservice.edit'),
@@ -256,6 +283,9 @@ final class ServiceOrderController extends Controller
     public function update(Request $request, string $id): Response
     {
         $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
         $data = $this->validated($request);
         if (!$this->em->find(Vehicle::class, $data['vehicle_id']) instanceof Vehicle) {
             $this->abort(422, $this->translator->trans('carservice.error.invalid_vehicle'));
@@ -304,7 +334,10 @@ final class ServiceOrderController extends Controller
 
     public function updateStatus(Request $request, string $id): Response
     {
-        $this->orderForBranchMutate($id);
+        $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
         $status = (string) $request->request->get('status', '');
         if (!in_array($status, ServiceOrder::STATUSES, true)) {
             $this->flash('error', $this->translator->trans('carservice.error.invalid_status'));
@@ -327,10 +360,6 @@ final class ServiceOrderController extends Controller
 
             return $this->redirect('admin.carservice.show', ['id' => $id]);
         }
-        $order = $this->carservice->getOrder($id);
-        if ($order === null) {
-            $this->abort(404, $this->translator->trans('carservice.error.not_found'));
-        }
         $prevStatus = $order->status();
         $order->setStatus($status);
         $this->em->flush();
@@ -346,9 +375,36 @@ final class ServiceOrderController extends Controller
         return $this->redirect('admin.carservice.show', ['id' => $id]);
     }
 
+    public function unlock(string $id): Response
+    {
+        $order = $this->orderForBranchMutate($id);
+        if ($order->isOpen()) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
+        $prevStatus = $order->status();
+        $order->setStatus('in_progress');
+        $this->em->flush();
+        FullServiceLogger::log('carservice.order.unlocked', [
+            'order_id' => $id,
+            'from' => $prevStatus,
+            'to' => 'in_progress',
+            'user_id' => $this->auth->user()?->id(),
+        ]);
+        $this->events->emit('carservice.order_updated', ['type' => 'carservice_order', 'id' => $id], $this->carservice->serialize($order));
+        $this->auditor->log('carservice.unlocked', 'carservice_order', $id, null, [
+            'from' => $prevStatus,
+        ]);
+        $this->flash('success', $this->translator->trans('carservice.flash.unlocked'));
+
+        return $this->redirect('admin.carservice.show', ['id' => $id]);
+    }
+
     public function switchTeam(Request $request, string $id): Response
     {
-        $this->orderForBranchMutate($id);
+        $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
         $team = (string) $request->request->get('team', '');
         $note = trim((string) $request->request->get('note', '')) ?: null;
         try {
@@ -368,7 +424,10 @@ final class ServiceOrderController extends Controller
 
     public function storeJob(Request $request, string $id): Response
     {
-        $this->orderForBranchMutate($id);
+        $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
         $data = $this->validate($request, 'carservice.job');
         try {
             $job = $this->carservice->addJob(
@@ -391,7 +450,10 @@ final class ServiceOrderController extends Controller
 
     public function completeJob(string $id, string $jobId): Response
     {
-        $this->orderForBranchMutate($id);
+        $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
         try {
             $job = $this->carservice->completeJob($jobId);
             if ($job->orderId() !== $id) {
@@ -416,61 +478,103 @@ final class ServiceOrderController extends Controller
 
     public function finish(Request $request, string $id): Response
     {
-        $this->orderForBranchMutate($id);
-        $meta = [];
-        if ($request->request->has('payment_type') || $request->request->has('signature') || $request->request->has('service_info')) {
-            $data = $this->validate($request, 'carservice.finish');
-            $mileage = trim((string) ($data['intake_mileage'] ?? ''));
-            $meta = [
-                'payment_type' => trim((string) ($data['payment_type'] ?? '')) ?: null,
-                'internal_cost' => trim((string) ($data['internal_cost'] ?? '')) !== '' ? (string) $data['internal_cost'] : null,
-                'external_cost' => trim((string) ($data['external_cost'] ?? '')) !== '' ? (string) $data['external_cost'] : null,
-                'service_info' => trim((string) ($data['service_info'] ?? '')) ?: null,
-                'intake_mileage' => $mileage !== '' ? (int) $mileage : null,
-                'intake_fuel_level' => trim((string) ($data['intake_fuel_level'] ?? '')) ?: null,
-                'note' => trim((string) ($data['note'] ?? '')) ?: null,
-                'signature' => trim((string) ($data['signature'] ?? '')) ?: null,
-            ];
+        // Legacy endpoint — dokončení probíhá přes wizard (finish/step).
+        return $this->redirectTo($this->finishWizardUrl($id));
+    }
+
+    public function finishStep(Request $request, string $id): Response
+    {
+        $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
         }
-        FullServiceLogger::log('carservice.finish.http', [
+        $data = $this->validate($request, 'carservice.finish');
+        $step = (string) ($data['step'] ?? '');
+        FullServiceLogger::log('carservice.finish.wizard.http', [
             'order_id' => $id,
-            'meta_keys' => array_keys($meta),
+            'step' => $step,
             'user_id' => $this->auth->user()?->id(),
         ]);
+
         try {
-            $result = $this->finishOrder->finish($id, $meta);
-            $order = $result['order'];
+            $result = $this->finishWizard->processStep($id, $step, $data, $request);
         } catch (\InvalidArgumentException $e) {
-            FullServiceLogger::log('carservice.finish.http.error', [
+            FullServiceLogger::log('carservice.finish.wizard.http.error', [
                 'order_id' => $id,
+                'step' => $step,
                 'error' => $e->getMessage(),
             ]);
             $this->flash('error', $this->translator->trans($e->getMessage()));
 
+            return $this->redirectTo($this->finishWizardUrl($id, $step));
+        } catch (\Throwable $e) {
+            FullServiceLogger::log('carservice.finish.wizard.http.error', [
+                'order_id' => $id,
+                'step' => $step,
+                'error' => $e,
+            ]);
+            $this->flash('error', $this->translator->trans('carservice.flash.document_failed'));
+
+            return $this->redirectTo($this->finishWizardUrl($id, $step));
+        }
+
+        if (!empty($result['error'])) {
+            $this->flash('error', (string) $result['error']);
+
+            return $this->redirectTo($this->finishWizardUrl($id, $step));
+        }
+
+        if (!empty($result['idoklad']['message'])) {
+            $this->flash(
+                !empty($result['idoklad']['ok']) ? 'success' : 'warning',
+                (string) $result['idoklad']['message'],
+            );
+        } elseif (!empty($result['esign']['message'])) {
+            $msgKey = (string) $result['esign']['message'];
+            $params = [];
+            if (!empty($result['esign']['signing_url'])) {
+                $params['%url%'] = (string) $result['esign']['signing_url'];
+            }
+            $this->flash('success', $this->translator->trans($msgKey, $params));
+        } elseif ($result['document'] !== null) {
+            $this->flash('success', $this->translator->trans('carservice.flash.wizard_doc', [
+                '%title%' => $result['document']->title(),
+            ]));
+        }
+
+        if ($result['done']) {
+            $order = $result['order'];
+            $payload = $this->carservice->serialize($order);
+            if ($result['document'] !== null) {
+                $payload['document_id'] = $result['document']->id();
+            }
+            $this->events->emit('carservice.order_finished', ['type' => 'carservice_order', 'id' => $id], $payload);
+            $this->events->emit('carservice.order_updated', ['type' => 'carservice_order', 'id' => $id], $payload);
+            $this->flash('success', $this->translator->trans('carservice.flash.finished'));
+
             return $this->redirect('admin.carservice.show', ['id' => $id]);
         }
-        $payload = $this->carservice->serialize($order);
-        if ($result['document'] !== null) {
-            $payload['document_id'] = $result['document']->id();
-        }
-        FullServiceLogger::log('carservice.finish.emit', [
-            'order_id' => $id,
-            'status' => $order->status(),
-            'document_id' => $result['document']?->id(),
-            'job_seconds' => $payload['job_seconds'] ?? null,
-        ]);
-        $this->events->emit('carservice.order_finished', ['type' => 'carservice_order', 'id' => $id], $payload);
-        $this->events->emit('carservice.order_updated', ['type' => 'carservice_order', 'id' => $id], $payload);
-        $this->flash('success', $this->translator->trans(
-            $result['document'] !== null ? 'carservice.flash.finished_with_doc' : 'carservice.flash.finished',
-        ));
 
-        return $this->redirect('admin.carservice.show', ['id' => $id]);
+        return $this->redirectTo($this->finishWizardUrl($id, (string) $result['next']));
+    }
+
+    private function finishWizardUrl(string $orderId, ?string $step = null): string
+    {
+        $url = $this->router->url('admin.carservice.show', ['id' => $orderId]);
+        $query = ['fw' => '1'];
+        if ($step !== null && $step !== '') {
+            $query['fs'] = $step;
+        }
+
+        return $url . '?' . http_build_query($query);
     }
 
     public function updateIntakeProtocol(Request $request, string $id): Response
     {
         $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
 
         $protocol = IntakeProtocolCatalog::normalize([
             'equipment' => $request->request->all('equipment'),
@@ -512,6 +616,9 @@ final class ServiceOrderController extends Controller
     public function generateDocument(Request $request, string $id): Response
     {
         $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
         if (!$this->capabilities->has('documents')) {
             $this->flash('error', $this->translator->trans('carservice.error.documents_unavailable'));
 
@@ -549,7 +656,10 @@ final class ServiceOrderController extends Controller
 
     public function uploadMedia(Request $request, string $id): Response
     {
-        $this->orderForBranchMutate($id);
+        $order = $this->orderForBranchMutate($id);
+        if ($this->rejectIfClosed($order)) {
+            return $this->redirect('admin.carservice.show', ['id' => $id]);
+        }
         $phase = trim((string) $request->request->get('phase', 'progress'));
         if (!in_array($phase, $this->carservice->mediaPhases(), true)) {
             $phase = $this->carservice->mediaPhases()[0] ?? 'progress';
@@ -634,6 +744,17 @@ final class ServiceOrderController extends Controller
         }
 
         return $order;
+    }
+
+    /** @return bool true = closed, caller should abort mutation */
+    private function rejectIfClosed(ServiceOrder $order): bool
+    {
+        if ($order->isOpen()) {
+            return false;
+        }
+        $this->flash('error', $this->translator->trans('carservice.error.order_locked'));
+
+        return true;
     }
 
     private function deleteOrder(ServiceOrder $order): void

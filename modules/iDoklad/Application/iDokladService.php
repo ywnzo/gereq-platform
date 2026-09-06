@@ -35,25 +35,128 @@ final class iDokladService
     }
 
     /**
-     * @return list<array{id: int, type: string, label: string}>
+     * Katalog typů dokladů iDoklad (API report type + UI klíč).
+     *
+     * @return list<array{
+     *   id: int,
+     *   type: string,
+     *   key: string,
+     *   label: string,
+     *   resource: string,
+     *   group: string,
+     *   pdf: bool,
+     *   writable: bool
+     * }>
      */
     public function documentTypes(?string $documentType = null): array
     {
         $types = [
-            ['id' => 0, 'type' => 'IssuedInvoice', 'label' => 'idoklad.document_type.issued_invoice'],
-            ['id' => 1, 'type' => 'ProformaInvoice', 'label' => 'idoklad.document_type.proforma_invoice'],
-            ['id' => 2, 'type' => 'CashVoucher', 'label' => 'idoklad.document_type.cash_voucher'],
-            ['id' => 3, 'type' => 'CreditNote', 'label' => 'idoklad.document_type.credit_note'],
-            ['id' => 4, 'type' => 'BankStatement', 'label' => 'idoklad.document_type.bank_statement'],
-            ['id' => 5, 'type' => 'ReceivedInvoice', 'label' => 'idoklad.document_type.received_invoice'],
-            ['id' => 6, 'type' => 'SalesReceipt', 'label' => 'idoklad.document_type.sales_receipt'],
-            ['id' => 7, 'type' => 'SalesOrder', 'label' => 'idoklad.document_type.sales_order'],
-            ['id' => 9, 'type' => 'IssuedTaxDocument', 'label' => 'idoklad.document_type.issued_tax_document'],
+            [
+                'id' => 0,
+                'type' => 'IssuedInvoice',
+                'key' => 'issued_invoice',
+                'label' => 'idoklad.document_type.issued_invoice',
+                'resource' => 'IssuedInvoices',
+                'group' => 'invoices',
+                'pdf' => true,
+                'writable' => true,
+            ],
+            [
+                'id' => 1,
+                'type' => 'ProformaInvoice',
+                'key' => 'proforma_invoice',
+                'label' => 'idoklad.document_type.proforma_invoice',
+                'resource' => 'ProformaInvoices',
+                'group' => 'invoices',
+                'pdf' => true,
+                'writable' => true,
+            ],
+            [
+                'id' => 2,
+                'type' => 'CashVoucher',
+                'key' => 'cash_voucher',
+                'label' => 'idoklad.document_type.cash_voucher',
+                'resource' => 'CashVouchers',
+                'group' => 'cash',
+                'pdf' => true,
+                'writable' => true,
+            ],
+            [
+                'id' => 3,
+                'type' => 'CreditNote',
+                'key' => 'credit_note',
+                'label' => 'idoklad.document_type.credit_note',
+                'resource' => 'CreditNotes',
+                'group' => 'returns',
+                'pdf' => true,
+                'writable' => true,
+            ],
+            [
+                'id' => 4,
+                'type' => 'BankStatement',
+                'key' => 'bank_statement',
+                'label' => 'idoklad.document_type.bank_statement',
+                'resource' => 'BankStatements',
+                'group' => 'bank',
+                'pdf' => false,
+                'writable' => false,
+            ],
+            [
+                'id' => 5,
+                'type' => 'ReceivedInvoice',
+                'key' => 'received_invoice',
+                'label' => 'idoklad.document_type.received_invoice',
+                'resource' => 'ReceivedInvoices',
+                'group' => 'expenses',
+                'pdf' => true,
+                'writable' => true,
+            ],
+            [
+                'id' => 6,
+                'type' => 'SalesReceipt',
+                'key' => 'sales_receipt',
+                'label' => 'idoklad.document_type.sales_receipt',
+                'resource' => 'SalesReceipts',
+                'group' => 'income',
+                'pdf' => true,
+                'writable' => true,
+            ],
+            [
+                'id' => 7,
+                'type' => 'SalesOrder',
+                'key' => 'sales_order',
+                'label' => 'idoklad.document_type.sales_order',
+                'resource' => 'SalesOrders',
+                'group' => 'orders',
+                'pdf' => false,
+                'writable' => false,
+            ],
+            [
+                'id' => 9,
+                'type' => 'IssuedTaxDocument',
+                'key' => 'issued_tax_document',
+                'label' => 'idoklad.document_type.issued_tax_document',
+                'resource' => 'IssuedTaxDocuments',
+                'group' => 'invoices',
+                'pdf' => true,
+                'writable' => false,
+            ],
+            [
+                'id' => 11,
+                'type' => 'ReceivedReceipt',
+                'key' => 'received_receipt',
+                'label' => 'idoklad.document_type.received_receipt',
+                'resource' => 'ReceivedReceipts',
+                'group' => 'expenses',
+                'pdf' => false,
+                'writable' => false,
+            ],
         ];
 
         if ($documentType !== null && $documentType !== '') {
+            $needle = $this->normalizeDocumentTypeKey($documentType);
             foreach ($types as $row) {
-                if ($row['type'] === $documentType) {
+                if ($row['type'] === $documentType || $row['key'] === $needle) {
                     return [$row];
                 }
             }
@@ -62,6 +165,101 @@ final class iDokladService
         }
 
         return $types;
+    }
+
+    /**
+     * @return array{
+     *   id: int,
+     *   type: string,
+     *   key: string,
+     *   label: string,
+     *   resource: string,
+     *   group: string,
+     *   pdf: bool,
+     *   writable: bool
+     * }|null
+     */
+    public function resolveDocumentType(string $documentType): ?array
+    {
+        $rows = $this->documentTypes($documentType);
+
+        return $rows[0] ?? null;
+    }
+
+    /**
+     * Seznam dokladů z iDoklad API (stránkovaný).
+     *
+     * @return array{
+     *   isSucceed: bool,
+     *   code: int|null,
+     *   message: string|null,
+     *   items: list<array<string, mixed>>,
+     *   totalItems: int,
+     *   totalPages: int,
+     *   type: array<string, mixed>|null
+     * }
+     */
+    public function listDocuments(string $documentType, int $page = 1, int $pageSize = 20, string $search = ''): array
+    {
+        $meta = $this->resolveDocumentType($documentType);
+        if ($meta === null) {
+            return [
+                'isSucceed' => false,
+                'code' => 400,
+                'message' => 'idoklad.error.unknown_document_type',
+                'items' => [],
+                'totalItems' => 0,
+                'totalPages' => 0,
+                'type' => null,
+            ];
+        }
+
+        $sortField = match ($meta['key']) {
+            'cash_voucher' => 'DateOfTransaction',
+            'bank_statement' => 'DateOfTransaction',
+            default => 'DateOfIssue',
+        };
+        $query = [
+            'sort' => $sortField . '~Desc',
+        ];
+        $search = trim($search);
+        if ($search !== '') {
+            $safe = str_replace(['~', '|'], '', $search);
+            $query['filter'] = 'DocumentNumber~contains~' . $safe;
+        }
+
+        $response = match ($meta['key']) {
+            'issued_invoice' => $this->api->getListIssuedInvoices($page, $pageSize, $query),
+            'proforma_invoice' => $this->api->getListProformaInvoices($page, $pageSize, $query),
+            'cash_voucher' => $this->api->getListCashVouchers($page, $pageSize, $query),
+            'credit_note' => $this->api->getListCreditNotes($page, $pageSize, $query),
+            'received_invoice' => $this->api->getListReceivedInvoices($page, $pageSize, $query),
+            'sales_receipt' => $this->api->getListSalesReceipts($page, $pageSize, $query),
+            'bank_statement' => $this->api->getListBankStatements($page, $pageSize, $query),
+            'sales_order' => $this->api->getListSalesOrders($page, $pageSize, $query),
+            'issued_tax_document' => $this->api->getListIssuedTaxDocuments($page, $pageSize, $query),
+            'received_receipt' => $this->api->getListReceivedReceipts($page, $pageSize, $query),
+            default => [
+                'isSucceed' => false,
+                'code' => 400,
+                'message' => 'idoklad.error.unknown_document_type',
+                'items' => [],
+                'totalItems' => 0,
+                'totalPages' => 0,
+            ],
+        };
+
+        $items = is_array($response['items'] ?? null) ? array_values($response['items']) : [];
+
+        return [
+            'isSucceed' => (bool) ($response['isSucceed'] ?? false),
+            'code' => isset($response['code']) ? (int) $response['code'] : null,
+            'message' => isset($response['message']) ? (string) $response['message'] : null,
+            'items' => $items,
+            'totalItems' => (int) ($response['totalItems'] ?? count($items)),
+            'totalPages' => (int) ($response['totalPages'] ?? 0),
+            'type' => $meta,
+        ];
     }
 
     /**
@@ -153,10 +351,13 @@ final class iDokladService
             'description' => $documentData['Description'] ?? null,
         ]);
 
-        $result = match ($type) {
-            'invoice' => $this->api->setInvoice($this->normalizeIssuedDocument($documentData, $partnerId, $iDokladId), $iDokladId),
-            'creditNote', 'credit_note' => $this->api->setCreditNote($this->normalizeCreditNote($documentData, $partnerId, $iDokladId), $iDokladId),
-            'cashVoucher', 'cash_voucher' => $this->api->setCashVoucher($this->normalizeCashVoucher($documentData, $partnerId, $iDokladId), $iDokladId),
+        $result = match ($this->normalizeDocumentTypeKey($type)) {
+            'issued_invoice', 'invoice' => $this->api->setInvoice($this->normalizeIssuedDocument($documentData, $partnerId, $iDokladId), $iDokladId),
+            'credit_note', 'creditnote' => $this->api->setCreditNote($this->normalizeCreditNote($documentData, $partnerId, $iDokladId), $iDokladId),
+            'cash_voucher', 'cashvoucher' => $this->api->setCashVoucher($this->normalizeCashVoucher($documentData, $partnerId, $iDokladId), $iDokladId),
+            'proforma_invoice', 'proformainvoice' => $this->api->setProformaInvoice($this->normalizeIssuedDocument($documentData, $partnerId, $iDokladId), $iDokladId),
+            'received_invoice', 'receivedinvoice' => $this->api->setReceivedInvoice($this->normalizeReceivedInvoice($documentData, $partnerId, $iDokladId), $iDokladId),
+            'sales_receipt', 'salesreceipt' => $this->api->setSalesReceipt($this->normalizeSalesReceipt($documentData, $partnerId, $iDokladId), $iDokladId),
             default => [
                 'isSucceed' => false,
                 'code' => 400,
@@ -183,10 +384,19 @@ final class iDokladService
     /** @return array<string, mixed> */
     public function getDocument(int $iDokladId, string $documentType): array
     {
-        return match ($documentType) {
-            'invoice' => $this->api->getInvoice($iDokladId),
-            'creditNote', 'credit_note' => $this->api->getCreditNote($iDokladId),
-            'cashVoucher', 'cash_voucher' => $this->api->getCashVoucher($iDokladId),
+        $key = $this->normalizeDocumentTypeKey($documentType);
+
+        return match ($key) {
+            'issued_invoice', 'invoice' => $this->api->getInvoice($iDokladId),
+            'credit_note', 'creditnote' => $this->api->getCreditNote($iDokladId),
+            'cash_voucher', 'cashvoucher' => $this->api->getCashVoucher($iDokladId),
+            'proforma_invoice', 'proformainvoice' => $this->api->getProformaInvoice($iDokladId),
+            'received_invoice', 'receivedinvoice' => $this->api->getReceivedInvoice($iDokladId),
+            'sales_receipt', 'salesreceipt' => $this->api->getSalesReceipt($iDokladId),
+            'bank_statement', 'bankstatement' => $this->api->getBankStatement($iDokladId),
+            'sales_order', 'salesorder' => $this->api->getSalesOrder($iDokladId),
+            'issued_tax_document', 'issuedtaxdocument' => $this->api->getIssuedTaxDocument($iDokladId),
+            'received_receipt', 'receivedreceipt' => $this->api->getReceivedReceipt($iDokladId),
             default => [
                 'isSucceed' => false,
                 'code' => 400,
@@ -202,13 +412,7 @@ final class iDokladService
     /** @return array<string, mixed> */
     public function getDocumentReport(int $iDokladId, string $documentType): array
     {
-        $apiType = match ($documentType) {
-            'invoice' => 'IssuedInvoice',
-            'creditNote', 'credit_note' => 'CreditNote',
-            'cashVoucher', 'cash_voucher' => 'CashVoucher',
-            default => null,
-        };
-
+        $apiType = $this->reportType($documentType);
         if ($apiType === null) {
             return [
                 'isSucceed' => false,
@@ -226,13 +430,7 @@ final class iDokladService
 
     public function downloadDocumentPdf(int $iDokladId, string $documentType = 'invoice'): ?string
     {
-        $apiType = match ($documentType) {
-            'invoice' => 'IssuedInvoice',
-            'creditNote', 'credit_note' => 'CreditNote',
-            'cashVoucher', 'cash_voucher' => 'CashVoucher',
-            default => null,
-        };
-
+        $apiType = $this->reportType($documentType);
         if ($apiType === null) {
             FullServiceLogger::log('idoklad.pdf.unknown_type', [
                 'idoklad_id' => $iDokladId,
@@ -673,5 +871,80 @@ final class iDokladService
         }
 
         return $items;
+    }
+
+    /**
+     * @param array<string, mixed> $documentData
+     * @return array<string, mixed>
+     */
+    private function normalizeReceivedInvoice(array $documentData, int $partnerId, ?int $iDokladId): array
+    {
+        $payload = $this->baseDocumentPayload($documentData, $partnerId, 5);
+        if ($iDokladId !== null && $iDokladId > 0) {
+            $payload['Id'] = $iDokladId;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array<string, mixed> $documentData
+     * @return array<string, mixed>
+     */
+    private function normalizeSalesReceipt(array $documentData, int $partnerId, ?int $iDokladId): array
+    {
+        $payload = $this->baseDocumentPayload($documentData, $partnerId, 6);
+        if ($iDokladId !== null && $iDokladId > 0) {
+            $payload['Id'] = $iDokladId;
+        }
+
+        return $payload;
+    }
+
+    private function normalizeDocumentTypeKey(string $documentType): string
+    {
+        $raw = trim($documentType);
+        if ($raw === '') {
+            return '';
+        }
+
+        // PascalCase API type → snake_case key
+        $fromPascal = preg_replace('/(?<!^)[A-Z]/', '_$0', $raw);
+        $normalized = strtolower(str_replace(['-', ' '], '_', (string) $fromPascal));
+        $normalized = preg_replace('/_+/', '_', $normalized) ?? $normalized;
+
+        return match ($normalized) {
+            'invoice' => 'issued_invoice',
+            'creditnote' => 'credit_note',
+            'cashvoucher' => 'cash_voucher',
+            'proformainvoice' => 'proforma_invoice',
+            'receivedinvoice' => 'received_invoice',
+            'salesreceipt' => 'sales_receipt',
+            'bankstatement' => 'bank_statement',
+            'salesorder' => 'sales_order',
+            'issuedtaxdocument' => 'issued_tax_document',
+            'receivedreceipt' => 'received_receipt',
+            default => $normalized,
+        };
+    }
+
+    private function reportType(string $documentType): ?string
+    {
+        $meta = $this->resolveDocumentType($documentType);
+        if ($meta !== null && !empty($meta['pdf'])) {
+            return $meta['type'];
+        }
+
+        // legacy aliases without catalog hit
+        return match ($this->normalizeDocumentTypeKey($documentType)) {
+            'issued_invoice', 'invoice' => 'IssuedInvoice',
+            'credit_note' => 'CreditNote',
+            'cash_voucher' => 'CashVoucher',
+            'proforma_invoice' => 'ProformaInvoice',
+            'received_invoice' => 'ReceivedInvoice',
+            'sales_receipt' => 'SalesReceipt',
+            'issued_tax_document' => 'IssuedTaxDocument',
+            default => null,
+        };
     }
 }

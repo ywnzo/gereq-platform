@@ -1,4 +1,11 @@
 {% extends 'admin/layout.html.twig' %}
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.carservice'|trans, url: url('admin.carservice.index') },
+        { label: 'nav.carservice.tracker'|trans },
+    ] } %}
+{% endblock %}
 {% block content %}
 <div class="cs-tracker">
 <header class="page-header">

@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'translate',
     'name' => 'Translate',
-    'version' => '2.0.0',
+    'version' => '2.0.1',
     'description' => 'module.translate.description',
     'class' => Modules\Translate\TranslateModule::class,
     'author' => 'GEREQ',

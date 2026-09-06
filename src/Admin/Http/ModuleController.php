@@ -49,6 +49,7 @@ final class ModuleController extends Controller
                 'counts' => $report['counts'],
                 'health_issues' => $report['counts']['health_issues'],
                 'update_available' => $report['overview']['update_available'],
+                'settings_route' => $report['overview']['settings_route'],
             ];
         }
 
@@ -100,6 +101,7 @@ final class ModuleController extends Controller
             'enabled' => $report['overview']['enabled'],
             'missing' => $report['overview']['missing'],
             'report' => $report,
+            'settingsRoute' => $report['overview']['settings_route'],
         ]);
     }
 
