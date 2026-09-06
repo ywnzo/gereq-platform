@@ -17,6 +17,7 @@ import { registerBrandAsset } from './brandAsset';
 import { registerCssEditor } from './cssEditor';
 import { registerDashboardSettings } from './dashboardSettings';
 import { registerCalendarBoard } from './calendarBoard';
+import { registerFleetBrandCatalog } from './fleetBrandCatalog';
 import { registerChart } from './chart';
 
 export function registerUi(alpine: typeof Alpine): void {
@@ -38,9 +39,10 @@ export function registerUi(alpine: typeof Alpine): void {
     registerBrandAsset(alpine);
     registerCssEditor(alpine);
     registerDashboardSettings(alpine);
-    registerChart(alpine);
     registerCalendarBoard(alpine);
     registerAres(alpine);
     registerCmsBlockForm(alpine);
     registerModuleTable(alpine);
+    registerFleetBrandCatalog(alpine);
+    registerChart(alpine);
 }

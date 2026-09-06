@@ -1,0 +1,83 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="fleet-brand-models" data-actions-default="1">
+<header class="page-header">
+    <div class="fleet-brand-detail__title">
+        <p class="eyebrow"><a href="{{ url('admin.fleet.settings') }}">{{ 'fleet.settings.title'|trans }}</a> · {{ 'fleet.brands.title'|trans }}</p>
+        <div class="fleet-brand-detail__identity">
+            {% if logo %}
+                <img class="fleet-brand-logo" src="{{ logo }}" alt="{{ brand.name() }}" loading="lazy" onerror="this.style.display='none'">
+            {% endif %}
+            <div>
+                <h1>{{ brand.name() }}</h1>
+                <p class="muted">{{ models|length }} {{ 'fleet.brands.models'|trans }}{% if catalogCount > 0 %} · {{ 'fleet.brands.catalog_available'|trans({'%count%': catalogCount}) }}{% endif %}</p>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        {% if user.can('fleet.manage') %}
+            <form method="post" action="{{ url('admin.fleet.brands.import',{id:brand.id()}) }}">
+                {{ csrf_field()|raw }}
+                <button type="submit" class="btn btn--primary">{{ 'fleet.brands.import_models'|trans }}</button>
+            </form>
+            <form method="post" action="{{ url('admin.fleet.brands.destroy',{id:brand.id()}) }}" data-confirm="{{ 'fleet.brands.confirm_delete'|trans }}">
+                {{ csrf_field()|raw }}
+                <button type="submit" class="btn btn--ghost">{{ 'common.delete'|trans }}</button>
+            </form>
+        {% endif %}
+        <a class="btn btn--ghost" href="{{ url('admin.fleet.settings') }}">{{ 'common.back'|trans }}</a>
+    </div>
+</header>
+
+{% if user.can('fleet.manage') %}
+<div class="toolbar--table">
+    <form class="toolbar fleet-model-toolbar" method="post" action="{{ url('admin.fleet.models.store') }}">
+        {{ csrf_field()|raw }}
+        <input type="hidden" name="brand_id" value="{{ brand.id() }}">
+        <label class="sr-only" for="f-model-name">{{ 'fleet.field.model'|trans }}</label>
+        <input class="input" type="text" id="f-model-name" name="name" required placeholder="{{ 'fleet.field.model'|trans }}" autocomplete="off">
+        <button class="btn btn--primary" type="submit">{{ 'fleet.brands.add_model'|trans }}</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="table-wrap" data-table>
+<table class="table table--fleet">
+<thead>
+<tr>
+    <th>{{ 'fleet.field.model'|trans }}</th>
+    <th>{{ 'fleet.brands.col.body'|trans }}</th>
+    <th>{{ 'fleet.brands.col.kind'|trans }}</th>
+    <th class="table__actions-head"></th>
+</tr>
+</thead>
+<tbody>
+{% for item in models %}
+{% set metaKey = item.name()|lower %}
+{% set meta = catalogMeta[metaKey]|default(null) %}
+<tr class="fleet-row">
+    <td>
+        <span class="fleet-row__plate">{{ item.name() }}</span>
+    </td>
+    <td class="is-mute">{% if meta.body %}{{ ('fleet.catalog.body.' ~ meta.body)|trans }}{% else %}—{% endif %}</td>
+    <td class="is-mute">{% if meta.kind %}{{ ('fleet.catalog.kind.' ~ meta.kind)|trans }}{% else %}—{% endif %}</td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% if user.can('fleet.manage') %}
+                {% include 'ui/row_action_destroy.html.twig' with {
+                    action: url('admin.fleet.models.destroy',{id:item.id()}),
+                    label: 'common.delete'|trans,
+                    confirm: 'fleet.brands.confirm_delete_model'|trans
+                } %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr><td colspan="4"><div class="empty"><h2>{{ 'fleet.brands.no_models'|trans }}</h2></div></td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endblock %}

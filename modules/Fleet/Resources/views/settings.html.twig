@@ -1,0 +1,45 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'fleet.settings.title'|trans }}</h1>
+        <p class="muted">{{ 'fleet.settings.intro'|trans }}</p>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'fleet.settings' } %}
+
+<div class="detail-stack">
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'fleet.settings.section.orv'|trans }}</h2>
+            <p class="muted">{{ 'fleet.settings.orv_hint'|trans }}</p>
+        </div>
+    </header>
+    <form method="post" class="form-grid" action="{{ url('admin.fleet.settings.update') }}" data-form="fleet.settings" x-data="gereqForm" id="fleet-settings-form">
+        {{ csrf_field()|raw }}
+        <label class="field">
+            <span>{{ 'fleet.settings.orv_api_key'|trans }}</span>
+            <input class="input" type="password" name="orv_api_key" value="" autocomplete="new-password" placeholder="{{ orvConfigured ? ('settings.secret.placeholder'|trans) : '' }}">
+        </label>
+        {% if orvConfigured %}
+            <p class="muted field--full">{{ 'fleet.settings.orv_configured'|trans }}</p>
+        {% endif %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'fleet.brands.title'|trans }}</h2>
+            <p class="muted">{{ 'fleet.brands.intro'|trans }}</p>
+        </div>
+    </header>
+    {% include '@fleet/brands/_catalog.html.twig' %}
+</section>
+</div>
+{% endblock %}

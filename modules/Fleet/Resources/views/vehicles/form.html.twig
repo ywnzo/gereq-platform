@@ -1,29 +1,277 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
-<header class="page-header"><h1>{{ item ? 'fleet.edit'|trans : 'fleet.new'|trans }}</h1></header>
+<header class="page-header">
+    <div>
+        <h1>{{ item ? 'fleet.edit'|trans : 'fleet.new'|trans }}</h1>
+        <p class="muted">{{ 'fleet.form.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.fleet.index') }}">{{ 'common.cancel'|trans }}</a>
+        <button class="btn btn--primary" type="submit" form="fleet-vehicle-form">{{ 'common.save'|trans }}</button>
+    </div>
+</header>
+
 {% include 'ui/error-summary.html.twig' with { form: 'fleet.save' } %}
-<form method="post" class="form-grid" action="{{ item ? url('admin.fleet.update',{id:item.id()}) : url('admin.fleet.store') }}" data-form="fleet.save" x-data="gereqForm">
+
+<form method="post" id="fleet-vehicle-form" class="detail-stack" action="{{ item ? url('admin.fleet.update',{id:item.id()}) : url('admin.fleet.store') }}" data-form="fleet.save" x-data="gereqForm">
 {{ csrf_field()|raw }}
-{% include 'ui/input.html.twig' with { name:'plate', label:'fleet.field.plate'|trans, required:true, form:'fleet.save', value: item?item.plate():'' } %}
-{% include 'ui/input.html.twig' with { name:'vin', label:'fleet.field.vin'|trans, optional:true, form:'fleet.save', value: item?item.vin():'' } %}
-{% include 'ui/input.html.twig' with { name:'brand', label:'fleet.field.brand'|trans, optional:true, form:'fleet.save', value: item?item.brand():'' } %}
-{% include 'ui/input.html.twig' with { name:'model', label:'fleet.field.model'|trans, optional:true, form:'fleet.save', value: item?item.model():'' } %}
-{% include 'ui/input.html.twig' with { name:'model_year', type:'number', label:'fleet.field.year'|trans, optional:true, form:'fleet.save', value: item and item.modelYear()?item.modelYear():'' } %}
-{% include 'ui/input.html.twig' with { name:'color', label:'fleet.field.color'|trans, optional:true, form:'fleet.save', value: item?item.color():'' } %}
-{% include 'ui/input.html.twig' with { name:'fuel', label:'fleet.field.fuel'|trans, optional:true, form:'fleet.save', value: item?item.fuel():'' } %}
-{% include 'ui/input.html.twig' with { name:'mileage', type:'number', label:'fleet.field.mileage'|trans, optional:true, form:'fleet.save', value: item and item.mileage()?item.mileage():'' } %}
-{% include 'ui/select.html.twig' with { name:'status', label:'fleet.field.status'|trans, form:'fleet.save', value: item?item.status():'available', options:[
-{value:'available',label:'fleet.status.available'|trans},{value:'rented',label:'fleet.status.rented'|trans},{value:'in_service',label:'fleet.status.in_service'|trans},{value:'repair_wait',label:'fleet.status.repair_wait'|trans},{value:'out_of_service',label:'fleet.status.out_of_service'|trans}
-] } %}
-{% include 'ui/select.html.twig' with { name:'ownership', label:'fleet.field.ownership'|trans, form:'fleet.save', value: item?item.ownership():'owned', options:[
-{value:'owned',label:'fleet.ownership.owned'|trans},{value:'external',label:'fleet.ownership.external'|trans}
-] } %}
-{% include 'ui/select.html.twig' with { name:'customer_id', label:'fleet.field.customer'|trans, optional:true, form:'fleet.save', value: item?item.customerId():customerId, options:customerOptions } %}
-{% include 'ui/input.html.twig' with { name:'stk_at', type:'date', label:'fleet.field.stk'|trans, optional:true, form:'fleet.save', value: item and item.stkAt()?item.stkAt().format('Y-m-d'):'' } %}
-{% include 'ui/input.html.twig' with { name:'insurance_until', type:'date', label:'fleet.field.insurance'|trans, optional:true, form:'fleet.save', value: item and item.insuranceUntil()?item.insuranceUntil().format('Y-m-d'):'' } %}
-{% include 'ui/input.html.twig' with { name:'vignette_until', type:'date', label:'fleet.field.vignette'|trans, optional:true, form:'fleet.save', value: item and item.vignetteUntil()?item.vignetteUntil().format('Y-m-d'):'' } %}
-{% include 'ui/textarea.html.twig' with { name:'note', label:'fleet.field.note'|trans, optional:true, form:'fleet.save', value: item?item.note():'' } %}
-<div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-<a class="btn btn--ghost" href="{{ url('admin.fleet.index') }}">{{ 'common.cancel'|trans }}</a></div>
+
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'fleet.form.section.identity'|trans }}</h2>
+            <p class="muted">{{ 'fleet.form.section.identity_hint'|trans }}</p>
+        </div>
+    </header>
+    <div class="form-grid">
+        {% include 'ui/input.html.twig' with { name:'plate', label:'fleet.field.plate'|trans, required:true, form:'fleet.save', value: item?item.plate():'' } %}
+        {% include 'ui/input.html.twig' with { name:'vin', label:'fleet.field.vin'|trans, optional:true, form:'fleet.save', value: item?item.vin():'' } %}
+        <div class="g-field field--full" data-field="orv_id">
+            <label class="g-label" for="orv_id">
+                <span>{{ 'fleet.field.orv'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+            </label>
+            <div class="ares-field__row fleet-orv">
+                <div class="g-control-wrap" style="flex:1;min-width:0">
+                    <input class="g-control" type="text" name="orv_id" id="orv_id" value="{{ item ? item.orvId() : '' }}" data-form="fleet.save" autocomplete="off" placeholder="{{ 'fleet.field.orv_placeholder'|trans }}">
+                </div>
+                {% if orvConfigured %}
+                    <button class="btn btn--primary" type="button" id="fleet-orv-lookup">{{ 'fleet.orv.lookup'|trans }}</button>
+                {% endif %}
+            </div>
+            {% if not orvConfigured %}
+                <p class="g-hint">{{ 'fleet.orv.configure_hint'|trans }}</p>
+            {% endif %}
+            <p class="g-hint" id="fleet-orv-status" hidden></p>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div><h2>{{ 'fleet.form.section.vehicle'|trans }}</h2></div>
+    </header>
+    <div class="form-grid">
+        {% include 'ui/input.html.twig' with { name:'brand', label:'fleet.field.brand'|trans, optional:true, form:'fleet.save', value: item?item.brand():'', list:'fleet-brands' } %}
+        {% if brandOptions %}<datalist id="fleet-brands">{% for b in brandOptions %}<option value="{{ b }}">{% endfor %}</datalist>{% endif %}
+        {% include 'ui/input.html.twig' with { name:'model', label:'fleet.field.model'|trans, optional:true, form:'fleet.save', value: item?item.model():'' } %}
+        {% include 'ui/input.html.twig' with { name:'model_year', type:'number', label:'fleet.field.year'|trans, optional:true, form:'fleet.save', value: item and item.modelYear()?item.modelYear():'' } %}
+        {% include 'ui/input.html.twig' with { name:'color', label:'fleet.field.color'|trans, optional:true, form:'fleet.save', value: item?item.color():'' } %}
+        {% include 'ui/select.html.twig' with { name:'fuel', label:'fleet.field.fuel'|trans, optional:true, form:'fleet.save', value: item?item.fuel():'', options: fuelOptions } %}
+        {% include 'ui/select.html.twig' with { name:'gearbox', label:'fleet.field.gearbox'|trans, optional:true, form:'fleet.save', value: item?item.gearbox():'', options: [
+        {value:'',label:'—'},{value:'manual',label:'fleet.gearbox.manual'|trans},{value:'automatic',label:'fleet.gearbox.automatic'|trans}
+        ] } %}
+        {% include 'ui/input.html.twig' with { name:'motorization', label:'fleet.field.motorization'|trans, optional:true, form:'fleet.save', value: item?item.motorization():'', extra:'field--full' } %}
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'fleet.form.section.tech'|trans }}</h2>
+            <p class="muted">{{ 'fleet.form.section.tech_hint'|trans }}</p>
+        </div>
+    </header>
+    <div class="form-grid">
+        {% set tech = item ? (item.techJson() ?? {}) : {} %}
+        {% include 'ui/input.html.twig' with { name:'vehicle_kind', label:'fleet.field.vehicle_kind'|trans, optional:true, form:'fleet.save', value: tech.vehicle_kind|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'body_type', label:'fleet.field.body_type'|trans, optional:true, form:'fleet.save', value: tech.body_type|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'category', label:'fleet.field.category'|trans, optional:true, form:'fleet.save', value: tech.category|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'emission', label:'fleet.field.emission'|trans, optional:true, form:'fleet.save', value: tech.emission|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'engine_code', label:'fleet.field.engine_code'|trans, optional:true, form:'fleet.save', value: tech.engine_code|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'power_kw', type:'number', label:'fleet.field.power_kw'|trans, optional:true, form:'fleet.save', value: tech.power_kw|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'displacement_cc', type:'number', label:'fleet.field.displacement_cc'|trans, optional:true, form:'fleet.save', value: tech.displacement_cc|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'weight_kg', type:'number', label:'fleet.field.weight_kg'|trans, optional:true, form:'fleet.save', value: tech.weight_kg|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'seats', type:'number', label:'fleet.field.seats'|trans, optional:true, form:'fleet.save', value: tech.seats|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'max_speed', type:'number', label:'fleet.field.max_speed'|trans, optional:true, form:'fleet.save', value: tech.max_speed|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'consumption', label:'fleet.field.consumption'|trans, optional:true, form:'fleet.save', value: tech.consumption|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'tire_size', label:'fleet.field.tire_size'|trans, optional:true, form:'fleet.save', value: tech.tire_size|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'tp_number', label:'fleet.field.tp_number'|trans, optional:true, form:'fleet.save', value: tech.tp_number|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'first_registered_at', type:'date', label:'fleet.field.first_registered_at'|trans, optional:true, form:'fleet.save', value: tech.first_registered_at|default('') } %}
+        {% include 'ui/input.html.twig' with { name:'homologation', label:'fleet.field.homologation'|trans, optional:true, form:'fleet.save', value: tech.homologation|default(''), extra:'field--full' } %}
+        {% include 'ui/input.html.twig' with { name:'version_code', label:'fleet.field.version_code'|trans, optional:true, form:'fleet.save', value: tech.version_code|default(''), extra:'field--full' } %}
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div><h2>{{ 'fleet.form.section.status'|trans }}</h2></div>
+    </header>
+    <div class="form-grid">
+        {% include 'ui/input.html.twig' with { name:'mileage', type:'number', label:'fleet.field.mileage'|trans, optional:true, form:'fleet.save', value: item and item.mileage()?item.mileage():'' } %}
+        {% include 'ui/select.html.twig' with { name:'fuel_level', label:'fleet.field.fuel_level'|trans, optional:true, form:'fleet.save', value: item?item.fuelLevel():'', options: [
+        {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
+        ] } %}
+        {% include 'ui/select.html.twig' with { name:'status', label:'fleet.field.status'|trans, form:'fleet.save', value: item?item.status():'available', options:[
+        {value:'available',label:'fleet.status.available'|trans},{value:'rented',label:'fleet.status.rented'|trans},{value:'in_service',label:'fleet.status.in_service'|trans},{value:'repair_wait',label:'fleet.status.repair_wait'|trans},{value:'out_of_service',label:'fleet.status.out_of_service'|trans}
+        ] } %}
+        {% include 'ui/select.html.twig' with { name:'ownership', label:'fleet.field.ownership'|trans, form:'fleet.save', value: item?item.ownership():'owned', options:[
+        {value:'owned',label:'fleet.ownership.owned'|trans},{value:'external',label:'fleet.ownership.external'|trans}
+        ] } %}
+        {% include 'ui/select.html.twig' with { name:'customer_id', label:'fleet.field.customer'|trans, optional:true, form:'fleet.save', value: item?item.customerId():customerId, options:customerOptions, extra:'field--full' } %}
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div><h2>{{ 'fleet.form.section.dates'|trans }}</h2></div>
+    </header>
+    <div class="form-grid">
+        {% include 'ui/input.html.twig' with { name:'stk_at', type:'date', label:'fleet.field.stk'|trans, optional:true, form:'fleet.save', value: item and item.stkAt()?item.stkAt().format('Y-m-d'):'' } %}
+        {% include 'ui/input.html.twig' with { name:'insurance_until', type:'date', label:'fleet.field.insurance'|trans, optional:true, form:'fleet.save', value: item and item.insuranceUntil()?item.insuranceUntil().format('Y-m-d'):'' } %}
+        {% include 'ui/input.html.twig' with { name:'vignette_until', type:'date', label:'fleet.field.vignette'|trans, optional:true, form:'fleet.save', value: item and item.vignetteUntil()?item.vignetteUntil().format('Y-m-d'):'' } %}
+        {% include 'ui/input.html.twig' with { name:'tires_at', type:'date', label:'fleet.field.tires'|trans, optional:true, form:'fleet.save', value: item and item.tiresAt()?item.tiresAt().format('Y-m-d'):'' } %}
+        {% include 'ui/input.html.twig' with { name:'warranty_until', type:'date', label:'fleet.field.warranty'|trans, optional:true, form:'fleet.save', value: item and item.warrantyUntil()?item.warrantyUntil().format('Y-m-d'):'' } %}
+    </div>
+</section>
+
+<section class="panel">
+    <header class="panel__head">
+        <div><h2>{{ 'fleet.form.section.condition'|trans }}</h2></div>
+    </header>
+    <div class="form-grid">
+        {% set cond = item ? item.conditionJson() : null %}
+        {% include 'ui/select.html.twig' with { name:'condition_interior', label:'fleet.field.condition_interior'|trans, optional:true, form:'fleet.save', value: cond.interior|default(''), options:[
+        {value:'',label:'—'},{value:'clean',label:'fleet.condition.clean'|trans},{value:'wash',label:'fleet.condition.wash'|trans},{value:'dirty',label:'fleet.condition.dirty'|trans}
+        ] } %}
+        {% include 'ui/select.html.twig' with { name:'condition_exterior', label:'fleet.field.condition_exterior'|trans, optional:true, form:'fleet.save', value: cond.exterior|default(''), options:[
+        {value:'',label:'—'},{value:'clean',label:'fleet.condition.clean'|trans},{value:'wash',label:'fleet.condition.wash'|trans},{value:'dirty',label:'fleet.condition.dirty'|trans}
+        ] } %}
+        {% include 'ui/textarea.html.twig' with { name:'condition_damage', label:'fleet.field.condition_damage'|trans, optional:true, form:'fleet.save', value: cond.damage|default(''), size:'mini', rows:3, extra:'field--full' } %}
+        {% include 'ui/textarea.html.twig' with { name:'note', label:'fleet.field.note'|trans, optional:true, form:'fleet.save', value: item?item.note():'', size:'mini', rows:3, extra:'field--full' } %}
+    </div>
+</section>
 </form>
+
+{% if orvConfigured %}
+<script nonce="{{ csp_nonce() }}">
+(() => {
+  const btn = document.getElementById('fleet-orv-lookup');
+  const status = document.getElementById('fleet-orv-status');
+  const form = document.getElementById('fleet-vehicle-form');
+  if (!btn || !form) return;
+
+  const clearMarks = () => {
+    form.querySelectorAll('.g-field.is-orv-filled').forEach((el) => {
+      el.classList.remove('is-orv-filled');
+      el.querySelectorAll('.g-orv-check').forEach((n) => n.remove());
+    });
+    status?.classList.remove('g-hint--ok');
+  };
+
+  const markField = (name) => {
+    const el = form.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    const field = el.closest('.g-field');
+    if (!field || field.classList.contains('is-orv-filled')) return;
+    field.classList.add('is-orv-filled');
+    const label = field.querySelector('.g-label span');
+    if (label && !label.querySelector('.g-orv-check')) {
+      const check = document.createElement('span');
+      check.className = 'material-symbols-outlined g-icon g-orv-check';
+      check.setAttribute('aria-hidden', 'true');
+      check.textContent = 'check_circle';
+      label.appendChild(check);
+    }
+  };
+
+  const set = (name, val) => {
+    if (val == null || val === '') return false;
+    const el = form.querySelector(`[name="${name}"]`);
+    if (!el) return false;
+    const value = String(val);
+    const selectRoot = el.closest('.g-select');
+    if (selectRoot && window.Alpine) {
+      try {
+        const data = window.Alpine.$data(selectRoot);
+        if (data && typeof data.setValue === 'function') {
+          if (!data.setValue(value)) return false;
+          markField(name);
+          return true;
+        }
+      } catch (_) {}
+    }
+    el.value = value;
+    if (selectRoot) {
+      const opt = selectRoot.querySelector(`[data-value="${CSS.escape(value)}"]`);
+      selectRoot.querySelectorAll('.is-selected').forEach((n) => n.classList.remove('is-selected'));
+      if (opt) {
+        opt.classList.add('is-selected');
+        const labelText = opt.dataset.label || value;
+        const triggerLabel = selectRoot.querySelector('.g-select__label');
+        if (triggerLabel) triggerLabel.textContent = labelText;
+      }
+    }
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    markField(name);
+    return true;
+  };
+
+  btn.addEventListener('click', async () => {
+    const orv = document.getElementById('orv_id')?.value?.trim();
+    clearMarks();
+    if (!orv) {
+      status.hidden = false;
+      status.textContent = {{ 'fleet.error.orv_required'|trans|json_encode|raw }};
+      return;
+    }
+    status.hidden = false;
+    status.textContent = {{ 'fleet.orv.loading'|trans|json_encode|raw }};
+    const body = new FormData();
+    body.append('orv_id', orv);
+    const csrf = document.querySelector('input[name="_csrf"]') || document.querySelector('input[name="_token"]');
+    if (csrf) body.append(csrf.name, csrf.value);
+    try {
+      const res = await fetch({{ url('admin.fleet.orv_lookup')|json_encode|raw }}, {
+        method: 'POST',
+        body,
+        headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+        credentials: 'same-origin',
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        status.textContent = json.error || {{ 'fleet.error.orv_request_failed'|trans|json_encode|raw }};
+        return;
+      }
+      const f = json.fields || {};
+      const filled = [
+        set('plate', f.plate),
+        set('vin', f.vin),
+        set('brand', f.brand),
+        set('model', f.model),
+        set('model_year', f.model_year),
+        set('color', f.color),
+        set('fuel', f.fuel),
+        set('gearbox', f.gearbox),
+        set('motorization', f.motorization),
+        set('stk_at', f.stk_at),
+        set('vehicle_kind', f.vehicle_kind),
+        set('body_type', f.body_type),
+        set('category', f.category),
+        set('emission', f.emission),
+        set('engine_code', f.engine_code),
+        set('power_kw', f.power_kw),
+        set('displacement_cc', f.displacement_cc),
+        set('weight_kg', f.weight_kg),
+        set('seats', f.seats),
+        set('max_speed', f.max_speed),
+        set('consumption', f.consumption),
+        set('tire_size', f.tire_size),
+        set('tp_number', f.tp_number),
+        set('first_registered_at', f.first_registered_at),
+        set('homologation', f.homologation),
+        set('version_code', f.version_code),
+      ].filter(Boolean).length;
+      markField('orv_id');
+      status.classList.add('g-hint--ok');
+      status.textContent = filled
+        ? {{ 'fleet.orv.success'|trans|json_encode|raw }}
+        : {{ 'fleet.orv.success_empty'|trans|json_encode|raw }};
+    } catch (e) {
+      status.textContent = {{ 'fleet.error.orv_request_failed'|trans|json_encode|raw }};
+    }
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

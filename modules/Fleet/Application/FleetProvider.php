@@ -6,6 +6,8 @@ namespace Modules\Fleet\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Modules\Fleet\Domain\Vehicle;
+use Modules\Fleet\Domain\VehicleBrand;
+use Modules\Fleet\Domain\VehicleModel;
 use Modules\Fleet\Domain\VehicleStatusLog;
 
 final class FleetProvider
@@ -48,7 +50,7 @@ final class FleetProvider
         }
         if (!empty($filters['q'])) {
             $q = '%' . mb_strtolower((string) $filters['q']) . '%';
-            $qb->andWhere('LOWER(v.plate) LIKE :q OR LOWER(v.vin) LIKE :q OR LOWER(v.brand) LIKE :q OR LOWER(v.model) LIKE :q')
+            $qb->andWhere('LOWER(v.plate) LIKE :q OR LOWER(v.vin) LIKE :q OR LOWER(v.brand) LIKE :q OR LOWER(v.model) LIKE :q OR LOWER(v.orvId) LIKE :q')
                 ->setParameter('q', $q);
         }
 
@@ -83,7 +85,7 @@ final class FleetProvider
     }
 
     /**
-     * @param array{plate: string, vin?: ?string, brand?: ?string, model?: ?string, model_year?: ?int, color?: ?string, fuel?: ?string, mileage?: ?int} $plateData
+     * @param array{plate: string, vin?: ?string, brand?: ?string, model?: ?string, model_year?: ?int, color?: ?string, fuel?: ?string, mileage?: ?int, orv_id?: ?string, gearbox?: ?string, motorization?: ?string, fuel_level?: ?string} $plateData
      */
     public function ensureForCustomer(string $customerId, array $plateData): Vehicle
     {
@@ -100,6 +102,7 @@ final class FleetProvider
                 $existing->setOwnership('external');
             }
             $this->applyPlateData($existing, $plateData);
+            $this->ensureBrandModel($existing);
             $this->em->flush();
 
             return $existing;
@@ -107,11 +110,51 @@ final class FleetProvider
         $vehicle = new Vehicle($plate, 'external');
         $vehicle->setCustomerId($customerId);
         $this->applyPlateData($vehicle, $plateData);
+        $this->ensureBrandModel($vehicle);
         $this->em->persist($vehicle);
         $this->em->persist(new VehicleStatusLog($vehicle->id(), null, $vehicle->status(), 'ensure_for_customer'));
         $this->em->flush();
 
         return $vehicle;
+    }
+
+    /**
+     * Jako RPS setCarBrandAndModel — doplní číselník značek/modelů a ID na vozidle.
+     *
+     * @return array{brand_id: ?string, model_id: ?string}
+     */
+    public function ensureBrandModel(Vehicle $vehicle): array
+    {
+        $brandName = $vehicle->brand();
+        $modelName = $vehicle->model();
+        if ($brandName === null || $brandName === '') {
+            return ['brand_id' => null, 'model_id' => null];
+        }
+
+        $brand = $this->em->getRepository(VehicleBrand::class)->findOneBy(['name' => $brandName]);
+        if (!$brand instanceof VehicleBrand) {
+            $brand = new VehicleBrand($brandName);
+            $this->em->persist($brand);
+            $this->em->flush();
+        }
+        $vehicle->setBrandId($brand->id());
+
+        $modelId = null;
+        if ($modelName !== null && $modelName !== '') {
+            $model = $this->em->getRepository(VehicleModel::class)->findOneBy([
+                'brandId' => $brand->id(),
+                'name' => $modelName,
+            ]);
+            if (!$model instanceof VehicleModel) {
+                $model = new VehicleModel($brand->id(), $modelName);
+                $this->em->persist($model);
+                $this->em->flush();
+            }
+            $modelId = $model->id();
+            $vehicle->setModelId($modelId);
+        }
+
+        return ['brand_id' => $brand->id(), 'model_id' => $modelId];
     }
 
     /** @return array<string, mixed> */
@@ -121,19 +164,30 @@ final class FleetProvider
             'id' => $v->id(),
             'plate' => $v->plate(),
             'vin' => $v->vin(),
+            'orv_id' => $v->orvId(),
             'brand' => $v->brand(),
             'model' => $v->model(),
+            'brand_id' => $v->brandId(),
+            'model_id' => $v->modelId(),
             'model_year' => $v->modelYear(),
             'color' => $v->color(),
             'fuel' => $v->fuel(),
+            'gearbox' => $v->gearbox(),
+            'motorization' => $v->motorization(),
             'mileage' => $v->mileage(),
+            'fuel_level' => $v->fuelLevel(),
+            'condition' => $v->conditionJson(),
             'status' => $v->status(),
             'ownership' => $v->ownership(),
             'customer_id' => $v->customerId(),
+            'branch_id' => $v->branchId(),
             'stk_at' => $v->stkAt()?->format('Y-m-d'),
             'insurance_until' => $v->insuranceUntil()?->format('Y-m-d'),
             'vignette_until' => $v->vignetteUntil()?->format('Y-m-d'),
+            'tires_at' => $v->tiresAt()?->format('Y-m-d'),
+            'warranty_until' => $v->warrantyUntil()?->format('Y-m-d'),
             'note' => $v->note(),
+            'tech' => $v->techJson(),
             'label' => $v->label(),
             'created_at' => $v->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $v->updatedAt()->format(\DateTimeInterface::ATOM),
@@ -145,6 +199,9 @@ final class FleetProvider
     {
         if (array_key_exists('vin', $data)) {
             $vehicle->setVin($data['vin'] !== null ? (string) $data['vin'] : null);
+        }
+        if (array_key_exists('orv_id', $data)) {
+            $vehicle->setOrvId($data['orv_id'] !== null ? (string) $data['orv_id'] : null);
         }
         if (array_key_exists('brand', $data)) {
             $vehicle->setBrand($data['brand'] !== null ? (string) $data['brand'] : null);
@@ -161,8 +218,20 @@ final class FleetProvider
         if (array_key_exists('fuel', $data)) {
             $vehicle->setFuel($data['fuel'] !== null ? (string) $data['fuel'] : null);
         }
+        if (array_key_exists('gearbox', $data)) {
+            $g = $data['gearbox'] !== null && $data['gearbox'] !== '' ? (string) $data['gearbox'] : null;
+            if ($g === null || in_array($g, Vehicle::GEARBOXES, true)) {
+                $vehicle->setGearbox($g);
+            }
+        }
+        if (array_key_exists('motorization', $data)) {
+            $vehicle->setMotorization($data['motorization'] !== null ? (string) $data['motorization'] : null);
+        }
         if (array_key_exists('mileage', $data) && $data['mileage'] !== null && $data['mileage'] !== '') {
             $vehicle->setMileage((int) $data['mileage']);
+        }
+        if (array_key_exists('fuel_level', $data)) {
+            $vehicle->setFuelLevel($data['fuel_level'] !== null ? (string) $data['fuel_level'] : null);
         }
     }
 }

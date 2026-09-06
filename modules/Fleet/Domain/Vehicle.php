@@ -16,6 +16,10 @@ class Vehicle
 {
     public const STATUSES = ['available', 'rented', 'in_service', 'repair_wait', 'out_of_service'];
     public const OWNERSHIPS = ['owned', 'external'];
+    public const FUELS = ['petrol', 'diesel', 'lpg', 'cng', 'hybrid', 'electric', 'other'];
+    public const GEARBOXES = ['manual', 'automatic'];
+    /** RPS tankValue — textové úrovně nádrže. */
+    public const FUEL_LEVELS = ['full', 'three_quarters', 'half', 'quarter', 'empty'];
 
     #[ORM\Id]
     #[ORM\Column(length: 36)]
@@ -27,11 +31,21 @@ class Vehicle
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $vin = null;
 
+    /** ORV / technický průkaz (dataovozidlech). */
+    #[ORM\Column(name: 'orv_id', length: 64, nullable: true)]
+    private ?string $orvId = null;
+
     #[ORM\Column(length: 80, nullable: true)]
     private ?string $brand = null;
 
     #[ORM\Column(length: 80, nullable: true)]
     private ?string $model = null;
+
+    #[ORM\Column(name: 'brand_id', length: 36, nullable: true)]
+    private ?string $brandId = null;
+
+    #[ORM\Column(name: 'model_id', length: 36, nullable: true)]
+    private ?string $modelId = null;
 
     #[ORM\Column(name: 'model_year', type: 'integer', nullable: true)]
     private ?int $modelYear = null;
@@ -42,8 +56,20 @@ class Vehicle
     #[ORM\Column(length: 32, nullable: true)]
     private ?string $fuel = null;
 
+    #[ORM\Column(length: 16, nullable: true)]
+    private ?string $gearbox = null;
+
+    #[ORM\Column(length: 80, nullable: true)]
+    private ?string $motorization = null;
+
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $mileage = null;
+
+    #[ORM\Column(name: 'fuel_level', length: 16, nullable: true)]
+    private ?string $fuelLevel = null;
+
+    #[ORM\Column(name: 'condition_json', type: 'json', nullable: true)]
+    private ?array $conditionJson = null;
 
     #[ORM\Column(length: 32)]
     private string $status = 'available';
@@ -54,6 +80,9 @@ class Vehicle
     #[ORM\Column(name: 'customer_id', length: 36, nullable: true)]
     private ?string $customerId = null;
 
+    #[ORM\Column(name: 'branch_id', length: 36, nullable: true)]
+    private ?string $branchId = null;
+
     #[ORM\Column(name: 'stk_at', type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $stkAt = null;
 
@@ -63,8 +92,18 @@ class Vehicle
     #[ORM\Column(name: 'vignette_until', type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $vignetteUntil = null;
 
+    #[ORM\Column(name: 'tires_at', type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $tiresAt = null;
+
+    #[ORM\Column(name: 'warranty_until', type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $warrantyUntil = null;
+
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $note = null;
+
+    /** Extra technická data z ORV (karoserie, emise, výkon, …). */
+    #[ORM\Column(name: 'tech_json', type: 'json', nullable: true)]
+    private ?array $techJson = null;
 
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
@@ -101,6 +140,11 @@ class Vehicle
         return $this->vin;
     }
 
+    public function orvId(): ?string
+    {
+        return $this->orvId;
+    }
+
     public function brand(): ?string
     {
         return $this->brand;
@@ -109,6 +153,16 @@ class Vehicle
     public function model(): ?string
     {
         return $this->model;
+    }
+
+    public function brandId(): ?string
+    {
+        return $this->brandId;
+    }
+
+    public function modelId(): ?string
+    {
+        return $this->modelId;
     }
 
     public function modelYear(): ?int
@@ -126,9 +180,30 @@ class Vehicle
         return $this->fuel;
     }
 
+    public function gearbox(): ?string
+    {
+        return $this->gearbox;
+    }
+
+    public function motorization(): ?string
+    {
+        return $this->motorization;
+    }
+
     public function mileage(): ?int
     {
         return $this->mileage;
+    }
+
+    public function fuelLevel(): ?string
+    {
+        return $this->fuelLevel;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function conditionJson(): ?array
+    {
+        return $this->conditionJson;
     }
 
     public function status(): string
@@ -146,6 +221,11 @@ class Vehicle
         return $this->customerId;
     }
 
+    public function branchId(): ?string
+    {
+        return $this->branchId;
+    }
+
     public function stkAt(): ?\DateTimeImmutable
     {
         return $this->stkAt;
@@ -161,9 +241,30 @@ class Vehicle
         return $this->vignetteUntil;
     }
 
+    public function tiresAt(): ?\DateTimeImmutable
+    {
+        return $this->tiresAt;
+    }
+
+    public function warrantyUntil(): ?\DateTimeImmutable
+    {
+        return $this->warrantyUntil;
+    }
+
     public function note(): ?string
     {
         return $this->note;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function techJson(): ?array
+    {
+        return $this->techJson;
+    }
+
+    public function tech(string $key, mixed $default = null): mixed
+    {
+        return $this->techJson[$key] ?? $default;
     }
 
     public function createdAt(): \DateTimeImmutable
@@ -205,6 +306,12 @@ class Vehicle
         $this->touch();
     }
 
+    public function setOrvId(?string $v): void
+    {
+        $this->orvId = $v !== null && $v !== '' ? trim($v) : null;
+        $this->touch();
+    }
+
     public function setBrand(?string $v): void
     {
         $this->brand = $v !== null && $v !== '' ? trim($v) : null;
@@ -214,6 +321,18 @@ class Vehicle
     public function setModel(?string $v): void
     {
         $this->model = $v !== null && $v !== '' ? trim($v) : null;
+        $this->touch();
+    }
+
+    public function setBrandId(?string $v): void
+    {
+        $this->brandId = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
+    public function setModelId(?string $v): void
+    {
+        $this->modelId = $v !== null && $v !== '' ? $v : null;
         $this->touch();
     }
 
@@ -231,13 +350,46 @@ class Vehicle
 
     public function setFuel(?string $v): void
     {
-        $this->fuel = $v !== null && $v !== '' ? trim($v) : null;
+        if ($v !== null && $v !== '' && !in_array($v, self::FUELS, true)) {
+            // allow free-text from ORV lookup when not in enum
+            $this->fuel = trim($v);
+        } else {
+            $this->fuel = $v !== null && $v !== '' ? $v : null;
+        }
+        $this->touch();
+    }
+
+    public function setGearbox(?string $v): void
+    {
+        if ($v !== null && $v !== '' && !in_array($v, self::GEARBOXES, true)) {
+            throw new \InvalidArgumentException('fleet.error.invalid_gearbox');
+        }
+        $this->gearbox = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
+    public function setMotorization(?string $v): void
+    {
+        $this->motorization = $v !== null && $v !== '' ? trim($v) : null;
         $this->touch();
     }
 
     public function setMileage(?int $v): void
     {
         $this->mileage = $v;
+        $this->touch();
+    }
+
+    public function setFuelLevel(?string $v): void
+    {
+        $this->fuelLevel = $v !== null && $v !== '' ? trim($v) : null;
+        $this->touch();
+    }
+
+    /** @param array<string, mixed>|null $v */
+    public function setConditionJson(?array $v): void
+    {
+        $this->conditionJson = $v !== null && $v !== [] ? $v : null;
         $this->touch();
     }
 
@@ -265,6 +417,12 @@ class Vehicle
         $this->touch();
     }
 
+    public function setBranchId(?string $v): void
+    {
+        $this->branchId = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
     public function setStkAt(?\DateTimeImmutable $v): void
     {
         $this->stkAt = $v;
@@ -283,9 +441,32 @@ class Vehicle
         $this->touch();
     }
 
+    public function setTiresAt(?\DateTimeImmutable $v): void
+    {
+        $this->tiresAt = $v;
+        $this->touch();
+    }
+
+    public function setWarrantyUntil(?\DateTimeImmutable $v): void
+    {
+        $this->warrantyUntil = $v;
+        $this->touch();
+    }
+
     public function setNote(?string $v): void
     {
         $this->note = $v !== null && $v !== '' ? $v : null;
+        $this->touch();
+    }
+
+    /** @param array<string, mixed>|null $v */
+    public function setTechJson(?array $v): void
+    {
+        if ($v === null || $v === []) {
+            $this->techJson = null;
+        } else {
+            $this->techJson = $v;
+        }
         $this->touch();
     }
 

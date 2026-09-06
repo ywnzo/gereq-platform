@@ -37,6 +37,12 @@ final class VehicleCalendarService
         if ($vehicle->vignetteUntil() !== null) {
             $this->upsert($vehicle, 'vignette', 'Známka ' . $vehicle->plate(), $vehicle->vignetteUntil(), 'blue');
         }
+        if ($vehicle->tiresAt() !== null) {
+            $this->upsert($vehicle, 'tires', 'Pneu ' . $vehicle->plate(), $vehicle->tiresAt(), 'green');
+        }
+        if ($vehicle->warrantyUntil() !== null) {
+            $this->upsert($vehicle, 'warranty', 'Garanční kontrola ' . $vehicle->plate(), $vehicle->warrantyUntil(), 'purple');
+        }
     }
 
     private function upsert(Vehicle $vehicle, string $kind, string $title, \DateTimeImmutable $day, string $color): void

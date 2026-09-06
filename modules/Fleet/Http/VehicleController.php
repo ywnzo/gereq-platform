@@ -15,12 +15,14 @@ use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Modules\Customers\Domain\Customer;
 use Modules\Fleet\Application\FleetProvider;
+use Modules\Fleet\Application\OrvClient;
 use Modules\Fleet\Application\VehicleCalendarService;
 use Modules\Fleet\Application\VehicleMediaService;
 use Modules\Fleet\Domain\Vehicle;
 use Modules\Fleet\Domain\VehicleBrand;
 use Modules\Fleet\Domain\VehicleStatusLog;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,6 +46,7 @@ final class VehicleController extends Controller
         private readonly HookManager $hooks,
         private readonly VehicleMediaService $vehicleMedia,
         private readonly VehicleCalendarService $vehicleCalendar,
+        private readonly OrvClient $orv,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -97,6 +100,11 @@ final class VehicleController extends Controller
             'customerOptions' => $this->customerOptions(),
             'statuses' => Vehicle::STATUSES,
             'ownerships' => Vehicle::OWNERSHIPS,
+            'fuels' => Vehicle::FUELS,
+            'gearboxes' => Vehicle::GEARBOXES,
+            'fuelLevels' => Vehicle::FUEL_LEVELS,
+            'fuelOptions' => $this->fuelOptions(),
+            'orvConfigured' => $this->orv->configured(),
             'brandOptions' => $this->brandNames(),
         ]);
     }
@@ -112,6 +120,7 @@ final class VehicleController extends Controller
         }
         $vehicle = new Vehicle($data['plate'], $data['ownership']);
         $this->apply($vehicle, $data);
+        $this->fleet->ensureBrandModel($vehicle);
         $this->em->persist($vehicle);
         $this->em->persist(new VehicleStatusLog($vehicle->id(), null, $vehicle->status(), 'created', $this->auth->user()?->id()));
         $this->em->flush();
@@ -171,6 +180,11 @@ final class VehicleController extends Controller
             'customerOptions' => $this->customerOptions(),
             'statuses' => Vehicle::STATUSES,
             'ownerships' => Vehicle::OWNERSHIPS,
+            'fuels' => Vehicle::FUELS,
+            'gearboxes' => Vehicle::GEARBOXES,
+            'fuelLevels' => Vehicle::FUEL_LEVELS,
+            'fuelOptions' => $this->fuelOptions(),
+            'orvConfigured' => $this->orv->configured(),
             'brandOptions' => $this->brandNames(),
         ]);
     }
@@ -190,6 +204,7 @@ final class VehicleController extends Controller
         }
         $prevStatus = $vehicle->status();
         $this->apply($vehicle, $data);
+        $this->fleet->ensureBrandModel($vehicle);
         if ($prevStatus !== $vehicle->status()) {
             $this->em->persist(new VehicleStatusLog($id, $prevStatus, $vehicle->status(), 'edit', $this->auth->user()?->id()));
         }
@@ -272,32 +287,60 @@ final class VehicleController extends Controller
         return $this->redirect('admin.fleet.index');
     }
 
+    public function orvLookup(Request $request): Response
+    {
+        $data = $this->validate($request, 'fleet.orv');
+        $result = $this->orv->lookup((string) $data['orv_id']);
+        if (!$result['ok']) {
+            $msg = $result['error'] ?? 'fleet.error.orv_request_failed';
+
+            return new JsonResponse([
+                'ok' => false,
+                'error' => str_starts_with((string) $msg, 'fleet.') ? $this->translator->trans((string) $msg) : (string) $msg,
+            ], 422);
+        }
+
+        return new JsonResponse([
+            'ok' => true,
+            'fields' => $this->orv->mapToVehicleFields($result['data'] ?? []),
+            'raw' => $result['data'],
+        ]);
+    }
+
     private function find(string $id): ?Vehicle
     {
         return $this->fleet->find($id);
     }
 
-    /** @param array{plate: string, vin: ?string, brand: ?string, model: ?string, model_year: ?int, color: ?string, fuel: ?string, mileage: ?int, status: string, ownership: string, customer_id: ?string, stk_at: ?\DateTimeImmutable, insurance_until: ?\DateTimeImmutable, vignette_until: ?\DateTimeImmutable, note: ?string} $data */
+    /** @param array<string, mixed> $data */
     private function apply(Vehicle $vehicle, array $data): void
     {
         $vehicle->setPlate($data['plate']);
         $vehicle->setVin($data['vin']);
+        $vehicle->setOrvId($data['orv_id']);
         $vehicle->setBrand($data['brand']);
         $vehicle->setModel($data['model']);
         $vehicle->setModelYear($data['model_year']);
         $vehicle->setColor($data['color']);
         $vehicle->setFuel($data['fuel']);
+        $vehicle->setGearbox($data['gearbox']);
+        $vehicle->setMotorization($data['motorization']);
         $vehicle->setMileage($data['mileage']);
+        $vehicle->setFuelLevel($data['fuel_level']);
+        $vehicle->setConditionJson($data['condition']);
         $vehicle->setStatus($data['status']);
         $vehicle->setOwnership($data['ownership']);
         $vehicle->setCustomerId($data['customer_id']);
         $vehicle->setStkAt($data['stk_at']);
         $vehicle->setInsuranceUntil($data['insurance_until']);
         $vehicle->setVignetteUntil($data['vignette_until']);
+        $vehicle->setTiresAt($data['tires_at']);
+        $vehicle->setWarrantyUntil($data['warranty_until']);
         $vehicle->setNote($data['note']);
+        $vehicle->setTechJson($data['tech']);
     }
 
-    /** @return array{plate: string, vin: ?string, brand: ?string, model: ?string, model_year: ?int, color: ?string, fuel: ?string, mileage: ?int, status: string, ownership: string, customer_id: ?string, stk_at: ?\DateTimeImmutable, insurance_until: ?\DateTimeImmutable, vignette_until: ?\DateTimeImmutable, note: ?string} */
+    /** @return array<string, mixed> */
     private function validated(Request $request): array
     {
         $data = $this->validate($request, 'fleet.save');
@@ -310,23 +353,59 @@ final class VehicleController extends Controller
         $stk = trim((string) ($data['stk_at'] ?? ''));
         $ins = trim((string) ($data['insurance_until'] ?? ''));
         $vig = trim((string) ($data['vignette_until'] ?? ''));
+        $tires = trim((string) ($data['tires_at'] ?? ''));
+        $warranty = trim((string) ($data['warranty_until'] ?? ''));
+        $gearbox = trim((string) ($data['gearbox'] ?? ''));
+        $fuelLevel = trim((string) ($data['fuel_level'] ?? ''));
+        $condition = array_filter([
+            'interior' => trim((string) ($data['condition_interior'] ?? '')) ?: null,
+            'exterior' => trim((string) ($data['condition_exterior'] ?? '')) ?: null,
+            'damage' => trim((string) ($data['condition_damage'] ?? '')) ?: null,
+        ], static fn ($v) => $v !== null);
+
+        $techKeys = [
+            'vehicle_kind', 'body_type', 'category', 'emission', 'engine_code',
+            'power_kw', 'displacement_cc', 'weight_kg', 'seats', 'max_speed',
+            'consumption', 'tire_size', 'tp_number', 'first_registered_at',
+            'homologation', 'version_code',
+        ];
+        $tech = [];
+        foreach ($techKeys as $key) {
+            $raw = $data[$key] ?? null;
+            if ($raw === null || $raw === '') {
+                continue;
+            }
+            if (in_array($key, ['power_kw', 'displacement_cc', 'weight_kg', 'seats', 'max_speed'], true)) {
+                $tech[$key] = (int) $raw;
+            } else {
+                $tech[$key] = trim((string) $raw);
+            }
+        }
 
         return [
             'plate' => Vehicle::normalizePlate((string) $data['plate']),
             'vin' => trim((string) ($data['vin'] ?? '')) ?: null,
+            'orv_id' => trim((string) ($data['orv_id'] ?? '')) ?: null,
             'brand' => trim((string) ($data['brand'] ?? '')) ?: null,
             'model' => trim((string) ($data['model'] ?? '')) ?: null,
             'model_year' => $year !== '' ? (int) $year : null,
             'color' => trim((string) ($data['color'] ?? '')) ?: null,
             'fuel' => trim((string) ($data['fuel'] ?? '')) ?: null,
+            'gearbox' => $gearbox !== '' && in_array($gearbox, Vehicle::GEARBOXES, true) ? $gearbox : null,
+            'motorization' => trim((string) ($data['motorization'] ?? '')) ?: null,
             'mileage' => $mileage !== '' ? (int) $mileage : null,
+            'fuel_level' => $fuelLevel !== '' ? $fuelLevel : null,
+            'condition' => $condition !== [] ? $condition : null,
             'status' => in_array(($data['status'] ?? 'available'), Vehicle::STATUSES, true) ? (string) $data['status'] : 'available',
             'ownership' => in_array(($data['ownership'] ?? 'owned'), Vehicle::OWNERSHIPS, true) ? (string) $data['ownership'] : 'owned',
             'customer_id' => $customerId !== '' ? $customerId : null,
             'stk_at' => $stk !== '' ? new \DateTimeImmutable($stk) : null,
             'insurance_until' => $ins !== '' ? new \DateTimeImmutable($ins) : null,
             'vignette_until' => $vig !== '' ? new \DateTimeImmutable($vig) : null,
+            'tires_at' => $tires !== '' ? new \DateTimeImmutable($tires) : null,
+            'warranty_until' => $warranty !== '' ? new \DateTimeImmutable($warranty) : null,
             'note' => trim((string) ($data['note'] ?? '')) ?: null,
+            'tech' => $tech !== [] ? $tech : null,
         ];
     }
 
@@ -373,6 +452,17 @@ final class VehicleController extends Controller
             static fn (VehicleBrand $b): string => $b->name(),
             $this->em->getRepository(VehicleBrand::class)->findBy([], ['name' => 'ASC']),
         );
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    private function fuelOptions(): array
+    {
+        $opts = [['value' => '', 'label' => '—']];
+        foreach (Vehicle::FUELS as $fuel) {
+            $opts[] = ['value' => $fuel, 'label' => $this->translator->trans('fleet.fuel.' . $fuel)];
+        }
+
+        return $opts;
     }
 
     /** @param array<string, mixed> $data */
