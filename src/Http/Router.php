@@ -6,6 +6,7 @@ namespace Gereq\Http;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGenerator;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\Route as SymfonyRoute;
@@ -133,6 +134,20 @@ final class Router
         $generator = new UrlGenerator($collection, $context);
 
         return $generator->generate($name, $parameters);
+    }
+
+    /** Absolute URL for OAuth / webhooks (Google requires full https/http URI). */
+    public function absoluteUrl(string $name, array $parameters = [], ?Request $request = null): string
+    {
+        $collection = $this->collection();
+        $context = new RequestContext();
+        if ($request !== null) {
+            $context->fromRequest($request);
+        }
+
+        $generator = new UrlGenerator($collection, $context);
+
+        return $generator->generate($name, $parameters, UrlGeneratorInterface::ABSOLUTE_URL);
     }
 
     public function has(string $name): bool
