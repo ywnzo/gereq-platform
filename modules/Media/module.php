@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'media',
     'name' => 'Media',
-    'version' => '1.1.0',
+    'version' => '1.2.0',
     'description' => 'module.media.description',
     'class' => Modules\Media\MediaModule::class,
     'author' => 'GEREQ',
@@ -13,6 +13,7 @@ return [
         'core' => '^1.0',
     ],
     'optional' => [],
+    'groups' => ['ecs'],
     'provides' => ['media'],
     'capabilities' => ['media'],
     'permissions' => [

@@ -1,0 +1,27 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'media.folder.move'|trans }}</h1>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'media.folder.move' } %}
+
+    <form method="post" class="form-grid" action="{{ url('admin.media.folders.move.submit', {id: folder.id()}) }}" data-form="media.folder.move" x-data="gereqForm"{% if form_errors('media.folder.move') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        <p class="muted">{{ 'media.folder.move.hint'|trans({'%name%': folder.name()}) }}</p>
+        {% include 'ui/select.html.twig' with {
+            name: 'parent_id',
+            label: 'media.folder.field.parent'|trans,
+            optional: true,
+            form: 'media.folder.move',
+            value: folder.parentId()|default(''),
+            options: folderOptions,
+            searchable: true
+        } %}
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'media.folder.move'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.media.index', folder.parentId() ? {folder: folder.parentId()} : {}) }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

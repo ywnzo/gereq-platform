@@ -11,6 +11,7 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Table(name: 'media_assets')]
 #[ORM\Index(name: 'idx_media_assets_mime', columns: ['mime'])]
 #[ORM\Index(name: 'idx_media_assets_created', columns: ['created_at'])]
+#[ORM\Index(name: 'idx_media_assets_folder', columns: ['folder_id'])]
 class MediaAsset
 {
     #[ORM\Id]
@@ -41,6 +42,9 @@ class MediaAsset
     #[ORM\Column(name: 'uploaded_by', length: 36, nullable: true)]
     private ?string $uploadedBy = null;
 
+    #[ORM\Column(name: 'folder_id', length: 36, nullable: true)]
+    private ?string $folderId = null;
+
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
 
@@ -53,6 +57,7 @@ class MediaAsset
         ?string $alt = null,
         ?int $width = null,
         ?int $height = null,
+        ?string $folderId = null,
     ) {
         $this->id = Uuid::uuid7()->toString();
         $this->title = $title;
@@ -63,6 +68,7 @@ class MediaAsset
         $this->alt = $alt !== '' ? $alt : null;
         $this->width = $width;
         $this->height = $height;
+        $this->folderId = $folderId !== null && $folderId !== '' ? $folderId : null;
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -111,6 +117,11 @@ class MediaAsset
         return $this->uploadedBy;
     }
 
+    public function folderId(): ?string
+    {
+        return $this->folderId;
+    }
+
     public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -135,5 +146,10 @@ class MediaAsset
     {
         $this->width = $width;
         $this->height = $height;
+    }
+
+    public function moveTo(?string $folderId): void
+    {
+        $this->folderId = $folderId !== null && $folderId !== '' ? $folderId : null;
     }
 }

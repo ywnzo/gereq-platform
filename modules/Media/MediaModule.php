@@ -27,7 +27,7 @@ final class MediaModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.2.0';
     }
 
     public function register(ModuleContext $context): void
@@ -48,6 +48,32 @@ final class MediaModule implements ModuleInterface
             $routes->post('', [MediaController::class, 'store'])
                 ->name('admin.media.store')
                 ->permission('media.manage');
+            $routes->post('/bulk', [MediaController::class, 'bulk'])
+                ->name('admin.media.bulk')
+                ->permission('media.manage');
+
+            $routes->get('/folders/create', [MediaController::class, 'createFolder'])
+                ->name('admin.media.folders.create')
+                ->permission('media.manage');
+            $routes->post('/folders', [MediaController::class, 'storeFolder'])
+                ->name('admin.media.folders.store')
+                ->permission('media.manage');
+            $routes->get('/folders/{id}/edit', [MediaController::class, 'editFolder'])
+                ->name('admin.media.folders.edit')
+                ->permission('media.manage');
+            $routes->post('/folders/{id}', [MediaController::class, 'updateFolder'])
+                ->name('admin.media.folders.update')
+                ->permission('media.manage');
+            $routes->get('/folders/{id}/move', [MediaController::class, 'moveFolderForm'])
+                ->name('admin.media.folders.move')
+                ->permission('media.manage');
+            $routes->post('/folders/{id}/move', [MediaController::class, 'moveFolder'])
+                ->name('admin.media.folders.move.submit')
+                ->permission('media.manage');
+            $routes->post('/folders/{id}/delete', [MediaController::class, 'destroyFolder'])
+                ->name('admin.media.folders.destroy')
+                ->permission('media.manage');
+
             $routes->get('/{id}', [MediaController::class, 'show'])
                 ->name('admin.media.show')
                 ->permission('media.view');
@@ -56,6 +82,12 @@ final class MediaModule implements ModuleInterface
                 ->permission('media.manage');
             $routes->post('/{id}', [MediaController::class, 'update'])
                 ->name('admin.media.update')
+                ->permission('media.manage');
+            $routes->get('/{id}/move', [MediaController::class, 'moveForm'])
+                ->name('admin.media.move')
+                ->permission('media.manage');
+            $routes->post('/{id}/move', [MediaController::class, 'move'])
+                ->name('admin.media.move.submit')
                 ->permission('media.manage');
             $routes->get('/{id}/file', [MediaController::class, 'file'])
                 ->name('admin.media.file')
@@ -105,7 +137,7 @@ final class MediaModule implements ModuleInterface
             url: '/admin/media',
             icon: 'image',
             permission: 'media.view',
-            keywords: ['média', 'media', 'obrázky', 'assets', 'galerie'],
+            keywords: ['média', 'media', 'obrázky', 'assets', 'galerie', 'složky'],
         ));
         $context->commandPalette()->add(new PaletteCommand(
             id: 'media.upload',
@@ -155,11 +187,32 @@ final class MediaModule implements ModuleInterface
         $validation->ruleset('media.save', [
             'title' => 'required|min:1|max:190',
             'alt' => 'nullable|max:255',
+            'folder_id' => 'nullable|max:36',
         ]);
 
         $validation->ruleset('media.upload', [
             'title' => 'nullable|max:190',
             'alt' => 'nullable|max:255',
+            'folder_id' => 'nullable|max:36',
+        ]);
+
+        $validation->ruleset('media.move', [
+            'folder_id' => 'nullable|max:36',
+        ]);
+
+        $validation->ruleset('media.bulk', [
+            'action' => 'required|max:32',
+            'folder_id' => 'nullable|max:36',
+            'confirmed' => 'nullable',
+        ]);
+
+        $validation->ruleset('media.folder.save', [
+            'name' => 'required|min:1|max:190',
+            'parent_id' => 'nullable|max:36',
+        ]);
+
+        $validation->ruleset('media.folder.move', [
+            'parent_id' => 'nullable|max:36',
         ]);
     }
 }

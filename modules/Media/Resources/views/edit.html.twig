@@ -23,6 +23,15 @@
             form: 'media.save',
             value: item.alt()|default('')
         } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'folder_id',
+            label: 'media.field.folder'|trans,
+            optional: true,
+            form: 'media.save',
+            value: item.folderId()|default(''),
+            options: folderOptions,
+            searchable: true
+        } %}
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.media.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>

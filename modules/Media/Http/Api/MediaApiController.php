@@ -219,6 +219,7 @@ final class MediaApiController extends Controller
             'alt' => $asset->alt(),
             'width' => $asset->width(),
             'height' => $asset->height(),
+            'folder_id' => $asset->folderId(),
             'uploaded_by' => $asset->uploadedBy(),
             'url' => '/media/' . $asset->id() . '/file',
             'created_at' => $asset->createdAt()->format(\DateTimeInterface::ATOM),

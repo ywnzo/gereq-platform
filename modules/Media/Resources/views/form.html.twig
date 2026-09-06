@@ -24,6 +24,15 @@
             form: 'media.upload',
             value: ''
         } %}
+        {% include 'ui/select.html.twig' with {
+            name: 'folder_id',
+            label: 'media.field.folder'|trans,
+            optional: true,
+            form: 'media.upload',
+            value: folder|default(''),
+            options: folderOptions,
+            searchable: true
+        } %}
         {% include 'ui/file.html.twig' with {
             name: 'file',
             label: 'media.field.file'|trans,
@@ -32,7 +41,7 @@
         } %}
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'media.upload'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.media.index') }}">{{ 'common.cancel'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.media.index', folder ? {folder: folder} : {}) }}">{{ 'common.cancel'|trans }}</a>
         </div>
     </form>
 {% endblock %}
