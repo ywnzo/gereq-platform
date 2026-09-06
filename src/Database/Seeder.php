@@ -46,6 +46,8 @@ final class Seeder
         $nearPlaces = $this->seedNearLocationsForSamples($samples);
         $this->seedListings($samples, $nearPlaces, $brokers);
         $this->em->flush();
+        $this->seedViewings();
+        $this->em->flush();
         $this->seedPortalsDemo();
         if ($withDemo) {
             $this->demoSeeder->seed();
@@ -183,11 +185,11 @@ final class Seeder
 
     private function seedModules(): void
     {
-        // Norda / EShop: obchodní stack — bez RealEstates (listings/CRM/projekty…).
+        // RealEstates balíček (viz config/module_groups.php → realestates).
         $defaultEnabled = [
-            'customers', 'currency', 'media', 'cms',
-            'products', 'shop', 'orders', 'payments',
-            'translate', 'partscatalog',
+            'currency', 'customers', 'media', 'cms', 'listings',
+            'crm', 'calendar', 'viewings', 'documents', 'notifications',
+            'reviews', 'newsletter', 'portals', 'translate', 'webhooks',
         ];
 
         foreach ($this->modules->discover() as $manifest) {
@@ -502,11 +504,16 @@ final class Seeder
                 'lat' => 50.0758,
                 'lng' => 14.4478,
                 'desc' => 'Světlý byt po rekonstrukci, výhled do vnitrobloku, sklep a výtah.',
-                'images' => [
+                'images' => $this->pickGallery([
                     'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
                     'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200',
                     'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200',
-                ],
+                    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200',
+                    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200',
+                    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+                    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200',
+                    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200',
+                ], 0, 8),
                 'featured' => true,
                 'amenities' => ['balcony' => true, 'cellar' => true, 'elevator' => true],
                 'energy' => 'B',
@@ -529,10 +536,16 @@ final class Seeder
                 'lat' => 49.2105,
                 'lng' => 16.5750,
                 'desc' => 'Samostatný dům se zahradou, garáž, klidná lokalita.',
-                'images' => [
+                'images' => $this->pickGallery([
                     'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
                     'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-                ],
+                    'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=1200',
+                    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200',
+                    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200',
+                    'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+                    'https://images.unsplash.com/photo-1605146769289-440113cc3d00?w=1200',
+                    'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=1200',
+                ], 1, 8),
                 'featured' => true,
                 'amenities' => ['garage' => true, 'terrace' => true, 'cellar' => true],
                 'energy' => 'C',
@@ -556,16 +569,41 @@ final class Seeder
                 'lat' => 50.0923,
                 'lng' => 14.4508,
                 'desc' => 'Zařízený byt blízko metra B, ihned k nastěhování.',
-                'images' => [
+                'images' => $this->pickGallery([
                     'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200',
                     'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200',
-                ],
+                    'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200',
+                    'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200',
+                    'https://images.unsplash.com/photo-1486304873000-235643847519?w=1200',
+                    'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?w=1200',
+                    'https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1200',
+                ], 2, 8),
                 'featured' => false,
                 'amenities' => ['elevator' => true, 'balcony' => true],
                 'energy' => 'B',
                 'broker' => 0,
             ],
         ];
+    }
+
+    /**
+     * @param list<string> $pool
+     * @return list<string>
+     */
+    private function pickGallery(array $pool, int $seed, int $count = 8): array
+    {
+        $n = count($pool);
+        if ($n === 0) {
+            return [];
+        }
+        $count = max(1, min($count, $n));
+        $start = ($seed * 3) % $n;
+        $out = [];
+        for ($k = 0; $k < $count; ++$k) {
+            $out[] = $pool[($start + $k) % $n];
+        }
+
+        return $out;
     }
 
     /** @return list<array<string, mixed>> */
@@ -583,7 +621,7 @@ final class Seeder
             'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200',
             'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=1200',
             'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200',
-            'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdbc?w=1200',
+            'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200',
             'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=1200',
             'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200',
             'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
@@ -594,15 +632,20 @@ final class Seeder
             'https://images.unsplash.com/photo-1486304873000-235643847519?w=1200',
             'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?w=1200',
             'https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1200',
-            'https://images.unsplash.com/photo-1567767292278-a1f110e9bd1e?w=1200',
             'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200',
             'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
             'https://images.unsplash.com/photo-1605146769289-440113cc3d00?w=1200',
             'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=1200',
-            'https://images.unsplash.com/photo-1598228723791-2176c5f5a6f1?w=1200',
-            'https://images.unsplash.com/photo-1582265861263-496e0d5c5b7a?w=1200',
             'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-            // Pozn.: photo-1564013799919 (dům s bazénem) záměrně nepoužíváme jako fallback ani default cover.
+            'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=1200',
+            'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200',
+            'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=1200',
+            'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1200',
+            'https://images.unsplash.com/photo-1560184897-ae75f418493e?w=1200',
+            'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
+            'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200',
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200',
+            'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200',
         ];
 
         $rows = [
@@ -655,10 +698,7 @@ final class Seeder
                 'lat' => $lat,
                 'lng' => $lng,
                 'desc' => $desc,
-                'images' => [
-                    $imgs[$i % count($imgs)],
-                    $imgs[($i + (int) floor(count($imgs) / 2)) % count($imgs)],
-                ],
+                'images' => $this->pickGallery($imgs, $i + 3, 8),
                 'featured' => $featured,
                 'amenities' => $amenities,
                 'energy' => $energy,
@@ -790,6 +830,74 @@ final class Seeder
     private function publicMediaUrl(string $assetId): string
     {
         return '/media/' . $assetId . '/file';
+    }
+
+    private function seedViewings(): void
+    {
+        if (!class_exists(\Modules\Viewings\Domain\Viewing::class)
+            || !class_exists(\Modules\Listings\Domain\Listing::class)
+            || !class_exists(\Modules\Viewings\Application\ViewingsProvider::class)
+        ) {
+            return;
+        }
+
+        $existing = (int) $this->em->getRepository(\Modules\Viewings\Domain\Viewing::class)->count([]);
+        if ($existing > 0) {
+            return;
+        }
+
+        /** @var list<\Modules\Listings\Domain\Listing> $listings */
+        $listings = $this->em->getRepository(\Modules\Listings\Domain\Listing::class)->findBy(
+            [],
+            ['createdAt' => 'DESC'],
+            12,
+        );
+        if ($listings === []) {
+            return;
+        }
+
+        $provider = new \Modules\Viewings\Application\ViewingsProvider($this->em);
+        $contacts = [
+            ['Anna Svobodová', 'anna.svobodova@email.cz', '+420 777 101 202', 'Zájem o odpolední termín.'],
+            ['Petr Novák', 'petr.novak@seznam.cz', '+420 603 445 778', 'Chce vidět i sklep.'],
+            ['Lucie Horáková', 'lucie.horakova@gmail.com', '+420 731 990 112', 'S hypotečním poradcem.'],
+            ['Martin Dvořák', 'martin.dvorak@firma.cz', '+420 608 221 334', null],
+            ['Eva Černá', 'eva.cerna@outlook.cz', '+420 724 556 889', 'Preferuje víkend.'],
+            ['Tomáš Veselý', 'tomas.vesely@email.cz', '+420 775 333 001', 'Druhá prohlídka.'],
+        ];
+        $statuses = ['scheduled', 'confirmed', 'requested', 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'];
+
+        foreach ($listings as $i => $listing) {
+            $contact = $contacts[$i % count($contacts)];
+            $status = $statuses[$i % count($statuses)];
+            $days = match ($status) {
+                'completed', 'cancelled', 'no_show' => -($i + 1),
+                'requested' => $i + 2,
+                default => $i + 1,
+            };
+            $hour = 9 + ($i % 7);
+            $at = (new \DateTimeImmutable('today'))
+                ->modify(sprintf('%+d days', $days))
+                ->setTime($hour, $i % 2 === 0 ? 0 : 30);
+
+            $viewing = new \Modules\Viewings\Domain\Viewing(
+                $provider->nextNumber(),
+                $listing->id(),
+                $contact[0],
+            );
+            $viewing->setStatus($status);
+            $viewing->setScheduledAt($at);
+            $viewing->setContactEmail($contact[1]);
+            $viewing->setContactPhone($contact[2]);
+            if ($contact[3] !== null) {
+                $viewing->setNote($contact[3]);
+            }
+            if ($listing->brokerId()) {
+                $viewing->setBrokerId($listing->brokerId());
+            }
+            $this->em->persist($viewing);
+            $this->em->flush(); // nextNumber() counts persisted rows
+        }
     }
 
     /**

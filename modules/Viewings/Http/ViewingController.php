@@ -58,11 +58,26 @@ final class ViewingController extends Controller
         $qb->orderBy('v.' . $list->sort, $list->direction());
 
         $total = (int) (clone $qb)->select('COUNT(v.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        /** @var list<Viewing> $items */
         $items = $qb->setFirstResult($list->offset())->setMaxResults($list->perPage)->getQuery()->getResult();
+
+        $listings = [];
+        if ($items !== [] && class_exists(\Modules\Listings\Domain\Listing::class)) {
+            $listingIds = array_values(array_unique(array_map(
+                static fn (Viewing $v): string => $v->listingId(),
+                $items,
+            )));
+            /** @var list<\Modules\Listings\Domain\Listing> $found */
+            $found = $this->em->getRepository(\Modules\Listings\Domain\Listing::class)->findBy(['id' => $listingIds]);
+            foreach ($found as $listing) {
+                $listings[$listing->id()] = $listing;
+            }
+        }
 
         return $this->page('@viewings/index.html.twig', array_merge($list->viewData($total), [
             'pageTitle' => $this->translator->trans('viewings.title'),
             'items' => $items,
+            'listings' => $listings,
             'status' => $status,
             'statuses' => Viewing::STATUSES,
         ]));
@@ -70,11 +85,10 @@ final class ViewingController extends Controller
 
     public function create(): Response
     {
-        return $this->page('@viewings/form.html.twig', [
-            'pageTitle' => $this->translator->trans('viewings.new'),
-            'item' => null,
-            'statuses' => Viewing::STATUSES,
-        ]);
+        return $this->page('@viewings/form.html.twig', $this->formViewData(
+            $this->translator->trans('viewings.new'),
+            null,
+        ));
     }
 
     public function store(Request $request): Response
@@ -101,9 +115,21 @@ final class ViewingController extends Controller
             $this->abort(404, $this->translator->trans('viewings.error.not_found'));
         }
 
+        $listing = null;
+        if (class_exists(\Modules\Listings\Domain\Listing::class)) {
+            $listing = $this->em->find(\Modules\Listings\Domain\Listing::class, $item->listingId());
+        }
+
+        $broker = null;
+        if ($item->brokerId() !== null && class_exists(\Modules\Listings\Domain\Broker::class)) {
+            $broker = $this->em->find(\Modules\Listings\Domain\Broker::class, $item->brokerId());
+        }
+
         return $this->page('@viewings/show.html.twig', [
             'pageTitle' => $item->number(),
             'item' => $item,
+            'listing' => $listing,
+            'broker' => $broker,
             'statuses' => Viewing::STATUSES,
         ]);
     }
@@ -115,11 +141,10 @@ final class ViewingController extends Controller
             $this->abort(404, $this->translator->trans('viewings.error.not_found'));
         }
 
-        return $this->page('@viewings/form.html.twig', [
-            'pageTitle' => $this->translator->trans('viewings.edit', ['%number%' => $item->number()]),
-            'item' => $item,
-            'statuses' => Viewing::STATUSES,
-        ]);
+        return $this->page('@viewings/form.html.twig', $this->formViewData(
+            $this->translator->trans('viewings.edit', ['%number%' => $item->number()]),
+            $item,
+        ));
     }
 
     public function update(Request $request, string $id): Response
@@ -253,6 +278,147 @@ final class ViewingController extends Controller
         } catch (\Exception) {
             return null;
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formViewData(string $pageTitle, ?Viewing $item): array
+    {
+        return [
+            'pageTitle' => $pageTitle,
+            'item' => $item,
+            'statuses' => Viewing::STATUSES,
+            'listingOptions' => $this->listingOptions($item?->listingId()),
+            'brokerOptions' => $this->brokerOptions($item?->brokerId()),
+            'customerOptions' => $this->customerOptions($item?->customerId()),
+        ];
+    }
+
+    /**
+     * @return list<array{value: string, label: string, description?: string, search?: string}>
+     */
+    private function listingOptions(?string $currentId): array
+    {
+        if (!class_exists(\Modules\Listings\Domain\Listing::class)) {
+            return $currentId ? [['value' => $currentId, 'label' => $currentId]] : [];
+        }
+
+        /** @var list<\Modules\Listings\Domain\Listing> $rows */
+        $rows = $this->em->getRepository(\Modules\Listings\Domain\Listing::class)
+            ->createQueryBuilder('l')
+            ->orderBy('l.updatedAt', 'DESC')
+            ->setMaxResults(150)
+            ->getQuery()
+            ->getResult();
+
+        $options = [];
+        $seen = [];
+        foreach ($rows as $listing) {
+            $seen[$listing->id()] = true;
+            $city = $listing->city() ?: '—';
+            $options[] = [
+                'value' => $listing->id(),
+                'label' => $listing->title(),
+                'description' => $city . ' · ' . number_format((float) $listing->price(), 0, ',', ' ') . ' ' . $listing->currency(),
+                'search' => $listing->title() . ' ' . $city . ' ' . $listing->slug(),
+            ];
+        }
+
+        if ($currentId && !isset($seen[$currentId])) {
+            $current = $this->em->find(\Modules\Listings\Domain\Listing::class, $currentId);
+            array_unshift($options, [
+                'value' => $currentId,
+                'label' => $current ? $current->title() : $currentId,
+                'description' => $current && $current->city() ? $current->city() : '',
+            ]);
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function brokerOptions(?string $currentId): array
+    {
+        $options = [['value' => '', 'label' => '—']];
+        if (!class_exists(\Modules\Listings\Domain\Broker::class)) {
+            if ($currentId) {
+                $options[] = ['value' => $currentId, 'label' => $currentId];
+            }
+
+            return $options;
+        }
+
+        /** @var list<\Modules\Listings\Domain\Broker> $rows */
+        $rows = $this->em->getRepository(\Modules\Listings\Domain\Broker::class)
+            ->createQueryBuilder('b')
+            ->orderBy('b.lastName', 'ASC')
+            ->addOrderBy('b.firstName', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $seen = [];
+        foreach ($rows as $broker) {
+            $seen[$broker->id()] = true;
+            $options[] = [
+                'value' => $broker->id(),
+                'label' => $broker->fullName(),
+                'description' => $broker->email(),
+                'search' => $broker->fullName() . ' ' . $broker->email(),
+            ];
+        }
+
+        if ($currentId && !isset($seen[$currentId])) {
+            $options[] = ['value' => $currentId, 'label' => $currentId];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function customerOptions(?string $currentId): array
+    {
+        $options = [['value' => '', 'label' => '—']];
+        if (!class_exists(\Modules\Customers\Domain\Customer::class)) {
+            if ($currentId) {
+                $options[] = ['value' => $currentId, 'label' => $currentId];
+            }
+
+            return $options;
+        }
+
+        /** @var list<\Modules\Customers\Domain\Customer> $rows */
+        $rows = $this->em->getRepository(\Modules\Customers\Domain\Customer::class)
+            ->createQueryBuilder('c')
+            ->orderBy('c.name', 'ASC')
+            ->setMaxResults(200)
+            ->getQuery()
+            ->getResult();
+
+        $seen = [];
+        foreach ($rows as $customer) {
+            $seen[$customer->id()] = true;
+            $label = $customer->name();
+            if (method_exists($customer, 'company') && $customer->company()) {
+                $label .= ' · ' . $customer->company();
+            }
+            $options[] = [
+                'value' => $customer->id(),
+                'label' => $label,
+                'description' => method_exists($customer, 'email') ? (string) ($customer->email() ?? '') : '',
+                'search' => $label,
+            ];
+        }
+
+        if ($currentId && !isset($seen[$currentId])) {
+            $options[] = ['value' => $currentId, 'label' => $currentId];
+        }
+
+        return $options;
     }
 
     /** @param array<string, mixed> $data */

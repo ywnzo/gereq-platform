@@ -49,6 +49,7 @@ final class MediaImporter
         $hash = sha1($url);
         $existing = $this->findByHash($hash);
         if ($existing instanceof MediaAsset) {
+            $this->reconcilePathExtension($existing, $hash);
             $this->cache[$url] = $existing;
 
             return $existing;
@@ -126,6 +127,39 @@ final class MediaImporter
         }
 
         return null;
+    }
+
+    /**
+     * Seed may store AVIF/WebP on disk while an older DB row still points at .jpg.
+     */
+    private function reconcilePathExtension(MediaAsset $asset, string $hash): void
+    {
+        $absolute = $this->uploadsRoot . '/' . ltrim($asset->path(), '/');
+        if (is_file($absolute)) {
+            return;
+        }
+
+        $extMime = [
+            'avif' => 'image/avif',
+            'webp' => 'image/webp',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+        ];
+        foreach ($extMime as $ext => $mime) {
+            $relative = 'seed/' . $hash . '.' . $ext;
+            $candidate = $this->uploadsRoot . '/' . $relative;
+            if (!is_file($candidate)) {
+                continue;
+            }
+            $asset->setPath($relative);
+            $asset->setMime($mime);
+            $asset->setSize((int) filesize($candidate));
+            $this->em->flush();
+
+            return;
+        }
     }
 
     /**

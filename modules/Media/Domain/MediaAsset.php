@@ -137,6 +137,21 @@ class MediaAsset
         $this->title = $title;
     }
 
+    public function setPath(string $path): void
+    {
+        $this->path = $path;
+    }
+
+    public function setMime(string $mime): void
+    {
+        $this->mime = $mime;
+    }
+
+    public function setSize(int $size): void
+    {
+        $this->size = max(0, $size);
+    }
+
     public function setAlt(?string $alt): void
     {
         $this->alt = $alt !== null && $alt !== '' ? $alt : null;
