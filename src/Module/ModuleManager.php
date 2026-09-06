@@ -6,6 +6,7 @@ namespace Gereq\Module;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Audit\Auditor;
+use Gereq\Hook\HookManager;
 use Gereq\User\Entity\Permission;
 use Gereq\User\PermissionRegistry;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -30,6 +31,7 @@ final class ModuleManager
         private readonly PermissionRegistry $permissionRegistry,
         private readonly Auditor $auditor,
         private readonly TranslatorInterface $translator,
+        private readonly ?HookManager $hooks = null,
     ) {
     }
 
@@ -147,6 +149,7 @@ final class ModuleManager
         $this->enabledIds = null;
         $this->installedById = null;
         $this->auditor->log('module.enabled', 'module', $id);
+        $this->hooks?->doAction('module.enabled', $id);
     }
 
     public function disable(string $id): void
