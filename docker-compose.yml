@@ -38,7 +38,7 @@ services:
       DB_PORT: 5432
       DB_DATABASE_NAME: ${DB_DATABASE_NAME:-gereq}
       DB_USERNAME: ${DB_USERNAME:-gereq}
-      DB_PASSWORD: ${DB_PASSWORD:-gereq}
+      DB_PASSWORD: ${DB_PASSWORD:?Set a strong DB_PASSWORD in .env}
       # PHP-FPM workers (default image had max_children=5)
       PHP_FPM_MAX_CHILDREN: ${PHP_FPM_MAX_CHILDREN:-32}
       PHP_FPM_START_SERVERS: ${PHP_FPM_START_SERVERS:-8}
@@ -60,9 +60,8 @@ services:
     environment:
       POSTGRES_DB: ${DB_DATABASE_NAME:-gereq}
       POSTGRES_USER: ${DB_USERNAME:-gereq}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-gereq}
-    ports:
-      - "${GEREQ_PG_PORT:-5432}:5432"
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set a strong DB_PASSWORD in .env}
+    # Not published to the host — reach DB only via docker network (or: docker compose exec postgres psql …)
     volumes:
       - gereq-postgres:/var/lib/postgresql/data
     healthcheck:
@@ -81,7 +80,9 @@ services:
     networks:
       - gereq
 
+  # Opt-in only: docker compose --profile tools up adminer
   adminer:
+    profiles: ["tools"]
     image: adminer:4
     ports:
       - "${GEREQ_ADMINER_PORT:-8086}:8080"
@@ -90,7 +91,7 @@ services:
       ADMINER_DESIGN: pepa-linha
       ADMINER_SERVER: postgres
       ADMINER_USERNAME: ${DB_USERNAME:-gereq}
-      ADMINER_PASSWORD: ${DB_PASSWORD:-gereq}
+      ADMINER_PASSWORD: ${DB_PASSWORD:?Set a strong DB_PASSWORD in .env}
       ADMINER_DB: ${DB_DATABASE_NAME:-gereq}
     volumes:
       - ./docker/adminer/autologin.php:/var/www/html/plugins-enabled/autologin.php:ro,z
@@ -118,7 +119,7 @@ services:
       DB_PORT: 5432
       DB_DATABASE_NAME: ${DB_DATABASE_NAME:-gereq}
       DB_USERNAME: ${DB_USERNAME:-gereq}
-      DB_PASSWORD: ${DB_PASSWORD:-gereq}
+      DB_PASSWORD: ${DB_PASSWORD:?Set a strong DB_PASSWORD in .env}
     depends_on:
       redis:
         condition: service_started
