@@ -25,7 +25,7 @@ final class CustomerUploadsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.1.1';
     }
 
     public function register(ModuleContext $context): void

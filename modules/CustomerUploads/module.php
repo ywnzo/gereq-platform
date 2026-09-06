@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'customer_uploads',
     'name' => 'Customer Uploads',
-    'version' => '1.1.0',
+    'version' => '1.1.1',
     'description' => 'module.customer_uploads.description',
     'class' => Modules\CustomerUploads\CustomerUploadsModule::class,
     'author' => 'GEREQ',

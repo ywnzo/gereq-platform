@@ -69,10 +69,19 @@ final class PublicStoreUploadController extends Controller
 
     public function file(Request $request, string $id): Response
     {
+        $sessionHash = $this->requireSession($request);
+        if ($sessionHash === null) {
+            return $this->cors(ApiResponse::error('unauthorized', 'Invalid upload session', [], 401));
+        }
+
         $upload = $this->em->find(CustomerUpload::class, $id);
         if (!$upload instanceof CustomerUpload) {
             return $this->cors(ApiResponse::notFound());
         }
+        if (!hash_equals($upload->sessionHash(), $sessionHash)) {
+            return $this->cors(ApiResponse::notFound());
+        }
+
         $path = $this->uploads->absolutePath($upload);
         if (!is_file($path)) {
             return $this->cors(ApiResponse::notFound());
