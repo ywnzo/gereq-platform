@@ -60,6 +60,7 @@ final class CalendarController extends Controller
             'anchor' => $anchor,
             'feedUrl' => $this->router->url('admin.calendar.feed', [], $request),
             'moveUrl' => $this->router->url('admin.calendar.move', [], $request),
+            'saveUrl' => $this->router->url('admin.calendar.save', [], $request),
             'createUrl' => $this->router->url('admin.calendar.create', [], $request),
             'canManage' => $this->auth->user()?->can('calendar.manage') ?? false,
             'connections' => array_map(
@@ -111,6 +112,59 @@ final class CalendarController extends Controller
         $this->em->flush();
         $data = $this->calendar->serialize($event);
         $this->events->emit('calendar.event_updated', ['type' => 'calendar_event', 'id' => $event->id()], $data);
+
+        return new JsonResponse(['data' => $data]);
+    }
+
+    public function save(Request $request): JsonResponse
+    {
+        if (!($this->auth->user()?->can('calendar.manage') ?? false)) {
+            return new JsonResponse(['error' => 'forbidden'], 403);
+        }
+        $payload = $this->jsonBody($request);
+        $id = (string) ($payload['id'] ?? '');
+        $event = $this->calendar->find($id);
+        if ($event === null) {
+            return new JsonResponse(['error' => 'not_found'], 404);
+        }
+        $title = trim((string) ($payload['title'] ?? ''));
+        $starts = $this->parseDateTime((string) ($payload['starts_at'] ?? ''));
+        $ends = $this->parseDateTime((string) ($payload['ends_at'] ?? ''));
+        if ($title === '' || $starts === null || $ends === null || $ends < $starts) {
+            return new JsonResponse(['error' => 'invalid'], 422);
+        }
+        $type = (string) ($payload['type'] ?? $event->type());
+        if (!in_array($type, CalendarEvent::TYPES, true)) {
+            $type = $event->type();
+        }
+        $color = (string) ($payload['color'] ?? $event->color());
+        if (!in_array($color, CalendarEvent::COLORS, true)) {
+            $color = $event->color();
+        }
+        $status = (string) ($payload['status'] ?? $event->status());
+        if (!in_array($status, CalendarEvent::STATUSES, true)) {
+            $status = $event->status();
+        }
+
+        $event->setTitle($title);
+        $event->setStartsAt($starts);
+        $event->setEndsAt($ends);
+        $event->setType($type);
+        $event->setColor($color);
+        $event->setStatus($status);
+        $event->setAllDay((bool) ($payload['all_day'] ?? false));
+        $event->setTimezone(trim((string) ($payload['timezone'] ?? 'Europe/Prague')) ?: 'Europe/Prague');
+        $location = trim((string) ($payload['location'] ?? ''));
+        $event->setLocation($location !== '' ? $location : null);
+        $description = trim((string) ($payload['description'] ?? ''));
+        $event->setDescription($description !== '' ? $description : null);
+        $rrule = trim((string) ($payload['rrule'] ?? ''));
+        $event->setRrule($rrule !== '' ? $rrule : null);
+
+        $this->em->flush();
+        $data = $this->calendar->serialize($event);
+        $this->events->emit('calendar.event_updated', ['type' => 'calendar_event', 'id' => $event->id()], $data);
+        $this->auditor->log('calendar.updated', 'calendar_event', $id);
 
         return new JsonResponse(['data' => $data]);
     }
@@ -428,6 +482,11 @@ final class CalendarController extends Controller
             return null;
         }
         try {
+            // Naive datetimes from the board are civil wall-clock (Europe/Prague), not UTC.
+            if (preg_match('/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/', $raw) === 1) {
+                return new \DateTimeImmutable($raw, new \DateTimeZone('Europe/Prague'));
+            }
+
             return new \DateTimeImmutable($raw);
         } catch (\Exception) {
             return null;

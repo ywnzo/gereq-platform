@@ -3,7 +3,7 @@ declare(strict_types=1);
 return [
     'id' => 'calendar',
     'name' => 'Calendar',
-    'version' => '1.1.0',
+    'version' => '1.2.1',
     'description' => 'module.calendar.description',
     'class' => Modules\Calendar\CalendarModule::class,
     'author' => 'GEREQ',

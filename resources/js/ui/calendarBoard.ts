@@ -52,6 +52,19 @@ function addDays(d: Date, n: number): Date {
 }
 
 function parseIso(iso: string): Date {
+    // Civil wall-clock for calendar events — ignore legacy Z/+offset from UTC-labelled feed.
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+        return new Date(
+            Number(m[1]),
+            Number(m[2]) - 1,
+            Number(m[3]),
+            Number(m[4]),
+            Number(m[5]),
+            Number(m[6] || '0'),
+            0,
+        );
+    }
     return new Date(iso);
 }
 
@@ -94,6 +107,41 @@ const STATUS_LABELS: Record<string, string> = {
     cancelled: 'Zrušeno',
 };
 
+function toLocalInput(iso: string): string {
+    const d = parseIso(iso);
+    return ymd(d) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+type EditForm = {
+    title: string;
+    type: string;
+    status: string;
+    color: string;
+    starts_at: string;
+    ends_at: string;
+    all_day: boolean;
+    timezone: string;
+    location: string;
+    description: string;
+    rrule: string;
+};
+
+function emptyEditForm(): EditForm {
+    return {
+        title: '',
+        type: 'meeting',
+        status: 'confirmed',
+        color: 'blue',
+        starts_at: '',
+        ends_at: '',
+        all_day: false,
+        timezone: 'Europe/Prague',
+        location: '',
+        description: '',
+        rrule: '',
+    };
+}
+
 export function registerCalendarBoard(alpine: typeof Alpine): void {
     alpine.data('gereqCalendar', () => ({
         view: 'month' as 'month' | 'week' | 'day' | 'agenda',
@@ -101,8 +149,12 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
         events: [] as CalEvent[],
         loading: false,
         selected: null as CalEvent | null,
+        drawerMode: 'view' as 'view' | 'edit',
+        editForm: emptyEditForm(),
+        saving: false,
         feedUrl: '',
         moveUrl: '',
+        saveUrl: '',
         createUrl: '',
         canManage: false,
         csrf: '',
@@ -116,6 +168,7 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
             const el = this.$el as HTMLElement;
             this.feedUrl = el.dataset.feedUrl || '';
             this.moveUrl = el.dataset.moveUrl || '';
+            this.saveUrl = el.dataset.saveUrl || '';
             this.createUrl = el.dataset.createUrl || '';
             this.canManage = el.dataset.canManage === '1';
             this.view = (el.dataset.view as typeof this.view) || 'month';
@@ -298,11 +351,16 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
                 return;
             }
             this.selected = ev;
+            this.drawerMode = 'view';
+            this.editForm = emptyEditForm();
             document.body.classList.add('has-drawer');
         },
 
         closeEvent() {
             this.selected = null;
+            this.drawerMode = 'view';
+            this.editForm = emptyEditForm();
+            this.saving = false;
             document.body.classList.remove('has-drawer');
         },
 
@@ -313,12 +371,112 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
         },
 
         goEdit() {
-            if (this.selected?.edit_url) {
-                window.location.href = this.selected.edit_url;
+            if (!this.selected || !this.canManage) {
                 return;
             }
-            if (this.selected?.url) {
-                window.location.href = this.selected.url + '/edit';
+            const ev = this.selected;
+            this.editForm = {
+                title: ev.title || '',
+                type: ev.type || 'meeting',
+                status: ev.status || 'confirmed',
+                color: ev.color || 'blue',
+                starts_at: toLocalInput(ev.starts_at),
+                ends_at: toLocalInput(ev.ends_at),
+                all_day: !!ev.all_day,
+                timezone: ev.timezone || 'Europe/Prague',
+                location: ev.location || '',
+                description: ev.description || '',
+                rrule: ev.rrule || '',
+            };
+            this.drawerMode = 'edit';
+        },
+
+        cancelEdit() {
+            this.drawerMode = 'view';
+            this.editForm = emptyEditForm();
+        },
+
+        onDrawerEscape() {
+            if (this.drawerMode === 'edit') {
+                this.cancelEdit();
+                return;
+            }
+            this.closeEvent();
+        },
+
+        isEditMode(): boolean {
+            return this.drawerMode === 'edit';
+        },
+
+        isViewMode(): boolean {
+            return this.drawerMode === 'view';
+        },
+
+        drawerTitle(): string {
+            if (this.drawerMode === 'edit') {
+                return 'Upravit událost';
+            }
+            return this.selectedTitle();
+        },
+
+        async saveEdit() {
+            if (!this.selected || !this.saveUrl || this.saving) {
+                return;
+            }
+            const title = this.editForm.title.trim();
+            if (!title) {
+                window.gereq?.toast?.('Vyplňte název události.', 'error');
+                return;
+            }
+            if (!this.editForm.starts_at || !this.editForm.ends_at) {
+                window.gereq?.toast?.('Vyplňte začátek a konec.', 'error');
+                return;
+            }
+            this.saving = true;
+            try {
+                const res = await fetch(this.saveUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': this.csrf,
+                    },
+                    body: JSON.stringify({
+                        id: this.selected.id,
+                        title,
+                        type: this.editForm.type,
+                        status: this.editForm.status,
+                        color: this.editForm.color,
+                        starts_at: this.editForm.starts_at,
+                        ends_at: this.editForm.ends_at,
+                        all_day: this.editForm.all_day,
+                        timezone: this.editForm.timezone.trim() || 'Europe/Prague',
+                        location: this.editForm.location.trim() || null,
+                        description: this.editForm.description.trim() || null,
+                        rrule: this.editForm.rrule.trim() || null,
+                    }),
+                });
+                if (!res.ok) {
+                    throw new Error('save failed');
+                }
+                const json = (await res.json()) as { data?: CalEvent };
+                if (json.data) {
+                    this.selected = json.data;
+                    const idx = this.events.findIndex((e) => e.id === json.data!.id);
+                    if (idx >= 0) {
+                        this.events[idx] = json.data;
+                    }
+                }
+                window.gereq?.toast?.('Událost uložena.', 'success');
+                this.drawerMode = 'view';
+                this.editForm = emptyEditForm();
+                void this.load();
+            } catch {
+                window.gereq?.toast?.('Uložení se nezdařilo.', 'error');
+            } finally {
+                this.saving = false;
             }
         },
 
@@ -645,3 +803,4 @@ export function registerCalendarBoard(alpine: typeof Alpine): void {
         },
     }));
 }
+

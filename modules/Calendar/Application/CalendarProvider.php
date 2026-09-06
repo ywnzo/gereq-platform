@@ -50,8 +50,9 @@ final class CalendarProvider
         return [
             'id' => $e->id(),
             'title' => $e->title(),
-            'starts_at' => $e->startsAt()->format(\DateTimeInterface::ATOM),
-            'ends_at' => $e->endsAt()->format(\DateTimeInterface::ATOM),
+            // Wall-clock local time (no Z/+00:00) — calendar stores civil time in event TZ.
+            'starts_at' => $e->startsAt()->format('Y-m-d\TH:i:s'),
+            'ends_at' => $e->endsAt()->format('Y-m-d\TH:i:s'),
             'all_day' => $e->allDay(),
             'type' => $e->type(),
             'color' => $e->color(),

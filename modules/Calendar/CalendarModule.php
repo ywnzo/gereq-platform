@@ -32,7 +32,7 @@ final class CalendarModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.2.1';
     }
 
     public function register(ModuleContext $context): void
@@ -45,6 +45,7 @@ final class CalendarModule implements ModuleInterface
             $routes->get('', [CalendarController::class, 'index'])->name('admin.calendar.index')->permission('calendar.view');
             $routes->get('/feed', [CalendarController::class, 'feed'])->name('admin.calendar.feed')->permission('calendar.view');
             $routes->post('/move', [CalendarController::class, 'move'])->name('admin.calendar.move')->permission('calendar.manage');
+            $routes->post('/save', [CalendarController::class, 'save'])->name('admin.calendar.save')->permission('calendar.manage');
             $routes->get('/export.ics', [CalendarController::class, 'ics'])->name('admin.calendar.ics')->permission('calendar.view');
             $routes->get('/connections', [CalendarController::class, 'connections'])->name('admin.calendar.connections')->permission('calendar.manage');
             $routes->post('/connections', [CalendarController::class, 'storeConnection'])->name('admin.calendar.connections.store')->permission('calendar.manage');

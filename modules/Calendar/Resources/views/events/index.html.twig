@@ -13,6 +13,7 @@
     x-data="gereqCalendar"
     data-feed-url="{{ feedUrl }}"
     data-move-url="{{ moveUrl }}"
+    data-save-url="{{ saveUrl }}"
     data-create-url="{{ createUrl }}"
     data-can-manage="{{ canManage ? '1' : '0' }}"
     data-view="{{ view }}"
@@ -186,12 +187,12 @@
         </div>
     </div>
 
-    {# Event drawer (no popover) #}
+    {# Event drawer (view + inline edit) #}
     <div
         class="g-drawer g-drawer--wide cal-drawer"
         :class="selected ? 'is-open' : ''"
         :data-open="selected ? 'true' : 'false'"
-        @keydown.escape.window="closeEvent"
+        @keydown.escape.window="onDrawerEscape"
         role="dialog"
         aria-modal="true"
         :aria-hidden="selected ? 'false' : 'true'"
@@ -199,58 +200,132 @@
         <div class="g-drawer__overlay" @click="closeEvent"></div>
         <div class="g-drawer__panel" @click.stop>
             <header class="g-drawer__head">
-                <h2 class="g-drawer__title" x-text="selectedTitle()"></h2>
+                <h2 class="g-drawer__title" x-text="drawerTitle()"></h2>
                 <button type="button" class="icon-btn g-drawer__close" @click="closeEvent" aria-label="{{ 'ui.drawer.close'|trans }}">{{ icon('close') }}</button>
             </header>
             <div class="g-drawer__body">
-                <p class="cal-drawer__when muted" x-text="selectedWhen()"></p>
-                <dl class="cal-drawer__meta">
-                    <div>
-                        <dt>{{ 'calendar.field.type'|trans }}</dt>
-                        <dd x-text="selectedType()"></dd>
+                <div x-show="isViewMode()" x-cloak>
+                    <p class="cal-drawer__when muted" x-text="selectedWhen()"></p>
+                    <dl class="cal-drawer__meta">
+                        <div>
+                            <dt>{{ 'calendar.field.type'|trans }}</dt>
+                            <dd x-text="selectedType()"></dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'calendar.field.status'|trans }}</dt>
+                            <dd x-text="selectedStatus()"></dd>
+                        </div>
+                        <div x-show="hasSelectedLocation()">
+                            <dt>{{ 'calendar.field.location'|trans }}</dt>
+                            <dd x-text="selectedLocation()"></dd>
+                        </div>
+                        <div x-show="hasSelectedTimezone()">
+                            <dt>{{ 'calendar.field.timezone'|trans }}</dt>
+                            <dd x-text="selectedTimezone()"></dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'calendar.field.color'|trans }}</dt>
+                            <dd class="cal-drawer__color">
+                                <span class="cal-drawer__swatch" :class="selected ? eventStyle(selected) : ''"></span>
+                                <span x-text="selectedColor()"></span>
+                            </dd>
+                        </div>
+                        <div x-show="isSelectedExternal()">
+                            <dt>{{ 'calendar.external'|trans }}</dt>
+                            <dd x-text="selectedExternal()"></dd>
+                        </div>
+                    </dl>
+                    <section class="cal-drawer__section" x-show="hasSelectedDescription()">
+                        <h3>{{ 'calendar.field.description'|trans }}</h3>
+                        <p x-text="selectedDescription()"></p>
+                    </section>
+                    <section class="cal-drawer__section" x-show="hasSelectedRrule()">
+                        <h3>{{ 'calendar.field.rrule'|trans }}</h3>
+                        <code x-text="selectedRrule()"></code>
+                    </section>
+                </div>
+
+                <form class="cal-drawer__form" x-show="isEditMode()" x-cloak @submit.prevent="saveEdit">
+                    <div class="form-grid">
+                        <label class="field field--full">
+                            <span class="field__label">{{ 'calendar.field.title'|trans }}</span>
+                            <input class="input" type="text" x-model="editForm.title" required>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">{{ 'calendar.field.type'|trans }}</span>
+                            <select class="input" x-model="editForm.type">
+                                {% for t in types|default(['meeting','deadline','call','task','other']) %}
+                                    <option value="{{ t }}">{{ ('calendar.type.' ~ t)|trans }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">{{ 'calendar.field.status'|trans }}</span>
+                            <select class="input" x-model="editForm.status">
+                                <option value="confirmed">{{ 'calendar.status.confirmed'|trans }}</option>
+                                <option value="tentative">{{ 'calendar.status.tentative'|trans }}</option>
+                                <option value="cancelled">{{ 'calendar.status.cancelled'|trans }}</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">{{ 'calendar.field.color'|trans }}</span>
+                            <select class="input" x-model="editForm.color">
+                                {% for c in colors|default(['blue','green','amber','red','violet','slate']) %}
+                                    <option value="{{ c }}">{{ ('calendar.color.' ~ c)|trans }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">{{ 'calendar.field.starts'|trans }}</span>
+                            <input class="input" type="datetime-local" x-model="editForm.starts_at" required>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">{{ 'calendar.field.ends'|trans }}</span>
+                            <input class="input" type="datetime-local" x-model="editForm.ends_at" required>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">{{ 'calendar.field.all_day'|trans }}</span>
+                            <input type="checkbox" x-model="editForm.all_day">
+                        </label>
+                        <label class="field">
+                            <span class="field__label">{{ 'calendar.field.timezone'|trans }}</span>
+                            <input class="input" type="text" x-model="editForm.timezone">
+                        </label>
+                        <label class="field field--full">
+                            <span class="field__label">{{ 'calendar.field.location'|trans }}</span>
+                            <input class="input" type="text" x-model="editForm.location">
+                        </label>
+                        <label class="field field--full">
+                            <span class="field__label">{{ 'calendar.field.description'|trans }}</span>
+                            <textarea class="input" rows="4" x-model="editForm.description"></textarea>
+                        </label>
+                        <label class="field field--full">
+                            <span class="field__label">{{ 'calendar.field.rrule'|trans }}</span>
+                            <input class="input" type="text" x-model="editForm.rrule" placeholder="{{ 'calendar.field.rrule_hint'|trans }}">
+                        </label>
                     </div>
-                    <div>
-                        <dt>{{ 'calendar.field.status'|trans }}</dt>
-                        <dd x-text="selectedStatus()"></dd>
-                    </div>
-                    <div x-show="hasSelectedLocation()">
-                        <dt>{{ 'calendar.field.location'|trans }}</dt>
-                        <dd x-text="selectedLocation()"></dd>
-                    </div>
-                    <div x-show="hasSelectedTimezone()">
-                        <dt>{{ 'calendar.field.timezone'|trans }}</dt>
-                        <dd x-text="selectedTimezone()"></dd>
-                    </div>
-                    <div>
-                        <dt>{{ 'calendar.field.color'|trans }}</dt>
-                        <dd class="cal-drawer__color">
-                            <span class="cal-drawer__swatch" :class="selected ? eventStyle(selected) : ''"></span>
-                            <span x-text="selectedColor()"></span>
-                        </dd>
-                    </div>
-                    <div x-show="isSelectedExternal()">
-                        <dt>{{ 'calendar.external'|trans }}</dt>
-                        <dd x-text="selectedExternal()"></dd>
-                    </div>
-                </dl>
-                <section class="cal-drawer__section" x-show="hasSelectedDescription()">
-                    <h3>{{ 'calendar.field.description'|trans }}</h3>
-                    <p x-text="selectedDescription()"></p>
-                </section>
-                <section class="cal-drawer__section" x-show="hasSelectedRrule()">
-                    <h3>{{ 'calendar.field.rrule'|trans }}</h3>
-                    <code x-text="selectedRrule()"></code>
-                </section>
+                </form>
             </div>
             <footer class="g-drawer__foot">
-                {% if canManage %}
-                    <button type="button" class="btn btn--primary" @click="goEdit">{{ 'common.edit'|trans }}</button>
-                    <template x-if="canManage && selected">
-                        <button type="button" class="btn btn--ghost" @click="shiftEvent(selected, 1)">{{ 'calendar.shift_day'|trans }}</button>
-                    </template>
-                {% endif %}
-                <button type="button" class="btn btn--ghost" @click="goEvent">{{ 'common.detail'|trans }}</button>
-                <button type="button" class="btn btn--ghost" @click="closeEvent">{{ 'common.cancel'|trans }}</button>
+                <template x-if="isViewMode()">
+                    <div class="cal-drawer__actions">
+                        {% if canManage %}
+                            <button type="button" class="btn btn--primary" @click="goEdit">{{ 'common.edit'|trans }}</button>
+                            <template x-if="canManage && selected">
+                                <button type="button" class="btn btn--ghost" @click="shiftEvent(selected, 1)">{{ 'calendar.shift_day'|trans }}</button>
+                            </template>
+                        {% endif %}
+                        <button type="button" class="btn btn--ghost" @click="goEvent">{{ 'common.detail'|trans }}</button>
+                        <button type="button" class="btn btn--ghost" @click="closeEvent">{{ 'common.cancel'|trans }}</button>
+                    </div>
+                </template>
+                <template x-if="isEditMode()">
+                    <div class="cal-drawer__actions">
+                        <button type="button" class="btn btn--primary" @click="saveEdit" :disabled="saving">{{ 'common.save'|trans }}</button>
+                        <button type="button" class="btn btn--ghost" @click="cancelEdit" :disabled="saving">{{ 'common.back'|trans }}</button>
+                        <button type="button" class="btn btn--ghost" @click="closeEvent">{{ 'common.cancel'|trans }}</button>
+                    </div>
+                </template>
             </footer>
         </div>
     </div>
