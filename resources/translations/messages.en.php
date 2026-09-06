@@ -742,6 +742,8 @@ return [
     'settings.group.customer_uploads.help' => 'Customer file upload limits',
     'settings.group.reviews' => 'Reviews',
     'settings.group.reviews.help' => 'Google / Facebook connections and merchant replies',
+    'settings.group.calendar' => 'Calendar',
+    'settings.group.calendar.help' => 'Google / Outlook OAuth Client ID and Secret',
     'settings.group.other' => 'Other',
     'settings.group.other.help' => 'Additional module settings',
     'settings.preview' => 'Preview',

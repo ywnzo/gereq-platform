@@ -759,6 +759,8 @@ return [
     'settings.group.customer_uploads.help' => 'Limity nahrávaných souborů',
     'settings.group.reviews' => 'Recenze',
     'settings.group.reviews.help' => 'Google / Facebook propojení a odpovědi obchodu',
+    'settings.group.calendar' => 'Kalendář',
+    'settings.group.calendar.help' => 'Google / Outlook OAuth Client ID a Secret',
     'settings.group.other' => 'Ostatní',
     'settings.group.other.help' => 'Další modulová nastavení',
     'settings.preview' => 'Náhled',
