@@ -135,33 +135,37 @@
         {% if mediaAvailable %}
         <section class="panel">
             <header class="panel__head"><h2>{{ 'carservice.media.title'|trans }}</h2></header>
-            {% for phase in mediaPhases %}
-                <h3>{{ ('carservice.media.phase.'~phase)|trans }}</h3>
-                <div class="table-wrap"><table class="table"><tbody>
-                {% for row in mediaByPhase[phase]|default([]) %}
-                    <tr>
-                        <td><a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">{{ row.asset.title() }}</a></td>
-                        <td class="is-mute">{{ row.asset.mime() }}</td>
-                    </tr>
-                {% else %}
-                    <tr><td class="muted" colspan="2">{{ 'carservice.media.empty_phase'|trans }}</td></tr>
+            <div class="panel__body">
+                {% for phase in mediaPhases %}
+                    <div class="cs-media-phase">
+                        <h3>{{ ('carservice.media.phase.'~phase)|trans }}</h3>
+                        <div class="table-wrap"><table class="table"><tbody>
+                        {% for row in mediaByPhase[phase]|default([]) %}
+                            <tr>
+                                <td><a href="{{ url('admin.media.show',{id:row.asset.id()}) }}">{{ row.asset.title() }}</a></td>
+                                <td class="is-mute">{{ row.asset.mime() }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td class="muted" colspan="2">{{ 'carservice.media.empty_phase'|trans }}</td></tr>
+                        {% endfor %}
+                        </tbody></table></div>
+                    </div>
                 {% endfor %}
-                </tbody></table></div>
-            {% endfor %}
-            {% if user.can('carservice.manage') %}
-                <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.media',{id:item.id()}) }}">
-                    {{ csrf_field()|raw }}
-                    <label class="field"><span>{{ 'carservice.media.phase_label'|trans }}</span>
-                        <select name="phase" class="input">
-                            {% for phase in mediaPhases %}<option value="{{ phase }}">{{ ('carservice.media.phase.'~phase)|trans }}</option>{% endfor %}
-                        </select>
-                    </label>
-                    <label class="field"><span>{{ 'carservice.media.file'|trans }}</span>
-                        <input class="input" type="file" name="file" accept="image/*,application/pdf" required>
-                    </label>
-                    <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
-                </form>
-            {% endif %}
+                {% if user.can('carservice.manage') %}
+                    <form method="post" enctype="multipart/form-data" class="form-grid form-grid--compact" action="{{ url('admin.carservice.media',{id:item.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <label class="field"><span>{{ 'carservice.media.phase_label'|trans }}</span>
+                            <select name="phase" class="input">
+                                {% for phase in mediaPhases %}<option value="{{ phase }}">{{ ('carservice.media.phase.'~phase)|trans }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="field"><span>{{ 'carservice.media.file'|trans }}</span>
+                            <input class="input" type="file" name="file" accept="image/*,application/pdf" required>
+                        </label>
+                        <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'carservice.media.upload'|trans }}</button></div>
+                    </form>
+                {% endif %}
+            </div>
         </section>
         {% endif %}
 
