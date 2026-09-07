@@ -1,0 +1,24 @@
+{
+  "name": "permissions",
+  "displayName": "GEREQ Permissions",
+  "description": "Hover, autocomplete a Go to Definition pro permission klíče (user.can / ->permission)",
+  "version": "0.1.0",
+  "publisher": "gereq",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:**/module.php"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gereq.permissions.reindex",
+        "title": "GEREQ Permissions: Reindex (.cache/permissions)"
+      }
+    ]
+  }
+}

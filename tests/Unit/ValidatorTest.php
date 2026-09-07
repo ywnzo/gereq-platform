@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Tests\Unit;
 
 use Gereq\Hook\HookManager;
+use Gereq\Tests\Support\PassthroughTranslator;
 use Gereq\Validation\ValidationException;
 use Gereq\Validation\ValidationRegistry;
 use Gereq\Validation\Validator;
@@ -48,7 +49,7 @@ final class ValidatorTest extends TestCase
     public function testModuleCanRegisterCustomRule(): void
     {
         $hooks = new HookManager();
-        $registry = new ValidationRegistry($hooks);
+        $registry = new ValidationRegistry($hooks, new PassthroughTranslator());
         $registry->rule('no_gereq', static function (mixed $value): ?string {
             return is_string($value) && str_contains($value, 'gereq')
                 ? 'Tenhle e-mail je rezervovaný.'
@@ -69,7 +70,7 @@ final class ValidatorTest extends TestCase
     public function testAfterCallbackCanAddModuleError(): void
     {
         $hooks = new HookManager();
-        $registry = new ValidationRegistry($hooks);
+        $registry = new ValidationRegistry($hooks, new PassthroughTranslator());
         $registry->ruleset('demo', ['name' => 'required']);
         $registry->after('demo', static function (array $data, array $errors): array {
             if (($data['name'] ?? '') === 'root') {
@@ -97,6 +98,6 @@ final class ValidatorTest extends TestCase
     {
         $hooks = new HookManager();
 
-        return new Validator(new ValidationRegistry($hooks), $hooks);
+        return new Validator(new ValidationRegistry($hooks, new PassthroughTranslator()), $hooks, new PassthroughTranslator());
     }
 }

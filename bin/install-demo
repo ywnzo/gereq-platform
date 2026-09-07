@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+# GEREQ / RealEstates — non-interactive demo instalace (SQLite + demo data).
+# Použití po rozbalení zipu:
+#   ./INSTALACE.sh
+#   ./bin/install-demo
+#   ./bin/install-demo --serve          # po instalaci spustí PHP server
+#   ./bin/install-demo --port=8080
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+PORT=8080
+DO_SERVE=0
+for arg in "$@"; do
+  case "$arg" in
+    --serve) DO_SERVE=1 ;;
+    --port=*) PORT="${arg#--port=}" ;;
+    -h|--help)
+      cat <<'EOF'
+GEREQ RealEstates — demo instalace
+
+  ./bin/install-demo [--serve] [--port=8080]
+
+Nainstaluje závislosti, vytvoří SQLite DB s demo daty (nabídky, prohlídky,
+portály, obchody…) a připraví frontend build.
+
+Po instalaci:
+  Admin:  http://127.0.0.1:PORT/admin
+  Účet:   demo@gereq.cz / demo123
+EOF
+      exit 0
+      ;;
+  esac
+done
+
+if [[ -t 1 ]]; then
+  C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'
+  C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_CYAN=$'\033[36m'; C_RED=$'\033[31m'
+else
+  C_RESET= C_BOLD= C_DIM= C_GREEN= C_YELLOW= C_CYAN= C_RED=
+fi
+
+ok()   { printf '%s✓%s %s\n' "$C_GREEN" "$C_RESET" "$*"; }
+warn() { printf '%s!%s %s\n' "$C_YELLOW" "$C_RESET" "$*"; }
+err()  { printf '%s✗%s %s\n' "$C_RED" "$C_RESET" "$*" >&2; }
+info() { printf '%s→%s %s\n' "$C_CYAN" "$C_RESET" "$*"; }
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || { err "Chybí příkaz: $1"; return 1; }
+}
+
+printf '\n%s%s GEREQ RealEstates%s — demo instalace\n\n' "$C_BOLD" "$C_CYAN" "$C_RESET"
+
+info "Kontrola závislostí…"
+need_cmd php || exit 1
+php -r 'exit(version_compare(PHP_VERSION, "8.4.0", ">=") ? 0 : 1);' \
+  || { err "Potřebujete PHP 8.4+ (máte $(php -r 'echo PHP_VERSION;'))"; exit 1; }
+ok "PHP $(php -r 'echo PHP_VERSION;')"
+
+for ext in pdo_sqlite mbstring json gd; do
+  php -m | grep -qi "^${ext}$" || { err "Chybí PHP extension: $ext"; exit 1; }
+done
+ok "PHP extensions (pdo_sqlite, mbstring, json, gd)"
+
+need_cmd composer || exit 1
+ok "Composer"
+
+JS_PKG=""
+if command -v bun >/dev/null 2>&1; then
+  JS_PKG=bun
+  ok "bun"
+elif command -v npm >/dev/null 2>&1; then
+  JS_PKG=npm
+  ok "npm"
+else
+  err "Chybí bun nebo npm (frontend build)."
+  exit 1
+fi
+
+COMPOSER_FLAGS=(--no-interaction --prefer-dist)
+# Demo běží na SQLite bez Redis — ext-redis není nutný za běhu.
+if ! php -m | grep -qi '^redis$'; then
+  warn "ext-redis chybí — composer ignore-platform-req (pro demo OK)."
+  COMPOSER_FLAGS+=(--ignore-platform-req=ext-redis)
+fi
+
+info "composer install…"
+composer install "${COMPOSER_FLAGS[@]}"
+ok "PHP závislosti"
+
+APP_KEY="$(php -r 'echo bin2hex(random_bytes(32));')"
+APP_URL="http://127.0.0.1:${PORT}"
+
+if [[ -f .env ]]; then
+  cp .env ".env.bak.$(date +%Y%m%d%H%M%S)"
+  warn "Existující .env zálohován."
+fi
+
+cat > .env <<EOF
+# GEREQ RealEstates — demo balíček ($(date -Iseconds 2>/dev/null || date))
+
+APP_NAME="RealEstates Demo"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=${APP_URL}
+APP_KEY=${APP_KEY}
+
+TRUSTED_PROXIES=*
+
+DB_CONNECTION=sqlite
+DB_DATABASE=storage/database.sqlite
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE_NAME=gereq
+DB_USERNAME=gereq
+DB_PASSWORD=demo
+
+CACHE_DRIVER=file
+CACHE_TTL=3600
+CACHE_TWIG=true
+CACHE_DOCTRINE_RESULT=true
+
+SEARCH_DRIVER=self_repair
+
+QUEUE_DRIVER=sync
+FILE_DRIVER=local
+
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+MAIL_DSN=null://null
+
+ADMIN_NAME="Demo Admin"
+ADMIN_EMAIL=demo@gereq.cz
+ADMIN_PASSWORD=demo123
+
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+SESSION_SAME_SITE=lax
+
+WEBHOOKS_ALLOW_PRIVATE_URLS=true
+
+FRONTEND_ORIGIN=http://127.0.0.1:5173,http://localhost:5173
+EOF
+ok ".env (SQLite, demo účet)"
+
+mkdir -p storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}
+chmod -R a+rwX storage 2>/dev/null || true
+: > storage/database.sqlite
+ok "Prázdný SQLite"
+
+info "Frontend ($JS_PKG)…"
+if [[ "$JS_PKG" == "bun" ]]; then
+  bun install
+  bun run build
+else
+  npm install
+  npm run build
+fi
+ok "Assets v public/build"
+
+info "Migrace + demo data (nabídky, prohlídky, portály, katalog…)…"
+php gereq migrate --fresh --no-interaction
+ok "Databáze s demo daty"
+
+printf '\n'
+printf '%s%s Hotovo — připraveno k prohlížení%s\n\n' "$C_BOLD" "$C_GREEN" "$C_RESET"
+printf '  Admin:   %s/admin\n' "$APP_URL"
+printf '  E-mail:  demo@gereq.cz\n'
+printf '  Heslo:   demo123\n'
+printf '\n'
+printf '  Spuštění:\n'
+printf '    php gereq serve --port=%s\n' "$PORT"
+printf '\n'
+
+if (( DO_SERVE )); then
+  info "Spouštím php gereq serve --port=${PORT}…"
+  exec php gereq serve --port="$PORT"
+fi

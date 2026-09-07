@@ -1,0 +1,27 @@
+{
+  "name": "work-monitor",
+  "displayName": "GEREQ Pulse",
+  "description": "GEREQ Pulse — Toggl-style time tracking z Cursoru (Timer / Day / Week). UI :8772",
+  "version": "0.3.0",
+  "publisher": "gereq",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gereq.pulse.open",
+        "title": "GEREQ Pulse: Open dashboard (:8772)"
+      },
+      {
+        "command": "gereq.pulse.reset",
+        "title": "GEREQ Pulse: Reset today's session log"
+      }
+    ]
+  }
+}

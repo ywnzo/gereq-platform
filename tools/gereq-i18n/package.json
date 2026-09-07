@@ -1,0 +1,25 @@
+{
+  "name": "i18n",
+  "displayName": "GEREQ i18n",
+  "description": "Hover, autocomplete a Go to Definition pro překladové klíče (|trans / ->trans)",
+  "version": "0.1.0",
+  "publisher": "gereq",
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:**/*.twig",
+    "workspaceContains:**/translations/*.php"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gereq.i18n.reindex",
+        "title": "GEREQ i18n: Reindex translations (.cache/i18n)"
+      }
+    ]
+  }
+}

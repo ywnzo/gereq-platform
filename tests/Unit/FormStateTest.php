@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Tests\Unit;
 
 use Gereq\Http\FormState;
+use Gereq\Tests\Support\PassthroughTranslator;
 use Gereq\Validation\ValidationException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -43,7 +44,7 @@ final class FormStateTest extends TestCase
         $request->setSession($session);
         $stack = new RequestStack();
         $stack->push($request);
-        $state = new FormState($stack);
+        $state = new FormState($stack, new PassthroughTranslator());
 
         $response = $state->respond($request, new ValidationException(
             ['name' => 'Toto pole je povinné.'],
@@ -63,6 +64,6 @@ final class FormStateTest extends TestCase
         $stack = new RequestStack();
         $stack->push($request);
 
-        return new FormState($stack);
+        return new FormState($stack, new PassthroughTranslator());
     }
 }

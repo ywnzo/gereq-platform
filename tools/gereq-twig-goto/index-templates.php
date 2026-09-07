@@ -32,7 +32,7 @@ $globals = [
     'user' => ['class' => 'Gereq\\User\\Entity\\User', 'array' => false],
 ];
 
-/** @var array<string, array<string, array{class: string, array: bool}>> $index */
+/** @var array<string, array<string, array{class: string, array: bool, shape?: array<string, string>}>> $index */
 $index = [];
 
 $phpFiles = array_merge(
@@ -59,8 +59,10 @@ foreach ($phpFiles as $file) {
     $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
     $ast = $traverser->traverse($ast);
 
+    $uses = collectUses($ast, $finder);
     $docTypes = collectVarDocs($code, $ast, $finder);
     $methodReturns = collectMethodReturns($code, $ast, $finder);
+    $propTypes = collectPropertyTypes($ast, $finder);
     $calls = $finder->find($ast, static function (Node $node): bool {
         if (!$node instanceof Node\Expr\MethodCall || !$node->name instanceof Node\Identifier) {
             return false;
@@ -84,18 +86,39 @@ foreach ($phpFiles as $file) {
             continue;
         }
 
+        $method = findEnclosingMethod($ast, $call, $finder);
+        $locals = $docTypes;
+        $qbEntities = [];
+        if ($method !== null) {
+            [$locals, $qbEntities] = collectLocalTypes(
+                $method,
+                $docTypes,
+                $methodReturns,
+                $propTypes,
+                $uses,
+            );
+        }
+
+        $ctx = [
+            'locals' => $locals,
+            'methodReturns' => $methodReturns,
+            'propTypes' => $propTypes,
+            'qbEntities' => $qbEntities,
+            'uses' => $uses,
+        ];
+
         $vars = $globals;
         if (isset($call->args[1])) {
-            foreach (extractArrayKeys($call->args[1]->value, $docTypes, $methodReturns) as $name => $type) {
+            foreach (extractArrayKeys($call->args[1]->value, $ctx) as $name => $type) {
                 $vars[$name] = $type;
             }
         }
         if ($call->name->toString() === 'page') {
-            $vars = array_merge($vars, $globals);
+            $vars = mergeTemplateVars($vars, $globals);
         }
 
         $rel = relativePath($basePath, $template);
-        $index[$rel] = array_merge($index[$rel] ?? [], $vars);
+        $index[$rel] = mergeTemplateVars($index[$rel] ?? [], $vars);
     }
 }
 
@@ -140,7 +163,7 @@ $classes = [];
 foreach ($index as $vars) {
     foreach ($vars as $meta) {
         $fqcn = $meta['class'];
-        if (isScalarClass($fqcn) || isset($classes[$fqcn])) {
+        if (isScalarClass($fqcn) || isset($classes[$fqcn]) || str_starts_with($fqcn, 'array{')) {
             continue;
         }
         $classes[$fqcn] = reflectClass($fqcn);
@@ -182,7 +205,7 @@ fwrite(STDOUT, 'Indexed ' . count($index) . ' templates, ' . count($classes) . "
 fwrite(STDOUT, "Stubs: {$stubs} in .cache/twig/vars/; removed type blocks from {$stripped} templates\n");
 
 /**
- * @param array<string, array{class: string, array: bool}> $vars
+ * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $vars
  */
 function writeStubFile(string $varsDir, string $rel, array $vars): bool
 {
@@ -366,22 +389,401 @@ function collectMethodReturns(string $code, array $ast, NodeFinder $finder): arr
 
     foreach ($finder->findInstanceOf($ast, Node\Stmt\ClassMethod::class) as $method) {
         /** @var Node\Stmt\ClassMethod $method */
+        $name = $method->name->toString();
+
         $doc = $method->getDocComment()?->getText() ?? '';
-        if ($doc === '' || !preg_match('/@return\s+(\S+(?:\{[^}]*\})?)/', $doc, $m)) {
-            continue;
-        }
-        // rozšířit match pro list<array{...}>
-        if (preg_match('/@return\s+(.+?)(?:\n|\*\/)/', $doc, $m2)) {
+        if ($doc !== '' && preg_match('/@return\s+(.+?)(?:\n|\*\/)/', $doc, $m2)) {
             $raw = trim(preg_replace('/\s+/', ' ', $m2[1]) ?? $m2[1]);
             $raw = rtrim($raw, ' */');
             $parsed = parsePhpDocType($raw, $uses);
             if ($parsed !== null) {
-                $returns[$method->name->toString()] = $parsed;
+                $returns[$name] = $parsed;
+                continue;
+            }
+        }
+
+        if ($method->returnType !== null) {
+            $parsed = typeNodeToType($method->returnType, $uses);
+            if ($parsed !== null) {
+                $returns[$name] = $parsed;
             }
         }
     }
 
     return $returns;
+}
+
+/**
+ * Promoted ctor props + typed properties → $this->foo typy.
+ *
+ * @return array<string, array{class: string, array: bool}>
+ */
+function collectPropertyTypes(array $ast, NodeFinder $finder): array
+{
+    $uses = collectUses($ast, $finder);
+    $props = [];
+
+    foreach ($finder->findInstanceOf($ast, Node\Stmt\ClassMethod::class) as $method) {
+        /** @var Node\Stmt\ClassMethod $method */
+        if ($method->name->toString() !== '__construct') {
+            continue;
+        }
+        foreach ($method->params as $param) {
+            if ($param->flags === 0 || $param->var->name === null || !is_string($param->var->name)) {
+                continue;
+            }
+            if ($param->type === null) {
+                continue;
+            }
+            $parsed = typeNodeToType($param->type, $uses);
+            if ($parsed !== null) {
+                $props[$param->var->name] = $parsed;
+            }
+        }
+    }
+
+    foreach ($finder->findInstanceOf($ast, Node\Stmt\Property::class) as $prop) {
+        /** @var Node\Stmt\Property $prop */
+        if ($prop->type === null) {
+            continue;
+        }
+        $parsed = typeNodeToType($prop->type, $uses);
+        if ($parsed === null) {
+            continue;
+        }
+        foreach ($prop->props as $p) {
+            $props[$p->name->toString()] = $parsed;
+        }
+    }
+
+    return $props;
+}
+
+/**
+ * @param array<string, string> $uses
+ * @return array{class: string, array: bool}|null
+ */
+function typeNodeToType(Node $type, array $uses): ?array
+{
+    if ($type instanceof Node\NullableType) {
+        return typeNodeToType($type->type, $uses);
+    }
+    if ($type instanceof Node\UnionType) {
+        foreach ($type->types as $part) {
+            if ($part instanceof Node\Identifier && strtolower($part->toString()) === 'null') {
+                continue;
+            }
+            $parsed = typeNodeToType($part, $uses);
+            if ($parsed !== null && !isScalarClass($parsed['class'])) {
+                return $parsed;
+            }
+        }
+        foreach ($type->types as $part) {
+            $parsed = typeNodeToType($part, $uses);
+            if ($parsed !== null) {
+                return $parsed;
+            }
+        }
+
+        return null;
+    }
+    if ($type instanceof Node\Identifier) {
+        $name = $type->toString();
+        if (isScalarClass($name)) {
+            return ['class' => $name, 'array' => false];
+        }
+
+        return null;
+    }
+    if ($type instanceof Node\Name) {
+        $raw = $type->toString();
+        if (!$type->isFullyQualified() && !str_contains($raw, '\\') && isset($uses[$raw])) {
+            $raw = $uses[$raw];
+        }
+        $raw = ltrim($raw, '\\');
+        if ($raw === '' || isScalarClass($raw)) {
+            return isScalarClass($raw) ? ['class' => $raw, 'array' => false] : null;
+        }
+
+        return ['class' => $raw, 'array' => false];
+    }
+
+    return null;
+}
+
+/**
+ * Najdi ClassMethod obsahující $call podle pozice v AST souboru.
+ */
+function findEnclosingMethod(array $ast, Node\Expr\MethodCall $call, NodeFinder $finder): ?Node\Stmt\ClassMethod
+{
+    $callStart = $call->getStartFilePos();
+    $callEnd = $call->getEndFilePos();
+    if ($callStart < 0) {
+        return null;
+    }
+    foreach ($finder->findInstanceOf($ast, Node\Stmt\ClassMethod::class) as $method) {
+        /** @var Node\Stmt\ClassMethod $method */
+        $ms = $method->getStartFilePos();
+        $me = $method->getEndFilePos();
+        if ($ms <= $callStart && $callEnd <= $me) {
+            return $method;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $docTypes
+ * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $methodReturns
+ * @param array<string, array{class: string, array: bool}> $propTypes
+ * @param array<string, string> $uses
+ * @return array{0: array<string, array{class: string, array: bool, shape?: array<string, string>}>, 1: array<string, string>}
+ */
+function collectLocalTypes(
+    Node\Stmt\ClassMethod $method,
+    array $docTypes,
+    array $methodReturns,
+    array $propTypes,
+    array $uses,
+): array {
+    $locals = $docTypes;
+    $qbEntities = [];
+    $ctx = [
+        'locals' => &$locals,
+        'methodReturns' => $methodReturns,
+        'propTypes' => $propTypes,
+        'qbEntities' => &$qbEntities,
+        'uses' => $uses,
+    ];
+
+    $stmts = $method->stmts ?? [];
+    foreach (flattenStatements($stmts) as $stmt) {
+        if (!$stmt instanceof Node\Expr\Assign) {
+            continue;
+        }
+        if (!$stmt->var instanceof Node\Expr\Variable || !is_string($stmt->var->name)) {
+            continue;
+        }
+        $varName = $stmt->var->name;
+
+        $repoEntity = extractRepositoryEntity($stmt->expr, $uses);
+        if ($repoEntity !== null && isQueryBuilderLike($stmt->expr)) {
+            $qbEntities[$varName] = $repoEntity;
+        }
+
+        // $items = $qb->...->getResult()
+        $fromQb = entityFromGetResult($stmt->expr, $qbEntities, $uses);
+        if ($fromQb !== null) {
+            $locals[$varName] = ['class' => $fromQb, 'array' => true];
+            continue;
+        }
+
+        // $x = $this->em->getRepository(Foo::class)->find* / findAll
+        $fromRepo = entityFromRepositoryCall($stmt->expr, $uses);
+        if ($fromRepo !== null) {
+            $locals[$varName] = $fromRepo;
+            continue;
+        }
+
+        // $x = $this->em->find(Foo::class, ...)
+        $fromFind = entityFromEmFind($stmt->expr, $uses);
+        if ($fromFind !== null) {
+            $locals[$varName] = $fromFind;
+            continue;
+        }
+
+        $type = inferExprType($stmt->expr, $ctx);
+        if ($type !== null) {
+            $locals[$varName] = $type;
+        }
+    }
+
+    return [$locals, $qbEntities];
+}
+
+/**
+ * @param list<Node\Stmt> $stmts
+ * @return list<Node>
+ */
+function flattenStatements(array $stmts): array
+{
+    $out = [];
+    foreach ($stmts as $stmt) {
+        $out[] = $stmt;
+        if ($stmt instanceof Node\Stmt\Expression) {
+            $out[] = $stmt->expr;
+        }
+        if ($stmt instanceof Node\Stmt\If_) {
+            $out = array_merge($out, flattenStatements($stmt->stmts));
+            foreach ($stmt->elseifs as $elseif) {
+                $out = array_merge($out, flattenStatements($elseif->stmts));
+            }
+            if ($stmt->else !== null) {
+                $out = array_merge($out, flattenStatements($stmt->else->stmts));
+            }
+        }
+        if ($stmt instanceof Node\Stmt\Foreach_) {
+            $out = array_merge($out, flattenStatements($stmt->stmts));
+        }
+        if ($stmt instanceof Node\Stmt\TryCatch) {
+            $out = array_merge($out, flattenStatements($stmt->stmts));
+            foreach ($stmt->catches as $catch) {
+                $out = array_merge($out, flattenStatements($catch->stmts));
+            }
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * @param array<string, string> $uses
+ */
+function resolveNameNode(Node\Expr|Node\Name $name, array $uses): ?string
+{
+    if ($name instanceof Node\Expr\ClassConstFetch) {
+        if (!$name->class instanceof Node\Name) {
+            return null;
+        }
+        if (!$name->name instanceof Node\Identifier || strtolower($name->name->toString()) !== 'class') {
+            return null;
+        }
+        $raw = $name->class->toString();
+        if (!$name->class->isFullyQualified() && !str_contains($raw, '\\') && isset($uses[$raw])) {
+            $raw = $uses[$raw];
+        }
+
+        return ltrim($raw, '\\');
+    }
+    if ($name instanceof Node\Name) {
+        $raw = $name->toString();
+        if (!$name->isFullyQualified() && !str_contains($raw, '\\') && isset($uses[$raw])) {
+            $raw = $uses[$raw];
+        }
+
+        return ltrim($raw, '\\');
+    }
+
+    return null;
+}
+
+/**
+ * @param array<string, string> $uses
+ */
+function extractRepositoryEntity(Node\Expr $expr, array $uses): ?string
+{
+    $cur = $expr;
+    while ($cur instanceof Node\Expr\MethodCall) {
+        if ($cur->name instanceof Node\Identifier && $cur->name->toString() === 'getRepository') {
+            if (isset($cur->args[0])) {
+                return resolveNameNode($cur->args[0]->value, $uses);
+            }
+
+            return null;
+        }
+        $cur = $cur->var;
+    }
+
+    return null;
+}
+
+function isQueryBuilderLike(Node\Expr $expr): bool
+{
+    $cur = $expr;
+    while ($cur instanceof Node\Expr\MethodCall) {
+        if ($cur->name instanceof Node\Identifier) {
+            $n = $cur->name->toString();
+            if (in_array($n, ['createQueryBuilder', 'createQuery'], true)) {
+                return true;
+            }
+        }
+        $cur = $cur->var;
+    }
+
+    return false;
+}
+
+/**
+ * @param array<string, string> $qbEntities
+ * @param array<string, string> $uses
+ */
+function entityFromGetResult(Node\Expr $expr, array $qbEntities, array $uses = []): ?string
+{
+    if (!$expr instanceof Node\Expr\MethodCall || !$expr->name instanceof Node\Identifier) {
+        return null;
+    }
+    $name = $expr->name->toString();
+
+    // $qb->...->getQuery()->getResult() / getOneOrNullResult()
+    if (
+        in_array($name, ['getResult', 'getArrayResult', 'getOneOrNullResult', 'getSingleResult', 'execute'], true)
+        && $expr->var instanceof Node\Expr\MethodCall
+        && $expr->var->name instanceof Node\Identifier
+        && $expr->var->name->toString() === 'getQuery'
+    ) {
+        $expr = $expr->var; // continue unwrap from getQuery()
+    } elseif (!in_array($name, ['getResult', 'getArrayResult', 'execute'], true)) {
+        return null;
+    }
+
+    // unwrap chain to root variable
+    $cur = $expr instanceof Node\Expr\MethodCall ? $expr->var : $expr;
+    while ($cur instanceof Node\Expr\MethodCall) {
+        $cur = $cur->var;
+    }
+    if ($cur instanceof Node\Expr\Variable && is_string($cur->name) && isset($qbEntities[$cur->name])) {
+        return $qbEntities[$cur->name];
+    }
+
+    return extractRepositoryEntity($expr, $uses);
+}
+
+/**
+ * @param array<string, string> $uses
+ * @return array{class: string, array: bool}|null
+ */
+function entityFromRepositoryCall(Node\Expr $expr, array $uses): ?array
+{
+    if (!$expr instanceof Node\Expr\MethodCall || !$expr->name instanceof Node\Identifier) {
+        return null;
+    }
+    $method = $expr->name->toString();
+    $single = ['find', 'findOneBy', 'getReference', 'getPartialReference'];
+    $many = ['findBy', 'findAll', 'matching'];
+    if (!in_array($method, [...$single, ...$many], true)) {
+        return null;
+    }
+    $entity = extractRepositoryEntity($expr, $uses);
+    if ($entity === null) {
+        return null;
+    }
+
+    return ['class' => $entity, 'array' => in_array($method, $many, true)];
+}
+
+/**
+ * @param array<string, string> $uses
+ * @return array{class: string, array: bool}|null
+ */
+function entityFromEmFind(Node\Expr $expr, array $uses): ?array
+{
+    if (!$expr instanceof Node\Expr\MethodCall || !$expr->name instanceof Node\Identifier) {
+        return null;
+    }
+    if ($expr->name->toString() !== 'find' || !isset($expr->args[0])) {
+        return null;
+    }
+    // $this->em->find(Foo::class, $id)
+    if (!$expr->var instanceof Node\Expr\PropertyFetch) {
+        return null;
+    }
+    $entity = resolveNameNode($expr->args[0]->value, $uses);
+    if ($entity === null) {
+        return null;
+    }
+
+    return ['class' => $entity, 'array' => false];
 }
 
 /**
@@ -482,11 +884,16 @@ function parseArrayShape(string $raw): array
 }
 
 /**
- * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $docTypes
- * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $methodReturns
+ * @param array{
+ *   locals: array<string, array{class: string, array: bool, shape?: array<string, string>}>,
+ *   methodReturns: array<string, array{class: string, array: bool, shape?: array<string, string>}>,
+ *   propTypes: array<string, array{class: string, array: bool}>,
+ *   qbEntities: array<string, string>,
+ *   uses: array<string, string>
+ * } $ctx
  * @return array<string, array{class: string, array: bool, shape?: array<string, string>}>
  */
-function extractArrayKeys(Node\Expr $expr, array $docTypes, array $methodReturns = []): array
+function extractArrayKeys(Node\Expr $expr, array $ctx): array
 {
     $out = [];
 
@@ -495,7 +902,7 @@ function extractArrayKeys(Node\Expr $expr, array $docTypes, array $methodReturns
             if ($item === null || !$item->key instanceof Node\Scalar\String_) {
                 continue;
             }
-            $type = inferExprType($item->value, $docTypes, $methodReturns);
+            $type = inferExprType($item->value, $ctx);
             if ($type !== null) {
                 $out[$item->key->value] = $type;
             }
@@ -509,7 +916,7 @@ function extractArrayKeys(Node\Expr $expr, array $docTypes, array $methodReturns
         && $expr->name->toString() === 'array_merge'
     ) {
         foreach ($expr->args as $arg) {
-            foreach (extractArrayKeys($arg->value, $docTypes, $methodReturns) as $k => $v) {
+            foreach (extractArrayKeys($arg->value, $ctx) as $k => $v) {
                 $out[$k] = $v;
             }
         }
@@ -519,29 +926,88 @@ function extractArrayKeys(Node\Expr $expr, array $docTypes, array $methodReturns
 }
 
 /**
- * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $docTypes
- * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $methodReturns
+ * @param array{
+ *   locals: array<string, array{class: string, array: bool, shape?: array<string, string>}>,
+ *   methodReturns: array<string, array{class: string, array: bool, shape?: array<string, string>}>,
+ *   propTypes: array<string, array{class: string, array: bool}>,
+ *   qbEntities: array<string, string>,
+ *   uses: array<string, string>
+ * } $ctx
  * @return array{class: string, array: bool, shape?: array<string, string>}|null
  */
-function inferExprType(Node\Expr $expr, array $docTypes, array $methodReturns = []): ?array
+function inferExprType(Node\Expr $expr, array $ctx): ?array
 {
+    $locals = $ctx['locals'];
+    $methodReturns = $ctx['methodReturns'];
+    $propTypes = $ctx['propTypes'];
+    $uses = $ctx['uses'];
+
     if ($expr instanceof Node\Expr\Variable && is_string($expr->name)) {
-        return $docTypes[$expr->name] ?? (
-            // heuristika: $search, $q → string
+        return $locals[$expr->name] ?? (
             in_array($expr->name, ['search', 'q', 'query', 'pageTitle', 'title'], true)
                 ? ['class' => 'string', 'array' => false]
                 : null
         );
     }
     if ($expr instanceof Node\Expr\New_ && $expr->class instanceof Node\Name) {
-        return ['class' => $expr->class->toString(), 'array' => false];
+        $raw = $expr->class->toString();
+        if (!$expr->class->isFullyQualified() && !str_contains($raw, '\\') && isset($uses[$raw])) {
+            $raw = $uses[$raw];
+        }
+
+        return ['class' => ltrim($raw, '\\'), 'array' => false];
+    }
+    if ($expr instanceof Node\Expr\Ternary) {
+        // $x instanceof Foo ? $x : null  — jen když if-větev je stejná proměnná
+        if (
+            $expr->cond instanceof Node\Expr\Instanceof_
+            && $expr->cond->class instanceof Node\Name
+            && $expr->cond->expr instanceof Node\Expr\Variable
+            && is_string($expr->cond->expr->name)
+            && $expr->if instanceof Node\Expr\Variable
+            && $expr->if->name === $expr->cond->expr->name
+        ) {
+            $raw = $expr->cond->class->toString();
+            if (!$expr->cond->class->isFullyQualified() && !str_contains($raw, '\\') && isset($uses[$raw])) {
+                $raw = $uses[$raw];
+            }
+
+            return ['class' => ltrim($raw, '\\'), 'array' => false];
+        }
+        $ifType = $expr->if !== null ? inferExprType($expr->if, $ctx) : null;
+        if ($ifType !== null && !isScalarClass($ifType['class'])) {
+            return $ifType;
+        }
+        $elseType = inferExprType($expr->else, $ctx);
+        if ($elseType !== null && !isScalarClass($elseType['class'])) {
+            return $elseType;
+        }
+
+        return $ifType ?? $elseType;
+    }
+    if ($expr instanceof Node\Expr\BinaryOp\Coalesce) {
+        return inferExprType($expr->left, $ctx) ?? inferExprType($expr->right, $ctx);
     }
     if ($expr instanceof Node\Expr\MethodCall && $expr->name instanceof Node\Identifier) {
         $method = $expr->name->toString();
         if ($method === 'user') {
             return ['class' => 'Gereq\\User\\Entity\\User', 'array' => false];
         }
-        // $this->latestCnbRates()
+
+        $fromRepo = entityFromRepositoryCall($expr, $uses);
+        if ($fromRepo !== null) {
+            return $fromRepo;
+        }
+        $fromFind = entityFromEmFind($expr, $uses);
+        if ($fromFind !== null) {
+            return $fromFind;
+        }
+        $fromQb = entityFromGetResult($expr, $ctx['qbEntities'], $uses);
+        if ($fromQb !== null) {
+            return ['class' => $fromQb, 'array' => true];
+        }
+
+        // $this->latestCnbRates() / private helpers in same class
         if (
             $expr->var instanceof Node\Expr\Variable
             && $expr->var->name === 'this'
@@ -549,10 +1015,226 @@ function inferExprType(Node\Expr $expr, array $docTypes, array $methodReturns = 
         ) {
             return $methodReturns[$method];
         }
+
+        // $this->bikeservice->getBike($id) — property + reflection
+        if ($expr->var instanceof Node\Expr\PropertyFetch
+            && $expr->var->var instanceof Node\Expr\Variable
+            && $expr->var->var->name === 'this'
+            && $expr->var->name instanceof Node\Identifier
+        ) {
+            $prop = $expr->var->name->toString();
+            if (isset($propTypes[$prop])) {
+                $reflected = reflectMethodReturn($propTypes[$prop]['class'], $method);
+                if ($reflected !== null) {
+                    return $reflected;
+                }
+            }
+        }
+
+        // $customer->email() — metoda na lokální typované proměnné
+        if ($expr->var instanceof Node\Expr\Variable && is_string($expr->var->name)) {
+            $obj = $locals[$expr->var->name] ?? null;
+            if ($obj !== null && !isScalarClass($obj['class']) && empty($obj['array'])) {
+                $reflected = reflectMethodReturn($obj['class'], $method);
+                if ($reflected !== null) {
+                    return $reflected;
+                }
+            }
+        }
+
+        // $this->orderForBranchMutate($id) — native/@return na metodě ve stejné třídě
+        if ($expr->var instanceof Node\Expr\Variable && $expr->var->name === 'this') {
+            if (isset($methodReturns[$method])) {
+                return $methodReturns[$method];
+            }
+        }
+    }
+    if ($expr instanceof Node\Expr\ClassConstFetch && $expr->class instanceof Node\Name) {
+        // Foo::STATUSES / KINDS — typicky list stringů
+        if ($expr->name instanceof Node\Identifier) {
+            $const = $expr->name->toString();
+            if (in_array($const, ['STATUSES', 'KINDS', 'TYPES', 'TEAMS', 'PAYMENT_TYPES', 'FUEL_LEVELS'], true)) {
+                return ['class' => 'string', 'array' => true];
+            }
+        }
     }
     if ($expr instanceof Node\Scalar\String_) {
         return ['class' => 'string', 'array' => false];
     }
+    if ($expr instanceof Node\Scalar\LNumber || $expr instanceof Node\Scalar\DNumber) {
+        return ['class' => $expr instanceof Node\Scalar\LNumber ? 'int' : 'float', 'array' => false];
+    }
+    if ($expr instanceof Node\Expr\ConstFetch && $expr->name instanceof Node\Name) {
+        $n = strtolower($expr->name->toString());
+        if ($n === 'true' || $n === 'false') {
+            return ['class' => 'bool', 'array' => false];
+        }
+        if ($n === 'null') {
+            return null;
+        }
+    }
 
     return null;
+}
+
+/**
+ * @return array{class: string, array: bool, shape?: array<string, string>}|null
+ */
+function reflectMethodReturn(?string $fqcn, string $method): ?array
+{
+    if ($fqcn === null || $fqcn === '' || isScalarClass($fqcn)) {
+        return null;
+    }
+    $fqcn = ltrim($fqcn, '\\');
+    try {
+        if (!class_exists($fqcn) && !interface_exists($fqcn)) {
+            return null;
+        }
+        $ref = new ReflectionClass($fqcn);
+        if (!$ref->hasMethod($method)) {
+            return null;
+        }
+        $m = $ref->getMethod($method);
+        $nsUses = reflectionFileUses($m->getFileName() ?: null, $ref->getNamespaceName());
+
+        $doc = $m->getDocComment() ?: '';
+        if ($doc !== '' && preg_match('/@return\s+(.+?)(?:\n|\*\/)/', $doc, $m2)) {
+            $raw = trim(preg_replace('/\s+/', ' ', $m2[1]) ?? $m2[1]);
+            $raw = rtrim($raw, ' */');
+            $parsed = parsePhpDocType($raw, $nsUses);
+            if ($parsed !== null) {
+                return qualifyType($parsed, $ref->getNamespaceName());
+            }
+        }
+        if ($m->hasReturnType()) {
+            $rt = $m->getReturnType();
+            if ($rt instanceof ReflectionNamedType) {
+                $name = $rt->getName();
+                if ($name === 'void' || $name === 'null') {
+                    return null;
+                }
+                if ($name === 'array') {
+                    return null; // bez generics neuhádneme
+                }
+                if (in_array($name, ['string', 'int', 'float', 'bool', 'mixed', 'iterable', 'object', 'callable'], true)) {
+                    return ['class' => $name, 'array' => false];
+                }
+
+                return ['class' => ltrim($name, '\\'), 'array' => false];
+            }
+            if ($rt instanceof ReflectionUnionType) {
+                foreach ($rt->getTypes() as $part) {
+                    if (!$part instanceof ReflectionNamedType || $part->getName() === 'null') {
+                        continue;
+                    }
+                    $name = $part->getName();
+                    if ($name === 'array' || isScalarClass($name)) {
+                        continue;
+                    }
+
+                    return ['class' => ltrim($name, '\\'), 'array' => false];
+                }
+            }
+        }
+    } catch (\Throwable) {
+        return null;
+    }
+
+    return null;
+}
+
+/**
+ * @return array<string, string>
+ */
+function reflectionFileUses(?string $file, string $namespace): array
+{
+    $uses = [];
+    if ($file === null || !is_file($file)) {
+        return $uses;
+    }
+    $code = file_get_contents($file);
+    if ($code === false) {
+        return $uses;
+    }
+    if (preg_match_all('/^use\s+([^;]+);/m', $code, $matches)) {
+        foreach ($matches[1] as $use) {
+            $use = trim($use);
+            if (str_contains($use, '{') || str_starts_with($use, 'function ') || str_starts_with($use, 'const ')) {
+                continue;
+            }
+            if (preg_match('/^(.+?)\s+as\s+(\w+)$/', $use, $m)) {
+                $uses[$m[2]] = ltrim($m[1], '\\');
+            } else {
+                $parts = explode('\\', $use);
+                $uses[end($parts)] = ltrim($use, '\\');
+            }
+        }
+    }
+    // same-namespace short names resolve later via qualifyType
+    $uses['__NAMESPACE__'] = $namespace;
+
+    return $uses;
+}
+
+/**
+ * @param array{class: string, array: bool, shape?: array<string, string>} $type
+ * @return array{class: string, array: bool, shape?: array<string, string>}
+ */
+function qualifyType(array $type, string $namespace): array
+{
+    $class = $type['class'];
+    if (isScalarClass($class) || str_contains($class, '\\') || str_starts_with($class, 'array{')) {
+        return $type;
+    }
+    $candidate = $namespace !== '' ? $namespace . '\\' . $class : $class;
+    if (class_exists($candidate) || interface_exists($candidate)) {
+        $type['class'] = $candidate;
+    }
+
+    return $type;
+}
+
+/**
+ * Preferuj konkrétní class typ před chybějícím / skalárem při merge více page() volání.
+ *
+ * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $base
+ * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $overlay
+ * @return array<string, array{class: string, array: bool, shape?: array<string, string>}>
+ */
+function mergeTemplateVars(array $base, array $overlay): array
+{
+    foreach ($overlay as $name => $type) {
+        if (!isset($base[$name])) {
+            $base[$name] = $type;
+            continue;
+        }
+        $base[$name] = preferType($base[$name], $type);
+    }
+
+    return $base;
+}
+
+/**
+ * @param array{class: string, array: bool, shape?: array<string, string>} $a
+ * @param array{class: string, array: bool, shape?: array<string, string>} $b
+ * @return array{class: string, array: bool, shape?: array<string, string>}
+ */
+function preferType(array $a, array $b): array
+{
+    $score = static function (array $t): int {
+        $s = 0;
+        if (!isScalarClass($t['class']) && !str_starts_with($t['class'], 'array{')) {
+            $s += 10;
+        }
+        if (!empty($t['shape'])) {
+            $s += 5;
+        }
+        if (!empty($t['array'])) {
+            $s += 1;
+        }
+
+        return $s;
+    };
+
+    return $score($b) >= $score($a) ? $b : $a;
 }

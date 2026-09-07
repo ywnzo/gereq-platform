@@ -37,6 +37,34 @@ let psr4 = {};
 /** @type {{ appendLine: Function }} */
 let log = { appendLine() {} };
 
+/** @type {Set<string>} */
+const openedLogged = new Set();
+/** @type {number} */
+let lastCompletionLog = 0;
+
+function ts() {
+  return new Date().toISOString().slice(11, 23);
+}
+
+function lsp(method, detail) {
+  log.appendLine(`[${ts()}] ${method}${detail ? `  ${detail}` : ''}`);
+}
+
+function typeLabel(t) {
+  if (!t) {
+    return 'null';
+  }
+  if (t.shape) {
+    const keys = Object.keys(t.shape).join(', ');
+    return t.array ? `array{${keys}}[]` : `array{${keys}}`;
+  }
+  return `${t.class}${t.array ? '[]' : ''}`;
+}
+
+function relPath(workspaceRoot, document) {
+  return path.relative(workspaceRoot, document.uri.fsPath).replace(/\\/g, '/');
+}
+
 function cachePath(root) {
   const primary = path.join(root, '.cache', 'twig', 'types.json');
   if (fs.existsSync(primary)) {
@@ -61,7 +89,7 @@ function loadPsr4(workspaceRoot) {
     }
     psr4 = out;
   } catch (e) {
-    log.appendLine(`psr-4: ${e}`);
+    lsp('workspace/configuration', `psr-4: ${e}`);
     psr4 = {};
   }
 }
@@ -77,28 +105,65 @@ function rebuildIndex(workspaceRoot) {
 function loadIndex(workspaceRoot) {
   const file = cachePath(workspaceRoot);
   if (!fs.existsSync(file)) {
+    lsp('workspace/index', 'cache missing → rebuild');
     try {
       rebuildIndex(workspaceRoot);
     } catch (e) {
-      log.appendLine(`rebuild: ${e}`);
+      lsp('workspace/index', `rebuild failed: ${e}`);
     }
   }
   if (!fs.existsSync(file)) {
     templateIndex = {};
     classIndex = {};
+    lsp('workspace/index', 'empty (no cache)');
     return;
   }
   try {
     const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
     templateIndex = raw.templates || {};
     classIndex = raw.classes || {};
-    log.appendLine(
-      `index: ${Object.keys(templateIndex).length} templates, ${Object.keys(classIndex).length} classes`,
+    lsp(
+      'workspace/index',
+      `${Object.keys(templateIndex).length} templates, ${Object.keys(classIndex).length} classes ← ${path.relative(workspaceRoot, file)}`,
     );
+    if (raw.generated_at) {
+      lsp('workspace/index', `generated_at ${raw.generated_at}`);
+    }
   } catch (e) {
-    log.appendLine(`read index: ${e}`);
+    lsp('workspace/index', `read failed: ${e}`);
     templateIndex = {};
     classIndex = {};
+  }
+}
+
+/**
+ * Při otevření Twig souboru — dump známých typů (jako textDocument/didOpen).
+ */
+function onTwigOpened(document, workspaceRoot) {
+  if (!document.fileName.endsWith('.twig')) {
+    return;
+  }
+  const rel = relPath(workspaceRoot, document);
+  if (openedLogged.has(rel)) {
+    return;
+  }
+  openedLogged.add(rel);
+
+  const vars = varsForDocument(document, workspaceRoot);
+  const keys = Object.keys(vars);
+  const inIndex = !!templateIndex[rel];
+
+  lsp('textDocument/didOpen', rel);
+  lsp(
+    '  → types',
+    `${keys.length} vars${inIndex ? ' (from index)' : ' (document/@var only — not in .cache)'}`,
+  );
+  const preview = keys.slice(0, 12).map((k) => `${k}: ${typeLabel(vars[k])}`);
+  if (preview.length) {
+    lsp('  →', preview.join(', '));
+  }
+  if (keys.length > 12) {
+    lsp('  →', `… +${keys.length - 12} more`);
   }
 }
 
@@ -135,7 +200,17 @@ function varsForDocument(document, workspaceRoot) {
   while ((fm = forRe.exec(text))) {
     const [, loopVar, collection] = fm;
     if (!merged[loopVar] && merged[collection]) {
-      merged[loopVar] = { class: merged[collection].class, array: false };
+      merged[loopVar] = {
+        class: merged[collection].class,
+        array: false,
+        ...(merged[collection].shape ? { shape: merged[collection].shape } : {}),
+      };
+      if (
+        merged[collection].class === 'array'
+        || String(merged[collection].class).startsWith('array{')
+      ) {
+        merged[loopVar].class = 'array';
+      }
     }
   }
   return merged;
@@ -433,7 +508,7 @@ function cursorContext(document, position) {
 function activate(context) {
   log = vscode.window.createOutputChannel('GEREQ Twig Goto');
   context.subscriptions.push(log);
-  log.appendLine('activate');
+  lsp('initialize', 'GEREQ Twig IDE');
 
   const root = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
@@ -463,10 +538,15 @@ function activate(context) {
           'TwigRuntime.php',
         );
         if (!fs.existsSync(runtimeUri.fsPath)) {
+          lsp('textDocument/definition', `${fn.word}() → TwigRuntime missing`);
           return null;
         }
         const source = fs.readFileSync(runtimeUri.fsPath, 'utf8');
         const pos = findMethodPosition(source, method);
+        lsp(
+          'textDocument/definition',
+          `${fn.word}() → TwigRuntime::${method} ${pos ? 'ok' : 'miss'}`,
+        );
         return pos
           ? new vscode.Location(runtimeUri, new vscode.Position(pos.line, pos.character))
           : null;
@@ -481,16 +561,28 @@ function activate(context) {
       if (ctx.kind === 'member') {
         const t = resolveVarType(document, position, ctx.object, vars);
         if (!t || SCALAR.has(t.class.toLowerCase())) {
+          lsp('textDocument/definition', `${ctx.object}.${ctx.member} → unresolved`);
           return null;
         }
-        return locationFor(workspaceRoot, t.class, ctx.member || null);
+        const loc = locationFor(workspaceRoot, t.class, ctx.member || null);
+        lsp(
+          'textDocument/definition',
+          `${ctx.object}.${ctx.member}: ${typeLabel(t)} → ${loc ? 'ok' : 'miss'}`,
+        );
+        return loc;
       }
 
       const t = resolveVarType(document, position, ctx.name, vars);
       if (!t || SCALAR.has(t.class.toLowerCase())) {
+        lsp('textDocument/definition', `${ctx.name} → unresolved`);
         return null;
       }
-      return locationFor(workspaceRoot, t.class, null);
+      const loc = locationFor(workspaceRoot, t.class, null);
+      lsp(
+        'textDocument/definition',
+        `${ctx.name}: ${typeLabel(t)} → ${loc ? 'ok' : 'miss'}`,
+      );
+      return loc;
     },
   };
 
@@ -516,6 +608,10 @@ function activate(context) {
         }
         if (isShapeType(t)) {
           const key = (t.shape && t.shape[ctx.member]) || null;
+          lsp(
+            'textDocument/hover',
+            `${ctx.object}.${ctx.member} shape → ${key || 'unknown'}`,
+          );
           if (!key) {
             const md = new vscode.MarkdownString(undefined, true);
             md.appendMarkdown(`Neznámý klíč \`${ctx.member}\` v poli`);
@@ -534,10 +630,18 @@ function activate(context) {
         }
         const method = methodsOf(t.class).find((x) => x.name === ctx.member);
         if (!method) {
+          lsp(
+            'textDocument/hover',
+            `${ctx.object}.${ctx.member} → unknown on ${shortClass(t.class)}`,
+          );
           const md = new vscode.MarkdownString(undefined, true);
           md.appendMarkdown(`Neznámá metoda \`${ctx.member}\` na \`${shortClass(t.class)}\``);
           return new vscode.Hover(md, ctx.wordRange);
         }
+        lsp(
+          'textDocument/hover',
+          `${ctx.object}.${ctx.member}(): ${method.return || 'mixed'} ← ${typeLabel(t)}`,
+        );
         return new vscode.Hover(hoverForMethod(workspaceRoot, t.class, method), ctx.wordRange);
       }
 
@@ -545,6 +649,7 @@ function activate(context) {
       if (!t) {
         return null;
       }
+      lsp('textDocument/hover', `${ctx.name}: ${typeLabel(t)}`);
       return new vscode.Hover(hoverForVariable(workspaceRoot, ctx.name, t), ctx.wordRange);
     },
   };
@@ -571,8 +676,14 @@ function activate(context) {
       }
       const prefix = m[2] || '';
 
+      const now = Date.now();
+      const shouldLog = now - lastCompletionLog > 400;
+      if (shouldLog) {
+        lastCompletionLog = now;
+      }
+
       if (isShapeType(t)) {
-        return shapeKeys(t)
+        const items = shapeKeys(t)
           .filter((x) => x.name.toLowerCase().startsWith(prefix.toLowerCase()))
           .map((x) => {
             const item = new vscode.CompletionItem(x.name, vscode.CompletionItemKind.Field);
@@ -583,33 +694,47 @@ function activate(context) {
             );
             return item;
           });
+        if (shouldLog) {
+          lsp(
+            'textDocument/completion',
+            `${m[1]}. → ${items.length} fields (${typeLabel(t)})`,
+          );
+        }
+        return items;
       }
 
       if (SCALAR.has(t.class.toLowerCase())) {
         return null;
       }
 
-      return methodsOf(t.class)
-        .filter((x) => x.name.toLowerCase().startsWith(prefix.toLowerCase()))
-        .map((x) => {
-          const item = new vscode.CompletionItem(x.name, vscode.CompletionItemKind.Method);
-          item.detail = `${x.return || 'mixed'}`;
-          item.insertText = new vscode.SnippetString(
-            x.params.length ? `${x.name}($0)` : `${x.name}()`,
-          );
-          const doc = new vscode.MarkdownString(undefined, true);
-          doc.isTrusted = true;
-          const url = symbolLink(workspaceRoot, t.class, x.name);
-          doc.appendCodeblock(
-            `${shortClass(t.class)}::${x.name}(${x.params.join(', ')}): ${x.return || 'mixed'}`,
-            'php',
-          );
-          if (url) {
-            doc.appendMarkdown(`\n\n[$(link-external) Přejít na definici](${url})`);
-          }
-          item.documentation = doc;
-          return item;
-        });
+      const methods = methodsOf(t.class).filter((x) =>
+        x.name.toLowerCase().startsWith(prefix.toLowerCase()),
+      );
+      if (shouldLog) {
+        lsp(
+          'textDocument/completion',
+          `${m[1]}. → ${methods.length} methods (${typeLabel(t)})`,
+        );
+      }
+      return methods.map((x) => {
+        const item = new vscode.CompletionItem(x.name, vscode.CompletionItemKind.Method);
+        item.detail = `${x.return || 'mixed'}`;
+        item.insertText = new vscode.SnippetString(
+          x.params.length ? `${x.name}($0)` : `${x.name}()`,
+        );
+        const doc = new vscode.MarkdownString(undefined, true);
+        doc.isTrusted = true;
+        const url = symbolLink(workspaceRoot, t.class, x.name);
+        doc.appendCodeblock(
+          `${shortClass(t.class)}::${x.name}(${x.params.join(', ')}): ${x.return || 'mixed'}`,
+          'php',
+        );
+        if (url) {
+          doc.appendMarkdown(`\n\n[$(link-external) Přejít na definici](${url})`);
+        }
+        item.documentation = doc;
+        return item;
+      });
     },
   };
 
@@ -624,34 +749,73 @@ function activate(context) {
         return;
       }
       try {
+        lsp('workspace/reindex', 'start');
         rebuildIndex(workspaceRoot);
+        openedLogged.clear();
         loadIndex(workspaceRoot);
+        lsp('workspace/reindex', 'done');
         vscode.window.showInformationMessage(
           `GEREQ Twig: ${Object.keys(templateIndex).length} šablon → .cache/twig/`,
         );
       } catch (e) {
+        lsp('workspace/reindex', `failed: ${e}`);
         vscode.window.showErrorMessage(`Reindex selhal: ${e}`);
       }
     }),
   );
 
-  // sleduj controllery → soft reload cache (bez zápisu do šablon)
+  // otevření Twig → LSP-like dump typů
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument((doc) => {
+      const workspaceRoot = root();
+      if (workspaceRoot) {
+        onTwigOpened(doc, workspaceRoot);
+      }
+    }),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      const workspaceRoot = root();
+      if (editor && workspaceRoot) {
+        onTwigOpened(editor.document, workspaceRoot);
+      }
+    }),
+  );
+  for (const editor of vscode.window.visibleTextEditors) {
+    const workspaceRoot = root();
+    if (workspaceRoot) {
+      onTwigOpened(editor.document, workspaceRoot);
+    }
+  }
+
+  // sleduj controllery → soft reload cache
   const watcher = vscode.workspace.createFileSystemWatcher('**/*Controller.php');
-  const reload = () => {
+  let reloadTimer = null;
+  const reload = (uri) => {
     const workspaceRoot = root();
     if (!workspaceRoot) {
       return;
     }
-    try {
-      rebuildIndex(workspaceRoot);
-      loadIndex(workspaceRoot);
-    } catch (e) {
-      log.appendLine(`watch rebuild: ${e}`);
+    if (reloadTimer) {
+      clearTimeout(reloadTimer);
     }
+    reloadTimer = setTimeout(() => {
+      try {
+        lsp(
+          'workspace/didChangeWatchedFiles',
+          uri ? path.relative(workspaceRoot, uri.fsPath) : 'Controller.php',
+        );
+        rebuildIndex(workspaceRoot);
+        openedLogged.clear();
+        loadIndex(workspaceRoot);
+      } catch (e) {
+        lsp('workspace/didChangeWatchedFiles', `rebuild failed: ${e}`);
+      }
+    }, 800);
   };
   watcher.onDidChange(reload);
   watcher.onDidCreate(reload);
   context.subscriptions.push(watcher);
+
+  lsp('initialized', 'hover · definition · completion · didOpen logging');
 }
 
 function deactivate() {}

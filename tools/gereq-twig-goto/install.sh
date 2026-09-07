@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 EXT_ID="gereq.twig-goto"
-VERSION="0.3.3"
+VERSION="0.3.4"
 TARGET="${HOME}/.cursor-server/extensions/${EXT_ID}-${VERSION}"
 
 # odstraň starší verze

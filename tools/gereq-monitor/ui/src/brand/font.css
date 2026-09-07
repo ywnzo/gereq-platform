@@ -1,0 +1,154 @@
+/**
+ * GEREQ type scale — source of truth for sizes, roles & rhythm.
+ * Families live in tokens.css; this file defines how type is used.
+ *
+ * Import: resources/css/app.css → @import '../../.brand/font.css';
+ *
+ * Roles (prefer these classes over ad-hoc text-* sizes):
+ *   .type-kicker     — mono uppercase labels (04 — PROCES)
+ *   .type-caption    — tiny meta / counters
+ *   .type-small      — UI copy, buttons, form hints
+ *   .type-body       — default paragraph
+ *   .type-lead       — intro / supporting sentence under titles
+ *   .type-subhead    — card / aside titles
+ *   .type-heading    — section item titles (h3)
+ *   .type-title      — section titles (h2)
+ *   .type-display    — page heroes (h1)
+ *   .type-step       — numbered steps (home)
+ *   .type-step-lg    — numbered steps (process page)
+ */
+
+:root {
+  --gereq-type-display: var(--gereq-font-display);
+  --gereq-type-sans: var(--gereq-font-sans);
+  --gereq-type-mono: var(--gereq-font-mono);
+
+  /* Absolute scale (rem) */
+  --gereq-text-caption: 0.6875rem; /* 11px */
+  --gereq-text-kicker: 0.75rem; /* 12px */
+  --gereq-text-small: 0.875rem; /* 14px */
+  --gereq-text-body: 1rem; /* 16px */
+  --gereq-text-lead: 1.125rem; /* 18px */
+  --gereq-text-subhead: 1.25rem; /* 20px */
+  --gereq-text-heading: 1.375rem; /* 22px */
+  --gereq-text-title: 1.75rem; /* 28px */
+  --gereq-text-display: 2.25rem; /* 36px */
+  --gereq-text-step: 1.125rem; /* 18px */
+  --gereq-text-step-lg: 1.5rem; /* 24px */
+
+  --gereq-leading-tight: 1.05;
+  --gereq-leading-title: 1.15;
+  --gereq-leading-snug: 1.35;
+  --gereq-leading-body: 1.625;
+
+  --gereq-tracking-kicker: 0.18em;
+  --gereq-tracking-tight: -0.025em;
+  --gereq-tracking-button: 0.04em;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gereq-text-subhead: 1.375rem; /* 22px */
+    --gereq-text-heading: 1.5rem; /* 24px */
+    --gereq-text-title: 2rem; /* 32px */
+    --gereq-text-display: 2.75rem; /* 44px */
+    --gereq-text-step: 1.25rem; /* 20px */
+    --gereq-text-step-lg: 1.75rem; /* 28px */
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --gereq-text-title: 2.25rem; /* 36px — section titles, not hero */
+    --gereq-text-display: 3.25rem; /* 52px — page heroes only */
+  }
+}
+
+/* —— Semantic roles —— */
+
+.type-kicker {
+  font-family: var(--gereq-type-mono);
+  font-size: var(--gereq-text-kicker);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: var(--gereq-tracking-kicker);
+  text-transform: uppercase;
+}
+
+.type-caption {
+  font-family: var(--gereq-type-mono);
+  font-size: var(--gereq-text-caption);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+}
+
+.type-small {
+  font-family: var(--gereq-type-sans);
+  font-size: var(--gereq-text-small);
+  font-weight: 400;
+  line-height: var(--gereq-leading-body);
+}
+
+.type-body {
+  font-family: var(--gereq-type-sans);
+  font-size: var(--gereq-text-body);
+  font-weight: 400;
+  line-height: var(--gereq-leading-body);
+}
+
+.type-lead {
+  font-family: var(--gereq-type-sans);
+  font-size: var(--gereq-text-lead);
+  font-weight: 400;
+  line-height: var(--gereq-leading-body);
+}
+
+.type-subhead {
+  font-family: var(--gereq-type-display);
+  font-size: var(--gereq-text-subhead);
+  font-weight: 600;
+  line-height: var(--gereq-leading-title);
+  letter-spacing: var(--gereq-tracking-tight);
+}
+
+.type-heading {
+  font-family: var(--gereq-type-display);
+  font-size: var(--gereq-text-heading);
+  font-weight: 600;
+  line-height: var(--gereq-leading-title);
+  letter-spacing: var(--gereq-tracking-tight);
+}
+
+.type-title {
+  font-family: var(--gereq-type-display);
+  font-size: var(--gereq-text-title);
+  font-weight: 600;
+  line-height: var(--gereq-leading-title);
+  letter-spacing: var(--gereq-tracking-tight);
+}
+
+.type-display {
+  font-family: var(--gereq-type-display);
+  font-size: var(--gereq-text-display);
+  font-weight: 600;
+  line-height: var(--gereq-leading-tight);
+  letter-spacing: var(--gereq-tracking-tight);
+}
+
+.type-step,
+.type-step-lg {
+  font-family: var(--gereq-type-mono);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: var(--gereq-tracking-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.type-step {
+  font-size: var(--gereq-text-step);
+}
+
+.type-step-lg {
+  font-size: var(--gereq-text-step-lg);
+}

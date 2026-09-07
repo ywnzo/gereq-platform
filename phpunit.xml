@@ -3,10 +3,17 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="tests/bootstrap.php"
          colors="true"
-         cacheDirectory=".phpunit.cache">
+         cacheDirectory="storage/framework/phpunit">
     <testsuites>
-        <testsuite name="GEREQ">
-            <directory>tests</directory>
+        <testsuite name="Core">
+            <directory>tests/Unit</directory>
+            <exclude>tests/Unit/Modules</exclude>
+        </testsuite>
+        <testsuite name="Modules">
+            <directory>tests/Unit/Modules</directory>
+        </testsuite>
+        <testsuite name="File">
+            <directory>tests/File</directory>
         </testsuite>
     </testsuites>
 </phpunit>
