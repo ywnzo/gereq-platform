@@ -1,0 +1,17 @@
+{# Standard admin form panel — wrap forms().render / field blocks.
+   Usage:
+     {% embed 'ui/form_panel.html.twig' with { title: '…'|trans } %}
+       {% block body %}
+         {{ forms().render(...) }}
+       {% endblock %}
+     {% endembed %}
+#}
+{% set title = title|default(null) %}
+<section class="panel">
+    {% if title %}
+        <header class="panel__head">
+            <h2>{{ title }}</h2>
+        </header>
+    {% endif %}
+    {% block body %}{% endblock %}
+</section>

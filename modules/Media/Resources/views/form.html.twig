@@ -7,21 +7,28 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'media.upload' } %}
 
-    <form method="post" class="form-grid" action="{{ url('admin.media.store') }}" enctype="multipart/form-data" data-form="media.upload" x-data="gereqForm"{% if form_errors('media.upload') %} data-server-state="1"{% endif %}>
+    <form method="post" class="detail-stack" action="{{ url('admin.media.store') }}" enctype="multipart/form-data" data-form="media.upload" x-data="gereqForm"{% if form_errors('media.upload') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {{ forms().render('Modules\\Media\\Domain\\MediaAsset', {
-            form: 'media.upload',
-            cols: 1,
-            wrap: false,
-            values: { folder_id: folder|default('') },
-            choices: { folder_id: folderOptions|default([]) }
-        }) }}
-        {% include 'ui/file.html.twig' with {
-            name: 'file',
-            label: 'media.field.file'|trans,
-            hint: 'media.field.file.hint'|trans,
-            extra: 'field--full'
-        } %}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            <div class="form-grid">
+                {{ forms().render('Modules\\Media\\Domain\\MediaAsset', {
+                    form: 'media.upload',
+                    cols: 1,
+                    wrap: false,
+                    values: { folder_id: folder|default('') },
+                    choices: { folder_id: folderOptions|default([]) }
+                }) }}
+                {% include 'ui/file.html.twig' with {
+                    name: 'file',
+                    label: 'media.field.file'|trans,
+                    hint: 'media.field.file.hint'|trans,
+                    extra: 'field--full'
+                } %}
+            </div>
+        </section>
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'media.upload'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.media.index', folder ? {folder: folder} : {}) }}">{{ 'common.cancel'|trans }}</a>

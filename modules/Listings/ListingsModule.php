@@ -38,7 +38,7 @@ final class ListingsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.8';
+        return '1.2.9';
     }
 
     public function register(ModuleContext $context): void

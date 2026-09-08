@@ -7,14 +7,19 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'currency.save' } %}
 
-    <form method="post" action="{{ item ? url('admin.currencies.update', {code: item.code()}) : url('admin.currencies.store') }}" data-form="currency.save" x-data="gereqForm"{% if form_errors('currency.save') %} data-server-state="1"{% endif %}>
+    <form method="post" class="detail-stack" action="{{ item ? url('admin.currencies.update', {code: item.code()}) : url('admin.currencies.store') }}" data-form="currency.save" x-data="gereqForm"{% if form_errors('currency.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {{ forms().render(item ?? 'Modules\\Currency\\Domain\\Currency', {
-            form: 'currency.save',
-            cols: 1,
-            fieldOptions: item ? { code: { readonly: true } } : {},
-            values: item ? {} : { decimal_places: 2, is_active: true, is_default: false }
-        }) }}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            {{ forms().render(item ?? 'Modules\\Currency\\Domain\\Currency', {
+                form: 'currency.save',
+                cols: 1,
+                fieldOptions: item ? { code: { readonly: true } } : {},
+                values: item ? {} : { decimal_places: 2, is_active: true, is_default: false }
+            }) }}
+        </section>
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.currencies.index') }}">{{ 'common.cancel'|trans }}</a>

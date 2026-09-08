@@ -42,7 +42,7 @@ final class CustomersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.4.1';
+        return '1.4.2';
     }
 
     public function register(ModuleContext $context): void

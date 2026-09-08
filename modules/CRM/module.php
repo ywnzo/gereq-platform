@@ -6,7 +6,7 @@ return [
     'id' => 'crm',
     'name' => 'CRM',
     'icon' => 'briefcase',
-    'version' => '1.0.5',
+    'version' => '1.0.6',
     'description' => 'module.crm.description',
     'class' => Modules\CRM\CrmModule::class,
     'author' => 'GEREQ',

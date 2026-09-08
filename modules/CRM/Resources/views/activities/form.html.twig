@@ -16,17 +16,22 @@
         due_at: item and item.dueAt() ? item.dueAt().format('Y-m-d\\TH:i') : '',
     } %}
 
-    <form method="post" action="{{ item ? url('admin.crm.activities.update', {id: item.id()}) : url('admin.crm.activities.store') }}" data-form="crm.activity.save" x-data="gereqForm"{% if form_errors('crm.activity.save') %} data-server-state="1"{% endif %}>
+    <form method="post" class="detail-stack" action="{{ item ? url('admin.crm.activities.update', {id: item.id()}) : url('admin.crm.activities.store') }}" data-form="crm.activity.save" x-data="gereqForm"{% if form_errors('crm.activity.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {{ forms().render(activitySource, {
-            form: 'crm.activity.save',
-            cols: 2,
-            values: activityValues,
-            choices: {
-                customer_id: customerOptions,
-                deal_id: dealSelectOptions
-            }
-        }) }}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            {{ forms().render(activitySource, {
+                form: 'crm.activity.save',
+                cols: 2,
+                values: activityValues,
+                choices: {
+                    customer_id: customerOptions,
+                    deal_id: dealSelectOptions
+                }
+            }) }}
+        </section>
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.crm.activities.index') }}">{{ 'common.cancel'|trans }}</a>

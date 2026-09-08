@@ -15,7 +15,7 @@
 
 <form
     method="post"
-    class="form-grid form-grid--cols-2"
+    class="detail-stack"
     action="{{ item ? url('admin.esign.documents.update', {id: item.id()}) : url('admin.esign.documents.store') }}"
     data-form="esign.document.save"
     x-data="gereqForm"
@@ -23,12 +23,16 @@
 >
     {{ csrf_field()|raw }}
 
-    {{ forms().render(documentSource, {
-        form: 'esign.document.save',
-        cols: 2,
-        wrap: false,
-        values: item ? {} : { body_html: defaultBody }
-    }) }}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        {{ forms().render(documentSource, {
+            form: 'esign.document.save',
+            cols: 2,
+            values: item ? {} : { body_html: defaultBody }
+        }) }}
+    </section>
 
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>

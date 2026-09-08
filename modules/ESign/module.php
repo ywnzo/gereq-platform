@@ -6,7 +6,7 @@ return [
     'id' => 'esign',
     'name' => 'eSign',
     'icon' => 'edit',
-    'version' => '1.1.4',
+    'version' => '1.1.5',
     'description' => 'module.esign.description',
     'class' => Modules\ESign\ESignModule::class,
     'author' => 'GEREQ',

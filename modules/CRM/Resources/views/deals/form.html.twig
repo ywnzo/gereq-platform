@@ -14,14 +14,19 @@
         expected_close_at: item and item.expectedCloseAt() ? item.expectedCloseAt().format('Y-m-d') : '',
     } %}
 
-    <form method="post" action="{{ item ? url('admin.crm.deals.update', {id: item.id()}) : url('admin.crm.deals.store') }}" data-form="crm.deal.save" x-data="gereqForm"{% if form_errors('crm.deal.save') %} data-server-state="1"{% endif %}>
+    <form method="post" class="detail-stack" action="{{ item ? url('admin.crm.deals.update', {id: item.id()}) : url('admin.crm.deals.store') }}" data-form="crm.deal.save" x-data="gereqForm"{% if form_errors('crm.deal.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {{ forms().render(dealSource, {
-            form: 'crm.deal.save',
-            cols: 2,
-            values: dealValues,
-            choices: { customer_id: customerOptions }
-        }) }}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            {{ forms().render(dealSource, {
+                form: 'crm.deal.save',
+                cols: 2,
+                values: dealValues,
+                choices: { customer_id: customerOptions }
+            }) }}
+        </section>
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.crm.deals.index') }}">{{ 'common.cancel'|trans }}</a>

@@ -34,7 +34,7 @@ final class CurrencyModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.1';
+        return '1.3.2';
     }
 
     public function register(ModuleContext $context): void

@@ -136,6 +136,10 @@
 .dash-cell--two_thirds { grid-column: span 8; }
 .dash-cell--half { grid-column: span 6; }
 .dash-cell--third { grid-column: span 4; }
+/* Jediný widget v gridu — vždy přes celou šířku */
+.dash-grid > .dash-cell:only-child {
+    grid-column: 1 / -1;
+}
 
 @media (max-width: 960px) {
     .dash-grid { grid-template-columns: 1fr; }

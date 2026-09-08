@@ -6,7 +6,7 @@ return [
     'id' => 'customers',
     'name' => 'Customers',
     'icon' => 'users',
-    'version' => '1.4.1',
+    'version' => '1.4.2',
     'description' => 'module.customers.description',
     'class' => Modules\Customers\CustomersModule::class,
     'author' => 'GEREQ',

@@ -9,32 +9,37 @@
 
 {% set bundleSource = item ?? 'Modules\\Bundles\\Domain\\ProductBundle' %}
 
-<form method="post" action="{{ item ? url('admin.bundles.update', {id: item.id()}) : url('admin.bundles.store') }}" data-form="bundles.save" x-data="gereqForm"{% if form_errors('bundles.save') %} data-server-state="1"{% endif %}>
+<form method="post" class="detail-stack" action="{{ item ? url('admin.bundles.update', {id: item.id()}) : url('admin.bundles.store') }}" data-form="bundles.save" x-data="gereqForm"{% if form_errors('bundles.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    <div class="form-grid">
-        {{ forms().render(bundleSource, {
-            form: 'bundles.save',
-            cols: 2,
-            wrap: false,
-            exclude: ['active']
-        }) }}
-        {% include 'ui/textarea.html.twig' with {
-            name: 'items_json',
-            label: 'bundles.field.items_json'|trans,
-            optional: true,
-            form: 'bundles.save',
-            value: itemsJson,
-            hint: 'bundles.field.items_json.hint'|trans,
-            size: 'mini',
-            rows: 8,
-            extra: 'field--full'
-        } %}
-        {{ forms().render(bundleSource, {
-            form: 'bundles.save',
-            wrap: false,
-            only: ['active']
-        }) }}
-    </div>
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        <div class="form-grid">
+            {{ forms().render(bundleSource, {
+                form: 'bundles.save',
+                cols: 2,
+                wrap: false,
+                exclude: ['active']
+            }) }}
+            {% include 'ui/textarea.html.twig' with {
+                name: 'items_json',
+                label: 'bundles.field.items_json'|trans,
+                optional: true,
+                form: 'bundles.save',
+                value: itemsJson,
+                hint: 'bundles.field.items_json.hint'|trans,
+                size: 'mini',
+                rows: 8,
+                extra: 'field--full'
+            } %}
+            {{ forms().render(bundleSource, {
+                form: 'bundles.save',
+                wrap: false,
+                only: ['active']
+            }) }}
+        </div>
+    </section>
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.bundles.index') }}">{{ 'common.cancel'|trans }}</a>

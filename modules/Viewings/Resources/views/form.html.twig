@@ -25,6 +25,7 @@
 
 <form
     method="post"
+    class="detail-stack"
     action="{{ item ? url('admin.viewings.update', {id: item.id()}) : url('admin.viewings.store') }}"
     data-form="viewings.save"
     x-data="gereqForm"
@@ -32,16 +33,21 @@
 >
     {{ csrf_field()|raw }}
 
-    {{ forms().render(viewingSource, {
-        form: 'viewings.save',
-        cols: 2,
-        values: formValues,
-        choices: {
-            listing_id: listingOptions,
-            customer_id: customerOptions,
-            broker_id: brokerOptions
-        }
-    }) }}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        {{ forms().render(viewingSource, {
+            form: 'viewings.save',
+            cols: 2,
+            values: formValues,
+            choices: {
+                listing_id: listingOptions,
+                customer_id: customerOptions,
+                broker_id: brokerOptions
+            }
+        }) }}
+    </section>
 
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>

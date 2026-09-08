@@ -18,30 +18,35 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'listings.cities.save' } %}
 
-<form method="post" class="form-grid form-grid--cols-1" enctype="multipart/form-data" action="{{ item ? url('admin.listings.cities.update', {id: item.id()}) : url('admin.listings.cities.store') }}" data-form="listings.cities.save" x-data="gereqForm"{% if form_errors('listings.cities.save') %} data-server-state="1"{% endif %}>
+<form method="post" class="detail-stack" enctype="multipart/form-data" action="{{ item ? url('admin.listings.cities.update', {id: item.id()}) : url('admin.listings.cities.store') }}" data-form="listings.cities.save" x-data="gereqForm"{% if form_errors('listings.cities.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {{ forms().render(citySource, {
-        form: 'listings.cities.save',
-        cols: 1,
-        only: ['name'],
-        wrap: false
-    }) }}
-    {% include 'ui/media_box.html.twig' with {
-        name: 'image_url',
-        label: 'listings.cities.field.image_url'|trans,
-        optional: true,
-        form: 'listings.cities.save',
-        value: item and item.imageUrl() ? item.imageUrl() : '',
-        hint: 'listings.cities.field.image_url.hint'|trans,
-        has_media: hasMedia|default(false),
-        library: libraryImages|default([])
-    } %}
-    {{ forms().render(citySource, {
-        form: 'listings.cities.save',
-        cols: 1,
-        only: ['sort_order', 'active'],
-        wrap: false
-    }) }}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        {{ forms().render(citySource, {
+            form: 'listings.cities.save',
+            cols: 1,
+            only: ['name'],
+            wrap: false
+        }) }}
+        {% include 'ui/media_box.html.twig' with {
+            name: 'image_url',
+            label: 'listings.cities.field.image_url'|trans,
+            optional: true,
+            form: 'listings.cities.save',
+            value: item and item.imageUrl() ? item.imageUrl() : '',
+            hint: 'listings.cities.field.image_url.hint'|trans,
+            has_media: hasMedia|default(false),
+            library: libraryImages|default([])
+        } %}
+        {{ forms().render(citySource, {
+            form: 'listings.cities.save',
+            cols: 1,
+            only: ['sort_order', 'active'],
+            wrap: false
+        }) }}
+    </section>
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ item ? url('admin.listings.cities.show', {id: item.id()}) : url('admin.listings.cities.index') }}">{{ 'common.cancel'|trans }}</a>

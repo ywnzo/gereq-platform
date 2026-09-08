@@ -66,6 +66,10 @@
     background: var(--surface);
     padding: 1rem 1.1rem 1.15rem;
 }
+.customer-section .form-grid {
+    width: 100%;
+    max-width: none;
+}
 .customer-section--wide { grid-column: 1 / -1; }
 .customer-section--notes {
     display: flex;

@@ -83,6 +83,23 @@ Twig šablona stránky zůstává zodpovědná za:
 - runtime `choices` (např. seznam brokerů z DB),
 - speciální bloky (ARES, nearby, images).
 
+**Standardní shell stránky** (jednoduché CRUD — brokers, cities, currency…):
+
+```twig
+<form class="detail-stack" method="post" … data-form="…" x-data="gereqForm">
+    {{ csrf_field()|raw }}
+    <section class="panel">
+        <header class="panel__head"><h2>{{ 'common.details'|trans }}</h2></header>
+        {{ forms().render(source, { form: '…', cols: 2 }) }}
+    </section>
+    <div class="form-actions">…</div>
+</form>
+```
+
+Nebo `{% embed 'ui/form_panel.html.twig' with { title: 'common.details'|trans } %}`.
+
+**Nevkládej `detail-stack`** do formulářů s vlastním layoutem (Customers `customer-edit`, Fleet, Listing hub) — `max-width: 72rem` je zúží. Tam nech existující wrapper a jen `forms().render` uvnitř sekcí.
+
 ---
 
 ## 3. Rychlý start

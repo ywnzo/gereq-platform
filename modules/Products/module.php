@@ -4,7 +4,7 @@ return [
     'id' => 'products',
     'name' => 'Products',
     'icon' => 'package',
-    'version' => '1.8.2',
+    'version' => '1.8.3',
     'description' => 'module.products.description',
     'class' => Modules\Products\ProductsModule::class,
     'author' => 'GEREQ',

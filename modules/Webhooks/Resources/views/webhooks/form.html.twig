@@ -7,16 +7,23 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'webhooks.save' } %}
 
-    <form method="post" action="{{ item ? url('admin.developer.webhooks.update', {id: item.id()}) : url('admin.developer.webhooks.store') }}" data-form="webhooks.save" x-data="gereqForm"{% if form_errors('webhooks.save') %} data-server-state="1"{% endif %}>
+    <form method="post" class="detail-stack" action="{{ item ? url('admin.developer.webhooks.update', {id: item.id()}) : url('admin.developer.webhooks.store') }}" data-form="webhooks.save" x-data="gereqForm"{% if form_errors('webhooks.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {{ forms().render(item ?? 'Modules\\Webhooks\\Domain\\Webhook', {
-            form: 'webhooks.save',
-            cols: 1,
-            values: item ? {} : { timeout_seconds: defaultTimeout }
-        }) }}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            {{ forms().render(item ?? 'Modules\\Webhooks\\Domain\\Webhook', {
+                form: 'webhooks.save',
+                cols: 1,
+                values: item ? {} : { timeout_seconds: defaultTimeout }
+            }) }}
+        </section>
 
-        <div class="field--full">
-            <h2 class="page-header page-header--compact">{{ 'webhooks.events'|trans }}</h2>
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'webhooks.events'|trans }}</h2>
+            </header>
             <p class="muted">{{ 'webhooks.events.hint'|trans }}</p>
             {% set selected = item ? item.events() : ['*'] %}
             {% set availableTypes = availableEvents|map(e => e.type) %}
@@ -49,7 +56,7 @@
                 hint: 'webhooks.events.custom_hint'|trans,
                 placeholder: 'customer.*, crm.*'
             } %}
-        </div>
+        </section>
 
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>

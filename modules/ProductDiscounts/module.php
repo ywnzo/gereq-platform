@@ -6,7 +6,7 @@ return [
     'id' => 'product_discounts',
     'name' => 'Product Discounts',
     'icon' => 'tag',
-    'version' => '1.1.6',
+    'version' => '1.1.7',
     'description' => 'module.product_discounts.description',
     'class' => Modules\ProductDiscounts\ProductDiscountsModule::class,
     'author' => 'GEREQ',

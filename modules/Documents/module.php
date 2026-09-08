@@ -4,7 +4,7 @@ return [
     'id' => 'documents',
     'name' => 'Documents',
     'icon' => 'file',
-    'version' => '1.3.3',
+    'version' => '1.3.4',
     'description' => 'module.documents.description',
     'class' => Modules\Documents\DocumentsModule::class,
     'author' => 'GEREQ',

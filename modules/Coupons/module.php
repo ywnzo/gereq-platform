@@ -6,7 +6,7 @@ return [
     'id' => 'coupons',
     'name' => 'Coupons',
     'icon' => 'tag',
-    'version' => '1.0.2',
+    'version' => '1.0.3',
     'description' => 'module.coupons.description',
     'class' => Modules\Coupons\CouponsModule::class,
     'author' => 'GEREQ',

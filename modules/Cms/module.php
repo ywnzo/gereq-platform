@@ -6,7 +6,7 @@ return [
     'id' => 'cms',
     'name' => 'CMS',
     'icon' => 'layout',
-    'version' => '1.2.2',
+    'version' => '1.2.3',
     'description' => 'module.cms.description',
     'class' => Modules\Cms\CmsModule::class,
     'author' => 'GEREQ',

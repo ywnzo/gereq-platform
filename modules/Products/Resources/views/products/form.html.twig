@@ -9,56 +9,61 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'products.product.save' } %}
 
-    <form method="post" action="{{ item ? url('admin.products.update', {id: item.id()}) : url('admin.products.store') }}" data-form="products.product.save" x-data="gereqForm"{% if form_errors('products.product.save') %} data-server-state="1"{% endif %}>
+    <form method="post" class="detail-stack" action="{{ item ? url('admin.products.update', {id: item.id()}) : url('admin.products.store') }}" data-form="products.product.save" x-data="gereqForm"{% if form_errors('products.product.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
 
-        {{ forms().render(productSource, {
-            form: 'products.product.save',
-            group: 'basic',
-            cols: 2
-        }) }}
-
-        <div class="g-field field--full">
-            <span class="g-label">{{ 'products.field.personalization'|trans }}</span>
-            <p class="muted" style="margin:0 0 .75rem">{{ 'products.field.personalization.help'|trans }}</p>
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
             {{ forms().render(productSource, {
                 form: 'products.product.save',
-                group: 'personalization',
-                cols: 1,
-                wrap: false
+                group: 'basic',
+                cols: 2
             }) }}
-            <label class="g-switch" style="margin-top:1rem">
-                <input type="checkbox" name="user_images_enabled" value="1" {{ imageRule and imageRule.isActive() and imageRule.allowsImages() ? 'checked' : '' }}>
-                <span>{{ 'products.field.user_images_enabled'|trans }}</span>
-            </label>
-            {% include 'ui/input.html.twig' with {
-                name: 'user_images_max',
-                label: 'products.field.user_images_max'|trans,
-                form: 'products.product.save',
-                value: imageRule ? imageRule.maxImages() : '1',
-                optional: true
-            } %}
-            <label class="g-switch">
-                <input type="checkbox" name="user_images_crop" value="1" {{ imageRule and imageRule.cropRequired() ? 'checked' : '' }}>
-                <span>{{ 'products.field.user_images_crop'|trans }}</span>
-            </label>
-        </div>
 
-        <div class="g-field field--full">
-            <span class="g-label">{{ 'products.field.categories'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
-            {% if categoryOptions is empty %}
-                <p class="muted">{{ 'products.categories.empty.hint'|trans }}</p>
-            {% else %}
-                <div class="form-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
-                    {% for opt in categoryOptions %}
-                        <label class="g-switch">
-                            <input type="checkbox" name="category_ids[]" value="{{ opt.value }}" {{ opt.value in selectedCategories ? 'checked' : '' }}>
-                            <span>{{ opt.label }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
+            <div class="g-field field--full">
+                <span class="g-label">{{ 'products.field.personalization'|trans }}</span>
+                <p class="muted" style="margin:0 0 .75rem">{{ 'products.field.personalization.help'|trans }}</p>
+                {{ forms().render(productSource, {
+                    form: 'products.product.save',
+                    group: 'personalization',
+                    cols: 1,
+                    wrap: false
+                }) }}
+                <label class="g-switch" style="margin-top:1rem">
+                    <input type="checkbox" name="user_images_enabled" value="1" {{ imageRule and imageRule.isActive() and imageRule.allowsImages() ? 'checked' : '' }}>
+                    <span>{{ 'products.field.user_images_enabled'|trans }}</span>
+                </label>
+                {% include 'ui/input.html.twig' with {
+                    name: 'user_images_max',
+                    label: 'products.field.user_images_max'|trans,
+                    form: 'products.product.save',
+                    value: imageRule ? imageRule.maxImages() : '1',
+                    optional: true
+                } %}
+                <label class="g-switch">
+                    <input type="checkbox" name="user_images_crop" value="1" {{ imageRule and imageRule.cropRequired() ? 'checked' : '' }}>
+                    <span>{{ 'products.field.user_images_crop'|trans }}</span>
+                </label>
+            </div>
+
+            <div class="g-field field--full">
+                <span class="g-label">{{ 'products.field.categories'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+                {% if categoryOptions is empty %}
+                    <p class="muted">{{ 'products.categories.empty.hint'|trans }}</p>
+                {% else %}
+                    <div class="form-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+                        {% for opt in categoryOptions %}
+                            <label class="g-switch">
+                                <input type="checkbox" name="category_ids[]" value="{{ opt.value }}" {{ opt.value in selectedCategories ? 'checked' : '' }}>
+                                <span>{{ opt.label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </section>
 
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>

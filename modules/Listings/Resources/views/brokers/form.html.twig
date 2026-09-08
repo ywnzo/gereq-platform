@@ -18,12 +18,17 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'listings.brokers.save' } %}
 
-<form method="post" action="{{ item ? url('admin.listings.brokers.update', {id: item.id()}) : url('admin.listings.brokers.store') }}" data-form="listings.brokers.save" x-data="gereqForm"{% if form_errors('listings.brokers.save') %} data-server-state="1"{% endif %}>
+<form method="post" class="detail-stack" action="{{ item ? url('admin.listings.brokers.update', {id: item.id()}) : url('admin.listings.brokers.store') }}" data-form="listings.brokers.save" x-data="gereqForm"{% if form_errors('listings.brokers.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {{ forms().render(brokerSource, {
-        form: 'listings.brokers.save',
-        cols: 2
-    }) }}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        {{ forms().render(brokerSource, {
+            form: 'listings.brokers.save',
+            cols: 2
+        }) }}
+    </section>
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ item ? url('admin.listings.brokers.show', {id: item.id()}) : url('admin.listings.brokers.index') }}">{{ 'common.cancel'|trans }}</a>

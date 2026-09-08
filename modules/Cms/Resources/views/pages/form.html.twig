@@ -7,12 +7,17 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'cms.page.save' } %}
 
-    <form method="post" action="{{ item ? url('admin.cms.pages.update', {id: item.id()}) : url('admin.cms.pages.store') }}" data-form="cms.page.save" x-data="gereqForm"{% if form_errors('cms.page.save') %} data-server-state="1"{% endif %}>
+    <form method="post" class="detail-stack" action="{{ item ? url('admin.cms.pages.update', {id: item.id()}) : url('admin.cms.pages.store') }}" data-form="cms.page.save" x-data="gereqForm"{% if form_errors('cms.page.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {{ forms().render(item ?? 'Modules\\Cms\\Domain\\Page', {
-            form: 'cms.page.save',
-            cols: 1
-        }) }}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            {{ forms().render(item ?? 'Modules\\Cms\\Domain\\Page', {
+                form: 'cms.page.save',
+                cols: 1
+            }) }}
+        </section>
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ item ? url('admin.cms.pages.show', {id: item.id()}) : url('admin.cms.pages.index') }}">{{ 'common.cancel'|trans }}</a>

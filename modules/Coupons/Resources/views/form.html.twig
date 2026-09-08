@@ -13,13 +13,18 @@
     ends_at: item.endsAt() ? item.endsAt().format('Y-m-d\\TH:i') : '',
 } : {} %}
 
-<form method="post" action="{{ item ? url('admin.coupons.update', {id: item.id()}) : url('admin.coupons.store') }}" data-form="coupons.save" x-data="gereqForm"{% if form_errors('coupons.save') %} data-server-state="1"{% endif %}>
+<form method="post" class="detail-stack" action="{{ item ? url('admin.coupons.update', {id: item.id()}) : url('admin.coupons.store') }}" data-form="coupons.save" x-data="gereqForm"{% if form_errors('coupons.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {{ forms().render(couponSource, {
-        form: 'coupons.save',
-        cols: 2,
-        values: couponValues
-    }) }}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        {{ forms().render(couponSource, {
+            form: 'coupons.save',
+            cols: 2,
+            values: couponValues
+        }) }}
+    </section>
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.coupons.index') }}">{{ 'common.cancel'|trans }}</a>

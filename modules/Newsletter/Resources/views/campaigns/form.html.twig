@@ -16,18 +16,23 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'newsletter.campaign.save' } %}
 
-<form method="post" action="{{ item ? url('admin.newsletter.campaigns.update', {id: item.id()}) : url('admin.newsletter.campaigns.store') }}" data-form="newsletter.campaign.save" x-data="gereqForm"{% if form_errors('newsletter.campaign.save') %} data-server-state="1"{% endif %}>
+<form method="post" class="detail-stack" action="{{ item ? url('admin.newsletter.campaigns.update', {id: item.id()}) : url('admin.newsletter.campaigns.store') }}" data-form="newsletter.campaign.save" x-data="gereqForm"{% if form_errors('newsletter.campaign.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {{ forms().render(item ?? 'Modules\\Newsletter\\Domain\\Campaign', {
-        form: 'newsletter.campaign.save',
-        cols: 1
-    }) }}
-    {% if item %}
-    <div class="meta-list">
-        <div><span>{{ 'newsletter.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>
-        <div><span>{{ 'newsletter.field.sent_at'|trans }}</span><strong>{{ item.sentAt() ? item.sentAt().format('d. m. Y H:i') : '—' }}</strong></div>
-    </div>
-    {% endif %}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        {{ forms().render(item ?? 'Modules\\Newsletter\\Domain\\Campaign', {
+            form: 'newsletter.campaign.save',
+            cols: 1
+        }) }}
+        {% if item %}
+        <div class="meta-list">
+            <div><span>{{ 'newsletter.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>
+            <div><span>{{ 'newsletter.field.sent_at'|trans }}</span><strong>{{ item.sentAt() ? item.sentAt().format('d. m. Y H:i') : '—' }}</strong></div>
+        </div>
+        {% endif %}
+    </section>
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.newsletter.campaigns.index') }}">{{ 'common.cancel'|trans }}</a>

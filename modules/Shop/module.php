@@ -6,7 +6,7 @@ return [
     'id' => 'shop',
     'name' => 'Shop',
     'icon' => 'bag',
-    'version' => '1.5.1',
+    'version' => '1.5.2',
     'description' => 'module.shop.description',
     'class' => Modules\Shop\ShopModule::class,
     'author' => 'GEREQ',

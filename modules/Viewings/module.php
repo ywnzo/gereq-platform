@@ -6,7 +6,7 @@ return [
     'id' => 'viewings',
     'name' => 'Viewings',
     'icon' => 'eye',
-    'version' => '1.0.2',
+    'version' => '1.0.3',
     'description' => 'module.viewings.description',
     'class' => Modules\Viewings\ViewingsModule::class,
     'author' => 'RealEstates',

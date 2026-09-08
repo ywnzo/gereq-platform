@@ -27,7 +27,7 @@ final class ESignModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.4';
+        return '1.1.5';
     }
 
     public function register(ModuleContext $context): void

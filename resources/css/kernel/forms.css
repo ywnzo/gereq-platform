@@ -927,9 +927,51 @@ label.g-switch > span {
     border-top: 1px solid var(--border);
 }
 .g-editor__content a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.g-editor__content > p,
+.g-editor__content > h1,
+.g-editor__content > h2,
+.g-editor__content > h3,
+.g-editor__content > blockquote,
+.g-editor__content > ul,
+.g-editor__content > ol,
+.g-editor__content > pre {
+    position: relative;
+    outline: 1px dashed color-mix(in srgb, var(--text) 14%, transparent);
+    outline-offset: 3px;
+}
+.g-editor__content > p::before,
+.g-editor__content > h1::before,
+.g-editor__content > h2::before,
+.g-editor__content > h3::before,
+.g-editor__content > blockquote::before,
+.g-editor__content > ul::before,
+.g-editor__content > ol::before,
+.g-editor__content > pre::before {
+    position: absolute;
+    top: -0.7rem;
+    inset-inline-start: 0;
+    font-size: 0.62rem;
+    font-weight: 550;
+    color: color-mix(in srgb, var(--text-muted) 72%, transparent);
+    background: var(--surface);
+    padding: 0 0.28rem;
+    pointer-events: none;
+}
+.g-editor__content > p::before { content: 'p'; }
+.g-editor__content > h1::before { content: 'h1'; }
+.g-editor__content > h2::before { content: 'h2'; }
+.g-editor__content > h3::before { content: 'h3'; }
+.g-editor__content > blockquote::before { content: 'citace'; }
+.g-editor__content > ul::before { content: 'seznam'; }
+.g-editor__content > ol::before { content: 'čísla'; }
+.g-editor__content > pre::before { content: 'kód'; }
+.g-editor__content p.is-editor-empty:first-child { outline: none; }
 .g-editor__content p.is-editor-empty:first-child::before {
+    position: static;
     content: attr(data-placeholder);
     color: var(--text-muted);
+    background: transparent;
+    padding: 0;
     float: left;
     height: 0;
     pointer-events: none;

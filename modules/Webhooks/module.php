@@ -6,7 +6,7 @@ return [
     'id' => 'webhooks',
     'name' => 'Webhooks',
     'icon' => 'zap',
-    'version' => '1.0.2',
+    'version' => '1.0.3',
     'description' => 'module.webhooks.description',
     'class' => Modules\Webhooks\WebhooksModule::class,
     'author' => 'GEREQ',

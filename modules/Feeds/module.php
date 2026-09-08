@@ -6,7 +6,7 @@ return [
     'id' => 'feeds',
     'name' => 'Feeds',
     'icon' => 'rss',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'description' => 'module.feeds.description',
     'class' => Modules\Feeds\FeedsModule::class,
     'author' => 'GEREQ',

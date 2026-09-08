@@ -28,7 +28,7 @@ final class ReturnsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.2';
+        return '1.0.3';
     }
 
     public function register(ModuleContext $context): void

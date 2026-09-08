@@ -33,7 +33,7 @@ final class DocumentsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.3';
+        return '1.3.4';
     }
 
     public function register(ModuleContext $context): void

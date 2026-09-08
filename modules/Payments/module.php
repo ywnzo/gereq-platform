@@ -6,7 +6,7 @@ return [
     'id' => 'payments',
     'name' => 'Payments',
     'icon' => 'credit-card',
-    'version' => '1.3.1',
+    'version' => '1.3.2',
     'description' => 'module.payments.description',
     'class' => Modules\Payments\PaymentsModule::class,
     'author' => 'GEREQ',

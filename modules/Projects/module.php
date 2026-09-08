@@ -4,7 +4,7 @@ return [
     'id' => 'projects',
     'name' => 'Projects',
     'icon' => 'clipboard',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'description' => 'module.projects.description',
     'class' => Modules\Projects\ProjectsModule::class,
     'author' => 'GEREQ',

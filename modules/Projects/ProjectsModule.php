@@ -23,7 +23,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ProjectsModule implements ModuleInterface
 {
     public function id(): string { return 'projects'; }
-    public function version(): string { return '1.0.1'; }
+    public function version(): string { return '1.0.2'; }
 
     public function register(ModuleContext $context): void
     {

@@ -6,13 +6,18 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'newsletter.subscriber.save' } %}
 
-<form method="post" action="{{ url('admin.newsletter.subscribers.store') }}" data-form="newsletter.subscriber.save" x-data="gereqForm"{% if form_errors('newsletter.subscriber.save') %} data-server-state="1"{% endif %}>
+<form method="post" class="detail-stack" action="{{ url('admin.newsletter.subscribers.store') }}" data-form="newsletter.subscriber.save" x-data="gereqForm"{% if form_errors('newsletter.subscriber.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {{ forms().render('Modules\\Newsletter\\Domain\\Subscriber', {
-        form: 'newsletter.subscriber.save',
-        cols: 1,
-        values: { source: 'admin' }
-    }) }}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        {{ forms().render('Modules\\Newsletter\\Domain\\Subscriber', {
+            form: 'newsletter.subscriber.save',
+            cols: 1,
+            values: { source: 'admin' }
+        }) }}
+    </section>
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.newsletter.subscribers.index') }}">{{ 'common.cancel'|trans }}</a>

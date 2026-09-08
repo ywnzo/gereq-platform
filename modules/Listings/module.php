@@ -6,7 +6,7 @@ return [
     'id' => 'listings',
     'name' => 'Listings',
     'icon' => 'home',
-    'version' => '1.2.8',
+    'version' => '1.2.9',
     'description' => 'module.listings.description',
     'class' => Modules\Listings\ListingsModule::class,
     'author' => 'RealEstates',
