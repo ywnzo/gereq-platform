@@ -24,7 +24,7 @@ use Ramsey\Uuid\Uuid;
 )]
 #[FormEntity('customers.save')]
 #[FormGenerator(
-    exclude: ['id', 'company', 'status', 'createdAt', 'updatedAt'],
+    exclude: ['id', 'isCompany', 'company', 'ico', 'dic', 'companyAddress', 'createdAt', 'updatedAt'],
     form: 'customers.save',
     cols: 2,
 )]
@@ -48,13 +48,29 @@ class Customer
 
     #[ORM\Column(length: 40, nullable: true)]
     #[AdminField(type: 'text', label: 'Telefon', searchable: true)]
-    #[FormField(label: 'customers.field.phone', type: 'tel', group: 'profile', attrs: 'autocomplete="tel"', order: 30)]
+    #[FormField(label: 'customers.field.phone', type: 'tel', group: 'profile', attrs: 'autocomplete="tel"', options: ['placeholder' => '+420 777 123 456'], order: 30)]
     private ?string $phone = null;
 
-    /** ARES subject widget — ruční Twig. */
+    /** Osoba vs. firma — ruční Twig (switch + ARES). */
+    #[ORM\Column(name: 'is_company', type: 'boolean', options: ['default' => false])]
+    #[AdminField(type: 'boolean', label: 'Firma', sortable: true, filterable: true)]
+    private bool $isCompany = false;
+
+    /** Obchodní jméno / zaměstnavatel — ARES widget. */
     #[ORM\Column(length: 180, nullable: true)]
     #[AdminField(type: 'text', label: 'Firma', searchable: true, sortable: true)]
     private ?string $company = null;
+
+    #[ORM\Column(length: 12, nullable: true)]
+    #[AdminField(type: 'text', label: 'IČ', searchable: true)]
+    private ?string $ico = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    #[AdminField(type: 'text', label: 'DIČ', searchable: true)]
+    private ?string $dic = null;
+
+    #[ORM\Column(name: 'company_address', length: 255, nullable: true)]
+    private ?string $companyAddress = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     #[AdminField(type: 'textarea', label: 'Poznámka', showOnIndex: false)]
@@ -102,9 +118,29 @@ class Customer
         return $this->phone;
     }
 
+    public function isCompany(): bool
+    {
+        return $this->isCompany;
+    }
+
     public function company(): ?string
     {
         return $this->company;
+    }
+
+    public function ico(): ?string
+    {
+        return $this->ico;
+    }
+
+    public function dic(): ?string
+    {
+        return $this->dic;
+    }
+
+    public function companyAddress(): ?string
+    {
+        return $this->companyAddress;
     }
 
     public function note(): ?string
@@ -145,9 +181,40 @@ class Customer
         $this->touch();
     }
 
+    public function setIsCompany(bool $isCompany): void
+    {
+        $this->isCompany = $isCompany;
+        if (!$isCompany) {
+            $this->ico = null;
+            $this->dic = null;
+            $this->companyAddress = null;
+        }
+        $this->touch();
+    }
+
     public function setCompany(?string $company): void
     {
         $this->company = $company !== '' ? $company : null;
+        $this->touch();
+    }
+
+    public function setIco(?string $ico): void
+    {
+        $ico = $ico !== null ? preg_replace('/\s+/', '', $ico) : null;
+        $this->ico = $ico !== null && $ico !== '' ? $ico : null;
+        $this->touch();
+    }
+
+    public function setDic(?string $dic): void
+    {
+        $dic = $dic !== null ? preg_replace('/\s+/', '', $dic) : null;
+        $this->dic = $dic !== null && $dic !== '' ? $dic : null;
+        $this->touch();
+    }
+
+    public function setCompanyAddress(?string $companyAddress): void
+    {
+        $this->companyAddress = $companyAddress !== null && $companyAddress !== '' ? $companyAddress : null;
         $this->touch();
     }
 

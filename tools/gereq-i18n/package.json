@@ -1,8 +1,8 @@
 {
   "name": "i18n",
   "displayName": "GEREQ i18n",
-  "description": "Hover, autocomplete a Go to Definition pro překladové klíče (|trans / ->trans)",
-  "version": "0.1.0",
+  "description": "Hover, autocomplete a Go to Definition pro překladové klíče (|trans / ->trans / label: / FormField)",
+  "version": "0.2.0",
   "publisher": "gereq",
   "engines": {
     "vscode": "^1.88.0"

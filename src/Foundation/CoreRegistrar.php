@@ -203,7 +203,7 @@ final class CoreRegistrar
         $this->validation->ruleset('design.demo', [
             'name' => 'required|min:2|max:80',
             'email' => 'required|email',
-            'phone' => 'required|regex:/^\+?[0-9 ]{9,16}$/',
+            'phone' => 'required|phone',
             'website' => 'nullable|url',
             'note' => 'required|min:12|max:500',
             'comment' => 'nullable|max:120',
@@ -265,6 +265,7 @@ final class CoreRegistrar
             $router->get('/users/{id}/edit', [UserController::class, 'edit'])->name('admin.users.edit')->middleware('auth')->permission('users.edit');
             $router->post('/users/{id}', [UserController::class, 'update'])->name('admin.users.update')->middleware('auth')->permission('users.edit');
             $router->get('/users/{id}/avatar', [UserController::class, 'avatar'])->name('admin.users.avatar')->middleware('auth')->permission('users.view');
+            $router->get('/users/{id}/banner', [UserController::class, 'banner'])->name('admin.users.banner')->middleware('auth')->permission('users.view');
             $router->post('/users/{id}/delete', [UserController::class, 'destroy'])->name('admin.users.destroy')->middleware('auth')->permission('users.delete');
             $router->post('/users/{id}/mfa/reset', [UserController::class, 'resetMfa'])->name('admin.users.mfa.reset')->middleware('auth')->permission('users.edit');
 

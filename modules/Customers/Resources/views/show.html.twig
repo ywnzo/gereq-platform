@@ -27,6 +27,10 @@
                                 <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
                                     {{ item.statusLabel()|trans }}
                                 </span>
+                                {% if item.isCompany() %}
+                                    <span class="badge">{{ 'customers.field.is_company'|trans }}</span>
+                                    {% if item.ico() %}<span class="muted">IČ {{ item.ico() }}</span>{% endif %}
+                                {% endif %}
                                 <span class="muted">{{ 'customers.field.created'|trans }} {{ item.createdAt().format('d. m. Y') }}</span>
                             </div>
                         </div>
@@ -93,6 +97,22 @@
                                 <dt>{{ 'customers.field.company'|trans }}</dt>
                                 <dd>{{ item.company() ?: '—' }}</dd>
                             </div>
+                            {% if item.isCompany() %}
+                                <div>
+                                    <dt>{{ 'customers.field.ico'|trans }}</dt>
+                                    <dd>{{ item.ico() ?: '—' }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'customers.field.dic'|trans }}</dt>
+                                    <dd>{{ item.dic() ?: '—' }}</dd>
+                                </div>
+                                {% if item.companyAddress() %}
+                                    <div>
+                                        <dt>{{ 'customers.field.company_address'|trans }}</dt>
+                                        <dd>{{ item.companyAddress() }}</dd>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
                             <div>
                                 <dt>{{ 'customers.field.status'|trans }}</dt>
                                 <dd>{{ item.statusLabel()|trans }}</dd>

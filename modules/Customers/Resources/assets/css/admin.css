@@ -424,6 +424,31 @@
 .customer-edit__grid > .ares-field {
     min-width: 0;
 }
+.customer-edit__company {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-soft, var(--border));
+    display: grid;
+    gap: .65rem;
+}
+.customer-edit__company-toggle {
+    margin: 0;
+}
+.customer-edit__company-fields {
+    margin-top: .25rem;
+}
+.ares-field__row {
+    display: flex;
+    gap: .5rem;
+    align-items: stretch;
+}
+.ares-field__row .g-control,
+.ares-field__row .btn {
+    flex: 1 1 auto;
+}
+.ares-field__row .btn {
+    flex: 0 0 auto;
+}
 .customer-status-picks {
     display: grid;
     gap: .55rem;

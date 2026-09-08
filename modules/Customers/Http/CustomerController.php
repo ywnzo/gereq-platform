@@ -121,7 +121,11 @@ final class CustomerController extends Controller
         $data = $this->validated($request);
         $customer = new Customer($data['name'], $data['email']);
         $customer->setPhone($data['phone']);
+        $customer->setIsCompany($data['is_company']);
         $customer->setCompany($data['company']);
+        $customer->setIco($data['ico']);
+        $customer->setDic($data['dic']);
+        $customer->setCompanyAddress($data['company_address']);
         $customer->setNote($data['note']);
         $customer->setStatus($data['status']);
         $this->em->persist($customer);
@@ -371,7 +375,11 @@ final class CustomerController extends Controller
         $customer->setName($data['name']);
         $customer->setEmail($data['email']);
         $customer->setPhone($data['phone']);
+        $customer->setIsCompany($data['is_company']);
         $customer->setCompany($data['company']);
+        $customer->setIco($data['ico']);
+        $customer->setDic($data['dic']);
+        $customer->setCompanyAddress($data['company_address']);
         $customer->setNote($data['note']);
         $customer->setStatus($data['status']);
         $this->em->flush();
@@ -516,7 +524,7 @@ final class CustomerController extends Controller
         return $customer instanceof Customer ? $customer : null;
     }
 
-    /** @return array{name: string, email: string, phone: ?string, company: ?string, note: ?string, status: string} */
+    /** @return array{name: string, email: string, phone: ?string, is_company: bool, company: ?string, ico: ?string, dic: ?string, company_address: ?string, note: ?string, status: string} */
     private function validated(Request $request, ?Customer $existing = null): array
     {
         $data = $this->validate($request, 'customers.save', [
@@ -524,18 +532,32 @@ final class CustomerController extends Controller
         ]);
 
         $phone = trim((string) ($data['phone'] ?? ''));
+        $isCompany = in_array($data['is_company'] ?? null, [true, 1, '1', 'on', 'yes', 'true'], true);
         $company = trim((string) ($data['company'] ?? ''));
+        $ico = preg_replace('/\s+/', '', (string) ($data['ico'] ?? '')) ?? '';
+        $dic = preg_replace('/\s+/', '', (string) ($data['dic'] ?? '')) ?? '';
+        $companyAddress = trim((string) ($data['company_address'] ?? ''));
         $note = $this->html->sanitizeNullable((string) ($data['note'] ?? ''));
         $status = (string) ($data['status'] ?? 'active');
         if (!in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
             $status = 'active';
         }
 
+        if (!$isCompany) {
+            $ico = '';
+            $dic = '';
+            $companyAddress = '';
+        }
+
         return [
             'name' => trim((string) $data['name']),
             'email' => strtolower(trim((string) $data['email'])),
             'phone' => $phone !== '' ? $phone : null,
+            'is_company' => $isCompany,
             'company' => $company !== '' ? $company : null,
+            'ico' => $ico !== '' ? $ico : null,
+            'dic' => $dic !== '' ? $dic : null,
+            'company_address' => $companyAddress !== '' ? $companyAddress : null,
             'note' => $note,
             'status' => $status,
         ];
@@ -549,7 +571,11 @@ final class CustomerController extends Controller
             'name' => $customer->name(),
             'email' => $customer->email(),
             'phone' => $customer->phone(),
+            'is_company' => $customer->isCompany(),
             'company' => $customer->company(),
+            'ico' => $customer->ico(),
+            'dic' => $customer->dic(),
+            'company_address' => $customer->companyAddress(),
             'note' => $customer->note(),
             'status' => $customer->status(),
             'created_at' => $customer->createdAt()->format(\DateTimeInterface::ATOM),

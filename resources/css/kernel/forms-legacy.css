@@ -116,13 +116,6 @@ textarea { resize: vertical; }
 }
 .form-actions { grid-column: 1 / -1; display: flex; gap: 8px; margin-top: 12px; }
 .form-actions form { display: inline; margin: 0; }
-.detail-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    max-width: 72rem;
-}
 .detail-stack > .form-actions {
     margin-top: 4px;
 }

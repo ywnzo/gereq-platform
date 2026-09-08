@@ -98,7 +98,7 @@ Twig šablona stránky zůstává zodpovědná za:
 
 Nebo `{% embed 'ui/form_panel.html.twig' with { title: 'common.details'|trans } %}`.
 
-**Nevkládej `detail-stack`** do formulářů s vlastním layoutem (Customers `customer-edit`, Fleet, Listing hub) — `max-width: 72rem` je zúží. Tam nech existující wrapper a jen `forms().render` uvnitř sekcí.
+**Nevkládej `detail-stack`** do formulářů s vlastním layoutem (Customers `customer-edit`, Fleet, Listing hub) — přepíše flex/gap a rozbije page-specific grid. Tam nech existující wrapper a jen `forms().render` uvnitř sekcí.
 
 ---
 

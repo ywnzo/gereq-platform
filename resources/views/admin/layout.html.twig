@@ -30,10 +30,7 @@
                             {% if breadcrumbs is defined and breadcrumbs %}
                                 {% include 'ui/breadcrumbs.html.twig' with { items: breadcrumbs } %}
                             {% else %}
-                                {% include 'ui/breadcrumbs.html.twig' with { items: [
-                                    { label: 'nav.overview'|trans, url: url('admin.dashboard') },
-                                    { label: pageTitle|default('admin.title'|trans) },
-                                ] } %}
+                                {% include 'ui/breadcrumbs.html.twig' with { items: admin_breadcrumbs(pageTitle|default(null)) } %}
                             {% endif %}
                         {% endblock %}
                     </nav>

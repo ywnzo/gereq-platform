@@ -98,6 +98,7 @@ final class UserController extends Controller
         $this->applyProfile($user, $request);
         $this->assignRoles($user, $request->request->all('roles') ?: []);
         $this->storeAvatar($request, $user);
+        $this->storeBanner($request, $user);
         $this->em->persist($user);
         $this->hooks->doAction('admin.users.saving', $user, $request);
         $this->em->flush();
@@ -164,6 +165,10 @@ final class UserController extends Controller
         if ($request->request->getBoolean('remove_avatar')) {
             $user->setAvatarFileId(null);
         }
+        $this->storeBanner($request, $user);
+        if ($request->request->getBoolean('remove_banner')) {
+            $user->setBannerFileId(null);
+        }
         $this->hooks->doAction('admin.users.saving', $user, $request);
         $this->em->flush();
         $this->auditor->log('user.updated', 'user', $user->id(), $old, [
@@ -180,25 +185,12 @@ final class UserController extends Controller
 
     public function avatar(string $id): Response
     {
-        $user = $this->findUser($id);
-        if ($user->avatarFileId() === null) {
-            $this->abort(404, $this->translator->trans('admin.users.avatar_missing'));
-        }
-        $file = $this->em->find(StoredFile::class, $user->avatarFileId());
-        if (!$file instanceof StoredFile) {
-            $this->abort(404, $this->translator->trans('admin.users.avatar_missing'));
-        }
-        try {
-            $contents = $this->files->filesystem()->read($file->path());
-        } catch (\Throwable) {
-            $this->abort(404, $this->translator->trans('admin.users.avatar_missing'));
-        }
+        return $this->serveUserImage($id, 'avatar');
+    }
 
-        return new Response($contents, 200, [
-            'Content-Type' => $file->mime(),
-            'Cache-Control' => 'private, max-age=3600',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+    public function banner(string $id): Response
+    {
+        return $this->serveUserImage($id, 'banner');
     }
 
     public function destroy(string $id): Response
@@ -274,17 +266,58 @@ final class UserController extends Controller
 
     private function storeAvatar(Request $request, User $user): void
     {
-        $upload = $request->files->get('avatar');
+        $this->storeUserUpload($request, $user, 'avatar');
+    }
+
+    private function storeBanner(Request $request, User $user): void
+    {
+        $this->storeUserUpload($request, $user, 'banner');
+    }
+
+    /** @param 'avatar'|'banner' $kind */
+    private function storeUserUpload(Request $request, User $user, string $kind): void
+    {
+        $upload = $request->files->get($kind);
         if (!$upload instanceof UploadedFile || !$upload->isValid()) {
             return;
         }
         try {
             $stored = $this->files->store($upload, $this->auth->user());
             $this->em->persist($stored);
-            $user->setAvatarFileId($stored->id());
+            if ($kind === 'banner') {
+                $user->setBannerFileId($stored->id());
+            } else {
+                $user->setAvatarFileId($stored->id());
+            }
         } catch (\Throwable $e) {
             $this->flash('error', $e->getMessage());
         }
+    }
+
+    /** @param 'avatar'|'banner' $kind */
+    private function serveUserImage(string $id, string $kind): Response
+    {
+        $user = $this->findUser($id);
+        $fileId = $kind === 'banner' ? $user->bannerFileId() : $user->avatarFileId();
+        $missingKey = $kind === 'banner' ? 'admin.users.banner_missing' : 'admin.users.avatar_missing';
+        if ($fileId === null) {
+            $this->abort(404, $this->translator->trans($missingKey));
+        }
+        $file = $this->em->find(StoredFile::class, $fileId);
+        if (!$file instanceof StoredFile) {
+            $this->abort(404, $this->translator->trans($missingKey));
+        }
+        try {
+            $contents = $this->files->filesystem()->read($file->path());
+        } catch (\Throwable) {
+            $this->abort(404, $this->translator->trans($missingKey));
+        }
+
+        return new Response($contents, 200, [
+            'Content-Type' => $file->mime(),
+            'Cache-Control' => 'private, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     private function findUser(string $id): User

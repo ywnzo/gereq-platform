@@ -233,6 +233,27 @@
 .activity li { align-items: flex-start; }
 .activity__body { flex: 1; min-width: 0; display: flex; gap: 10px; }
 
+.user-edit-header {
+    position: relative;
+    overflow: hidden;
+}
+.user-edit-header--banner {
+    padding-top: 1.25rem;
+    border-radius: var(--radius);
+}
+.user-edit-header__banner {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--surface) 20%, transparent), var(--surface) 88%),
+        center / cover no-repeat;
+    pointer-events: none;
+}
+.user-edit-header--banner > .user-edit-hero,
+.user-edit-header--banner > .actions {
+    position: relative;
+    z-index: 1;
+}
 .user-edit-hero {
     display: flex;
     align-items: center;
@@ -240,7 +261,14 @@
     min-width: 0;
 }
 .user-edit-hero h1 { margin: 0; }
-.user-edit__photo {
+.user-edit__media {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 1rem 1.25rem;
+    align-items: start;
+}
+.user-edit__photo,
+.user-edit__banner {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
@@ -250,6 +278,25 @@
 .user-edit__photo > .avatar,
 .user-edit__photo > img.avatar {
     flex-shrink: 0;
+}
+.user-edit__banner-preview {
+    width: min(100%, 14rem);
+    height: 5.5rem;
+    flex-shrink: 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: center / cover no-repeat var(--surface);
+}
+.user-edit__banner-preview--empty {
+    background:
+        repeating-linear-gradient(
+            -45deg,
+            color-mix(in srgb, var(--border) 55%, transparent),
+            color-mix(in srgb, var(--border) 55%, transparent) 6px,
+            transparent 6px,
+            transparent 12px
+        ),
+        var(--surface);
 }
 .user-edit__photo-actions {
     display: flex;
@@ -263,6 +310,11 @@
 }
 .user-edit__photo-actions .g-label {
     margin-bottom: 0.25rem;
+}
+@media (max-width: 720px) {
+    .user-edit__media {
+        grid-template-columns: 1fr;
+    }
 }
 .user-edit__roles .check {
     align-items: flex-start;

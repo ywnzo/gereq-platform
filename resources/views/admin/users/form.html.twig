@@ -13,7 +13,10 @@
 {% endblock %}
 
 {% block content %}
-<header class="page-header">
+<header class="page-header user-edit-header{{ item and item.bannerFileId() ? ' user-edit-header--banner' : '' }}">
+    {% if item and item.bannerFileId() %}
+        <div class="user-edit-header__banner" style="background-image:url('{{ url('admin.users.banner', {id: item.id()}) }}')" aria-hidden="true"></div>
+    {% endif %}
     <div class="user-edit-hero">
         {% if item and item.avatarFileId() %}
             <img class="avatar avatar--xl" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="{{ item.name() }}">
@@ -74,28 +77,54 @@
                 </div>
             </header>
             <div class="form-grid">
-                <div class="field field--full user-edit__photo">
-                    {% if item and item.avatarFileId() %}
-                        <img class="avatar avatar--xl" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="">
-                    {% else %}
-                        <span class="avatar avatar--xl">{{ item ? item.initials() : '?' }}</span>
-                    {% endif %}
-                    <div class="user-edit__photo-actions">
-                        {% include 'ui/file.html.twig' with {
-                            name: 'avatar',
-                            id: 'f-avatar',
-                            label: 'admin.users.field.photo'|trans,
-                            optional: true,
-                            hint: 'admin.users.field.photo.hint'|trans,
-                            accept: 'image/*',
-                            compact: true
-                        } %}
+                <div class="field field--full user-edit__media">
+                    <div class="user-edit__photo">
                         {% if item and item.avatarFileId() %}
-                            <label class="check">
-                                <input type="checkbox" name="remove_avatar" value="1">
-                                <span>{{ 'admin.users.field.photo_remove'|trans }}</span>
-                            </label>
+                            <img class="avatar avatar--xl" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="">
+                        {% else %}
+                            <span class="avatar avatar--xl">{{ item ? item.initials() : '?' }}</span>
                         {% endif %}
+                        <div class="user-edit__photo-actions">
+                            {% include 'ui/file.html.twig' with {
+                                name: 'avatar',
+                                id: 'f-avatar',
+                                label: 'admin.users.field.photo'|trans,
+                                optional: true,
+                                hint: 'admin.users.field.photo.hint'|trans,
+                                accept: 'image/*',
+                                compact: true
+                            } %}
+                            {% if item and item.avatarFileId() %}
+                                <label class="check">
+                                    <input type="checkbox" name="remove_avatar" value="1">
+                                    <span>{{ 'admin.users.field.photo_remove'|trans }}</span>
+                                </label>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="user-edit__banner">
+                        {% if item and item.bannerFileId() %}
+                            <div class="user-edit__banner-preview" style="background-image:url('{{ url('admin.users.banner', {id: item.id()}) }}')" role="img" aria-label="{{ 'admin.users.field.banner'|trans }}"></div>
+                        {% else %}
+                            <div class="user-edit__banner-preview user-edit__banner-preview--empty" aria-hidden="true"></div>
+                        {% endif %}
+                        <div class="user-edit__photo-actions">
+                            {% include 'ui/file.html.twig' with {
+                                name: 'banner',
+                                id: 'f-banner',
+                                label: 'admin.users.field.banner'|trans,
+                                optional: true,
+                                hint: 'admin.users.field.banner.hint'|trans,
+                                accept: 'image/*',
+                                compact: true
+                            } %}
+                            {% if item and item.bannerFileId() %}
+                                <label class="check">
+                                    <input type="checkbox" name="remove_banner" value="1">
+                                    <span>{{ 'admin.users.field.banner_remove'|trans }}</span>
+                                </label>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 <label class="field">

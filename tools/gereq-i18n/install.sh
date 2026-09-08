@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 EXT_ID="gereq.i18n"
-VERSION="0.1.0"
+VERSION="0.2.0"
 TARGET="${HOME}/.cursor-server/extensions/${EXT_ID}-${VERSION}"
 
 rm -rf "${HOME}/.cursor-server/extensions/${EXT_ID}-"*

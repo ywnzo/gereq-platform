@@ -38,6 +38,9 @@ class User
     #[ORM\Column(name: 'avatar_file_id', length: 36, nullable: true)]
     private ?string $avatarFileId = null;
 
+    #[ORM\Column(name: 'banner_file_id', length: 36, nullable: true)]
+    private ?string $bannerFileId = null;
+
     #[ORM\Column(name: 'billing_street', length: 190, nullable: true)]
     private ?string $billingStreet = null;
 
@@ -167,6 +170,11 @@ class User
     public function avatarFileId(): ?string
     {
         return $this->avatarFileId;
+    }
+
+    public function bannerFileId(): ?string
+    {
+        return $this->bannerFileId;
     }
 
     public function billingStreet(): ?string
@@ -314,6 +322,12 @@ class User
     public function setAvatarFileId(?string $avatarFileId): void
     {
         $this->avatarFileId = self::nullable($avatarFileId);
+        $this->touch();
+    }
+
+    public function setBannerFileId(?string $bannerFileId): void
+    {
+        $this->bannerFileId = self::nullable($bannerFileId);
         $this->touch();
     }
 

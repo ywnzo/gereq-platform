@@ -94,6 +94,31 @@ final class ValidatorTest extends TestCase
         $this->validator()->validate(['status' => 'nope'], ['status' => 'required|in:active,lead']);
     }
 
+    public function testPhoneAcceptsCzechFormats(): void
+    {
+        $validator = $this->validator();
+
+        foreach (['+420777123456', '+420 777 123 456', '00420 777 123 456', '+420-777-123-456'] as $phone) {
+            $data = $validator->validate(['phone' => $phone], ['phone' => 'nullable|phone']);
+            self::assertSame($phone, $data['phone'], $phone);
+        }
+
+        $empty = $validator->validate(['phone' => ''], ['phone' => 'nullable|phone']);
+        self::assertNull($empty['phone']);
+    }
+
+    public function testPhoneRejectsInvalid(): void
+    {
+        foreach (['777123456', '+421777123456', '+420123', '+420012345678', 'abc'] as $phone) {
+            try {
+                $this->validator()->validate(['phone' => $phone], ['phone' => 'required|phone']);
+                self::fail('Očekávána ValidationException pro: ' . $phone);
+            } catch (ValidationException $exception) {
+                self::assertArrayHasKey('phone', $exception->errors());
+            }
+        }
+    }
+
     private function validator(): Validator
     {
         $hooks = new HookManager();

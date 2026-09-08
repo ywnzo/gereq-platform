@@ -81,38 +81,80 @@ function preferredLocaleOrder() {
   return [...prefer.filter((l) => locales.includes(l)), ...rest];
 }
 
+/** Named args / array keys that commonly hold i18n keys in PHP. */
+const PHP_I18N_PARAM =
+  '(?:label|singular|hint|title|message|placeholder|confirmLabel|cancelLabel|empty_label|emptyLabel|group)';
+
 /**
- * Klíč pod kurzorem: 'key'|trans / "key"|trans / ->trans('key')
+ * Patterns that capture a translation key string in Twig / PHP.
+ * Group 1 = quote, group 2 = key.
+ * PHP named-arg / array contexts require a dotted key (foo.bar) to avoid
+ * false positives like label: 'Jméno' or group: 'profile'.
+ */
+function keyMatchPatterns() {
+  return [
+    // Twig: 'key'|trans
+    /(['"])([a-zA-Z0-9][a-zA-Z0-9_.-]*)\1\s*\|\s*trans\b/g,
+    // PHP: ->trans('key') / $translator->trans('key')
+    /->\s*trans\s*\(\s*(['"])([a-zA-Z0-9][a-zA-Z0-9_.-]*)\1/g,
+    // PHP named arg: label: 'customers.field.name'
+    new RegExp(
+      `\\b${PHP_I18N_PARAM}\\s*:\\s*(['"])([a-zA-Z0-9][a-zA-Z0-9_-]*\\.[a-zA-Z0-9_.-]*)\\1`,
+      'g',
+    ),
+    // PHP array: 'label' => 'nav.customers' / "placeholder" => '…'
+    new RegExp(
+      `['"]${PHP_I18N_PARAM}['"]\\s*=>\\s*(['"])([a-zA-Z0-9][a-zA-Z0-9_-]*\\.[a-zA-Z0-9_.-]*)\\1`,
+      'g',
+    ),
+  ];
+}
+
+/**
+ * Collect key candidates on a line (shared by hover / definition / didOpen).
+ * @param {string} line
+ * @returns {{ key: string, start: number, end: number }[]}
+ */
+function collectKeysOnLine(line) {
+  const candidates = [];
+  for (const re of keyMatchPatterns()) {
+    let m;
+    while ((m = re.exec(line))) {
+      const quotePos = m.index + m[0].indexOf(m[1]);
+      const keyStart = quotePos + 1;
+      const keyEnd = keyStart + m[2].length;
+      candidates.push({ key: m[2], start: keyStart, end: keyEnd });
+    }
+  }
+  return candidates;
+}
+
+/**
+ * Fallback: quoted dotted string that exists in the catalog
+ * (e.g. return 'customers.status.active' in match arms).
+ * @returns {{ key: string, start: number, end: number }[]}
+ */
+function catalogKeysOnLine(line) {
+  const out = [];
+  const re = /(['"])([a-zA-Z0-9][a-zA-Z0-9_-]*\.[a-zA-Z0-9_.-]*)\1/g;
+  let m;
+  while ((m = re.exec(line))) {
+    if (!catalog[m[2]]) {
+      continue;
+    }
+    const keyStart = m.index + 1;
+    out.push({ key: m[2], start: keyStart, end: keyStart + m[2].length });
+  }
+  return out;
+}
+
+/**
+ * Klíč pod kurzorem: 'key'|trans / ->trans('key') / label: 'key' / 'label' => 'key'
  * @returns {{ key: string, range: vscode.Range } | null}
  */
 function keyAtPosition(document, position) {
   const line = document.lineAt(position.line).text;
-  const candidates = [];
-
-  const twigRe = /(['"])([a-zA-Z0-9][a-zA-Z0-9_.-]*)\1\s*\|\s*trans\b/g;
-  let m;
-  while ((m = twigRe.exec(line))) {
-    const keyStart = m.index + 1;
-    const keyEnd = keyStart + m[2].length;
-    candidates.push({
-      key: m[2],
-      start: keyStart,
-      end: keyEnd,
-    });
-  }
-
-  const phpRe = /->\s*trans\s*\(\s*(['"])([a-zA-Z0-9][a-zA-Z0-9_.-]*)\1/g;
-  while ((m = phpRe.exec(line))) {
-    const quotePos = m.index + m[0].indexOf(m[1]);
-    const keyStart = quotePos + 1;
-    const keyEnd = keyStart + m[2].length;
-    candidates.push({
-      key: m[2],
-      start: keyStart,
-      end: keyEnd,
-    });
-  }
-
+  const candidates = [...collectKeysOnLine(line), ...catalogKeysOnLine(line)];
   const ch = position.character;
   for (const c of candidates) {
     if (ch >= c.start && ch <= c.end) {
@@ -131,7 +173,7 @@ function keyAtPosition(document, position) {
 }
 
 /**
- * Autocomplete kontext: uvnitř uvozovek u |trans / ->trans(
+ * Autocomplete kontext: |trans / ->trans( / label: '…' / 'placeholder' => '…'
  * V .twig i bez |trans (klíče se píšou jako 'foo.bar').
  * @returns {{ prefix: string, range: vscode.Range } | null}
  */
@@ -140,10 +182,16 @@ function completionContext(document, position) {
   const before = line.slice(0, position.character);
   const after = line.slice(position.character);
   const isTwig = document.fileName.endsWith('.twig');
+  const isPhp = document.fileName.endsWith('.php');
 
-  // ->trans('prefix
-  if (/->\s*trans\s*\(\s*(['"])[a-zA-Z0-9_.-]*$/.test(before)) {
-    const m = before.match(/(['"])([a-zA-Z0-9_.-]*)$/);
+  const phpContexts = [
+    /->\s*trans\s*\(\s*(['"])([a-zA-Z0-9_.-]*)$/,
+    new RegExp(`\\b${PHP_I18N_PARAM}\\s*:\\s*(['"])([a-zA-Z0-9_.-]*)$`),
+    new RegExp(`['"]${PHP_I18N_PARAM}['"]\\s*=>\\s*(['"])([a-zA-Z0-9_.-]*)$`),
+  ];
+
+  for (const re of phpContexts) {
+    const m = before.match(re);
     if (m) {
       const prefix = m[2];
       const start = position.character - prefix.length;
@@ -176,6 +224,13 @@ function completionContext(document, position) {
       };
     }
   } else if (hasTransAfter) {
+    const start = position.character - prefix.length;
+    return {
+      prefix,
+      range: new vscode.Range(position.line, start, position.line, position.character),
+    };
+  } else if (isPhp && prefix.includes('.')) {
+    // PHP: string už vypadá jako klíč (např. return 'customers.status.active')
     const start = position.character - prefix.length;
     return {
       prefix,
@@ -279,14 +334,13 @@ function onDocOpened(document) {
 
   const text = document.getText();
   const keys = new Set();
-  const twigRe = /(['"])([a-zA-Z0-9][a-zA-Z0-9_.-]*)\1\s*\|\s*trans\b/g;
-  const phpRe = /->\s*trans\s*\(\s*(['"])([a-zA-Z0-9][a-zA-Z0-9_.-]*)\1/g;
-  let m;
-  while ((m = twigRe.exec(text))) {
-    keys.add(m[2]);
-  }
-  while ((m = phpRe.exec(text))) {
-    keys.add(m[2]);
+  for (const line of text.split(/\r?\n/)) {
+    for (const c of collectKeysOnLine(line)) {
+      keys.add(c.key);
+    }
+    for (const c of catalogKeysOnLine(line)) {
+      keys.add(c.key);
+    }
   }
 
   const rel = vscode.workspace.asRelativePath(document.uri);
@@ -493,7 +547,7 @@ function activate(context) {
   watcher.onDidDelete(reload);
   context.subscriptions.push(watcher);
 
-  lsp('initialized', 'hover · definition · completion · didOpen logging');
+  lsp('initialized', 'hover · definition · completion · php attrs · didOpen logging');
 }
 
 function deactivate() {}

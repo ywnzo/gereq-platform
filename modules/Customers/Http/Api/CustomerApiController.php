@@ -593,7 +593,19 @@ final class CustomerApiController extends AbstractCustomerApiController
     private function applyCustomerFields(Customer $customer, array $data): void
     {
         $customer->setPhone(isset($data['phone']) ? (string) $data['phone'] : null);
+        if (array_key_exists('is_company', $data)) {
+            $customer->setIsCompany((bool) $data['is_company']);
+        }
         $customer->setCompany(isset($data['company']) ? (string) $data['company'] : null);
+        if (array_key_exists('ico', $data)) {
+            $customer->setIco(isset($data['ico']) ? (string) $data['ico'] : null);
+        }
+        if (array_key_exists('dic', $data)) {
+            $customer->setDic(isset($data['dic']) ? (string) $data['dic'] : null);
+        }
+        if (array_key_exists('company_address', $data)) {
+            $customer->setCompanyAddress(isset($data['company_address']) ? (string) $data['company_address'] : null);
+        }
         $customer->setNote(isset($data['note']) ? (string) $data['note'] : null);
         $status = (string) ($data['status'] ?? 'active');
         if (!in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
@@ -634,7 +646,11 @@ final class CustomerApiController extends AbstractCustomerApiController
             'name' => $customer->name(),
             'email' => $customer->email(),
             'phone' => $customer->phone(),
+            'is_company' => $customer->isCompany(),
             'company' => $customer->company(),
+            'ico' => $customer->ico(),
+            'dic' => $customer->dic(),
+            'company_address' => $customer->companyAddress(),
             'note' => $customer->note(),
             'status' => $customer->status(),
             'created_at' => $customer->createdAt()->format(\DateTimeInterface::ATOM),

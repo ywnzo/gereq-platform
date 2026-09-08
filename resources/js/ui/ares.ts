@@ -184,14 +184,15 @@ export function registerAres(alpine: typeof Alpine): void {
             this.abort?.abort();
 
             const root = componentRoot(this as unknown as AresComponent);
-            fill(root, 'name', item.name);
-            fill(root, 'company', item.name);
-            fill(root, 'ico', item.ico);
+            const scope = (root.closest('form') as HTMLElement | null) ?? root;
+            fill(scope, 'name', item.name);
+            fill(scope, 'company', item.name);
+            fill(scope, 'ico', item.ico);
             if (item.dic) {
-                fill(root, 'dic', item.dic);
+                fill(scope, 'dic', item.dic);
             }
             if (item.address_text) {
-                fill(root, 'address', item.address_text);
+                fill(scope, 'address', item.address_text);
             }
 
             const query = this.inputEl();

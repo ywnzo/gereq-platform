@@ -102,6 +102,7 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('icon', [$runtime, 'icon'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('current_user', [$runtime, 'currentUser']));
         $twig->addFunction(new TwigFunction('route_is', [$runtime, 'routeIs']));
+        $twig->addFunction(new TwigFunction('admin_breadcrumbs', [$runtime, 'adminBreadcrumbs']));
         $twig->addFunction(new TwigFunction('flash', [$runtime, 'flash']));
         $twig->addFunction(new TwigFunction('csp_nonce', [$runtime, 'cspNonce']));
         $twig->addFunction(new TwigFunction('old', [$runtime, 'old']));

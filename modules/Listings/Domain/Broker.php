@@ -39,7 +39,7 @@ class Broker
     private string $email;
 
     #[ORM\Column(length: 64, nullable: true)]
-    #[FormField(label: 'listings.brokers.field.phone', order: 40)]
+    #[FormField(label: 'listings.brokers.field.phone', type: 'tel', options: ['placeholder' => '+420 777 123 456'], order: 40)]
     private ?string $phone = null;
 
     #[ORM\Column(length: 120, nullable: true)]

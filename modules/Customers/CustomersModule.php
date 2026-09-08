@@ -32,6 +32,7 @@ use Modules\Customers\Http\Api\CustomerTagApiController;
 use Modules\Customers\Http\Api\StoreAuthApiController;
 use Modules\Customers\Http\CustomerController;
 use Modules\Customers\Application\StoreAuthService;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class CustomersModule implements ModuleInterface
 {
@@ -42,7 +43,7 @@ final class CustomersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.4.2';
+        return '1.5.0';
     }
 
     public function register(ModuleContext $context): void
@@ -134,12 +135,12 @@ final class CustomersModule implements ModuleInterface
             'email' => 'required|email|max:190',
             'password' => 'required|min:8|max:120',
             'name' => 'nullable|max:180',
-            'phone' => 'nullable|max:40',
+            'phone' => 'nullable|phone|max:40',
         ]);
         $v->ruleset('customers.store.soft_register', [
             'email' => 'required|email|max:190',
             'name' => 'nullable|max:180',
-            'phone' => 'nullable|max:40',
+            'phone' => 'nullable|phone|max:40',
         ]);
         $v->ruleset('customers.store.complete', [
             'email' => 'required|email|max:190',
@@ -352,6 +353,7 @@ final class CustomersModule implements ModuleInterface
     private function registerValidation(ModuleContext $context): void
     {
         $em = $context->get(EntityManagerInterface::class);
+        $translator = $context->get(TranslatorInterface::class);
         $validation = $context->validation();
 
         $validation->rule(
@@ -372,11 +374,33 @@ final class CustomersModule implements ModuleInterface
         $validation->ruleset('customers.save', [
             'name' => 'required|min:2|max:120',
             'email' => 'required|email|max:190|customer_email_available',
-            'phone' => 'nullable|max:40',
+            'phone' => 'nullable|phone|max:40',
+            'is_company' => 'nullable|boolean',
             'company' => 'nullable|max:190',
+            'ico' => 'nullable|max:12',
+            'dic' => 'nullable|max:20',
+            'company_address' => 'nullable|max:255',
             'note' => 'nullable|max:20000',
             'status' => 'required|in:active,lead,inactive,archived',
         ]);
+        $validation->after('customers.save', static function (array $data, array $errors) use ($translator): array {
+            $isCompany = in_array($data['is_company'] ?? null, [true, 1, '1', 'on', 'yes', 'true'], true);
+            if (!$isCompany) {
+                return $errors;
+            }
+            $ico = preg_replace('/\s+/', '', (string) ($data['ico'] ?? '')) ?? '';
+            if ($ico === '') {
+                $errors['ico'] = $translator->trans('validation.required');
+            } elseif (preg_match('/^\d{8}$/', $ico) !== 1) {
+                $errors['ico'] = $translator->trans('customers.validation.ico');
+            }
+            $company = trim((string) ($data['company'] ?? ''));
+            if ($company === '') {
+                $errors['company'] = $translator->trans('validation.required');
+            }
+
+            return $errors;
+        });
         $context->forms()->entity('customers.save', \Modules\Customers\Domain\Customer::class);
 
         $validation->ruleset('customers.bulk', [
@@ -397,7 +421,7 @@ final class CustomersModule implements ModuleInterface
         $validation->ruleset('customers.contact.save', [
             'name' => 'required|min:2|max:180',
             'email' => 'nullable|email|max:180',
-            'phone' => 'nullable|max:40',
+            'phone' => 'nullable|phone|max:40',
             'role' => 'nullable|max:120',
             'is_primary' => 'nullable|boolean',
         ]);

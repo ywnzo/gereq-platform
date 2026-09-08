@@ -63,6 +63,7 @@
                         </div>
                     </header>
                     {% set customerSource = item ?? 'Modules\\Customers\\Domain\\Customer' %}
+                    {% set isCompany = old('is_company', item ? (item.isCompany() ? '1' : ''), 'customers.save') in ['1', 1, true, 'on', 'yes'] %}
                     <div class="customer-edit__grid">
                         {{ forms().render(customerSource, {
                             form: 'customers.save',
@@ -70,24 +71,109 @@
                             wrap: false,
                             cols: 2
                         }) }}
-                        <div class="g-field ares-field" x-data="gereqAresSubject">
-                            <span class="g-label">{{ 'customers.field.company'|trans }} · ARES</span>
-                            <div class="g-control-wrap">
-                                <input
-                                    class="g-control"
-                                    name="company"
-                                    data-ares-query
-                                    data-ares-fill="company"
-                                    autocomplete="organization"
-                                    placeholder="{{ 'customers.form.company.placeholder'|trans }}"
-                                    value="{{ old('company', item ? item.company() : '', 'customers.save') }}"
-                                    @input="onInput"
-                                    @keydown="onKeydown"
-                                    x-ref="query"
-                                >
+                    </div>
+
+                    <div
+                        class="customer-edit__company"
+                        x-data="{ isCompany: {{ isCompany ? 'true' : 'false' }} }"
+                    >
+                        <label class="g-switch customer-edit__company-toggle">
+                            <input type="checkbox" name="is_company" value="1" x-model="isCompany" {{ isCompany ? 'checked' : '' }}>
+                            <span>{{ 'customers.field.is_company'|trans }}</span>
+                        </label>
+                        <p class="muted customer-edit__section-hint">{{ 'customers.form.is_company.hint'|trans }}</p>
+
+                        <template x-if="isCompany">
+                            <div class="customer-edit__company-fields">
+                                <div class="customer-edit__grid">
+                                    <div class="g-field ares-field" x-data="gereqAresSubject">
+                                        <span class="g-label">{{ 'customers.field.ico'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
+                                        <div class="g-control-wrap ares-field__row">
+                                            <input
+                                                class="g-control"
+                                                name="ico"
+                                                data-ares-query
+                                                data-ares-ico
+                                                data-ares-fill="ico"
+                                                inputmode="numeric"
+                                                autocomplete="off"
+                                                placeholder="{{ 'customers.form.ico.placeholder'|trans }}"
+                                                value="{{ old('ico', item ? item.ico() : '', 'customers.save') }}"
+                                                @input="onInput"
+                                                @keydown="onKeydown"
+                                                x-ref="query"
+                                            >
+                                            <button type="button" class="btn btn--ghost" @click="lookupIco">ARES</button>
+                                        </div>
+                                        {% include 'ui/ares_subject_suggest.html.twig' %}
+                                        {% if error('ico', 'customers.save') %}
+                                            <p class="g-error">{{ error('ico', 'customers.save') }}</p>
+                                        {% endif %}
+                                        <p class="g-hint">{{ 'customers.form.ico.hint'|trans }}</p>
+                                    </div>
+                                    <div class="g-field">
+                                        <span class="g-label">{{ 'customers.field.dic'|trans }}</span>
+                                        <div class="g-control-wrap">
+                                            <input
+                                                class="g-control"
+                                                name="dic"
+                                                data-ares-fill="dic"
+                                                autocomplete="off"
+                                                placeholder="{{ 'customers.form.dic.placeholder'|trans }}"
+                                                value="{{ old('dic', item ? item.dic() : '', 'customers.save') }}"
+                                            >
+                                        </div>
+                                        {% if error('dic', 'customers.save') %}
+                                            <p class="g-error">{{ error('dic', 'customers.save') }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="g-field field--full">
+                                        <span class="g-label">{{ 'customers.field.company'|trans }}</span>
+                                        <div class="g-control-wrap">
+                                            <input
+                                                class="g-control"
+                                                name="company"
+                                                data-ares-fill="company"
+                                                autocomplete="organization"
+                                                placeholder="{{ 'customers.form.company.name.placeholder'|trans }}"
+                                                value="{{ old('company', item ? item.company() : '', 'customers.save') }}"
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="g-field field--full">
+                                        <span class="g-label">{{ 'customers.field.company_address'|trans }}</span>
+                                        <div class="g-control-wrap">
+                                            <input
+                                                class="g-control"
+                                                name="company_address"
+                                                data-ares-fill="address"
+                                                autocomplete="street-address"
+                                                placeholder="{{ 'customers.form.company_address.placeholder'|trans }}"
+                                                value="{{ old('company_address', item ? item.companyAddress() : '', 'customers.save') }}"
+                                            >
+                                        </div>
+                                        <p class="g-hint">{{ 'customers.form.company_address.hint'|trans }}</p>
+                                    </div>
+                                </div>
                             </div>
-                            {% include 'ui/ares_subject_suggest.html.twig' %}
-                        </div>
+                        </template>
+
+                        <template x-if="!isCompany">
+                            <div class="customer-edit__grid">
+                                <div class="g-field field--full">
+                                    <span class="g-label">{{ 'customers.field.company'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
+                                    <div class="g-control-wrap">
+                                        <input
+                                            class="g-control"
+                                            name="company"
+                                            autocomplete="organization"
+                                            placeholder="{{ 'customers.form.company.employer.placeholder'|trans }}"
+                                            value="{{ old('company', item and not item.isCompany() ? item.company() : '', 'customers.save') }}"
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </section>
 

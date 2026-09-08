@@ -120,6 +120,7 @@ final class Validator
             'email' => $this->isEmpty($value) || filter_var((string) $value, FILTER_VALIDATE_EMAIL)
                 ? null
                 : $this->t('validation.email'),
+            'phone' => $this->phone($value),
             'url' => $this->isEmpty($value) || filter_var((string) $value, FILTER_VALIDATE_URL)
                 ? null
                 : $this->t('validation.url'),
@@ -174,6 +175,25 @@ final class Validator
     private function t(string $id, array $parameters = []): string
     {
         return $this->translator->trans($id, $parameters);
+    }
+
+    private function phone(mixed $value): ?string
+    {
+        if ($this->isEmpty($value)) {
+            return null;
+        }
+
+        $normalized = preg_replace('/[\s\-().]/', '', (string) $value) ?? '';
+        if (str_starts_with($normalized, '00420')) {
+            $normalized = '+' . substr($normalized, 2);
+        }
+
+        // CZ: +420 + 9 číslic (první 2–9 — mobil/pevná, bez 0/1)
+        if (preg_match('/^\+420[2-9]\d{8}$/', $normalized) === 1) {
+            return null;
+        }
+
+        return $this->t('validation.phone');
     }
 
     private function min(mixed $value, int $min): ?string

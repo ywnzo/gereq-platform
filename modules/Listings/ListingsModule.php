@@ -339,7 +339,7 @@ final class ListingsModule implements ModuleInterface
             'first_name' => 'required|min:1|max:120',
             'last_name' => 'required|min:1|max:120',
             'email' => 'required|email|max:190',
-            'phone' => 'nullable|max:64',
+            'phone' => 'nullable|phone|max:64',
             'position' => 'nullable|max:120',
             'skills' => 'nullable|max:5000',
             'description' => 'nullable|max:20000',

@@ -117,6 +117,20 @@ final class TwigRuntime
         return $route === $name || str_starts_with($route, $name);
     }
 
+    /**
+     * @return list<array{label: string, url?: string|null}>
+     */
+    public function adminBreadcrumbs(?string $pageTitle = null): array
+    {
+        $request = $this->requestStack->getCurrentRequest();
+        $route = $request !== null ? (string) $request->attributes->get('_route', '') : '';
+
+        /** @var \Gereq\Admin\Menu\Menu $menu */
+        $menu = gereq()->make(\Gereq\Admin\Menu\Menu::class);
+
+        return $menu->breadcrumbsFor($route, $this->router, $request, $pageTitle);
+    }
+
     public function flash(string $key): mixed
     {
         $request = $this->requestStack->getCurrentRequest();

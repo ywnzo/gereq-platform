@@ -223,7 +223,7 @@ final class CarServiceModule implements ModuleInterface
             'city' => 'nullable|max:120',
             'zip' => 'nullable|max:32',
             'country' => 'nullable|max:2',
-            'phone' => 'nullable|max:40',
+            'phone' => 'nullable|phone|max:40',
             'email' => 'nullable|max:190',
             'employee_count' => 'nullable|integer',
             'note' => 'nullable|max:5000',
