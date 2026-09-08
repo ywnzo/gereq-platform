@@ -41,6 +41,11 @@ use Gereq\Http\DesignController;
 use Gereq\Http\Router;
 use Gereq\I18n\LocaleCatalog;
 use Gereq\Module\ModuleManager;
+use Gereq\Publish\Adapter\BrandingPublishAdapter;
+use Gereq\Publish\ContentVersion;
+use Gereq\Publish\Http\PublishController;
+use Gereq\Publish\PublishableRegistry;
+use Gereq\Publish\StagingStore;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 use Gereq\User\PermissionRegistry;
@@ -66,6 +71,10 @@ final class CoreRegistrar
         private readonly TranslatorInterface $translator,
         private readonly ModuleManager $modules,
         private readonly Authenticator $auth,
+        private readonly PublishableRegistry $publishables,
+        private readonly BrandingPublishAdapter $brandingPublishAdapter,
+        private readonly StagingStore $stagingStore,
+        private readonly \Gereq\Hook\HookManager $hooks,
     ) {
     }
 
@@ -73,12 +82,47 @@ final class CoreRegistrar
     {
         $this->permissions();
         $this->settings();
+        $this->publishables();
         $this->validation();
         $this->routes();
         $this->menu();
         $this->commands();
         $this->adminSearch();
         $this->dashboard();
+        $this->topbarPublishBadge();
+    }
+
+    private function publishables(): void
+    {
+        $this->publishables->register(
+            'branding',
+            $this->translator->trans('publish.category.branding'),
+            $this->brandingPublishAdapter,
+            null,
+            10,
+        );
+    }
+
+    private function topbarPublishBadge(): void
+    {
+        $this->hooks->addFilter('admin.topbar.center', function (string $html): string {
+            try {
+                $count = $this->stagingStore->count();
+            } catch (\Throwable) {
+                $count = 0;
+            }
+            if ($count < 1) {
+                return $html;
+            }
+
+            $partial = $this->twig->render('admin/partials/publish_badge.html.twig', [
+                'pending_count' => $count,
+                'pending_url' => $this->router->url('admin.publish.pending'),
+                'publish_url' => $this->router->url('admin.publish.run'),
+            ]);
+
+            return $html . $partial;
+        });
     }
 
     private function permissions(): void
@@ -126,6 +170,12 @@ final class CoreRegistrar
             SettingRecord::TYPE_JSON,
             'settings.dashboard.layout',
             [],
+        );
+        $this->settings->define(
+            ContentVersion::SETTING_KEY,
+            SettingRecord::TYPE_STRING,
+            'settings.app.content_version',
+            ContentVersion::DEFAULT,
         );
 
         // White-label branding (admin + public site).
@@ -240,6 +290,9 @@ final class CoreRegistrar
 
             $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth')->permission('settings.manage');
             $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth')->permission('settings.manage');
+            $router->get('/publish/pending', [PublishController::class, 'pending'])->name('admin.publish.pending')->middleware('auth')->permission('settings.manage');
+            $router->post('/publish', [PublishController::class, 'publish'])->name('admin.publish.run')->middleware('auth')->permission('settings.manage');
+            $router->get('/publish/releases', [PublishController::class, 'releases'])->name('admin.publish.releases')->middleware('auth')->permission('settings.manage');
             $router->get('/settings/audit', [AuditController::class, 'index'])->name('admin.audit.index')->middleware('auth')->permission('audit.view');
             $router->get('/audit', [AuditController::class, 'index'])->middleware('auth')->permission('audit.view');
             $router->get('/profile', [ProfileController::class, 'edit'])->name('admin.profile')->middleware('auth');

@@ -56,7 +56,7 @@
                     role="tabpanel"
                     {% if groupId == 'brand' %}x-data="settingsBrandPreview"{% endif %}
                 >
-                    <div class="detail-stack">
+                    <div class="detail-stack{% if groupId == 'brand' %} detail-stack--brand{% endif %}">
                         <section class="panel">
                             <header class="panel__head">
                                 <div>
@@ -118,7 +118,7 @@
                         </section>
 
                         {% if groupId == 'brand' %}
-                            <section class="panel">
+                            <aside class="panel settings-brand-preview" aria-label="{{ 'settings.preview'|trans }}">
                                 <header class="panel__head panel__head--actions">
                                     <div>
                                         <h2>{{ 'settings.preview'|trans }}</h2>
@@ -156,7 +156,7 @@
                                         <span class="settings-preview__swatch" :style="swatchSite" title="{{ 'settings.brand.site_primary'|trans }}"></span>
                                     </div>
                                 </div>
-                            </section>
+                            </aside>
                         {% endif %}
                     </div>
                 </section>

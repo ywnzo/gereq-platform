@@ -45,5 +45,13 @@
                 </div>
             {% endfor %}
         </div>
+    {% elseif widgets.metric is empty %}
+        <div class="dash-empty" role="status">
+            <span class="dash-empty__icon" aria-hidden="true">{{ icon('layout') }}</span>
+            <h2 class="dash-empty__title">{{ 'admin.dashboard.empty'|trans }}</h2>
+            <p class="dash-empty__hint">{{ 'admin.dashboard.empty.hint'|trans({
+                '%url%': url('admin.settings.index', {tab: 'dashboard'})
+            })|raw }}</p>
+        </div>
     {% endif %}
 {% endblock %}

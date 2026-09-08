@@ -1,10 +1,39 @@
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
 const hotFile = path.resolve('public/hot');
 const vitePort = Number(process.env.VITE_PORT ?? 5173);
+
+function writeHot(): void {
+  fs.mkdirSync(path.dirname(hotFile), { recursive: true });
+  fs.writeFileSync(hotFile, String(vitePort));
+}
+
+function clearHot(): void {
+  try {
+    fs.unlinkSync(hotFile);
+  } catch {
+    /* ignore */
+  }
+}
+
+async function viteListening(port: number, timeoutMs = 120): Promise<boolean> {
+  return await new Promise<boolean>((resolve) => {
+    const socket = net.connect({ host: '127.0.0.1', port });
+    const finish = (ok: boolean) => {
+      socket.removeAllListeners();
+      socket.destroy();
+      resolve(ok);
+    };
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => finish(true));
+    socket.once('error', () => finish(false));
+    socket.once('timeout', () => finish(false));
+  });
+}
 
 /** Writes `public/hot` (port) for PHP AssetManager + full-reload on Twig changes. */
 function gereqDev(): Plugin {
@@ -17,18 +46,6 @@ function gereqDev(): Plugin {
   return {
     name: 'gereq-dev',
     configureServer(server) {
-      const writeHot = () => {
-        fs.mkdirSync(path.dirname(hotFile), { recursive: true });
-        fs.writeFileSync(hotFile, String(vitePort));
-      };
-      const clearHot = () => {
-        try {
-          fs.unlinkSync(hotFile);
-        } catch {
-          /* ignore */
-        }
-      };
-
       writeHot();
       const httpServer = server.httpServer;
       httpServer?.once('listening', writeHot);
@@ -43,6 +60,15 @@ function gereqDev(): Plugin {
         process.exit();
       });
 
+      // `bun run build` used to delete public/hot while HMR was still up —
+      // PHP then served /build and ignored Vite. Restore the marker quickly.
+      const hotWatch = setInterval(() => {
+        if (!fs.existsSync(hotFile)) {
+          writeHot();
+        }
+      }, 1000);
+      httpServer?.once('close', () => clearInterval(hotWatch));
+
       server.watcher.add(twigGlobs);
       server.watcher.on('change', (file) => {
         if (file.endsWith('.twig') || file.endsWith('.php')) {
@@ -50,12 +76,12 @@ function gereqDev(): Plugin {
         }
       });
     },
-    buildStart() {
-      try {
-        fs.unlinkSync(hotFile);
-      } catch {
-        /* ignore */
+    async buildStart() {
+      // Don't wipe the HMR marker while `bun run dev` is still listening.
+      if (await viteListening(vitePort)) {
+        return;
       }
+      clearHot();
     },
   };
 }

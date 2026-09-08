@@ -10,6 +10,8 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Publish\Adapter\CmsMenuPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Modules\Cms\Domain\Page;
 use Modules\Cms\Domain\SiteMenu;
 use Modules\Cms\Domain\SiteMenuItem;
@@ -30,13 +32,31 @@ final class MenuController extends Controller
         private readonly Menu $menu,
         private readonly CommandPalette $palette,
         private readonly TranslatorInterface $translator,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezeMenu(SiteMenu $menu): void
+    {
+        $this->freeze->freezeIfNeeded(
+            'cms.menus',
+            'menu',
+            $menu->id(),
+            fn (): array => CmsMenuPublishAdapter::capture($this->em, $menu),
+            $menu->name(),
+            $this->auth->user()?->id(),
+        );
     }
 
     public function index(): Response
     {
         $items = $this->em->getRepository(SiteMenu::class)->findBy([], ['name' => 'ASC']);
+        $pendingDelete = array_flip($this->freeze->pendingDeleteKeys('cms.menus'));
+        $items = array_values(array_filter(
+            $items,
+            static fn (SiteMenu $m): bool => !isset($pendingDelete[$m->id()]),
+        ));
 
         return $this->page('@cms/menus/index.html.twig', [
             'pageTitle' => $this->translator->trans('cms.menus.title'),
@@ -58,8 +78,15 @@ final class MenuController extends Controller
         $menu = new SiteMenu(trim((string) $data['name']), (string) $data['location']);
         $this->em->persist($menu);
         $this->em->flush();
+        $this->freeze->stageCreate(
+            'cms.menus',
+            'menu',
+            $menu->id(),
+            $menu->name(),
+            $this->auth->user()?->id(),
+        );
         $this->forgetForm('cms.menu.save');
-        $this->flash('success', $this->translator->trans('cms.flash.menu_created', ['%name%' => $menu->name()]));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.cms.menus.show', ['id' => $menu->id()]);
     }
@@ -67,7 +94,7 @@ final class MenuController extends Controller
     public function show(string $id): Response
     {
         $item = $this->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('cms.menus', $id)) {
             $this->abort(404, $this->translator->trans('cms.error.menu_not_found'));
         }
 
@@ -92,7 +119,7 @@ final class MenuController extends Controller
     public function edit(string $id): Response
     {
         $item = $this->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('cms.menus', $id)) {
             $this->abort(404, $this->translator->trans('cms.error.menu_not_found'));
         }
 
@@ -110,11 +137,12 @@ final class MenuController extends Controller
         }
 
         $data = $this->validate($request, 'cms.menu.save');
+        $this->freezeMenu($item);
         $item->setName(trim((string) $data['name']));
         $item->setLocation((string) $data['location']);
         $this->em->flush();
         $this->forgetForm('cms.menu.save');
-        $this->flash('success', $this->translator->trans('cms.flash.menu_updated', ['%name%' => $item->name()]));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.cms.menus.show', ['id' => $id]);
     }
@@ -122,17 +150,19 @@ final class MenuController extends Controller
     public function destroy(string $id): Response
     {
         $item = $this->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('cms.menus', $id)) {
             $this->abort(404, $this->translator->trans('cms.error.menu_not_found'));
         }
 
-        $name = $item->name();
-        foreach ($this->em->getRepository(SiteMenuItem::class)->findBy(['menuId' => $id]) as $row) {
-            $this->em->remove($row);
-        }
-        $this->em->remove($item);
-        $this->em->flush();
-        $this->flash('success', $this->translator->trans('cms.flash.menu_deleted', ['%name%' => $name]));
+        $this->freeze->stageDelete(
+            'cms.menus',
+            'menu',
+            $id,
+            fn (): array => CmsMenuPublishAdapter::capture($this->em, $item),
+            $item->name(),
+            $this->auth->user()?->id(),
+        );
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.cms.menus.index');
     }
@@ -144,6 +174,7 @@ final class MenuController extends Controller
             $this->abort(404, $this->translator->trans('cms.error.menu_not_found'));
         }
 
+        $this->freezeMenu($menu);
         $data = $this->validate($request, 'cms.menu_item.save');
         $max = (int) $this->em->getRepository(SiteMenuItem::class)->createQueryBuilder('i')
             ->select('MAX(i.sortOrder)')
@@ -159,14 +190,15 @@ final class MenuController extends Controller
         $this->em->persist($row);
         $this->em->flush();
         $this->forgetForm('cms.menu_item.save');
-        $this->flash('success', $this->translator->trans('cms.flash.menu_item_created'));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.cms.menus.show', ['id' => $id]);
     }
 
     public function updateItem(Request $request, string $id, string $itemId): Response
     {
-        $this->findOrFail($id);
+        $menu = $this->findOrFail($id);
+        $this->freezeMenu($menu);
         $row = $this->em->find(SiteMenuItem::class, $itemId);
         if (!$row instanceof SiteMenuItem || $row->menuId() !== $id) {
             $this->abort(404, $this->translator->trans('cms.error.menu_item_not_found'));
@@ -182,21 +214,22 @@ final class MenuController extends Controller
         }
         $this->em->flush();
         $this->forgetForm('cms.menu_item.save');
-        $this->flash('success', $this->translator->trans('cms.flash.menu_item_updated'));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.cms.menus.show', ['id' => $id]);
     }
 
     public function destroyItem(string $id, string $itemId): Response
     {
-        $this->findOrFail($id);
+        $menu = $this->findOrFail($id);
+        $this->freezeMenu($menu);
         $row = $this->em->find(SiteMenuItem::class, $itemId);
         if (!$row instanceof SiteMenuItem || $row->menuId() !== $id) {
             $this->abort(404, $this->translator->trans('cms.error.menu_item_not_found'));
         }
         $this->em->remove($row);
         $this->em->flush();
-        $this->flash('success', $this->translator->trans('cms.flash.menu_item_deleted'));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.cms.menus.show', ['id' => $id]);
     }

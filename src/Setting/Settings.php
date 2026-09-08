@@ -6,6 +6,9 @@ namespace Gereq\Setting;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Config\Repository as Config;
+use Gereq\Publish\ContentReadContext;
+use Gereq\Publish\PublishableRegistry;
+use Gereq\Publish\StagingWriter;
 use Gereq\Support\Json;
 
 final class Settings
@@ -16,9 +19,17 @@ final class Settings
     /** @var array<string, mixed>|null null = ještě nenačteno */
     private ?array $values = null;
 
+    /** @var array<string, mixed> in-request overlay from staging (settings keys) */
+    private array $stagingOverlay = [];
+
+    private bool $stagingOverlayLoaded = false;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly Config $config,
+        private readonly ContentReadContext $readContext,
+        private readonly PublishableRegistry $publishables,
+        private readonly StagingWriter $stagingWriter,
     ) {
     }
 
@@ -54,6 +65,19 @@ final class Settings
 
     public function get(string $key, mixed $default = null): mixed
     {
+        if ($this->readContext->isStaging() && $this->publishables->isSettingsKey($key)) {
+            $this->warmStagingOverlay();
+            if (array_key_exists($key, $this->stagingOverlay)) {
+                return $this->stagingOverlay[$key];
+            }
+        }
+
+        return $this->getLive($key, $default);
+    }
+
+    /** Production value only (ignores staging overlay). */
+    public function getLive(string $key, mixed $default = null): mixed
+    {
         $this->warm();
 
         if (array_key_exists($key, $this->values ?? [])) {
@@ -69,6 +93,35 @@ final class Settings
 
     public function set(string $key, mixed $value, string $type = SettingRecord::TYPE_STRING, ?string $module = null): void
     {
+        if ($this->readContext->isStaging() && $this->publishables->isSettingsKey($key)) {
+            $live = $this->getLive($key, $this->definitions[$key]['default'] ?? null);
+            if ($this->sameSettingValue($live, $value, $type)) {
+                // Form posts every field; only real diffs belong in staging.
+                $this->stagingWriter->unstageSetting($key);
+                unset($this->stagingOverlay[$key]);
+
+                return;
+            }
+
+            $label = $this->definitions[$key]['label'] ?? $key;
+            $this->stagingWriter->stageSetting($key, $value, $type, $module ?? ($this->definitions[$key]['module'] ?? null), (string) $label);
+            $this->stagingOverlay[$key] = $value;
+            $this->stagingOverlayLoaded = true;
+
+            return;
+        }
+
+        $this->setLive($key, $value, $type, $module);
+    }
+
+    private function sameSettingValue(mixed $a, mixed $b, string $type): bool
+    {
+        return $this->serialize($a, $type) === $this->serialize($b, $type);
+    }
+
+    /** Write directly to production settings (used by publish apply). */
+    public function setLive(string $key, mixed $value, string $type = SettingRecord::TYPE_STRING, ?string $module = null): void
+    {
         $stored = $this->serialize($value, $type);
         $record = $this->em->find(SettingRecord::class, $key);
 
@@ -83,6 +136,25 @@ final class Settings
         $this->em->flush();
         $this->warm();
         $this->values[$key] = $this->cast($stored, $type);
+        unset($this->stagingOverlay[$key]);
+    }
+
+    public function typeOf(string $key): string
+    {
+        if (isset($this->definitions[$key]['type'])) {
+            return (string) $this->definitions[$key]['type'];
+        }
+
+        $this->warm();
+        try {
+            $record = $this->em->find(SettingRecord::class, $key);
+            if ($record instanceof SettingRecord) {
+                return $record->type();
+            }
+        } catch (\Throwable) {
+        }
+
+        return SettingRecord::TYPE_STRING;
     }
 
     /** @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}> */
@@ -121,6 +193,32 @@ final class Settings
         } catch (\Throwable) {
             // tabulka ještě nemusí existovat (install / migrate)
             $this->values = [];
+        }
+    }
+
+    private function warmStagingOverlay(): void
+    {
+        if ($this->stagingOverlayLoaded) {
+            return;
+        }
+
+        $this->stagingOverlayLoaded = true;
+        try {
+            $entries = $this->em->createQueryBuilder()
+                ->select('e')
+                ->from(\Gereq\Publish\Entity\ContentStagingEntry::class, 'e')
+                ->where('e.resourceType = :type')
+                ->setParameter('type', 'setting')
+                ->getQuery()
+                ->getResult();
+
+            /** @var list<\Gereq\Publish\Entity\ContentStagingEntry> $entries */
+            foreach ($entries as $entry) {
+                $payload = $entry->payload();
+                $this->stagingOverlay[$entry->resourceKey()] = $payload['value'] ?? null;
+            }
+        } catch (\Throwable) {
+            // staging table may not exist yet
         }
     }
 

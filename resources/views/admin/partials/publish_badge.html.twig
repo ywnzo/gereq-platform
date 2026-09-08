@@ -1,0 +1,90 @@
+{% set count = pending_count|default(0) %}
+{% if count > 0 %}
+<div
+    class="publish-badge"
+    x-data="publishBadge"
+    data-pending-url="{{ pending_url|e('html_attr') }}"
+    data-publish-url="{{ publish_url|e('html_attr') }}"
+    data-count="{{ count }}"
+    data-label-pending="{{ 'publish.badge.pending'|trans|e('html_attr') }}"
+    data-label-cta="{{ 'publish.badge.cta'|trans|e('html_attr') }}"
+    data-label-publishing="{{ 'publish.publishing'|trans|e('html_attr') }}"
+    data-label-submit="{{ 'publish.modal.submit'|trans|e('html_attr') }}"
+    @mouseenter="onEnter"
+    @mouseleave="onLeave"
+    @focusin="onEnter"
+    @focusout="onLeave"
+>
+    <button
+        type="button"
+        class="badge publish-badge__chip"
+        :class="chipClass"
+        @click.prevent="togglePanel"
+        :aria-expanded="expandedAttr"
+        aria-haspopup="dialog"
+    >
+        <span x-text="chipLabel"></span>
+        <span class="publish-badge__count" x-text="count"></span>
+    </button>
+
+    <div
+        class="publish-badge__popover"
+        x-show="popoverOpen"
+        x-cloak
+        @click.stop
+        role="dialog"
+        aria-label="{{ 'publish.popover.title'|trans }}"
+    >
+        <p class="publish-badge__intro">{{ 'publish.modal.intro'|trans }}</p>
+
+        <div class="publish-badge__popover-body">
+            <template x-if="loading">
+                <p class="muted">{{ 'publish.loading'|trans }}</p>
+            </template>
+
+            <template x-for="cat in categories" :key="cat.category">
+                <section class="publish-badge__group">
+                    <label class="publish-check publish-check--category">
+                        <span class="publish-check__control">
+                            <input type="checkbox" :checked="isCategoryChecked(cat)" @change="toggleCategory(cat)">
+                            <span class="publish-check__mark" aria-hidden="true"></span>
+                        </span>
+                        <span class="publish-check__text">
+                            <strong x-text="cat.label"></strong>
+                            <span class="muted" x-text="cat.countLabel"></span>
+                        </span>
+                    </label>
+                    <ul class="publish-badge__items">
+                        <template x-for="item in cat.items" :key="item.id">
+                            <li>
+                                <label class="publish-check">
+                                    <span class="publish-check__control">
+                                        <input type="checkbox" :value="item.id" x-model="selected">
+                                        <span class="publish-check__mark" aria-hidden="true"></span>
+                                    </span>
+                                    <span class="publish-check__text" x-text="item.display"></span>
+                                </label>
+                            </li>
+                        </template>
+                    </ul>
+                </section>
+            </template>
+
+            <template x-if="showEmpty">
+                <p class="muted">{{ 'publish.empty'|trans }}</p>
+            </template>
+        </div>
+
+        <div class="publish-badge__popover-foot">
+            <button
+                type="button"
+                class="btn btn--primary publish-badge__submit"
+                @click="publishSelected"
+                :disabled="cannotPublish"
+            >
+                <span x-text="submitLabel"></span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}

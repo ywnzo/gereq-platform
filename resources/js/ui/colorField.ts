@@ -60,6 +60,8 @@ type ColorFieldState = {
     draft: string;
     presets: string[];
     fieldName: string;
+    _onNative: ((event: Event) => void) | null;
+    _onDraft: ((event: Event) => void) | null;
     init(): void;
     destroy(): void;
     toggle(): void;
@@ -73,6 +75,7 @@ type ColorFieldState = {
     checkStyle: string;
     isPreset(hex: string): boolean;
     presetStyle(hex: string): string;
+    checkOn(hex: string): string;
     $dispatch: (name: string, detail?: unknown) => void;
     $el: HTMLElement;
 };
@@ -84,6 +87,8 @@ export function registerColorField(alpine: typeof Alpine): void {
         draft: '000000',
         presets: PRESETS,
         fieldName: '',
+        _onNative: null,
+        _onDraft: null,
 
         init() {
             const hidden = this.$el.querySelector<HTMLInputElement>('input[type="hidden"]');
@@ -98,11 +103,37 @@ export function registerColorField(alpine: typeof Alpine): void {
             if (this.fieldName) {
                 pickByField.set(this.fieldName, (hex: string) => this.pick(hex));
             }
+
+            // Nativní listenery — Alpine CSP @input/@blur na color/hex je nespolehlivý.
+            const native = this.$el.querySelector<HTMLInputElement>('input[type="color"]');
+            const draft = this.$el.querySelector<HTMLInputElement>('.color-picker__hex-input');
+            this._onNative = () => this.fromNative();
+            this._onDraft = () => this.fromDraft();
+            native?.addEventListener('input', this._onNative);
+            native?.addEventListener('change', this._onNative);
+            draft?.addEventListener('change', this._onDraft);
+            draft?.addEventListener('blur', this._onDraft);
+            draft?.addEventListener('keydown', (event: KeyboardEvent) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.fromDraft();
+                }
+            });
         },
 
         destroy() {
             if (this.fieldName && pickByField.get(this.fieldName)) {
                 pickByField.delete(this.fieldName);
+            }
+            const native = this.$el.querySelector<HTMLInputElement>('input[type="color"]');
+            const draft = this.$el.querySelector<HTMLInputElement>('.color-picker__hex-input');
+            if (this._onNative) {
+                native?.removeEventListener('input', this._onNative);
+                native?.removeEventListener('change', this._onNative);
+            }
+            if (this._onDraft) {
+                draft?.removeEventListener('change', this._onDraft);
+                draft?.removeEventListener('blur', this._onDraft);
             }
         },
 
@@ -137,7 +168,7 @@ export function registerColorField(alpine: typeof Alpine): void {
             const native = this.$el.querySelector<HTMLInputElement>('input[type="color"]');
             const draft = this.$el.querySelector<HTMLInputElement>('.color-picker__hex-input');
             const face = this.$el.querySelector<HTMLElement>('.color-picker__chip-face');
-            if (native) {
+            if (native && native.value.toLowerCase() !== this.hex.toLowerCase()) {
                 native.value = this.hex;
             }
             if (draft && draft.value.toLowerCase() !== bare.toLowerCase()) {
@@ -152,6 +183,12 @@ export function registerColorField(alpine: typeof Alpine): void {
         pick(hex: string) {
             const next = expandHex(hex);
             if (!next) return;
+            if (next === this.hex) {
+                this.syncHidden();
+                this.syncDom();
+                this.close();
+                return;
+            }
             this.hex = next;
             this.draft = next.replace('#', '');
             this.syncHidden();
@@ -159,6 +196,7 @@ export function registerColorField(alpine: typeof Alpine): void {
             this.$dispatch('color-change', { hex: next });
             this.$el.dispatchEvent(new Event('input', { bubbles: true }));
             this.$el.dispatchEvent(new Event('change', { bubbles: true }));
+            this.close();
         },
 
         fromNative() {
@@ -168,7 +206,10 @@ export function registerColorField(alpine: typeof Alpine): void {
         },
 
         fromDraft() {
-            const next = expandHex(this.draft.startsWith('#') ? this.draft : `#${this.draft}`);
+            const draftEl = this.$el.querySelector<HTMLInputElement>('.color-picker__hex-input');
+            const raw = (draftEl?.value || this.draft).trim();
+            this.draft = raw.replace(/^#/, '');
+            const next = expandHex(raw.startsWith('#') ? raw : `#${raw}`);
             if (next) {
                 this.pick(next);
             } else {
@@ -183,6 +224,10 @@ export function registerColorField(alpine: typeof Alpine): void {
 
         presetStyle(hex: string): string {
             return `background:${hex}`;
+        },
+
+        checkOn(hex: string): string {
+            return `color:${contrastOn(hex)}`;
         },
     }));
 }

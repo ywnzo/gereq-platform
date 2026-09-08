@@ -25,12 +25,15 @@ import { registerChart } from './chart';
 import { registerPageProgress } from './pageProgress';
 import { registerFile } from './file';
 import { registerCustomerEdit } from '../../../modules/Customers/Resources/assets/js/customerEdit';
+import { registerCustomerNotes } from '../../../modules/Customers/Resources/assets/js/customerNotes';
+import { registerCustomerContactForm } from '../../../modules/Customers/Resources/assets/js/customerContactForm';
 import { registerPcOemMarket } from '../../../modules/PartsCatalog/Resources/assets/js/pcOemMarket';
 import { registerCarserviceFinishWizard } from '../../../modules/CarService/Resources/assets/js/finishWizard';
 import { registerEsignSignaturePad } from '../../../modules/ESign/Resources/assets/js/signaturePad';
 import { registerPortalForm } from '../../../modules/Portals/Resources/assets/js/portalForm';
 
 import { registerWebauthn } from './webauthn';
+import { registerPublishBadge } from './publishBadge';
 
 export function registerUi(alpine: typeof Alpine): void {
     registerPageProgress();
@@ -67,5 +70,8 @@ export function registerUi(alpine: typeof Alpine): void {
     registerFleetBrandCatalog(alpine);
     registerChart(alpine);
     registerCustomerEdit(alpine);
+    registerCustomerNotes(alpine);
+    registerCustomerContactForm(alpine);
     registerPortalForm(alpine);
+    registerPublishBadge(alpine);
 }

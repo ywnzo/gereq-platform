@@ -13,6 +13,8 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Publish\Adapter\ProductCategoryPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Modules\Products\Application\ProductVariantOptionsService;
 use Modules\Products\Domain\ProductCategory;
 use Modules\Products\Domain\ProductOptionGroup;
@@ -37,6 +39,7 @@ final class CategoryController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly ProductVariantOptionsService $variantOptions,
         private readonly CapabilityRegistry $capabilities,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -59,6 +62,11 @@ final class CategoryController extends Controller
 
         /** @var list<ProductCategory> $items */
         $items = $qb->getQuery()->getResult();
+        $pendingDelete = array_flip($this->freeze->pendingDeleteKeys('products.categories'));
+        $items = array_values(array_filter(
+            $items,
+            static fn (ProductCategory $c): bool => !isset($pendingDelete[$c->id()]),
+        ));
 
         $productCounts = [];
         $optionCounts = [];
@@ -101,12 +109,19 @@ final class CategoryController extends Controller
         $category = new ProductCategory($data['name'], $data['slug']);
         $this->em->persist($category);
         $this->em->flush();
+        $this->freeze->stageCreate(
+            'products.categories',
+            'category',
+            $category->id(),
+            $category->name(),
+            $this->auth->user()?->id(),
+        );
         $this->auditor->log('product_category.created', 'product_category', $category->id(), null, [
             'name' => $category->name(),
             'slug' => $category->slug(),
         ]);
         $this->forgetForm('products.category.save');
-        $this->flash('success', $this->translator->trans('products.categories.flash.created', ['%name%' => $category->name()]));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.products.categories.edit', ['id' => $category->id()]);
     }
@@ -114,7 +129,7 @@ final class CategoryController extends Controller
     public function edit(string $id): Response
     {
         $category = $this->find($id);
-        if ($category === null) {
+        if ($category === null || $this->freeze->isPendingDelete('products.categories', $id)) {
             $this->abort(404, $this->translator->trans('products.categories.error.not_found'));
         }
 
@@ -139,7 +154,7 @@ final class CategoryController extends Controller
     public function update(Request $request, string $id): Response
     {
         $category = $this->find($id);
-        if ($category === null) {
+        if ($category === null || $this->freeze->isPendingDelete('products.categories', $id)) {
             $this->abort(404, $this->translator->trans('products.categories.error.not_found'));
         }
 
@@ -152,6 +167,14 @@ final class CategoryController extends Controller
         }
 
         $old = ['name' => $category->name(), 'slug' => $category->slug()];
+        $this->freeze->freezeIfNeeded(
+            'products.categories',
+            'category',
+            $category->id(),
+            fn (): array => ProductCategoryPublishAdapter::capture($category),
+            $category->name(),
+            $this->auth->user()?->id(),
+        );
         $category->setName($data['name']);
         $category->setSlug($data['slug']);
         $this->em->flush();
@@ -160,7 +183,7 @@ final class CategoryController extends Controller
             'slug' => $category->slug(),
         ]);
         $this->forgetForm('products.category.save');
-        $this->flash('success', $this->translator->trans('products.categories.flash.saved'));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.products.categories.edit', ['id' => $id]);
     }
@@ -168,18 +191,21 @@ final class CategoryController extends Controller
     public function destroy(string $id): Response
     {
         $category = $this->find($id);
-        if ($category === null) {
+        if ($category === null || $this->freeze->isPendingDelete('products.categories', $id)) {
             $this->abort(404, $this->translator->trans('products.categories.error.not_found'));
         }
 
         $name = $category->name();
-        foreach ($this->variantOptions->groupsForScope(ProductOptionGroup::SCOPE_CATEGORY, $category->id()) as $row) {
-            $this->variantOptions->deleteGroup($row['group']);
-        }
-        $this->em->remove($category);
-        $this->em->flush();
-        $this->auditor->log('product_category.deleted', 'product_category', $id);
-        $this->flash('success', $this->translator->trans('products.categories.flash.deleted', ['%name%' => $name]));
+        $this->freeze->stageDelete(
+            'products.categories',
+            'category',
+            $id,
+            fn (): array => ProductCategoryPublishAdapter::capture($category),
+            $name,
+            $this->auth->user()?->id(),
+        );
+        $this->auditor->log('product_category.delete_staged', 'product_category', $id);
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.products.categories.index');
     }

@@ -6,6 +6,8 @@ namespace Modules\Listings\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Http\Router;
+use Gereq\Publish\ContentReadContext;
+use Gereq\Publish\FrozenPublicReader;
 use Modules\Listings\Domain\Listing;
 use Modules\Listings\Domain\ListingImage;
 use Modules\Media\Domain\MediaAsset;
@@ -15,6 +17,8 @@ final class ListingsProvider
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly Router $router,
+        private readonly ContentReadContext $readContext,
+        private readonly FrozenPublicReader $frozen,
     ) {
     }
 
@@ -25,7 +29,38 @@ final class ListingsProvider
 
     public function findBySlug(string $slug): ?Listing
     {
-        return $this->em->getRepository(Listing::class)->findOneBy(['slug' => $slug]);
+        $slug = trim($slug);
+
+        if ($this->readContext->isProduction()) {
+            $hit = $this->frozen->findSnapshotBy('listings', 'slug', $slug);
+            if ($hit !== null) {
+                $snap = $hit['snapshot'];
+                if (($snap['status'] ?? '') !== 'published') {
+                    return null;
+                }
+
+                return $this->find($hit['resource_key']);
+            }
+        }
+
+        $listing = $this->em->getRepository(Listing::class)->findOneBy(['slug' => $slug]);
+        if (!$listing instanceof Listing) {
+            return null;
+        }
+
+        if ($this->readContext->isProduction()) {
+            if ($this->frozen->isPendingCreate('listings', $listing->id())) {
+                return null;
+            }
+            if ($this->frozen->isFrozen('listings', $listing->id())) {
+                $snap = $this->frozen->snapshot('listings', $listing->id());
+                if (is_array($snap) && (string) ($snap['slug'] ?? '') !== $slug) {
+                    return null;
+                }
+            }
+        }
+
+        return $listing;
     }
 
     /** @return list<ListingImage> */
@@ -189,7 +224,43 @@ final class ListingsProvider
         /** @var list<Listing> $items */
         $items = $qb->getQuery()->getResult();
 
-        return $items;
+        if (!$this->readContext->isProduction()) {
+            $pendingDelete = array_flip($this->frozen->pendingDeleteKeys('listings'));
+
+            return array_values(array_filter(
+                $items,
+                static fn (Listing $l): bool => !isset($pendingDelete[$l->id()]),
+            ));
+        }
+
+        $out = [];
+        foreach ($items as $listing) {
+            if ($this->frozen->isPendingCreate('listings', $listing->id())) {
+                continue;
+            }
+            $snap = $this->frozen->snapshot('listings', $listing->id());
+            if ($snap !== null && ($snap['status'] ?? '') !== 'published') {
+                continue;
+            }
+            $out[] = $listing;
+        }
+
+        foreach ($this->frozen->allSnapshots('listings') as $hit) {
+            $snap = $hit['snapshot'];
+            if (($snap['status'] ?? '') !== 'published') {
+                continue;
+            }
+            $id = $hit['resource_key'];
+            if (array_any($out, static fn (Listing $l): bool => $l->id() === $id)) {
+                continue;
+            }
+            $listing = $this->find($id);
+            if ($listing instanceof Listing) {
+                $out[] = $listing;
+            }
+        }
+
+        return array_slice($out, 0, max(1, min(100, $limit)));
     }
 
     /** @return list<Listing> */
@@ -293,6 +364,20 @@ final class ListingsProvider
                 $listing->latitude(),
                 $listing->longitude(),
             );
+        }
+
+        if ($this->readContext->isProduction()) {
+            $snap = $this->frozen->snapshot('listings', $listing->id());
+            if (is_array($snap)) {
+                foreach ([
+                    'title', 'slug', 'status', 'market_status', 'offer_type', 'property_type',
+                    'featured', 'price', 'currency', 'city', 'description',
+                ] as $key) {
+                    if (array_key_exists($key, $snap)) {
+                        $data[$key] = $key === 'price' ? (float) $snap[$key] : $snap[$key];
+                    }
+                }
+            }
         }
 
         return $data;

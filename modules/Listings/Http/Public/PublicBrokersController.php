@@ -38,6 +38,12 @@ final class PublicBrokersController
             return $this->cors(new JsonResponse(['error' => 'not_found'], 404), $request);
         }
 
+        // Exclude pending creates; deactivated-in-working-copy still served via freeze in serialize/allActive.
+        $active = $this->provider->allActive();
+        if (!array_any($active, static fn ($b): bool => $b->id() === $id)) {
+            return $this->cors(new JsonResponse(['error' => 'not_found'], 404), $request);
+        }
+
         return $this->cors(new JsonResponse(['data' => $this->provider->serialize($broker)]), $request);
     }
 

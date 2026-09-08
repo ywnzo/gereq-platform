@@ -10,6 +10,9 @@ use Gereq\Event\EventDefinition;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
+use Gereq\Publish\Adapter\BrokerPublishAdapter;
+use Gereq\Publish\Adapter\CityPublishAdapter;
+use Gereq\Publish\Adapter\ListingPublishAdapter;
 use Modules\Listings\Application\BrokersProvider;
 use Modules\Listings\Application\CitiesProvider;
 use Modules\Listings\Application\ListingsProvider;
@@ -35,7 +38,7 @@ final class ListingsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.2';
+        return '1.1.0';
     }
 
     public function register(ModuleContext $context): void
@@ -46,6 +49,29 @@ final class ListingsModule implements ModuleInterface
         $context->capabilities()->register('brokers', $this->id(), $context->get(BrokersProvider::class));
         $context->capabilities()->register('near_locations', $this->id(), $context->get(NearLocationsProvider::class));
         $context->capabilities()->register('cities', $this->id(), $context->get(CitiesProvider::class));
+
+        $translator = $context->get(TranslatorInterface::class);
+        $context->publishables()->register(
+            'listings',
+            $translator->trans('publish.category.listings'),
+            $context->get(ListingPublishAdapter::class),
+            $this->id(),
+            40,
+        );
+        $context->publishables()->register(
+            'listings.brokers',
+            $translator->trans('publish.category.brokers'),
+            $context->get(BrokerPublishAdapter::class),
+            $this->id(),
+            45,
+        );
+        $context->publishables()->register(
+            'listings.cities',
+            $translator->trans('publish.category.cities'),
+            $context->get(CityPublishAdapter::class),
+            $this->id(),
+            46,
+        );
 
         $context->router()->group('/admin/listings', function (Router $routes): void {
             $routes->get('', [ListingController::class, 'index'])->name('admin.listings.index')->permission('listings.view');

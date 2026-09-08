@@ -11,6 +11,8 @@ use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\ListQuery;
 use Gereq\Http\Router;
+use Gereq\Publish\Adapter\BrokerPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Gereq\Security\HtmlSanitizer;
 use Modules\Listings\Application\BrokersProvider;
 use Modules\Listings\Domain\Broker;
@@ -33,8 +35,24 @@ final class BrokerController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly BrokersProvider $provider,
         private readonly HtmlSanitizer $html,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezeBroker(Broker $broker): void
+    {
+        if (!$broker->active() && !$this->freeze->hasFreeze('listings.brokers', $broker->id())) {
+            return;
+        }
+        $this->freeze->freezeIfNeeded(
+            'listings.brokers',
+            'broker',
+            $broker->id(),
+            fn (): array => BrokerPublishAdapter::capture($broker),
+            $broker->fullName(),
+            $this->auth->user()?->id(),
+        );
     }
 
     public function index(Request $request): Response
@@ -54,6 +72,10 @@ final class BrokerController extends Controller
             $qb->andWhere('b.active = true');
         } elseif ($active === '0') {
             $qb->andWhere('b.active = false');
+        }
+        $deleteKeys = $this->freeze->pendingDeleteKeys('listings.brokers');
+        if ($deleteKeys !== []) {
+            $qb->andWhere('b.id NOT IN (:pendingDelete)')->setParameter('pendingDelete', $deleteKeys);
         }
         $qb->orderBy('b.' . $list->sort, $list->direction());
 
@@ -82,8 +104,22 @@ final class BrokerController extends Controller
         $this->apply($broker, $data);
         $this->em->persist($broker);
         $this->em->flush();
+        if ($broker->active()) {
+            $this->freeze->stageCreate(
+                'listings.brokers',
+                'broker',
+                $broker->id(),
+                $broker->fullName(),
+                $this->auth->user()?->id(),
+            );
+        }
         $this->forgetForm('listings.brokers.save');
-        $this->flash('success', $this->translator->trans('listings.brokers.flash.created'));
+        $this->flash(
+            'success',
+            $broker->active()
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('listings.brokers.flash.created'),
+        );
 
         return $this->redirect('admin.listings.brokers.show', ['id' => $broker->id()]);
     }
@@ -91,7 +127,7 @@ final class BrokerController extends Controller
     public function show(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.brokers', $id)) {
             $this->abort(404, $this->translator->trans('listings.brokers.error.not_found'));
         }
 
@@ -104,7 +140,7 @@ final class BrokerController extends Controller
     public function edit(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.brokers', $id)) {
             $this->abort(404, $this->translator->trans('listings.brokers.error.not_found'));
         }
 
@@ -117,18 +153,34 @@ final class BrokerController extends Controller
     public function update(Request $request, string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.brokers', $id)) {
             $this->abort(404, $this->translator->trans('listings.brokers.error.not_found'));
         }
 
         $data = $this->validated($request);
+        $wasActive = $item->active();
+        $this->freezeBroker($item);
         $item->setFirstName($data['first_name']);
         $item->setLastName($data['last_name']);
         $item->setEmail($data['email']);
         $this->apply($item, $data);
         $this->em->flush();
+        if ($item->active() && !$wasActive && !$this->freeze->hasFreeze('listings.brokers', $item->id())) {
+            $this->freeze->stageCreate(
+                'listings.brokers',
+                'broker',
+                $item->id(),
+                $item->fullName(),
+                $this->auth->user()?->id(),
+            );
+        }
         $this->forgetForm('listings.brokers.save');
-        $this->flash('success', $this->translator->trans('listings.brokers.flash.saved'));
+        $this->flash(
+            'success',
+            ($wasActive || $item->active())
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('listings.brokers.flash.saved'),
+        );
 
         return $this->redirect('admin.listings.brokers.show', ['id' => $item->id()]);
     }
@@ -136,13 +188,25 @@ final class BrokerController extends Controller
     public function destroy(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.brokers', $id)) {
             $this->abort(404, $this->translator->trans('listings.brokers.error.not_found'));
         }
 
-        $this->em->remove($item);
-        $this->em->flush();
-        $this->flash('success', $this->translator->trans('listings.brokers.flash.deleted'));
+        if ($item->active() || $this->freeze->hasFreeze('listings.brokers', $id)) {
+            $this->freeze->stageDelete(
+                'listings.brokers',
+                'broker',
+                $id,
+                fn (): array => BrokerPublishAdapter::capture($item),
+                $item->fullName(),
+                $this->auth->user()?->id(),
+            );
+            $this->flash('success', $this->translator->trans('publish.flash.staged'));
+        } else {
+            $this->em->remove($item);
+            $this->em->flush();
+            $this->flash('success', $this->translator->trans('listings.brokers.flash.deleted'));
+        }
 
         return $this->redirect('admin.listings.brokers.index');
     }
@@ -150,15 +214,24 @@ final class BrokerController extends Controller
     public function toggleActive(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.brokers', $id)) {
             $this->abort(404, $this->translator->trans('listings.brokers.error.not_found'));
         }
 
+        $this->freezeBroker($item);
+        if (!$item->active()) {
+            $this->freeze->freezeIfNeeded(
+                'listings.brokers',
+                'broker',
+                $item->id(),
+                fn (): array => BrokerPublishAdapter::capture($item),
+                $item->fullName(),
+                $this->auth->user()?->id(),
+            );
+        }
         $item->setActive(!$item->active());
         $this->em->flush();
-        $message = $this->translator->trans(
-            $item->active() ? 'listings.brokers.flash.activated' : 'listings.brokers.flash.deactivated'
-        );
+        $message = $this->translator->trans('publish.flash.staged');
         if (!$this->wantsJson()) {
             $this->flash('success', $message);
         }

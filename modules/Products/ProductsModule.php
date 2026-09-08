@@ -12,6 +12,8 @@ use Gereq\Event\EventDefinition;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
+use Gereq\Publish\Adapter\ProductCategoryPublishAdapter;
+use Gereq\Publish\Adapter\ProductPublishAdapter;
 use Modules\Products\Application\Widgets\ProductCreateHeroWidget;
 use Modules\Products\Application\Widgets\ProductStatsWidget;
 use Modules\Products\Application\Widgets\ProductsShortcutWidget;
@@ -42,6 +44,22 @@ final class ProductsModule implements ModuleInterface
 
         $provider = new ProductsProvider($context->get(EntityManagerInterface::class));
         $context->capabilities()->register('products', $this->id(), $provider);
+
+        $translator = $context->get(TranslatorInterface::class);
+        $context->publishables()->register(
+            'products',
+            $translator->trans('publish.category.products'),
+            $context->get(ProductPublishAdapter::class),
+            $this->id(),
+            50,
+        );
+        $context->publishables()->register(
+            'products.categories',
+            $translator->trans('publish.category.product_categories'),
+            $context->get(ProductCategoryPublishAdapter::class),
+            $this->id(),
+            51,
+        );
 
         $context->router()->group('/admin/products', function (Router $routes): void {
             $routes->get('', [ProductController::class, 'index'])

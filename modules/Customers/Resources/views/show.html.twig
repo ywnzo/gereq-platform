@@ -1,239 +1,447 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.customers'|trans, url: url('admin.customers.index') },
+        { label: item.name() },
+    ] } %}
+{% endblock %}
+
 {% block content %}
 <div class="customer-profile">
-    <header class="customer-profile__header">
-        <div class="customer-profile__identity">
-            <a class="text-link customer-profile__back" href="{{ url('admin.customers.index') }}">← {{ 'nav.customers'|trans }}</a>
-            <div class="cell-user cell-user--lg">
-                <span class="avatar avatar--xl">{{ item.initials() }}</span>
-                <div>
-                    <h1>{{ item.name() }}</h1>
-                    <p class="customer-profile__sub">
-                        {% if item.company() %}<strong>{{ item.company() }}</strong> · {% endif %}
-                        <a href="mailto:{{ item.email() }}">{{ item.email() }}</a>
-                        {% if item.phone() %} · <a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% endif %}
-                    </p>
-                    <div class="customer-profile__chips">
-                        <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
-                            {{ item.statusLabel()|trans }}
-                        </span>
-                        <span class="muted">{{ 'customers.field.created'|trans }} {{ item.createdAt().format('d. m. Y') }}</span>
+    <div class="detail-hub" x-data="gereqTabs" data-initial="overview" data-breadcrumbs="0">
+        <div class="detail-sticky customer-profile__chrome">
+            <header class="customer-profile__header">
+                <div class="customer-profile__identity">
+                    <div class="cell-user cell-user--lg">
+                        <span class="avatar avatar--xl">{{ item.initials() }}</span>
+                        <div>
+                            <h1>{{ item.name() }}</h1>
+                            <p class="customer-profile__sub">
+                                {% if item.company() %}<strong>{{ item.company() }}</strong> · {% endif %}
+                                <a href="mailto:{{ item.email() }}">{{ item.email() }}</a>
+                                {% if item.phone() %} · <a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% endif %}
+                            </p>
+                            <div class="customer-profile__chips">
+                                <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
+                                    {{ item.statusLabel()|trans }}
+                                </span>
+                                <span class="muted">{{ 'customers.field.created'|trans }} {{ item.createdAt().format('d. m. Y') }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="actions">
-            <a class="btn btn--ghost" href="mailto:{{ item.email() }}">{{ icon('mail') }} E-mail</a>
-            {% if item.phone() %}
-                <a class="btn btn--ghost" href="tel:{{ item.phone() }}">{{ icon('phone') }} {{ item.phone() }}</a>
-            {% endif %}
-            {% for action in hookActions|default([]) %}
-                <a class="btn {{ action.class|default('btn--ghost') }}" href="{{ action.url }}">{{ action.label|trans }}</a>
-            {% endfor %}
-            {% if user.can('customers.edit') %}
-                <a class="btn btn--primary" href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-            {% endif %}
-            {% if user.can('customers.delete') %}
-                <form method="post" action="{{ url('admin.customers.destroy', {id: item.id()}) }}" data-confirm="{{ 'customers.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
-                    {{ csrf_field()|raw }}
-                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
-                </form>
-            {% endif %}
-        </div>
-    </header>
+                <div class="actions">
+                    <a class="btn btn--ghost" href="mailto:{{ item.email() }}">{{ icon('mail') }} E-mail</a>
+                    {% if item.phone() %}
+                        <a class="btn btn--ghost" href="tel:{{ item.phone() }}">{{ icon('phone') }} {{ item.phone() }}</a>
+                    {% endif %}
+                    {% for action in hookActions|default([]) %}
+                        <a class="btn {{ action.class|default('btn--ghost') }}" href="{{ action.url }}">{{ action.label|trans }}</a>
+                    {% endfor %}
+                    {% if user.can('customers.edit') %}
+                        <a class="btn btn--primary" href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                    {% endif %}
+                    {% if user.can('customers.delete') %}
+                        <form method="post" action="{{ url('admin.customers.destroy', {id: item.id()}) }}" data-confirm="{{ 'customers.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                            {{ csrf_field()|raw }}
+                            <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </header>
 
-    <div class="detail-hub" x-data="gereqTabs" data-initial="overview">
-        <div class="design-tabs detail-tabs" role="tablist">
-            <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
-            {% for section in hookSections|default([]) %}
-                <button type="button" class="design-tab" role="tab" data-tab="{{ section.id|default(loop.index) }}">{{ section.label|trans }}</button>
-            {% endfor %}
+            <div class="design-tabs detail-tabs" role="tablist">
+                <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
+                <button type="button" class="design-tab" role="tab" data-tab="contacts">
+                    {{ 'customers.section.contacts'|trans }}<span class="module-tab-count">{{ contacts|length }}</span>
+                </button>
+                <button type="button" class="design-tab" role="tab" data-tab="addresses">
+                    {{ 'customers.section.addresses'|trans }}<span class="module-tab-count">{{ addresses|length }}</span>
+                </button>
+                {% for section in hookSections|default([]) %}
+                    <button type="button" class="design-tab" role="tab" data-tab="{{ section.id|default(loop.index) }}">{{ section.label|trans }}</button>
+                {% endfor %}
+            </div>
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
             <div class="customer-sections">
-                <section class="customer-section">
-                    <header class="customer-section__head">
-                        <h2>{{ 'customers.section.profile'|trans }}</h2>
-                        {% if user.can('customers.edit') %}
-                            <a class="btn btn--ghost btn-sm" href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <div class="customer-sections__main">
+                    <section class="customer-section">
+                        <header class="customer-section__head">
+                            <h2>{{ 'customers.section.profile'|trans }}</h2>
+                            {% if user.can('customers.edit') %}
+                                <a class="btn btn--ghost btn-sm" href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                            {% endif %}
+                        </header>
+                        <dl class="customer-section__facts">
+                            <div>
+                                <dt>{{ 'customers.field.name'|trans }}</dt>
+                                <dd>{{ item.name() }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'customers.field.email'|trans }}</dt>
+                                <dd><a href="mailto:{{ item.email() }}">{{ item.email() }}</a></dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'customers.field.phone'|trans }}</dt>
+                                <dd>{% if item.phone() %}<a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% else %}—{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'customers.field.company'|trans }}</dt>
+                                <dd>{{ item.company() ?: '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'customers.field.status'|trans }}</dt>
+                                <dd>{{ item.statusLabel()|trans }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'customers.field.updated'|trans }}</dt>
+                                <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                        {% if noteHtml %}
+                            <div class="customer-section__note">
+                                <h3>{{ 'customers.field.note'|trans }}</h3>
+                                <div class="g-prose">{{ noteHtml|raw }}</div>
+                            </div>
                         {% endif %}
-                    </header>
-                    <dl class="customer-section__facts">
-                        <div>
-                            <dt>{{ 'customers.field.name'|trans }}</dt>
-                            <dd>{{ item.name() }}</dd>
-                        </div>
-                        <div>
-                            <dt>{{ 'customers.field.email'|trans }}</dt>
-                            <dd><a href="mailto:{{ item.email() }}">{{ item.email() }}</a></dd>
-                        </div>
-                        <div>
-                            <dt>{{ 'customers.field.phone'|trans }}</dt>
-                            <dd>{% if item.phone() %}<a href="tel:{{ item.phone() }}">{{ item.phone() }}</a>{% else %}—{% endif %}</dd>
-                        </div>
-                        <div>
-                            <dt>{{ 'customers.field.company'|trans }}</dt>
-                            <dd>{{ item.company() ?: '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt>{{ 'customers.field.status'|trans }}</dt>
-                            <dd>{{ item.statusLabel()|trans }}</dd>
-                        </div>
-                        <div>
-                            <dt>{{ 'customers.field.updated'|trans }}</dt>
-                            <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
-                        </div>
-                    </dl>
-                    {% if noteHtml %}
-                        <div class="customer-section__note">
-                            <h3>{{ 'customers.field.note'|trans }}</h3>
-                            <div class="g-prose">{{ noteHtml|raw }}</div>
-                        </div>
-                    {% endif %}
-                </section>
+                    </section>
 
-                <section class="customer-section">
-                    <header class="customer-section__head">
-                        <h2>{{ 'customers.section.addresses'|trans }}</h2>
-                    </header>
-                    {% if addresses is empty %}
-                        <p class="muted customer-section__empty">{{ 'customers.addresses.empty'|trans }}</p>
-                    {% else %}
-                        <ul class="customer-list">
-                            {% for address in addresses %}
-                                <li class="customer-list__item">
-                                    <div>
-                                        <strong>{{ ('customers.address.type.' ~ address.type())|trans }}</strong>
-                                        {% if address.isPrimary() %}<span class="badge badge--ok">{{ 'customers.primary'|trans }}</span>{% endif %}
-                                        <p class="muted">
-                                            {{ address.line1() }}{% if address.line2() %}, {{ address.line2() }}{% endif %}<br>
-                                            {{ address.zip() }} {{ address.city() }}, {{ address.country() }}
-                                        </p>
-                                    </div>
-                                    {% if user.can('customers.edit') %}
-                                        <form method="post" action="{{ url('admin.customers.addresses.destroy', {id: item.id(), addressId: address.id()}) }}" data-confirm="{{ 'customers.addresses.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
-                                            {{ csrf_field()|raw }}
-                                            <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.delete'|trans }}</button>
-                                        </form>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                    {% if user.can('customers.edit') %}
-                        <details class="customer-add">
-                            <summary>{{ 'customers.addresses.add'|trans }}</summary>
-                            <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.customers.addresses.store', {id: item.id()}) }}">
-                                {{ csrf_field()|raw }}
-                                {% include 'ui/select.html.twig' with { name: 'type', label: 'customers.field.address_type'|trans, required: true, value: 'billing', options: [
-                                    { value: 'billing', label: 'customers.address.type.billing'|trans },
-                                    { value: 'shipping', label: 'customers.address.type.shipping'|trans },
-                                    { value: 'other', label: 'customers.address.type.other'|trans }
-                                ] } %}
-                                {% include 'ui/input.html.twig' with { name: 'line1', label: 'customers.field.line1'|trans, required: true, value: '' } %}
-                                {% include 'ui/input.html.twig' with { name: 'line2', label: 'customers.field.line2'|trans, optional: true, value: '' } %}
-                                {% include 'ui/input.html.twig' with { name: 'city', label: 'customers.field.city'|trans, required: true, value: '' } %}
-                                {% include 'ui/input.html.twig' with { name: 'zip', label: 'customers.field.zip'|trans, required: true, value: '' } %}
-                                {% include 'ui/input.html.twig' with { name: 'country', label: 'customers.field.country'|trans, required: true, value: 'CZ' } %}
-                                <label class="check">
-                                    <input type="checkbox" name="is_primary" value="1">
-                                    <span>{{ 'customers.primary'|trans }}</span>
-                                </label>
-                                <div class="form-actions">
-                                    <button class="btn btn--primary btn-sm" type="submit">{{ 'common.save'|trans }}</button>
-                                </div>
-                            </form>
-                        </details>
-                    {% endif %}
-                </section>
+                    <section class="customer-section">
+                        <header class="customer-section__head">
+                            <h2>{{ 'customers.section.addresses'|trans }}</h2>
+                            <a class="btn btn--ghost btn-sm" href="#addresses">{{ 'customers.preview.manage'|trans }}</a>
+                        </header>
+                        {% if addresses is empty %}
+                            <p class="muted customer-section__empty">{{ 'customers.addresses.empty'|trans }}</p>
+                        {% else %}
+                            <ul class="customer-list">
+                                {% for address in addresses|slice(0, 3) %}
+                                    <li class="customer-list__item">
+                                        <div>
+                                            <strong>{{ ('customers.address.type.' ~ address.type())|trans }}</strong>
+                                            {% if address.isPrimary() %}<span class="badge badge--ok">{{ 'customers.primary'|trans }}</span>{% endif %}
+                                            <p class="muted">
+                                                {{ address.line1() }}{% if address.line2() %}, {{ address.line2() }}{% endif %}<br>
+                                                {{ address.zip() }} {{ address.city() }}, {{ address.country() }}
+                                            </p>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            {% if addresses|length > 3 %}
+                                <p class="muted customer-section__more">
+                                    <a href="#addresses">{{ 'customers.preview.more'|trans({'%count%': addresses|length - 3}) }}</a>
+                                </p>
+                            {% endif %}
+                        {% endif %}
+                    </section>
 
-                <section class="customer-section">
-                    <header class="customer-section__head">
-                        <h2>{{ 'customers.section.contacts'|trans }}</h2>
-                    </header>
-                    {% if contacts is empty %}
-                        <p class="muted customer-section__empty">{{ 'customers.contacts.empty'|trans }}</p>
-                    {% else %}
-                        <ul class="customer-list">
-                            {% for contact in contacts %}
-                                <li class="customer-list__item">
-                                    <div>
-                                        <strong>{{ contact.name() }}</strong>
-                                        {% if contact.isPrimary() %}<span class="badge badge--ok">{{ 'customers.primary'|trans }}</span>{% endif %}
-                                        {% if contact.role() %}<span class="muted"> · {{ contact.role() }}</span>{% endif %}
-                                        <p class="muted">
-                                            {% if contact.email() %}<a href="mailto:{{ contact.email() }}">{{ contact.email() }}</a>{% endif %}
-                                            {% if contact.phone() %}{% if contact.email() %} · {% endif %}<a href="tel:{{ contact.phone() }}">{{ contact.phone() }}</a>{% endif %}
-                                            {% if not contact.email() and not contact.phone() %}—{% endif %}
-                                        </p>
-                                    </div>
-                                    {% if user.can('customers.edit') %}
-                                        <form method="post" action="{{ url('admin.customers.contacts.destroy', {id: item.id(), contactId: contact.id()}) }}" data-confirm="{{ 'customers.contacts.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
-                                            {{ csrf_field()|raw }}
-                                            <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.delete'|trans }}</button>
-                                        </form>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                    {% if user.can('customers.edit') %}
-                        <details class="customer-add">
-                            <summary>{{ 'customers.contacts.add'|trans }}</summary>
-                            <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.customers.contacts.store', {id: item.id()}) }}">
-                                {{ csrf_field()|raw }}
-                                {% include 'ui/input.html.twig' with { name: 'name', label: 'customers.field.name'|trans, required: true, value: '' } %}
-                                {% include 'ui/input.html.twig' with { name: 'role', label: 'customers.field.role'|trans, optional: true, value: '' } %}
-                                {% include 'ui/input.html.twig' with { name: 'email', label: 'customers.field.email'|trans, optional: true, value: '' } %}
-                                {% include 'ui/input.html.twig' with { name: 'phone', label: 'customers.field.phone'|trans, optional: true, value: '' } %}
-                                <label class="check">
-                                    <input type="checkbox" name="is_primary" value="1">
-                                    <span>{{ 'customers.primary'|trans }}</span>
-                                </label>
-                                <div class="form-actions">
-                                    <button class="btn btn--primary btn-sm" type="submit">{{ 'common.save'|trans }}</button>
-                                </div>
-                            </form>
-                        </details>
-                    {% endif %}
-                </section>
+                    <section class="customer-section">
+                        <header class="customer-section__head">
+                            <h2>{{ 'customers.section.contacts'|trans }}</h2>
+                            <a class="btn btn--ghost btn-sm" href="#contacts">{{ 'customers.preview.manage'|trans }}</a>
+                        </header>
+                        {% if contacts is empty %}
+                            <p class="muted customer-section__empty">{{ 'customers.contacts.empty'|trans }}</p>
+                        {% else %}
+                            <ul class="customer-list">
+                                {% for contact in contacts|slice(0, 3) %}
+                                    <li class="customer-list__item">
+                                        <div>
+                                            <strong>{{ contact.name() }}</strong>
+                                            {% if contact.isPrimary() %}<span class="badge badge--ok">{{ 'customers.primary'|trans }}</span>{% endif %}
+                                            {% if contact.role() %}<span class="muted"> · {{ contact.role() }}</span>{% endif %}
+                                            <p class="muted">
+                                                {% if contact.email() %}<a href="mailto:{{ contact.email() }}">{{ contact.email() }}</a>{% endif %}
+                                                {% if contact.phone() %}{% if contact.email() %} · {% endif %}<a href="tel:{{ contact.phone() }}">{{ contact.phone() }}</a>{% endif %}
+                                                {% if not contact.email() and not contact.phone() %}—{% endif %}
+                                            </p>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            {% if contacts|length > 3 %}
+                                <p class="muted customer-section__more">
+                                    <a href="#contacts">{{ 'customers.preview.more'|trans({'%count%': contacts|length - 3}) }}</a>
+                                </p>
+                            {% endif %}
+                        {% endif %}
+                    </section>
+                </div>
 
-                <section class="customer-section customer-section--wide">
+                <section class="customer-section customer-section--notes" x-data="customerNotes">
                     <header class="customer-section__head">
                         <h2>{{ 'customers.section.notes'|trans }}</h2>
+                        {% if user.can('customers.edit') %}
+                            <button
+                                type="button"
+                                class="icon-btn"
+                                @click="toggle"
+                                :aria-expanded="composing"
+                                title="{{ 'customers.notes.save'|trans }}"
+                                aria-label="{{ 'customers.notes.save'|trans }}"
+                            >{{ icon('plus') }}</button>
+                        {% endif %}
                     </header>
-                    {% if timelineNotes is empty %}
-                        <p class="muted customer-section__empty">{{ 'customers.notes.empty'|trans }}</p>
-                    {% else %}
-                        <ol class="customer-timeline">
-                            {% for note in timelineNotes %}
-                                <li>
-                                    <time>{{ note.createdAt().format('d. m. Y H:i') }}</time>
-                                    <div class="customer-timeline__body">{{ note.body()|nl2br }}</div>
-                                    {% if user.can('customers.edit') %}
-                                        <form method="post" action="{{ url('admin.customers.notes.destroy', {id: item.id(), noteId: note.id()}) }}" data-confirm="{{ 'customers.notes.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
-                                            {{ csrf_field()|raw }}
-                                            <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.delete'|trans }}</button>
-                                        </form>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ol>
-                    {% endif %}
+
+                    <div class="customer-notes-scroll">
+                        {% if timelineNotes is empty %}
+                            <p class="muted customer-section__empty">{{ 'customers.notes.empty'|trans }}</p>
+                        {% else %}
+                            <ol class="customer-timeline">
+                                {% for row in timelineNotes %}
+                                    <li>
+                                        <div class="customer-timeline__meta">
+                                            <strong>{{ row.author ?: 'customers.notes.author_unknown'|trans }}</strong>
+                                            <time>{{ row.note.createdAt().format('d. m. Y H:i') }}</time>
+                                        </div>
+                                        <div class="customer-timeline__body g-prose">{{ row.html|raw }}</div>
+                                        {% if user.can('customers.edit') %}
+                                            <form method="post" action="{{ url('admin.customers.notes.destroy', {id: item.id(), noteId: row.note.id()}) }}" data-confirm="{{ 'customers.notes.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                                {{ csrf_field()|raw }}
+                                                <button type="submit" class="btn btn--ghost btn-sm" title="{{ 'common.delete'|trans }}">{{ icon('trash') }}</button>
+                                            </form>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                        {% endif %}
+                    </div>
+
                     {% if user.can('customers.edit') %}
-                        <form method="post" class="customer-note-form" action="{{ url('admin.customers.notes.store', {id: item.id()}) }}">
-                            {{ csrf_field()|raw }}
-                            <label class="field">
-                                <span class="g-label">{{ 'customers.notes.add'|trans }}</span>
-                                <textarea class="input" name="body" rows="3" required placeholder="{{ 'customers.notes.placeholder'|trans }}"></textarea>
-                            </label>
-                            <button class="btn btn--primary btn-sm" type="submit">{{ 'customers.notes.save'|trans }}</button>
-                        </form>
+                        <div class="customer-note-compose" x-show="composing" x-cloak>
+                            <form method="post" class="customer-note-form" action="{{ url('admin.customers.notes.store', {id: item.id()}) }}">
+                                {{ csrf_field()|raw }}
+                                {% include 'ui/editor.html.twig' with {
+                                    name: 'body',
+                                    label: 'customers.notes.add'|trans,
+                                    required: true,
+                                    placeholder: 'customers.notes.placeholder'|trans,
+                                    value: '',
+                                    form: null,
+                                    extra: 'customer-note-form__editor'
+                                } %}
+                                <div class="customer-note-form__actions">
+                                    <button class="btn btn--ghost btn-sm" type="button" @click="close">{{ 'common.cancel'|trans }}</button>
+                                    <button class="btn btn--primary btn-sm" type="submit">{{ 'customers.notes.save'|trans }}</button>
+                                </div>
+                            </form>
+                        </div>
                     {% endif %}
                 </section>
             </div>
+        </section>
+
+        <section class="design-panel" data-panel="contacts" role="tabpanel">
+            <section class="customer-section customer-section--solo">
+                <header class="customer-section__head">
+                    <div>
+                        <h2>{{ 'customers.section.contacts'|trans }}</h2>
+                        <p class="muted customer-section__hint">{{ 'customers.contacts.hint'|trans }}</p>
+                    </div>
+                </header>
+                {% if contacts is empty %}
+                    <p class="muted customer-section__empty">{{ 'customers.contacts.empty'|trans }}</p>
+                {% else %}
+                    <ul class="customer-list">
+                        {% for contact in contacts %}
+                            <li class="customer-list__item">
+                                <div>
+                                    <strong>{{ contact.name() }}</strong>
+                                    {% if contact.isPrimary() %}<span class="badge badge--ok">{{ 'customers.primary'|trans }}</span>{% endif %}
+                                    {% if contact.role() %}<span class="muted"> · {{ contact.role() }}</span>{% endif %}
+                                    <p class="muted">
+                                        {% if contact.email() %}<a href="mailto:{{ contact.email() }}">{{ contact.email() }}</a>{% endif %}
+                                        {% if contact.phone() %}{% if contact.email() %} · {% endif %}<a href="tel:{{ contact.phone() }}">{{ contact.phone() }}</a>{% endif %}
+                                        {% if not contact.email() and not contact.phone() %}—{% endif %}
+                                    </p>
+                                </div>
+                                {% if user.can('customers.edit') %}
+                                    <form method="post" action="{{ url('admin.customers.contacts.destroy', {id: item.id(), contactId: contact.id()}) }}" data-confirm="{{ 'customers.contacts.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.delete'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if user.can('customers.edit') %}
+                    <div class="customer-crud" x-data="customerContactForm">
+                        <div class="customer-crud__head">
+                            <h3 class="customer-crud__title">{{ 'customers.contacts.add'|trans }}</h3>
+                            <div class="customer-kind" role="group" aria-label="{{ 'customers.contacts.kind'|trans }}">
+                                <button type="button" class="customer-kind__btn" :class="personBtnClass" @click="setPerson">{{ 'customers.contacts.kind.person'|trans }}</button>
+                                <button type="button" class="customer-kind__btn" :class="companyBtnClass" @click="setCompany">{{ 'customers.contacts.kind.company'|trans }}</button>
+                            </div>
+                        </div>
+                        <form method="post" class="customer-crud__grid" action="{{ url('admin.customers.contacts.store', {id: item.id()}) }}">
+                            {{ csrf_field()|raw }}
+
+                            <div class="customer-crud__span" x-show="isPerson">
+                                <div class="g-field">
+                                    <label class="g-label" for="customer-contact-person">
+                                        <span>{{ 'customers.field.name'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
+                                    </label>
+                                    <input
+                                        class="g-control"
+                                        type="text"
+                                        id="customer-contact-person"
+                                        name="name"
+                                        data-contact-name="person"
+                                        autocomplete="name"
+                                        value=""
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="customer-crud__span" x-show="isCompany" x-cloak>
+                                <div class="g-field ares-field" x-data="gereqAresSubject">
+                                    <label class="g-label" for="customer-contact-company">
+                                        <span>{{ 'customers.field.company'|trans }} · ARES <span class="g-req" aria-hidden="true">*</span></span>
+                                    </label>
+                                    <div class="ares-field__control">
+                                        <input
+                                            class="g-control"
+                                            type="text"
+                                            id="customer-contact-company"
+                                            name="name"
+                                            data-contact-name="company"
+                                            data-ares-query
+                                            data-ares-fill="name"
+                                            autocomplete="organization"
+                                            placeholder="{{ 'customers.contacts.company.placeholder'|trans }}"
+                                            value=""
+                                            @input="onInput"
+                                            @keydown="onKeydown"
+                                            x-ref="query"
+                                        >
+                                        {% include 'ui/ares_subject_suggest.html.twig' %}
+                                    </div>
+                                    <p class="ares-hint">{{ 'customers.contacts.company.hint'|trans }}</p>
+                                </div>
+                            </div>
+
+                            {% include 'ui/input.html.twig' with { name: 'role', label: 'customers.field.role'|trans, optional: true, value: '' } %}
+                            {% include 'ui/input.html.twig' with { name: 'email', type: 'email', label: 'customers.field.email'|trans, optional: true, value: '' } %}
+                            {% include 'ui/input.html.twig' with { name: 'phone', type: 'tel', label: 'customers.field.phone'|trans, optional: true, value: '' } %}
+                            <label class="check customer-crud__check">
+                                <input type="checkbox" name="is_primary" value="1">
+                                <span>{{ 'customers.primary'|trans }}</span>
+                            </label>
+                            <div class="customer-crud__actions">
+                                <button class="btn btn--primary btn-sm" type="submit">{{ 'common.save'|trans }}</button>
+                            </div>
+                        </form>
+                    </div>
+                {% endif %}
+            </section>
+        </section>
+
+        <section class="design-panel" data-panel="addresses" role="tabpanel">
+            <section class="customer-section customer-section--solo">
+                <header class="customer-section__head">
+                    <div>
+                        <h2>{{ 'customers.section.addresses'|trans }}</h2>
+                        <p class="muted customer-section__hint">{{ 'customers.addresses.hint'|trans }}</p>
+                    </div>
+                </header>
+                {% if addresses is empty %}
+                    <p class="muted customer-section__empty">{{ 'customers.addresses.empty'|trans }}</p>
+                {% else %}
+                    <ul class="customer-list">
+                        {% for address in addresses %}
+                            <li class="customer-list__item">
+                                <div>
+                                    <strong>{{ ('customers.address.type.' ~ address.type())|trans }}</strong>
+                                    {% if address.isPrimary() %}<span class="badge badge--ok">{{ 'customers.primary'|trans }}</span>{% endif %}
+                                    <p class="muted">
+                                        {{ address.line1() }}{% if address.line2() %}, {{ address.line2() }}{% endif %}<br>
+                                        {{ address.zip() }} {{ address.city() }}, {{ address.country() }}
+                                    </p>
+                                </div>
+                                {% if user.can('customers.edit') %}
+                                    <form method="post" action="{{ url('admin.customers.addresses.destroy', {id: item.id(), addressId: address.id()}) }}" data-confirm="{{ 'customers.addresses.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                        {{ csrf_field()|raw }}
+                                        <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.delete'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if user.can('customers.edit') %}
+                    <div class="customer-crud">
+                        <div class="customer-crud__head">
+                            <h3 class="customer-crud__title">{{ 'customers.addresses.add'|trans }}</h3>
+                        </div>
+                        <form method="post" class="customer-crud__grid" action="{{ url('admin.customers.addresses.store', {id: item.id()}) }}" x-data="gereqAresAddress">
+                            {{ csrf_field()|raw }}
+                            {% include 'ui/select.html.twig' with { name: 'type', label: 'customers.field.address_type'|trans, required: true, value: 'billing', options: [
+                                { value: 'billing', label: 'customers.address.type.billing'|trans },
+                                { value: 'shipping', label: 'customers.address.type.shipping'|trans },
+                                { value: 'other', label: 'customers.address.type.other'|trans }
+                            ] } %}
+
+                            <div class="g-field ares-field customer-crud__span">
+                                <label class="g-label" for="customer-address-line1">
+                                    <span>{{ 'customers.field.line1'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
+                                </label>
+                                <div class="ares-field__control">
+                                    <input
+                                        class="g-control"
+                                        type="text"
+                                        id="customer-address-line1"
+                                        name="line1"
+                                        data-ares-query
+                                        data-ares-fill="street"
+                                        autocomplete="off"
+                                        required
+                                        placeholder="{{ 'customers.addresses.street.placeholder'|trans }}"
+                                        value=""
+                                        @input="onInput"
+                                        @keydown="onKeydown"
+                                        x-ref="query"
+                                    >
+                                    {% include 'ui/ares_address_suggest.html.twig' %}
+                                </div>
+                                <p class="ares-hint">{{ 'customers.addresses.street.hint'|trans }}</p>
+                            </div>
+
+                            {% include 'ui/input.html.twig' with { name: 'line2', label: 'customers.field.line2'|trans, optional: true, value: '' } %}
+                            <div class="g-field">
+                                <label class="g-label" for="customer-address-city">
+                                    <span>{{ 'customers.field.city'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
+                                </label>
+                                <input class="g-control" type="text" id="customer-address-city" name="city" data-ares-fill="city" required value="">
+                            </div>
+                            <div class="g-field">
+                                <label class="g-label" for="customer-address-zip">
+                                    <span>{{ 'customers.field.zip'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
+                                </label>
+                                <input class="g-control" type="text" id="customer-address-zip" name="zip" data-ares-fill="zip" required value="">
+                            </div>
+                            <div class="g-field">
+                                <label class="g-label" for="customer-address-country">
+                                    <span>{{ 'customers.field.country'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
+                                </label>
+                                <input class="g-control" type="text" id="customer-address-country" name="country" data-ares-fill="country" maxlength="2" required value="CZ">
+                            </div>
+                            <label class="check customer-crud__check">
+                                <input type="checkbox" name="is_primary" value="1">
+                                <span>{{ 'customers.primary'|trans }}</span>
+                            </label>
+                            <div class="customer-crud__actions">
+                                <button class="btn btn--primary btn-sm" type="submit">{{ 'common.save'|trans }}</button>
+                            </div>
+                        </form>
+                    </div>
+                {% endif %}
+            </section>
         </section>
 
         {% for section in hookSections|default([]) %}

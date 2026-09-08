@@ -20,6 +20,9 @@ final class AccessLogEntry
 
     public function isAsset(): bool
     {
+        if ($this->isHotProxy()) {
+            return false;
+        }
         if ((bool) preg_match('#^/(build|assets|brand|favicon)/#', $this->path)) {
             return true;
         }
@@ -33,6 +36,19 @@ final class AccessLogEntry
             || str_ends_with($this->path, '.map')
             || str_ends_with($this->path, '.woff2')
             || str_ends_with($this->path, '.ico');
+    }
+
+    /**
+     * Nginx → Vite HMR proxy (viz docker/nginx: /@vite, /resources, /modules, …).
+     * Typicky 304 spam při každém page loadu.
+     */
+    public function isHotProxy(): bool
+    {
+        if (!$this->access) {
+            return false;
+        }
+
+        return (bool) preg_match('#^/(@vite|@fs|@id|node_modules|resources|modules)(/|$)#', $this->path);
     }
 
     public function isPhpIndexNoise(): bool

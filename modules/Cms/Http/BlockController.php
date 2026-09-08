@@ -12,6 +12,8 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Publish\Adapter\CmsPagePublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Gereq\Security\HtmlSanitizer;
 use Modules\Cms\Domain\Events\BlockCreated;
 use Modules\Cms\Domain\Events\BlockDeleted;
@@ -39,13 +41,30 @@ final class BlockController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly CapabilityRegistry $capabilities,
         private readonly HtmlSanitizer $html,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezePageIfPublished(Page $page): void
+    {
+        if (!$page->isPublished()) {
+            return;
+        }
+        $this->freeze->freezeIfNeeded(
+            'cms.pages',
+            'page',
+            $page->id(),
+            fn (): array => CmsPagePublishAdapter::capture($this->em, $page),
+            $page->title(),
+            $this->auth->user()?->id(),
+        );
     }
 
     public function store(Request $request, string $id): Response
     {
         $page = $this->pageEntity($id);
+        $this->freezePageIfPublished($page);
         $data = $this->validate($request, 'cms.block.save');
         $type = (string) $data['type'];
 
@@ -87,6 +106,7 @@ final class BlockController extends Controller
     public function update(Request $request, string $id, string $blockId): Response
     {
         $page = $this->pageEntity($id);
+        $this->freezePageIfPublished($page);
         $block = $this->blockEntity($id, $blockId);
         $data = $this->validate($request, 'cms.block.save');
         $type = (string) ($data['type'] ?? $block->type());
@@ -98,14 +118,17 @@ final class BlockController extends Controller
         $this->events->dispatch(BlockUpdated::make($block->id(), $payload));
         $this->events->dispatch(PageUpdated::make($page->id(), ['id' => $page->id(), 'touched' => 'block.updated']));
         $this->forgetForm('cms.block.save');
-        $this->flash('success', $this->translator->trans('cms.flash.block_updated'));
+        $this->flash('success', $page->isPublished()
+            ? $this->translator->trans('publish.flash.staged')
+            : $this->translator->trans('cms.flash.block_updated'));
 
         return $this->redirect('admin.cms.pages.show', ['id' => $id]);
     }
 
     public function moveUp(string $id, string $blockId): Response
     {
-        $this->pageEntity($id);
+        $page = $this->pageEntity($id);
+        $this->freezePageIfPublished($page);
         $block = $this->blockEntity($id, $blockId);
         $prev = $this->em->getRepository(PageBlock::class)->createQueryBuilder('b')
             ->where('b.pageId = :pid AND b.sortOrder < :ord')
@@ -125,7 +148,8 @@ final class BlockController extends Controller
 
     public function moveDown(string $id, string $blockId): Response
     {
-        $this->pageEntity($id);
+        $page = $this->pageEntity($id);
+        $this->freezePageIfPublished($page);
         $block = $this->blockEntity($id, $blockId);
         $next = $this->em->getRepository(PageBlock::class)->createQueryBuilder('b')
             ->where('b.pageId = :pid AND b.sortOrder > :ord')
@@ -146,6 +170,7 @@ final class BlockController extends Controller
     public function destroy(string $id, string $blockId): Response
     {
         $page = $this->pageEntity($id);
+        $this->freezePageIfPublished($page);
         $block = $this->blockEntity($id, $blockId);
         $payload = $this->serialize($block);
         $this->em->remove($block);

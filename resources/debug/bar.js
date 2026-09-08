@@ -13,8 +13,11 @@
   const KEY = "gereq.debugbar.v1";
   const POS_KEY = "gereq.debugbar.pos";
   const nPlusOneCount = data.nPlusOneCount || 0;
+  const staging = data.staging || { count: 0, version: "—", entries: [] };
+  const stagingCount = staging.count || 0;
   const tabs = [
     { id: "request", label: "Požadavek" },
+    { id: "staging", label: "Staging", count: stagingCount, warn: stagingCount > 0 },
     { id: "sql", label: "SQL", count: data.queryCount || 0, warn: nPlusOneCount > 0 },
     { id: "views", label: "Šablony", count: (data.views || []).length },
     { id: "time", label: "Čas" },
@@ -230,6 +233,41 @@
         ["Hlavičky", req.headers],
       ]);
     },
+    staging: () => {
+      const entries = staging.entries || [];
+      const head = kv([
+        ["Content verze", staging.version || "—"],
+        ["Nepublikované", stagingCount],
+      ]);
+      if (!entries.length) {
+        return `${head}<div class="gdb-empty">Žádné staged změny (content_staging je prázdný).</div>`;
+      }
+      const byCat = {};
+      for (const e of entries) {
+        const cat = e.category || "—";
+        if (!byCat[cat]) byCat[cat] = [];
+        byCat[cat].push(e);
+      }
+      const blocks = Object.keys(byCat)
+        .sort()
+        .map((cat) => {
+          const rows = byCat[cat]
+            .map((e) => {
+              const action = String(e.action || "");
+              const badge =
+                action === "delete"
+                  ? `<span class="gdb-badge">delete</span>`
+                  : action === "create"
+                    ? `<span class="gdb-badge">create</span>`
+                    : `<span class="gdb-badge">${esc(action)}</span>`;
+              return `<tr><td>${badge}</td><td>${esc(e.label)}</td><td><code>${esc(e.resource_type)}:${esc(e.resource_key)}</code></td><td class="gdb-ms">${esc(e.updated_at)}</td></tr>`;
+            })
+            .join("");
+          return `<div class="gdb-card${byCat[cat].some((e) => e.action === "delete") ? " gdb-card--warn" : ""}"><div class="gdb-card__meta"><b>${esc(cat)}</b> · ${esc(byCat[cat].length)}</div><table class="gdb-table"><thead><tr><th>Akce</th><th>Label</th><th>Resource</th><th>Updated</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        })
+        .join("");
+      return `${head}${blocks}`;
+    },
     nplusone: () => {
       const hits = data.nPlusOnes || [];
       if (!hits.length) {
@@ -337,6 +375,7 @@
       route: data.route || {},
       request: data.request || {},
     }),
+    staging: () => staging,
     nplusone: () => ({
       threshold: data.nPlusOneThreshold || 2,
       count: data.nPlusOneCount || 0,
@@ -415,13 +454,19 @@
     nPlusOneCount > 0
       ? `<span class="gdb-chip gdb-chip--warn" data-tab-jump="nplusone" title="Podezření na N+1 queries"><b>${esc(nPlusOneCount)}</b> N+1</span>`
       : "";
+  const stagingChip =
+    stagingCount > 0
+      ? `<span class="gdb-chip gdb-chip--warn" data-tab-jump="staging" title="Nepublikované staged změny"><b>${esc(stagingCount)}</b> stage</span>`
+      : `<span class="gdb-chip" data-tab-jump="staging" title="Content staging · verze ${esc(staging.version || "—")}"><b>v${esc(staging.version || "—")}</b></span>`;
   const n1Pill =
     nPlusOneCount > 0 ? ` <b class="gdb-chip--warn">${esc(nPlusOneCount)}×N+1</b>` : "";
+  const stagingPill =
+    stagingCount > 0 ? ` <b class="gdb-chip--warn">${esc(stagingCount)} stage</b>` : "";
 
   root.innerHTML = `
     <button type="button" class="gdb-pill" data-act="open" hidden>
       <span class="gdb-pill__brand">GEREQ</span>
-      <span class="gdb-pill__meta"><b class="gdb-chip--${tone}">${esc(data.status)}</b> <b>${esc(data.duration)} ms</b> ${esc(data.queryCount)}q${n1Pill}</span>
+      <span class="gdb-pill__meta"><b class="gdb-chip--${tone}">${esc(data.status)}</b> <b>${esc(data.duration)} ms</b> ${esc(data.queryCount)}q${n1Pill}${stagingPill}</span>
     </button>
     <div class="gdb-dock" data-dock>
       <div class="gdb-bar">
@@ -432,6 +477,7 @@
         <span class="gdb-chip"><b>${esc(data.memory)}</b></span>
         <span class="gdb-chip"><b>${esc(data.queryCount)}</b> SQL · ${esc(data.queryMs)} ms</span>
         ${n1Chip}
+        ${stagingChip}
         <div class="gdb-bar__tabs">${tabBtns}</div>
         <div class="gdb-bar__actions">
           <button type="button" class="gdb-copybtn" data-act="dumps-clear" data-dumps-clear hidden title="Smazat všechny dumpy">Smazat dumpy</button>

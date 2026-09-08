@@ -7,9 +7,12 @@ namespace Modules\Cms\Http\Api;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Api\ApiQuery;
 use Gereq\Api\ApiResponse;
+use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Publish\Adapter\CmsPagePublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Gereq\Security\HtmlSanitizer;
 use Gereq\Validation\ValidationRegistry;
 use Modules\Cms\Domain\Events\PagePublished;
@@ -30,6 +33,8 @@ final class PageApiController extends Controller
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
         private readonly HtmlSanitizer $html,
+        private readonly ProductionFreeze $freeze,
+        private readonly Authenticator $auth,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -72,9 +77,20 @@ final class PageApiController extends Controller
         $page->setContentMode((string) ($data['content_mode'] ?? 'blocks'));
         $page->setBody($this->sanitizeBody($data['body'] ?? null));
         $page->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
+        $wantPublished = (string) $data['status'] === 'published';
         $page->setStatus((string) $data['status']);
         $this->em->persist($page);
         $this->em->flush();
+
+        if ($wantPublished) {
+            $this->freeze->stageCreate(
+                'cms.pages',
+                'page',
+                $page->id(),
+                $page->title(),
+                $this->auth->user()?->id(),
+            );
+        }
 
         $payload = $this->serialize($page);
         $this->events->dispatch(PageUpdated::make($page->id(), $payload));
@@ -111,12 +127,23 @@ final class PageApiController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $page = $this->find($id);
-        if ($page === null) {
+        if ($page === null || $this->freeze->isPendingDelete('cms.pages', $id)) {
             return ApiResponse::notFound();
         }
 
         $data = $this->validateBody($request, 'cms.page.save', ['ignore_id' => $id]);
         $wasPublished = $page->isPublished();
+        $wantPublished = (string) $data['status'] === 'published';
+        if ($wasPublished || ($wantPublished && !$wasPublished)) {
+            $this->freeze->freezeIfNeeded(
+                'cms.pages',
+                'page',
+                $page->id(),
+                fn (): array => CmsPagePublishAdapter::capture($this->em, $page),
+                $page->title(),
+                $this->auth->user()?->id(),
+            );
+        }
         $page->setSlug((string) $data['slug']);
         $page->setTitle(trim((string) $data['title']));
         $page->setTemplate((string) $data['template']);
@@ -125,6 +152,16 @@ final class PageApiController extends Controller
         $page->setMetaDescription(isset($data['meta_description']) ? (string) $data['meta_description'] : null);
         $page->setStatus((string) $data['status']);
         $this->em->flush();
+
+        if ($wantPublished && !$wasPublished && !$this->freeze->hasFreeze('cms.pages', $page->id())) {
+            $this->freeze->stageCreate(
+                'cms.pages',
+                'page',
+                $page->id(),
+                $page->title(),
+                $this->auth->user()?->id(),
+            );
+        }
 
         $payload = $this->serialize($page);
         $this->events->dispatch(PageUpdated::make($page->id(), $payload));
@@ -138,13 +175,30 @@ final class PageApiController extends Controller
     public function publish(string $id): JsonResponse
     {
         $page = $this->find($id);
-        if ($page === null) {
+        if ($page === null || $this->freeze->isPendingDelete('cms.pages', $id)) {
             return ApiResponse::notFound();
         }
 
         if (!$page->isPublished()) {
+            $this->freeze->freezeIfNeeded(
+                'cms.pages',
+                'page',
+                $page->id(),
+                fn (): array => CmsPagePublishAdapter::capture($this->em, $page),
+                $page->title(),
+                $this->auth->user()?->id(),
+            );
             $page->setStatus('published');
             $this->em->flush();
+            if (!$this->freeze->hasFreeze('cms.pages', $page->id())) {
+                $this->freeze->stageCreate(
+                    'cms.pages',
+                    'page',
+                    $page->id(),
+                    $page->title(),
+                    $this->auth->user()?->id(),
+                );
+            }
             $payload = $this->serialize($page);
             $this->events->dispatch(PagePublished::make($page->id(), $payload));
             $this->events->dispatch(PageUpdated::make($page->id(), $payload));
@@ -158,8 +212,21 @@ final class PageApiController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $page = $this->find($id);
-        if ($page === null) {
+        if ($page === null || $this->freeze->isPendingDelete('cms.pages', $id)) {
             return ApiResponse::notFound();
+        }
+
+        if ($page->isPublished() || $this->freeze->hasFreeze('cms.pages', $id)) {
+            $this->freeze->stageDelete(
+                'cms.pages',
+                'page',
+                $id,
+                fn (): array => CmsPagePublishAdapter::capture($this->em, $page),
+                $page->title(),
+                $this->auth->user()?->id(),
+            );
+
+            return ApiResponse::data(['id' => $id, 'deleted' => false, 'staged' => true]);
         }
 
         foreach ($this->em->getRepository(PageBlock::class)->findBy(['pageId' => $id]) as $block) {

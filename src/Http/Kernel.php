@@ -84,6 +84,7 @@ final class Kernel
             CsrfMiddleware::class,
             \Gereq\Api\Http\CorrelationIdMiddleware::class,
             \Gereq\Http\Middleware\SetupMiddleware::class,
+            \Gereq\Http\Middleware\ContentWorkspaceMiddleware::class,
         ];
 
         $isApi = str_starts_with((string) $route->getPath(), '/api/');

@@ -11,6 +11,7 @@ use Gereq\Event\EventRegistry;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Route;
 use Gereq\Http\Router;
+use Gereq\Publish\PublishableRegistry;
 use Gereq\Setting\Settings;
 
 final class ModuleInspector
@@ -26,6 +27,7 @@ final class ModuleInspector
         private readonly CapabilityRegistry $capabilities,
         private readonly Settings $settings,
         private readonly Repository $config,
+        private readonly PublishableRegistry $publishables,
     ) {
     }
 
@@ -373,6 +375,43 @@ final class ModuleInspector
             ];
         }
 
+        $publicFacing = $this->hasPublicContentApiRoutes($manifest);
+        $registered = $this->publishables->forModule($manifest->id);
+        if ($publicFacing) {
+            $checks[] = [
+                'id' => 'publishables',
+                'label' => 'modules.health.publishables.label',
+                'status' => $registered !== [] ? 'ok' : ($enabled ? 'warn' : 'info'),
+                'detail' => $registered !== []
+                    ? 'modules.health.publishables.ok'
+                    : ($enabled
+                        ? 'modules.health.publishables.missing'
+                        : 'modules.health.publishables.none'),
+                'detail_params' => [
+                    '%categories%' => implode(', ', array_map(
+                        static fn ($d): string => $d->category,
+                        $registered,
+                    )),
+                ],
+            ];
+        } elseif ($this->hasPublicApiRoutes($manifest)) {
+            $checks[] = [
+                'id' => 'publishables',
+                'label' => 'modules.health.publishables.label',
+                'status' => 'ok',
+                'detail' => 'modules.health.publishables.runtime',
+                'detail_params' => ['%categories%' => ''],
+            ];
+        } else {
+            $checks[] = [
+                'id' => 'publishables',
+                'label' => 'modules.health.publishables.label',
+                'status' => 'info',
+                'detail' => 'modules.health.publishables.none',
+                'detail_params' => ['%categories%' => ''],
+            ];
+        }
+
         $pathOk = is_dir($manifest->path) && is_readable($manifest->path . '/module.php');
         $checks[] = [
             'id' => 'filesystem',
@@ -396,6 +435,35 @@ final class ModuleInspector
         }
 
         return $map;
+    }
+
+    private function hasPublicApiRoutes(ModuleManifest $manifest): bool
+    {
+        foreach ($this->router->all() as $route) {
+            $path = $route->getPath();
+            if (!str_starts_with($path, '/api/public')) {
+                continue;
+            }
+            if ($this->routeBelongs($manifest, $route)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * True when module exposes admin-editable public catalog/content (not runtime cart/intake).
+     */
+    private function hasPublicContentApiRoutes(ModuleManifest $manifest): bool
+    {
+        // Runtime / intake endpoints — no content staging required.
+        $runtimeModules = ['shop', 'viewings', 'customeruploads', 'customer_uploads'];
+        if (in_array(strtolower($manifest->id), $runtimeModules, true)) {
+            return false;
+        }
+
+        return $this->hasPublicApiRoutes($manifest);
     }
 
     private function belongsToModule(ModuleManifest $manifest, string $apiModule, mixed $handler): bool

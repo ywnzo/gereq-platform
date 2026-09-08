@@ -14,6 +14,8 @@ use Gereq\File\FileManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Publish\Adapter\ProductPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Currency\Domain\Currency;
 use Modules\Products\Application\ProductPersonalizationService;
@@ -54,8 +56,24 @@ final class ProductController extends Controller
         private readonly ProductPersonalizationService $personalization,
         private readonly ProductVariantOptionsService $variantOptions,
         private readonly CurrencyBuilder $money,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezeProductIfPublic(Product $product): void
+    {
+        if ($product->status() !== 'active' && !$this->freeze->hasFreeze('products', $product->id())) {
+            return;
+        }
+        $this->freeze->freezeIfNeeded(
+            'products',
+            'product',
+            $product->id(),
+            fn (): array => ProductPublishAdapter::capture($product),
+            $product->name(),
+            $this->auth->user()?->id(),
+        );
     }
 
     public function index(Request $request): Response
@@ -85,6 +103,11 @@ final class ProductController extends Controller
         }
         if ($unit !== '') {
             $qb->andWhere('LOWER(p.unit) = :unit')->setParameter('unit', mb_strtolower($unit));
+        }
+
+        $deleteKeys = $this->freeze->pendingDeleteKeys('products');
+        if ($deleteKeys !== []) {
+            $qb->andWhere('p.id NOT IN (:pendingDelete)')->setParameter('pendingDelete', $deleteKeys);
         }
 
         $qb->orderBy('p.' . $list->sort, $list->direction());
@@ -148,6 +171,16 @@ final class ProductController extends Controller
         $this->em->flush();
         $this->personalization->upsertRule($product->id(), $data['image_rule']);
 
+        if ($product->status() === 'active') {
+            $this->freeze->stageCreate(
+                'products',
+                'product',
+                $product->id(),
+                $product->name(),
+                $this->auth->user()?->id(),
+            );
+        }
+
         $payload = $this->publicProduct($product);
         $this->events->dispatch(ProductCreated::make($product->id(), $payload));
         if ($product->status() === 'active') {
@@ -158,7 +191,12 @@ final class ProductController extends Controller
             'name' => $product->name(),
         ]);
         $this->forgetForm('products.product.save');
-        $this->flash('success', $this->translator->trans('products.flash.created', ['%name%' => $product->name()]));
+        $this->flash(
+            'success',
+            $product->status() === 'active'
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('products.flash.created', ['%name%' => $product->name()]),
+        );
 
         return $this->redirect('admin.products.show', ['id' => $product->id()]);
     }
@@ -260,6 +298,17 @@ final class ProductController extends Controller
 
         $old = ['sku' => $product->sku(), 'name' => $product->name(), 'status' => $product->status()];
         $previousStatus = $product->status();
+        $wantActive = $data['status'] === 'active';
+        if ($previousStatus === 'active' || $wantActive) {
+            $this->freeze->freezeIfNeeded(
+                'products',
+                'product',
+                $product->id(),
+                fn (): array => ProductPublishAdapter::capture($product),
+                $product->name(),
+                $this->auth->user()?->id(),
+            );
+        }
         $product->setSku($data['sku']);
         $product->setName($data['name']);
         $product->setDescription($data['description']);
@@ -270,6 +319,16 @@ final class ProductController extends Controller
         $this->em->flush();
         $this->personalization->upsertRule($product->id(), $data['image_rule']);
 
+        if ($wantActive && $previousStatus !== 'active' && !$this->freeze->hasFreeze('products', $product->id())) {
+            $this->freeze->stageCreate(
+                'products',
+                'product',
+                $product->id(),
+                $product->name(),
+                $this->auth->user()?->id(),
+            );
+        }
+
         $payload = $this->publicProduct($product);
         $this->events->dispatch(ProductUpdated::make($product->id(), $payload));
         $this->emitStatusChange($previousStatus, $product->status(), $product->id(), $payload);
@@ -279,7 +338,12 @@ final class ProductController extends Controller
             'status' => $product->status(),
         ]);
         $this->forgetForm('products.product.save');
-        $this->flash('success', $this->translator->trans('products.flash.saved'));
+        $this->flash(
+            'success',
+            ($previousStatus === 'active' || $wantActive)
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('products.flash.saved'),
+        );
 
         return $this->redirect('admin.products.show', ['id' => $id]);
     }
@@ -287,7 +351,7 @@ final class ProductController extends Controller
     public function setStatus(Request $request, string $id): Response
     {
         $product = $this->find($id);
-        if ($product === null) {
+        if ($product === null || $this->freeze->isPendingDelete('products', $id)) {
             $this->abort(404, $this->translator->trans('products.error.not_found'));
         }
 
@@ -299,6 +363,16 @@ final class ProductController extends Controller
         }
 
         $previousStatus = $product->status();
+        if ($previousStatus === 'active' || $status === 'active') {
+            $this->freeze->freezeIfNeeded(
+                'products',
+                'product',
+                $product->id(),
+                fn (): array => ProductPublishAdapter::capture($product),
+                $product->name(),
+                $this->auth->user()?->id(),
+            );
+        }
         $product->setStatus($status);
         $this->em->flush();
 
@@ -306,9 +380,7 @@ final class ProductController extends Controller
         $this->events->dispatch(ProductUpdated::make($product->id(), $payload));
         $this->emitStatusChange($previousStatus, $status, $product->id(), $payload);
         $this->auditor->log('product.status_changed', 'product', $product->id(), ['status' => $previousStatus], ['status' => $status]);
-        $this->flash('success', $this->translator->trans('products.flash.status_changed', [
-            '%status%' => $this->translator->trans('products.status.' . $status),
-        ]));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.products.show', ['id' => $id]);
     }
@@ -319,6 +391,7 @@ final class ProductController extends Controller
         if ($product === null) {
             $this->abort(404, $this->translator->trans('products.error.not_found'));
         }
+        $this->freezeProductIfPublic($product);
 
         $data = $this->validate($request, 'products.price.save');
         $amountRaw = trim((string) $data['amount']);
@@ -841,24 +914,37 @@ final class ProductController extends Controller
     public function destroy(string $id): Response
     {
         $product = $this->find($id);
-        if ($product === null) {
+        if ($product === null || $this->freeze->isPendingDelete('products', $id)) {
             $this->abort(404, $this->translator->trans('products.error.not_found'));
         }
 
         $name = $product->name();
-        $prices = $this->em->getRepository(ProductPrice::class)->findBy(['productId' => $id]);
-        foreach ($prices as $price) {
-            $this->em->remove($price);
+        if ($product->status() === 'active' || $this->freeze->hasFreeze('products', $id)) {
+            $this->freeze->stageDelete(
+                'products',
+                'product',
+                $id,
+                fn (): array => ProductPublishAdapter::capture($product),
+                $name,
+                $this->auth->user()?->id(),
+            );
+            $this->auditor->log('product.delete_staged', 'product', $id);
+            $this->flash('success', $this->translator->trans('publish.flash.staged'));
+        } else {
+            $prices = $this->em->getRepository(ProductPrice::class)->findBy(['productId' => $id]);
+            foreach ($prices as $price) {
+                $this->em->remove($price);
+            }
+            $images = $this->em->getRepository(ProductImage::class)->findBy(['productId' => $id]);
+            foreach ($images as $image) {
+                $this->em->remove($image);
+            }
+            $product->clearCategories();
+            $this->em->remove($product);
+            $this->em->flush();
+            $this->auditor->log('product.deleted', 'product', $id);
+            $this->flash('success', $this->translator->trans('products.flash.deleted', ['%name%' => $name]));
         }
-        $images = $this->em->getRepository(ProductImage::class)->findBy(['productId' => $id]);
-        foreach ($images as $image) {
-            $this->em->remove($image);
-        }
-        $product->clearCategories();
-        $this->em->remove($product);
-        $this->em->flush();
-        $this->auditor->log('product.deleted', 'product', $id);
-        $this->flash('success', $this->translator->trans('products.flash.deleted', ['%name%' => $name]));
 
         return $this->redirect('admin.products.index');
     }

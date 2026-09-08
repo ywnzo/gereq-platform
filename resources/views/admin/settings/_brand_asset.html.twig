@@ -20,7 +20,6 @@
                     <span class="g-file__icon" aria-hidden="true">{{ icon('upload') }}</span>
                     <span class="g-file__copy">
                         <span class="g-file__title" x-text="fileName ? fileName : '{{ 'settings.brand.upload'|trans|e('js') }}'">{{ 'settings.brand.upload'|trans }}</span>
-                        <span class="g-file__meta">{{ 'settings.brand.upload_or_url'|trans }}</span>
                     </span>
                     <span class="g-file__browse" x-show="!fileName">{{ 'ui.file.browse'|trans }}</span>
                 </label>
@@ -34,6 +33,6 @@
             placeholder="/brand/asset/logo.png"
             {% if groupId == 'brand' %}@input="touch"{% endif %}
         >
-        <small class="field__hint">{{ 'settings.brand.upload_hint'|trans }}</small>
+        <small class="field__hint">{{ 'settings.brand.upload_or_url'|trans }} · {{ 'settings.brand.upload_hint'|trans }}</small>
     </div>
 </div>

@@ -206,7 +206,12 @@ final class ServeDockerCommand extends Command
         }
 
         $output->writeln('<info>Stack běží.</info> ' . ($dashboard ? 'Otevírám dashboard…' : 'Otevírám log stream…'));
-        $output->writeln($this->cDim('  [q] ukončit  [a] assety  [p] php  [n]oise  [space] pause'));
+        $hint = '  [q] ukončit  [a] assety  [p] php  [n]oise';
+        if ($hot) {
+            $hint .= '  [h]ot';
+        }
+        $hint .= '  [space] pause';
+        $output->writeln($this->cDim($hint));
         $output->writeln('');
 
         usleep(400_000);
@@ -218,6 +223,7 @@ final class ServeDockerCommand extends Command
             bringDownOnExit: !$keep,
             dashboard: $dashboard,
             https: $https,
+            hot: $hot,
         );
 
         try {

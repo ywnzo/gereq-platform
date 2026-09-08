@@ -38,6 +38,9 @@
                         {% endblock %}
                     </nav>
                 </div>
+                <div class="topbar__center">
+                    {{ apply_filters('admin.topbar.center', '')|raw }}
+                </div>
                 <div class="topbar__right">
                     {{ apply_filters('admin.topbar.context', '')|raw }}
                     <button type="button" class="search-trigger" @click="openPalette">

@@ -10,6 +10,7 @@ use Gereq\Http\Controller;
 use Gereq\Http\PublicCors;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Publish\FrozenPublicReader;
 use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Products\Application\ProductPersonalizationService;
 use Modules\Products\Application\ProductVariantOptionsService;
@@ -37,6 +38,7 @@ final class PublicStoreCatalogController extends Controller
         private readonly ProductVariantOptionsService $variantOptions,
         private readonly CapabilityRegistry $capabilities,
         private readonly CurrencyBuilder $money,
+        private readonly FrozenPublicReader $frozen,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -49,13 +51,41 @@ final class PublicStoreCatalogController extends Controller
     public function categories(Request $request): JsonResponse
     {
         $items = $this->em->getRepository(ProductCategory::class)->findBy([], ['name' => 'ASC']);
+        $pendingCreate = array_flip($this->frozen->pendingCreateKeys('products.categories'));
+        $pendingDelete = array_flip($this->frozen->pendingDeleteKeys('products.categories'));
+        // Pending deletes still appear via freeze until publish; keep entity in list.
+        $items = array_values(array_filter(
+            $items,
+            static fn (ProductCategory $c): bool => !isset($pendingCreate[$c->id()]),
+        ));
+        // Re-add deleted-but-frozen categories for public.
+        foreach ($this->frozen->allSnapshots('products.categories') as $hit) {
+            $id = $hit['resource_key'];
+            if (isset($pendingDelete[$id]) && !array_any($items, static fn (ProductCategory $c): bool => $c->id() === $id)) {
+                $cat = $this->em->find(ProductCategory::class, $id);
+                if ($cat instanceof ProductCategory) {
+                    $items[] = $cat;
+                }
+            }
+        }
 
         return $this->cors(ApiResponse::collection(array_map(
-            static fn (ProductCategory $c): array => [
-                'id' => $c->id(),
-                'name' => $c->name(),
-                'slug' => $c->slug(),
-            ],
+            function (ProductCategory $c): array {
+                $snap = $this->frozen->snapshot('products.categories', $c->id());
+                if (is_array($snap)) {
+                    return [
+                        'id' => (string) ($snap['id'] ?? $c->id()),
+                        'name' => (string) ($snap['name'] ?? ''),
+                        'slug' => (string) ($snap['slug'] ?? ''),
+                    ];
+                }
+
+                return [
+                    'id' => $c->id(),
+                    'name' => $c->name(),
+                    'slug' => $c->slug(),
+                ];
+            },
             $items,
         )));
     }
@@ -80,6 +110,11 @@ final class PublicStoreCatalogController extends Controller
             self_repair_search($qb, 'p', ['name', 'sku', 'description'], $q);
         }
 
+        $pendingCreate = $this->frozen->pendingCreateKeys('products');
+        if ($pendingCreate !== []) {
+            $qb->andWhere('p.id NOT IN (:pendingCreate)')->setParameter('pendingCreate', $pendingCreate);
+        }
+
         $limit = max(1, min(100, (int) $request->query->get('limit', $request->query->get('per_page', 48))));
         $page = max(1, (int) $request->query->get('page', 1));
 
@@ -87,8 +122,17 @@ final class PublicStoreCatalogController extends Controller
         /** @var list<Product> $products */
         $products = $qb->setFirstResult(($page - 1) * $limit)->setMaxResults($limit)->getQuery()->getResult();
 
+        $filtered = [];
+        foreach ($products as $product) {
+            $snap = $this->frozen->snapshot('products', $product->id());
+            if ($snap !== null && ($snap['status'] ?? '') !== 'active') {
+                continue;
+            }
+            $filtered[] = $product;
+        }
+
         return $this->cors(ApiResponse::collection(
-            $this->serializeStoreMany($products),
+            $this->serializeStoreMany($filtered),
             [
                 'page' => $page,
                 'per_page' => $limit,
@@ -106,6 +150,13 @@ final class PublicStoreCatalogController extends Controller
             $product = $bySku instanceof Product && $bySku->status() === 'active' ? $bySku : null;
         }
         if ($product === null) {
+            return $this->cors(ApiResponse::notFound());
+        }
+        if ($this->frozen->isPendingCreate('products', $product->id())) {
+            return $this->cors(ApiResponse::notFound());
+        }
+        $snap = $this->frozen->snapshot('products', $product->id());
+        if ($snap !== null && ($snap['status'] ?? '') !== 'active') {
             return $this->cors(ApiResponse::notFound());
         }
 

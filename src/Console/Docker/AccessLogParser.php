@@ -27,6 +27,10 @@ final class AccessLogParser
             if (str_contains($path, '?')) {
                 $path = explode('?', $path, 2)[0];
             }
+            // Vite HMR přes nginx proxy → sloupec „hot“ (ne nginx).
+            if ($svc === 'nginx' && preg_match('#^/(@vite|@fs|@id|node_modules|resources|modules)(/|$)#', $path) === 1) {
+                $svc = 'hot';
+            }
 
             return new AccessLogEntry(
                 service: $svc,

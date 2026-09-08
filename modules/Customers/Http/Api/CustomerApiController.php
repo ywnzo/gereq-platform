@@ -7,9 +7,12 @@ namespace Modules\Customers\Http\Api;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Api\ApiQuery;
 use Gereq\Api\ApiResponse;
+use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Router;
+use Gereq\Publish\Adapter\CustomerPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Modules\Customers\Domain\Customer;
 use Modules\Customers\Domain\CustomerAddress;
 use Modules\Customers\Domain\CustomerContact;
@@ -45,6 +48,8 @@ final class CustomerApiController extends AbstractCustomerApiController
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
         private readonly HookManager $hooks,
+        private readonly ProductionFreeze $freeze,
+        private readonly Authenticator $auth,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -61,6 +66,11 @@ final class CustomerApiController extends AbstractCustomerApiController
         self_repair_search($qb, 'c', ['name', 'email', 'company', 'phone'], $query->search);
         if (isset($query->filters['status']) && $query->filters['status'] !== '') {
             $qb->andWhere('c.status = :status')->setParameter('status', $query->filters['status']);
+        }
+
+        $deleteKeys = $this->freeze->pendingDeleteKeys('customers');
+        if ($deleteKeys !== []) {
+            $qb->andWhere('c.id NOT IN (:pendingDelete)')->setParameter('pendingDelete', $deleteKeys);
         }
 
         $sort = $query->sort ?? 'name';
@@ -83,6 +93,13 @@ final class CustomerApiController extends AbstractCustomerApiController
         $this->applyCustomerFields($customer, $data);
         $this->em->persist($customer);
         $this->em->flush();
+        $this->freeze->stageCreate(
+            'customers',
+            'customer',
+            $customer->id(),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
 
         $payload = $this->serializeCustomer($customer);
         $this->events->dispatch(new CustomerCreated($customer->id(), $payload));
@@ -109,6 +126,14 @@ final class CustomerApiController extends AbstractCustomerApiController
 
         $data = $this->validateBody($request, 'customers.save', ['ignore_id' => $customer->id()]);
         $previousStatus = $customer->status();
+        $this->freeze->freezeIfNeeded(
+            'customers',
+            'customer',
+            $customer->id(),
+            fn (): array => CustomerPublishAdapter::capture($customer),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
         $customer->setName(trim((string) $data['name']));
         $customer->setEmail(strtolower(trim((string) $data['email'])));
         $this->applyCustomerFields($customer, $data);
@@ -133,15 +158,16 @@ final class CustomerApiController extends AbstractCustomerApiController
             return ApiResponse::notFound();
         }
 
-        $payload = $this->serializeCustomer($customer);
-        $name = $customer->name();
-        $this->hooks->doAction('customers.deleting', $customer);
-        $this->em->remove($customer);
-        $this->em->flush();
-        $this->events->dispatch(CustomerDeleted::make($id, $payload));
-        $this->hooks->doAction('customers.deleted', $id, $name);
+        $this->freeze->stageDelete(
+            'customers',
+            'customer',
+            $customer->id(),
+            fn (): array => CustomerPublishAdapter::capture($customer),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
 
-        return ApiResponse::data(['id' => $id, 'deleted' => true]);
+        return ApiResponse::data(['id' => $id, 'deleted' => false, 'staged' => true]);
     }
 
     public function archive(string $id): JsonResponse
@@ -151,6 +177,14 @@ final class CustomerApiController extends AbstractCustomerApiController
             return ApiResponse::notFound();
         }
 
+        $this->freeze->freezeIfNeeded(
+            'customers',
+            'customer',
+            $customer->id(),
+            fn (): array => CustomerPublishAdapter::capture($customer),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
         $customer->archive();
         $this->em->flush();
         $payload = $this->serializeCustomer($customer);
@@ -167,6 +201,14 @@ final class CustomerApiController extends AbstractCustomerApiController
             return ApiResponse::notFound();
         }
 
+        $this->freeze->freezeIfNeeded(
+            'customers',
+            'customer',
+            $customer->id(),
+            fn (): array => CustomerPublishAdapter::capture($customer),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
         $customer->restore('active');
         $this->em->flush();
         $payload = $this->serializeCustomer($customer);
@@ -509,6 +551,9 @@ final class CustomerApiController extends AbstractCustomerApiController
 
     private function findCustomer(string $id): ?Customer
     {
+        if ($this->freeze->isPendingDelete('customers', $id)) {
+            return null;
+        }
         $customer = $this->em->find(Customer::class, $id);
 
         return $customer instanceof Customer ? $customer : null;

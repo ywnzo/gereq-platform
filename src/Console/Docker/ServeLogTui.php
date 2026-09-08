@@ -25,12 +25,17 @@ final class ServeLogTui
     private bool $showAssets = false;
     private bool $showPhpNoise = false;
     private bool $showNoise = false;
+    /** Nginx→Vite proxy access (304 spam); výchozí skryté. Vite log řádky (svc hot) zůstávají. */
+    private bool $showHotProxy = false;
     private bool $paused = false;
     private bool $showHelp = false;
     private bool $running = true;
     private int $cols = 100;
     private int $rows = 30;
     private string $stty = '';
+    /** @var resource|null */
+    private $viteLogHandle = null;
+    private int $viteLogPos = 0;
 
     public function __construct(
         private readonly string $basePath,
@@ -39,6 +44,7 @@ final class ServeLogTui
         private readonly bool $bringDownOnExit = true,
         private readonly bool $dashboard = false,
         private readonly bool $https = false,
+        private readonly bool $hot = false,
     ) {
         $this->parser = new AccessLogParser();
     }
@@ -85,6 +91,7 @@ final class ServeLogTui
 
         $bufOut = '';
         $bufErr = '';
+        $this->openViteLog(seekEnd: true);
 
         try {
             while ($this->running) {
@@ -114,12 +121,15 @@ final class ServeLogTui
                     }
                 }
 
+                $this->pollViteLog(stream: true);
+
                 $status = proc_get_status($proc);
                 if (!$status['running'] && $bufOut === '' && $bufErr === '') {
                     break;
                 }
             }
         } finally {
+            $this->closeViteLog();
             foreach ([1, 2] as $i) {
                 if (isset($pipes[$i]) && is_resource($pipes[$i])) {
                     fclose($pipes[$i]);
@@ -173,6 +183,7 @@ final class ServeLogTui
 
         $bufOut = '';
         $bufErr = '';
+        $this->openViteLog(seekEnd: true);
         $this->render(force: true);
 
         try {
@@ -200,6 +211,8 @@ final class ServeLogTui
                     }
                 }
 
+                $this->pollViteLog(stream: false);
+
                 $status = proc_get_status($proc);
                 if (!$status['running'] && $bufOut === '' && $bufErr === '') {
                     break;
@@ -208,6 +221,7 @@ final class ServeLogTui
                 $this->render();
             }
         } finally {
+            $this->closeViteLog();
             foreach ([1, 2] as $i) {
                 if (isset($pipes[$i]) && is_resource($pipes[$i])) {
                     fclose($pipes[$i]);
@@ -280,6 +294,11 @@ final class ServeLogTui
 
     private function shouldHide(AccessLogEntry $entry): bool
     {
+        // Vite access přes nginx (304 /@vite, /resources/*.ts …) — výchozí skryté.
+        // Řádky z vite-dev.log (access=false, svc hot) se vždy ukazují.
+        if ($entry->access && $entry->isHotProxy() && !$this->showHotProxy) {
+            return true;
+        }
         if ($entry->access && !$this->showPhpNoise && $entry->isPhpIndexNoise()) {
             return true;
         }
@@ -313,6 +332,10 @@ final class ServeLogTui
             $this->showNoise = !$this->showNoise;
             echo $this->c('dim', '  · noise ' . ($this->showNoise ? 'on' : 'off')) . "\n";
         }
+        if ($this->hot && str_contains(strtolower($raw), 'h')) {
+            $this->showHotProxy = !$this->showHotProxy;
+            echo $this->c('dim', '  · hot proxy ' . ($this->showHotProxy ? 'on' : 'off')) . "\n";
+        }
         if (str_contains($raw, ' ')) {
             $this->paused = !$this->paused;
             echo $this->c('warn', $this->paused ? '  · paused' : '  · resumed') . "\n";
@@ -330,16 +353,24 @@ final class ServeLogTui
             return;
         }
         foreach (str_split($raw) as $ch) {
-            match (strtolower($ch)) {
-                'q' => $this->running = false,
-                'c' => $this->clear(),
-                'a' => $this->showAssets = !$this->showAssets,
-                'p' => $this->showPhpNoise = !$this->showPhpNoise,
-                'n' => $this->showNoise = !$this->showNoise,
-                ' ' => $this->paused = !$this->paused,
-                'h', '?' => $this->showHelp = !$this->showHelp,
-                default => null,
-            };
+            $key = strtolower($ch);
+            if ($key === 'q') {
+                $this->running = false;
+            } elseif ($key === 'c') {
+                $this->clear();
+            } elseif ($key === 'a') {
+                $this->showAssets = !$this->showAssets;
+            } elseif ($key === 'p') {
+                $this->showPhpNoise = !$this->showPhpNoise;
+            } elseif ($key === 'n') {
+                $this->showNoise = !$this->showNoise;
+            } elseif ($key === 'h' && $this->hot) {
+                $this->showHotProxy = !$this->showHotProxy;
+            } elseif ($ch === ' ') {
+                $this->paused = !$this->paused;
+            } elseif ($key === '?' || ($key === 'h' && !$this->hot)) {
+                $this->showHelp = !$this->showHelp;
+            }
         }
         $this->render(force: true);
     }
@@ -371,7 +402,16 @@ final class ServeLogTui
         echo $this->c('dim', str_repeat('─', $w)) . "\n";
         echo $this->c('dim', 'TIME      SVC    METHOD  CODE  SIZE   PATH') . "\n";
         echo $this->c('dim', str_repeat('─', $w)) . "\n";
-        echo $this->c('dim', 'filtr: assety+php+noise skryté · [q]uit [a]ssets [p]hp [n]oise [space] pause') . "\n\n";
+        $keys = '[q]uit [a]ssets [p]hp [n]oise';
+        if ($this->hot) {
+            $keys .= ' [h]ot';
+        }
+        $keys .= ' [space] pause';
+        $filtr = 'assety+php+noise';
+        if ($this->hot) {
+            $filtr .= '+hot-proxy';
+        }
+        echo $this->c('dim', 'filtr: ' . $filtr . ' skryté · ' . $keys) . "\n\n";
     }
 
     private function formatStreamLine(AccessLogEntry $entry): string
@@ -379,10 +419,12 @@ final class ServeLogTui
         if (!$entry->access) {
             $level = str_contains(strtolower($entry->path), 'warn') || str_contains(strtolower($entry->path), 'error')
                 ? 'warn'
-                : 'dim';
+                : ($entry->service === 'hot' ? 'lime' : 'dim');
+            $time = $entry->time ?? '        ';
+
             return sprintf(
                 '%s  %s  %s',
-                $this->c('dim', '        '),
+                $this->c('dim', str_pad($time, 8)),
                 $this->c('svc', str_pad($entry->service, 5)),
                 $this->c($level, $this->truncate($entry->path, 90))
             );
@@ -441,6 +483,9 @@ final class ServeLogTui
             $this->showPhpNoise ? $this->c('lime', 'php') : $this->c('dim', 'php'),
             $this->showNoise ? $this->c('lime', 'noise') : $this->c('dim', 'noise'),
         ];
+        if ($this->hot) {
+            $filters[] = $this->showHotProxy ? $this->c('lime', 'hot') : $this->c('dim', 'hot');
+        }
         if ($this->paused) {
             $filters[] = $this->c('warn', 'PAUSED');
         }
@@ -451,11 +496,19 @@ final class ServeLogTui
             $this->c('dim', (string) $this->hidden),
             implode(' ', $filters)
         );
-        $out[] = $this->boxRow($this->c('ok', '●') . ' nginx php redis queue   ' . $stats, $w);
+        $svcLine = $this->hot
+            ? 'nginx php redis queue hot'
+            : 'nginx php redis queue';
+        $out[] = $this->boxRow($this->c('ok', '●') . ' ' . $svcLine . '   ' . $stats, $w);
         if ($this->lanIp !== null) {
             $out[] = $this->boxRow(sprintf('LAN http://%s:%d', $this->lanIp, $this->port), $w);
         }
-        $out[] = $this->boxRow($this->c('dim', '[q]uit [c]lear [a]ssets [p]hp [n]oise [space] [h]elp'), $w);
+        $keys = '[q]uit [c]lear [a]ssets [p]hp [n]oise';
+        if ($this->hot) {
+            $keys .= ' [h]ot';
+        }
+        $keys .= ' [space] [?]help';
+        $out[] = $this->boxRow($this->c('dim', $keys), $w);
         $out[] = $this->c('dim', '├' . str_repeat('─', $w - 2) . '┤');
         $out[] = $this->boxRow($this->c('dim', 'TIME      SVC    METHOD  CODE  SIZE   PATH'), $w);
         $out[] = $this->c('dim', '├' . str_repeat('─', $w - 2) . '┤');
@@ -463,14 +516,18 @@ final class ServeLogTui
         $used = count($out) + 1;
         $bodyRows = max(3, $h - $used);
         if ($this->showHelp) {
-            foreach ([
+            $help = [
                 $this->c('lime', 'Ovládání'),
                 '  q  ukončit (+ down stacku)',
                 '  a  assety (/build, /media…/file)',
                 '  p  php /index.php',
                 '  n  nginx/redis systémový šum',
-                '  c  clear · mezerník pause',
-            ] as $line) {
+            ];
+            if ($this->hot) {
+                $help[] = '  h  Vite proxy access (304 /@vite…)';
+            }
+            $help[] = '  c  clear · mezerník pause';
+            foreach ($help as $line) {
                 $out[] = $this->boxRow($line, $w);
                 $bodyRows--;
             }
@@ -600,6 +657,130 @@ final class ServeLogTui
         );
         $cmd = implode(' ', array_map(static fn (string $p): string => escapeshellarg($p), $parts));
         passthru($cmd);
+    }
+
+    private function viteLogPath(): string
+    {
+        return $this->basePath . '/storage/logs/vite-dev.log';
+    }
+
+    private function openViteLog(bool $seekEnd): void
+    {
+        if (!$this->hot) {
+            return;
+        }
+        $path = $this->viteLogPath();
+        if (!is_file($path)) {
+            return;
+        }
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            return;
+        }
+        $this->viteLogHandle = $handle;
+        if ($seekEnd) {
+            fseek($handle, 0, SEEK_END);
+            $this->viteLogPos = (int) ftell($handle);
+        }
+    }
+
+    private function closeViteLog(): void
+    {
+        if (is_resource($this->viteLogHandle)) {
+            fclose($this->viteLogHandle);
+        }
+        $this->viteLogHandle = null;
+        $this->viteLogPos = 0;
+    }
+
+    private function pollViteLog(bool $stream): void
+    {
+        if (!$this->hot || $this->paused) {
+            return;
+        }
+
+        $path = $this->viteLogPath();
+        if (!is_file($path)) {
+            return;
+        }
+
+        if (!is_resource($this->viteLogHandle)) {
+            $this->openViteLog(seekEnd: true);
+
+            return;
+        }
+
+        clearstatcache(true, $path);
+        $size = (int) filesize($path);
+        if ($size < $this->viteLogPos) {
+            // log rotated / truncated
+            fseek($this->viteLogHandle, 0, SEEK_SET);
+            $this->viteLogPos = 0;
+        }
+        if ($size === $this->viteLogPos) {
+            return;
+        }
+
+        fseek($this->viteLogHandle, $this->viteLogPos, SEEK_SET);
+        $chunk = stream_get_contents($this->viteLogHandle);
+        if ($chunk === false || $chunk === '') {
+            return;
+        }
+        $this->viteLogPos = (int) ftell($this->viteLogHandle);
+
+        foreach (preg_split("/\r\n|\n|\r/", $chunk) ?: [] as $line) {
+            if ($line === '') {
+                continue;
+            }
+            $entry = $this->parseViteLogLine($line);
+            if ($stream) {
+                echo $this->formatStreamLine($entry) . "\n";
+            } else {
+                $this->lines[] = $entry;
+                if (count($this->lines) > self::MAX_LINES) {
+                    $this->lines = array_slice($this->lines, -self::MAX_LINES);
+                }
+            }
+        }
+    }
+
+    private function parseViteLogLine(string $line): AccessLogEntry
+    {
+        $line = (string) preg_replace('/\033\[[0-9;]*m/', '', $line);
+        $line = trim($line);
+
+        $time = date('H:i:s');
+        $message = $line;
+
+        // `10:07:19 AM [vite] (client) hmr update …` nebo `9:15:08 AM [vite] …`
+        if (preg_match(
+            '/^(?P<h>\d{1,2}):(?P<m>\d{2}):(?P<s>\d{2})\s*(?P<ampm>AM|PM)?\s*\[vite\]\s*(?P<msg>.+)$/i',
+            $line,
+            $m
+        ) === 1) {
+            $h = (int) $m['h'];
+            $ampm = strtoupper((string) ($m['ampm'] ?? ''));
+            if ($ampm === 'PM' && $h < 12) {
+                $h += 12;
+            } elseif ($ampm === 'AM' && $h === 12) {
+                $h = 0;
+            }
+            $time = sprintf('%02d:%s:%s', $h, $m['m'], $m['s']);
+            $message = trim((string) $m['msg']);
+        } elseif (preg_match('/^\[vite\]\s*(?P<msg>.+)$/i', $line, $m) === 1) {
+            $message = trim((string) $m['msg']);
+        }
+
+        return new AccessLogEntry(
+            service: 'hot',
+            method: '',
+            path: $message,
+            status: 0,
+            bytes: null,
+            time: $time,
+            raw: $line,
+            access: false,
+        );
     }
 
     /** @return list<string> */

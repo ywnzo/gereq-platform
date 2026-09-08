@@ -13,6 +13,8 @@ use Gereq\Http\Controller;
 use Gereq\Http\ListQuery;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Publish\Adapter\ListingPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Gereq\Security\HtmlSanitizer;
 use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Listings\Application\BrokersProvider;
@@ -48,8 +50,31 @@ final class ListingController extends Controller
         private readonly CapabilityRegistry $capabilities,
         private readonly HtmlSanitizer $html,
         private readonly CurrencyBuilder $money,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezeListingIfPublished(Listing $listing): void
+    {
+        if ($listing->status() !== 'published' && !$this->freeze->hasFreeze('listings', $listing->id())) {
+            return;
+        }
+        $this->freeze->freezeIfNeeded(
+            'listings',
+            'listing',
+            $listing->id(),
+            fn (): array => ListingPublishAdapter::capture($this->em, $listing),
+            $listing->title(),
+            $this->auth->user()?->id(),
+        );
+    }
+
+    private function freezeListingForPublicChange(Listing $listing): void
+    {
+        if ($listing->status() === 'published' || $this->freeze->hasFreeze('listings', $listing->id())) {
+            $this->freezeListingIfPublished($listing);
+        }
     }
 
     public function index(Request $request): Response
@@ -83,6 +108,10 @@ final class ListingController extends Controller
         $featured = $list->filter('featured');
         if ($featured === '1' || $featured === '0') {
             $qb->andWhere('l.featured = :featured')->setParameter('featured', $featured === '1');
+        }
+        $deleteKeys = $this->freeze->pendingDeleteKeys('listings');
+        if ($deleteKeys !== []) {
+            $qb->andWhere('l.id NOT IN (:pendingDelete)')->setParameter('pendingDelete', $deleteKeys);
         }
         $qb->orderBy('l.' . $list->sort, $list->direction());
 
@@ -119,12 +148,27 @@ final class ListingController extends Controller
         }
         $listing = new Listing($data['title'], $data['slug']);
         $this->apply($listing, $data);
-        if (($data['status'] ?? '') === 'published') {
+        $wantPublished = ($data['status'] ?? '') === 'published';
+        if ($wantPublished) {
             $listing->publish();
         }
         $this->em->persist($listing);
         $this->em->flush();
-        $this->flash('success', $this->translator->trans('listings.flash.created'));
+        if ($wantPublished) {
+            $this->freeze->stageCreate(
+                'listings',
+                'listing',
+                $listing->id(),
+                $listing->title(),
+                $this->auth->user()?->id(),
+            );
+        }
+        $this->flash(
+            'success',
+            $wantPublished
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('listings.flash.created'),
+        );
 
         return $this->redirect('admin.listings.edit', ['id' => $listing->id()]);
     }
@@ -132,7 +176,7 @@ final class ListingController extends Controller
     public function show(string $id): Response
     {
         $listing = $this->provider->find($id);
-        if ($listing === null) {
+        if ($listing === null || $this->freeze->isPendingDelete('listings', $id)) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
 
@@ -159,7 +203,7 @@ final class ListingController extends Controller
     public function edit(string $id): Response
     {
         $listing = $this->provider->find($id);
-        if ($listing === null) {
+        if ($listing === null || $this->freeze->isPendingDelete('listings', $id)) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
 
@@ -169,7 +213,7 @@ final class ListingController extends Controller
     public function update(Request $request, string $id): Response
     {
         $listing = $this->provider->find($id);
-        if ($listing === null) {
+        if ($listing === null || $this->freeze->isPendingDelete('listings', $id)) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
 
@@ -179,10 +223,22 @@ final class ListingController extends Controller
 
             return $this->redirect('admin.listings.edit', ['id' => $id]);
         }
+        $wasPublished = $listing->status() === 'published';
+        $wantPublished = ($data['status'] ?? '') === 'published';
+        if ($wasPublished || ($wantPublished && !$wasPublished)) {
+            $this->freeze->freezeIfNeeded(
+                'listings',
+                'listing',
+                $listing->id(),
+                fn (): array => ListingPublishAdapter::capture($this->em, $listing),
+                $listing->title(),
+                $this->auth->user()?->id(),
+            );
+        }
         $listing->setTitle($data['title']);
         $listing->setSlug($data['slug']);
         $this->apply($listing, $data);
-        if (($data['status'] ?? '') === 'published') {
+        if ($wantPublished) {
             $listing->publish();
         } elseif (($data['status'] ?? '') === 'archived') {
             $listing->archive();
@@ -190,7 +246,18 @@ final class ListingController extends Controller
             $listing->unpublish();
         }
         $this->em->flush();
-        $this->flash('success', $this->translator->trans('listings.flash.updated'));
+        if ($wantPublished && !$wasPublished && !$this->freeze->hasFreeze('listings', $listing->id())) {
+            $this->freeze->stageCreate(
+                'listings',
+                'listing',
+                $listing->id(),
+                $listing->title(),
+                $this->auth->user()?->id(),
+            );
+        }
+        $this->flash('success', ($wasPublished || $wantPublished)
+            ? $this->translator->trans('publish.flash.staged')
+            : $this->translator->trans('listings.flash.updated'));
 
         return $this->redirect('admin.listings.edit', ['id' => $listing->id()]);
     }
@@ -198,12 +265,24 @@ final class ListingController extends Controller
     public function destroy(string $id): Response
     {
         $listing = $this->provider->find($id);
-        if ($listing === null) {
+        if ($listing === null || $this->freeze->isPendingDelete('listings', $id)) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
-        $this->deleteListing($listing);
-        $this->em->flush();
-        $this->flash('success', $this->translator->trans('listings.flash.deleted'));
+        if ($listing->status() === 'published' || $this->freeze->hasFreeze('listings', $id)) {
+            $this->freeze->stageDelete(
+                'listings',
+                'listing',
+                $id,
+                fn (): array => ListingPublishAdapter::capture($this->em, $listing),
+                $listing->title(),
+                $this->auth->user()?->id(),
+            );
+            $this->flash('success', $this->translator->trans('publish.flash.staged'));
+        } else {
+            $this->deleteListing($listing);
+            $this->em->flush();
+            $this->flash('success', $this->translator->trans('listings.flash.deleted'));
+        }
 
         return $this->redirect('admin.listings.index');
     }
@@ -257,7 +336,18 @@ final class ListingController extends Controller
                     $listing->setFeatured(false);
                     break;
                 case 'delete':
-                    $this->deleteListing($listing);
+                    if ($listing->status() === 'published' || $this->freeze->hasFreeze('listings', $listing->id())) {
+                        $this->freeze->stageDelete(
+                            'listings',
+                            'listing',
+                            $listing->id(),
+                            fn (): array => ListingPublishAdapter::capture($this->em, $listing),
+                            $listing->title(),
+                            $this->auth->user()?->id(),
+                        );
+                    } else {
+                        $this->deleteListing($listing);
+                    }
                     break;
                 default:
                     continue 2;
@@ -281,13 +371,22 @@ final class ListingController extends Controller
         }
 
         if ($listing->status() === 'published') {
+            $this->freezeListingIfPublished($listing);
             $listing->unpublish();
             $on = false;
-            $message = $this->translator->trans('listings.flash.unpublished');
+            $message = $this->translator->trans('publish.flash.staged');
         } else {
+            $this->freeze->freezeIfNeeded(
+                'listings',
+                'listing',
+                $listing->id(),
+                fn (): array => ListingPublishAdapter::capture($this->em, $listing),
+                $listing->title(),
+                $this->auth->user()?->id(),
+            );
             $listing->publish();
             $on = true;
-            $message = $this->translator->trans('listings.flash.published');
+            $message = $this->translator->trans('publish.flash.staged');
         }
         $this->em->flush();
         if (!$this->wantsJson()) {
@@ -333,6 +432,7 @@ final class ListingController extends Controller
         if ($listing === null) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
+        $this->freezeListingForPublicChange($listing);
 
         $data = $this->validate($request, 'listings.near_link.save');
         $nearId = trim((string) ($data['near_location_id'] ?? ''));
@@ -419,6 +519,7 @@ final class ListingController extends Controller
         if ($listing === null) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
+        $this->freezeListingForPublicChange($listing);
         $link = $this->nearLocations->findLink($id, $linkId);
         if ($link === null) {
             $this->abort(404, $this->translator->trans('listings.near_links.error.not_found'));
@@ -437,6 +538,7 @@ final class ListingController extends Controller
         if ($listing === null) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
+        $this->freezeListingForPublicChange($listing);
         if (!$this->mediaAvailable()) {
             $this->flash('error', $this->translator->trans('listings.images.error.media_required'));
 
@@ -626,6 +728,7 @@ final class ListingController extends Controller
         if ($listing === null) {
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
+        $this->freezeListingForPublicChange($listing);
 
         $image = $this->em->find(ListingImage::class, $imageId);
         if (!$image instanceof ListingImage || $image->listingId() !== $listing->id()) {

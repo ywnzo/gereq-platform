@@ -71,11 +71,14 @@ final class PublicListingsController extends Controller
     public function show(string $slug): JsonResponse
     {
         $listing = $this->provider->findBySlug($slug);
-        if ($listing === null || $listing->status() !== 'published') {
+        if ($listing === null) {
             return $this->cors(ApiResponse::notFound());
         }
 
         $data = $this->provider->serialize($listing, true);
+        if (($data['status'] ?? '') !== 'published') {
+            return $this->cors(ApiResponse::notFound());
+        }
         $data['similar'] = array_map(
             fn (Listing $l): array => $this->provider->serialize($l),
             $this->provider->similar($listing, 3),

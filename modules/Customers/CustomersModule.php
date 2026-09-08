@@ -13,6 +13,7 @@ use Gereq\Hook\HookPriority;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
+use Gereq\Publish\Adapter\CustomerPublishAdapter;
 use Modules\Customers\Application\CustomerCounters;
 use Modules\Customers\Application\Widgets\CustomerCreateHeroWidget;
 use Modules\Customers\Application\Widgets\CustomerGrowthChartWidget;
@@ -41,7 +42,7 @@ final class CustomersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.2';
+        return '1.4.0';
     }
 
     public function register(ModuleContext $context): void
@@ -55,6 +56,15 @@ final class CustomersModule implements ModuleInterface
 
         $provider = new CustomersProvider($context->get(\Doctrine\ORM\EntityManagerInterface::class));
         $context->capabilities()->register('contacts', $this->id(), $provider);
+
+        $translator = $context->get(\Symfony\Contracts\Translation\TranslatorInterface::class);
+        $context->publishables()->register(
+            'customers',
+            $translator->trans('publish.category.customers'),
+            $context->get(CustomerPublishAdapter::class),
+            $this->id(),
+            60,
+        );
 
         $context->router()->group('/admin/customers', function (Router $routes): void {
             $routes->get('', [CustomerController::class, 'index'])

@@ -13,14 +13,16 @@ use Gereq\Event\EventBus;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Publish\Adapter\CustomerPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Gereq\Security\HtmlSanitizer;
+use Gereq\User\Entity\User;
 use Modules\Customers\Domain\Customer;
 use Modules\Customers\Domain\CustomerAddress;
 use Modules\Customers\Domain\CustomerContact;
 use Modules\Customers\Domain\CustomerCreated;
 use Modules\Customers\Domain\CustomerNote;
 use Modules\Customers\Domain\Events\CustomerArchived;
-use Modules\Customers\Domain\Events\CustomerDeleted;
 use Modules\Customers\Domain\Events\CustomerRestored;
 use Modules\Customers\Domain\Events\CustomerUpdated;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,8 +46,33 @@ final class CustomerController extends Controller
         private readonly HookManager $hooks,
         private readonly TranslatorInterface $translator,
         private readonly HtmlSanitizer $html,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezeCustomer(Customer $customer): void
+    {
+        $this->freeze->freezeIfNeeded(
+            'customers',
+            'customer',
+            $customer->id(),
+            fn (): array => CustomerPublishAdapter::capture($customer),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
+    }
+
+    private function stageDeleteCustomer(Customer $customer): void
+    {
+        $this->freeze->stageDelete(
+            'customers',
+            'customer',
+            $customer->id(),
+            fn (): array => CustomerPublishAdapter::capture($customer),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
     }
 
     public function index(Request $request): Response
@@ -62,6 +89,11 @@ final class CustomerController extends Controller
         $list->applySearch($qb, 'c', ['name', 'email', 'company', 'phone']);
         if (in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
             $qb->andWhere('c.status = :status')->setParameter('status', $status);
+        }
+
+        $deleteKeys = $this->freeze->pendingDeleteKeys('customers');
+        if ($deleteKeys !== []) {
+            $qb->andWhere('c.id NOT IN (:pendingDelete)')->setParameter('pendingDelete', $deleteKeys);
         }
 
         $qb->orderBy('c.' . $list->sort, $list->direction());
@@ -94,6 +126,13 @@ final class CustomerController extends Controller
         $customer->setStatus($data['status']);
         $this->em->persist($customer);
         $this->em->flush();
+        $this->freeze->stageCreate(
+            'customers',
+            'customer',
+            $customer->id(),
+            $customer->name(),
+            $this->auth->user()?->id(),
+        );
         $this->events->dispatch(new CustomerCreated($customer->id(), $this->publicCustomer($customer)));
         $this->auditor->log(
             'customer.created',
@@ -103,7 +142,7 @@ final class CustomerController extends Controller
             ['name' => $customer->name(), 'email' => $customer->email()],
         );
         $this->forgetForm('customers.save');
-        $this->flash('success', $this->translator->trans('customers.flash.created', ['%name%' => $customer->name()]));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.customers.show', ['id' => $customer->id()]);
     }
@@ -111,7 +150,7 @@ final class CustomerController extends Controller
     public function show(string $id): Response
     {
         $customer = $this->find($id);
-        if ($customer === null) {
+        if ($customer === null || $this->freeze->isPendingDelete('customers', $id)) {
             $this->abort(404, $this->translator->trans('customers.error.not_found'));
         }
 
@@ -133,10 +172,34 @@ final class CustomerController extends Controller
             ['customerId' => $customer->id()],
             ['isPrimary' => 'DESC', 'name' => 'ASC'],
         );
-        $timelineNotes = $this->em->getRepository(CustomerNote::class)->findBy(
+        $notes = $this->em->getRepository(CustomerNote::class)->findBy(
             ['customerId' => $customer->id()],
             ['createdAt' => 'DESC'],
         );
+        $authorIds = [];
+        foreach ($notes as $note) {
+            $authorId = $note->createdByUserId();
+            if ($authorId !== null && $authorId !== '') {
+                $authorIds[$authorId] = true;
+            }
+        }
+        $authors = [];
+        if ($authorIds !== []) {
+            /** @var list<User> $users */
+            $users = $this->em->getRepository(User::class)->findBy(['id' => array_keys($authorIds)]);
+            foreach ($users as $author) {
+                $authors[$author->id()] = $author->name();
+            }
+        }
+        $timelineNotes = [];
+        foreach ($notes as $note) {
+            $authorId = $note->createdByUserId();
+            $timelineNotes[] = [
+                'note' => $note,
+                'html' => $this->html->sanitize($note->body()),
+                'author' => $authorId !== null ? ($authors[$authorId] ?? null) : null,
+            ];
+        }
 
         return $this->page('@customers/show.html.twig', [
             'pageTitle' => $customer->name(),
@@ -153,6 +216,7 @@ final class CustomerController extends Controller
     public function storeAddress(Request $request, string $id): Response
     {
         $customer = $this->requireCustomer($id);
+        $this->freezeCustomer($customer);
         $type = (string) $request->request->get('type', 'other');
         if (!in_array($type, CustomerAddress::TYPES, true)) {
             $type = 'other';
@@ -164,7 +228,7 @@ final class CustomerController extends Controller
         if ($line1 === '' || $city === '' || $zip === '') {
             $this->flash('error', $this->translator->trans('customers.addresses.validation'));
 
-            return $this->redirectToShow($id);
+            return $this->redirectToShow($id, 'addresses');
         }
         $address = new CustomerAddress($customer->id(), $type, $line1, $city, $zip, $country);
         $address->setLine2(trim((string) $request->request->get('line2', '')) ?: null);
@@ -173,12 +237,13 @@ final class CustomerController extends Controller
         $this->em->flush();
         $this->flash('success', $this->translator->trans('customers.addresses.flash.created'));
 
-        return $this->redirectToShow($id);
+        return $this->redirectToShow($id, 'addresses');
     }
 
     public function destroyAddress(string $id, string $addressId): Response
     {
         $customer = $this->requireCustomer($id);
+        $this->freezeCustomer($customer);
         $address = $this->em->find(CustomerAddress::class, $addressId);
         if (!$address instanceof CustomerAddress || $address->customerId() !== $customer->id()) {
             $this->abort(404);
@@ -187,17 +252,18 @@ final class CustomerController extends Controller
         $this->em->flush();
         $this->flash('success', $this->translator->trans('customers.addresses.flash.deleted'));
 
-        return $this->redirectToShow($id);
+        return $this->redirectToShow($id, 'addresses');
     }
 
     public function storeContact(Request $request, string $id): Response
     {
         $customer = $this->requireCustomer($id);
+        $this->freezeCustomer($customer);
         $name = trim((string) $request->request->get('name', ''));
         if ($name === '') {
             $this->flash('error', $this->translator->trans('customers.contacts.validation'));
 
-            return $this->redirectToShow($id);
+            return $this->redirectToShow($id, 'contacts');
         }
         $contact = new CustomerContact($customer->id(), $name);
         $contact->setRole(trim((string) $request->request->get('role', '')) ?: null);
@@ -208,12 +274,13 @@ final class CustomerController extends Controller
         $this->em->flush();
         $this->flash('success', $this->translator->trans('customers.contacts.flash.created'));
 
-        return $this->redirectToShow($id);
+        return $this->redirectToShow($id, 'contacts');
     }
 
     public function destroyContact(string $id, string $contactId): Response
     {
         $customer = $this->requireCustomer($id);
+        $this->freezeCustomer($customer);
         $contact = $this->em->find(CustomerContact::class, $contactId);
         if (!$contact instanceof CustomerContact || $contact->customerId() !== $customer->id()) {
             $this->abort(404);
@@ -222,17 +289,19 @@ final class CustomerController extends Controller
         $this->em->flush();
         $this->flash('success', $this->translator->trans('customers.contacts.flash.deleted'));
 
-        return $this->redirectToShow($id);
+        return $this->redirectToShow($id, 'contacts');
     }
 
     public function storeNote(Request $request, string $id): Response
     {
         $customer = $this->requireCustomer($id);
-        $body = trim((string) $request->request->get('body', ''));
-        if ($body === '') {
+        $this->freezeCustomer($customer);
+        $body = $this->html->sanitize(trim((string) $request->request->get('body', '')));
+        $plain = trim(html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($plain === '') {
             $this->flash('error', $this->translator->trans('customers.notes.validation'));
 
-            return $this->redirectToShow($id);
+            return $this->redirectToShow($id, 'overview');
         }
         $userId = $this->auth->user()?->id();
         $note = new CustomerNote($customer->id(), $body, $userId);
@@ -240,12 +309,13 @@ final class CustomerController extends Controller
         $this->em->flush();
         $this->flash('success', $this->translator->trans('customers.notes.flash.created'));
 
-        return $this->redirectToShow($id);
+        return $this->redirectToShow($id, 'overview');
     }
 
     public function destroyNote(string $id, string $noteId): Response
     {
         $customer = $this->requireCustomer($id);
+        $this->freezeCustomer($customer);
         $note = $this->em->find(CustomerNote::class, $noteId);
         if (!$note instanceof CustomerNote || $note->customerId() !== $customer->id()) {
             $this->abort(404);
@@ -254,28 +324,30 @@ final class CustomerController extends Controller
         $this->em->flush();
         $this->flash('success', $this->translator->trans('customers.notes.flash.deleted'));
 
-        return $this->redirectToShow($id);
+        return $this->redirectToShow($id, 'overview');
     }
 
     private function requireCustomer(string $id): Customer
     {
         $customer = $this->find($id);
-        if ($customer === null) {
+        if ($customer === null || $this->freeze->isPendingDelete('customers', $id)) {
             $this->abort(404, $this->translator->trans('customers.error.not_found'));
         }
 
         return $customer;
     }
 
-    private function redirectToShow(string $id): Response
+    private function redirectToShow(string $id, string $tab = 'overview'): Response
     {
-        return $this->redirectTo($this->router->url('admin.customers.show', ['id' => $id], $this->request()) . '#overview');
+        $hash = in_array($tab, ['overview', 'contacts', 'addresses'], true) ? $tab : 'overview';
+
+        return $this->redirectTo($this->router->url('admin.customers.show', ['id' => $id], $this->request()) . '#' . $hash);
     }
 
     public function edit(string $id): Response
     {
         $customer = $this->find($id);
-        if ($customer === null) {
+        if ($customer === null || $this->freeze->isPendingDelete('customers', $id)) {
             $this->abort(404, $this->translator->trans('customers.error.not_found'));
         }
 
@@ -288,13 +360,14 @@ final class CustomerController extends Controller
     public function update(Request $request, string $id): Response
     {
         $customer = $this->find($id);
-        if ($customer === null) {
+        if ($customer === null || $this->freeze->isPendingDelete('customers', $id)) {
             $this->abort(404, $this->translator->trans('customers.error.not_found'));
         }
 
         $data = $this->validated($request, $customer);
         $old = ['email' => $customer->email(), 'name' => $customer->name(), 'status' => $customer->status()];
         $previousStatus = $customer->status();
+        $this->freezeCustomer($customer);
         $customer->setName($data['name']);
         $customer->setEmail($data['email']);
         $customer->setPhone($data['phone']);
@@ -316,7 +389,7 @@ final class CustomerController extends Controller
             'status' => $customer->status(),
         ]);
         $this->forgetForm('customers.save');
-        $this->flash('success', $this->translator->trans('customers.flash.saved'));
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.customers.show', ['id' => $id]);
     }
@@ -324,19 +397,14 @@ final class CustomerController extends Controller
     public function destroy(string $id): Response
     {
         $customer = $this->find($id);
-        if ($customer === null) {
+        if ($customer === null || $this->freeze->isPendingDelete('customers', $id)) {
             $this->abort(404, $this->translator->trans('customers.error.not_found'));
         }
 
         $name = $customer->name();
-        $payload = $this->publicCustomer($customer);
-        $this->hooks->doAction('customers.deleting', $customer);
-        $this->em->remove($customer);
-        $this->em->flush();
-        $this->events->dispatch(CustomerDeleted::make($id, $payload));
-        $this->hooks->doAction('customers.deleted', $id, $name);
-        $this->auditor->log('customer.deleted', 'customer', $id);
-        $this->flash('success', $this->translator->trans('customers.flash.deleted', ['%name%' => $name]));
+        $this->stageDeleteCustomer($customer);
+        $this->auditor->log('customer.delete_staged', 'customer', $id);
+        $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.customers.index');
     }
@@ -392,13 +460,11 @@ final class CustomerController extends Controller
             }
 
             if ($action === 'delete') {
-                $name = $customer->name();
-                $payload = $this->publicCustomer($customer);
-                $this->hooks->doAction('customers.deleting', $customer);
-                $this->em->remove($customer);
-                $this->events->dispatch(CustomerDeleted::make($id, $payload));
-                $this->hooks->doAction('customers.deleted', $id, $name);
-                $this->auditor->log('customer.deleted', 'customer', $id);
+                if ($this->freeze->isPendingDelete('customers', $customer->id())) {
+                    continue;
+                }
+                $this->stageDeleteCustomer($customer);
+                $this->auditor->log('customer.delete_staged', 'customer', $id);
                 $affected++;
                 continue;
             }
@@ -407,8 +473,12 @@ final class CustomerController extends Controller
             if ($newStatus === null || $customer->status() === $newStatus) {
                 continue;
             }
+            if ($this->freeze->isPendingDelete('customers', $customer->id())) {
+                continue;
+            }
 
             $previousStatus = $customer->status();
+            $this->freezeCustomer($customer);
             $customer->setStatus($newStatus);
             $payload = $this->publicCustomer($customer);
             $this->events->dispatch(CustomerUpdated::make($customer->id(), $payload));
@@ -427,9 +497,14 @@ final class CustomerController extends Controller
         }
 
         $this->em->flush();
-        $this->flash('success', $this->translator->trans('customers.bulk.flash.' . $action, [
-            '%count%' => (string) $affected,
-        ]));
+        $this->flash(
+            'success',
+            $action === 'delete'
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('customers.bulk.flash.' . $action, [
+                    '%count%' => (string) $affected,
+                ]),
+        );
 
         return $this->redirect('admin.customers.index');
     }

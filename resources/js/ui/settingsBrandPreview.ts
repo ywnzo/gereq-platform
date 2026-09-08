@@ -83,6 +83,43 @@ function findPaletteIndex(current: BrandPalette): number {
     );
 }
 
+/** Live-apply brand tokens so admin chrome updates while editing (before Save). */
+function applyLiveBrand(signal: string, onSignal: string, ink: string, cream: string): void {
+    const root = document.documentElement;
+    const map: Record<string, string> = {
+        '--gereq-signal': signal,
+        '--gereq-brand': ink,
+        '--brand-ink': ink,
+        '--brand-cream': cream,
+        '--primary': signal,
+        '--primary-fg': onSignal,
+        '--accent': signal,
+        '--focus': signal,
+        '--sidebar-line': signal,
+        '--color-primary': signal,
+        '--color-primary-content': onSignal,
+        '--color-secondary': signal,
+        '--color-secondary-content': onSignal,
+        '--color-accent': signal,
+        '--color-accent-content': onSignal,
+    };
+    for (const [name, value] of Object.entries(map)) {
+        root.style.setProperty(name, value);
+    }
+
+    // Override brand_css() !important block injected after admin.css.
+    let tag = document.getElementById('gereq-brand-live') as HTMLStyleElement | null;
+    if (!tag) {
+        tag = document.createElement('style');
+        tag.id = 'gereq-brand-live';
+        document.head.appendChild(tag);
+    }
+    const body = Object.entries(map)
+        .map(([name, value]) => `${name}: ${value} !important;`)
+        .join('');
+    tag.textContent = `:root, html, html.dark, [data-theme="gereq"], [data-theme="gereq-dark"] { ${body} }`;
+}
+
 export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
     alpine.data('settingsBrandPreview', (): BrandPreviewState => ({
         name: 'GEREQ',
@@ -109,6 +146,7 @@ export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
             this.read();
             this.$el.addEventListener('input', () => this.touch());
             this.$el.addEventListener('change', () => this.touch());
+            this.$el.addEventListener('color-change', () => this.touch());
         },
 
         touch() {
@@ -140,6 +178,7 @@ export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
             this.swatchInk = `background:${this.ink}`;
             this.swatchCream = `background:${this.cream}`;
             this.swatchSite = `background:${this.sitePrimary}`;
+            applyLiveBrand(this.signal, onSignal, this.ink, this.cream);
         },
 
         generateStyle() {

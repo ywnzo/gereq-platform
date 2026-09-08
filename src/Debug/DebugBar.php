@@ -8,6 +8,8 @@ use Gereq\Auth\Authenticator;
 use Gereq\Config\Repository;
 use Gereq\Event\EventBus;
 use Gereq\Http\Router;
+use Gereq\Publish\ContentVersion;
+use Gereq\Publish\StagingStore;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,6 +46,8 @@ final class DebugBar
         private readonly EventBus $eventsBus,
         private readonly string $basePath,
         private readonly ?Authenticator $auth,
+        private readonly ?StagingStore $staging = null,
+        private readonly ?ContentVersion $contentVersion = null,
     ) {
         $this->mark('start');
         $this->eventsBus->setTracer(function (string $class, float $ms): void {
@@ -182,7 +186,68 @@ final class DebugBar
             'events' => $this->events,
             'timeline' => $this->timelineMs($started),
             'config' => $this->configBag(),
+            'staging' => $this->stagingBag(),
         ];
+    }
+
+    /**
+     * @return array{
+     *   count: int,
+     *   version: string,
+     *   entries: list<array{
+     *     id: string,
+     *     category: string,
+     *     action: string,
+     *     label: string,
+     *     resource_type: string,
+     *     resource_key: string,
+     *     updated_at: string
+     *   }>
+     * }
+     */
+    private function stagingBag(): array
+    {
+        $version = '—';
+        try {
+            $version = $this->contentVersion?->current() ?? '—';
+        } catch (\Throwable) {
+            $version = '—';
+        }
+
+        if ($this->staging === null) {
+            return [
+                'count' => 0,
+                'version' => $version,
+                'entries' => [],
+            ];
+        }
+
+        try {
+            $entries = [];
+            foreach ($this->staging->all() as $entry) {
+                $entries[] = [
+                    'id' => $entry->id(),
+                    'category' => $entry->category(),
+                    'action' => $entry->action(),
+                    'label' => $entry->label(),
+                    'resource_type' => $entry->resourceType(),
+                    'resource_key' => $entry->resourceKey(),
+                    'updated_at' => $entry->updatedAt()->format('c'),
+                ];
+            }
+
+            return [
+                'count' => count($entries),
+                'version' => $version,
+                'entries' => $entries,
+            ];
+        } catch (\Throwable) {
+            return [
+                'count' => 0,
+                'version' => $version,
+                'entries' => [],
+            ];
+        }
     }
 
     /** @return list<array{name: string, duration: float}> */

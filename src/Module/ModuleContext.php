@@ -15,6 +15,7 @@ use Gereq\Event\EventBus;
 use Gereq\Event\EventRegistry;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Router;
+use Gereq\Publish\PublishableRegistry;
 use Gereq\Setting\Settings;
 use Gereq\User\PermissionRegistry;
 use Gereq\Validation\ValidationRegistry;
@@ -38,6 +39,7 @@ final class ModuleContext
         private readonly Repository $config,
         private readonly ApiRegistry $api,
         private readonly EventRegistry $eventRegistry,
+        private readonly PublishableRegistry $publishables,
     ) {
     }
 
@@ -124,6 +126,11 @@ final class ModuleContext
     public function config(): Repository
     {
         return $this->config;
+    }
+
+    public function publishables(): PublishableRegistry
+    {
+        return $this->publishables;
     }
 
     public function validation(): ValidationRegistry

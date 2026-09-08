@@ -7,18 +7,16 @@
     data-value="{{ colorValue }}"
     @click.outside="close"
 >
-    <input type="hidden" name="{{ field }}" value="{{ colorValue }}" data-color-value :value="hex">
+    <input type="hidden" name="{{ field }}" value="{{ colorValue }}" data-color-value>
     <div class="color-picker__row">
         <label class="color-picker__chip">
             <input
                 type="color"
                 class="color-picker__native"
                 value="{{ colorValue }}"
-                :value="hex"
-                @input="fromNative"
                 aria-label="{{ definition.label|trans }}"
             >
-            <span class="color-picker__chip-face" :style="swatchStyle" style="background: {{ colorValue }}"></span>
+            <span class="color-picker__chip-face" style="background: {{ colorValue }}"></span>
         </label>
         <div class="color-picker__hex-field">
             <span class="color-picker__hash">#</span>
@@ -28,8 +26,6 @@
                 maxlength="6"
                 value="{{ colorHex }}"
                 x-model="draft"
-                @keydown.enter.prevent="fromDraft"
-                @blur="fromDraft"
                 spellcheck="false"
                 autocomplete="off"
                 aria-label="HEX"
@@ -39,18 +35,29 @@
             {{ icon('palette') }}
         </button>
     </div>
-    <div class="color-picker__presets" x-show="open" x-cloak role="listbox" aria-label="{{ 'settings.color.presets'|trans }}">
-        <template x-for="preset in presets" :key="preset">
-            <button
-                type="button"
-                class="color-picker__preset"
-                role="option"
-                :class="isPreset(preset) ? 'is-active' : ''"
-                :style="presetStyle(preset)"
-                :aria-selected="isPreset(preset) ? 'true' : 'false'"
-                :title="preset"
-                @click="pick(preset)"
-            ></button>
-        </template>
+    <div
+        class="color-picker__panel"
+        x-show="open"
+        x-cloak
+        role="listbox"
+        aria-label="{{ 'settings.color.presets'|trans }}"
+    >
+        <p class="color-picker__panel-label">{{ 'settings.color.presets'|trans }}</p>
+        <div class="color-picker__presets">
+            <template x-for="preset in presets" :key="preset">
+                <button
+                    type="button"
+                    class="color-picker__preset"
+                    role="option"
+                    :class="isPreset(preset) ? 'is-active' : ''"
+                    :style="presetStyle(preset)"
+                    :aria-selected="isPreset(preset) ? 'true' : 'false'"
+                    :title="preset"
+                    @click="pick(preset)"
+                >
+                    <span class="color-picker__preset-check" :style="checkOn(preset)" aria-hidden="true">{{ icon('check') }}</span>
+                </button>
+            </template>
+        </div>
     </div>
 </div>

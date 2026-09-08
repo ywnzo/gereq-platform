@@ -202,7 +202,9 @@ final class Application
             Renderer::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             DebugBar::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath)
-                ->constructorParameter('auth', \DI\get(\Gereq\Auth\Authenticator::class)),
+                ->constructorParameter('auth', \DI\get(\Gereq\Auth\Authenticator::class))
+                ->constructorParameter('staging', \DI\get(\Gereq\Publish\StagingStore::class))
+                ->constructorParameter('contentVersion', \DI\get(\Gereq\Publish\ContentVersion::class)),
             TranslatorFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             TwigFactory::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath)

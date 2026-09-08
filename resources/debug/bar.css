@@ -227,7 +227,9 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
-  margin-left: 8px;
+  margin-left: 28px;
+  padding-left: 16px;
+  border-left: 1px solid var(--gdb-line);
   overflow-x: auto;
   scrollbar-width: none;
   min-width: 0;

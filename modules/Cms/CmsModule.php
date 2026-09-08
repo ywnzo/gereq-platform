@@ -12,6 +12,8 @@ use Gereq\Event\EventDefinition;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
+use Gereq\Publish\Adapter\CmsMenuPublishAdapter;
+use Gereq\Publish\Adapter\CmsPagePublishAdapter;
 use Gereq\Setting\SettingRecord;
 use Modules\Cms\Application\CmsProvider;
 use Modules\Cms\Domain\Page;
@@ -34,7 +36,7 @@ final class CmsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.2';
+        return '1.1.0';
     }
 
     public function register(ModuleContext $context): void
@@ -113,6 +115,22 @@ final class CmsModule implements ModuleInterface
         $this->registerApi($context);
         $this->registerPlatformEvents($context);
         $this->registerValidation($context);
+
+        $translator = $context->get(TranslatorInterface::class);
+        $context->publishables()->register(
+            'cms.pages',
+            $translator->trans('publish.category.cms_pages'),
+            $context->get(CmsPagePublishAdapter::class),
+            $this->id(),
+            20,
+        );
+        $context->publishables()->register(
+            'cms.menus',
+            $translator->trans('publish.category.cms_menus'),
+            $context->get(CmsMenuPublishAdapter::class),
+            $this->id(),
+            30,
+        );
     }
 
     public function boot(ModuleContext $context): void

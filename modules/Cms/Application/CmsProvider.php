@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Cms\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Publish\ContentReadContext;
+use Gereq\Publish\FrozenPublicReader;
 use Gereq\Security\HtmlSanitizer;
 use Modules\Cms\Domain\Page;
 use Modules\Cms\Domain\PageBlock;
@@ -17,6 +19,8 @@ final class CmsProvider
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly HtmlSanitizer $html,
+        private readonly ContentReadContext $readContext,
+        private readonly FrozenPublicReader $frozen,
     ) {
     }
 
@@ -36,9 +40,38 @@ final class CmsProvider
 
     public function findPublishedBySlug(string $slug): ?Page
     {
-        $page = $this->findPageBySlug($slug);
+        $slug = strtolower(trim($slug));
 
-        return $page !== null && $page->isPublished() ? $page : null;
+        if ($this->readContext->isProduction()) {
+            $hit = $this->frozen->findSnapshotBy('cms.pages', 'slug', $slug);
+            if ($hit !== null) {
+                $snap = $hit['snapshot'];
+                if (($snap['status'] ?? '') !== 'published') {
+                    return null;
+                }
+
+                return $this->findPage($hit['resource_key']);
+            }
+        }
+
+        $page = $this->findPageBySlug($slug);
+        if ($page === null || !$page->isPublished()) {
+            return null;
+        }
+
+        if ($this->readContext->isProduction()) {
+            if ($this->frozen->isPendingCreate('cms.pages', $page->id())) {
+                return null;
+            }
+            if ($this->frozen->isFrozen('cms.pages', $page->id())) {
+                $snap = $this->frozen->snapshot('cms.pages', $page->id());
+                if (is_array($snap) && (string) ($snap['slug'] ?? '') !== $slug) {
+                    return null;
+                }
+            }
+        }
+
+        return $page;
     }
 
     /** @return list<PageBlock> */
@@ -71,7 +104,23 @@ final class CmsProvider
         /** @var list<SiteMenu> $menus */
         $menus = $this->em->getRepository(SiteMenu::class)->findBy($criteria, ['name' => 'ASC']);
 
-        return $menus;
+        if (!$this->readContext->isProduction()) {
+            // Admin: hide soft-deleted menus.
+            $pendingDelete = array_flip($this->frozen->pendingDeleteKeys('cms.menus'));
+
+            return array_values(array_filter(
+                $menus,
+                static fn (SiteMenu $m): bool => !isset($pendingDelete[$m->id()]),
+            ));
+        }
+
+        // Public: hide pending creates; keep pending deletes (served via freeze snapshot).
+        $pendingCreate = array_flip($this->frozen->pendingCreateKeys('cms.menus'));
+
+        return array_values(array_filter(
+            $menus,
+            static fn (SiteMenu $m): bool => !isset($pendingCreate[$m->id()]),
+        ));
     }
 
     /** @return list<SiteMenuItem> */
@@ -96,12 +145,58 @@ final class CmsProvider
             $limit,
         );
 
-        return $pages;
+        if (!$this->readContext->isProduction()) {
+            $pendingDelete = array_flip($this->frozen->pendingDeleteKeys('cms.pages'));
+
+            return array_values(array_filter(
+                $pages,
+                static fn (Page $p): bool => !isset($pendingDelete[$p->id()]),
+            ));
+        }
+
+        $out = [];
+        foreach ($pages as $page) {
+            if ($this->frozen->isPendingCreate('cms.pages', $page->id())) {
+                continue;
+            }
+            $snap = $this->frozen->snapshot('cms.pages', $page->id());
+            if ($snap !== null) {
+                if (($snap['status'] ?? '') !== 'published') {
+                    continue;
+                }
+            }
+            $out[] = $page;
+        }
+
+        // Include pages unpublished in working copy but still published in freeze.
+        foreach ($this->frozen->allSnapshots('cms.pages') as $hit) {
+            $snap = $hit['snapshot'];
+            if (($snap['status'] ?? '') !== 'published') {
+                continue;
+            }
+            $id = $hit['resource_key'];
+            if (array_any($out, static fn (Page $p): bool => $p->id() === $id)) {
+                continue;
+            }
+            $page = $this->findPage($id);
+            if ($page instanceof Page) {
+                $out[] = $page;
+            }
+        }
+
+        return array_slice($out, 0, $limit);
     }
 
     /** @return array<string, mixed> */
     public function serializePage(Page $page, bool $withBlocks = false): array
     {
+        if ($this->readContext->isProduction()) {
+            $snap = $this->frozen->snapshot('cms.pages', $page->id());
+            if (is_array($snap)) {
+                return $this->serializePageSnapshot($snap, $withBlocks);
+            }
+        }
+
         $data = [
             'id' => $page->id(),
             'slug' => $page->slug(),
@@ -131,19 +226,15 @@ final class CmsProvider
     }
 
     /** @return array<string, mixed> */
-    public function serializeBlock(PageBlock $block): array
-    {
-        return [
-            'id' => $block->id(),
-            'type' => $block->type(),
-            'sort_order' => $block->sortOrder(),
-            'payload' => $this->publicPayload($block->type(), $block->payload()),
-        ];
-    }
-
-    /** @return array<string, mixed> */
     public function serializeMenu(SiteMenu $menu, bool $withItems = true): array
     {
+        if ($this->readContext->isProduction()) {
+            $snap = $this->frozen->snapshot('cms.menus', $menu->id());
+            if (is_array($snap)) {
+                return $this->serializeMenuSnapshot($snap, $withItems);
+            }
+        }
+
         $data = [
             'id' => $menu->id(),
             'name' => $menu->name(),
@@ -155,6 +246,108 @@ final class CmsProvider
                 fn (SiteMenuItem $item): array => $this->serializeMenuItem($item),
                 $this->menuItems($menu->id()),
             );
+        }
+
+        return $data;
+    }
+
+    /** @return array<string, mixed> */
+    public function serializeBlock(PageBlock $block): array
+    {
+        return [
+            'id' => $block->id(),
+            'type' => $block->type(),
+            'sort_order' => $block->sortOrder(),
+            'payload' => $this->publicPayload($block->type(), $block->payload()),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $snap
+     * @return array<string, mixed>
+     */
+    private function serializePageSnapshot(array $snap, bool $withBlocks): array
+    {
+        $data = [
+            'id' => (string) ($snap['id'] ?? ''),
+            'slug' => (string) ($snap['slug'] ?? ''),
+            'title' => (string) ($snap['title'] ?? ''),
+            'status' => (string) ($snap['status'] ?? 'draft'),
+            'template' => (string) ($snap['template'] ?? 'default'),
+            'content_mode' => (string) ($snap['content_mode'] ?? 'blocks'),
+            'meta_description' => $snap['meta_description'] ?? null,
+            'published_at' => $snap['published_at'] ?? null,
+            'updated_at' => $snap['published_at'] ?? null,
+        ];
+
+        if ($withBlocks) {
+            if (($snap['content_mode'] ?? '') === 'raw') {
+                $data['body'] = $this->html->sanitizeNullable(isset($snap['body']) ? (string) $snap['body'] : null);
+                $data['blocks'] = [];
+            } else {
+                $data['body'] = null;
+                $blocks = is_array($snap['blocks'] ?? null) ? $snap['blocks'] : [];
+                $data['blocks'] = [];
+                foreach ($blocks as $block) {
+                    if (!is_array($block)) {
+                        continue;
+                    }
+                    $type = (string) ($block['type'] ?? 'text');
+                    $payload = is_array($block['payload'] ?? null) ? $block['payload'] : [];
+                    $data['blocks'][] = [
+                        'id' => (string) ($block['id'] ?? ''),
+                        'type' => $type,
+                        'sort_order' => (int) ($block['sort_order'] ?? 0),
+                        'payload' => $this->publicPayload($type, $payload),
+                    ];
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $snap
+     * @return array<string, mixed>
+     */
+    private function serializeMenuSnapshot(array $snap, bool $withItems): array
+    {
+        $data = [
+            'id' => (string) ($snap['id'] ?? ''),
+            'name' => (string) ($snap['name'] ?? ''),
+            'location' => (string) ($snap['location'] ?? ''),
+        ];
+        if ($withItems) {
+            $items = is_array($snap['items'] ?? null) ? $snap['items'] : [];
+            $data['items'] = [];
+            foreach ($items as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $href = isset($item['url']) ? (string) $item['url'] : null;
+                $pageSlug = null;
+                $pageId = isset($item['page_id']) ? (string) $item['page_id'] : null;
+                if ($pageId) {
+                    $page = $this->findPage($pageId);
+                    if ($page instanceof Page) {
+                        $serialized = $this->serializePage($page, false);
+                        if (($serialized['status'] ?? '') === 'published') {
+                            $pageSlug = (string) $serialized['slug'];
+                            $href = '/' . $pageSlug;
+                        }
+                    }
+                }
+                $data['items'][] = [
+                    'id' => (string) ($item['id'] ?? ''),
+                    'label' => (string) ($item['label'] ?? ''),
+                    'url' => $href,
+                    'page_id' => $pageId,
+                    'page_slug' => $pageSlug,
+                    'parent_id' => $item['parent_id'] ?? null,
+                    'sort_order' => (int) ($item['sort_order'] ?? 0),
+                ];
+            }
         }
 
         return $data;

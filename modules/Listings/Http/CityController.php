@@ -13,6 +13,8 @@ use Gereq\Http\Controller;
 use Gereq\Http\ListQuery;
 use Gereq\Http\Router;
 use Gereq\Module\CapabilityRegistry;
+use Gereq\Publish\Adapter\CityPublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Modules\Listings\Application\CitiesProvider;
 use Modules\Listings\Domain\City;
 use Modules\Media\Domain\MediaAsset;
@@ -37,8 +39,24 @@ final class CityController extends Controller
         private readonly CitiesProvider $provider,
         private readonly FileManager $files,
         private readonly CapabilityRegistry $capabilities,
+        private readonly ProductionFreeze $freeze,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezeCity(City $city): void
+    {
+        if (!$city->active() && !$this->freeze->hasFreeze('listings.cities', $city->id())) {
+            return;
+        }
+        $this->freeze->freezeIfNeeded(
+            'listings.cities',
+            'city',
+            $city->id(),
+            fn (): array => CityPublishAdapter::capture($city),
+            $city->name(),
+            $this->auth->user()?->id(),
+        );
     }
 
     public function index(Request $request): Response
@@ -58,6 +76,10 @@ final class CityController extends Controller
             $qb->andWhere('c.active = true');
         } elseif ($active === '0') {
             $qb->andWhere('c.active = false');
+        }
+        $deleteKeys = $this->freeze->pendingDeleteKeys('listings.cities');
+        if ($deleteKeys !== []) {
+            $qb->andWhere('c.id NOT IN (:pendingDelete)')->setParameter('pendingDelete', $deleteKeys);
         }
         $qb->orderBy('c.' . $list->sort, $list->direction());
 
@@ -88,8 +110,22 @@ final class CityController extends Controller
         $this->apply($city, $data, $image);
         $this->em->persist($city);
         $this->em->flush();
+        if ($city->active()) {
+            $this->freeze->stageCreate(
+                'listings.cities',
+                'city',
+                $city->id(),
+                $city->name(),
+                $this->auth->user()?->id(),
+            );
+        }
         $this->forgetForm('listings.cities.save');
-        $this->flash('success', $this->translator->trans('listings.cities.flash.created'));
+        $this->flash(
+            'success',
+            $city->active()
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('listings.cities.flash.created'),
+        );
 
         return $this->redirect('admin.listings.cities.show', ['id' => $city->id()]);
     }
@@ -97,7 +133,7 @@ final class CityController extends Controller
     public function show(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.cities', $id)) {
             $this->abort(404, $this->translator->trans('listings.cities.error.not_found'));
         }
 
@@ -111,7 +147,7 @@ final class CityController extends Controller
     public function edit(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.cities', $id)) {
             $this->abort(404, $this->translator->trans('listings.cities.error.not_found'));
         }
 
@@ -121,7 +157,7 @@ final class CityController extends Controller
     public function update(Request $request, string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.cities', $id)) {
             $this->abort(404, $this->translator->trans('listings.cities.error.not_found'));
         }
 
@@ -131,11 +167,27 @@ final class CityController extends Controller
             return $image;
         }
 
+        $wasActive = $item->active();
+        $this->freezeCity($item);
         $item->setName($data['name']);
         $this->apply($item, $data, $image);
         $this->em->flush();
+        if ($item->active() && !$wasActive && !$this->freeze->hasFreeze('listings.cities', $item->id())) {
+            $this->freeze->stageCreate(
+                'listings.cities',
+                'city',
+                $item->id(),
+                $item->name(),
+                $this->auth->user()?->id(),
+            );
+        }
         $this->forgetForm('listings.cities.save');
-        $this->flash('success', $this->translator->trans('listings.cities.flash.saved'));
+        $this->flash(
+            'success',
+            ($wasActive || $item->active())
+                ? $this->translator->trans('publish.flash.staged')
+                : $this->translator->trans('listings.cities.flash.saved'),
+        );
 
         return $this->redirect('admin.listings.cities.show', ['id' => $item->id()]);
     }
@@ -143,13 +195,25 @@ final class CityController extends Controller
     public function destroy(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.cities', $id)) {
             $this->abort(404, $this->translator->trans('listings.cities.error.not_found'));
         }
 
-        $this->em->remove($item);
-        $this->em->flush();
-        $this->flash('success', $this->translator->trans('listings.cities.flash.deleted'));
+        if ($item->active() || $this->freeze->hasFreeze('listings.cities', $id)) {
+            $this->freeze->stageDelete(
+                'listings.cities',
+                'city',
+                $id,
+                fn (): array => CityPublishAdapter::capture($item),
+                $item->name(),
+                $this->auth->user()?->id(),
+            );
+            $this->flash('success', $this->translator->trans('publish.flash.staged'));
+        } else {
+            $this->em->remove($item);
+            $this->em->flush();
+            $this->flash('success', $this->translator->trans('listings.cities.flash.deleted'));
+        }
 
         return $this->redirect('admin.listings.cities.index');
     }
@@ -157,15 +221,24 @@ final class CityController extends Controller
     public function toggleActive(string $id): Response
     {
         $item = $this->provider->find($id);
-        if ($item === null) {
+        if ($item === null || $this->freeze->isPendingDelete('listings.cities', $id)) {
             $this->abort(404, $this->translator->trans('listings.cities.error.not_found'));
         }
 
+        $this->freezeCity($item);
+        if (!$item->active()) {
+            $this->freeze->freezeIfNeeded(
+                'listings.cities',
+                'city',
+                $item->id(),
+                fn (): array => CityPublishAdapter::capture($item),
+                $item->name(),
+                $this->auth->user()?->id(),
+            );
+        }
         $item->setActive(!$item->active());
         $this->em->flush();
-        $message = $this->translator->trans(
-            $item->active() ? 'listings.cities.flash.activated' : 'listings.cities.flash.deactivated'
-        );
+        $message = $this->translator->trans('publish.flash.staged');
         if (!$this->wantsJson()) {
             $this->flash('success', $message);
         }
