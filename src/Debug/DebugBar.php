@@ -43,7 +43,7 @@ final class DebugBar
         private readonly Router $router,
         private readonly EventBus $eventsBus,
         private readonly string $basePath,
-        private readonly ?Authenticator $auth = null,
+        private readonly ?Authenticator $auth,
     ) {
         $this->mark('start');
         $this->eventsBus->setTracer(function (string $class, float $ms): void {
@@ -81,8 +81,11 @@ final class DebugBar
 
     public function addDump(mixed $value, string $file = '', int $line = 0): void
     {
+        $normalized = $this->dumper->normalize($value);
+        $safe = $this->redactor->value($normalized);
+
         $this->dumps[] = [
-            'html' => $this->dumper->dump($this->redactor->value($value)),
+            'value' => $safe,
             'file' => $file !== '' ? $this->rel($file) : '',
             'line' => $line,
         ];
@@ -279,16 +282,44 @@ final class DebugBar
 
         $roles = [];
         foreach ($user->roles() as $role) {
-            $roles[] = $role->name();
+            $permissions = [];
+            foreach ($role->permissions() as $permission) {
+                $permissions[] = $permission->name();
+            }
+            $roles[] = [
+                'id' => $role->id(),
+                'name' => $role->name(),
+                'label' => $role->label(),
+                'description' => $role->description(),
+                'privileged' => $role->isPrivileged(),
+                'permissions' => $permissions,
+            ];
         }
 
-        return [
+        $payload = [
             'guest' => false,
             'id' => $user->id(),
             'name' => $user->name(),
             'email' => $user->email(),
+            'status' => $user->status(),
+            'locale' => $user->locale(),
+            'initials' => $user->initials(),
+            'isActive' => $user->isActive(),
+            'isAdministrator' => $user->isAdministrator(),
+            'totpEnabled' => $user->totpEnabled(),
+            'passkeyEnabled' => $user->passkeyEnabled(),
+            'oauthProvider' => $user->oauthProvider(),
+            'oauthId' => $user->oauthId(),
+            'lastLoginAt' => $user->lastLoginAt()?->format('c'),
+            'createdAt' => $user->createdAt()->format('c'),
+            'updatedAt' => $user->updatedAt()->format('c'),
             'roles' => $roles,
+            'permissions' => $user->permissionNames(),
         ];
+
+        $value = $this->redactor->value($payload);
+
+        return is_array($value) ? $value : $payload;
     }
 
     /**

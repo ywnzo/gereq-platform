@@ -1,42 +1,112 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.users'|trans, url: url('admin.users.index') },
+        { label: 'nav.roles'|trans, url: url('admin.users.roles') },
+        { label: role.label() },
+    ] } %}
+{% endblock %}
+
 {% block content %}
     <header class="page-header">
-        <h1>{{ role.label() }}</h1>
+        <div>
+            <h1>{{ role.label() }}</h1>
+            <p class="muted"><code>{{ role.name() }}</code></p>
+        </div>
+        <div class="actions">
+            <button class="btn btn--primary" type="submit" form="role-edit-form">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.users.roles') }}">{{ 'common.back'|trans }}</a>
+            {% if not role.isPrivileged() and user.can('roles.manage') %}
+                <button class="btn btn--danger" type="submit" form="delete-role">{{ 'common.delete'|trans }}</button>
+            {% endif %}
+        </div>
     </header>
-    <form method="post" action="{{ url('admin.roles.update', {id: role.id()}) }}" class="stack">
+
+    <form method="post" id="role-edit-form" action="{{ url('admin.roles.update', {id: role.id()}) }}" class="role-edit">
         {{ csrf_field()|raw }}
-        <label class="field">
-            <span>{{ 'admin.roles.name'|trans }}</span>
-            <input type="text" name="label" value="{{ role.label() }}" required>
-        </label>
-        <label class="field">
-            <span>{{ 'common.description'|trans }}</span>
-            <textarea name="description" rows="3">{{ role.description() }}</textarea>
-        </label>
+
+        <div class="role-edit__meta">
+            <label class="field">
+                <span>{{ 'admin.roles.name'|trans }}</span>
+                <input type="text" name="label" value="{{ role.label() }}" required maxlength="180">
+            </label>
+            <label class="field field--full">
+                <span>{{ 'common.description'|trans }}</span>
+                <textarea name="description" rows="2" maxlength="2000">{{ role.description() }}</textarea>
+            </label>
+        </div>
 
         {% if role.isPrivileged() %}
             <p class="muted">{{ 'admin.roles.admin_hint'|trans }}</p>
         {% else %}
-            {% for group, permissions in grouped %}
-                <section class="panel">
-                    <header class="panel__head"><h2>{{ group|trans }}</h2></header>
-                    <div class="chip-list">
-                        {% for permission in permissions %}
-                            <label class="check">
-                                <input type="checkbox" name="permissions[]" value="{{ permission.id() }}"
-                                    {{ assigned[permission.id()] is defined ? 'checked' : '' }}>
-                                <span>{{ permission.label()|trans }} <code>{{ permission.name() }}</code></span>
-                            </label>
-                        {% endfor %}
-                    </div>
-                </section>
-            {% endfor %}
+            <div class="role-edit__toolbar">
+                <h2 class="role-edit__section-title">{{ 'admin.roles.permissions'|trans }}</h2>
+                <p class="muted">{{ 'admin.roles.permissions.hint'|trans }}</p>
+            </div>
+            <div class="role-perm-grid">
+                {% for group, permissions in grouped %}
+                    <section class="panel role-perm-card" x-data="{
+                        tick: 0,
+                        get boxes() {
+                            this.tick;
+                            return this.$refs.list ? [...this.$refs.list.querySelectorAll('input[type=checkbox]')] : [];
+                        },
+                        get allOn() {
+                            return this.boxes.length > 0 && this.boxes.every(b => b.checked);
+                        },
+                        refresh() { this.tick++; },
+                        toggleAll() {
+                            const on = !this.allOn;
+                            this.boxes.forEach(b => { b.checked = on; });
+                            this.refresh();
+                        }
+                    }">
+                        <header class="panel__head panel__head--actions">
+                            <div>
+                                <h2>{{ group|trans }}</h2>
+                                <p class="muted">{{ 'admin.roles.permissions.count'|trans({ '%count%': permissions|length }) }}</p>
+                            </div>
+                            <button
+                                type="button"
+                                class="btn btn--ghost btn-sm"
+                                @click="toggleAll"
+                            >
+                                <span x-text="allOn ? '{{ 'admin.roles.permissions.clear'|trans|e('js') }}' : '{{ 'admin.roles.permissions.all'|trans|e('js') }}'"></span>
+                            </button>
+                        </header>
+                        <div class="chip-list" x-ref="list" @change="refresh()">
+                            {% for permission in permissions %}
+                                <label class="check role-perm-item">
+                                    <input
+                                        type="checkbox"
+                                        name="permissions[]"
+                                        value="{{ permission.id() }}"
+                                        {{ assigned[permission.id()] is defined ? 'checked' : '' }}
+                                    >
+                                    <span class="role-perm-item__text">
+                                        <span>{{ permission.label()|trans }}</span>
+                                        <code>{{ permission.name() }}</code>
+                                    </span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
         {% endif %}
-
-        <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.roles.index') }}">{{ 'common.back'|trans }}</a>
-        </div>
     </form>
+    {% if not role.isPrivileged() and user.can('roles.manage') %}
+        <form
+            id="delete-role"
+            method="post"
+            action="{{ url('admin.roles.destroy', {id: role.id()}) }}"
+            data-confirm="{{ 'admin.roles.confirm_delete'|trans }}"
+            data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}"
+            data-confirm-danger="1"
+        >
+            {{ csrf_field()|raw }}
+        </form>
+    {% endif %}
 {% endblock %}

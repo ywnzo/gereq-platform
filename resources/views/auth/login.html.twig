@@ -4,30 +4,46 @@
     <h1>{{ 'auth.login.welcome'|trans }}</h1>
     <p class="muted">{{ 'auth.login.subtitle'|trans }}</p>
     {% include 'ui/error-summary.html.twig' with { form: 'auth.login' } %}
-    <form method="post" action="{{ url('admin.login.submit') }}" class="stack" data-form="auth.login" x-data="gereqForm"{% if form_errors('auth.login') %} data-server-state="1"{% endif %}>
-        {{ csrf_field()|raw }}
-        {% include 'ui/input.html.twig' with {
-            name: 'email',
-            type: 'email',
-            label: 'common.email'|trans,
-            required: true,
-            autocomplete: 'username',
-            form: 'auth.login'
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'password',
-            type: 'password',
-            label: 'common.password'|trans,
-            required: true,
-            autocomplete: 'current-password',
-            form: 'auth.login'
-        } %}
-        {% include 'ui/checkbox.html.twig' with {
-            name: 'remember',
-            label: 'auth.login.remember'|trans,
-            form: 'auth.login'
-        } %}
-        <button type="submit" class="btn btn--primary btn--block">{{ 'auth.login.submit'|trans }}</button>
+    <div
+        class="stack"
+        x-data="gereqPasskeyLogin"
+        data-options-url="{{ passkeyLoginUrl|e('html_attr') }}"
+        data-verify-url="{{ passkeyVerifyUrl|e('html_attr') }}"
+        data-label-waiting="{{ 'auth.passkey.waiting'|trans|e('html_attr') }}"
+        data-label-passkey="{{ 'auth.login.passkey'|trans|e('html_attr') }}"
+    >
+        <form method="post" action="{{ url('admin.login.submit') }}" class="stack" data-form="auth.login" x-data="gereqForm"{% if form_errors('auth.login') %} data-server-state="1"{% endif %}>
+            {{ csrf_field()|raw }}
+            {% include 'ui/input.html.twig' with {
+                name: 'email',
+                type: 'email',
+                label: 'common.email'|trans,
+                required: true,
+                autocomplete: 'username',
+                form: 'auth.login'
+            } %}
+            {% include 'ui/input.html.twig' with {
+                name: 'password',
+                type: 'password',
+                label: 'common.password'|trans,
+                required: true,
+                autocomplete: 'current-password',
+                form: 'auth.login'
+            } %}
+            {% include 'ui/checkbox.html.twig' with {
+                name: 'remember',
+                label: 'auth.login.remember'|trans,
+                form: 'auth.login'
+            } %}
+            <button type="submit" class="btn btn--primary btn--block">{{ 'auth.login.submit'|trans }}</button>
+        </form>
+
+        <div class="auth-mfa__divider"><span>{{ 'auth.mfa.or'|trans }}</span></div>
+        <button type="button" class="btn btn--ghost btn--block" @click="loginWithPasskey()" :disabled="busy">
+            <span class="material-symbols-outlined" aria-hidden="true">fingerprint</span>
+            <span x-text="passkeyButtonLabel()"></span>
+        </button>
+        <p class="muted" x-show="error" x-text="error" x-cloak></p>
         <a class="text-link" href="{{ url('admin.password.forgot') }}">{{ 'auth.login.forgot'|trans }}</a>
-    </form>
+    </div>
 {% endblock %}

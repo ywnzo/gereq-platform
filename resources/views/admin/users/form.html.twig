@@ -1,57 +1,338 @@
 {% extends 'admin/layout.html.twig' %}
 
-{% block content %}
-    <header class="page-header">
-        <h1>{{ item ? 'admin.users.edit'|trans : 'admin.users.new'|trans }}</h1>
-    </header>
+{% set firstName = item ? (item.firstName() ?: item.name()|split(' ')|first) : '' %}
+{% set lastName = item ? (item.lastName() ?: (item.name()|split(' ')|slice(1)|join(' '))) : '' %}
+{% set shippingSame = item and item.billingStreet() and item.billingStreet() == item.shippingStreet() and item.billingCity() == item.shippingCity() and item.billingZip() == item.shippingZip() %}
 
-    <form method="post" action="{{ item ? url('admin.users.update', {id: item.id()}) : url('admin.users.store') }}" class="form-grid">
-        {{ csrf_field()|raw }}
-        <label class="field">
-            <span>{{ 'common.name'|trans }}</span>
-            <input type="text" name="name" value="{{ item ? item.name() : '' }}" required>
-        </label>
-        <label class="field">
-            <span>{{ 'common.email'|trans }}</span>
-            <input type="email" name="email" value="{{ item ? item.email() : '' }}" required>
-        </label>
-        <label class="field">
-            <span>{{ item ? 'admin.users.password_new'|trans : 'common.password'|trans }}</span>
-            <input type="password" name="password" {{ item ? '' : 'required minlength="10"' }}>
-        </label>
-        {% if item %}
-            <label class="field">
-                <span>{{ 'common.status'|trans }}</span>
-                <select name="status">
-                    <option value="active" {{ item.status() == 'active' ? 'selected' : '' }}>{{ 'common.active'|trans }}</option>
-                    <option value="disabled" {{ item.status() == 'disabled' ? 'selected' : '' }}>{{ 'common.inactive'|trans }}</option>
-                </select>
-            </label>
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.users'|trans, url: url('admin.users.index') },
+        { label: item ? item.name() : 'admin.users.new'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div class="user-edit-hero">
+        {% if item and item.avatarFileId() %}
+            <img class="avatar avatar--xl" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="{{ item.name() }}">
+        {% else %}
+            <span class="avatar avatar--xl">{{ item ? item.initials() : '?' }}</span>
         {% endif %}
-        <fieldset class="field field--full">
-            <legend>{{ 'common.roles'|trans }}</legend>
-            <div class="chip-list">
+        <div>
+            <h1>{{ item ? item.name() : 'admin.users.new'|trans }}</h1>
+            {% if item %}
+                <p class="muted detail-layout__meta">
+                    {{ item.email() }}
+                    <span class="badge badge--{{ item.status() == 'active' ? 'ok' : 'muted' }}">
+                        {{ item.status() == 'active' ? 'common.active'|trans : 'common.inactive'|trans }}
+                    </span>
+                    {% if item.age() is not null %}
+                        <span>{{ 'admin.users.age_years'|trans({ '%age%': item.age() }) }}</span>
+                    {% endif %}
+                </p>
+            {% else %}
+                <p class="muted">{{ 'admin.users.hub.hint'|trans }}</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="actions">
+        <button class="btn btn--primary" type="submit" form="user-form">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ url('admin.users.index') }}">{{ 'common.cancel'|trans }}</a>
+        {% if item and user.can('users.delete') %}
+            <button class="btn btn--danger" type="submit" form="delete-user">{{ 'common.delete'|trans }}</button>
+        {% endif %}
+    </div>
+</header>
+
+<form
+    method="post"
+    id="user-form"
+    class="detail-hub user-edit"
+    enctype="multipart/form-data"
+    action="{{ item ? url('admin.users.update', {id: item.id()}) : url('admin.users.store') }}"
+    x-data="gereqTabs"
+    data-initial="{{ activeTab|default('profile') }}"
+>
+    {{ csrf_field()|raw }}
+    <input type="hidden" name="settings_tab" value="{{ activeTab|default('profile') }}">
+
+    <div class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.users.title'|trans }}">
+        <button type="button" class="design-tab" role="tab" data-tab="profile">{{ 'admin.users.tab.profile'|trans }}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="addresses">{{ 'admin.users.tab.addresses'|trans }}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="roles">{{ 'admin.users.tab.roles'|trans }}</button>
+        <button type="button" class="design-tab" role="tab" data-tab="security">{{ 'admin.users.tab.security'|trans }}</button>
+    </div>
+
+    <section class="design-panel" data-panel="profile" role="tabpanel">
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'admin.users.section.identity'|trans }}</h2>
+                    <p class="muted">{{ 'admin.users.section.identity.hint'|trans }}</p>
+                </div>
+            </header>
+            <div class="form-grid">
+                <div class="field field--full user-edit__photo">
+                    {% if item and item.avatarFileId() %}
+                        <img class="avatar avatar--xl" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="">
+                    {% else %}
+                        <span class="avatar avatar--xl">{{ item ? item.initials() : '?' }}</span>
+                    {% endif %}
+                    <div class="user-edit__photo-actions">
+                        {% include 'ui/file.html.twig' with {
+                            name: 'avatar',
+                            id: 'f-avatar',
+                            label: 'admin.users.field.photo'|trans,
+                            optional: true,
+                            hint: 'admin.users.field.photo.hint'|trans,
+                            accept: 'image/*',
+                            compact: true
+                        } %}
+                        {% if item and item.avatarFileId() %}
+                            <label class="check">
+                                <input type="checkbox" name="remove_avatar" value="1">
+                                <span>{{ 'admin.users.field.photo_remove'|trans }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                </div>
+                <label class="field">
+                    <span>{{ 'admin.users.field.first_name'|trans }}</span>
+                    <input class="input" type="text" name="first_name" value="{{ firstName }}" required maxlength="120">
+                </label>
+                <label class="field">
+                    <span>{{ 'admin.users.field.last_name'|trans }}</span>
+                    <input class="input" type="text" name="last_name" value="{{ lastName }}" required maxlength="120">
+                </label>
+                <label class="field">
+                    <span>{{ 'common.email'|trans }}</span>
+                    <input class="input" type="email" name="email" value="{{ item ? item.email() : '' }}" required>
+                </label>
+                <label class="field">
+                    <span>{{ 'common.phone'|trans }}</span>
+                    <input class="input" type="tel" name="phone" value="{{ item ? item.phone() : '' }}" maxlength="40">
+                </label>
+                <label class="field">
+                    <span>{{ 'admin.users.field.birth_date'|trans }}</span>
+                    <input class="input" type="date" name="birth_date" value="{{ item and item.birthDate() ? item.birthDate().format('Y-m-d') : '' }}">
+                </label>
+                {% if item %}
+                    <label class="field">
+                        <span>{{ 'common.status'|trans }}</span>
+                        <select class="input" name="status">
+                            <option value="active" {{ item.status() == 'active' ? 'selected' : '' }}>{{ 'common.active'|trans }}</option>
+                            <option value="disabled" {{ item.status() == 'disabled' ? 'selected' : '' }}>{{ 'common.inactive'|trans }}</option>
+                        </select>
+                    </label>
+                {% endif %}
+                <label class="field field--full">
+                    <span>{{ 'admin.users.field.description'|trans }}</span>
+                    <textarea class="input" name="description" rows="4" maxlength="4000">{{ item ? item.description() : '' }}</textarea>
+                </label>
+            </div>
+        </section>
+        {{ apply_filters('admin.users.form_fields', '', item|default(null))|raw }}
+    </section>
+
+    <section class="design-panel" data-panel="addresses" role="tabpanel">
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'admin.users.section.billing'|trans }}</h2>
+                    <p class="muted">{{ 'admin.users.section.billing.hint'|trans }}</p>
+                </div>
+            </header>
+            <div class="form-grid" x-data="gereqAresAddress">
+                <div class="g-field field--full ares-field">
+                    <label class="g-label" for="f-billing-street"><span>{{ 'admin.users.field.street'|trans }}</span></label>
+                    <div class="ares-field__control">
+                        <input
+                            class="g-control"
+                            type="text"
+                            id="f-billing-street"
+                            name="billing_street"
+                            data-ares-query
+                            data-ares-fill="street"
+                            autocomplete="off"
+                            value="{{ item ? item.billingStreet() : '' }}"
+                            @input="onInput"
+                            @keydown="onKeydown"
+                            x-ref="query"
+                        >
+                        {% include 'ui/ares_address_suggest.html.twig' %}
+                    </div>
+                </div>
+                <label class="field">
+                    <span>{{ 'admin.users.field.city'|trans }}</span>
+                    <input class="input" type="text" name="billing_city" data-ares-fill="city" value="{{ item ? item.billingCity() : '' }}">
+                </label>
+                <label class="field">
+                    <span>{{ 'admin.users.field.zip'|trans }}</span>
+                    <input class="input" type="text" name="billing_zip" data-ares-fill="zip" value="{{ item ? item.billingZip() : '' }}">
+                </label>
+                <label class="field">
+                    <span>{{ 'admin.users.field.country'|trans }}</span>
+                    <input class="input" type="text" name="billing_country" data-ares-fill="country" maxlength="2" value="{{ item ? (item.billingCountry() ?: 'CZ') : 'CZ' }}">
+                </label>
+            </div>
+        </section>
+
+        <section class="panel" x-data="gereqSameAs" data-on="{{ shippingSame ? '1' : '0' }}">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'admin.users.section.shipping'|trans }}</h2>
+                    <p class="muted">{{ 'admin.users.section.shipping.hint'|trans }}</p>
+                </div>
+            </header>
+            <div class="form-grid">
+                <label class="field field--full check">
+                    <input type="checkbox" name="shipping_same" value="1" x-model="same">
+                    <span>{{ 'admin.users.field.shipping_same'|trans }}</span>
+                </label>
+                <div class="field field--full" x-show="shippingVisible" x-cloak>
+                    <div class="form-grid" x-data="gereqAresAddress">
+                        <div class="g-field field--full ares-field">
+                            <label class="g-label" for="f-shipping-street"><span>{{ 'admin.users.field.street'|trans }}</span></label>
+                            <div class="ares-field__control">
+                                <input
+                                    class="g-control"
+                                    type="text"
+                                    id="f-shipping-street"
+                                    name="shipping_street"
+                                    data-ares-query
+                                    data-ares-fill="street"
+                                    autocomplete="off"
+                                    value="{{ item ? item.shippingStreet() : '' }}"
+                                    @input="onInput"
+                                    @keydown="onKeydown"
+                                    x-ref="query"
+                                >
+                                {% include 'ui/ares_address_suggest.html.twig' %}
+                            </div>
+                        </div>
+                        <label class="field">
+                            <span>{{ 'admin.users.field.city'|trans }}</span>
+                            <input class="input" type="text" name="shipping_city" data-ares-fill="city" value="{{ item ? item.shippingCity() : '' }}">
+                        </label>
+                        <label class="field">
+                            <span>{{ 'admin.users.field.zip'|trans }}</span>
+                            <input class="input" type="text" name="shipping_zip" data-ares-fill="zip" value="{{ item ? item.shippingZip() : '' }}">
+                        </label>
+                        <label class="field">
+                            <span>{{ 'admin.users.field.country'|trans }}</span>
+                            <input class="input" type="text" name="shipping_country" data-ares-fill="country" maxlength="2" value="{{ item ? (item.shippingCountry() ?: 'CZ') : 'CZ' }}">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <section class="design-panel" data-panel="roles" role="tabpanel">
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'common.roles'|trans }}</h2>
+                    <p class="muted">{{ 'admin.users.section.roles.hint'|trans }}</p>
+                </div>
+            </header>
+            <div class="chip-list user-edit__roles">
                 {% for role in roles %}
                     <label class="check">
                         <input type="checkbox" name="roles[]" value="{{ role.id() }}"
                             {{ item and item.hasRole(role.name()) ? 'checked' : '' }}>
-                        <span>{{ role.label() }}</span>
+                        <span>
+                            <strong>{{ role.label() }}</strong>
+                            {% if role.description() %}
+                                <small class="muted">{{ role.description() }}</small>
+                            {% endif %}
+                        </span>
                     </label>
                 {% endfor %}
             </div>
-        </fieldset>
-        {{ apply_filters('admin.users.form_fields', '', item|default(null))|raw }}
-        <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.users.index') }}">{{ 'common.cancel'|trans }}</a>
-            {% if item and user.can('users.delete') %}
-                <button class="btn btn--danger" type="submit" form="delete-user">{{ 'common.delete'|trans }}</button>
-            {% endif %}
-        </div>
+        </section>
+    </section>
+
+    <section class="design-panel" data-panel="security" role="tabpanel">
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'admin.users.section.security'|trans }}</h2>
+                    <p class="muted">{{ 'admin.users.section.security.hint'|trans }}</p>
+                </div>
+            </header>
+            <div class="form-grid">
+                <label class="field field--full">
+                    <span>{{ item ? 'admin.users.password_new'|trans : 'common.password'|trans }}</span>
+                    <input class="input" type="password" name="password" {{ item ? '' : 'required minlength="10"' }} autocomplete="new-password">
+                </label>
+            </div>
+        </section>
+
+        {% if item %}
+            <section class="panel security-card">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.users.mfa.title'|trans }}</h2>
+                        <p class="muted">{{ 'admin.users.mfa.hint'|trans }}</p>
+                    </div>
+                </header>
+                <div class="security-status">
+                    <div class="security-status__row">
+                        <span>{{ 'security.totp.title'|trans }}</span>
+                        <span class="badge {{ item.totpEnabled() ? 'badge--ok' : 'badge--muted' }}">
+                            {{ item.totpEnabled() ? 'common.enabled'|trans : 'common.disabled'|trans }}
+                        </span>
+                    </div>
+                    <div class="security-status__row">
+                        <span>{{ 'security.passkey.title'|trans }}</span>
+                        <span class="badge {{ passkeys|default([])|length ? 'badge--ok' : 'badge--muted' }}">
+                            {{ passkeys|default([])|length ? passkeys|length : ('common.disabled'|trans) }}
+                        </span>
+                    </div>
+                    {% if passkeys|default([])|length %}
+                        <ul class="security-passkeys security-passkeys--static">
+                            {% for pk in passkeys %}
+                                <li class="security-passkeys__item">
+                                    <div>
+                                        <strong>{{ pk.name() }}</strong>
+                                        <small class="muted">{{ pk.createdAt()|date('d.m.Y H:i') }}</small>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if user.can('users.edit') and (item.totpEnabled() or item.passkeyEnabled() or (passkeys|default([])|length) > 0) %}
+                        <form
+                            method="post"
+                            action="{{ url('admin.users.mfa.reset', {id: item.id()}) }}"
+                            class="form-actions"
+                            data-confirm="{{ 'admin.users.mfa.reset_confirm'|trans }}"
+                            data-confirm-title="{{ 'admin.users.mfa.title'|trans }}"
+                            data-confirm-danger="1"
+                        >
+                            {{ csrf_field()|raw }}
+                            <button type="submit" class="btn btn--danger">{{ 'admin.users.mfa.reset'|trans }}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </section>
+        {% endif %}
+    </section>
+</form>
+
+{% if item and user.can('users.delete') %}
+    <form
+        id="delete-user"
+        method="post"
+        action="{{ url('admin.users.destroy', {id: item.id()}) }}"
+        data-confirm="{{ 'admin.users.confirm_delete'|trans }}"
+        data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}"
+        data-confirm-danger="1"
+    >
+        {{ csrf_field()|raw }}
     </form>
-    {% if item and user.can('users.delete') %}
-        <form id="delete-user" method="post" action="{{ url('admin.users.destroy', {id: item.id()}) }}" data-confirm="{{ 'admin.users.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
-            {{ csrf_field()|raw }}
-        </form>
-    {% endif %}
+{% endif %}
 {% endblock %}

@@ -11,6 +11,7 @@
   }
 
   const KEY = "gereq.debugbar.v1";
+  const POS_KEY = "gereq.debugbar.pos";
   const nPlusOneCount = data.nPlusOneCount || 0;
   const tabs = [
     { id: "request", label: "Požadavek" },
@@ -19,7 +20,7 @@
     { id: "time", label: "Čas" },
     { id: "events", label: "Události", count: (data.events || []).length },
     { id: "session", label: "Session" },
-    { id: "user", label: "Uživatel" },
+    { id: "user", label: "Uživatel", live: Boolean(data.user) && data.user.guest === false },
     { id: "dumps", label: "Dumpy", count: (data.dumps || []).length },
     { id: "config", label: "Config" },
   ];
@@ -55,11 +56,95 @@
     return "ok";
   };
 
-  const highlightSql = (sql) =>
-    esc(sql).replace(
-      /\b(SELECT|FROM|WHERE|AND|OR|JOIN|LEFT|RIGHT|INNER|OUTER|INSERT|UPDATE|DELETE|INTO|VALUES|SET|LIMIT|OFFSET|ORDER|GROUP|BY|AS|ON|NULL|NOT|IN|IS|DISTINCT|HAVING|UNION|CASE|WHEN|THEN|ELSE|END|COUNT|SUM|AVG|MAX|MIN|LIKE|BETWEEN|EXISTS|CREATE|ALTER|DROP|TABLE|INDEX|PRIMARY|KEY|DEFAULT|TRUE|FALSE)\b/gi,
-      "<b>$1</b>"
+  const SQL_KEYWORDS =
+    /\b(SELECT|FROM|WHERE|AND|OR|JOIN|LEFT|RIGHT|INNER|OUTER|INSERT|UPDATE|DELETE|INTO|VALUES|SET|LIMIT|OFFSET|ORDER|GROUP|BY|AS|ON|NULL|NOT|IN|IS|DISTINCT|HAVING|UNION|CASE|WHEN|THEN|ELSE|END|COUNT|SUM|AVG|MAX|MIN|LIKE|BETWEEN|EXISTS|CREATE|ALTER|DROP|TABLE|INDEX|PRIMARY|KEY|DEFAULT|TRUE|FALSE)\b/gi;
+
+  const SQL_ALIAS_STOP = new Set([
+    "where", "on", "set", "limit", "offset", "order", "group", "having", "join", "left",
+    "right", "inner", "outer", "cross", "full", "union", "values", "as", "and", "or",
+    "using", "into", "when", "then", "else", "end", "select", "from", "with", "only",
+  ]);
+
+  const stripSqlIdent = (raw) =>
+    String(raw || "")
+      .replace(/^["`\[]+|["`\]]+$/g, "")
+      .replace(/^public\./i, "");
+
+  /** Map alias → table from FROM / JOIN clauses (Doctrine t0, p0_, …). */
+  const sqlAliasMap = (sql) => {
+    const map = {};
+    const re =
+      /\b(?:FROM|JOIN)\s+(?:ONLY\s+)?((?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[\w.]+))\s+(?:AS\s+)?([a-zA-Z_][\w]*)\b/gi;
+    let m;
+    while ((m = re.exec(sql))) {
+      const table = stripSqlIdent(m[1]);
+      const alias = m[2];
+      if (!table || !alias || SQL_ALIAS_STOP.has(alias.toLowerCase())) continue;
+      if (alias.toLowerCase() === table.toLowerCase()) continue;
+      map[alias] = table;
+    }
+    return map;
+  };
+
+  const highlightSql = (sql) => {
+    const aliases = sqlAliasMap(sql);
+    let out = esc(sql).replace(SQL_KEYWORDS, "<b>$1</b>");
+    const names = Object.keys(aliases).sort((a, b) => b.length - a.length);
+    for (const alias of names) {
+      const table = aliases[alias];
+      const re = new RegExp(`\\b(${alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})\\b`, "g");
+      out = out.replace(
+        re,
+        `<span class="gdb-alias" title="${esc(table)}">$1</span>`,
+      );
+    }
+    return out;
+  };
+
+  const isMigratorWarmQuery = (q) => {
+    const sql = String(q.sql || "");
+    const origin = String(q.origin || "");
+    if (/\/\*\s*gereq:warm\s*\*\//i.test(sql)) return true;
+    if (/^\s*SELECT\s+CURRENT_DATABASE\s*\(\s*\)\s*$/i.test(sql)) return true;
+    if (/^\s*SELECT\s+current_schema\s*\(\s*\)\s*$/i.test(sql)) return true;
+    if (!/Migrator\.php/i.test(origin)) return false;
+    return /current_database|current_schema|information_schema|schema_migrations|pg_catalog|pg_namespace|pg_class|pg_attribute/i.test(
+      sql,
     );
+  };
+
+  const collapseSqlQueries = (queries) => {
+    const out = [];
+    let batch = [];
+    const flush = () => {
+      if (!batch.length) return;
+      const duration = roundMs(batch.reduce((sum, q) => sum + (q.duration || 0), 0));
+      out.push({ type: "warm", queries: batch, duration, count: batch.length });
+      batch = [];
+    };
+    for (const q of queries) {
+      if (isMigratorWarmQuery(q)) {
+        batch.push(q);
+      } else {
+        flush();
+        out.push({ type: "query", query: q });
+      }
+    }
+    flush();
+    return out;
+  };
+
+  const roundMs = (n) => Math.round(n * 100) / 100;
+
+  const renderSqlQueryRow = (q, maxMs) => {
+    const slow = q.duration >= 20 ? " is-slow" : "";
+    const n1 = q.nPlusOne ? " is-n1" : "";
+    const width = Math.max(4, Math.round((q.duration / maxMs) * 100));
+    const badge = q.nPlusOne
+      ? `<span class="gdb-badge" title="Součást N+1 skupiny (${esc(q.nPlusOneCount)}×)">N+1 ×${esc(q.nPlusOneCount)}</span>`
+      : "";
+    return `<tr class="${n1.trim()}"><td class="gdb-ms${slow}${n1}">${esc(q.duration)} ms<div class="gdb-barline"><i style="width:${width}%"></i></div></td><td>${badge}<div class="gdb-sql">${highlightSql(q.sql)}</div>${q.origin ? `<div class="gdb-origin">${esc(q.origin)}</div>` : ""}${q.params && Object.keys(q.params).length ? `<div class="gdb-origin">${esc(JSON.stringify(q.params))}</div>` : ""}</td></tr>`;
+  };
 
   const kv = (rows) => {
     const body = rows
@@ -71,7 +156,50 @@
     return `<table class="gdb-kv">${body}</table>`;
   };
 
-  const maxQuery = Math.max(1, ...(data.queries || []).map((q) => q.duration || 0));
+  const jsonLeaf = (value) => {
+    if (value === null) return `<span class="gdb-dump gdb-dump--null">null</span>`;
+    if (typeof value === "boolean") {
+      return `<span class="gdb-dump gdb-dump--bool">${value ? "true" : "false"}</span>`;
+    }
+    if (typeof value === "number") {
+      return `<span class="gdb-dump gdb-dump--num">${esc(value)}</span>`;
+    }
+    if (typeof value === "string") {
+      return `<span class="gdb-dump gdb-dump--str">"${esc(value)}"</span>`;
+    }
+    return `<span class="gdb-dump gdb-dump--muted">${esc(String(value))}</span>`;
+  };
+
+  const jsonTree = (value, key = null, depth = 0) => {
+    const isArr = Array.isArray(value);
+    const isObj = value !== null && typeof value === "object";
+    if (!isObj) {
+      const leaf = jsonLeaf(value);
+      if (key === null) return leaf;
+      return `<div class="gdb-tree__row"><span class="gdb-tree__key">${esc(key)}</span><span class="gdb-tree__sep">:</span>${leaf}</div>`;
+    }
+
+    const entries = isArr
+      ? value.map((item, i) => [String(i), item])
+      : Object.keys(value).map((k) => [k, value[k]]);
+    const hint = isArr ? `Array(${entries.length})` : `Object(${entries.length})`;
+    const open = depth < 2 ? " open" : "";
+    const children = entries.map(([k, v]) => jsonTree(v, k, depth + 1)).join("");
+    const summaryKey =
+      key === null
+        ? `<span class="gdb-tree__hint">${esc(hint)}</span>`
+        : `<span class="gdb-tree__key">${esc(key)}</span><span class="gdb-tree__sep">:</span><span class="gdb-tree__hint">${esc(hint)}</span>`;
+
+    return `<details class="gdb-tree"${open}><summary class="gdb-tree__sum">${summaryKey}</summary><div class="gdb-tree__kids">${children || `<div class="gdb-tree__row"><span class="gdb-dump gdb-dump--muted">${isArr ? "[]" : "{}"}</span></div>`}</div></details>`;
+  };
+
+  const maxQuery = Math.max(
+    1,
+    ...(data.queries || []).map((q) => q.duration || 0),
+    ...collapseSqlQueries(data.queries || [])
+      .filter((row) => row.type === "warm")
+      .map((row) => row.duration || 0),
+  );
   const maxView = Math.max(1, ...(data.views || []).map((v) => v.duration || 0));
 
   const panels = {
@@ -124,13 +252,14 @@
         nPlusOneCount > 0
           ? `<div class="gdb-alert">⚠ ${esc(nPlusOneCount)}× podezření na N+1 — detail v záložce N+1</div>`
           : "";
-      const rows = queries
-        .map((q) => {
-          const slow = q.duration >= 20 ? " is-slow" : "";
-          const n1 = q.nPlusOne ? " is-n1" : "";
-          const width = Math.max(4, Math.round((q.duration / maxQuery) * 100));
-          const badge = q.nPlusOne ? `<span class="gdb-badge" title="Součást N+1 skupiny (${esc(q.nPlusOneCount)}×)">N+1 ×${esc(q.nPlusOneCount)}</span>` : "";
-          return `<tr class="${n1.trim()}"><td class="gdb-ms${slow}${n1}">${esc(q.duration)} ms<div class="gdb-barline"><i style="width:${width}%"></i></div></td><td>${badge}<div class="gdb-sql">${highlightSql(q.sql)}</div>${q.origin ? `<div class="gdb-origin">${esc(q.origin)}</div>` : ""}${q.params && Object.keys(q.params).length ? `<div class="gdb-origin">${esc(JSON.stringify(q.params))}</div>` : ""}</td></tr>`;
+      const rows = collapseSqlQueries(queries)
+        .map((row) => {
+          if (row.type === "warm") {
+            const width = Math.max(4, Math.round((row.duration / maxQuery) * 100));
+            const inner = row.queries.map((q) => renderSqlQueryRow(q, maxQuery)).join("");
+            return `<tr class="gdb-sql-warm"><td class="gdb-ms">${esc(row.duration)} ms<div class="gdb-barline"><i style="width:${width}%"></i></div></td><td><details class="gdb-sql-group"><summary class="gdb-sql-group__sum"><span class="gdb-sql-group__title">Migrator warm-up</span><span class="gdb-sql-group__meta">${esc(row.count)} SQL</span></summary><table class="gdb-table gdb-table--nested"><tbody>${inner}</tbody></table></details></td></tr>`;
+          }
+          return renderSqlQueryRow(row.query, maxQuery);
         })
         .join("");
       return `${alert}<table class="gdb-table"><thead><tr><th>Čas</th><th>Dotaz · ${esc(data.queryMs)} ms celkem</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -174,12 +303,7 @@
     user: () => {
       const user = data.user || { guest: true };
       if (user.guest) return `<div class="gdb-empty">Host — nepřihlášen.</div>`;
-      return kv([
-        ["ID", user.id],
-        ["Jméno", user.name],
-        ["E-mail", user.email],
-        ["Role", (user.roles || []).join(", ")],
-      ]);
+      return `<div class="gdb-tree-wrap">${jsonTree(user)}</div>`;
     },
     dumps: () => {
       const dumps = data.dumps || [];
@@ -189,7 +313,11 @@
       const cards = dumps
         .map((d, i) => {
           const meta = d.file ? `${esc(d.file)}:${esc(d.line)}` : "dump()";
-          return `<div class="gdb-card" data-dump-i="${i}"><div class="gdb-card__meta"><span>${meta}</span><button type="button" class="gdb-mini" data-act="dump-del" data-i="${i}" title="Smazat tento dump">×</button></div>${d.html}</div>`;
+          const tree =
+            Object.prototype.hasOwnProperty.call(d, "value")
+              ? jsonTree(d.value)
+              : `<div class="gdb-dump">${d.html || ""}</div>`;
+          return `<div class="gdb-card gdb-card--dump" data-dump-i="${i}"><div class="gdb-card__meta"><span>${meta}</span><button type="button" class="gdb-mini" data-act="dump-del" data-i="${i}" title="Smazat tento dump">×</button></div><div class="gdb-tree-wrap gdb-tree-wrap--flush">${tree}</div></div>`;
         })
         .join("");
       return `<div class="gdb-toolbar"><span class="gdb-toolbar__label">${esc(dumps.length)} dumpů</span><button type="button" class="gdb-copybtn" data-act="dumps-clear" title="Smazat všechny dumpy v tomto requestu">Smazat dumpy</button></div>${cards}`;
@@ -241,10 +369,7 @@
       (data.dumps || []).map((d) => ({
         file: d.file,
         line: d.line,
-        text: String(d.html || "")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim(),
+        value: Object.prototype.hasOwnProperty.call(d, "value") ? d.value : d.html || null,
       })),
     config: () => data.config || {},
   };
@@ -282,7 +407,8 @@
   const tabBtns = tabs
     .map((t) => {
       const n = t.count ? `<span class="gdb-tab__n${t.warn ? " is-warn" : ""}">${esc(t.count)}</span>` : "";
-      return `<button type="button" class="gdb-tab${t.id === tab ? " is-active" : ""}${t.warn ? " is-warn" : ""}" data-tab="${t.id}">${esc(t.label)}${n}</button>`;
+      const live = t.live ? `<span class="gdb-live" title="Přihlášen" aria-hidden="true"></span>` : "";
+      return `<button type="button" class="gdb-tab${t.id === tab ? " is-active" : ""}${t.warn ? " is-warn" : ""}" data-tab="${t.id}">${live}${esc(t.label)}${n}</button>`;
     })
     .join("");
   const n1Chip =
@@ -330,6 +456,125 @@
     try {
       localStorage.setItem(KEY, JSON.stringify({ open, tab }));
     } catch {}
+  };
+
+  const loadPos = () => {
+    try {
+      const raw = sessionStorage.getItem(POS_KEY);
+      if (!raw) return null;
+      const pos = JSON.parse(raw);
+      if (
+        !pos ||
+        typeof pos.left !== "number" ||
+        typeof pos.top !== "number" ||
+        !Number.isFinite(pos.left) ||
+        !Number.isFinite(pos.top)
+      ) {
+        return null;
+      }
+      return pos;
+    } catch {
+      return null;
+    }
+  };
+
+  const savePos = (left, top) => {
+    try {
+      sessionStorage.setItem(POS_KEY, JSON.stringify({ left, top }));
+    } catch {}
+  };
+
+  const clampPos = (left, top) => {
+    const pad = 8;
+    const w = pill.offsetWidth || 160;
+    const h = pill.offsetHeight || 36;
+    const maxL = Math.max(pad, window.innerWidth - w - pad);
+    const maxT = Math.max(pad, window.innerHeight - h - pad);
+    return {
+      left: Math.min(Math.max(pad, left), maxL),
+      top: Math.min(Math.max(pad, top), maxT),
+    };
+  };
+
+  const applyPos = (left, top) => {
+    const next = clampPos(left, top);
+    pill.style.left = `${next.left}px`;
+    pill.style.top = `${next.top}px`;
+    pill.style.right = "auto";
+    pill.style.bottom = "auto";
+    return next;
+  };
+
+  const restorePos = () => {
+    const pos = loadPos();
+    if (!pos) return;
+    applyPos(pos.left, pos.top);
+  };
+
+  const enableDrag = () => {
+    let dragging = false;
+    let moved = false;
+    let startX = 0;
+    let startY = 0;
+    let originL = 0;
+    let originT = 0;
+    let pointerId = 0;
+
+    const onMove = (e) => {
+      if (!dragging || e.pointerId !== pointerId) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!moved && dx * dx + dy * dy < 16) return;
+      moved = true;
+      pill.classList.add("is-dragging");
+      applyPos(originL + dx, originT + dy);
+    };
+
+    const onUp = (e) => {
+      if (!dragging || e.pointerId !== pointerId) return;
+      dragging = false;
+      pill.classList.remove("is-dragging");
+      try {
+        pill.releasePointerCapture(pointerId);
+      } catch {}
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      if (moved) {
+        const rect = pill.getBoundingClientRect();
+        const next = applyPos(rect.left, rect.top);
+        savePos(next.left, next.top);
+      }
+    };
+
+    pill.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      const rect = pill.getBoundingClientRect();
+      dragging = true;
+      moved = false;
+      pointerId = e.pointerId;
+      startX = e.clientX;
+      startY = e.clientY;
+      originL = rect.left;
+      originT = rect.top;
+      try {
+        pill.setPointerCapture(pointerId);
+      } catch {}
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
+    });
+
+    pill.addEventListener(
+      "click",
+      (e) => {
+        if (!moved) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        moved = false;
+      },
+      true,
+    );
   };
 
   const flashCopy = (ok) => {
@@ -403,7 +648,11 @@
     dock.hidden = !open;
     document.body.classList.toggle("gdb-pad", open);
     persist();
-    if (open) renderPanel();
+    if (open) {
+      renderPanel();
+    } else {
+      restorePos();
+    }
   };
 
   root.addEventListener("click", (e) => {
@@ -456,5 +705,15 @@
     setOpen(!open);
   });
 
+  window.addEventListener("resize", () => {
+    if (pill.hidden) return;
+    const rect = pill.getBoundingClientRect();
+    if (pill.style.left || pill.style.top) {
+      const next = applyPos(rect.left, rect.top);
+      savePos(next.left, next.top);
+    }
+  });
+
+  enableDrag();
   setOpen(open);
 })();

@@ -20,6 +20,48 @@ class User
     #[ORM\Column(length: 180)]
     private string $name;
 
+    #[ORM\Column(name: 'first_name', length: 120, nullable: true)]
+    private ?string $firstName = null;
+
+    #[ORM\Column(name: 'last_name', length: 120, nullable: true)]
+    private ?string $lastName = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(name: 'birth_date', type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $birthDate = null;
+
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $phone = null;
+
+    #[ORM\Column(name: 'avatar_file_id', length: 36, nullable: true)]
+    private ?string $avatarFileId = null;
+
+    #[ORM\Column(name: 'billing_street', length: 190, nullable: true)]
+    private ?string $billingStreet = null;
+
+    #[ORM\Column(name: 'billing_city', length: 120, nullable: true)]
+    private ?string $billingCity = null;
+
+    #[ORM\Column(name: 'billing_zip', length: 32, nullable: true)]
+    private ?string $billingZip = null;
+
+    #[ORM\Column(name: 'billing_country', length: 2, nullable: true)]
+    private ?string $billingCountry = null;
+
+    #[ORM\Column(name: 'shipping_street', length: 190, nullable: true)]
+    private ?string $shippingStreet = null;
+
+    #[ORM\Column(name: 'shipping_city', length: 120, nullable: true)]
+    private ?string $shippingCity = null;
+
+    #[ORM\Column(name: 'shipping_zip', length: 32, nullable: true)]
+    private ?string $shippingZip = null;
+
+    #[ORM\Column(name: 'shipping_country', length: 2, nullable: true)]
+    private ?string $shippingCountry = null;
+
     #[ORM\Column(length: 180, unique: true)]
     private string $email;
 
@@ -33,7 +75,7 @@ class User
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $locale = null;
 
-    #[ORM\Column(name: 'totp_secret', length: 64, nullable: true)]
+    #[ORM\Column(name: 'totp_secret', length: 255, nullable: true)]
     private ?string $totpSecret = null;
 
     #[ORM\Column(name: 'totp_enabled')]
@@ -75,6 +117,7 @@ class User
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         $this->roles = new ArrayCollection();
+        $this->splitNameIntoParts($name);
     }
 
     public function id(): string
@@ -85,6 +128,85 @@ class User
     public function name(): string
     {
         return $this->name;
+    }
+
+    public function firstName(): ?string
+    {
+        return $this->firstName;
+    }
+
+    public function lastName(): ?string
+    {
+        return $this->lastName;
+    }
+
+    public function description(): ?string
+    {
+        return $this->description;
+    }
+
+    public function birthDate(): ?\DateTimeImmutable
+    {
+        return $this->birthDate;
+    }
+
+    public function age(): ?int
+    {
+        if ($this->birthDate === null) {
+            return null;
+        }
+
+        return $this->birthDate->diff(new \DateTimeImmutable('today'))->y;
+    }
+
+    public function phone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function avatarFileId(): ?string
+    {
+        return $this->avatarFileId;
+    }
+
+    public function billingStreet(): ?string
+    {
+        return $this->billingStreet;
+    }
+
+    public function billingCity(): ?string
+    {
+        return $this->billingCity;
+    }
+
+    public function billingZip(): ?string
+    {
+        return $this->billingZip;
+    }
+
+    public function billingCountry(): ?string
+    {
+        return $this->billingCountry;
+    }
+
+    public function shippingStreet(): ?string
+    {
+        return $this->shippingStreet;
+    }
+
+    public function shippingCity(): ?string
+    {
+        return $this->shippingCity;
+    }
+
+    public function shippingZip(): ?string
+    {
+        return $this->shippingZip;
+    }
+
+    public function shippingCountry(): ?string
+    {
+        return $this->shippingCountry;
     }
 
     public function email(): string
@@ -122,6 +244,21 @@ class User
         return $this->totpSecret;
     }
 
+    public function passkeyEnabled(): bool
+    {
+        return $this->passkeyEnabled;
+    }
+
+    public function oauthProvider(): ?string
+    {
+        return $this->oauthProvider;
+    }
+
+    public function oauthId(): ?string
+    {
+        return $this->oauthId;
+    }
+
     public function lastLoginAt(): ?\DateTimeImmutable
     {
         return $this->lastLoginAt;
@@ -139,7 +276,64 @@ class User
 
     public function setName(string $name): void
     {
-        $this->name = $name;
+        $this->name = trim($name);
+        $this->splitNameIntoParts($this->name);
+        $this->touch();
+    }
+
+    public function setFirstName(?string $firstName): void
+    {
+        $this->firstName = self::nullable($firstName);
+        $this->syncDisplayName();
+    }
+
+    public function setLastName(?string $lastName): void
+    {
+        $this->lastName = self::nullable($lastName);
+        $this->syncDisplayName();
+    }
+
+    public function setDescription(?string $description): void
+    {
+        $this->description = self::nullable($description);
+        $this->touch();
+    }
+
+    public function setBirthDate(?\DateTimeImmutable $birthDate): void
+    {
+        $this->birthDate = $birthDate;
+        $this->touch();
+    }
+
+    public function setPhone(?string $phone): void
+    {
+        $this->phone = self::nullable($phone);
+        $this->touch();
+    }
+
+    public function setAvatarFileId(?string $avatarFileId): void
+    {
+        $this->avatarFileId = self::nullable($avatarFileId);
+        $this->touch();
+    }
+
+    public function setBillingAddress(?string $street, ?string $city, ?string $zip, ?string $country): void
+    {
+        $this->billingStreet = self::nullable($street);
+        $this->billingCity = self::nullable($city);
+        $this->billingZip = self::nullable($zip);
+        $country = self::nullable($country);
+        $this->billingCountry = $country !== null ? strtoupper($country) : null;
+        $this->touch();
+    }
+
+    public function setShippingAddress(?string $street, ?string $city, ?string $zip, ?string $country): void
+    {
+        $this->shippingStreet = self::nullable($street);
+        $this->shippingCity = self::nullable($city);
+        $this->shippingZip = self::nullable($zip);
+        $country = self::nullable($country);
+        $this->shippingCountry = $country !== null ? strtoupper($country) : null;
         $this->touch();
     }
 
@@ -177,7 +371,69 @@ class User
     {
         $this->totpSecret = $secret;
         $this->totpEnabled = true;
-        $this->recoveryCodes = $recoveryCodes;
+        $this->recoveryCodes = array_values($recoveryCodes);
+        $this->touch();
+    }
+
+    public function disableTotp(): void
+    {
+        $this->totpSecret = null;
+        $this->totpEnabled = false;
+        $this->recoveryCodes = null;
+        $this->touch();
+    }
+
+    /** @return list<string>|null Hashed recovery codes. */
+    public function recoveryCodes(): ?array
+    {
+        return $this->recoveryCodes;
+    }
+
+    /** @param list<string> $hashedCodes */
+    public function setRecoveryCodes(array $hashedCodes): void
+    {
+        $this->recoveryCodes = array_values($hashedCodes);
+        $this->touch();
+    }
+
+    public function consumeRecoveryCode(string $plain): bool
+    {
+        if ($this->recoveryCodes === null || $this->recoveryCodes === []) {
+            return false;
+        }
+
+        $plain = strtoupper(trim($plain));
+        foreach ($this->recoveryCodes as $index => $hash) {
+            if (is_string($hash) && password_verify($plain, $hash)) {
+                unset($this->recoveryCodes[$index]);
+                $this->recoveryCodes = array_values($this->recoveryCodes);
+                if ($this->recoveryCodes === []) {
+                    $this->recoveryCodes = null;
+                }
+                $this->touch();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function setPasskeyEnabled(bool $enabled): void
+    {
+        $this->passkeyEnabled = $enabled;
+        $this->touch();
+    }
+
+    public function hasMfa(): bool
+    {
+        return $this->totpEnabled || $this->passkeyEnabled;
+    }
+
+    public function resetMfa(): void
+    {
+        $this->disableTotp();
+        $this->passkeyEnabled = false;
         $this->touch();
     }
 
@@ -255,6 +511,20 @@ class User
 
     public function initials(): string
     {
+        $first = trim((string) $this->firstName);
+        $last = trim((string) $this->lastName);
+        if ($first !== '' || $last !== '') {
+            $letters = '';
+            if ($first !== '') {
+                $letters .= mb_strtoupper(mb_substr($first, 0, 1));
+            }
+            if ($last !== '') {
+                $letters .= mb_strtoupper(mb_substr($last, 0, 1));
+            }
+
+            return $letters !== '' ? $letters : 'G';
+        }
+
         $parts = preg_split('/\s+/', trim($this->name)) ?: [];
         $letters = '';
         foreach (array_slice($parts, 0, 2) as $part) {
@@ -262,6 +532,40 @@ class User
         }
 
         return $letters !== '' ? $letters : 'G';
+    }
+
+    private function syncDisplayName(): void
+    {
+        $full = trim(implode(' ', array_filter([
+            $this->firstName,
+            $this->lastName,
+        ], static fn (?string $part): bool => $part !== null && trim($part) !== '')));
+        if ($full !== '') {
+            $this->name = $full;
+        }
+        $this->touch();
+    }
+
+    private function splitNameIntoParts(string $name): void
+    {
+        $parts = preg_split('/\s+/', trim($name)) ?: [];
+        if ($parts === [] || ($parts[0] ?? '') === '') {
+            return;
+        }
+        if ($this->firstName === null && $this->lastName === null) {
+            $this->firstName = array_shift($parts) ?: null;
+            $this->lastName = $parts !== [] ? implode(' ', $parts) : null;
+        }
+    }
+
+    private static function nullable(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $trimmed = trim($value);
+
+        return $trimmed !== '' ? $trimmed : null;
     }
 
     private function touch(): void

@@ -20,7 +20,7 @@ final class Menu
     }
 
     /**
-     * @return list<array{item: MenuItem, children: list<MenuItem>, url: string}>
+     * @return list<array{group: ?string, nodes: list<array{item: MenuItem, children: list<MenuItem>, url: string}>}>
      */
     public function tree(?User $user, Router $router, ?Request $request = null): array
     {
@@ -47,12 +47,12 @@ final class Menu
                 $children[$item->parent][] = $item;
                 continue;
             }
-            $group = $item->group ?? 'Hlavní';
+            $group = $item->group ?? '';
             $rootsByGroup[$group][] = $item;
         }
 
-        // Sidebar spojuje sousední stejné group — proto nejdřív shluknout skupiny,
-        // jinak stejná sekce (např. Provoz) spadne na více míst podle order položek.
+        // Sidebar spojuje sousední stejné group — proto nejdřív shluknout skupiny.
+        // Prázdná group = položky mimo sekce (např. Přehled) — vždy první.
         $groupRanks = [];
         foreach ($rootsByGroup as $group => $roots) {
             usort($roots, static fn (MenuItem $a, MenuItem $b): int => $a->order <=> $b->order ?: strcmp($a->id, $b->id));
@@ -63,6 +63,13 @@ final class Menu
         uksort(
             $rootsByGroup,
             static function (string $a, string $b) use ($groupRanks): int {
+                if ($a === '') {
+                    return -1;
+                }
+                if ($b === '') {
+                    return 1;
+                }
+
                 return ($groupRanks[$a] <=> $groupRanks[$b]) ?: strcmp($a, $b);
             },
         );
@@ -72,18 +79,23 @@ final class Menu
             $children[$parentId] = $list;
         }
 
-        $tree = [];
-        foreach ($rootsByGroup as $roots) {
+        $sections = [];
+        foreach ($rootsByGroup as $group => $roots) {
+            $nodes = [];
             foreach ($roots as $root) {
-                $tree[] = [
+                $nodes[] = [
                     'item' => $root,
                     'children' => $children[$root->id] ?? [],
                     'url' => $this->resolveUrl($root, $router, $request),
                 ];
             }
+            $sections[] = [
+                'group' => $group !== '' ? $group : null,
+                'nodes' => $nodes,
+            ];
         }
 
-        return $tree;
+        return $sections;
     }
 
     /** @return list<MenuItem> */

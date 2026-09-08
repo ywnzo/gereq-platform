@@ -1,0 +1,9 @@
+# Override: php gereq serve-docker --https
+# Publishes HTTPS on host port 443 and mounts self-signed certs.
+services:
+  nginx:
+    ports:
+      - "443:443"
+    volumes:
+      - ./docker/nginx/certs:/etc/nginx/certs:ro,z
+      - ./docker/nginx/https.conf:/etc/nginx/conf.d/https.conf:ro,z

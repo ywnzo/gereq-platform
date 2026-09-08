@@ -1,6 +1,7 @@
 {#
-  Host confirm dialog (Athena-style modal). Include once in admin layout.
+  Host confirm / prompt dialog. Include once in admin layout.
   Use: window.gereq.confirm({ title, body, confirmLabel, danger })
+       window.gereq.prompt({ title, body, inputLabel, inputValue, inputType })
   Or: <form data-confirm="…" data-confirm-title="…" data-confirm-danger="1">
 #}
 <div
@@ -30,7 +31,21 @@
     >
         <div class="g-modal__panel g-confirm__panel" @click.stop>
             <h3 class="g-modal__title" id="gereq-confirm-title" x-text="title"></h3>
-            <p class="g-modal__body" x-text="body"></p>
+            <p class="g-modal__body" x-show="body" x-text="body"></p>
+            <div class="g-confirm__field" x-show="showInput" x-cloak>
+                <label class="field">
+                    <span x-show="inputLabel" x-text="inputLabel"></span>
+                    <input
+                        class="input"
+                        :type="inputType"
+                        x-model="inputValue"
+                        :placeholder="inputPlaceholder"
+                        autocomplete="off"
+                        x-ref="inputField"
+                        @keydown.enter="accept"
+                    >
+                </label>
+            </div>
             <div class="g-modal__actions">
                 <button type="button" class="btn btn--ghost" @click="cancel" x-ref="cancelBtn">
                     <span x-text="cancelLabel"></span>

@@ -35,6 +35,8 @@
   --gdb-sans: var(--gereq-font-sans, "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif);
   --gdb-display: var(--gereq-font-display, "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif);
   --gdb-mono: var(--gereq-font-mono, "JetBrains Mono", ui-monospace, monospace);
+  --gdb-radius: var(--radius, 4px);
+  --gdb-radius-lg: var(--radius-lg, 6px);
   position: fixed;
   inset: auto;
   width: 0;
@@ -93,9 +95,28 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   font-size: 10px;
   padding: 1px 5px;
   border: 1px solid var(--gdb-line);
-  border-radius: 4px;
+  border-radius: var(--gdb-radius);
   color: var(--gdb-mute);
   background: transparent;
+}
+
+#gereq-debug.gdb .gdb-bar__actions kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--gdb-mute);
+  background: var(--gdb-fill-soft);
+  border: 1px solid var(--gdb-line);
+  border-radius: var(--gdb-radius);
+  white-space: nowrap;
 }
 
 .gdb-pill,
@@ -109,17 +130,23 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  height: 40px;
-  padding: 0 14px 0 12px;
+  height: 36px;
+  padding: 0 12px 0 10px;
   background: var(--gdb-ink) !important;
   color: var(--gdb-paper) !important;
   border: 1px solid var(--gdb-line);
-  border-radius: 999px;
+  border-radius: var(--gdb-radius);
   box-shadow: var(--gdb-shadow);
-  cursor: pointer;
+  cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 #gereq-debug.gdb .gdb-pill:hover { border-color: var(--gdb-hover-border); }
+#gereq-debug.gdb .gdb-pill.is-dragging {
+  cursor: grabbing;
+  border-color: var(--gdb-hover-border);
+  opacity: 0.95;
+}
 #gereq-debug.gdb .gdb-pill__brand {
   font-family: var(--gdb-display);
   font-weight: 700;
@@ -147,7 +174,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   background: var(--gdb-ink);
   color: var(--gdb-paper);
   border: 1px solid var(--gdb-line);
-  border-radius: 16px;
+  border-radius: var(--gdb-radius-lg);
   box-shadow: var(--gdb-shadow-dock);
   overflow: hidden;
 }
@@ -177,7 +204,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   gap: 6px;
   height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--gdb-radius);
   background: var(--gdb-fill);
   font-family: var(--gdb-mono);
   font-size: 11px;
@@ -216,7 +243,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   height: 28px;
   padding: 0 10px !important;
   border: 0 !important;
-  border-radius: 8px;
+  border-radius: var(--gdb-radius);
   background: var(--gdb-fill-soft) !important;
   color: var(--gdb-mute) !important;
   font-size: 12px;
@@ -238,7 +265,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   height: 16px;
   margin-left: 5px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--gdb-radius);
   background: var(--gdb-tab-n);
   font-family: var(--gdb-mono);
   font-size: 10px;
@@ -251,19 +278,115 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   color: var(--gdb-on-signal);
 }
 
+#gereq-debug.gdb .gdb-live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--gdb-ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--gdb-ok) 55%, transparent);
+  animation: gdb-live-pulse 1.6s ease-out infinite;
+  flex-shrink: 0;
+}
+@keyframes gdb-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gdb-ok) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--gdb-ok) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gdb-ok) 0%, transparent);
+  }
+}
+
+#gereq-debug.gdb .gdb-tree-wrap {
+  padding: 10px 14px 16px;
+  font-family: var(--gdb-mono);
+  font-size: 12px;
+  line-height: 1.45;
+}
+#gereq-debug.gdb .gdb-tree-wrap--flush {
+  padding: 0;
+}
+#gereq-debug.gdb .gdb-card--dump {
+  padding-top: 10px;
+}
+#gereq-debug.gdb .gdb-card--dump .gdb-card__meta {
+  margin-bottom: 6px;
+}
+#gereq-debug.gdb .gdb-tree {
+  margin: 0;
+}
+#gereq-debug.gdb .gdb-tree__sum {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 4px;
+  margin: 0 -4px;
+  border-radius: var(--gdb-radius);
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-tree__sum::-webkit-details-marker { display: none; }
+#gereq-debug.gdb .gdb-tree__sum::before {
+  content: "▸";
+  display: inline-block;
+  width: 0.9em;
+  color: var(--gdb-mute);
+  font-size: 11px;
+  transition: transform 0.12s ease;
+  flex-shrink: 0;
+}
+#gereq-debug.gdb .gdb-tree[open] > .gdb-tree__sum::before {
+  transform: rotate(90deg);
+}
+#gereq-debug.gdb .gdb-tree__sum:hover {
+  background: var(--gdb-fill);
+}
+#gereq-debug.gdb .gdb-tree__key {
+  color: var(--gdb-mute);
+}
+#gereq-debug.gdb .gdb-tree__sep {
+  color: var(--gdb-mute);
+  opacity: 0.6;
+}
+#gereq-debug.gdb .gdb-tree__hint {
+  color: var(--gdb-accent-text);
+  font-weight: 600;
+}
+#gereq-debug.gdb .gdb-tree__kids {
+  margin-left: 8px;
+  padding-left: 10px;
+  border-left: 1px solid var(--gdb-line);
+}
+#gereq-debug.gdb .gdb-tree__row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 4px;
+  min-width: 0;
+}
+#gereq-debug.gdb .gdb-tree__row .gdb-dump {
+  word-break: break-word;
+}
+
 #gereq-debug.gdb .gdb-bar__actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 #gereq-debug.gdb .gdb-iconbtn {
   width: 28px;
   height: 28px;
   padding: 0 !important;
-  border: 0 !important;
-  border-radius: 8px;
+  border: 1px solid transparent !important;
+  border-radius: var(--gdb-radius);
   background: transparent !important;
   color: var(--gdb-mute) !important;
   display: grid !important;
@@ -272,18 +395,26 @@ html[data-theme="gereq"] #gereq-debug.gdb {
 #gereq-debug.gdb .gdb-iconbtn:hover {
   color: var(--gdb-paper) !important;
   background: var(--gdb-fill) !important;
+  border-color: var(--gdb-line) !important;
 }
 #gereq-debug.gdb .gdb-copybtn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   height: 28px;
-  padding: 0 10px !important;
+  min-height: 28px;
+  padding: 0 12px !important;
   border: 1px solid var(--gdb-line) !important;
-  border-radius: 8px;
-  background: var(--gdb-fill-soft) !important;
-  color: var(--gdb-mute) !important;
+  border-radius: var(--gdb-radius);
+  background: var(--gdb-ink-2) !important;
+  color: var(--gdb-paper) !important;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  line-height: 1;
   white-space: nowrap;
+  cursor: pointer;
 }
 #gereq-debug.gdb .gdb-copybtn:hover {
   color: var(--gdb-paper) !important;
@@ -368,6 +499,46 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   word-break: break-word;
 }
 #gereq-debug.gdb .gdb-sql b { color: var(--gdb-accent-text); font-weight: 600; }
+#gereq-debug.gdb .gdb-alias {
+  border-bottom: 1px dotted color-mix(in srgb, var(--gdb-info) 55%, var(--gdb-line));
+  cursor: help;
+  color: var(--gdb-info);
+}
+#gereq-debug.gdb .gdb-sql-group {
+  margin: 0;
+}
+#gereq-debug.gdb .gdb-sql-group__sum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+}
+#gereq-debug.gdb .gdb-sql-group__sum::-webkit-details-marker { display: none; }
+#gereq-debug.gdb .gdb-sql-group__sum::before {
+  content: "▸";
+  color: var(--gdb-mute);
+  font-size: 11px;
+  transition: transform 0.12s ease;
+}
+#gereq-debug.gdb .gdb-sql-group[open] > .gdb-sql-group__sum::before {
+  transform: rotate(90deg);
+}
+#gereq-debug.gdb .gdb-sql-group__title {
+  font-weight: 600;
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-sql-group__meta {
+  color: var(--gdb-mute);
+  font-family: var(--gdb-mono);
+  font-size: 11px;
+}
+#gereq-debug.gdb .gdb-table--nested {
+  margin-top: 8px;
+  border-top: 1px solid var(--gdb-line);
+}
 #gereq-debug.gdb .gdb-ms { font-family: var(--gdb-mono); color: var(--gdb-mute); white-space: nowrap; }
 #gereq-debug.gdb .gdb-ms.is-slow { color: var(--gdb-warn); }
 #gereq-debug.gdb .gdb-ms.is-n1 { color: var(--gdb-err); }
@@ -379,7 +550,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   margin: 10px 14px 4px;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--gdb-warn) 45%, var(--gdb-line));
-  border-radius: 10px;
+  border-radius: var(--gdb-radius-lg);
   background: color-mix(in srgb, var(--gdb-warn) 12%, transparent);
   color: var(--gdb-paper);
 }
@@ -388,7 +559,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   display: inline-block;
   margin: 0 8px 6px 0;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--gdb-radius);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -410,7 +581,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   height: 3px;
   margin-top: 6px;
   background: var(--gdb-barline-track);
-  border-radius: 99px;
+  border-radius: var(--gdb-radius);
   overflow: hidden;
 }
 #gereq-debug.gdb .gdb-barline > i {
@@ -433,7 +604,7 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   margin: 12px 14px;
   padding: 12px 14px;
   border: 1px solid var(--gdb-line);
-  border-radius: 12px;
+  border-radius: var(--gdb-radius-lg);
   background: var(--gdb-card-bg);
 }
 #gereq-debug.gdb .gdb-card__meta {

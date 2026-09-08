@@ -16,6 +16,7 @@ use Gereq\Admin\Dashboard\Widgets\UsersStatsWidget;
 use Gereq\Admin\Http\AresController;
 use Gereq\Admin\Http\AuditController;
 use Gereq\Admin\Http\AuthController;
+use Gereq\Admin\Http\SecurityController;
 use Gereq\Admin\Http\DashboardController;
 use Gereq\Api\PublicAresController;
 use Gereq\Admin\Http\Developer\ApiTokenController;
@@ -159,6 +160,19 @@ final class CoreRegistrar
             'role' => 'required|in:admin,editor,viewer',
             'terms' => 'accepted',
         ]);
+        $this->validation->ruleset('roles.save', [
+            'name' => 'required|alpha_dash|min:2|max:80',
+            'label' => 'required|min:1|max:180',
+            'description' => 'nullable|max:2000',
+        ]);
+        $this->validation->ruleset('roles.update', [
+            'label' => 'required|min:1|max:180',
+            'description' => 'nullable|max:2000',
+        ]);
+        $this->validation->ruleset('roles.bulk', [
+            'action' => 'required|in:delete',
+            'confirmed' => 'nullable',
+        ]);
     }
 
     private function routes(): void
@@ -170,6 +184,13 @@ final class CoreRegistrar
         $this->router->group('/admin', function (Router $router): void {
             $router->get('/login', [AuthController::class, 'show'])->name('admin.login')->middleware('guest');
             $router->post('/login', [AuthController::class, 'login'])->name('admin.login.submit')->middleware('guest');
+            $router->get('/login/mfa', [AuthController::class, 'mfaShow'])->name('admin.login.mfa')->middleware('guest');
+            $router->post('/login/mfa', [AuthController::class, 'mfaVerify'])->name('admin.login.mfa.verify')->middleware('guest');
+            $router->post('/login/mfa/cancel', [AuthController::class, 'mfaCancel'])->name('admin.login.mfa.cancel')->middleware('guest');
+            $router->post('/login/mfa/passkey/options', [AuthController::class, 'mfaPasskeyOptions'])->name('admin.login.mfa.passkey.options')->middleware('guest');
+            $router->post('/login/mfa/passkey/verify', [AuthController::class, 'mfaPasskeyVerify'])->name('admin.login.mfa.passkey.verify')->middleware('guest');
+            $router->post('/login/passkey/options', [AuthController::class, 'passkeyLoginOptions'])->name('admin.login.passkey.options')->middleware('guest');
+            $router->post('/login/passkey/verify', [AuthController::class, 'passkeyLoginVerify'])->name('admin.login.passkey.verify')->middleware('guest');
             $router->post('/logout', [AuthController::class, 'logout'])->name('admin.logout')->middleware('auth');
 
             $router->get('/setup', [SetupController::class, 'show'])->name('admin.setup')->middleware('auth');
@@ -190,13 +211,20 @@ final class CoreRegistrar
             $router->get('/users', [UserController::class, 'index'])->name('admin.users.index')->middleware('auth')->permission('users.view');
             $router->get('/users/create', [UserController::class, 'create'])->name('admin.users.create')->middleware('auth')->permission('users.create');
             $router->post('/users', [UserController::class, 'store'])->name('admin.users.store')->middleware('auth')->permission('users.create');
+            $router->get('/users/roles', [RoleController::class, 'index'])->name('admin.users.roles')->middleware('auth')->permission('roles.view');
             $router->get('/users/{id}/edit', [UserController::class, 'edit'])->name('admin.users.edit')->middleware('auth')->permission('users.edit');
             $router->post('/users/{id}', [UserController::class, 'update'])->name('admin.users.update')->middleware('auth')->permission('users.edit');
+            $router->get('/users/{id}/avatar', [UserController::class, 'avatar'])->name('admin.users.avatar')->middleware('auth')->permission('users.view');
             $router->post('/users/{id}/delete', [UserController::class, 'destroy'])->name('admin.users.destroy')->middleware('auth')->permission('users.delete');
+            $router->post('/users/{id}/mfa/reset', [UserController::class, 'resetMfa'])->name('admin.users.mfa.reset')->middleware('auth')->permission('users.edit');
 
             $router->get('/roles', [RoleController::class, 'index'])->name('admin.roles.index')->middleware('auth')->permission('roles.view');
+            $router->get('/roles/create', [RoleController::class, 'create'])->name('admin.roles.create')->middleware('auth')->permission('roles.manage');
+            $router->post('/roles', [RoleController::class, 'store'])->name('admin.roles.store')->middleware('auth')->permission('roles.manage');
+            $router->post('/roles/bulk', [RoleController::class, 'bulk'])->name('admin.roles.bulk')->middleware('auth')->permission('roles.manage');
             $router->get('/roles/{id}/edit', [RoleController::class, 'edit'])->name('admin.roles.edit')->middleware('auth')->permission('roles.manage');
             $router->post('/roles/{id}', [RoleController::class, 'update'])->name('admin.roles.update')->middleware('auth')->permission('roles.manage');
+            $router->post('/roles/{id}/delete', [RoleController::class, 'destroy'])->name('admin.roles.destroy')->middleware('auth')->permission('roles.manage');
 
             $router->get('/modules', [ModuleController::class, 'index'])->name('admin.modules.index')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/bulk', [ModuleController::class, 'bulk'])->name('admin.modules.bulk')->middleware('auth')->permission('modules.manage');
@@ -212,10 +240,17 @@ final class CoreRegistrar
 
             $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth')->permission('settings.manage');
             $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth')->permission('settings.manage');
-
-            $router->get('/audit', [AuditController::class, 'index'])->name('admin.audit.index')->middleware('auth')->permission('audit.view');
+            $router->get('/settings/audit', [AuditController::class, 'index'])->name('admin.audit.index')->middleware('auth')->permission('audit.view');
+            $router->get('/audit', [AuditController::class, 'index'])->middleware('auth')->permission('audit.view');
             $router->get('/profile', [ProfileController::class, 'edit'])->name('admin.profile')->middleware('auth');
             $router->post('/profile', [ProfileController::class, 'update'])->name('admin.profile.update')->middleware('auth');
+            $router->post('/profile/mfa/totp/start', [SecurityController::class, 'totpStart'])->name('admin.profile.mfa.totp.start')->middleware('auth');
+            $router->post('/profile/mfa/totp/confirm', [SecurityController::class, 'totpConfirm'])->name('admin.profile.mfa.totp.confirm')->middleware('auth');
+            $router->post('/profile/mfa/totp/disable', [SecurityController::class, 'totpDisable'])->name('admin.profile.mfa.totp.disable')->middleware('auth');
+            $router->post('/profile/mfa/recovery', [SecurityController::class, 'recoveryRegenerate'])->name('admin.profile.mfa.recovery')->middleware('auth');
+            $router->post('/profile/passkeys/options', [SecurityController::class, 'passkeyOptions'])->name('admin.profile.passkeys.options')->middleware('auth');
+            $router->post('/profile/passkeys/register', [SecurityController::class, 'passkeyRegister'])->name('admin.profile.passkeys.register')->middleware('auth');
+            $router->post('/profile/passkeys/{id}/delete', [SecurityController::class, 'passkeyDelete'])->name('admin.profile.passkeys.delete')->middleware('auth');
 
             $router->get('/developer/api', [DeveloperController::class, 'api'])->name('admin.developer.api')->middleware('auth')->permission('developer.api.view');
             $router->get('/developer/events', [DeveloperController::class, 'events'])->name('admin.developer.events')->middleware('auth')->permission('developer.events.view');
@@ -249,23 +284,25 @@ final class CoreRegistrar
     private function menu(): void
     {
         $this->menu->add(new MenuItem(id: 'dashboard', label: 'nav.overview', icon: 'home', route: 'admin.dashboard', order: 10, group: 'Hlavní'));
-        $this->menu->add(new MenuItem(id: 'developer', label: 'nav.developer', icon: 'key', route: 'admin.developer.api', permission: 'developer.api.view', order: 70, group: 'Developer'));
-        $this->menu->add(new MenuItem(id: 'developer.api', label: 'nav.api', route: 'admin.developer.api', permission: 'developer.api.view', parent: 'developer', order: 71, group: 'Developer'));
-        $this->menu->add(new MenuItem(id: 'developer.tokens', label: 'nav.api_tokens', route: 'admin.developer.tokens.index', permission: 'developer.tokens.manage', parent: 'developer', order: 72, group: 'Developer'));
-        $this->menu->add(new MenuItem(id: 'developer.events', label: 'nav.events', route: 'admin.developer.events', permission: 'developer.events.view', parent: 'developer', order: 73, group: 'Developer'));
-        $this->menu->add(new MenuItem(id: 'users', label: 'nav.users', icon: 'users', route: 'admin.users.index', permission: 'users.view', order: 80, group: 'Systém'));
-        $this->menu->add(new MenuItem(id: 'roles', label: 'nav.roles', icon: 'shield', route: 'admin.roles.index', permission: 'roles.view', order: 81, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'developer', label: 'nav.developer', icon: 'key', route: 'admin.developer.api', permission: 'developer.api.view', order: 110, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'developer.api', label: 'nav.api', route: 'admin.developer.api', permission: 'developer.api.view', parent: 'developer', order: 10, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'developer.tokens', label: 'nav.api_tokens', route: 'admin.developer.tokens.index', permission: 'developer.tokens.manage', parent: 'developer', order: 20, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'developer.events', label: 'nav.events', route: 'admin.developer.events', permission: 'developer.events.view', parent: 'developer', order: 30, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'users', label: 'nav.users', icon: 'manage_accounts', route: 'admin.users.index', permission: 'users.view', order: 80, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'roles', label: 'nav.roles', route: 'admin.users.roles', permission: 'roles.view', parent: 'users', order: 10));
         $this->menu->add(new MenuItem(id: 'modules', label: 'nav.modules', icon: 'modules', route: 'admin.modules.index', permission: 'modules.manage', order: 90, group: 'Systém'));
-        $this->menu->add(new MenuItem(id: 'audit', label: 'nav.audit', icon: 'activity', route: 'admin.audit.index', permission: 'audit.view', order: 91, group: 'Systém'));
         $this->menu->add(new MenuItem(id: 'settings', label: 'nav.settings', icon: 'settings', route: 'admin.settings.index', permission: 'settings.manage', order: 100, group: 'Systém'));
+        $this->menu->add(new MenuItem(id: 'audit', label: 'nav.audit', icon: 'activity', route: 'admin.audit.index', permission: 'audit.view', parent: 'settings', order: 10));
     }
 
     private function commands(): void
     {
         $this->palette->add(new PaletteCommand('go-dashboard', 'palette.go_dashboard', '/admin', 'home', keywords: ['home', 'dashboard']));
         $this->palette->add(new PaletteCommand('go-users', 'palette.go_users', '/admin/users', 'users', 'users.view'));
+        $this->palette->add(new PaletteCommand('go-roles', 'palette.go_roles', '/admin/users/roles', 'shield', 'roles.view', keywords: ['role', 'opravneni', 'permissions']));
         $this->palette->add(new PaletteCommand('go-modules', 'palette.go_modules', '/admin/modules', 'modules', 'modules.manage'));
         $this->palette->add(new PaletteCommand('go-settings', 'palette.go_settings', '/admin/settings', 'settings', 'settings.manage', keywords: ['konfigurace', 'settings']));
+        $this->palette->add(new PaletteCommand('go-audit', 'palette.go_audit', '/admin/settings/audit', 'activity', 'audit.view', keywords: ['audit', 'log', 'historie']));
         $this->palette->add(new PaletteCommand('go-profile', 'palette.go_profile', '/admin/profile', 'user'));
         $this->palette->add(new PaletteCommand('logout', 'palette.logout', '/admin/logout', 'logout', group: 'Účet'));
     }
@@ -301,7 +338,7 @@ final class CoreRegistrar
             },
             permission: 'users.view',
             group: 'nav.users',
-            icon: 'users',
+            icon: 'manage_accounts',
         );
     }
 

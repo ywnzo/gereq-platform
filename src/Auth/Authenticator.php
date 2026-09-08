@@ -15,6 +15,9 @@ use Symfony\Component\HttpFoundation\Response;
 final class Authenticator
 {
     private const SESSION_KEY = 'auth.user_id';
+    private const MFA_USER_KEY = 'auth.mfa_pending_user_id';
+    private const MFA_REMEMBER_KEY = 'auth.mfa_remember';
+    private const MFA_EXPIRES_KEY = 'auth.mfa_expires';
     private const REMEMBER_COOKIE = 'gereq_remember';
 
     private ?User $user = null;
@@ -43,6 +46,13 @@ final class Authenticator
 
         if ($this->hasher->needsRehash($user->passwordHash())) {
             $user->setPasswordHash($this->hasher->hash($password));
+            $this->em->flush();
+        }
+
+        if ($user->hasMfa()) {
+            $this->beginMfaChallenge($user, $remember);
+
+            return true;
         }
 
         $this->login($user, $remember);
@@ -50,8 +60,90 @@ final class Authenticator
         return true;
     }
 
+    public function beginMfaChallenge(User $user, bool $remember = false): void
+    {
+        $session = $this->requestStack->getSession();
+        $session->migrate(true);
+        $ttl = (int) config('security.mfa_challenge_ttl', 600);
+        $session->set(self::MFA_USER_KEY, $user->id());
+        $session->set(self::MFA_REMEMBER_KEY, $remember);
+        $session->set(self::MFA_EXPIRES_KEY, time() + max(60, $ttl));
+    }
+
+    public function isMfaPending(): bool
+    {
+        return $this->pendingMfaUser() !== null;
+    }
+
+    public function pendingMfaUser(): ?User
+    {
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request === null || !$request->hasSession()) {
+            return null;
+        }
+
+        $session = $request->getSession();
+        $expires = (int) $session->get(self::MFA_EXPIRES_KEY, 0);
+        if ($expires > 0 && $expires < time()) {
+            $this->clearMfaChallenge();
+
+            return null;
+        }
+
+        $id = $session->get(self::MFA_USER_KEY);
+        if (!is_string($id) || $id === '') {
+            return null;
+        }
+
+        $user = $this->em->find(User::class, $id);
+        if (!$user instanceof User || !$user->isActive() || !$user->hasMfa()) {
+            $this->clearMfaChallenge();
+
+            return null;
+        }
+
+        return $user;
+    }
+
+    public function pendingMfaRemember(): bool
+    {
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request === null || !$request->hasSession()) {
+            return false;
+        }
+
+        return (bool) $request->getSession()->get(self::MFA_REMEMBER_KEY, false);
+    }
+
+    public function completeMfaLogin(?bool $remember = null): void
+    {
+        $user = $this->pendingMfaUser();
+        if (!$user instanceof User) {
+            throw new \RuntimeException('No MFA challenge in progress.');
+        }
+
+        $remember ??= $this->pendingMfaRemember();
+        $this->clearMfaChallenge();
+        $this->login($user, $remember);
+        $this->auditor->log('auth.mfa_verified', 'user', $user->id());
+    }
+
+    public function clearMfaChallenge(): void
+    {
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request === null || !$request->hasSession()) {
+            return;
+        }
+
+        $session = $request->getSession();
+        $session->remove(self::MFA_USER_KEY);
+        $session->remove(self::MFA_REMEMBER_KEY);
+        $session->remove(self::MFA_EXPIRES_KEY);
+    }
+
     public function login(User $user, bool $remember = false): void
     {
+        $this->clearMfaChallenge();
         $session = $this->requestStack->getSession();
         $session->migrate(true);
         $session->set(self::SESSION_KEY, $user->id());
@@ -72,6 +164,7 @@ final class Authenticator
         $user = $this->user();
         $session = $this->requestStack->getSession();
         $session->remove(self::SESSION_KEY);
+        $this->clearMfaChallenge();
         $session->migrate(true);
         $this->user = null;
 

@@ -1,36 +1,145 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.users'|trans, url: url('admin.users.index') },
+        { label: 'nav.roles'|trans },
+    ] } %}
+{% endblock %}
+
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="admin-roles" data-actions-default="1">
+{% set pageIds = roles|filter(r => not r.isPrivileged())|map(r => r.id()) %}
+{% set canManage = user.can('roles.manage') %}
+<div
+    class="list-shell list-shell--tabs"
+    x-data="dataTable"
+    data-table-id="admin-roles"
+    data-actions-default="2"
+    data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
+    data-bulk-delete-confirm="{{ 'admin.roles.bulk.confirm_delete'|trans|e('html_attr') }}"
+>
     <header class="page-header">
-        <h1>{{ 'admin.roles.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'admin.users.title'|trans }}</h1>
+            <p class="muted">{{ 'admin.users.hub.hint'|trans }}</p>
+        </div>
+        {% if canManage %}
+            <div class="actions">
+                <a class="btn btn--primary" href="{{ url('admin.roles.create') }}">{{ icon('plus') }} {{ 'admin.roles.new'|trans }}</a>
+            </div>
+        {% endif %}
     </header>
 
+    {% include 'admin/users/_hub_tabs.html.twig' with { active: 'roles' } %}
+
     <div class="toolbar--table">
-        <div class="toolbar"></div>
+        <form class="toolbar" method="get" action="{{ url('admin.users.roles') }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.roles.search'|trans }}">
+        </form>
     </div>
+
+    {% if canManage and roles is not empty %}
+        <form
+            class="bulk-bar"
+            method="post"
+            action="{{ url('admin.roles.bulk') }}"
+            x-show="selectedCount > 0"
+            x-cloak
+            @submit="confirmBulk"
+        >
+            {{ csrf_field()|raw }}
+            <input type="hidden" name="confirmed" value="1">
+            <template x-for="id in selected" :key="id">
+                <input type="hidden" name="ids[]" :value="id">
+            </template>
+            <div class="bulk-bar__meta">
+                <strong x-text="selectedCount"></strong>
+                <span>{{ 'admin.roles.bulk.selected'|trans }}</span>
+                <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'admin.roles.bulk.clear'|trans }}</button>
+            </div>
+            <div class="bulk-bar__actions">
+                <select class="input" name="action" x-model="bulkAction" required>
+                    <option value="">{{ 'admin.roles.bulk.choose'|trans }}</option>
+                    <option value="delete">{{ 'admin.roles.bulk.action.delete'|trans }}</option>
+                </select>
+                <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'admin.roles.bulk.apply'|trans }}</button>
+            </div>
+        </form>
+    {% endif %}
 
     <div class="table-wrap" data-table>
         <table class="table">
             <thead>
                 <tr>
+                    {% if canManage %}
+                        <th class="table__check">
+                            <label class="table-check">
+                                <input type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected">
+                                <span class="sr-only">{{ 'admin.roles.bulk.select_all'|trans }}</span>
+                            </label>
+                        </th>
+                    {% endif %}
                     <th>{{ 'common.role'|trans }}</th>
                     <th>{{ 'common.description'|trans }}</th>
+                    <th>{{ 'admin.roles.users'|trans }}</th>
                     <th class="table__actions-head"></th>
                 </tr>
             </thead>
             <tbody>
                 {% for role in roles %}
-                    <tr>
-                        <td>{{ role.label() }}</td>
-                        <td class="muted">{{ role.description() }}</td>
+                    <tr :class="isSelected('{{ role.id() }}') ? 'is-selected' : ''">
+                        {% if canManage %}
+                            <td class="table__check">
+                                {% if not role.isPrivileged() %}
+                                    <label class="table-check">
+                                        <input
+                                            type="checkbox"
+                                            value="{{ role.id() }}"
+                                            @change="toggleId('{{ role.id() }}')"
+                                            :checked="isSelected('{{ role.id() }}')"
+                                        >
+                                        <span class="sr-only">{{ role.label() }}</span>
+                                    </label>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                        <td>
+                            <div class="table__title">
+                                <strong>{{ role.label() }}</strong>
+                                <span class="muted"><code>{{ role.name() }}</code></span>
+                            </div>
+                        </td>
+                        <td class="muted">{{ role.description() ?: '—' }}</td>
+                        <td>{{ role.users()|length }}</td>
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
-                                {% if user.can('roles.manage') %}
-                                    <a href="{{ url('admin.roles.edit', {id: role.id()}) }}">{{ 'admin.roles.permissions'|trans }}</a>
+                                {% if canManage %}
+                                    {% include 'ui/row_action.html.twig' with {
+                                        href: url('admin.roles.edit', {id: role.id()}),
+                                        label: 'common.edit'|trans,
+                                        icon: 'edit'
+                                    } %}
+                                    {% if not role.isPrivileged() %}
+                                        {% include 'ui/row_action_destroy.html.twig' with {
+                                            action: url('admin.roles.destroy', {id: role.id()}),
+                                            confirm: 'admin.roles.confirm_delete'|trans
+                                        } %}
+                                    {% else %}
+                                        {% include 'ui/row_action.html.twig' with { placeholder: true, icon: 'trash' } %}
+                                    {% endif %}
                                 {% endif %}
                             {% endblock %}
                         {% endembed %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="{{ canManage ? 5 : 4 }}">
+                            <div class="empty">
+                                <h2>{{ 'admin.roles.empty'|trans }}</h2>
+                                <p>{{ 'admin.roles.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

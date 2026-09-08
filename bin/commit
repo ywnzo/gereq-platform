@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# GEREQ — commit bez Co-authored-by (Cursor ani jiné trailery).
+#
+# Použití:
+#   bin/commit "feat: krátký popis"
+#   bin/commit -m "fix: …"
+#   bin/commit -a -m "chore: …"     # stage tracked změn (git commit -a)
+#   bin/commit --all -m "…"         # git add -A před commitem
+#   bin/commit --install-hooks      # jen nastaví core.hooksPath=.githooks
+#
+# Message se vyčistí od Co-authored-by; hook to hlídá i u běžného `git commit`.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+HOOKS_DIR="$ROOT/.githooks"
+
+die() { printf 'bin/commit: %s\n' "$*" >&2; exit 1; }
+
+ensure_hooks() {
+  [[ -d "$HOOKS_DIR" ]] || die "chybí $HOOKS_DIR"
+  chmod +x "$HOOKS_DIR/commit-msg" 2>/dev/null || true
+  local current
+  current="$(git config --local --get core.hooksPath 2>/dev/null || true)"
+  if [[ "$current" != ".githooks" && "$current" != "$HOOKS_DIR" ]]; then
+    git config --local core.hooksPath .githooks
+    printf 'Nastaveno core.hooksPath=.githooks\n'
+  fi
+}
+
+strip_coauthors() {
+  awk '
+    tolower($0) ~ /^[[:space:]]*co-authored-by:/ { next }
+    { lines[++n] = $0 }
+    END {
+      while (n > 0 && lines[n] ~ /^[[:space:]]*$/) n--
+      for (i = 1; i <= n; i++) print lines[i]
+    }
+  '
+}
+
+usage() {
+  cat <<'EOF'
+Použití:
+  bin/commit [-a|--all] [-m MSG | MSG...]
+  bin/commit --install-hooks
+
+  -a               git commit -a (tracked změny)
+  --all            git add -A před commitem
+  -m MSG           commit message
+  --install-hooks  zapne .githooks (strip Co-authored-by)
+EOF
+}
+
+STAGE_ALL=0
+COMMIT_ALL=0
+INSTALL_ONLY=0
+MSG=""
+PASS_THROUGH=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --install-hooks)
+      INSTALL_ONLY=1
+      shift
+      ;;
+    --all)
+      STAGE_ALL=1
+      shift
+      ;;
+    -a)
+      COMMIT_ALL=1
+      shift
+      ;;
+    -m)
+      [[ $# -ge 2 ]] || die "chybí argument u -m"
+      MSG="$2"
+      shift 2
+      ;;
+    --)
+      shift
+      PASS_THROUGH+=("$@")
+      break
+      ;;
+    -*)
+      PASS_THROUGH+=("$1")
+      shift
+      ;;
+    *)
+      if [[ -z "$MSG" ]]; then
+        MSG="$1"
+      else
+        MSG="$MSG $1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+ensure_hooks
+
+if [[ "$INSTALL_ONLY" -eq 1 ]]; then
+  printf 'Hooks OK.\n'
+  exit 0
+fi
+
+[[ -n "$MSG" ]] || die "zadej commit message (bin/commit \"msg\" nebo -m \"msg\")"
+
+MSG="$(printf '%s\n' "$MSG" | strip_coauthors)"
+[[ -n "$MSG" ]] || die "message je prázdná po odstranění Co-authored-by"
+
+if [[ "$STAGE_ALL" -eq 1 ]]; then
+  git add -A
+fi
+
+args=(commit)
+[[ "$COMMIT_ALL" -eq 1 ]] && args+=(-a)
+
+# HEREDOC → žádný Cursor trailer v -m z agenta; hook ještě jednou vyčistí
+msg_file="$(mktemp)"
+trap 'rm -f "$msg_file"' EXIT
+printf '%s\n' "$MSG" > "$msg_file"
+args+=(-F "$msg_file")
+args+=("${PASS_THROUGH[@]+"${PASS_THROUGH[@]}"}")
+
+git "${args[@]}"
+
+printf 'Commit: %s\n' "$(git log -1 --oneline)"

@@ -1,13 +1,27 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.users'|trans },
+    ] } %}
+{% endblock %}
+
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="admin-users" data-actions-default="1">
+<div class="list-shell list-shell--tabs" x-data="dataTable" data-table-id="admin-users" data-actions-default="1">
     <header class="page-header">
-        <h1>{{ 'admin.users.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'admin.users.title'|trans }}</h1>
+            <p class="muted">{{ 'admin.users.hub.hint'|trans }}</p>
+        </div>
         {% if user.can('users.create') %}
-            <a class="btn btn--primary" href="{{ url('admin.users.create') }}">{{ icon('plus') }} {{ 'admin.users.new'|trans }}</a>
+            <div class="actions">
+                <a class="btn btn--primary" href="{{ url('admin.users.create') }}">{{ icon('plus') }} {{ 'admin.users.new'|trans }}</a>
+            </div>
         {% endif %}
     </header>
+
+    {% include 'admin/users/_hub_tabs.html.twig' with { active: 'users' } %}
 
     <div class="toolbar--table">
         <form class="toolbar" method="get">
@@ -31,8 +45,17 @@
                     <tr>
                         <td>
                             <div class="cell-user">
-                                <span class="avatar avatar--sm">{{ item.initials() }}</span>
-                                {{ item.name() }}
+                                {% if item.avatarFileId() %}
+                                    <img class="avatar avatar--sm" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="">
+                                {% else %}
+                                    <span class="avatar avatar--sm">{{ item.initials() }}</span>
+                                {% endif %}
+                                <span class="cell-user__text">
+                                    <strong>{{ item.name() }}</strong>
+                                    {% if item.phone() %}
+                                        <small class="muted">{{ item.phone() }}</small>
+                                    {% endif %}
+                                </span>
                             </div>
                         </td>
                         <td>{{ item.email() }}</td>

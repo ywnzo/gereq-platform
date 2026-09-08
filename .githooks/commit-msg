@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Odstraní všechny Co-authored-by trailery z commit message.
+set -euo pipefail
+
+MSG_FILE="${1:-}"
+[[ -n "$MSG_FILE" && -f "$MSG_FILE" ]] || exit 0
+
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+
+awk '
+  tolower($0) ~ /^[[:space:]]*co-authored-by:/ { next }
+  { lines[++n] = $0 }
+  END {
+    while (n > 0 && lines[n] ~ /^[[:space:]]*$/) n--
+    for (i = 1; i <= n; i++) print lines[i]
+  }
+' "$MSG_FILE" > "$tmp"
+
+mv "$tmp" "$MSG_FILE"
+trap - EXIT

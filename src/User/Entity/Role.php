@@ -92,6 +92,12 @@ class Role
         return $this->permissions;
     }
 
+    /** @return Collection<int, User> */
+    public function users(): Collection
+    {
+        return $this->users;
+    }
+
     public function givePermission(Permission $permission): void
     {
         if (!$this->permissions->contains($permission)) {

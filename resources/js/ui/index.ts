@@ -30,6 +30,8 @@ import { registerCarserviceFinishWizard } from '../../../modules/CarService/Reso
 import { registerEsignSignaturePad } from '../../../modules/ESign/Resources/assets/js/signaturePad';
 import { registerPortalForm } from '../../../modules/Portals/Resources/assets/js/portalForm';
 
+import { registerWebauthn } from './webauthn';
+
 export function registerUi(alpine: typeof Alpine): void {
     registerPageProgress();
     registerSelect(alpine);
@@ -45,6 +47,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerForm(alpine);
     registerEditor(alpine);
     registerTabs(alpine);
+    registerWebauthn(alpine);
     registerSettingsBrandPreview(alpine);
     registerColorField(alpine);
     registerBrandAsset(alpine);

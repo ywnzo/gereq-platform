@@ -1,0 +1,43 @@
+{% extends 'auth/layout.html.twig' %}
+
+{% block content %}
+    <h1>{{ 'auth.mfa.title'|trans }}</h1>
+    <p class="muted">{{ 'auth.mfa.subtitle'|trans({'%email%': user.email()}) }}</p>
+
+    <div
+        class="auth-mfa"
+        x-data="gereqMfaChallenge"
+        data-passkey-enabled="{{ passkeyEnabled ? '1' : '0' }}"
+        data-options-url="{{ passkeyOptionsUrl|e('html_attr') }}"
+        data-verify-url="{{ passkeyVerifyUrl|e('html_attr') }}"
+        data-label-waiting="{{ 'auth.passkey.waiting'|trans|e('html_attr') }}"
+        data-label-passkey="{{ 'auth.mfa.passkey'|trans|e('html_attr') }}"
+    >
+        {% if totpEnabled %}
+            <form method="post" action="{{ url('admin.login.mfa.verify') }}" class="stack">
+                {{ csrf_field()|raw }}
+                <label class="field">
+                    <span>{{ 'auth.mfa.code'|trans }}</span>
+                    <input class="input" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus placeholder="000000">
+                </label>
+                <p class="muted auth-mfa__hint">{{ 'auth.mfa.code_hint'|trans }}</p>
+                <button type="submit" class="btn btn--primary btn--block">{{ 'auth.mfa.verify'|trans }}</button>
+            </form>
+        {% endif %}
+
+        {% if passkeyEnabled %}
+            <div class="auth-mfa__divider" x-show="passkeyEnabled"><span>{{ 'auth.mfa.or'|trans }}</span></div>
+            <button type="button" class="btn btn--ghost btn--block" @click="usePasskey()" :disabled="busy">
+                <span class="material-symbols-outlined" aria-hidden="true">fingerprint</span>
+                <span x-text="passkeyButtonLabel()"></span>
+            </button>
+        {% endif %}
+
+        <p class="muted" x-show="error" x-text="error" x-cloak></p>
+
+        <form method="post" action="{{ url('admin.login.mfa.cancel') }}" class="auth-mfa__cancel">
+            {{ csrf_field()|raw }}
+            <button type="submit" class="text-link">{{ 'auth.mfa.cancel'|trans }}</button>
+        </form>
+    </div>
+{% endblock %}

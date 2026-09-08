@@ -1,8 +1,9 @@
 {% set name = name|default('file') %}
 {% set id = id|default('f-' ~ name) %}
 {% set label = label|default('ui.file.label'|trans) %}
-{% set hint = hint|default('ui.file.hint'|trans) %}
-{% set title = title|default('ui.file.drop'|trans) %}
+{% set compact = compact|default(false) %}
+{% set hint = hint|default(compact ? '' : 'ui.file.hint'|trans) %}
+{% set title = title|default(compact ? 'ui.file.drop_compact'|trans : 'ui.file.drop'|trans) %}
 {% set extra = extra|default('') %}
 {% set form = form|default(null) %}
 {% set err = error(name, form) %}
@@ -11,7 +12,6 @@
 {% set accept = accept|default('') %}
 {% set multiple = multiple|default(false) %}
 {% set capture = capture|default('') %}
-{% set compact = compact|default(false) %}
 {% set described = [] %}
 {% if hint and not err %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
 {% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
@@ -25,6 +25,7 @@
     <div
         class="g-file{% if compact %} g-file--compact{% endif %}"
         x-data="gereqFile"
+        data-compact="{{ compact ? '1' : '0' }}"
         data-drop-title="{{ title|e('html_attr') }}"
         data-drop-hint="{{ hint|e('html_attr') }}"
     >
@@ -41,14 +42,16 @@
             {% if err %}aria-invalid="true"{% endif %}
             {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
         >
-        <div class="g-file__shell" :class="boxClass">
+        <div class="g-file__shell" :class="boxClass" :title="shellTitle">
             <label class="g-file__box" for="{{ id }}">
                 <span class="g-file__icon" aria-hidden="true">{{ icon(compact ? 'upload' : 'cloud-upload') }}</span>
                 <span class="g-file__copy">
                     <span class="g-file__title" x-text="titleText">{{ title }}</span>
-                    <span class="g-file__meta" x-text="metaText">{{ hint }}</span>
+                    {% if not compact %}
+                        <span class="g-file__meta" x-text="metaText" x-show="showMeta" x-cloak>{{ hint }}</span>
+                    {% endif %}
                 </span>
-                <span class="g-file__browse">{{ 'ui.file.browse'|trans }}</span>
+                <span class="g-file__browse" x-show="showBrowse">{{ 'ui.file.browse'|trans }}</span>
             </label>
             <button
                 type="button"
@@ -61,6 +64,9 @@
             >{{ icon('close') }}</button>
         </div>
     </div>
+    {% if hint and compact %}
+        <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
+    {% endif %}
     {% if err %}
         <p class="g-error" id="{{ id }}-error">{{ err }}</p>
     {% endif %}

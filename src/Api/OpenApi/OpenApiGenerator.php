@@ -6,6 +6,7 @@ namespace Gereq\Api\OpenApi;
 
 use Gereq\Api\ApiRegistry;
 use Gereq\Config\Repository;
+use Gereq\Support\AppVersion;
 
 final class OpenApiGenerator
 {
@@ -42,7 +43,7 @@ final class OpenApiGenerator
             'openapi' => '3.1.0',
             'info' => [
                 'title' => 'GEREQ Platform API',
-                'version' => (string) $this->config->get('app.version', '0.1.0'),
+                'version' => (string) $this->config->get('app.version', AppVersion::DEFAULT),
             ],
             'servers' => [
                 ['url' => (string) $this->config->get('app.url', '')],

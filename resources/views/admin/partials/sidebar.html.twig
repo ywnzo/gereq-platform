@@ -6,35 +6,52 @@
         </button>
     </div>
 
-    <div class="sidebar__search">
-        <button type="button" class="sidebar__search-btn" @click="openPalette">
-            <span class="sidebar__search-icon" aria-hidden="true">{{ icon('search') }}</span>
-            <span class="sidebar__search-label">{{ 'common.search'|trans }}</span>
-            <kbd>⌘K</kbd>
-        </button>
-    </div>
+    {% set pinnedGroups = ['Systém'] %}
 
     <nav class="sidebar__nav" aria-label="{{ 'ui.main_menu'|trans }}">
-        {% set lastGroup = '' %}
-        {% for node in menu %}
-            {% set menuItem = node.item %}
-            {% set group = menuItem.group|default('Hlavní') %}
-            {% set active = menuItem.route is not null and route_is(menuItem.route) %}
-            {% set childActive = false %}
-            {% for child in node.children %}
-                {% if child.route and route_is(child.route) %}
-                    {% set childActive = true %}
-                {% endif %}
-            {% endfor %}
-
-            {% if group != lastGroup %}
-                {% if lastGroup != '' %}
+        {% for section in menu %}
+            {% if section.group not in pinnedGroups %}
+                {% if section.group %}
+                    <div
+                        class="nav-group"
+                        data-group="{{ section.group|e('html_attr') }}"
+                        x-data="navGroup"
+                        :class="open ? 'is-open' : 'is-closed'"
+                    >
+                        <button
+                            type="button"
+                            class="nav-group__head"
+                            @click="toggle"
+                            :aria-expanded="expandedAttr"
+                        >
+                            <span class="nav-group__label">{{ section.group|trans }}</span>
+                            <span class="nav-group__chevron" :class="chevronClass" aria-hidden="true">{{ icon('chevron-down') }}</span>
+                        </button>
+                        <div class="nav-group__body">
+                            <div class="nav-group__items">
+                                {% for node in section.nodes %}
+                                    {% include 'admin/partials/sidebar_nav_node.html.twig' with { node: node } only %}
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
+                {% else %}
+                    <div class="nav-ungrouped">
+                        {% for node in section.nodes %}
+                            {% include 'admin/partials/sidebar_nav_node.html.twig' with { node: node } only %}
+                        {% endfor %}
+                    </div>
                 {% endif %}
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    <div class="sidebar__pin">
+        {% for section in menu %}
+            {% if section.group in pinnedGroups %}
                 <div
-                    class="nav-group"
-                    data-group="{{ group|e('html_attr') }}"
+                    class="nav-group nav-group--pinned"
+                    data-group="{{ section.group|e('html_attr') }}"
                     x-data="navGroup"
                     :class="open ? 'is-open' : 'is-closed'"
                 >
@@ -44,90 +61,26 @@
                         @click="toggle"
                         :aria-expanded="expandedAttr"
                     >
-                        <span class="nav-group__label">{{ group|trans }}</span>
+                        <span class="nav-group__label">{{ section.group|trans }}</span>
                         <span class="nav-group__chevron" :class="chevronClass" aria-hidden="true">{{ icon('chevron-down') }}</span>
                     </button>
                     <div class="nav-group__body">
                         <div class="nav-group__items">
-                {% set lastGroup = group %}
-            {% endif %}
-
-            {% if node.children|length > 0 %}
-                <div
-                    class="nav-tree{% if active or childActive %} is-current{% endif %}"
-                    data-tree-id="{{ menuItem.id|e('html_attr') }}"
-                    data-default-open="{{ (active or childActive) ? '1' : '0' }}"
-                    x-data="navTree"
-                    :class="open ? 'is-open' : ''"
-                >
-                    <div class="nav-tree__row">
-                        <a
-                            href="{{ node.url }}"
-                            class="nav-item{% if active %} is-active{% elseif childActive %} is-branch{% endif %}"
-                            title="{{ menuItem.label|trans }}"
-                        >
-                            <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
-                            <span class="nav-item__label">{{ menuItem.label|trans }}</span>
-                            {% if menuItem.badge %}
-                                <span class="nav-item__badge">{{ menuItem.badge|raw }}</span>
-                            {% endif %}
-                        </a>
-                        <button
-                            type="button"
-                            class="nav-tree__expand"
-                            @click.stop="toggle"
-                            :aria-expanded="expandedAttr"
-                            aria-label="{{ 'ui.toggle_submenu'|trans({ '%label%': menuItem.label|trans }) }}"
-                        >
-                            <span class="nav-tree__chevron" :class="chevronClass" aria-hidden="true">{{ icon('chevron-down') }}</span>
-                        </button>
-                    </div>
-                    <div class="nav-tree__panel">
-                        <div class="nav-tree__children" role="group" aria-label="{{ menuItem.label|trans }}">
-                            {% for child in node.children %}
-                                {% set childUrl = child.route ? url(child.route) : (child.url|default('#')) %}
-                                {% set childIsActive = child.route and route_is(child.route) %}
-                                <a
-                                    href="{{ childUrl }}"
-                                    class="nav-item nav-item--child{% if childIsActive %} is-active{% endif %}"
-                                    title="{{ child.label|trans }}"
-                                >
-                                    <span class="nav-item__rail" aria-hidden="true"></span>
-                                    <span class="nav-item__label">{{ child.label|trans }}</span>
-                                    {% if child.badge %}
-                                        <span class="nav-item__badge">{{ child.badge|raw }}</span>
-                                    {% endif %}
-                                </a>
+                            {% for node in section.nodes %}
+                                {% include 'admin/partials/sidebar_nav_node.html.twig' with { node: node } only %}
                             {% endfor %}
                         </div>
                     </div>
                 </div>
-            {% else %}
-                <a
-                    href="{{ node.url }}"
-                    class="nav-item{% if active %} is-active{% endif %}"
-                    title="{{ menuItem.label|trans }}"
-                >
-                    <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
-                    <span class="nav-item__label">{{ menuItem.label|trans }}</span>
-                    {% if menuItem.badge %}
-                        <span class="nav-item__badge">{{ menuItem.badge|raw }}</span>
-                    {% endif %}
-                </a>
             {% endif %}
         {% endfor %}
-        {% if lastGroup != '' %}
-                        </div>
-                    </div>
-                </div>
-        {% endif %}
-    </nav>
+    </div>
 
     <div class="sidebar__footer">
         <div class="sidebar__chip">
             <span class="sidebar__chip-dot" aria-hidden="true"></span>
             <span class="sidebar__env">{{ app_env() }}</span>
         </div>
-        <span class="sidebar__ver">{{ brand('name') }}</span>
+        <span class="sidebar__ver" title="{{ brand('name') }}">v{{ app_version() }}</span>
     </div>
 </aside>

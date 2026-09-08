@@ -44,6 +44,19 @@ export function registerSwitch(alpine: typeof Alpine): void {
             }
         },
     }));
+
+    /** Checkbox „stejné jako…“ — CSP-safe náhrada za x-data="{ same: … }". */
+    alpine.data('gereqSameAs', () => ({
+        same: false,
+
+        init() {
+            this.same = (this.$el as HTMLElement).dataset.on === '1';
+        },
+
+        get shippingVisible(): boolean {
+            return !this.same;
+        },
+    }));
 }
 
 /** Row publish / active / featured toggle (POST + CSRF, no full reload). */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Console\Command;
 
 use Gereq\Module\ModuleManager;
+use Gereq\Support\AppVersion;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +21,7 @@ final class AboutCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('GEREQ Platform ' . config('app.version', '0.1.0'));
+        $output->writeln('GEREQ Platform ' . config('app.version', AppVersion::DEFAULT));
         $output->writeln('Interní modulární backendová platforma');
         $output->writeln('');
         $output->writeln('PHP        ' . PHP_VERSION);

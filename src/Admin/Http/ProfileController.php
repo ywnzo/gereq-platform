@@ -9,6 +9,7 @@ use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
+use Gereq\Auth\PasskeyService;
 use Gereq\Auth\PasswordHasher;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
@@ -36,15 +37,38 @@ final class ProfileController extends Controller
         private readonly LocaleCatalog $locales,
         private readonly TranslatorInterface $translator,
         private readonly HookManager $hooks,
+        private readonly PasskeyService $passkeys,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
 
     public function edit(): Response
     {
+        $user = $this->auth->user();
+        $passkeyRows = [];
+        if ($user instanceof User) {
+            foreach ($this->passkeys->credentialsFor($user) as $credential) {
+                $passkeyRows[] = [
+                    'id' => $credential->id(),
+                    'name' => $credential->name(),
+                    'created_at' => $credential->createdAt()->format('d.m.Y H:i'),
+                ];
+            }
+        }
+
         return $this->page('admin/profile.html.twig', [
             'pageTitle' => $this->translator->trans('profile.title'),
             'locales' => $this->locales->all(),
+            'passkeys' => $passkeyRows,
+            'securityUrls' => [
+                'totpStart' => $this->router->url('admin.profile.mfa.totp.start', [], $this->request()),
+                'totpConfirm' => $this->router->url('admin.profile.mfa.totp.confirm', [], $this->request()),
+                'totpDisable' => $this->router->url('admin.profile.mfa.totp.disable', [], $this->request()),
+                'recovery' => $this->router->url('admin.profile.mfa.recovery', [], $this->request()),
+                'passkeyOptions' => $this->router->url('admin.profile.passkeys.options', [], $this->request()),
+                'passkeyRegister' => $this->router->url('admin.profile.passkeys.register', [], $this->request()),
+                'passkeyDelete' => $this->router->url('admin.profile.passkeys.delete', ['id' => '__ID__'], $this->request()),
+            ],
         ]);
     }
 

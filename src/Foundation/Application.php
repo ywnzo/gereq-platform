@@ -200,7 +200,9 @@ final class Application
 
             // Autowire with scalar constructor params
             Renderer::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            DebugBar::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            DebugBar::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath)
+                ->constructorParameter('auth', \DI\get(\Gereq\Auth\Authenticator::class)),
             TranslatorFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             TwigFactory::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath)

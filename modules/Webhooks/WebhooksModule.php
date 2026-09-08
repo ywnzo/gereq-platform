@@ -108,16 +108,18 @@ final class WebhooksModule implements ModuleInterface
             icon: 'zap',
             route: 'admin.developer.webhooks.index',
             permission: 'webhooks.view',
-            order: 72,
-            group: 'Developer',
+            parent: 'developer',
+            order: 40,
+            group: 'Systém',
         ));
         $context->menu()->add(new MenuItem(
             id: 'developer.webhook-deliveries',
             label: 'nav.webhook_deliveries',
             route: 'admin.developer.webhook-deliveries.index',
             permission: 'webhooks.view',
-            order: 73,
-            group: 'Developer',
+            parent: 'developer',
+            order: 50,
+            group: 'Systém',
         ));
         $context->menu()->add(new MenuItem(
             id: 'developer.webhooks.create',
@@ -125,7 +127,7 @@ final class WebhooksModule implements ModuleInterface
             route: 'admin.developer.webhooks.create',
             permission: 'webhooks.manage',
             parent: 'developer.webhooks',
-            order: 74,
+            order: 10,
             hidden: true,
         ));
 

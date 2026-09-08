@@ -1,0 +1,25 @@
+{#
+  Shared Users ↔ Roles hub tabs.
+  {% include 'admin/users/_hub_tabs.html.twig' with { active: 'users' } %}
+#}
+{% set active = active|default('users') %}
+<nav class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.users.hub'|trans }}">
+    {% if user.can('users.view') %}
+        <a
+            class="design-tab{{ active == 'users' ? ' is-active' : '' }}"
+            role="tab"
+            href="{{ url('admin.users.index') }}"
+            aria-selected="{{ active == 'users' ? 'true' : 'false' }}"
+            style="text-decoration:none"
+        >{{ 'nav.users'|trans }}</a>
+    {% endif %}
+    {% if user.can('roles.view') %}
+        <a
+            class="design-tab{{ active == 'roles' ? ' is-active' : '' }}"
+            role="tab"
+            href="{{ url('admin.users.roles') }}"
+            aria-selected="{{ active == 'roles' ? 'true' : 'false' }}"
+            style="text-decoration:none"
+        >{{ 'nav.roles'|trans }}</a>
+    {% endif %}
+</nav>

@@ -23,6 +23,7 @@ use Gereq\Console\Command\ServeCommand;
 use Gereq\Console\Command\ServeDockerCommand;
 use Gereq\Console\Command\TwigTypesCommand;
 use Gereq\Console\Command\UserCreateCommand;
+use Gereq\Support\AppVersion;
 use Modules\Currency\Console\SyncRatesCommand;
 use Modules\CustomerUploads\Console\PurgeUploadsCommand;
 use Modules\PartsCatalog\Console\SyncJamaCatalogCommand;
@@ -41,7 +42,7 @@ final class ConsoleKernel
 
     public function run(): int
     {
-        $console = new ConsoleApplication('GEREQ Platform', (string) config('app.version', '0.1.0'));
+        $console = new ConsoleApplication('GEREQ Platform', (string) config('app.version', AppVersion::DEFAULT));
         $console->setAutoExit(false);
 
         foreach ($this->commands() as $class) {

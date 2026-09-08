@@ -9,12 +9,16 @@ use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
+use Gereq\Auth\PasskeyService;
 use Gereq\Auth\PasswordHasher;
+use Gereq\File\FileManager;
+use Gereq\File\StoredFile;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\User\Entity\Role;
 use Gereq\User\Entity\User;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,6 +39,8 @@ final class UserController extends Controller
         private readonly Auditor $auditor,
         private readonly TranslatorInterface $translator,
         private readonly HookManager $hooks,
+        private readonly FileManager $files,
+        private readonly PasskeyService $passkeys,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -42,8 +48,12 @@ final class UserController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->query->get('q', ''));
-        $qb = $this->em->getRepository(User::class)->createQueryBuilder('u')->orderBy('u.name', 'ASC');
-        self_repair_search($qb, 'u', ['name', 'email'], $search);
+        $qb = $this->em->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->leftJoin('u.roles', 'r')
+            ->addSelect('r')
+            ->orderBy('u.name', 'ASC');
+        self_repair_search($qb, 'u', ['name', 'firstName', 'lastName', 'email', 'phone'], $search);
 
         $users = $qb->getQuery()->getResult();
 
@@ -60,16 +70,19 @@ final class UserController extends Controller
             'pageTitle' => $this->translator->trans('admin.users.new'),
             'item' => null,
             'roles' => $this->em->getRepository(Role::class)->findBy([], ['label' => 'ASC']),
+            'activeTab' => 'profile',
         ]);
     }
 
     public function store(Request $request): Response
     {
-        $name = trim((string) $request->request->get('name'));
         $email = strtolower(trim((string) $request->request->get('email')));
         $password = (string) $request->request->get('password');
+        $firstName = trim((string) $request->request->get('first_name'));
+        $lastName = trim((string) $request->request->get('last_name'));
+        $displayName = trim($firstName . ' ' . $lastName);
 
-        if ($name === '' || $email === '' || strlen($password) < 10) {
+        if ($displayName === '' || $email === '' || strlen($password) < 10) {
             $this->flash('error', $this->translator->trans('admin.users.validation'));
 
             return $this->redirect('admin.users.create');
@@ -81,48 +94,65 @@ final class UserController extends Controller
             return $this->redirect('admin.users.create');
         }
 
-        $user = new User($name, $email, $this->hasher->hash($password));
+        $user = new User($displayName, $email, $this->hasher->hash($password));
+        $this->applyProfile($user, $request);
         $this->assignRoles($user, $request->request->all('roles') ?: []);
+        $this->storeAvatar($request, $user);
         $this->em->persist($user);
         $this->hooks->doAction('admin.users.saving', $user, $request);
         $this->em->flush();
         $this->auditor->log('user.created', 'user', $user->id(), null, ['email' => $email]);
         $this->flash('success', $this->translator->trans('admin.users.created'));
 
-        return $this->redirect('admin.users.index');
+        return $this->redirect('admin.users.edit', ['id' => $user->id()]);
     }
 
-    public function edit(string $id): Response
+    public function edit(Request $request, string $id): Response
     {
-        $user = $this->em->find(User::class, $id);
-        if (!$user instanceof User) {
-            $this->abort(404, $this->translator->trans('admin.users.not_found'));
-        }
+        $user = $this->findUser($id);
 
         return $this->page('admin/users/form.html.twig', [
             'pageTitle' => $this->translator->trans('admin.users.edit'),
             'item' => $user,
             'roles' => $this->em->getRepository(Role::class)->findBy([], ['label' => 'ASC']),
+            'activeTab' => (string) $request->query->get('tab', 'profile'),
+            'passkeys' => $this->passkeys->credentialsFor($user),
         ]);
     }
 
     public function update(Request $request, string $id): Response
     {
-        $user = $this->em->find(User::class, $id);
-        if (!$user instanceof User) {
-            $this->abort(404, $this->translator->trans('admin.users.not_found'));
+        $user = $this->findUser($id);
+
+        $old = [
+            'name' => $user->name(),
+            'email' => $user->email(),
+            'status' => $user->status(),
+        ];
+        $email = strtolower(trim((string) $request->request->get('email')));
+        if ($email === '') {
+            $this->flash('error', $this->translator->trans('admin.users.validation'));
+
+            return $this->redirect('admin.users.edit', ['id' => $id]);
         }
 
-        $old = ['name' => $user->name(), 'email' => $user->email(), 'status' => $user->status()];
-        $user->setName(trim((string) $request->request->get('name')));
-        $user->setEmail(trim((string) $request->request->get('email')));
+        $existing = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+        if ($existing instanceof User && $existing->id() !== $user->id()) {
+            $this->flash('error', $this->translator->trans('admin.users.exists'));
+
+            return $this->redirect('admin.users.edit', ['id' => $id]);
+        }
+
+        $user->setEmail($email);
         $user->setStatus((string) $request->request->get('status', 'active'));
+        $this->applyProfile($user, $request);
+
         $password = (string) $request->request->get('password');
         if ($password !== '') {
             if (strlen($password) < 10) {
                 $this->flash('error', $this->translator->trans('admin.users.password_min'));
 
-                return $this->redirect('admin.users.edit', ['id' => $id]);
+                return $this->redirect('admin.users.edit', ['id' => $id, 'tab' => 'security']);
             }
             $user->setPasswordHash($this->hasher->hash($password));
         }
@@ -130,6 +160,10 @@ final class UserController extends Controller
         $wasPrivileged = $user->isAdministrator();
         $user->roles()->clear();
         $this->assignRoles($user, $request->request->all('roles') ?: [], keepPrivileged: $wasPrivileged);
+        $this->storeAvatar($request, $user);
+        if ($request->request->getBoolean('remove_avatar')) {
+            $user->setAvatarFileId(null);
+        }
         $this->hooks->doAction('admin.users.saving', $user, $request);
         $this->em->flush();
         $this->auditor->log('user.updated', 'user', $user->id(), $old, [
@@ -139,15 +173,37 @@ final class UserController extends Controller
         ]);
         $this->flash('success', $this->translator->trans('admin.users.saved'));
 
-        return $this->redirect('admin.users.index');
+        $tab = (string) $request->request->get('settings_tab', 'profile');
+
+        return $this->redirect('admin.users.edit', ['id' => $id, 'tab' => $tab]);
+    }
+
+    public function avatar(string $id): Response
+    {
+        $user = $this->findUser($id);
+        if ($user->avatarFileId() === null) {
+            $this->abort(404, $this->translator->trans('admin.users.avatar_missing'));
+        }
+        $file = $this->em->find(StoredFile::class, $user->avatarFileId());
+        if (!$file instanceof StoredFile) {
+            $this->abort(404, $this->translator->trans('admin.users.avatar_missing'));
+        }
+        try {
+            $contents = $this->files->filesystem()->read($file->path());
+        } catch (\Throwable) {
+            $this->abort(404, $this->translator->trans('admin.users.avatar_missing'));
+        }
+
+        return new Response($contents, 200, [
+            'Content-Type' => $file->mime(),
+            'Cache-Control' => 'private, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function destroy(string $id): Response
     {
-        $user = $this->em->find(User::class, $id);
-        if (!$user instanceof User) {
-            $this->abort(404, $this->translator->trans('admin.users.not_found'));
-        }
+        $user = $this->findUser($id);
 
         if ($this->auth->id() === $user->id()) {
             $this->flash('error', $this->translator->trans('admin.users.cannot_delete_self'));
@@ -161,6 +217,91 @@ final class UserController extends Controller
         $this->flash('success', $this->translator->trans('admin.users.deleted'));
 
         return $this->redirect('admin.users.index');
+    }
+
+    public function resetMfa(string $id): Response
+    {
+        $user = $this->findUser($id);
+        $this->passkeys->deleteAllFor($user);
+        $user->resetMfa();
+        $this->auth->revokeRememberTokens($user);
+        $this->em->flush();
+        $this->auditor->log('auth.mfa_reset', 'user', $user->id(), null, [
+            'by' => $this->auth->id(),
+        ]);
+        $this->flash('success', $this->translator->trans('admin.users.mfa_reset'));
+
+        return $this->redirect('admin.users.edit', ['id' => $id, 'tab' => 'security']);
+    }
+
+    private function applyProfile(User $user, Request $request): void
+    {
+        $user->setFirstName(trim((string) $request->request->get('first_name')));
+        $user->setLastName(trim((string) $request->request->get('last_name')));
+        $user->setDescription(trim((string) $request->request->get('description')));
+        $user->setPhone(trim((string) $request->request->get('phone')));
+
+        $birth = trim((string) $request->request->get('birth_date'));
+        if ($birth !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $birth) === 1) {
+            $user->setBirthDate(new \DateTimeImmutable($birth));
+        } else {
+            $user->setBirthDate(null);
+        }
+
+        $user->setBillingAddress(
+            trim((string) $request->request->get('billing_street')),
+            trim((string) $request->request->get('billing_city')),
+            trim((string) $request->request->get('billing_zip')),
+            trim((string) $request->request->get('billing_country')) ?: 'CZ',
+        );
+
+        if ($request->request->getBoolean('shipping_same')) {
+            $user->setShippingAddress(
+                $user->billingStreet(),
+                $user->billingCity(),
+                $user->billingZip(),
+                $user->billingCountry(),
+            );
+        } else {
+            $user->setShippingAddress(
+                trim((string) $request->request->get('shipping_street')),
+                trim((string) $request->request->get('shipping_city')),
+                trim((string) $request->request->get('shipping_zip')),
+                trim((string) $request->request->get('shipping_country')) ?: 'CZ',
+            );
+        }
+    }
+
+    private function storeAvatar(Request $request, User $user): void
+    {
+        $upload = $request->files->get('avatar');
+        if (!$upload instanceof UploadedFile || !$upload->isValid()) {
+            return;
+        }
+        try {
+            $stored = $this->files->store($upload, $this->auth->user());
+            $this->em->persist($stored);
+            $user->setAvatarFileId($stored->id());
+        } catch (\Throwable $e) {
+            $this->flash('error', $e->getMessage());
+        }
+    }
+
+    private function findUser(string $id): User
+    {
+        $user = $this->em->createQueryBuilder()
+            ->select('u', 'r')
+            ->from(User::class, 'u')
+            ->leftJoin('u.roles', 'r')
+            ->where('u.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+        if (!$user instanceof User) {
+            $this->abort(404, $this->translator->trans('admin.users.not_found'));
+        }
+
+        return $user;
     }
 
     /** @param list<string> $roleIds */

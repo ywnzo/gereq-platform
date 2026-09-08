@@ -6,10 +6,17 @@ type ConfirmOptions = {
     confirmLabel?: string;
     cancelLabel?: string;
     danger?: boolean;
+    input?: boolean;
+    inputLabel?: string;
+    inputValue?: string;
+    inputType?: 'text' | 'password';
+    inputPlaceholder?: string;
+    inputRequired?: boolean;
 };
 
 type ConfirmApi = {
     confirm: (opts: ConfirmOptions | string) => Promise<boolean>;
+    prompt: (opts: ConfirmOptions | string) => Promise<string | null>;
 };
 
 declare global {
@@ -43,7 +50,8 @@ function normalize(opts: ConfirmOptions | string): ConfirmOptions {
     return opts;
 }
 
-type AskFn = (opts: ConfirmOptions) => Promise<boolean>;
+type AskResult = { ok: boolean; value: string };
+type AskFn = (opts: ConfirmOptions) => Promise<AskResult>;
 
 let askImpl: AskFn | null = null;
 
@@ -57,7 +65,13 @@ export function registerConfirm(alpine: typeof Alpine): void {
         confirmLabel: defaults.confirmLabel,
         cancelLabel: defaults.cancelLabel,
         danger: true,
-        _resolve: null as ((value: boolean) => void) | null,
+        showInput: false,
+        inputLabel: '',
+        inputValue: '',
+        inputType: 'text',
+        inputPlaceholder: '',
+        inputRequired: false,
+        _resolve: null as ((value: AskResult) => void) | null,
 
         init() {
             readHostDefaults();
@@ -72,9 +86,9 @@ export function registerConfirm(alpine: typeof Alpine): void {
             askImpl = null;
         },
 
-        ask(opts: ConfirmOptions = {}): Promise<boolean> {
+        ask(opts: ConfirmOptions = {}): Promise<AskResult> {
             if (this._resolve) {
-                this._resolve(false);
+                this._resolve({ ok: false, value: '' });
                 this._resolve = null;
             }
             this.title = opts.title || defaults.title;
@@ -82,23 +96,40 @@ export function registerConfirm(alpine: typeof Alpine): void {
             this.confirmLabel = opts.confirmLabel || defaults.confirmLabel;
             this.cancelLabel = opts.cancelLabel || defaults.cancelLabel;
             this.danger = opts.danger !== false;
+            this.showInput = Boolean(opts.input);
+            this.inputLabel = opts.inputLabel || '';
+            this.inputValue = opts.inputValue || '';
+            this.inputType = opts.inputType === 'password' ? 'password' : 'text';
+            this.inputPlaceholder = opts.inputPlaceholder || '';
+            this.inputRequired = Boolean(opts.inputRequired);
             this.open = true;
-            this.$nextTick(() => (this.$refs.confirmBtn as HTMLButtonElement | undefined)?.focus());
+            this.$nextTick(() => {
+                if (this.showInput) {
+                    (this.$refs.inputField as HTMLInputElement | undefined)?.focus();
+                    (this.$refs.inputField as HTMLInputElement | undefined)?.select();
+                } else {
+                    (this.$refs.confirmBtn as HTMLButtonElement | undefined)?.focus();
+                }
+            });
 
-            return new Promise<boolean>((resolve) => {
+            return new Promise<AskResult>((resolve) => {
                 this._resolve = resolve;
             });
         },
 
         accept() {
+            if (this.showInput && this.inputRequired && this.inputValue.trim() === '') {
+                (this.$refs.inputField as HTMLInputElement | undefined)?.focus();
+                return;
+            }
             this.open = false;
-            this._resolve?.(true);
+            this._resolve?.({ ok: true, value: this.inputValue });
             this._resolve = null;
         },
 
         cancel() {
             this.open = false;
-            this._resolve?.(false);
+            this._resolve?.({ ok: false, value: '' });
             this._resolve = null;
         },
 
@@ -110,12 +141,27 @@ export function registerConfirm(alpine: typeof Alpine): void {
     }));
 
     const api: ConfirmApi = {
-        confirm(opts) {
+        async confirm(opts) {
             const options = normalize(opts);
             if (!askImpl) {
-                return Promise.resolve(window.confirm(options.body || defaults.body));
+                return window.confirm(options.body || defaults.body);
             }
-            return askImpl(options);
+            const result = await askImpl({ ...options, input: false });
+            return result.ok;
+        },
+        async prompt(opts) {
+            const options = normalize(opts);
+            if (!askImpl) {
+                const value = window.prompt(options.body || options.title || '', options.inputValue || '');
+                return value;
+            }
+            const result = await askImpl({
+                ...options,
+                input: true,
+                danger: options.danger === true,
+                inputRequired: options.inputRequired !== false,
+            });
+            return result.ok ? result.value : null;
         },
     };
 

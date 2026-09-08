@@ -1,3 +1,5 @@
+/docker/nginx/certs/*
+!/docker/nginx/certs/.gitignore
 /.env
 /.env.bak
 /.env.bak*

@@ -1,48 +1,149 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.settings'|trans, url: url('admin.settings.index') },
+        { label: 'nav.audit'|trans },
+    ] } %}
+{% endblock %}
+
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="admin-audit" data-actions-default="1">
+{% set filterQuery = {} %}
+{% if kind %}{% set filterQuery = filterQuery|merge({ kind: kind }) %}{% endif %}
+{% if resource %}{% set filterQuery = filterQuery|merge({ resource: resource }) %}{% endif %}
+{% if from %}{% set filterQuery = filterQuery|merge({ from: from }) %}{% endif %}
+{% if to %}{% set filterQuery = filterQuery|merge({ to: to }) %}{% endif %}
+
+<div class="list-shell" x-data="dataTable" data-table-id="admin-audit">
     <header class="page-header">
-        <h1>{{ 'admin.audit.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'admin.audit.title'|trans }}</h1>
+            <p class="muted">{{ 'admin.audit.intro'|trans }}</p>
+        </div>
     </header>
 
-    <div class="table-wrap" data-table>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>{{ 'common.time'|trans }}</th>
-                    <th>{{ 'common.user'|trans }}</th>
-                    <th>{{ 'common.action'|trans }}</th>
-                    <th>{{ 'common.source'|trans }}</th>
-                    <th>{{ 'common.ip'|trans }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in logs %}
-                    <tr>
-                        <td>{{ log.createdAt().format('d. m. Y H:i:s') }}</td>
-                        <td>{{ log.userName() ?: 'common.system'|trans }}</td>
-                        <td>{{ log.action()|audit_action }}</td>
-                        <td>
-                            {{ log.resource() ?: 'common.none'|trans }}
-                            {% if log.oldValues() or log.newValues() %}
-                                <div class="diff muted">
-                                    {% for field, value in log.newValues()|default({}) %}
-                                        {% set old = log.oldValues()[field]|default(null) %}
-                                        {% if old is not null and old != value %}
-                                            <div>{{ field }}: {{ old }} → {{ value }}</div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </td>
-                        <td class="muted">{{ log.ip() }}</td>
-                    </tr>
-                {% else %}
-                    <tr><td colspan="5"><div class="empty">{{ 'empty.audit'|trans }}</div></td></tr>
+    <div class="toolbar--table">
+        <form class="toolbar toolbar--audit" method="get" action="{{ url('admin.audit.index') }}">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.audit.search'|trans }}">
+            <select name="kind" class="input" onchange="this.form.requestSubmit()">
+                <option value="">{{ 'admin.audit.filter.kind_all'|trans }}</option>
+                <option value="created" {{ kind == 'created' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.created'|trans }}</option>
+                <option value="updated" {{ kind == 'updated' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.updated'|trans }}</option>
+                <option value="deleted" {{ kind == 'deleted' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.deleted'|trans }}</option>
+                <option value="auth" {{ kind == 'auth' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.auth'|trans }}</option>
+            </select>
+            <select name="resource" class="input" onchange="this.form.requestSubmit()">
+                <option value="">{{ 'admin.audit.filter.resource_all'|trans }}</option>
+                {% for res in resources %}
+                    <option value="{{ res }}" {{ resource == res ? 'selected' : '' }}>{{ res }}</option>
                 {% endfor %}
-            </tbody>
-        </table>
+            </select>
+            <label class="toolbar__date">
+                <span class="sr-only">{{ 'admin.audit.filter.from'|trans }}</span>
+                <input class="input" type="date" name="from" value="{{ from }}" title="{{ 'admin.audit.filter.from'|trans }}" onchange="this.form.requestSubmit()">
+            </label>
+            <label class="toolbar__date">
+                <span class="sr-only">{{ 'admin.audit.filter.to'|trans }}</span>
+                <input class="input" type="date" name="to" value="{{ to }}" title="{{ 'admin.audit.filter.to'|trans }}" onchange="this.form.requestSubmit()">
+            </label>
+            {% if hasFilters %}
+                <a class="btn btn--ghost btn-sm" href="{{ url('admin.audit.index') }}">{{ 'admin.audit.filter.reset'|trans }}</a>
+            {% endif %}
+        </form>
     </div>
+
+    {% if logs is empty %}
+        <div class="empty">
+            <h2>{{ 'empty.audit'|trans }}</h2>
+            <p>{{ hasFilters ? 'admin.audit.empty.filtered'|trans : 'admin.audit.empty.hint'|trans }}</p>
+            {% if hasFilters %}
+                <a class="btn btn--ghost" href="{{ url('admin.audit.index') }}">{{ 'admin.audit.filter.reset'|trans }}</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="table-wrap" data-table>
+            <table class="table table--audit">
+                <colgroup>
+                    <col class="audit-col-time">
+                    <col class="audit-col-user">
+                    <col class="audit-col-action">
+                    <col class="audit-col-resource">
+                    <col class="audit-col-ip">
+                </colgroup>
+                <thead>
+                    <tr>
+                        {% include 'ui/sort_th.html.twig' with { label: 'common.time'|trans, column: 'createdAt', query: filterQuery } %}
+                        {% include 'ui/sort_th.html.twig' with { label: 'common.user'|trans, column: 'userName', query: filterQuery } %}
+                        {% include 'ui/sort_th.html.twig' with { label: 'common.action'|trans, column: 'action', query: filterQuery } %}
+                        {% include 'ui/sort_th.html.twig' with { label: 'common.source'|trans, column: 'resource', query: filterQuery } %}
+                        {% include 'ui/sort_th.html.twig' with { label: 'common.ip'|trans, column: 'ip', query: filterQuery } %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                        {% set tone = log.action()|audit_action_tone %}
+                        {% set rid = log.resourceId() %}
+                        <tr class="audit-row audit-row--{{ tone }}">
+                            <td class="nowrap">
+                                <time datetime="{{ log.createdAt().format('c') }}">{{ log.createdAt().format('d. m. Y H:i:s') }}</time>
+                            </td>
+                            <td>
+                                {% if log.userName() %}
+                                    <span class="cell-user">
+                                        <span class="avatar avatar--sm">{{ log.userName()|slice(0, 1)|upper }}</span>
+                                        {{ log.userName() }}
+                                    </span>
+                                {% else %}
+                                    <span class="muted">{{ 'common.system'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge--{{ tone }}" title="{{ log.action() }}">{{ log.action()|audit_action }}</span>
+                            </td>
+                            <td>
+                                {% if log.resource() or rid %}
+                                    <span class="audit-resource">
+                                        {% if log.resource() %}<strong>{{ log.resource() }}</strong>{% endif %}
+                                        {% if rid %}
+                                            {% if log.resource() %}<span class="muted">·</span>{% endif %}
+                                            <code title="{{ rid }}">{{ rid|length > 36 ? rid|slice(0, 8) ~ '…' : rid }}</code>
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                                {% if log.oldValues() or log.newValues() %}
+                                    <div class="audit-diff">
+                                        {% for field, value in log.newValues()|default({}) %}
+                                            {% set old = log.oldValues()[field]|default(null) %}
+                                            {% if old is not null and old != value %}
+                                                <div class="audit-diff__row">
+                                                    <span class="audit-diff__field">{{ field }}</span>
+                                                    <span class="audit-diff__old">{{ old }}</span>
+                                                    <span class="audit-diff__arrow" aria-hidden="true">→</span>
+                                                    <span class="audit-diff__new">{{ value }}</span>
+                                                </div>
+                                            {% elseif old is null %}
+                                                <div class="audit-diff__row">
+                                                    <span class="audit-diff__field">{{ field }}</span>
+                                                    <span class="audit-diff__new">{{ value }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="muted nowrap">{{ log.ip() ?: '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'ui/table_footer.html.twig' %}
+    {% endif %}
 </div>
 {% endblock %}

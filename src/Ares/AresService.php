@@ -74,9 +74,14 @@ final class AresService
 
         $limit = max(1, min(30, $limit));
 
-        // Jednoslovný název obce → částečná standardizace (bez tisíců adresních míst).
+        // Jednoslovný název obce → obec; když nic, zkus ulici (Karlova ≠ obec).
         if ($this->looksLikeCityOnly($query)) {
-            return $this->searchCity($query, $limit);
+            $cities = $this->searchCity($query, $limit);
+            if ($cities !== []) {
+                return $cities;
+            }
+
+            return $this->searchStreetName($query, $limit);
         }
 
         try {
@@ -87,8 +92,15 @@ final class AresService
                 'start' => 0,
             ]);
         } catch (AresException $e) {
-            // Příliš široký dotaz — zkusíme aspoň obec.
+            // Příliš široký dotaz — nejdřív ulice, pak obec.
             if ($this->isTooManyResults($e)) {
+                $street = $this->guessStreetToken($query);
+                if ($street !== null) {
+                    $byStreet = $this->searchStreetName($street, $limit);
+                    if ($byStreet !== []) {
+                        return $byStreet;
+                    }
+                }
                 $city = $this->guessCityToken($query);
                 if ($city !== null) {
                     return $this->searchCity($city, $limit);
@@ -97,7 +109,15 @@ final class AresService
             throw $e;
         }
 
-        return $this->mapAddressList($response, $limit);
+        $mapped = $this->mapAddressList($response, $limit);
+        if ($mapped === []) {
+            $street = $this->guessStreetToken($query);
+            if ($street !== null) {
+                return $this->searchStreetName($street, $limit);
+            }
+        }
+
+        return $mapped;
     }
 
     /**
@@ -113,6 +133,21 @@ final class AresService
         ]);
 
         return $this->mapAddressList($response, $limit, cityHint: $city);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function searchStreetName(string $street, int $limit): array
+    {
+        $response = $this->client->searchAddresses([
+            'typStandardizaceAdresy' => 'VYHOVUJICI_ADRESY',
+            'nazevUlice' => mb_substr($street, 0, 48),
+            'pocet' => $limit,
+            'start' => 0,
+        ]);
+
+        return $this->mapAddressList($response, $limit);
     }
 
     /**
@@ -268,6 +303,25 @@ final class AresService
         }
 
         return mb_substr((string) end($parts), 0, 48);
+    }
+
+    /** První nečíselný token — typicky název ulice při širokém textovém dotazu. */
+    private function guessStreetToken(string $query): ?string
+    {
+        $parts = preg_split('/[,\s]+/u', $query) ?: [];
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part === '' || preg_match('/\d/u', $part) === 1) {
+                continue;
+            }
+            if (mb_strlen($part) < 2) {
+                continue;
+            }
+
+            return mb_substr($part, 0, 48);
+        }
+
+        return null;
     }
 
     private function isTooManyResults(AresException $e): bool

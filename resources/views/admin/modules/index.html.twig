@@ -117,8 +117,8 @@
                 class="bulk-bar"
                 method="post"
                 action="{{ url('admin.modules.bulk') }}"
-                :class="selectedCount > 0 ? 'is-active' : 'is-idle'"
-                :aria-hidden="selectedCount > 0 ? 'false' : 'true'"
+                x-show="selectedCount > 0"
+                x-cloak
                 @submit="confirmBulk"
             >
                 {{ csrf_field()|raw }}

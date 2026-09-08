@@ -15,6 +15,7 @@ use Gereq\Http\FormState;
 use Gereq\Http\Router;
 use Gereq\I18n\LocaleCatalog;
 use Gereq\Security\Csrf;
+use Gereq\Support\AppVersion;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -112,8 +113,10 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('trans', [$runtime, 'trans']));
         $twig->addFunction(new TwigFunction('__', [$runtime, 'trans']));
         $twig->addFunction(new TwigFunction('audit_action', [$runtime, 'auditAction']));
+        $twig->addFunction(new TwigFunction('audit_action_tone', [$runtime, 'auditActionTone']));
         $twig->addFunction(new TwigFunction('app_locale', [$runtime, 'appLocale']));
         $twig->addFunction(new TwigFunction('app_env', static fn (): string => (string) config('app.env', 'local')));
+        $twig->addFunction(new TwigFunction('app_version', static fn (): string => (string) config('app.version', AppVersion::DEFAULT)));
         $twig->addFunction(new TwigFunction('available_locales', [$runtime, 'availableLocales']));
         $twig->addFunction(new TwigFunction('brand', [$runtime, 'brand']));
         $twig->addFunction(new TwigFunction('brand_css', [$runtime, 'brandCss'], ['is_safe' => ['css']]));
@@ -126,6 +129,7 @@ final class TwigFactory
         ));
         $twig->addFilter(new TwigFilter('trans', [$runtime, 'trans']));
         $twig->addFilter(new TwigFilter('audit_action', [$runtime, 'auditAction']));
+        $twig->addFilter(new TwigFilter('audit_action_tone', [$runtime, 'auditActionTone']));
 
         if ($this->debugBar !== null && $this->debugBar->enabled()) {
             $profile = new Profile();

@@ -187,6 +187,43 @@ final class TwigRuntime
         return $translated === $key ? $action : $translated;
     }
 
+    public function auditActionTone(string $action): string
+    {
+        if (
+            str_ends_with($action, '.deleted')
+            || str_ends_with($action, '.revoked')
+            || str_ends_with($action, '.disabled')
+        ) {
+            return 'danger';
+        }
+
+        if (
+            str_ends_with($action, '.created')
+            || $action === 'auth.login'
+            || str_ends_with($action, '.enabled')
+            || str_ends_with($action, '.uploaded')
+            || str_ends_with($action, '.published')
+        ) {
+            return 'ok';
+        }
+
+        if (
+            str_contains($action, '.updated')
+            || str_ends_with($action, '.status')
+            || str_ends_with($action, '.synced')
+            || str_contains($action, '_changed')
+            || str_ends_with($action, '.default_changed')
+        ) {
+            return 'warn';
+        }
+
+        if ($action === 'auth.logout') {
+            return 'info';
+        }
+
+        return 'muted';
+    }
+
     public function appLocale(): string
     {
         $request = $this->requestStack->getCurrentRequest();

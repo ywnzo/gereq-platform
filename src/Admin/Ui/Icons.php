@@ -24,7 +24,8 @@ final class Icons
     {
         return [
             'home' => 'home',
-            'users' => 'group',
+            'users' => 'manage_accounts',
+            'manage_accounts' => 'manage_accounts',
             'user' => 'person',
             'modules' => 'grid_view',
             'settings' => 'settings',

@@ -30,7 +30,7 @@
             {% endif %}
             {% block content %}{% endblock %}
         </section>
-        <p class="auth-footnote">{% set brandFoot = brand('footnote') %}{{ brandFoot != '' ? brandFoot : ('brand.footnote'|trans({'%version%': '0.1.0'})) }}</p>
+        <p class="auth-footnote">{% set brandFoot = brand('footnote') %}{{ brandFoot != '' ? brandFoot : ('brand.footnote'|trans({'%version%': app_version()})) }}</p>
     </main>
     <script nonce="{{ csp_nonce() }}">
         window.__GEREQ_COMMANDS__ = [];

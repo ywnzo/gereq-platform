@@ -2,38 +2,159 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>{{ 'profile.title'|trans }}</h1>
-    </header>
-    <form method="post" action="{{ url('admin.profile.update') }}" class="form-grid">
-        {{ csrf_field()|raw }}
-        <label class="field">
-            <span>{{ 'profile.name'|trans }}</span>
-            <input type="text" name="name" value="{{ user.name() }}" required>
-        </label>
-        <label class="field">
-            <span>{{ 'profile.email'|trans }}</span>
-            <input type="email" value="{{ user.email() }}" disabled>
-        </label>
-        <label class="field">
-            <span>{{ 'profile.locale'|trans }}</span>
-            <select name="locale">
-                <option value="_default" {{ user.locale() is null ? 'selected' : '' }}>{{ 'profile.locale.default'|trans }}</option>
-                {% for code, label in locales %}
-                    <option value="{{ code }}" {{ user.locale() == code ? 'selected' : '' }}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        {{ apply_filters('admin.profile.form_fields', '')|raw }}
-        <label class="field field--full">
-            <span>{{ 'profile.password.current'|trans }}</span>
-            <input type="password" name="current_password" autocomplete="current-password" placeholder="{{ 'profile.password.current.hint'|trans }}">
-        </label>
-        <label class="field field--full">
-            <span>{{ 'profile.password'|trans }}</span>
-            <input type="password" name="password" minlength="10" autocomplete="new-password" placeholder="{{ 'profile.password.hint'|trans }}">
-        </label>
-        <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'profile.save'|trans }}</button>
+        <div>
+            <h1>{{ 'profile.title'|trans }}</h1>
+            <p class="muted">{{ 'profile.subtitle'|trans }}</p>
         </div>
-    </form>
+    </header>
+
+    <div class="profile-hub detail-hub" x-data="gereqTabs" data-initial="account">
+        <nav class="design-tabs" role="tablist">
+            <button type="button" class="design-tab is-active" role="tab" data-tab="account" aria-selected="true">{{ 'profile.tab.account'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="security" aria-selected="false">{{ 'profile.tab.security'|trans }}</button>
+        </nav>
+
+        <section class="design-panel is-active" data-panel="account" role="tabpanel">
+            <form method="post" action="{{ url('admin.profile.update') }}" class="panel">
+                {{ csrf_field()|raw }}
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'profile.tab.account'|trans }}</h2>
+                        <p class="muted">{{ 'profile.account.hint'|trans }}</p>
+                    </div>
+                </header>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>{{ 'profile.name'|trans }}</span>
+                        <input class="input" type="text" name="name" value="{{ user.name() }}" required>
+                    </label>
+                    <label class="field">
+                        <span>{{ 'profile.email'|trans }}</span>
+                        <input class="input" type="email" value="{{ user.email() }}" disabled>
+                    </label>
+                    <label class="field">
+                        <span>{{ 'profile.locale'|trans }}</span>
+                        <select class="input" name="locale">
+                            <option value="_default" {{ user.locale() is null ? 'selected' : '' }}>{{ 'profile.locale.default'|trans }}</option>
+                            {% for code, label in locales %}
+                                <option value="{{ code }}" {{ user.locale() == code ? 'selected' : '' }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    {{ apply_filters('admin.profile.form_fields', '')|raw }}
+                    <label class="field field--full">
+                        <span>{{ 'profile.password.current'|trans }}</span>
+                        <input class="input" type="password" name="current_password" autocomplete="current-password" placeholder="{{ 'profile.password.current.hint'|trans }}">
+                    </label>
+                    <label class="field field--full">
+                        <span>{{ 'profile.password'|trans }}</span>
+                        <input class="input" type="password" name="password" minlength="10" autocomplete="new-password" placeholder="{{ 'profile.password.hint'|trans }}">
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn--primary" type="submit">{{ 'profile.save'|trans }}</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="design-panel" data-panel="security" role="tabpanel">
+            <div
+                class="security-grid"
+                x-data="gereqSecurityPanel"
+                data-label-enabled="{{ 'common.enabled'|trans|e('html_attr') }}"
+                data-label-disabled="{{ 'common.disabled'|trans|e('html_attr') }}"
+                data-config="{{ {
+                    totpEnabled: user.totpEnabled(),
+                    passkeyEnabled: user.passkeyEnabled(),
+                    passkeys: passkeys,
+                    urls: securityUrls,
+                    labels: {
+                        waiting: 'auth.passkey.waiting'|trans,
+                        addPasskey: 'security.passkey.add'|trans,
+                        confirmDisable: 'security.totp.confirm_disable'|trans,
+                        passwordPrompt: 'security.password_prompt'|trans,
+                        codePrompt: 'security.code_prompt'|trans,
+                        passkeyName: 'security.passkey.name_prompt'|trans,
+                        copyOk: 'security.recovery.copied'|trans,
+                        continueLabel: 'common.continue'|trans
+                    }
+                }|json_encode|e('html_attr') }}"
+            >
+                <section class="panel security-card">
+                    <header class="panel__head">
+                        <div>
+                            <h2>{{ 'security.totp.title'|trans }}</h2>
+                            <p class="muted">{{ 'security.totp.hint'|trans }}</p>
+                        </div>
+                        <span :class="totpBadgeClass()" x-text="totpBadgeLabel()"></span>
+                    </header>
+
+                    <div x-show="showEnableTotp()" class="security-card__body">
+                        <button type="button" class="btn btn--primary" @click="startTotp()" :disabled="busy">{{ 'security.totp.enable'|trans }}</button>
+                    </div>
+
+                    <div x-show="setupOpen" x-cloak class="security-card__body stack">
+                        <p class="muted">{{ 'security.totp.scan'|trans }}</p>
+                        <img class="security-qr" :src="qr" alt="TOTP QR" width="200" height="200">
+                        <code class="security-secret" x-text="secret"></code>
+                        <label class="field">
+                            <span>{{ 'auth.mfa.code'|trans }}</span>
+                            <input class="input" type="text" x-model="setupCode" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+                        </label>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--primary" @click="confirmTotp()" :disabled="busy">{{ 'security.totp.confirm'|trans }}</button>
+                            <button type="button" class="btn btn--ghost" @click="cancelSetup()" :disabled="busy">{{ 'common.cancel'|trans }}</button>
+                        </div>
+                    </div>
+
+                    <div x-show="showManageTotp()" x-cloak class="security-card__body stack">
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--ghost" @click="regenerateRecovery()" :disabled="busy">{{ 'security.recovery.regenerate'|trans }}</button>
+                            <button type="button" class="btn btn--danger" @click="disableTotp()" :disabled="busy">{{ 'security.totp.disable'|trans }}</button>
+                        </div>
+                    </div>
+
+                    <div x-show="hasRecovery()" x-cloak class="security-recovery">
+                        <h3>{{ 'security.recovery.title'|trans }}</h3>
+                        <p class="muted">{{ 'security.recovery.hint'|trans }}</p>
+                        <ul class="security-recovery__list">
+                            <template x-for="code in recoveryCodes" :key="code">
+                                <li><code x-text="code"></code></li>
+                            </template>
+                        </ul>
+                        <button type="button" class="btn btn--ghost" @click="copyRecovery()">{{ 'security.recovery.copy'|trans }}</button>
+                    </div>
+                </section>
+
+                <section class="panel security-card">
+                    <header class="panel__head">
+                        <div>
+                            <h2>{{ 'security.passkey.title'|trans }}</h2>
+                            <p class="muted">{{ 'security.passkey.hint'|trans }}</p>
+                        </div>
+                        <span :class="passkeyBadgeClass()" x-text="passkeyBadgeLabel()"></span>
+                    </header>
+                    <div class="security-card__body stack">
+                        <ul class="security-passkeys" x-show="hasPasskeys()">
+                            <template x-for="item in passkeys" :key="item.id">
+                                <li class="security-passkeys__item">
+                                    <div>
+                                        <strong x-text="item.name"></strong>
+                                        <small class="muted" x-text="item.created_at"></small>
+                                    </div>
+                                    <button type="button" class="btn btn--ghost" @click="removePasskey(item.id)" :disabled="busy">{{ 'common.delete'|trans }}</button>
+                                </li>
+                            </template>
+                        </ul>
+                        <button type="button" class="btn btn--primary" @click="addPasskey()" :disabled="busy">
+                            <span class="material-symbols-outlined" aria-hidden="true">fingerprint</span>
+                            <span x-text="passkeyAddLabel()"></span>
+                        </button>
+                    </div>
+                </section>
+
+                <p class="muted security-grid__error" x-show="error" x-text="error" x-cloak></p>
+            </div>
+        </section>
+    </div>
 {% endblock %}

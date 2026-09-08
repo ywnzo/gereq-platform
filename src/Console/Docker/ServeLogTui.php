@@ -38,6 +38,7 @@ final class ServeLogTui
         private readonly ?string $lanIp,
         private readonly bool $bringDownOnExit = true,
         private readonly bool $dashboard = false,
+        private readonly bool $https = false,
     ) {
         $this->parser = new AccessLogParser();
     }
@@ -60,12 +61,11 @@ final class ServeLogTui
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w'],
         ];
-        $cmd = [
-            'docker', 'compose',
-            '-f', $this->basePath . '/docker-compose.yml',
-            '--project-directory', $this->basePath,
-            'logs', '-f', '--tail=40',
-        ];
+        $cmd = array_merge(
+            ['docker', 'compose'],
+            $this->composeFileArgs(),
+            ['--project-directory', $this->basePath, 'logs', '-f', '--tail=40'],
+        );
         $proc = proc_open($cmd, $descriptors, $pipes, $this->basePath);
         if (!is_resource($proc)) {
             fwrite(STDERR, "Nelze spustit docker compose logs.\n");
@@ -153,12 +153,11 @@ final class ServeLogTui
             1 => ['pipe', 'w'],
             2 => ['pipe', 'w'],
         ];
-        $cmd = [
-            'docker', 'compose',
-            '-f', $this->basePath . '/docker-compose.yml',
-            '--project-directory', $this->basePath,
-            'logs', '-f', '--tail=80',
-        ];
+        $cmd = array_merge(
+            ['docker', 'compose'],
+            $this->composeFileArgs(),
+            ['--project-directory', $this->basePath, 'logs', '-f', '--tail=80'],
+        );
         $proc = proc_open($cmd, $descriptors, $pipes, $this->basePath);
         if (!is_resource($proc)) {
             $this->restoreTerminal();
@@ -357,9 +356,17 @@ final class ServeLogTui
     {
         $w = 72;
         echo $this->c('lime', 'GEREQ') . $this->c('dim', ' · Docker logs') . "\n";
-        echo $this->c('dim', 'local  ') . sprintf("http://127.0.0.1:%d/admin\n", $this->port);
-        if ($this->lanIp !== null) {
-            echo $this->c('dim', 'lan    ') . sprintf("http://%s:%d/admin\n", $this->lanIp, $this->port);
+        if ($this->https) {
+            echo $this->c('dim', 'https  ') . "https://127.0.0.1/admin\n";
+            if ($this->lanIp !== null) {
+                echo $this->c('dim', 'lan    ') . sprintf("https://%s/admin\n", $this->lanIp);
+            }
+            echo $this->c('dim', 'http   ') . sprintf("http://127.0.0.1:%d/admin\n", $this->port);
+        } else {
+            echo $this->c('dim', 'local  ') . sprintf("http://127.0.0.1:%d/admin\n", $this->port);
+            if ($this->lanIp !== null) {
+                echo $this->c('dim', 'lan    ') . sprintf("http://%s:%d/admin\n", $this->lanIp, $this->port);
+            }
         }
         echo $this->c('dim', str_repeat('─', $w)) . "\n";
         echo $this->c('dim', 'TIME      SVC    METHOD  CODE  SIZE   PATH') . "\n";
@@ -423,7 +430,9 @@ final class ServeLogTui
         $out = [];
 
         $title = ' GEREQ · Docker ';
-        $url = sprintf(' http://127.0.0.1:%d ', $this->port);
+        $url = $this->https
+            ? ' https://127.0.0.1 '
+            : sprintf(' http://127.0.0.1:%d ', $this->port);
         $mid = max(0, $w - mb_strlen($title) - mb_strlen($url) - 2);
         $out[] = $this->c('dim', '┌' . $title . str_repeat('─', $mid) . $url . '┐');
 
@@ -584,11 +593,27 @@ final class ServeLogTui
 
     private function composeDown(): void
     {
-        $cmd = sprintf(
-            'docker compose -f %s --project-directory %s down',
-            escapeshellarg($this->basePath . '/docker-compose.yml'),
-            escapeshellarg($this->basePath)
+        $parts = array_merge(
+            ['docker', 'compose'],
+            $this->composeFileArgs(),
+            ['--project-directory', $this->basePath, 'down'],
         );
+        $cmd = implode(' ', array_map(static fn (string $p): string => escapeshellarg($p), $parts));
         passthru($cmd);
+    }
+
+    /** @return list<string> */
+    private function composeFileArgs(): array
+    {
+        $args = ['-f', $this->basePath . '/docker-compose.yml'];
+        if ($this->https) {
+            $override = $this->basePath . '/docker-compose.https.yml';
+            if (is_file($override)) {
+                $args[] = '-f';
+                $args[] = $override;
+            }
+        }
+
+        return $args;
     }
 }

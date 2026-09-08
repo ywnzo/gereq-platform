@@ -5,12 +5,16 @@ type GereqFileCtx = {
     fileMeta: string;
     dragging: boolean;
     hasFile: boolean;
+    compact: boolean;
     dropTitle: string;
     dropHint: string;
     $el: HTMLElement;
     boxClass: string;
     titleText: string;
     metaText: string;
+    shellTitle: string;
+    showMeta: boolean;
+    showBrowse: boolean;
     formatSize: (bytes: number) => string;
     applyFiles: (files: FileList | null) => void;
     clear: () => void;
@@ -33,12 +37,14 @@ export function registerFile(alpine: typeof Alpine): void {
         fileMeta: '',
         dragging: false,
         hasFile: false,
+        compact: false,
         dropTitle: '',
         dropHint: '',
         _dragDepth: 0,
 
         init(this: GereqFileCtx) {
             const root = this.$el;
+            this.compact = root.dataset.compact === '1' || root.classList.contains('g-file--compact');
             this.dropTitle = root.dataset.dropTitle || '';
             this.dropHint = root.dataset.dropHint || '';
 
@@ -111,23 +117,29 @@ export function registerFile(alpine: typeof Alpine): void {
         },
 
         get titleText(this: GereqFileCtx): string {
-            if (!this.hasFile) {
-                return this.dropTitle;
-            }
-            if (this.$el.classList.contains('g-file--compact') && this.fileMeta) {
-                return `${this.fileName} · ${this.fileMeta}`;
-            }
-            return this.fileName;
+            return this.hasFile ? this.fileName : this.dropTitle;
         },
 
         get metaText(this: GereqFileCtx): string {
-            if (!this.hasFile) {
-                return this.dropHint;
-            }
-            if (this.$el.classList.contains('g-file--compact')) {
+            if (this.compact) {
                 return '';
             }
-            return this.fileMeta;
+            return this.hasFile ? this.fileMeta : this.dropHint;
+        },
+
+        get showMeta(this: GereqFileCtx): boolean {
+            return !this.compact && this.metaText !== '';
+        },
+
+        get showBrowse(this: GereqFileCtx): boolean {
+            return !this.hasFile;
+        },
+
+        get shellTitle(this: GereqFileCtx): string {
+            if (!this.hasFile) {
+                return '';
+            }
+            return this.fileMeta ? `${this.fileName} (${this.fileMeta})` : this.fileName;
         },
 
         formatSize(this: GereqFileCtx, bytes: number): string {
@@ -154,7 +166,7 @@ export function registerFile(alpine: typeof Alpine): void {
             for (let i = 0; i < files.length; i += 1) {
                 total += files[i].size;
             }
-            this.fileName = `${files.length}×`;
+            this.fileName = `${files.length} souborů`;
             this.fileMeta = this.formatSize(total);
         },
 

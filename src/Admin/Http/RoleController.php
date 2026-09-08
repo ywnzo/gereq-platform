@@ -35,22 +35,66 @@ final class RoleController extends Controller
         parent::__construct($twig, $router, $requestStack);
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $roles = $this->em->getRepository(Role::class)->findBy([], ['label' => 'ASC']);
+        $search = trim((string) $request->query->get('q', ''));
+        $qb = $this->em->getRepository(Role::class)
+            ->createQueryBuilder('r')
+            ->orderBy('r.label', 'ASC');
+        self_repair_search($qb, 'r', ['name', 'label', 'description'], $search);
+
+        $roles = $qb->getQuery()->getResult();
+        // Warm user counts for the list (few roles).
+        foreach ($roles as $role) {
+            if ($role instanceof Role) {
+                $role->users()->count();
+            }
+        }
 
         return $this->page('admin/roles/index.html.twig', [
             'pageTitle' => $this->translator->trans('admin.roles.title'),
             'roles' => $roles,
+            'search' => $search,
         ]);
+    }
+
+    public function create(): Response
+    {
+        return $this->page('admin/roles/form.html.twig', [
+            'pageTitle' => $this->translator->trans('admin.roles.new'),
+            'item' => null,
+        ]);
+    }
+
+    public function store(Request $request): Response
+    {
+        $data = $this->validate($request, 'roles.save');
+        $name = strtolower(trim((string) $data['name']));
+        $label = trim((string) $data['label']);
+        $description = trim((string) ($data['description'] ?? ''));
+
+        if ($this->em->getRepository(Role::class)->findOneBy(['name' => $name])) {
+            $this->flash('error', $this->translator->trans('admin.roles.exists'));
+
+            return $this->redirect('admin.roles.create');
+        }
+
+        $role = new Role($name, $label, $description);
+        $this->em->persist($role);
+        $this->em->flush();
+        $this->auditor->log('role.created', 'role', $role->id(), null, [
+            'name' => $role->name(),
+            'label' => $role->label(),
+        ]);
+        $this->forgetForm('roles.save');
+        $this->flash('success', $this->translator->trans('admin.roles.created', ['%label%' => $role->label()]));
+
+        return $this->redirect('admin.roles.edit', ['id' => $role->id()]);
     }
 
     public function edit(string $id): Response
     {
-        $role = $this->em->find(Role::class, $id);
-        if (!$role instanceof Role) {
-            $this->abort(404, $this->translator->trans('admin.roles.not_found'));
-        }
+        $role = $this->findRole($id);
 
         $permissions = $this->em->getRepository(Permission::class)->findBy([], ['groupName' => 'ASC', 'name' => 'ASC']);
         $grouped = [];
@@ -73,13 +117,12 @@ final class RoleController extends Controller
 
     public function update(Request $request, string $id): Response
     {
-        $role = $this->em->find(Role::class, $id);
-        if (!$role instanceof Role) {
-            $this->abort(404, $this->translator->trans('admin.roles.not_found'));
-        }
+        $role = $this->findRole($id);
+        $data = $this->validate($request, 'roles.update');
 
-        $role->setLabel(trim((string) $request->request->get('label')));
-        $role->setDescription(trim((string) $request->request->get('description')));
+        $old = ['label' => $role->label(), 'description' => $role->description()];
+        $role->setLabel(trim((string) $data['label']));
+        $role->setDescription(trim((string) ($data['description'] ?? '')));
 
         if (!$role->isPrivileged()) {
             $ids = $request->request->all('permissions') ?: [];
@@ -94,10 +137,119 @@ final class RoleController extends Controller
         }
 
         $this->em->flush();
-        $this->auditor->log('role.updated', 'role', $role->id());
+        $this->auditor->log('role.updated', 'role', $role->id(), $old, [
+            'label' => $role->label(),
+            'description' => $role->description(),
+        ]);
+        $this->forgetForm('roles.update');
         $this->flash('success', $this->translator->trans('admin.roles.saved'));
 
-        return $this->redirect('admin.roles.index');
+        return $this->redirect('admin.users.roles');
+    }
+
+    public function destroy(string $id): Response
+    {
+        $role = $this->findRole($id);
+        if (!$this->deleteRole($role)) {
+            $this->flash('error', $this->translator->trans('admin.roles.cannot_delete_privileged'));
+
+            return $this->redirect('admin.users.roles');
+        }
+
+        $label = $role->label();
+        $this->em->flush();
+        $this->auditor->log('role.deleted', 'role', $id, null, ['label' => $label]);
+        $this->flash('success', $this->translator->trans('admin.roles.deleted', ['%label%' => $label]));
+
+        return $this->redirect('admin.users.roles');
+    }
+
+    public function bulk(Request $request): Response
+    {
+        $data = $this->validate($request, 'roles.bulk');
+        $action = (string) $data['action'];
+
+        if ($action !== 'delete') {
+            $this->abort(400);
+        }
+
+        $ids = $request->request->all('ids');
+        if (!is_array($ids)) {
+            $ids = [];
+        }
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn ($id): string => trim((string) $id),
+            $ids,
+        ), static fn (string $id): bool => $id !== '')));
+
+        if ($ids === []) {
+            $this->flash('error', $this->translator->trans('admin.roles.bulk.error.empty'));
+
+            return $this->redirect('admin.users.roles');
+        }
+        if (!$request->request->getBoolean('confirmed')) {
+            $this->flash('error', $this->translator->trans('admin.roles.bulk.error.confirm'));
+
+            return $this->redirect('admin.users.roles');
+        }
+
+        $affected = 0;
+        $skipped = 0;
+        foreach ($ids as $id) {
+            $role = $this->em->find(Role::class, $id);
+            if (!$role instanceof Role) {
+                continue;
+            }
+            if (!$this->deleteRole($role)) {
+                $skipped++;
+                continue;
+            }
+            $this->auditor->log('role.deleted', 'role', $id, null, ['label' => $role->label()]);
+            $affected++;
+        }
+
+        $this->em->flush();
+
+        if ($affected > 0) {
+            $this->flash('success', $this->translator->trans('admin.roles.bulk.flash.delete', [
+                '%count%' => (string) $affected,
+            ]));
+        }
+        if ($skipped > 0) {
+            $this->flash('error', $this->translator->trans('admin.roles.bulk.flash.skipped', [
+                '%count%' => (string) $skipped,
+            ]));
+        }
+        if ($affected === 0 && $skipped === 0) {
+            $this->flash('error', $this->translator->trans('admin.roles.bulk.error.empty'));
+        }
+
+        return $this->redirect('admin.users.roles');
+    }
+
+    private function findRole(string $id): Role
+    {
+        $role = $this->em->find(Role::class, $id);
+        if (!$role instanceof Role) {
+            $this->abort(404, $this->translator->trans('admin.roles.not_found'));
+        }
+
+        return $role;
+    }
+
+    private function deleteRole(Role $role): bool
+    {
+        if ($role->isPrivileged()) {
+            return false;
+        }
+
+        foreach ($role->users()->toArray() as $user) {
+            $user->removeRole($role);
+        }
+        $role->syncPermissions();
+        $this->em->remove($role);
+
+        return true;
     }
 
     /** @param array<string, mixed> $data */
