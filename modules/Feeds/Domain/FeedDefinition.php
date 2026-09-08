@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Modules\Feeds\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'feed_definitions')]
 #[ORM\UniqueConstraint(name: 'uniq_feed_definitions_code', columns: ['code'])]
+#[FormEntity('feeds.save')]
+#[FormGenerator(
+    exclude: ['id', 'config', 'createdAt', 'updatedAt'],
+    form: 'feeds.save',
+    cols: 1,
+)]
 class FeedDefinition
 {
     public const DRIVERS = [
@@ -29,18 +38,40 @@ class FeedDefinition
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(required: true, label: 'feeds.field.code', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'feeds.field.name', order: 20)]
     private string $name;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'feeds.field.driver',
+        type: 'select',
+        choicesFrom: 'DRIVERS',
+        choiceLabel: 'feeds.driver.',
+        order: 30,
+    )]
     private string $driver = 'google_merchant';
 
     #[ORM\Column(length: 16)]
+    #[FormField(
+        required: true,
+        label: 'feeds.field.format',
+        type: 'select',
+        choices: [
+            ['value' => 'xml', 'label' => 'XML'],
+            ['value' => 'tsv', 'label' => 'TSV'],
+            ['value' => 'csv', 'label' => 'CSV'],
+        ],
+        order: 40,
+    )]
     private string $format = 'xml';
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'feeds.field.active', type: 'switch', order: 50)]
     private bool $active = true;
 
     /** @var array<string, mixed>|null */

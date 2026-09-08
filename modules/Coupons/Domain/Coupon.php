@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Modules\Coupons\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'coupons')]
 #[ORM\UniqueConstraint(name: 'uniq_coupons_code', columns: ['code'])]
+#[FormEntity('coupons.save')]
+#[FormGenerator(
+    exclude: ['id', 'usedCount', 'createdAt', 'updatedAt'],
+    form: 'coupons.save',
+    cols: 2,
+)]
 class Coupon
 {
     public const TYPES = [
@@ -22,36 +31,58 @@ class Coupon
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(required: true, label: 'coupons.field.code', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'coupons.field.name', order: 20)]
     private string $name;
 
     #[ORM\Column(length: 16)]
-    private string $type;
+    #[FormField(
+        required: true,
+        label: 'coupons.field.type',
+        type: 'select',
+        choicesFrom: 'TYPES',
+        choiceLabel: 'coupons.type.',
+        order: 30,
+    )]
+    private string $type = 'percent';
 
     #[ORM\Column(type: 'decimal', precision: 14, scale: 2)]
+    #[FormField(required: true, label: 'coupons.field.value', type: 'number', options: ['step' => '0.01'], order: 40)]
     private string $value = '0.00';
 
     #[ORM\Column(length: 3, nullable: true)]
+    #[FormField(
+        label: 'coupons.field.currency',
+        hint: 'coupons.field.currency.hint',
+        options: ['maxlength' => 3],
+        order: 50,
+    )]
     private ?string $currency = null;
 
     #[ORM\Column(name: 'min_order', type: 'decimal', precision: 14, scale: 2, nullable: true)]
+    #[FormField(label: 'coupons.field.min_order', type: 'number', options: ['step' => '0.01'], order: 60)]
     private ?string $minOrder = null;
 
     #[ORM\Column(name: 'max_uses', type: 'integer', nullable: true)]
+    #[FormField(label: 'coupons.field.max_uses', type: 'number', order: 70)]
     private ?int $maxUses = null;
 
     #[ORM\Column(name: 'used_count', type: 'integer')]
     private int $usedCount = 0;
 
     #[ORM\Column(name: 'starts_at', nullable: true)]
+    #[FormField(label: 'coupons.field.starts_at', type: 'datetime-local', order: 80)]
     private ?\DateTimeImmutable $startsAt = null;
 
     #[ORM\Column(name: 'ends_at', nullable: true)]
+    #[FormField(label: 'coupons.field.ends_at', type: 'datetime-local', order: 90)]
     private ?\DateTimeImmutable $endsAt = null;
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'coupons.field.active', type: 'switch', order: 100)]
     private bool $active = true;
 
     #[ORM\Column(name: 'created_at')]

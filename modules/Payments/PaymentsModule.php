@@ -32,7 +32,7 @@ final class PaymentsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.0';
+        return '1.3.1';
     }
 
     public function register(ModuleContext $context): void
@@ -169,5 +169,6 @@ final class PaymentsModule implements ModuleInterface
             'sort_order' => 'nullable',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('payments.method.save', \Modules\Payments\Domain\PaymentMethod::class);
     }
 }

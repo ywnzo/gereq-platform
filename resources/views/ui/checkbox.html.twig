@@ -6,15 +6,31 @@
 {% set form = form|default(null) %}
 {% set checked = old(name, checked|default(false), form) %}
 {% set err = error(name, form) %}
-{% set required = required|default(false) %}
+{% set required = field_required(name, form, required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
 {% set extra = extra|default('') %}
 {% set value = value|default('1') %}
+{% set variant = variant|default('check') %}
 
+{% if variant == 'switch' %}
+    {% include 'ui/switch.html.twig' with {
+        name: name,
+        id: id,
+        label: label,
+        description: description,
+        form: form,
+        on: checked,
+        checked: checked,
+        extra: extra,
+        hint: hint,
+        err: err
+    } only %}
+{% else %}
 <div class="g-check{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
     <label class="g-check__row" for="{{ id }}">
         <span class="g-check__box">
             <input
                 id="{{ id }}"
+                class="g-check__input"
                 type="checkbox"
                 name="{{ name }}"
                 value="{{ value }}"
@@ -32,3 +48,4 @@
     {% if hint %}<p class="g-hint">{{ hint }}</p>{% endif %}
     {% if err %}<p class="g-error" id="{{ id }}-error">{{ err }}</p>{% endif %}
 </div>
+{% endif %}

@@ -57,7 +57,7 @@
                 action: url('admin.listings.brokers.toggle_active', {id: item.id()}),
                 on: item.active(),
                 title_on: 'ui.table.active.on'|trans,
-                title_off: 'ui.table.active.off'|trans,
+                title_off: 'ui.table.active.off'|trans
             } %}
         {% else %}
             <span class="badge badge--{{ item.active() ? 'ok' : 'muted' }}">

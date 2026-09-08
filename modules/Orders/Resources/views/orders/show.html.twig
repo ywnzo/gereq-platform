@@ -140,8 +140,8 @@
             {{ csrf_field()|raw }}
             {% include 'ui/select.html.twig' with { name: 'product_id', label: 'orders.field.product'|trans, optional: true, form: 'orders.line.save', value: '', options: productOptions } %}
             {% include 'ui/input.html.twig' with { name: 'title', label: 'orders.field.title'|trans, optional: true, form: 'orders.line.save', value: '' } %}
-            {% include 'ui/input.html.twig' with { name: 'qty', label: 'orders.field.qty'|trans, required: true, form: 'orders.line.save', value: '1' } %}
-            {% include 'ui/input.html.twig' with { name: 'unit_price', label: 'orders.field.unit_price'|trans, required: true, form: 'orders.line.save', value: '0' } %}
+            {% include 'ui/input.html.twig' with { name: 'qty', label: 'orders.field.qty'|trans, form: 'orders.line.save', value: '1' } %}
+            {% include 'ui/input.html.twig' with { name: 'unit_price', label: 'orders.field.unit_price'|trans, form: 'orders.line.save', value: '0' } %}
             {% include 'ui/input.html.twig' with { name: 'tax_rate', label: 'orders.field.tax_rate'|trans, optional: true, form: 'orders.line.save', value: '21' } %}
             <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'orders.lines.add'|trans }}</button></div>
             </form>

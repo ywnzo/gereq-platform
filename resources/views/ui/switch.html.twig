@@ -2,25 +2,40 @@
 {% set id = id|default('f-' ~ name) %}
 {% set label = label|default('') %}
 {% set description = description|default('') %}
+{% set hint = hint|default('') %}
 {% set form = form|default(null) %}
-{% set on = old(name, on|default(false), form) %}
+{% set on = old(name, on|default(checked|default(false)), form) %}
+{% set err = err|default(error(name, form)) %}
 {% set extra = extra|default('') %}
+{% set onBool = on is same as(true) or on is same as(1) or on is same as('1') or on is same as('on') %}
 
-<div class="g-switch {{ extra }}" x-data="gereqSwitch" data-on="{{ on ? '1' : '0' }}">
-    <input type="hidden" name="{{ name }}" value="{{ on ? '1' : '0' }}" x-ref="value">
-    <button
-        id="{{ id }}"
-        type="button"
-        class="g-switch__track"
-        :class="trackClass"
-        role="switch"
-        :aria-checked="checkedAttr"
-        @click="toggle"
+{# Stejný layout jako input/select: label nahoře → control ve stejné výšce jako sousední pole #}
+<div class="g-field g-field--switch{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+    {% if label %}
+        <span class="g-label" id="{{ id }}-label">
+            <span>{{ label }}</span>
+        </span>
+    {% endif %}
+    <div
+        class="g-switch"
+        x-data="gereqSwitch"
+        data-on="{{ onBool ? '1' : '0' }}"
     >
-        <span class="g-switch__thumb" aria-hidden="true"></span>
-    </button>
-    <div class="g-switch__copy">
-        {% if label %}<label class="g-switch__label" for="{{ id }}">{{ label }}</label>{% endif %}
+        <input type="hidden" name="{{ name }}" value="{{ onBool ? '1' : '0' }}" x-ref="value">
+        <button
+            id="{{ id }}"
+            type="button"
+            class="table-switch{{ onBool ? ' is-on' : '' }}"
+            :class="onClass"
+            role="switch"
+            :aria-checked="checkedAttr"
+            {% if label %}aria-labelledby="{{ id }}-label"{% endif %}
+            @click="toggle"
+        >
+            <span class="table-switch__knob" aria-hidden="true"></span>
+        </button>
         {% if description %}<p class="g-switch__desc">{{ description }}</p>{% endif %}
     </div>
+    {% if hint %}<p class="g-hint">{{ hint }}</p>{% endif %}
+    {% if err %}<p class="g-error">{{ err }}</p>{% endif %}
 </div>

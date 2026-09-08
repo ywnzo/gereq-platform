@@ -8,7 +8,7 @@
     {% if vite_hot() %}
         {{ vite_tags() }}
     {% else %}
-        <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('resources/css/kernel.css') }}">
     {% endif %}
     {% include 'partials/brand-overrides.html.twig' %}
 </head>
@@ -148,7 +148,7 @@
                 </div>
                 <div class="design-box__body design-settings">
                     {% include 'ui/input.html.twig' with { name: 'demo_name', label: 'design.field.name'|trans, placeholder: 'design.field.name.placeholder'|trans, hint: 'design.field.name.hint'|trans, form: 'design.static' } %}
-                    {% include 'ui/input.html.twig' with { name: 'demo_email', type: 'email', label: 'common.email'|trans, placeholder: 'design.field.email.placeholder'|trans, required: true, hint: 'design.field.email.hint'|trans, form: 'design.static' } %}
+                    {% include 'ui/input.html.twig' with { name: 'demo_email', type: 'email', label: 'common.email'|trans, placeholder: 'design.field.email.placeholder'|trans, hint: 'design.field.email.hint'|trans, form: 'design.static' } %}
                     {% include 'ui/input.html.twig' with { name: 'demo_tel', type: 'tel', label: 'design.field.phone'|trans, placeholder: 'design.field.phone.placeholder'|trans, prefix: '+420', inputmode: 'tel', hint: 'design.field.phone.hint'|trans, form: 'design.static' } %}
                     {% include 'ui/input.html.twig' with { name: 'demo_url', type: 'url', label: 'design.field.web'|trans, placeholder: 'design.field.web.placeholder'|trans, hint: 'design.field.web.hint'|trans, form: 'design.static' } %}
                     {% include 'ui/input.html.twig' with { name: 'demo_number', type: 'number', label: 'design.field.limit'|trans, value: '12', min: 0, max: 99, suffix: 'design.field.limit.suffix'|trans, hint: 'design.field.limit.hint'|trans, form: 'design.static' } %}
@@ -285,7 +285,7 @@
                             drawer_id: 'design-demo-drawer',
                             label: 'ui.drawer.open'|trans,
                             variant: 'ghost',
-                            icon: 'panel',
+                            icon: 'panel'
                         }) }}
                         <button
                             class="btn btn--ghost"
@@ -323,7 +323,7 @@
                             window.gereq?.loadDrawer({
                                 title: {{ 'ui.drawer.demo.title'|trans|json_encode|raw }},
                                 html: '<p class="muted">' + {{ 'ui.drawer.demo.body'|trans|json_encode|raw }} + '</p>',
-                                footer: '<button type="button" class="btn btn--primary" data-drawer-close>' + {{ 'common.cancel'|trans|json_encode|raw }} + '</button>',
+                                footer: '<button type="button" class="btn btn--primary" data-drawer-close>' + {{ 'common.cancel'|trans|json_encode|raw }} + '</button>'
                             });
                         });
                     </script>
@@ -372,15 +372,14 @@
                     {% include 'ui/error-summary.html.twig' with { form: 'design.demo' } %}
                     <form method="post" action="{{ url('design.submit') }}" class="design-settings" data-form="design.demo" x-data="gereqForm"{% if form_errors('design.demo') %} data-server-state="1"{% endif %}>
                         {{ csrf_field()|raw }}
-                        {% include 'ui/input.html.twig' with { name: 'name', label: 'design.field.name'|trans, required: true, hint: 'design.live.name.hint'|trans, form: 'design.demo' } %}
-                        {% include 'ui/input.html.twig' with { name: 'email', type: 'email', label: 'common.email'|trans, required: true, hint: 'design.live.email.hint'|trans, form: 'design.demo' } %}
-                        {% include 'ui/input.html.twig' with { name: 'phone', type: 'tel', label: 'design.field.phone'|trans, required: true, prefix: '+420', placeholder: 'design.field.phone.placeholder'|trans, inputmode: 'tel', hint: 'design.live.phone.hint'|trans, form: 'design.demo' } %}
+                        {% include 'ui/input.html.twig' with { name: 'name', label: 'design.field.name'|trans, hint: 'design.live.name.hint'|trans, form: 'design.demo' } %}
+                        {% include 'ui/input.html.twig' with { name: 'email', type: 'email', label: 'common.email'|trans, hint: 'design.live.email.hint'|trans, form: 'design.demo' } %}
+                        {% include 'ui/input.html.twig' with { name: 'phone', type: 'tel', label: 'design.field.phone'|trans, prefix: '+420', placeholder: 'design.field.phone.placeholder'|trans, inputmode: 'tel', hint: 'design.live.phone.hint'|trans, form: 'design.demo' } %}
                         {% include 'ui/input.html.twig' with { name: 'website', type: 'url', label: 'design.field.web'|trans, optional: true, placeholder: 'design.live.web.placeholder'|trans, hint: 'design.live.web.hint'|trans, form: 'design.demo' } %}
                         {% include 'ui/select.html.twig' with {
                             name: 'role',
                             label: 'design.field.role'|trans,
                             form: 'design.demo',
-                            required: true,
                             hint: 'design.live.role.hint'|trans,
                             options: [
                                 { value: 'admin', label: 'design.role.admin'|trans },
@@ -391,7 +390,6 @@
                         {% include 'ui/textarea.html.twig' with {
                             name: 'note',
                             label: 'design.textarea.description'|trans,
-                            required: true,
                             maxlength: 500,
                             placeholder: 'design.live.note.placeholder'|trans,
                             hint: 'design.live.note.hint'|trans,
@@ -407,7 +405,7 @@
                             hint: 'design.live.comment.hint'|trans,
                             form: 'design.demo'
                         } %}
-                        {% include 'ui/checkbox.html.twig' with { name: 'terms', label: 'design.live.terms'|trans, required: true, form: 'design.demo' } %}
+                        {% include 'ui/checkbox.html.twig' with { name: 'terms', label: 'design.live.terms'|trans, form: 'design.demo' } %}
                         <div class="design-submit">
                             <button class="btn btn--ghost" type="reset">{{ 'design.live.reset'|trans }}</button>
                             <button class="btn btn-primary" type="submit">{{ 'design.live.submit'|trans }}</button>
@@ -422,6 +420,7 @@
         window.__GEREQ_COMMANDS__ = [];
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
+        window.__GEREQ_FORM_FP_CLEARED__ = {{ flash('form_fp_cleared')|json_encode|raw }};
     </script>
     {% if not vite_hot() %}
         <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>

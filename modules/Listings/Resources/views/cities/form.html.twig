@@ -10,21 +10,22 @@
 {% endblock %}
 
 {% block content %}
+{% set citySource = item ?? 'Modules\\Listings\\Domain\\City' %}
+
 <header class="page-header">
     <h1>{{ item ? 'listings.cities.edit'|trans : 'listings.cities.new'|trans }}</h1>
 </header>
 
 {% include 'ui/error-summary.html.twig' with { form: 'listings.cities.save' } %}
 
-<form method="post" class="form-grid" enctype="multipart/form-data" action="{{ item ? url('admin.listings.cities.update', {id: item.id()}) : url('admin.listings.cities.store') }}" data-form="listings.cities.save" x-data="gereqForm"{% if form_errors('listings.cities.save') %} data-server-state="1"{% endif %}>
+<form method="post" class="form-grid form-grid--cols-1" enctype="multipart/form-data" action="{{ item ? url('admin.listings.cities.update', {id: item.id()}) : url('admin.listings.cities.store') }}" data-form="listings.cities.save" x-data="gereqForm"{% if form_errors('listings.cities.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {% include 'ui/input.html.twig' with {
-        name: 'name',
-        label: 'listings.cities.field.name'|trans,
-        required: true,
+    {{ forms().render(citySource, {
         form: 'listings.cities.save',
-        value: item ? item.name() : ''
-    } %}
+        cols: 1,
+        only: ['name'],
+        wrap: false
+    }) }}
     {% include 'ui/media_box.html.twig' with {
         name: 'image_url',
         label: 'listings.cities.field.image_url'|trans,
@@ -35,17 +36,12 @@
         has_media: hasMedia|default(false),
         library: libraryImages|default([])
     } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'sort_order',
-        label: 'listings.cities.field.sort_order'|trans,
-        optional: true,
+    {{ forms().render(citySource, {
         form: 'listings.cities.save',
-        value: item ? item.sortOrder() : '0'
-    } %}
-    <label class="field">
-        <span class="field__label">{{ 'listings.cities.field.active'|trans }}</span>
-        <input type="checkbox" name="active" value="1" {{ (item is null or item.active()) ? 'checked' : '' }}>
-    </label>
+        cols: 1,
+        only: ['sort_order', 'active'],
+        wrap: false
+    }) }}
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ item ? url('admin.listings.cities.show', {id: item.id()}) : url('admin.listings.cities.index') }}">{{ 'common.cancel'|trans }}</a>

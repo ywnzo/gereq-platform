@@ -34,6 +34,26 @@ final class FormStateTest extends TestCase
         self::assertNull($state->old('email', null, 'auth.login'));
     }
 
+    public function testForgetFlashesMatchingRequestFingerprint(): void
+    {
+        $request = Request::create('/admin/login', 'POST', ['_gereq_fp' => 'abc123fingerprint']);
+        $session = new Session(new MockArraySessionStorage());
+        $request->setSession($session);
+        $stack = new RequestStack();
+        $stack->push($request);
+        $state = new FormState($stack, new PassthroughTranslator());
+
+        $state->fail(new ValidationException(
+            ['email' => 'Zadejte platný e-mail.'],
+            ['email' => 'neplatny'],
+            'auth.login',
+        ));
+        $state->forget('auth.login');
+
+        self::assertSame(['auth.login'], $session->getFlashBag()->get('form_cleared'));
+        self::assertSame(['abc123fingerprint'], $session->getFlashBag()->get('form_fp_cleared'));
+    }
+
     public function testHtmlRedirectStaysOnSameOrigin(): void
     {
         $request = Request::create('/design.html', 'POST', server: [

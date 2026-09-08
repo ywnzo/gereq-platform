@@ -5,11 +5,30 @@ declare(strict_types=1);
 namespace Modules\Webhooks\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'webhooks')]
 #[ORM\Index(name: 'idx_webhooks_status', columns: ['status'])]
+#[FormEntity('webhooks.save')]
+#[FormGenerator(
+    exclude: [
+        'id',
+        'secret',
+        'previousSecret',
+        'events',
+        'status',
+        'consecutiveFailures',
+        'lastDeliveryAt',
+        'createdAt',
+        'updatedAt',
+    ],
+    form: 'webhooks.save',
+    cols: 1,
+)]
 class Webhook
 {
     public const STATUSES = ['active', 'paused', 'failing'];
@@ -19,9 +38,18 @@ class Webhook
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'webhooks.field.name', hint: 'webhooks.hint.name', order: 10)]
     private string $name;
 
     #[ORM\Column(length: 2048)]
+    #[FormField(
+        required: true,
+        label: 'webhooks.field.url',
+        type: 'url',
+        hint: 'webhooks.hint.url',
+        options: ['placeholder' => 'https://example.com/hooks/gereq'],
+        order: 20,
+    )]
     private string $url;
 
     #[ORM\Column(length: 128)]
@@ -38,6 +66,14 @@ class Webhook
     private string $status = 'active';
 
     #[ORM\Column(name: 'timeout_seconds')]
+    #[FormField(
+        required: true,
+        label: 'webhooks.field.timeout',
+        type: 'number',
+        hint: 'webhooks.hint.timeout',
+        options: ['min' => 1, 'max' => 120],
+        order: 30,
+    )]
     private int $timeoutSeconds = 10;
 
     #[ORM\Column(name: 'consecutive_failures')]

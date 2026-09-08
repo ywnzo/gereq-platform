@@ -28,7 +28,7 @@ final class PartsCatalogModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.13.10';
+        return '1.13.11';
     }
 
     public function register(ModuleContext $context): void

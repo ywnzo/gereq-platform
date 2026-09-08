@@ -163,6 +163,7 @@ final class ListingController extends Controller
                 $this->auth->user()?->id(),
             );
         }
+        $this->forgetForm('listings.save');
         $this->flash(
             'success',
             $wantPublished
@@ -225,16 +226,8 @@ final class ListingController extends Controller
         }
         $wasPublished = $listing->status() === 'published';
         $wantPublished = ($data['status'] ?? '') === 'published';
-        if ($wasPublished || ($wantPublished && !$wasPublished)) {
-            $this->freeze->freezeIfNeeded(
-                'listings',
-                'listing',
-                $listing->id(),
-                fn (): array => ListingPublishAdapter::capture($this->em, $listing),
-                $listing->title(),
-                $this->auth->user()?->id(),
-            );
-        }
+        // Freeze only existing production / already-staged rows — never on first publish.
+        $this->freezeListingIfPublished($listing);
         $listing->setTitle($data['title']);
         $listing->setSlug($data['slug']);
         $this->apply($listing, $data);
@@ -255,6 +248,7 @@ final class ListingController extends Controller
                 $this->auth->user()?->id(),
             );
         }
+        $this->forgetForm('listings.save');
         $this->flash('success', ($wasPublished || $wantPublished)
             ? $this->translator->trans('publish.flash.staged')
             : $this->translator->trans('listings.flash.updated'));
@@ -321,18 +315,34 @@ final class ListingController extends Controller
 
             switch ($action) {
                 case 'publish':
+                    $wasPublished = $listing->status() === 'published';
+                    $this->freezeListingIfPublished($listing);
                     $listing->publish();
+                    if (!$wasPublished && !$this->freeze->hasFreeze('listings', $listing->id())) {
+                        $this->em->flush();
+                        $this->freeze->stageCreate(
+                            'listings',
+                            'listing',
+                            $listing->id(),
+                            $listing->title(),
+                            $this->auth->user()?->id(),
+                        );
+                    }
                     break;
                 case 'draft':
+                    $this->freezeListingIfPublished($listing);
                     $listing->unpublish();
                     break;
                 case 'archive':
+                    $this->freezeListingIfPublished($listing);
                     $listing->archive();
                     break;
                 case 'feature':
+                    $this->freezeListingForPublicChange($listing);
                     $listing->setFeatured(true);
                     break;
                 case 'unfeature':
+                    $this->freezeListingForPublicChange($listing);
                     $listing->setFeatured(false);
                     break;
                 case 'delete':
@@ -375,20 +385,22 @@ final class ListingController extends Controller
             $listing->unpublish();
             $on = false;
             $message = $this->translator->trans('publish.flash.staged');
+            $this->em->flush();
         } else {
-            $this->freeze->freezeIfNeeded(
-                'listings',
-                'listing',
-                $listing->id(),
-                fn (): array => ListingPublishAdapter::capture($this->em, $listing),
-                $listing->title(),
-                $this->auth->user()?->id(),
-            );
             $listing->publish();
+            $this->em->flush();
+            if (!$this->freeze->hasFreeze('listings', $listing->id())) {
+                $this->freeze->stageCreate(
+                    'listings',
+                    'listing',
+                    $listing->id(),
+                    $listing->title(),
+                    $this->auth->user()?->id(),
+                );
+            }
             $on = true;
             $message = $this->translator->trans('publish.flash.staged');
         }
-        $this->em->flush();
         if (!$this->wantsJson()) {
             $this->flash('success', $message);
         }
@@ -403,6 +415,7 @@ final class ListingController extends Controller
             $this->abort(404, $this->translator->trans('listings.error.not_found'));
         }
 
+        $this->freezeListingForPublicChange($listing);
         $listing->setFeatured(!$listing->featured());
         $this->em->flush();
         $message = $this->translator->trans(
@@ -831,6 +844,7 @@ final class ListingController extends Controller
             'nearLinks' => $nearLinks,
             'nearPlaces' => $this->resolveNearPlaces($nearLinks),
             'nearOptions' => $this->nearLocations->options(true, $attachedNearIds),
+            'requiredFields' => forms()->requiredMap(Listing::class),
         ]);
     }
 

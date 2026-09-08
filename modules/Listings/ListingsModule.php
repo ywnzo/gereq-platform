@@ -38,7 +38,7 @@ final class ListingsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.2.8';
     }
 
     public function register(ModuleContext $context): void
@@ -314,6 +314,12 @@ final class ListingsModule implements ModuleInterface
     {
         $validation = $context->validation();
 
+        $validation->ruleset('listings.save', [
+            'title' => 'required|min:1|max:190',
+            'slug' => 'nullable|max:190',
+        ]);
+        $context->forms()->entity('listings.save', \Modules\Listings\Domain\Listing::class);
+
         $validation->ruleset('listings.image.upload', [
             'alt' => 'nullable|max:255',
             'title' => 'nullable|max:190',
@@ -340,6 +346,7 @@ final class ListingsModule implements ModuleInterface
             'photo_url' => 'nullable|max:500',
             'sort_order' => 'nullable',
         ]);
+        $context->forms()->entity('listings.brokers.save', \Modules\Listings\Domain\Broker::class);
 
         $validation->ruleset('listings.near.save', [
             'name' => 'required|min:1|max:190',
@@ -351,6 +358,7 @@ final class ListingsModule implements ModuleInterface
             'longitude' => 'nullable',
             'sort_order' => 'nullable',
         ]);
+        $context->forms()->entity('listings.near.save', \Modules\Listings\Domain\NearLocation::class);
 
         $validation->ruleset('listings.cities.save', [
             'name' => 'required|min:1|max:120',
@@ -358,6 +366,7 @@ final class ListingsModule implements ModuleInterface
             'media_asset_id' => 'nullable|min:36|max:36',
             'sort_order' => 'nullable',
         ]);
+        $context->forms()->entity('listings.cities.save', \Modules\Listings\Domain\City::class);
 
         $validation->ruleset('listings.near_link.save', [
             'near_location_id' => 'required|min:36|max:36',

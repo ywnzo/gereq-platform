@@ -1,0 +1,13 @@
+{#
+  Grid cell / span wrapper (Athena rowBox span).
+
+  span: 1 (default), 2, 3, or 'full'
+#}
+{% set span = span|default(1) %}
+{% set class = class|default('') %}
+{% set span_class = span == 'full' or span == 0 ? 'field--full' : (span == 2 ? 'field--span-2' : (span == 3 ? 'field--span-3' : '')) %}
+{% if span_class or class %}
+<div class="{{ span_class }}{{ class ? (span_class ? ' ' : '') ~ class : '' }}">{{ body|raw }}</div>
+{% else %}
+{{ body|raw }}
+{% endif %}

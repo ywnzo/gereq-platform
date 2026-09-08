@@ -1,0 +1,18 @@
+{#
+  Form grid container (Athena contentDiv + rowBox two/three/four).
+
+  Twig embed:
+    {% embed 'ui/components/grid.html.twig' with { cols: 3 } %}
+      {% block body %}…fields…{% endblock %}
+    {% endembed %}
+
+  Or ui_render / ui()->grid(3, $html)
+#}
+{% set cols = cols|default(2) %}
+{% set compact = compact|default(false) %}
+{% set class = class|default('') %}
+{% set id = id|default(null) %}
+{% set cols_class = cols == 3 ? ' form-grid--cols-3' : (cols == 4 ? ' form-grid--cols-4' : (cols == 1 ? ' form-grid--cols-1' : '')) %}
+<div{% if id %} id="{{ id }}"{% endif %} class="form-grid{{ cols_class }}{{ compact ? ' form-grid--compact' : '' }}{{ class ? ' ' ~ class : '' }}">
+{% if body is defined and body %}{{ body|raw }}{% else %}{% block body %}{% endblock %}{% endif %}
+</div>

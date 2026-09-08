@@ -55,7 +55,7 @@
     {% include 'ui/table_thumb.html.twig' with {
         src: listing ? listing.coverImageUrl() : null,
         href: listingHref,
-        alt: listing ? listing.title() : item.listingId(),
+        alt: listing ? listing.title() : item.listingId()
     } %}
 </td>
 <td>

@@ -6,7 +6,7 @@ return [
     'id' => 'loyalty',
     'name' => 'Loyalty',
     'icon' => 'gift',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'description' => 'module.loyalty.description',
     'class' => Modules\Loyalty\LoyaltyModule::class,
     'author' => 'GEREQ',

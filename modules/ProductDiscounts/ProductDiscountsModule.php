@@ -23,7 +23,7 @@ final class ProductDiscountsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.5';
+        return '1.1.6';
     }
 
     public function register(ModuleContext $context): void
@@ -128,5 +128,6 @@ final class ProductDiscountsModule implements ModuleInterface
             'ends_at' => 'nullable',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('product_discounts.save', \Modules\ProductDiscounts\Domain\ProductDiscount::class);
     }
 }

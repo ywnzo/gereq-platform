@@ -10,79 +10,20 @@
 {% endblock %}
 
 {% block content %}
+{% set brokerSource = item ?? 'Modules\\Listings\\Domain\\Broker' %}
+
 <header class="page-header">
     <h1>{{ item ? 'listings.brokers.edit'|trans : 'listings.brokers.new'|trans }}</h1>
 </header>
 
 {% include 'ui/error-summary.html.twig' with { form: 'listings.brokers.save' } %}
 
-<form method="post" class="form-grid" action="{{ item ? url('admin.listings.brokers.update', {id: item.id()}) : url('admin.listings.brokers.store') }}" data-form="listings.brokers.save" x-data="gereqForm"{% if form_errors('listings.brokers.save') %} data-server-state="1"{% endif %}>
+<form method="post" action="{{ item ? url('admin.listings.brokers.update', {id: item.id()}) : url('admin.listings.brokers.store') }}" data-form="listings.brokers.save" x-data="gereqForm"{% if form_errors('listings.brokers.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {% include 'ui/input.html.twig' with {
-        name: 'first_name',
-        label: 'listings.brokers.field.first_name'|trans,
-        required: true,
+    {{ forms().render(brokerSource, {
         form: 'listings.brokers.save',
-        value: item ? item.firstName() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'last_name',
-        label: 'listings.brokers.field.last_name'|trans,
-        required: true,
-        form: 'listings.brokers.save',
-        value: item ? item.lastName() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'email',
-        label: 'listings.brokers.field.email'|trans,
-        required: true,
-        form: 'listings.brokers.save',
-        value: item ? item.email() : '',
-        type: 'email'
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'phone',
-        label: 'listings.brokers.field.phone'|trans,
-        optional: true,
-        form: 'listings.brokers.save',
-        value: item and item.phone() ? item.phone() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'position',
-        label: 'listings.brokers.field.position'|trans,
-        optional: true,
-        form: 'listings.brokers.save',
-        value: item and item.position() ? item.position() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'photo_url',
-        label: 'listings.brokers.field.photo_url'|trans,
-        optional: true,
-        form: 'listings.brokers.save',
-        value: item and item.photoUrl() ? item.photoUrl() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'sort_order',
-        label: 'listings.brokers.field.sort_order'|trans,
-        optional: true,
-        form: 'listings.brokers.save',
-        value: item ? item.sortOrder() : '0'
-    } %}
-    <label class="field field--full"><span class="field__label">{{ 'listings.brokers.field.skills'|trans }}</span>
-        <textarea class="input" name="skills" rows="3">{{ item and item.skills() ? item.skills() : '' }}</textarea>
-    </label>
-    {% include 'ui/editor.html.twig' with {
-        name: 'description',
-        label: 'listings.brokers.field.description'|trans,
-        optional: true,
-        form: 'listings.brokers.save',
-        value: item and item.description() ? item.description() : '',
-        extra: 'field--full'
-    } %}
-    <label class="field">
-        <span class="field__label">{{ 'listings.brokers.field.active'|trans }}</span>
-        <input type="checkbox" name="active" value="1" {{ (item is null or item.active()) ? 'checked' : '' }}>
-    </label>
+        cols: 2
+    }) }}
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ item ? url('admin.listings.brokers.show', {id: item.id()}) : url('admin.listings.brokers.index') }}">{{ 'common.cancel'|trans }}</a>

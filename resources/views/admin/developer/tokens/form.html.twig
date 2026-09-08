@@ -14,7 +14,7 @@
     {% else %}
         <form method="post" action="{{ url('admin.developer.tokens.store') }}" class="form-grid">
             {{ csrf_field()|raw }}
-            {% include 'ui/input.html.twig' with { name: 'name', label: 'admin.tokens.name'|trans, required: true, value: '' } %}
+            {% include 'ui/input.html.twig' with { name: 'name', label: 'admin.tokens.name'|trans, value: '' } %}
             {% include 'ui/input.html.twig' with { name: 'expires_at', type: 'date', label: 'admin.tokens.expires'|trans, optional: true, value: '' } %}
             <div class="field field--full">
                 <label class="g-check"><input type="checkbox" name="test" value="1"> {{ 'admin.tokens.test'|trans }}</label>

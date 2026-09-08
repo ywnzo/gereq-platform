@@ -6,7 +6,7 @@ return [
     'id' => 'orders',
     'name' => 'Orders',
     'icon' => 'cart',
-    'version' => '1.2.2',
+    'version' => '1.2.3',
     'description' => 'module.orders.description',
     'class' => Modules\Orders\OrdersModule::class,
     'author' => 'GEREQ',

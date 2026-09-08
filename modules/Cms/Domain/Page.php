@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace Modules\Cms\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'cms_pages')]
 #[ORM\UniqueConstraint(name: 'uniq_cms_pages_slug', columns: ['slug'])]
 #[ORM\Index(name: 'idx_cms_pages_status', columns: ['status'])]
+#[FormEntity('cms.page.save')]
+#[FormGenerator(
+    exclude: ['id', 'publishedAt', 'createdAt', 'updatedAt'],
+    form: 'cms.page.save',
+    cols: 1,
+)]
 class Page
 {
     public const STATUSES = ['draft', 'published', 'archived'];
@@ -22,26 +31,65 @@ class Page
     private string $id;
 
     #[ORM\Column(length: 180)]
+    #[FormField(required: true, label: 'cms.field.slug', hint: 'cms.field.slug.hint', order: 20)]
     private string $slug;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'cms.field.title', order: 10)]
     private string $title;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'cms.field.status',
+        type: 'select',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'cms.page.status.',
+        order: 30,
+    )]
     private string $status = 'draft';
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'cms.field.template',
+        type: 'select',
+        choicesFrom: 'TEMPLATES',
+        choiceLabel: 'cms.page.template.',
+        order: 40,
+    )]
     private string $template = 'default';
 
     /** blocks = PageBlock builder, raw = single textarea body */
     #[ORM\Column(name: 'content_mode', length: 16, options: ['default' => 'blocks'])]
+    #[FormField(
+        required: true,
+        label: 'cms.field.content_mode',
+        type: 'select',
+        choicesFrom: 'CONTENT_MODES',
+        choiceLabel: 'cms.page.content_mode.',
+        hint: 'cms.field.content_mode.hint',
+        order: 50,
+    )]
     private string $contentMode = 'blocks';
 
     /** HTML/plain body when content_mode=raw */
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(
+        label: 'cms.field.body',
+        type: 'textarea',
+        hint: 'cms.field.body.hint',
+        extra: 'field--full',
+        order: 60,
+    )]
     private ?string $body = null;
 
     #[ORM\Column(name: 'meta_description', type: 'text', nullable: true)]
+    #[FormField(
+        label: 'cms.field.meta_description',
+        type: 'textarea',
+        order: 70,
+    )]
     private ?string $metaDescription = null;
 
     #[ORM\Column(name: 'published_at', nullable: true)]

@@ -107,7 +107,7 @@ function applyLiveBrand(signal: string, onSignal: string, ink: string, cream: st
         root.style.setProperty(name, value);
     }
 
-    // Override brand_css() !important block injected after admin.css.
+    // Override brand_css() !important block injected after kernel.css.
     let tag = document.getElementById('gereq-brand-live') as HTMLStyleElement | null;
     if (!tag) {
         tag = document.createElement('style');

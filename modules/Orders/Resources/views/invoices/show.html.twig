@@ -156,8 +156,8 @@
                 <header class="panel__head"><h2>{{ 'orders.payment.new'|trans }}</h2></header>
                 <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.invoices.pay', {id: item.id()}) }}" data-form="orders.payment.save">
                 {{ csrf_field()|raw }}
-                {% include 'ui/input.html.twig' with { name: 'amount', label: 'orders.field.amount'|trans, required: true, form: 'orders.payment.save', value: item.total() } %}
-                {% include 'ui/input.html.twig' with { name: 'method', label: 'orders.field.method'|trans, required: true, form: 'orders.payment.save', value: 'bank' } %}
+                {% include 'ui/input.html.twig' with { name: 'amount', label: 'orders.field.amount'|trans, form: 'orders.payment.save', value: item.total() } %}
+                {% include 'ui/input.html.twig' with { name: 'method', label: 'orders.field.method'|trans, form: 'orders.payment.save', value: 'bank' } %}
                 <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'orders.payment.record'|trans }}</button></div>
                 </form>
             </section>

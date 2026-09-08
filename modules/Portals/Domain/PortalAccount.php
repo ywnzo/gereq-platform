@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace Modules\Portals\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'portal_accounts')]
 #[ORM\UniqueConstraint(name: 'uniq_portal_accounts_code', columns: ['code'])]
 #[ORM\Index(name: 'idx_portal_accounts_provider', columns: ['provider_id'])]
+#[FormEntity('portals.account.save')]
+#[FormGenerator(
+    exclude: ['id', 'providerId', 'config', 'createdAt', 'updatedAt'],
+    form: 'portals.account.save',
+    cols: 2,
+)]
 class PortalAccount
 {
     #[ORM\Id]
@@ -18,15 +27,20 @@ class PortalAccount
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(required: true, label: 'portals.field.code', group: 'identity', hint: 'portals.field.code.hint', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'portals.field.name', group: 'identity', order: 20)]
     private string $name;
 
+    /** Provider card picker — ruční Twig. */
     #[ORM\Column(name: 'provider_id', length: 36)]
+    #[FormField(required: true, name: 'provider_id')]
     private string $providerId;
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'portals.field.active', type: 'switch', group: 'status', hint: 'portals.field.active.hint', order: 10)]
     private bool $active = true;
 
     /** Values for fields defined on the provider číselník. @var array<string, mixed>|null */

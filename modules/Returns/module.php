@@ -6,7 +6,7 @@ return [
     'id' => 'returns',
     'name' => 'Returns',
     'icon' => 'undo',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'description' => 'module.returns.description',
     'class' => Modules\Returns\ReturnsModule::class,
     'author' => 'GEREQ',

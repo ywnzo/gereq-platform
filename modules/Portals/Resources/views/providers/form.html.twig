@@ -39,25 +39,26 @@
         <section class="panel">
             <header class="panel__head"><h2>{{ 'portals.providers.section.basic'|trans }}</h2></header>
             <div class="form-grid form-grid--compact">
+                {% set providerSource = item ?? 'Modules\\Portals\\Domain\\PortalProvider' %}
                 {% if item %}
                     <div class="g-field">
                         <span class="g-label">{{ 'portals.providers.field.code'|trans }}</span>
                         <div class="portal-form__code"><code>{{ item.code() }}</code></div>
                         <input type="hidden" name="code" value="{{ item.code() }}">
                     </div>
+                    {{ forms().render(providerSource, {
+                        form: 'portals.provider.save',
+                        group: 'basic',
+                        wrap: false,
+                        exclude: ['code']
+                    }) }}
                 {% else %}
-                    {% include 'ui/input.html.twig' with { name:'code', label:'portals.providers.field.code'|trans, required:true, form:'portals.provider.save', value:'', hint:'portals.providers.field.code.hint'|trans } %}
+                    {{ forms().render(providerSource, {
+                        form: 'portals.provider.save',
+                        group: 'basic',
+                        wrap: false
+                    }) }}
                 {% endif %}
-                {% include 'ui/input.html.twig' with { name:'name', label:'portals.providers.field.name'|trans, required:true, form:'portals.provider.save', value: item ? item.name() : '' } %}
-                {% set driverOpts = [] %}
-                {% for d in drivers %}
-                    {% set driverOpts = driverOpts|merge([{ value: d, label: ('portals.driver.' ~ d)|trans }]) %}
-                {% endfor %}
-                {% include 'ui/select.html.twig' with { name:'driver', label:'portals.providers.field.driver'|trans, required:true, form:'portals.provider.save', value: item ? item.driver() : 'custom', options: driverOpts } %}
-                {% include 'ui/input.html.twig' with { name:'api_base_url', type:'url', label:'portals.providers.field.api_base_url'|trans, optional:true, form:'portals.provider.save', value: item and item.apiBaseUrl() ? item.apiBaseUrl() : '', hint:'portals.providers.field.api_base_url.hint'|trans } %}
-                {% include 'ui/input.html.twig' with { name:'openapi_url', type:'url', label:'portals.providers.field.openapi_url'|trans, optional:true, form:'portals.provider.save', value: item and item.openapiUrl() ? item.openapiUrl() : '', hint:'portals.providers.field.openapi_url.hint'|trans, placeholder:'https://…/openapi.json' } %}
-                {% include 'ui/input.html.twig' with { name:'sort_order', type:'number', label:'portals.providers.field.sort_order'|trans, optional:true, form:'portals.provider.save', value: item ? item.sortOrder() : '100' } %}
-                {% include 'ui/textarea.html.twig' with { name:'description', label:'portals.providers.field.description'|trans, optional:true, form:'portals.provider.save', value: item and item.description() ? item.description() : '', size:'mini', rows:3 } %}
             </div>
         </section>
 
@@ -93,13 +94,11 @@
     <aside class="detail-layout__aside">
         <section class="panel">
             <header class="panel__head"><h2>{{ 'portals.form.section.status'|trans }}</h2></header>
-            {% include 'ui/switch.html.twig' with {
-                name: 'active',
-                label: 'portals.field.active'|trans,
-                description: 'portals.providers.field.active.hint'|trans,
-                on: item is null or item.active(),
-                form: 'portals.provider.save'
-            } %}
+            {{ forms().render(item ?? 'Modules\\Portals\\Domain\\PortalProvider', {
+                form: 'portals.provider.save',
+                group: 'status',
+                cols: 1
+            }) }}
         </section>
         {% if item and user.can('portals.manage') %}
             <section class="panel">

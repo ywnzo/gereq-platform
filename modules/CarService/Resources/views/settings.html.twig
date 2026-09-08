@@ -31,18 +31,17 @@
             </div>
         </header>
         <div class="form-grid">
-            {% include 'ui/input.html.twig' with { name:'job_soft_limit_hours', type:'number', label:'carservice.settings.job_soft_limit'|trans, required:true, form:'carservice.settings', value:jobSoftLimitHours } %}
+            {% include 'ui/input.html.twig' with { name:'job_soft_limit_hours', type:'number', label:'carservice.settings.job_soft_limit'|trans, form:'carservice.settings', value:jobSoftLimitHours } %}
             {% include 'ui/select.html.twig' with { name:'default_team', label:'carservice.settings.default_team'|trans, form:'carservice.settings', value:defaultTeam, options:[
                 {value:'body_shop',label:'carservice.team.body_shop'|trans},
                 {value:'paint_shop',label:'carservice.team.paint_shop'|trans}
             ] } %}
-            {% include 'ui/input.html.twig' with { name:'media_phases', label:'carservice.settings.media_phases'|trans, required:true, form:'carservice.settings', value:mediaPhases } %}
+            {% include 'ui/input.html.twig' with { name:'media_phases', label:'carservice.settings.media_phases'|trans, form:'carservice.settings', value:mediaPhases } %}
             {% include 'ui/input.html.twig' with {
                 name: 'margin_percent',
                 type: 'number',
                 label: 'carservice.settings.margin_percent'|trans,
                 hint: 'carservice.settings.margin_percent.hint'|trans,
-                required: true,
                 form: 'carservice.settings',
                 value: marginPercent,
                 min: 0,
@@ -70,7 +69,6 @@
                 type: 'number',
                 label: 'carservice.settings.labor_rate_default'|trans,
                 hint: 'carservice.settings.labor_rate_default.hint'|trans,
-                required: true,
                 form: 'carservice.settings',
                 value: laborRates.labor_rate_default,
                 min: 0,

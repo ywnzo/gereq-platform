@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\CarService\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -14,6 +17,26 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_carservice_orders_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_carservice_orders_team', columns: ['team'])]
 #[ORM\UniqueConstraint(name: 'uniq_carservice_orders_tracker', columns: ['tracker_token'])]
+#[FormEntity('carservice.save')]
+#[FormGenerator(
+    exclude: [
+        'id',
+        'trackerToken',
+        'paymentType',
+        'internalCost',
+        'externalCost',
+        'intakeMileage',
+        'intakeFuelLevel',
+        'intakeProtocol',
+        'intakeAt',
+        'handoverAt',
+        'finishedAt',
+        'createdAt',
+        'updatedAt',
+    ],
+    form: 'carservice.save',
+    cols: 2,
+)]
 class ServiceOrder
 {
     public const TYPES = ['internal_fleet', 'external_customer', 'linked'];
@@ -26,21 +49,69 @@ class ServiceOrder
     private string $id;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'carservice.field.type',
+        type: 'select',
+        group: 'order',
+        choicesFrom: 'TYPES',
+        choiceLabel: 'carservice.type.',
+        order: 30,
+    )]
     private string $type = 'external_customer';
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'carservice.field.status',
+        type: 'select',
+        group: 'order',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'carservice.status.',
+        order: 40,
+    )]
     private string $status = 'intake';
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'carservice.field.team',
+        type: 'select',
+        group: 'order',
+        choicesFrom: 'TEAMS',
+        choiceLabel: 'carservice.team.',
+        order: 50,
+    )]
     private string $team = 'body_shop';
 
     #[ORM\Column(name: 'vehicle_id', length: 36)]
+    #[FormField(
+        required: true,
+        name: 'vehicle_id',
+        label: 'carservice.field.vehicle',
+        type: 'select',
+        group: 'order',
+        extra: 'field--full',
+        order: 10,
+    )]
     private string $vehicleId;
 
     #[ORM\Column(name: 'customer_id', length: 36, nullable: true)]
+    #[FormField(
+        name: 'customer_id',
+        label: 'carservice.field.customer',
+        type: 'select',
+        group: 'order',
+        order: 20,
+    )]
     private ?string $customerId = null;
 
     #[ORM\Column(name: 'branch_id', length: 36, nullable: true)]
+    #[FormField(
+        name: 'branch_id',
+        label: 'carservice.field.branch',
+        type: 'select',
+        group: 'order',
+        options: ['searchable' => true],
+        order: 60,
+    )]
     private ?string $branchId = null;
 
     #[ORM\Column(name: 'tracker_token', length: 64)]
@@ -48,6 +119,7 @@ class ServiceOrder
 
     /** Objednané práce (RPS serviceInfo). */
     #[ORM\Column(name: 'service_info', type: 'text', nullable: true)]
+    #[FormField(label: 'carservice.field.service_info', type: 'textarea', group: 'work', extra: 'field--full', order: 10)]
     private ?string $serviceInfo = null;
 
     #[ORM\Column(name: 'payment_type', length: 16, nullable: true)]
@@ -70,6 +142,7 @@ class ServiceOrder
     private ?array $intakeProtocol = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'carservice.field.note', type: 'textarea', group: 'work', extra: 'field--full', order: 20)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'finished_at', nullable: true)]

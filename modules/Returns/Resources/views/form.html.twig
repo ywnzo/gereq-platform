@@ -1,19 +1,16 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+{% set returnSource = 'Modules\\Returns\\Domain\\ReturnRequest' %}
+
 <header class="page-header"><h1>{{ 'returns.new'|trans }}</h1></header>
 {% include 'ui/error-summary.html.twig' with { form: 'returns.save' } %}
-<form method="post" class="form-grid" action="{{ url('admin.returns.store') }}" data-form="returns.save" x-data="gereqForm">
+<form method="post" action="{{ url('admin.returns.store') }}" data-form="returns.save" x-data="gereqForm">
 {{ csrf_field()|raw }}
-{% include 'ui/input.html.twig' with { name:'order_id', label:'returns.field.order'|trans, required:true, form:'returns.save', value:'' } %}
-{% include 'ui/input.html.twig' with { name:'customer_id', label:'returns.field.customer'|trans, optional:true, form:'returns.save', value:'' } %}
-{% include 'ui/textarea.html.twig' with { name:'reason', label:'returns.field.reason'|trans, required:true, form:'returns.save', value:'' } %}
-{% include 'ui/select.html.twig' with { name:'resolution', label:'returns.field.resolution'|trans, optional:true, form:'returns.save', value:'', options:[
-{value:'',label:'—'},{value:'refund',label:'returns.resolution.refund'|trans},{value:'exchange',label:'returns.resolution.exchange'|trans},
-{value:'store_credit',label:'returns.resolution.store_credit'|trans},{value:'none',label:'returns.resolution.none'|trans}
-] } %}
-{% include 'ui/input.html.twig' with { name:'refund_amount', label:'returns.field.refund_amount'|trans, optional:true, form:'returns.save', value:'' } %}
-{% include 'ui/input.html.twig' with { name:'currency', label:'returns.field.currency'|trans, optional:true, form:'returns.save', value: currency_code() } %}
-{% include 'ui/textarea.html.twig' with { name:'note', label:'returns.field.note'|trans, optional:true, form:'returns.save', value:'' } %}
+{{ forms().render(returnSource, {
+    form: 'returns.save',
+    cols: 2,
+    values: { currency: currency_code() }
+}) }}
 
 <div class="field field--full">
 <span class="field__label">{{ 'returns.items'|trans }}</span>

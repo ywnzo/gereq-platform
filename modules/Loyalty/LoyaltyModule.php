@@ -29,7 +29,7 @@ final class LoyaltyModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.0.2';
     }
 
     public function register(ModuleContext $context): void
@@ -160,6 +160,7 @@ final class LoyaltyModule implements ModuleInterface
             'sort_order' => 'nullable',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('loyalty.tier.save', \Modules\Loyalty\Domain\LoyaltyTier::class);
         $context->validation()->ruleset('loyalty.account.adjust', [
             'customer_id' => 'nullable|max:36',
             'account_id' => 'nullable|max:36',

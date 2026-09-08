@@ -6,7 +6,7 @@ return [
     'id' => 'newsletter',
     'name' => 'Newsletter',
     'icon' => 'mail',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.newsletter.description',
     'class' => Modules\Newsletter\NewsletterModule::class,
     'author' => 'GEREQ',

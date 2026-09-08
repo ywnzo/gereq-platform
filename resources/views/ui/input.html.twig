@@ -5,7 +5,7 @@
 {% set form = form|default(null) %}
 {% set value = old(name, value|default(''), form) %}
 {% set err = error(name, form) %}
-{% set required = required|default(false) %}
+{% set required = field_required(name, form, required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
 {% set optional = optional|default(false) %}
 {% set extra = extra|default('') %}
 {% set placeholder = placeholder|default('') %}
@@ -21,6 +21,8 @@
 {% set step = step|default(null) %}
 {% set pattern = pattern|default('') %}
 {% set list = list|default('') %}
+{% set maxlength = maxlength|default(null) %}
+{% set attrs = attrs|default('') %}
 {% set described = [] %}
 {% if hint %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
 {% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
@@ -53,12 +55,14 @@
             {% if min is not null %}min="{{ min }}"{% endif %}
             {% if max is not null %}max="{{ max }}"{% endif %}
             {% if step is not null %}step="{{ step }}"{% endif %}
+            {% if maxlength is not null %}maxlength="{{ maxlength }}"{% endif %}
             {% if required %}required{% endif %}
             {% if disabled %}disabled{% endif %}
             {% if readonly %}readonly{% endif %}
             {% if err %}aria-invalid="true"{% endif %}
             {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
             {% if type|default('text') == 'password' %}x-ref="input"{% endif %}
+            {% if attrs %}{{ attrs|raw }}{% endif %}
         >
         {% if suffix %}
             <span class="g-addon__affix">{{ suffix }}</span>

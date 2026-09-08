@@ -33,7 +33,7 @@ final class DocumentsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.2';
+        return '1.3.3';
     }
 
     public function register(ModuleContext $context): void
@@ -161,6 +161,7 @@ final class DocumentsModule implements ModuleInterface
             'entity_type' => 'nullable|max:80',
             'entity_id' => 'nullable|max:36',
         ]);
+        $context->forms()->entity('documents.save', \Modules\Documents\Domain\Document::class);
 
         $validation->ruleset('documents.link', [
             'entity_type' => 'required|max:80',

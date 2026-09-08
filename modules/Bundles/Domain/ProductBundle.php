@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Modules\Bundles\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'product_bundles')]
 #[ORM\UniqueConstraint(name: 'uniq_product_bundles_code', columns: ['code'])]
+#[FormEntity('bundles.save')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt'],
+    form: 'bundles.save',
+    cols: 2,
+)]
 class ProductBundle
 {
     public const DISCOUNT_TYPES = [
@@ -23,33 +32,51 @@ class ProductBundle
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(required: true, label: 'bundles.field.code', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'bundles.field.name', order: 20)]
     private string $name;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'bundles.field.description', type: 'textarea', extra: 'field--full', order: 30)]
     private ?string $description = null;
 
     #[ORM\Column(name: 'discount_type', length: 16)]
+    #[FormField(
+        required: true,
+        name: 'discount_type',
+        label: 'bundles.field.discount_type',
+        type: 'select',
+        choicesFrom: 'DISCOUNT_TYPES',
+        choiceLabel: 'bundles.discount.',
+        order: 40,
+    )]
     private string $discountType = 'none';
 
     #[ORM\Column(name: 'discount_value', type: 'decimal', precision: 14, scale: 2)]
+    #[FormField(label: 'bundles.field.discount_value', type: 'number', options: ['step' => '0.01'], order: 50)]
     private string $discountValue = '0.00';
 
     #[ORM\Column(length: 3, nullable: true)]
+    #[FormField(label: 'bundles.field.currency', options: ['maxlength' => 3], order: 60)]
     private ?string $currency = null;
 
     #[ORM\Column(name: 'min_items', type: 'integer')]
+    #[FormField(label: 'bundles.field.min_items', type: 'number', order: 70)]
     private int $minItems = 1;
 
     #[ORM\Column(name: 'max_items', type: 'integer', nullable: true)]
+    #[FormField(label: 'bundles.field.max_items', type: 'number', order: 80)]
     private ?int $maxItems = null;
 
     #[ORM\Column(name: 'max_same_product', type: 'integer', nullable: true)]
+    #[FormField(label: 'bundles.field.max_same_product', type: 'number', order: 90)]
     private ?int $maxSameProduct = null;
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'bundles.field.active', type: 'switch', order: 100)]
     private bool $active = true;
 
     #[ORM\Column(name: 'created_at')]

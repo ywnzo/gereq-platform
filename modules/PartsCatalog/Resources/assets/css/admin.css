@@ -70,7 +70,12 @@
     letter-spacing: .02em;
 }
 .pc-selected__meta { margin: 0 0 .75rem; line-height: 1.4; }
-.pc-picker { padding: 1.05rem 1.2rem; }
+.pc-picker {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+    padding: 1.05rem 1.2rem;
+}
 .pc-picker__form { display: flex; flex-direction: column; gap: .75rem; height: 100%; }
 .pc-picker__fields {
     display: grid;
@@ -763,3 +768,8 @@
         justify-self: start;
     }
 }
+
+/* Picker dropdown stacking (moved from kernel) */
+.pc-selected .g-select__list.is-open { max-height: 22rem; z-index: 60; }
+.pc-selected .g-select__options { max-height: 16rem; }
+.pc-picker .g-select__list.is-open { z-index: 60; }

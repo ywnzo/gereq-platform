@@ -6,29 +6,13 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'newsletter.subscriber.save' } %}
 
-<form method="post" class="form-grid" action="{{ url('admin.newsletter.subscribers.store') }}" data-form="newsletter.subscriber.save" x-data="gereqForm"{% if form_errors('newsletter.subscriber.save') %} data-server-state="1"{% endif %}>
+<form method="post" action="{{ url('admin.newsletter.subscribers.store') }}" data-form="newsletter.subscriber.save" x-data="gereqForm"{% if form_errors('newsletter.subscriber.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {% include 'ui/input.html.twig' with {
-        name: 'email',
-        label: 'newsletter.field.email'|trans,
-        required: true,
+    {{ forms().render('Modules\\Newsletter\\Domain\\Subscriber', {
         form: 'newsletter.subscriber.save',
-        value: ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'name',
-        label: 'newsletter.field.name'|trans,
-        optional: true,
-        form: 'newsletter.subscriber.save',
-        value: ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'source',
-        label: 'newsletter.field.source'|trans,
-        optional: true,
-        form: 'newsletter.subscriber.save',
-        value: 'admin'
-    } %}
+        cols: 1,
+        values: { source: 'admin' }
+    }) }}
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.newsletter.subscribers.index') }}">{{ 'common.cancel'|trans }}</a>

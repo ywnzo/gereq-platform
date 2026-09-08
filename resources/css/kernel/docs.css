@@ -1,0 +1,158 @@
+/* Developer docs (API / Events / Tokens) — not list-shell */
+.developer-page {
+    width: 100%;
+    max-width: 100%;
+    padding-bottom: 2rem;
+}
+.developer-page > .page-header {
+    margin-bottom: 1.25rem;
+}
+.developer-page > .page-header .muted {
+    margin: 0.4rem 0 0;
+    max-width: 52rem;
+    line-height: 1.45;
+}
+.developer-stack {
+    display: grid;
+    gap: 1rem;
+}
+.developer-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+}
+.developer-card__head {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--hover);
+}
+.developer-card__head h2 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.table-wrap--flush {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    max-height: none;
+    overflow-x: auto;
+}
+.table--developer {
+    table-layout: fixed;
+    width: 100%;
+}
+.table--developer th,
+.table--developer td {
+    padding: 0.85rem 1rem;
+    vertical-align: top;
+    white-space: normal;
+}
+.table--developer th {
+    position: sticky;
+    top: 0;
+}
+.table--developer .table__path code {
+    display: inline-block;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+.table--developer .table__wrap-cell {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+.table--api .col-method { width: 6.5rem; }
+.table--api .col-path { width: 38%; }
+.table--api .col-scopes { width: 22%; }
+.table--api .col-summary { width: auto; }
+.table--events .col-event { width: 36%; }
+.table--events .col-version { width: 5.5rem; }
+.table--events .col-webhook { width: 7rem; }
+.table--events .col-description { width: auto; }
+.table--tokens .col-name { width: 16%; }
+.table--tokens .col-prefix { width: 9rem; }
+.table--tokens .col-scopes { width: 34%; }
+.table--tokens .col-used { width: 10rem; }
+.table--tokens .col-status { width: 7.5rem; }
+.table--tokens .col-actions { width: 7rem; }
+.method-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.4rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: var(--hover);
+    color: var(--text);
+}
+.method-pill--get { background: color-mix(in srgb, #16a34a 18%, var(--surface)); color: #15803d; }
+.method-pill--post { background: color-mix(in srgb, #2563eb 18%, var(--surface)); color: #1d4ed8; }
+.method-pill--put,
+.method-pill--patch { background: color-mix(in srgb, #d97706 18%, var(--surface)); color: #b45309; }
+.method-pill--delete { background: color-mix(in srgb, #dc2626 18%, var(--surface)); color: #b91c1c; }
+html.dark .method-pill--get,
+[data-theme="gereq-dark"] .method-pill--get { color: #86efac; }
+html.dark .method-pill--post,
+[data-theme="gereq-dark"] .method-pill--post { color: #93c5fd; }
+html.dark .method-pill--put,
+html.dark .method-pill--patch,
+[data-theme="gereq-dark"] .method-pill--put,
+[data-theme="gereq-dark"] .method-pill--patch { color: #fcd34d; }
+html.dark .method-pill--delete,
+[data-theme="gereq-dark"] .method-pill--delete { color: #fca5a5; }
+
+.idoklad-partner .toolbar--table {
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 12px;
+}
+.idoklad-partner .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.idoklad-partner__hint {
+    margin: 10px 0 0;
+}
+.idoklad-partner__attach {
+    margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+    .table--api .col-method,
+    .table--api .col-path,
+    .table--api .col-scopes,
+    .table--api .col-summary,
+    .table--events .col-event,
+    .table--events .col-version,
+    .table--events .col-webhook,
+    .table--events .col-description,
+    .table--tokens .col-name,
+    .table--tokens .col-prefix,
+    .table--tokens .col-scopes,
+    .table--tokens .col-used,
+    .table--tokens .col-status,
+    .table--tokens .col-actions {
+        width: auto;
+    }
+    .table--developer {
+        table-layout: auto;
+        min-width: 44rem;
+    }
+}

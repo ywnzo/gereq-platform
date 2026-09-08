@@ -15,7 +15,7 @@
     offer_type: offer_type,
     market_status: market_status,
     property_type: property_type,
-    featured: featured,
+    featured: featured
 } %}
 <div
     class="list-shell"
@@ -57,7 +57,7 @@
             drawer_id: 'listings-filters',
             label: 'ui.drawer.filters'|trans,
             variant: advancedFilters ? 'primary' : 'ghost',
-            icon: 'filters',
+            icon: 'filters'
         }) }}
     </div>
 </div>
@@ -151,7 +151,7 @@
         {% include 'ui/table_thumb.html.twig' with {
             src: item.coverImageUrl(),
             href: url('admin.listings.show', {id: item.id()}),
-            alt: item.title(),
+            alt: item.title()
         } %}
     </td>
     <td>
@@ -176,7 +176,7 @@
             title_on: 'ui.table.featured.on'|trans,
             title_off: 'ui.table.featured.off'|trans,
             toast_on: 'listings.flash.featured'|trans,
-            toast_off: 'listings.flash.unfeatured'|trans,
+            toast_off: 'listings.flash.unfeatured'|trans
         } %}
     </td>
     <td class="table__toggle-cell">
@@ -186,7 +186,7 @@
             title_on: 'ui.table.publish.on'|trans,
             title_off: 'ui.table.publish.off'|trans,
             toast_on: 'listings.flash.published'|trans,
-            toast_off: 'listings.flash.unpublished'|trans,
+            toast_off: 'listings.flash.unpublished'|trans
         } %}
     </td>
     {% else %}
@@ -209,9 +209,6 @@
         <div class="empty">
             <h2>{{ 'listings.empty'|trans }}</h2>
             <p>{{ 'listings.empty.hint'|trans }}</p>
-            {% if user.can('listings.manage') %}
-                <a class="btn btn--primary" href="{{ url('admin.listings.create') }}">{{ icon('plus') }} {{ 'listings.action.new'|trans }}</a>
-            {% endif %}
         </div>
     </td>
 </tr>

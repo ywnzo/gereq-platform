@@ -9,30 +9,13 @@
 
     <form method="post" class="form-grid" action="{{ url('admin.media.store') }}" enctype="multipart/form-data" data-form="media.upload" x-data="gereqForm"{% if form_errors('media.upload') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {% include 'ui/input.html.twig' with {
-            name: 'title',
-            label: 'media.field.title'|trans,
-            optional: true,
+        {{ forms().render('Modules\\Media\\Domain\\MediaAsset', {
             form: 'media.upload',
-            value: '',
-            hint: 'media.field.title.hint'|trans
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'alt',
-            label: 'media.field.alt'|trans,
-            optional: true,
-            form: 'media.upload',
-            value: ''
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'folder_id',
-            label: 'media.field.folder'|trans,
-            optional: true,
-            form: 'media.upload',
-            value: folder|default(''),
-            options: folderOptions,
-            searchable: true
-        } %}
+            cols: 1,
+            wrap: false,
+            values: { folder_id: folder|default('') },
+            choices: { folder_id: folderOptions|default([]) }
+        }) }}
         {% include 'ui/file.html.twig' with {
             name: 'file',
             label: 'media.field.file'|trans,

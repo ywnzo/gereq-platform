@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Media\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -12,6 +15,13 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_media_assets_mime', columns: ['mime'])]
 #[ORM\Index(name: 'idx_media_assets_created', columns: ['created_at'])]
 #[ORM\Index(name: 'idx_media_assets_folder', columns: ['folder_id'])]
+#[FormEntity('media.save')]
+#[FormEntity('media.upload')]
+#[FormGenerator(
+    exclude: ['id', 'path', 'mime', 'size', 'width', 'height', 'uploadedBy', 'createdAt'],
+    form: 'media.save',
+    cols: 1,
+)]
 class MediaAsset
 {
     #[ORM\Id]
@@ -19,6 +29,7 @@ class MediaAsset
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(label: 'media.field.title', hint: 'media.field.title.hint', order: 10)]
     private string $title;
 
     #[ORM\Column(length: 255)]
@@ -31,6 +42,7 @@ class MediaAsset
     private int $size = 0;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[FormField(label: 'media.field.alt', order: 20)]
     private ?string $alt = null;
 
     #[ORM\Column(nullable: true)]
@@ -43,6 +55,13 @@ class MediaAsset
     private ?string $uploadedBy = null;
 
     #[ORM\Column(name: 'folder_id', length: 36, nullable: true)]
+    #[FormField(
+        label: 'media.field.folder',
+        type: 'select',
+        name: 'folder_id',
+        options: ['searchable' => true],
+        order: 30,
+    )]
     private ?string $folderId = null;
 
     #[ORM\Column(name: 'created_at')]

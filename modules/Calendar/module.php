@@ -4,7 +4,7 @@ return [
     'id' => 'calendar',
     'name' => 'Calendar',
     'icon' => 'calendar',
-    'version' => '1.2.2',
+    'version' => '1.2.3',
     'description' => 'module.calendar.description',
     'class' => Modules\Calendar\CalendarModule::class,
     'author' => 'GEREQ',

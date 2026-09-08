@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\CRM\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -12,6 +15,12 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_crm_activities_customer', columns: ['customer_id'])]
 #[ORM\Index(name: 'idx_crm_activities_deal', columns: ['deal_id'])]
 #[ORM\Index(name: 'idx_crm_activities_type', columns: ['type'])]
+#[FormEntity('crm.activity.save')]
+#[FormGenerator(
+    exclude: ['id', 'completedAt', 'createdAt', 'updatedAt'],
+    form: 'crm.activity.save',
+    cols: 2,
+)]
 class Activity
 {
     public const TYPES = ['call', 'email', 'meeting', 'task', 'note'];
@@ -21,22 +30,47 @@ class Activity
     private string $id;
 
     #[ORM\Column(name: 'customer_id', length: 36)]
+    #[FormField(
+        required: true,
+        name: 'customer_id',
+        label: 'crm.field.customer',
+        type: 'select',
+        order: 10,
+    )]
     private string $customerId;
 
     #[ORM\Column(name: 'deal_id', length: 36, nullable: true)]
+    #[FormField(
+        name: 'deal_id',
+        label: 'crm.field.deal',
+        type: 'select',
+        emptyLabel: 'crm.activities.no_deal',
+        order: 20,
+    )]
     private ?string $dealId = null;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'crm.field.type',
+        type: 'select',
+        choicesFrom: 'TYPES',
+        choiceLabel: 'crm.activity.type.',
+        order: 30,
+    )]
     private string $type = 'note';
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'crm.field.subject', order: 40)]
     private string $subject;
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $body = null;
-
     #[ORM\Column(name: 'due_at', nullable: true)]
+    #[FormField(label: 'crm.field.due', type: 'datetime-local', order: 50)]
     private ?\DateTimeImmutable $dueAt = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'crm.field.body', type: 'textarea', extra: 'field--full', order: 60)]
+    private ?string $body = null;
 
     #[ORM\Column(name: 'completed_at', nullable: true)]
     private ?\DateTimeImmutable $completedAt = null;

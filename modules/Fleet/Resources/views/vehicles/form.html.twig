@@ -1,5 +1,48 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+{% set vehicleSource = item ?? 'Modules\\Fleet\\Domain\\Vehicle' %}
+{% set tech = item ? (item.techJson() ?? {}) : {} %}
+{% set cond = item ? (item.conditionJson() ?? {}) : {} %}
+{% set fleetValues = {
+    generation: tech.generation|default(item ? item.generation() : ''),
+    vehicle_kind: tech.vehicle_kind|default(''),
+    body_type: tech.body_type|default(''),
+    category: tech.category|default(''),
+    emission: tech.emission|default(''),
+    engine_code: tech.engine_code|default(''),
+    power_kw: tech.power_kw|default(''),
+    displacement_cc: tech.displacement_cc|default(''),
+    weight_kg: tech.weight_kg|default(''),
+    seats: tech.seats|default(''),
+    max_speed: tech.max_speed|default(''),
+    consumption: tech.consumption|default(''),
+    tire_size: tech.tire_size|default(''),
+    tp_number: tech.tp_number|default(''),
+    first_registered_at: tech.first_registered_at|default(''),
+    homologation: tech.homologation|default(''),
+    version_code: tech.version_code|default(''),
+    orv_notes: tech.orv_notes|default(''),
+    condition_interior: cond.interior|default(''),
+    condition_exterior: cond.exterior|default(''),
+    condition_damage: cond.damage|default(''),
+    stk_at: item and item.stkAt() ? item.stkAt().format('Y-m-d') : '',
+    insurance_until: item and item.insuranceUntil() ? item.insuranceUntil().format('Y-m-d') : '',
+    vignette_until: item and item.vignetteUntil() ? item.vignetteUntil().format('Y-m-d') : '',
+    tires_at: item and item.tiresAt() ? item.tiresAt().format('Y-m-d') : '',
+    warranty_until: item and item.warrantyUntil() ? item.warrantyUntil().format('Y-m-d') : '',
+    customer_id: item ? item.customerId() : customerId,
+    branch_id: item ? item.branchId() : defaultBranchId|default(''),
+} %}
+{% set statusChoices = [
+    { value: 'available', label: 'fleet.status.available', tone: 'available' },
+    { value: 'rented', label: 'fleet.status.rented', tone: 'rented' },
+    { value: 'in_service', label: 'fleet.status.in_service', tone: 'in_service' },
+    { value: 'repair_wait', label: 'fleet.status.repair_wait', tone: 'repair_wait' },
+    { value: 'out_of_service', label: 'fleet.status.out_of_service', tone: 'out_of_service' },
+    { value: 'returned_to_client', label: 'fleet.status.returned_to_client', tone: 'returned_to_client' },
+] %}
+{% set identityExclude = (branchOptions is defined and branchOptions is not empty) ? [] : ['branchId'] %}
+
 <header class="page-header">
     <div>
         <h1>{{ item ? 'fleet.edit'|trans : 'fleet.new'|trans }}</h1>
@@ -24,19 +67,14 @@
         </div>
     </header>
     <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'plate', label:'fleet.field.plate'|trans, required:true, form:'fleet.save', value: item?item.plate():'' } %}
-        {% include 'ui/input.html.twig' with { name:'vin', label:'fleet.field.vin'|trans, optional:true, form:'fleet.save', value: item?item.vin():'' } %}
-        {% if branchOptions is defined and branchOptions is not empty %}
-            {% include 'ui/select.html.twig' with {
-                name: 'branch_id',
-                label: 'fleet.field.branch'|trans,
-                optional: true,
-                form: 'fleet.save',
-                value: item ? item.branchId() : defaultBranchId|default(''),
-                options: branchOptions,
-                searchable: true
-            } %}
-        {% endif %}
+        {{ forms().render(vehicleSource, {
+            form: 'fleet.save',
+            group: 'identity',
+            wrap: false,
+            exclude: identityExclude,
+            values: fleetValues,
+            choices: branchOptions is defined and branchOptions is not empty ? { branch_id: branchOptions } : {}
+        }) }}
         <div class="g-field field--full" data-field="orv_id">
             <label class="g-label" for="orv_id">
                 <span>{{ 'fleet.field.orv'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
@@ -61,20 +99,13 @@
     <header class="panel__head">
         <div><h2>{{ 'fleet.form.section.vehicle'|trans }}</h2></div>
     </header>
-    <div class="form-grid">
-        {% set tech = item ? (item.techJson() ?? {}) : {} %}
-        {% include 'ui/input.html.twig' with { name:'brand', label:'fleet.field.brand'|trans, optional:true, form:'fleet.save', value: item?item.brand():'', list:'fleet-brands' } %}
-        {% if brandOptions %}<datalist id="fleet-brands">{% for b in brandOptions %}<option value="{{ b }}">{% endfor %}</datalist>{% endif %}
-        {% include 'ui/input.html.twig' with { name:'model', label:'fleet.field.model'|trans, optional:true, form:'fleet.save', value: item?item.model():'' } %}
-        {% include 'ui/input.html.twig' with { name:'generation', label:'fleet.field.generation'|trans, optional:true, form:'fleet.save', value: tech.generation|default(item ? item.generation() : ''), hint:'fleet.field.generation_hint'|trans } %}
-        {% include 'ui/input.html.twig' with { name:'model_year', type:'number', label:'fleet.field.year'|trans, optional:true, form:'fleet.save', value: item and item.modelYear()?item.modelYear():'' } %}
-        {% include 'ui/input.html.twig' with { name:'color', label:'fleet.field.color'|trans, optional:true, form:'fleet.save', value: item?item.color():'' } %}
-        {% include 'ui/select.html.twig' with { name:'fuel', label:'fleet.field.fuel'|trans, optional:true, form:'fleet.save', value: item?item.fuel():'', options: fuelOptions } %}
-        {% include 'ui/select.html.twig' with { name:'gearbox', label:'fleet.field.gearbox'|trans, optional:true, form:'fleet.save', value: item?item.gearbox():'', options: [
-        {value:'',label:'—'},{value:'manual',label:'fleet.gearbox.manual'|trans},{value:'automatic',label:'fleet.gearbox.automatic'|trans}
-        ] } %}
-        {% include 'ui/input.html.twig' with { name:'motorization', label:'fleet.field.motorization'|trans, optional:true, form:'fleet.save', value: item?item.motorization():'', extra:'field--full' } %}
-    </div>
+    {{ forms().render(vehicleSource, {
+        form: 'fleet.save',
+        group: 'vehicle',
+        values: fleetValues,
+        choices: fuelOptions is defined ? { fuel: fuelOptions } : {}
+    }) }}
+    {% if brandOptions %}<datalist id="fleet-brands">{% for b in brandOptions %}<option value="{{ b }}">{% endfor %}</datalist>{% endif %}
 </section>
 
 <section class="panel">
@@ -84,74 +115,48 @@
             <p class="muted">{{ 'fleet.form.section.tech_hint'|trans }}</p>
         </div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'vehicle_kind', label:'fleet.field.vehicle_kind'|trans, optional:true, form:'fleet.save', value: tech.vehicle_kind|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'body_type', label:'fleet.field.body_type'|trans, optional:true, form:'fleet.save', value: tech.body_type|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'category', label:'fleet.field.category'|trans, optional:true, form:'fleet.save', value: tech.category|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'emission', label:'fleet.field.emission'|trans, optional:true, form:'fleet.save', value: tech.emission|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'engine_code', label:'fleet.field.engine_code'|trans, optional:true, form:'fleet.save', value: tech.engine_code|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'power_kw', type:'number', label:'fleet.field.power_kw'|trans, optional:true, form:'fleet.save', value: tech.power_kw|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'displacement_cc', type:'number', label:'fleet.field.displacement_cc'|trans, optional:true, form:'fleet.save', value: tech.displacement_cc|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'weight_kg', type:'number', label:'fleet.field.weight_kg'|trans, optional:true, form:'fleet.save', value: tech.weight_kg|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'seats', type:'number', label:'fleet.field.seats'|trans, optional:true, form:'fleet.save', value: tech.seats|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'max_speed', type:'number', label:'fleet.field.max_speed'|trans, optional:true, form:'fleet.save', value: tech.max_speed|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'consumption', label:'fleet.field.consumption'|trans, optional:true, form:'fleet.save', value: tech.consumption|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'tire_size', label:'fleet.field.tire_size'|trans, optional:true, form:'fleet.save', value: tech.tire_size|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'tp_number', label:'fleet.field.tp_number'|trans, optional:true, form:'fleet.save', value: tech.tp_number|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'first_registered_at', type:'date', label:'fleet.field.first_registered_at'|trans, optional:true, form:'fleet.save', value: tech.first_registered_at|default('') } %}
-        {% include 'ui/input.html.twig' with { name:'homologation', label:'fleet.field.homologation'|trans, optional:true, form:'fleet.save', value: tech.homologation|default(''), extra:'field--full' } %}
-        {% include 'ui/input.html.twig' with { name:'version_code', label:'fleet.field.version_code'|trans, optional:true, form:'fleet.save', value: tech.version_code|default(''), extra:'field--full' } %}
-        {% include 'ui/textarea.html.twig' with { name:'orv_notes', label:'fleet.field.orv_notes'|trans, optional:true, form:'fleet.save', value: tech.orv_notes|default(''), size:'mini', rows:5, extra:'field--full', hint:'fleet.field.orv_notes_hint'|trans } %}
-    </div>
+    {{ forms().render(vehicleSource, {
+        form: 'fleet.save',
+        group: 'tech',
+        values: fleetValues
+    }) }}
 </section>
 
 <section class="panel">
     <header class="panel__head">
         <div><h2>{{ 'fleet.form.section.status'|trans }}</h2></div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'mileage', type:'number', label:'fleet.field.mileage'|trans, optional:true, form:'fleet.save', value: item and item.mileage()?item.mileage():'' } %}
-        {% include 'ui/select.html.twig' with { name:'fuel_level', label:'fleet.field.fuel_level'|trans, optional:true, form:'fleet.save', value: item?item.fuelLevel():'', options: [
-        {value:'',label:'—'},{value:'full',label:'fleet.fuel_level.full'|trans},{value:'three_quarters',label:'fleet.fuel_level.three_quarters'|trans},{value:'half',label:'fleet.fuel_level.half'|trans},{value:'quarter',label:'fleet.fuel_level.quarter'|trans},{value:'empty',label:'fleet.fuel_level.empty'|trans}
-        ] } %}
-        {% include 'ui/select.html.twig' with { name:'status', label:'fleet.field.status'|trans, form:'fleet.save', value: item?item.status():'available', options:[
-        {value:'available',label:'fleet.status.available'|trans,tone:'available'},{value:'rented',label:'fleet.status.rented'|trans,tone:'rented'},{value:'in_service',label:'fleet.status.in_service'|trans,tone:'in_service'},{value:'repair_wait',label:'fleet.status.repair_wait'|trans,tone:'repair_wait'},{value:'out_of_service',label:'fleet.status.out_of_service'|trans,tone:'out_of_service'},{value:'returned_to_client',label:'fleet.status.returned_to_client'|trans,tone:'returned_to_client'}
-        ] } %}
-        {% include 'ui/select.html.twig' with { name:'ownership', label:'fleet.field.ownership'|trans, form:'fleet.save', value: item?item.ownership():'owned', options:[
-        {value:'owned',label:'fleet.ownership.owned'|trans},{value:'external',label:'fleet.ownership.external'|trans}
-        ] } %}
-        {% include 'ui/select.html.twig' with { name:'customer_id', label:'fleet.field.customer'|trans, optional:true, form:'fleet.save', value: item?item.customerId():customerId, options:customerOptions, extra:'field--full' } %}
-    </div>
+    {{ forms().render(vehicleSource, {
+        form: 'fleet.save',
+        group: 'status',
+        values: fleetValues,
+        choices: {
+            status: statusChoices,
+            customer_id: customerOptions|default([])
+        }
+    }) }}
 </section>
 
 <section class="panel">
     <header class="panel__head">
         <div><h2>{{ 'fleet.form.section.dates'|trans }}</h2></div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'stk_at', type:'date', label:'fleet.field.stk'|trans, optional:true, form:'fleet.save', value: item and item.stkAt()?item.stkAt().format('Y-m-d'):'' } %}
-        {% include 'ui/input.html.twig' with { name:'insurance_until', type:'date', label:'fleet.field.insurance'|trans, optional:true, form:'fleet.save', value: item and item.insuranceUntil()?item.insuranceUntil().format('Y-m-d'):'' } %}
-        {% include 'ui/input.html.twig' with { name:'vignette_until', type:'date', label:'fleet.field.vignette'|trans, optional:true, form:'fleet.save', value: item and item.vignetteUntil()?item.vignetteUntil().format('Y-m-d'):'' } %}
-        {% include 'ui/input.html.twig' with { name:'tires_at', type:'date', label:'fleet.field.tires'|trans, optional:true, form:'fleet.save', value: item and item.tiresAt()?item.tiresAt().format('Y-m-d'):'' } %}
-        {% include 'ui/input.html.twig' with { name:'warranty_until', type:'date', label:'fleet.field.warranty'|trans, optional:true, form:'fleet.save', value: item and item.warrantyUntil()?item.warrantyUntil().format('Y-m-d'):'' } %}
-    </div>
+    {{ forms().render(vehicleSource, {
+        form: 'fleet.save',
+        group: 'dates',
+        values: fleetValues
+    }) }}
 </section>
 
 <section class="panel">
     <header class="panel__head">
         <div><h2>{{ 'fleet.form.section.condition'|trans }}</h2></div>
     </header>
-    <div class="form-grid">
-        {% set cond = item ? item.conditionJson() : null %}
-        {% include 'ui/select.html.twig' with { name:'condition_interior', label:'fleet.field.condition_interior'|trans, optional:true, form:'fleet.save', value: cond.interior|default(''), options:[
-        {value:'',label:'—'},{value:'clean',label:'fleet.condition.clean'|trans},{value:'wash',label:'fleet.condition.wash'|trans},{value:'dirty',label:'fleet.condition.dirty'|trans}
-        ] } %}
-        {% include 'ui/select.html.twig' with { name:'condition_exterior', label:'fleet.field.condition_exterior'|trans, optional:true, form:'fleet.save', value: cond.exterior|default(''), options:[
-        {value:'',label:'—'},{value:'clean',label:'fleet.condition.clean'|trans},{value:'wash',label:'fleet.condition.wash'|trans},{value:'dirty',label:'fleet.condition.dirty'|trans}
-        ] } %}
-        {% include 'ui/textarea.html.twig' with { name:'condition_damage', label:'fleet.field.condition_damage'|trans, optional:true, form:'fleet.save', value: cond.damage|default(''), size:'mini', rows:3, extra:'field--full' } %}
-        {% include 'ui/textarea.html.twig' with { name:'note', label:'fleet.field.note'|trans, optional:true, form:'fleet.save', value: item?item.note():'', size:'mini', rows:3, extra:'field--full' } %}
-    </div>
+    {{ forms().render(vehicleSource, {
+        form: 'fleet.save',
+        group: 'condition',
+        values: fleetValues
+    }) }}
 </section>
 </form>
 
@@ -239,7 +244,7 @@
         method: 'POST',
         body,
         headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
-        credentials: 'same-origin',
+        credentials: 'same-origin'
       });
       const json = await res.json();
       if (!json.ok) {

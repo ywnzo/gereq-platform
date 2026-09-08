@@ -2,16 +2,26 @@
 declare(strict_types=1);
 namespace Modules\Documents\Domain;
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'documents')]
+#[FormEntity('documents.save')]
+#[FormGenerator(
+    exclude: ['id', 'path', 'originalName', 'mime', 'size', 'uploadedBy', 'createdAt'],
+    form: 'documents.save',
+    cols: 1,
+)]
 class Document
 {
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $id;
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'documents.field.title', order: 10)]
     private string $title;
     #[ORM\Column(length: 255)]
     private string $path;
@@ -25,6 +35,13 @@ class Document
     private ?string $uploadedBy = null;
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
+
+    /** Form-only link fields (not ORM). */
+    #[FormField(label: 'documents.field.entity_type', name: 'entity_type', hint: 'documents.field.entity_type.hint', order: 20)]
+    private ?string $entityType = null;
+
+    #[FormField(label: 'documents.field.entity_id', name: 'entity_id', order: 30)]
+    private ?string $entityId = null;
 
     public function __construct(string $title, string $path, string $originalName, string $mime, int $size, ?string $uploadedBy = null)
     {

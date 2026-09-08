@@ -3,6 +3,12 @@
   {% import 'ui/macros.html.twig' as ui %}
   {{ ui.badge('TOP', 'signal') }}
   {{ ui.drawer_trigger('filters', 'Filtry'|trans, 'ghost', 'filters') }}
+
+  Grid (Athena contentDiv + cols):
+    {% embed 'ui/components/grid.html.twig' with { cols: 3 } %}
+      {% block body %}…{% endblock %}
+    {% endembed %}
+  Or from PHP: ui()->container(3, $html) / ui()->grid(3, $html)
 #}
 {% macro badge(label, tone = 'muted', class = null) %}
 <span class="badge badge--{{ tone }}{{ class ? ' ' ~ class : '' }}">{{ label }}</span>
@@ -24,4 +30,12 @@
     {% if hint %}<p>{{ hint }}</p>{% endif %}
     {% if action %}{{ action|raw }}{% endif %}
 </div>
+{% endmacro %}
+
+{% macro grid(cols = 2, body = '', class = null, compact = false) %}
+{{ ui_render('grid', { cols: cols, body: body, class: class, compact: compact })|raw }}
+{% endmacro %}
+
+{% macro cell(body, span = 1, class = null) %}
+{{ ui_render('cell', { body: body, span: span, class: class })|raw }}
 {% endmacro %}

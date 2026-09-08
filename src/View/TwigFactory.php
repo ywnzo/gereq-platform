@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\View;
 
+use Gereq\Admin\Form\Forms;
 use Gereq\Admin\Ui\Icons;
 use Gereq\Admin\Ui\Ui;
 use Gereq\Auth\Authenticator;
@@ -126,6 +127,19 @@ final class TwigFactory
             'ui_render',
             static fn (string $name, array $data = []): string => gereq()->make(Ui::class)->component($name, $data),
             ['is_safe' => ['html']],
+        ));
+        $twig->addFunction(new TwigFunction('forms', static fn (): Forms => gereq()->make(Forms::class)));
+        $twig->addFunction(new TwigFunction(
+            'field_required',
+            static function (
+                string $name,
+                ?string $form = null,
+                mixed $required = null,
+                ?array $requiredFields = null,
+                string|object|null $entity = null,
+            ): bool {
+                return gereq()->make(Forms::class)->resolveRequired($name, $form, $required, $requiredFields, $entity);
+            },
         ));
         $twig->addFilter(new TwigFilter('trans', [$runtime, 'trans']));
         $twig->addFilter(new TwigFilter('audit_action', [$runtime, 'auditAction']));

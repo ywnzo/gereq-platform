@@ -100,7 +100,6 @@
     min-width: 240px;
 }
 
-.esign-send .form-actions,
-.form-actions form {
+.esign-send .form-actions {
     display: inline;
 }

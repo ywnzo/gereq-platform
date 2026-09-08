@@ -1,5 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+{% set bikeSource = item ?? 'Modules\\BikeService\\Domain\\Bike' %}
+
 <header class="page-header">
     <div>
         <p class="eyebrow"><a href="{{ url('admin.bikeservice.bikes') }}">{{ 'nav.bikeservice.bikes'|trans }}</a></p>
@@ -19,27 +21,22 @@
 
 <section class="panel">
     <header class="panel__head"><div><h2>{{ 'bikeservice.bikes.section.basic'|trans }}</h2></div></header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'brand', label:'bikeservice.field.brand'|trans, required:true, form:'bikeservice.bike', value: item?item.brand():(brandPrefill|default('')) } %}
-        {% include 'ui/input.html.twig' with { name:'model', label:'bikeservice.field.model'|trans, optional:true, form:'bikeservice.bike', value: item?item.model():'' } %}
-        {% include 'ui/select.html.twig' with { name:'kind', label:'bikeservice.field.kind'|trans, form:'bikeservice.bike', value: item?item.kind():'bike', options: kinds|map(k => {value:k, label:('bikeservice.kind.'~k)|trans}) } %}
-        {% include 'ui/select.html.twig' with { name:'status', label:'bikeservice.field.status'|trans, form:'bikeservice.bike', value: item?item.status():'active', options: statuses|map(s => {value:s, label:('bikeservice.bike_status.'~s)|trans}) } %}
-        {% include 'ui/input.html.twig' with { name:'serial_number', label:'bikeservice.field.serial'|trans, optional:true, form:'bikeservice.bike', value: item?item.serialNumber():'' } %}
-        {% include 'ui/input.html.twig' with { name:'color', label:'bikeservice.field.color'|trans, optional:true, form:'bikeservice.bike', value: item?item.color():'' } %}
-        {% include 'ui/input.html.twig' with { name:'frame_size', label:'bikeservice.field.frame_size'|trans, optional:true, form:'bikeservice.bike', value: item?item.frameSize():'' } %}
-        {% include 'ui/select.html.twig' with { name:'customer_id', label:'bikeservice.field.customer'|trans, optional:true, form:'bikeservice.bike', value: item?item.customerId():customerId, options:customerOptions } %}
-        {% include 'ui/input.html.twig' with { name:'bike_index_id', type:'number', label:'bikeservice.field.bike_index_id'|trans, optional:true, form:'bikeservice.bike', value: item and item.bikeIndexId()?item.bikeIndexId():'' } %}
-        {% include 'ui/textarea.html.twig' with { name:'note', label:'bikeservice.field.note'|trans, optional:true, form:'bikeservice.bike', value: item?item.note():'', extra:'field--full' } %}
-    </div>
+    {{ forms().render(bikeSource, {
+        form: 'bikeservice.bike',
+        group: 'basic',
+        cols: 2,
+        values: item ? {} : { brand: brandPrefill|default(''), customer_id: customerId },
+        choices: { customer_id: customerOptions }
+    }) }}
 </section>
 
 <section class="panel">
     <header class="panel__head"><div><h2>{{ 'bikeservice.bikes.section.ebike'|trans }}</h2><p class="muted">{{ 'bikeservice.bikes.section.ebike_hint'|trans }}</p></div></header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'battery_wh', type:'number', label:'bikeservice.field.battery_wh'|trans, optional:true, form:'bikeservice.bike', value: item and item.batteryWh()?item.batteryWh():'' } %}
-        {% include 'ui/input.html.twig' with { name:'motor_w', type:'number', label:'bikeservice.field.motor_w'|trans, optional:true, form:'bikeservice.bike', value: item and item.motorW()?item.motorW():'' } %}
-        {% include 'ui/input.html.twig' with { name:'odometer_km', type:'number', label:'bikeservice.field.odometer'|trans, optional:true, form:'bikeservice.bike', value: item and item.odometerKm()?item.odometerKm():'' } %}
-    </div>
+    {{ forms().render(bikeSource, {
+        form: 'bikeservice.bike',
+        group: 'ebike',
+        cols: 2
+    }) }}
 </section>
 </form>
 {% endblock %}

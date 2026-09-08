@@ -37,7 +37,7 @@ final class ShopModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.5.0';
+        return '1.5.1';
     }
 
     public function register(ModuleContext $context): void
@@ -209,6 +209,7 @@ final class ShopModule implements ModuleInterface
             'active' => 'nullable',
             'estimated_days' => 'nullable',
         ]);
+        $context->forms()->entity('shop.shipping.save', \Modules\Shop\Domain\ShippingMethod::class);
         $v->ruleset('shop.cart.item.add', [
             'product_id' => 'required|max:36',
             'qty' => 'nullable',

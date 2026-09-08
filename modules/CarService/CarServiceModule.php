@@ -42,7 +42,7 @@ final class CarServiceModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.13.4';
+        return '1.13.5';
     }
 
     public function register(ModuleContext $context): void
@@ -178,6 +178,7 @@ final class CarServiceModule implements ModuleInterface
             'intake_at' => 'nullable',
             'handover_at' => 'nullable',
         ]);
+        $context->forms()->entity('carservice.save', \Modules\CarService\Domain\ServiceOrder::class);
         $v->ruleset('carservice.finish', [
             'payment_type' => 'nullable|in:online,cash',
             'internal_cost' => 'nullable',
@@ -228,6 +229,7 @@ final class CarServiceModule implements ModuleInterface
             'note' => 'nullable|max:5000',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('carservice.branch', \Modules\CarService\Domain\ServiceBranch::class);
         $v->ruleset('carservice.settings', [
             'job_soft_limit_hours' => 'required',
             'default_team' => 'required|in:body_shop,paint_shop',

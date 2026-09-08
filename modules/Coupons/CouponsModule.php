@@ -28,7 +28,7 @@ final class CouponsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.0.2';
     }
 
     public function register(ModuleContext $context): void
@@ -148,5 +148,6 @@ final class CouponsModule implements ModuleInterface
             'ends_at' => 'nullable',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('coupons.save', \Modules\Coupons\Domain\Coupon::class);
     }
 }

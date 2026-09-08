@@ -314,3 +314,5 @@ Modules
 ```
 
 Platforma je od začátku navržena jako integrační vrstva: **Admin + Domain + API + Events + Webhooks**.
+
+Admin formuláře (atributy `#[FormField]` / `#[FormGenerator]`, `forms()->render()`): viz [docs/FORMS.md](docs/FORMS.md).

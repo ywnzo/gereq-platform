@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\BikeService\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -14,6 +17,25 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_bikeservice_orders_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_bikeservice_orders_team', columns: ['team'])]
 #[ORM\UniqueConstraint(name: 'uniq_bikeservice_orders_tracker', columns: ['tracker_token'])]
+#[FormEntity('bikeservice.save')]
+#[FormGenerator(
+    exclude: [
+        'id',
+        'trackerToken',
+        'laborCost',
+        'partsCost',
+        'paymentType',
+        'intakeOdometerKm',
+        'intakeBatteryPct',
+        'intakeAt',
+        'handoverAt',
+        'finishedAt',
+        'createdAt',
+        'updatedAt',
+    ],
+    form: 'bikeservice.save',
+    cols: 2,
+)]
 class BikeOrder
 {
     public const STATUSES = ['intake', 'in_progress', 'waiting', 'ready', 'done', 'cancelled'];
@@ -25,21 +47,54 @@ class BikeOrder
     private string $id;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'bikeservice.field.status',
+        type: 'select',
+        group: 'order',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'bikeservice.status.',
+        order: 30,
+    )]
     private string $status = 'intake';
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'bikeservice.field.team',
+        type: 'select',
+        group: 'order',
+        choicesFrom: 'TEAMS',
+        choiceLabel: 'bikeservice.team.',
+        order: 40,
+    )]
     private string $team = 'mechanics';
 
     #[ORM\Column(name: 'bike_id', length: 36)]
+    #[FormField(
+        required: true,
+        name: 'bike_id',
+        label: 'bikeservice.field.bike',
+        type: 'select',
+        group: 'order',
+        extra: 'field--full',
+        order: 10,
+    )]
     private string $bikeId;
 
     #[ORM\Column(name: 'customer_id', length: 36, nullable: true)]
+    #[FormField(
+        name: 'customer_id',
+        label: 'bikeservice.field.customer',
+        type: 'select',
+        group: 'order',
+        order: 20,
+    )]
     private ?string $customerId = null;
 
     #[ORM\Column(name: 'tracker_token', length: 64)]
     private string $trackerToken;
 
     #[ORM\Column(name: 'service_info', type: 'text', nullable: true)]
+    #[FormField(label: 'bikeservice.field.service_info', type: 'textarea', group: 'work', extra: 'field--full', order: 10)]
     private ?string $serviceInfo = null;
 
     #[ORM\Column(name: 'payment_type', length: 16, nullable: true)]
@@ -58,6 +113,7 @@ class BikeOrder
     private ?int $intakeBatteryPct = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'bikeservice.field.note', type: 'textarea', group: 'work', extra: 'field--full', order: 20)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'finished_at', nullable: true)]

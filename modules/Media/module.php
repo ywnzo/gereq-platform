@@ -6,7 +6,7 @@ return [
     'id' => 'media',
     'name' => 'Media',
     'icon' => 'image',
-    'version' => '1.2.2',
+    'version' => '1.2.3',
     'description' => 'module.media.description',
     'class' => Modules\Media\MediaModule::class,
     'author' => 'GEREQ',

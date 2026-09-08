@@ -24,7 +24,6 @@
     {% include 'ui/input.html.twig' with {
         name: 'provider_name',
         label: 'esign.field.provider_name'|trans,
-        required: true,
         form: 'esign.settings',
         value: providerName
     } %}
@@ -38,7 +37,6 @@
     {% include 'ui/input.html.twig' with {
         name: 'link_ttl_days',
         label: 'esign.field.link_ttl_days'|trans,
-        required: true,
         form: 'esign.settings',
         value: linkTtlDays,
         type: 'number'
@@ -46,7 +44,6 @@
     {% include 'ui/input.html.twig' with {
         name: 'consent_version',
         label: 'esign.field.consent_version'|trans,
-        required: true,
         form: 'esign.settings',
         value: consentVersion
     } %}

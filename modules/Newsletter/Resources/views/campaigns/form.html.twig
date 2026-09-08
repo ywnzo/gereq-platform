@@ -16,23 +16,12 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'newsletter.campaign.save' } %}
 
-<form method="post" class="form-grid" action="{{ item ? url('admin.newsletter.campaigns.update', {id: item.id()}) : url('admin.newsletter.campaigns.store') }}" data-form="newsletter.campaign.save" x-data="gereqForm"{% if form_errors('newsletter.campaign.save') %} data-server-state="1"{% endif %}>
+<form method="post" action="{{ item ? url('admin.newsletter.campaigns.update', {id: item.id()}) : url('admin.newsletter.campaigns.store') }}" data-form="newsletter.campaign.save" x-data="gereqForm"{% if form_errors('newsletter.campaign.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {% include 'ui/input.html.twig' with {
-        name: 'subject',
-        label: 'newsletter.field.subject'|trans,
-        required: true,
+    {{ forms().render(item ?? 'Modules\\Newsletter\\Domain\\Campaign', {
         form: 'newsletter.campaign.save',
-        value: item ? item.subject() : ''
-    } %}
-    {% include 'ui/textarea.html.twig' with {
-        name: 'body_html',
-        label: 'newsletter.field.body'|trans,
-        required: true,
-        form: 'newsletter.campaign.save',
-        value: item ? item.bodyHtml() : '',
-        rows: 12
-    } %}
+        cols: 1
+    }) }}
     {% if item %}
     <div class="meta-list">
         <div><span>{{ 'newsletter.field.status'|trans }}</span><strong>{{ item.statusLabel()|trans }}</strong></div>

@@ -8,7 +8,7 @@
     status: status,
     payment_status: paymentFilter,
     currency: currencyFilter,
-    customer: customerId|default(''),
+    customer: customerId|default('')
 } %}
 <div
     class="list-shell"
@@ -51,7 +51,7 @@
                 drawer_id: 'orders-filters',
                 label: 'ui.drawer.filters'|trans,
                 variant: advancedFilters ? 'primary' : 'ghost',
-                icon: 'filters',
+                icon: 'filters'
             }) }}
         </div>
     </div>

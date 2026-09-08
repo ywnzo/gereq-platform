@@ -1,0 +1,59 @@
+{# Auto form fields from #[FormGenerator] + #[FormField] via forms()->render($entity) #}
+{% set formName = form|default(null) %}
+{% set cols = cols|default(2) %}
+{% set wrap = wrap is defined ? wrap : true %}
+{% if wrap %}<div class="form-grid{% if cols == 1 %} form-grid--cols-1{% elseif cols == 3 %} form-grid--cols-3{% elseif cols == 4 %} form-grid--cols-4{% endif %}">{% endif %}
+    {% for field in fields %}
+        {% set type = field.type|default('text') %}
+        {% set label = field.label|trans %}
+        {% set common = {
+            name: field.name,
+            label: label,
+            form: formName,
+            required: field.required,
+            value: field.value,
+            hint: field.hint ? field.hint|trans : null,
+            extra: field.extra,
+            entity: entity|default(null),
+            attrs: field.attrs|default('')
+        } %}
+        {% if type in ['textarea', 'editor'] %}
+            {% include 'ui/textarea.html.twig' with common|merge({
+                size: type == 'editor' ? 'full' : 'mini',
+                placeholder: field.options.placeholder|default('')
+            }) %}
+        {% elseif type == 'select' %}
+            {% include 'ui/select.html.twig' with common|merge({
+                options: field.choices,
+                searchable: field.options.searchable|default(false)
+            }) %}
+        {% elseif type in ['checkbox', 'switch'] %}
+            {% include 'ui/checkbox.html.twig' with {
+                name: field.name,
+                label: label,
+                form: formName,
+                required: field.required,
+                checked: field.value ? true : false,
+                description: field.hint ? field.hint|trans : null,
+                variant: type == 'switch' ? 'switch' : 'check',
+                extra: field.extra,
+                entity: entity|default(null)
+            } %}
+        {% elseif type == 'hidden' %}
+            <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+        {% else %}
+            {% include 'ui/input.html.twig' with common|merge({
+                type: type,
+                placeholder: field.options.placeholder|default(''),
+                maxlength: field.options.maxlength|default(null),
+                min: field.options.min|default(null),
+                max: field.options.max|default(null),
+                step: field.options.step|default(null),
+                readonly: field.options.readonly|default(false),
+                disabled: field.options.disabled|default(false)
+            }) %}
+        {% endif %}
+    {% else %}
+        <p class="muted">Žádná pole pro FormGenerator.</p>
+    {% endfor %}
+{% if wrap %}</div>{% endif %}

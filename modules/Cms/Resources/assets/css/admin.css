@@ -85,27 +85,3 @@
         justify-content: flex-start;
     }
 }
-
-.panel {
-    border-radius: var(--radius);
-}
-.panel__head {
-    min-height: 44px;
-    padding: 10px 14px;
-}
-.panel__head .panel__actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
-
-@media (max-width: 960px) {
-    .dash-grid { grid-template-columns: 1fr; }
-    .dash-cell--full,
-    .dash-cell--two_thirds,
-    .dash-cell--half,
-    .dash-cell--third {
-        grid-column: 1 / -1;
-    }
-    .dash-hero { flex-direction: column; align-items: stretch; }
-}

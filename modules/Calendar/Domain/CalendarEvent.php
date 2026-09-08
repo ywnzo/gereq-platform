@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace Modules\Calendar\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'calendar_events')]
 #[ORM\Index(name: 'idx_calendar_starts', columns: ['starts_at'])]
 #[ORM\Index(name: 'idx_calendar_external', columns: ['external_provider', 'external_id'])]
+#[FormEntity('calendar.event.save')]
+#[FormGenerator(
+    exclude: ['id', 'externalProvider', 'externalId', 'externalEtag', 'connectionId', 'createdBy', 'createdAt', 'updatedAt'],
+    form: 'calendar.event.save',
+    cols: 2,
+)]
 class CalendarEvent
 {
     public const TYPES = ['meeting', 'deadline', 'call', 'task', 'other'];
@@ -22,37 +31,69 @@ class CalendarEvent
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'calendar.field.title', group: 'basic', extra: 'field--full', order: 10)]
     private string $title;
 
     #[ORM\Column(name: 'starts_at')]
+    #[FormField(required: true, name: 'starts_at', label: 'calendar.field.starts', type: 'datetime-local', group: 'schedule', order: 10)]
     private \DateTimeImmutable $startsAt;
 
     #[ORM\Column(name: 'ends_at')]
+    #[FormField(required: true, name: 'ends_at', label: 'calendar.field.ends', type: 'datetime-local', group: 'schedule', order: 20)]
     private \DateTimeImmutable $endsAt;
 
     #[ORM\Column(name: 'all_day', type: 'boolean')]
+    #[FormField(label: 'calendar.field.all_day', type: 'checkbox', group: 'schedule', order: 30)]
     private bool $allDay = false;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'calendar.field.type',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'TYPES',
+        choiceLabel: 'calendar.type.',
+        order: 20,
+    )]
     private string $type = 'other';
 
     #[ORM\Column(length: 16)]
+    #[FormField(
+        label: 'calendar.field.color',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'COLORS',
+        choiceLabel: 'calendar.color.',
+        order: 40,
+    )]
     private string $color = 'blue';
 
     #[ORM\Column(length: 16)]
+    #[FormField(
+        label: 'calendar.field.status',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'calendar.status.',
+        order: 30,
+    )]
     private string $status = 'confirmed';
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[FormField(label: 'calendar.field.timezone', group: 'schedule', order: 40)]
     private ?string $timezone = 'Europe/Prague';
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[FormField(label: 'calendar.field.location', group: 'details', extra: 'field--full', order: 10)]
     private ?string $location = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'calendar.field.description', type: 'textarea', group: 'details', extra: 'field--full', order: 20)]
     private ?string $description = null;
 
     /** RFC 5545 RRULE, e.g. FREQ=WEEKLY;BYDAY=MO */
     #[ORM\Column(length: 255, nullable: true)]
+    #[FormField(label: 'calendar.field.rrule', group: 'schedule', hint: 'calendar.field.rrule_hint', extra: 'field--full', order: 50)]
     private ?string $rrule = null;
 
     #[ORM\Column(name: 'external_provider', length: 32, nullable: true)]

@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Modules\Newsletter\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'newsletter_campaigns')]
 #[ORM\Index(name: 'idx_newsletter_campaigns_status', columns: ['status'])]
+#[FormEntity('newsletter.campaign.save')]
+#[FormGenerator(
+    exclude: ['id', 'status', 'sentAt', 'createdAt'],
+    form: 'newsletter.campaign.save',
+    cols: 1,
+)]
 class Campaign
 {
     public const STATUSES = ['draft', 'sent'];
@@ -19,9 +28,17 @@ class Campaign
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'newsletter.field.subject', order: 10)]
     private string $subject;
 
     #[ORM\Column(name: 'body_html', type: 'text')]
+    #[FormField(
+        required: true,
+        label: 'newsletter.field.body',
+        type: 'editor',
+        extra: 'field--full',
+        order: 20,
+    )]
     private string $bodyHtml;
 
     #[ORM\Column(length: 32)]

@@ -10,6 +10,9 @@
 {% endblock %}
 
 {% block content %}
+    {% set listingSource = listing ?? 'Modules\\Listings\\Domain\\Listing' %}
+    {% set brokerSelectOptions = [{ value: '', label: 'listings.field.broker.none'|trans }]|merge(brokerOptions|default([])) %}
+
     <header class="page-header">
         <div>
             <h1>{{ pageTitle }}</h1>
@@ -41,7 +44,7 @@
             {% endif %}
         </div>
 
-        <form id="listing-form" method="post" action="{{ listing ? url('admin.listings.update', {id: listing.id()}) : url('admin.listings.store') }}">
+        <form id="listing-form" method="post" action="{{ listing ? url('admin.listings.update', {id: listing.id()}) : url('admin.listings.store') }}" data-form="listings.save" x-data="gereqForm"{% if form_errors('listings.save') %} data-server-state="1"{% endif %}>
             {{ csrf_field()|raw }}
 
             <section class="design-panel" data-panel="basic" role="tabpanel">
@@ -49,78 +52,12 @@
                     <header class="panel__head">
                         <h2>{{ 'listings.section.basic'|trans }}</h2>
                     </header>
-                    <div class="form-grid">
-                        <label class="field field--full"><span>{{ 'listings.field.title'|trans }}</span>
-                            <input class="input" name="title" required value="{{ listing ? listing.title() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.slug'|trans }}</span>
-                            <input class="input" name="slug" value="{{ listing ? listing.slug() : '' }}" placeholder="auto">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.status'|trans }}</span>
-                            <select class="input" name="status">
-                                {% for s in statuses %}
-                                    <option value="{{ s }}" {{ listing and listing.status()==s?'selected':(s=='draft' and not listing?'selected':'') }}>{{ ('listings.status.'~s)|trans }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.market_status'|trans }}</span>
-                            <select class="input" name="market_status">
-                                {% for s in marketStatuses %}
-                                    <option value="{{ s }}" {{ listing and listing.marketStatus()==s?'selected':(s=='available' and not listing?'selected':'') }}>{{ ('listings.market.'~s)|trans }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.offer'|trans }}</span>
-                            <select class="input" name="offer_type">
-                                {% for o in offers %}
-                                    <option value="{{ o }}" {{ listing and listing.offerType()==o?'selected':'' }}>{{ ('listings.offer.'~o)|trans }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.type'|trans }}</span>
-                            <select class="input" name="property_type">
-                                {% for t in types %}
-                                    <option value="{{ t }}" {{ listing and listing.propertyType()==t?'selected':'' }}>{{ ('listings.type.'~t)|trans }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
-                            <input type="checkbox" name="featured" value="1" {{ listing and listing.featured() ? 'checked' : '' }}>
-                            <span>{{ 'listings.field.featured'|trans }}</span>
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.price'|trans }}</span>
-                            <input class="input" type="number" step="0.01" name="price" value="{{ listing ? listing.price() : '0' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.currency'|trans }}</span>
-                            <input class="input" name="currency" maxlength="3" value="{{ listing ? listing.currency() : currency_code() }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.area'|trans }}</span>
-                            <input class="input" type="number" step="0.1" name="area_m2" value="{{ listing and listing.areaM2() is not null ? listing.areaM2() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.rooms'|trans }}</span>
-                            <input class="input" type="number" name="rooms" value="{{ listing and listing.rooms() is not null ? listing.rooms() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.floor'|trans }}</span>
-                            <input class="input" type="number" name="floor" value="{{ listing and listing.floor() is not null ? listing.floor() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.floors'|trans }}</span>
-                            <input class="input" type="number" name="floors" value="{{ listing and listing.floors() is not null ? listing.floors() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.energy'|trans }}</span>
-                            <select class="input" name="energy_rating">
-                                <option value="">—</option>
-                                {% for e in energy %}
-                                    <option value="{{ e }}" {{ listing and listing.energyRating()==e?'selected':'' }}>{{ e }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        {% include 'ui/editor.html.twig' with {
-                            name: 'description',
-                            label: 'listings.field.description'|trans,
-                            value: listing ? listing.description() : '',
-                            extra: 'field--full'
-                        } %}
-                    </div>
+                    {{ forms().render(listingSource, {
+                        form: 'listings.save',
+                        group: 'basic',
+                        cols: 3,
+                        values: listing ? {} : { currency: currency_code() }
+                    }) }}
                 </section>
             </section>
 
@@ -129,12 +66,12 @@
                     <header class="panel__head">
                         <h2>{{ 'listings.section.location'|trans }}</h2>
                     </header>
-                    <div class="form-grid" x-data="gereqAresAddress">
-                        <div class="field field--full ares-field">
-                            <span>{{ 'listings.field.address'|trans }} · ARES / RÚIAN</span>
+                    <div class="form-grid form-grid--cols-3" x-data="gereqAresAddress">
+                        <div class="g-field field--full ares-field">
+                            <span class="g-label">{{ 'listings.field.address'|trans }} · ARES / RÚIAN</span>
                             <div class="ares-field__control">
                                 <input
-                                    class="input"
+                                    class="g-control"
                                     name="address"
                                     data-ares-query
                                     data-ares-fill="address"
@@ -147,26 +84,15 @@
                                 >
                                 {% include 'ui/ares_address_suggest.html.twig' %}
                             </div>
-                            <p class="ares-hint">Začněte psát adresu — po výběru se doplní ulice, město a PSČ.</p>
+                            <p class="g-hint ares-hint">Začněte psát adresu — po výběru se doplní ulice, město a PSČ.</p>
                         </div>
-                        <label class="field"><span>{{ 'listings.field.city'|trans }}</span>
-                            <input class="input" name="city" data-ares-fill="city" value="{{ listing ? listing.city() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.city_part'|trans }}</span>
-                            <input class="input" name="city_part" data-ares-fill="city_part" value="{{ listing ? listing.cityPart() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.street'|trans }}</span>
-                            <input class="input" name="street" data-ares-fill="street" value="{{ listing ? listing.street() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.zip'|trans }}</span>
-                            <input class="input" name="zip" data-ares-fill="zip" value="{{ listing ? listing.zip() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.latitude'|trans }}</span>
-                            <input class="input" type="number" step="any" name="latitude" value="{{ listing and listing.latitude() is not null ? listing.latitude() : '' }}">
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.longitude'|trans }}</span>
-                            <input class="input" type="number" step="any" name="longitude" value="{{ listing and listing.longitude() is not null ? listing.longitude() : '' }}">
-                        </label>
+
+                        {{ forms().render(listingSource, {
+                            form: 'listings.save',
+                            group: 'location',
+                            cols: 3,
+                            wrap: false
+                        }) }}
                     </div>
                 </section>
             </section>
@@ -176,31 +102,11 @@
                     <header class="panel__head">
                         <h2>{{ 'listings.section.amenities'|trans }}</h2>
                     </header>
-                    <div class="form-grid">
-                        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
-                            <input type="checkbox" name="balcony" value="1" {{ listing and listing.balcony() ? 'checked' : '' }}>
-                            <span>{{ 'listings.amenity.balcony'|trans }}</span>
-                        </label>
-                        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
-                            <input type="checkbox" name="terrace" value="1" {{ listing and listing.terrace() ? 'checked' : '' }}>
-                            <span>{{ 'listings.amenity.terrace'|trans }}</span>
-                        </label>
-                        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
-                            <input type="checkbox" name="cellar" value="1" {{ listing and listing.cellar() ? 'checked' : '' }}>
-                            <span>{{ 'listings.amenity.cellar'|trans }}</span>
-                        </label>
-                        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
-                            <input type="checkbox" name="garage" value="1" {{ listing and listing.garage() ? 'checked' : '' }}>
-                            <span>{{ 'listings.amenity.garage'|trans }}</span>
-                        </label>
-                        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
-                            <input type="checkbox" name="elevator" value="1" {{ listing and listing.elevator() ? 'checked' : '' }}>
-                            <span>{{ 'listings.amenity.elevator'|trans }}</span>
-                        </label>
-                        <label class="field"><span>{{ 'listings.field.parking'|trans }}</span>
-                            <input class="input" type="number" name="parking_lots" value="{{ listing and listing.parkingLots() is not null ? listing.parkingLots() : '' }}">
-                        </label>
-                    </div>
+                    {{ forms().render(listingSource, {
+                        form: 'listings.save',
+                        group: 'amenities',
+                        cols: 3
+                    }) }}
                 </section>
             </section>
 
@@ -212,16 +118,12 @@
                             <a class="btn btn--ghost btn--sm" href="{{ url('admin.listings.brokers.index') }}">{{ 'listings.field.broker.manage'|trans }}</a>
                         {% endif %}
                     </header>
-                    <div class="form-grid">
-                        <label class="field field--full"><span>{{ 'listings.field.broker'|trans }}</span>
-                            <select class="input" name="broker_id">
-                                <option value="">{{ 'listings.field.broker.none'|trans }}</option>
-                                {% for option in brokerOptions %}
-                                    <option value="{{ option.value }}" {{ listing and listing.brokerId() == option.value ? 'selected' : '' }}>{{ option.label }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                    </div>
+                    {{ forms().render(listingSource, {
+                        form: 'listings.save',
+                        group: 'broker',
+                        cols: 1,
+                        choices: { broker_id: brokerSelectOptions }
+                    }) }}
                 </section>
             </section>
         </form>
@@ -271,8 +173,8 @@
                                                 {% if user.can('listings.manage') %}
                                                     <form method="post" class="form-inline" action="{{ url('admin.listings.near_links.update', {id: listing.id(), linkId: link.id()}) }}" style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
                                                         {{ csrf_field()|raw }}
-                                                        <input class="input" style="width:5.5rem" type="number" min="0" name="distance_m" value="{{ link.distanceM() ?? '' }}" placeholder="m">
-                                                        <input class="input" style="width:5.5rem" type="number" min="0" name="walk_minutes" value="{{ link.walkMinutes() ?? '' }}" placeholder="min">
+                                                        <input class="g-control g-control--compact" type="number" min="0" name="distance_m" value="{{ link.distanceM() ?? '' }}" placeholder="m">
+                                                        <input class="g-control g-control--compact" type="number" min="0" name="walk_minutes" value="{{ link.walkMinutes() ?? '' }}" placeholder="min">
                                                         <button class="btn btn--ghost btn-sm" type="submit">{{ 'common.save'|trans }}</button>
                                                     </form>
                                                     <form method="post" action="{{ url('admin.listings.near_links.destroy', {id: listing.id(), linkId: link.id()}) }}" data-confirm="{{ 'listings.near_links.confirm_remove'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1" style="display:inline">
@@ -308,7 +210,6 @@
                                             {% include 'ui/select.html.twig' with {
                                                 name: 'near_location_id',
                                                 label: 'listings.near_links.field.place'|trans,
-                                                required: true,
                                                 form: 'listings.near_link.save',
                                                 value: '',
                                                 options: nearOptions,
@@ -446,7 +347,7 @@
                                             {% include 'ui/error-summary.html.twig' with { form: 'listings.image.attach' } %}
                                             <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.listings.images.attach', {id: listing.id()}) }}" data-form="listings.image.attach" x-data="gereqForm"{% if form_errors('listings.image.attach') %} data-server-state="1"{% endif %}>
                                                 {{ csrf_field()|raw }}
-                                                {% include 'ui/select.html.twig' with { name: 'media_asset_id', label: 'listings.images.attach_existing'|trans, required: true, form: 'listings.image.attach', value: '', options: libraryImages, extra: 'field--full' } %}
+                                                {% include 'ui/select.html.twig' with { name: 'media_asset_id', label: 'listings.images.attach_existing'|trans, form: 'listings.image.attach', value: '', options: libraryImages, extra: 'field--full' } %}
                                                 <div class="form-actions">
                                                     <button class="btn btn--ghost" type="submit">{{ 'listings.images.attach'|trans }}</button>
                                                 </div>
@@ -465,7 +366,7 @@
                                     {% include 'ui/error-summary.html.twig' with { form: 'listings.image.url' } %}
                                     <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.listings.images.url', {id: listing.id()}) }}" data-form="listings.image.url" x-data="gereqForm"{% if form_errors('listings.image.url') %} data-server-state="1"{% endif %}>
                                         {{ csrf_field()|raw }}
-                                        {% include 'ui/input.html.twig' with { name: 'external_url', type: 'url', label: 'listings.images.field.url'|trans, required: true, form: 'listings.image.url', value: '', extra: 'field--full' } %}
+                                        {% include 'ui/input.html.twig' with { name: 'external_url', type: 'url', label: 'listings.images.field.url'|trans, form: 'listings.image.url', value: '', extra: 'field--full' } %}
                                         {% include 'ui/input.html.twig' with { name: 'alt', label: 'listings.images.field.alt'|trans, optional: true, form: 'listings.image.url', value: '' } %}
                                         <div class="form-actions">
                                             <button class="btn btn--ghost" type="submit">{{ 'listings.images.add_url'|trans }}</button>

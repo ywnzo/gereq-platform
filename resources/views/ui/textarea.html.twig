@@ -4,7 +4,7 @@
 {% set hint = hint|default('') %}
 {% set form = form|default(null) %}
 {% set value = value|default('') %}
-{% set required = required|default(false) %}
+{% set required = field_required(name, form, required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
 {% set optional = optional|default(false) %}
 {% set extra = extra|default('') %}
 {% set rows = rows|default(null) %}
@@ -24,6 +24,8 @@
         required: required,
         optional: optional,
         extra: extra,
+        requiredFields: requiredFields|default(null),
+        entity: entity|default(null),
         placeholder: placeholder|default('ui.editor.placeholder'|trans)
     } only %}
 {% else %}

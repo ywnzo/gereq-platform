@@ -36,7 +36,7 @@ final class CmsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.0';
+        return '1.2.2';
     }
 
     public function register(ModuleContext $context): void
@@ -263,6 +263,7 @@ final class CmsModule implements ModuleInterface
             'body' => 'nullable|max:200000',
             'meta_description' => 'nullable|max:2000',
         ]);
+        $context->forms()->entity('cms.page.save', \Modules\Cms\Domain\Page::class);
 
         $validation->ruleset('cms.block.save', [
             'type' => 'required|in:heading,text,image,html,cta,columns,divider,products,gallery',
@@ -286,6 +287,7 @@ final class CmsModule implements ModuleInterface
             'name' => 'required|min:1|max:120',
             'location' => 'required|in:header,footer',
         ]);
+        $context->forms()->entity('cms.menu.save', \Modules\Cms\Domain\SiteMenu::class);
 
         $validation->ruleset('cms.menu_item.save', [
             'label' => 'required|min:1|max:190',

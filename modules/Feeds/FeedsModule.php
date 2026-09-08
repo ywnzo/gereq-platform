@@ -31,7 +31,7 @@ final class FeedsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.0.1';
     }
 
     public function register(ModuleContext $context): void
@@ -155,5 +155,6 @@ final class FeedsModule implements ModuleInterface
             'config_json' => 'nullable|max:100000',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('feeds.save', \Modules\Feeds\Domain\FeedDefinition::class);
     }
 }

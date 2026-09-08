@@ -12,7 +12,6 @@
         {% include 'ui/select.html.twig' with {
             name: 'warehouse_id',
             label: 'warehouse.field.warehouse'|trans,
-            required: true,
             form: 'warehouse.movement.save',
             value: '',
             options: warehouseOptions
@@ -20,7 +19,6 @@
         {% include 'ui/select.html.twig' with {
             name: 'product_id',
             label: 'warehouse.field.product'|trans,
-            required: true,
             form: 'warehouse.movement.save',
             value: '',
             options: productOptions
@@ -28,7 +26,6 @@
         {% include 'ui/select.html.twig' with {
             name: 'type',
             label: 'warehouse.field.type'|trans,
-            required: true,
             form: 'warehouse.movement.save',
             value: 'in',
             options: [
@@ -41,7 +38,6 @@
         {% include 'ui/input.html.twig' with {
             name: 'qty',
             label: 'warehouse.field.qty'|trans,
-            required: true,
             form: 'warehouse.movement.save',
             value: ''
         } %}

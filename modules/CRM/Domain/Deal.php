@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace Modules\CRM\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'crm_deals')]
 #[ORM\Index(name: 'idx_crm_deals_customer', columns: ['customer_id'])]
 #[ORM\Index(name: 'idx_crm_deals_stage', columns: ['stage'])]
+#[FormEntity('crm.deal.save')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt'],
+    form: 'crm.deal.save',
+    cols: 2,
+)]
 class Deal
 {
     public const STAGES = ['lead', 'qualified', 'proposal', 'won', 'lost'];
@@ -20,24 +29,44 @@ class Deal
     private string $id;
 
     #[ORM\Column(name: 'customer_id', length: 36)]
+    #[FormField(
+        required: true,
+        name: 'customer_id',
+        label: 'crm.field.customer',
+        type: 'select',
+        order: 10,
+    )]
     private string $customerId;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'crm.field.title', order: 20)]
     private string $title;
 
     #[ORM\Column(type: 'decimal', precision: 14, scale: 2, nullable: true)]
+    #[FormField(label: 'crm.field.amount', type: 'number', options: ['step' => '0.01'], order: 30)]
     private ?string $amount = null;
 
     #[ORM\Column(length: 3)]
+    #[FormField(label: 'crm.field.currency', options: ['maxlength' => 3], order: 40)]
     private string $currency = 'CZK';
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'crm.field.stage',
+        type: 'select',
+        choicesFrom: 'STAGES',
+        choiceLabel: 'crm.stage.',
+        order: 50,
+    )]
     private string $stage = 'lead';
 
     #[ORM\Column(name: 'expected_close_at', type: 'date_immutable', nullable: true)]
+    #[FormField(label: 'crm.field.expected_close', type: 'date', order: 60)]
     private ?\DateTimeImmutable $expectedCloseAt = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'crm.field.note', type: 'textarea', extra: 'field--full', order: 70)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'created_at')]

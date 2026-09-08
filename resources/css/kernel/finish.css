@@ -1,0 +1,33 @@
+.g-modal__panel--finish {
+    width: min(28rem, 100%);
+    max-height: min(90vh, 40rem);
+    overflow: auto;
+}
+.cs-finish {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.cs-finish__head .g-modal__title { margin-bottom: 0.15rem; }
+.cs-finish__head .muted {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.35;
+}
+.cs-finish__notes .textarea-mini {
+    min-height: 4.5rem;
+    max-height: 9rem;
+}
+.cs-finish__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem 0.75rem;
+}
+.cs-finish__actions {
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-soft, var(--border));
+}
+@media (max-width: 520px) {
+    .cs-finish__grid { grid-template-columns: 1fr; }
+}

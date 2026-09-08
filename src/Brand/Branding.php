@@ -124,7 +124,7 @@ final class Branding
         ];
     }
 
-    /** Inline CSS overrides for admin / auth layouts (must load after admin.css). */
+    /** Inline CSS overrides for admin / auth layouts (must load after kernel.css). */
     public function adminCssVariables(): string
     {
         $lines = [':root, html, html.dark, [data-theme="gereq"], [data-theme="gereq-dark"] {'];

@@ -9,8 +9,13 @@ use Twig\Environment;
 /**
  * Kernel UI renderer — Athena Panel-style helpers for admin HTML fragments.
  *
- * Use from PHP: ui()->drawer(...), ui()->badge(...)
- * Use from Twig: {{ ui_render('badge', {label: 'TOP', tone: 'signal'}) }}
+ * Athena mapping:
+ *   $render->contentDiv(true, id, class)  →  ui()->container(cols|class, $body)
+ *   $render->contentRow(..., fieldHtml)   →  ui()->cell($html, span)
+ *   rowBox two/three/four                 →  form-grid / form-grid--cols-3|4
+ *
+ * Use from PHP: ui()->grid(3, $html), ui()->container(3, $html)
+ * Use from Twig: {{ ui().grid(3, body) }} or {% embed 'ui/components/grid.html.twig' with { cols: 3 } %}
  * Or macros: {% import 'ui/macros.html.twig' as ui %}
  */
 final class Ui
@@ -34,6 +39,61 @@ final class Ui
         }
 
         return $this->twig->render('ui/components/' . $name . '.html.twig', $data);
+    }
+
+    /**
+     * Layout container (Athena `contentDiv`).
+     *
+     * - int 1–4 → form grid columns (`ui()->grid`)
+     * - string   → plain `<div class="…">` wrapper
+     *
+     * @param array{id?: string|null, class?: string|null, compact?: bool} $options
+     */
+    public function container(int|string $colsOrClass, string $body = '', array $options = []): string
+    {
+        if (is_int($colsOrClass)) {
+            return $this->grid($colsOrClass, $body, $options);
+        }
+
+        $class = trim($colsOrClass . ' ' . (string) ($options['class'] ?? ''));
+
+        return $this->component('container', [
+            'body' => $body,
+            'id' => $options['id'] ?? null,
+            'class' => $class !== '' ? $class : null,
+        ]);
+    }
+
+    /**
+     * Form field grid with 1–4 columns.
+     *
+     * @param array{id?: string|null, class?: string|null, compact?: bool} $options
+     */
+    public function grid(int $cols, string $body = '', array $options = []): string
+    {
+        $cols = max(1, min(4, $cols));
+
+        return $this->component('grid', [
+            'cols' => $cols,
+            'body' => $body,
+            'id' => $options['id'] ?? null,
+            'class' => $options['class'] ?? null,
+            'compact' => (bool) ($options['compact'] ?? false),
+        ]);
+    }
+
+    /**
+     * Span wrapper inside a grid (Athena `rowBox` width helpers).
+     *
+     * @param int|string $span 1, 2, 3, or 'full'
+     */
+    public function cell(string $body, int|string $span = 1, ?string $class = null): string
+    {
+        return $this->component('cell', [
+            'body' => $body,
+            'span' => $span,
+            'class' => $class,
+        ]);
     }
 
     /**

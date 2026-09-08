@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace Modules\Listings\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'near_locations')]
 #[ORM\Index(name: 'idx_near_locations_category', columns: ['category'])]
 #[ORM\Index(name: 'idx_near_locations_active', columns: ['active'])]
+#[FormEntity('listings.near.save')]
+#[FormGenerator(
+    exclude: ['id', 'address', 'city', 'createdAt', 'updatedAt'],
+    form: 'listings.near.save',
+    cols: 2,
+)]
 class NearLocation
 {
     public const CATEGORIES = [
@@ -36,9 +45,19 @@ class NearLocation
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'listings.near.field.name', group: 'basic', order: 10)]
     private string $name;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'listings.near.field.category',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'CATEGORIES',
+        choiceLabel: 'listings.near.category.',
+        order: 20,
+    )]
     private string $category = 'other';
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -48,18 +67,23 @@ class NearLocation
     private ?string $city = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'listings.near.field.description', type: 'editor', group: 'details', extra: 'field--full', order: 10)]
     private ?string $description = null;
 
     #[ORM\Column(type: 'float', nullable: true)]
+    #[FormField(label: 'listings.near.field.latitude', type: 'number', group: 'location', options: ['step' => 'any'], order: 10)]
     private ?float $latitude = null;
 
     #[ORM\Column(type: 'float', nullable: true)]
+    #[FormField(label: 'listings.near.field.longitude', type: 'number', group: 'location', options: ['step' => 'any'], order: 20)]
     private ?float $longitude = null;
 
     #[ORM\Column]
+    #[FormField(label: 'listings.near.field.active', type: 'switch', group: 'details', order: 30)]
     private bool $active = true;
 
     #[ORM\Column(name: 'sort_order')]
+    #[FormField(label: 'listings.near.field.sort_order', type: 'number', group: 'details', order: 20)]
     private int $sortOrder = 0;
 
     #[ORM\Column(name: 'created_at')]

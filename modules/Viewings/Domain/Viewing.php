@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Viewings\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -12,6 +15,12 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_viewings_listing', columns: ['listing_id'])]
 #[ORM\Index(name: 'idx_viewings_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_viewings_scheduled', columns: ['scheduled_at'])]
+#[FormEntity('viewings.save')]
+#[FormGenerator(
+    exclude: ['id', 'number', 'createdAt', 'updatedAt'],
+    form: 'viewings.save',
+    cols: 2,
+)]
 class Viewing
 {
     public const STATUSES = ['requested', 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'];
@@ -24,30 +33,65 @@ class Viewing
     private string $number;
 
     #[ORM\Column(name: 'listing_id', length: 36)]
+    #[FormField(
+        required: true,
+        name: 'listing_id',
+        label: 'viewings.field.listing',
+        type: 'select',
+        options: ['searchable' => true],
+        extra: 'field--full',
+        order: 10,
+    )]
     private string $listingId;
 
     #[ORM\Column(name: 'customer_id', length: 36, nullable: true)]
+    #[FormField(
+        label: 'viewings.field.customer',
+        type: 'select',
+        name: 'customer_id',
+        options: ['searchable' => true],
+        order: 70,
+    )]
     private ?string $customerId = null;
 
     #[ORM\Column(name: 'broker_id', length: 36, nullable: true)]
+    #[FormField(
+        label: 'viewings.field.broker',
+        type: 'select',
+        name: 'broker_id',
+        options: ['searchable' => true],
+        order: 80,
+    )]
     private ?string $brokerId = null;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'viewings.field.status',
+        type: 'select',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'viewings.status.',
+        order: 60,
+    )]
     private string $status = 'requested';
 
     #[ORM\Column(name: 'scheduled_at', nullable: true)]
+    #[FormField(label: 'viewings.field.scheduled_at', type: 'datetime-local', name: 'scheduled_at', order: 50)]
     private ?\DateTimeImmutable $scheduledAt = null;
 
     #[ORM\Column(name: 'contact_name', length: 190)]
+    #[FormField(required: true, name: 'contact_name', label: 'viewings.field.contact_name', order: 20)]
     private string $contactName;
 
     #[ORM\Column(name: 'contact_email', length: 190, nullable: true)]
+    #[FormField(label: 'viewings.field.contact_email', type: 'email', name: 'contact_email', order: 30)]
     private ?string $contactEmail = null;
 
     #[ORM\Column(name: 'contact_phone', length: 64, nullable: true)]
+    #[FormField(label: 'viewings.field.contact_phone', name: 'contact_phone', order: 40)]
     private ?string $contactPhone = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'viewings.field.note', type: 'textarea', extra: 'field--full', order: 90)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'created_at')]

@@ -4,36 +4,78 @@ namespace Modules\Products\Domain;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'products')]
+#[FormEntity('products.product.save')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt', 'categories', 'inheritCategoryOptions'],
+    form: 'products.product.save',
+    cols: 2,
+)]
 class Product
 {
     public const STATUSES = ['draft', 'active', 'archived'];
+    public const NOTE_MODES = ['off', 'optional', 'required'];
+
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $id;
+
     #[ORM\Column(length: 64, unique: true)]
+    #[FormField(required: true, label: 'products.field.sku', group: 'basic', order: 10)]
     private string $sku;
+
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'products.field.name', group: 'basic', order: 20)]
     private string $name;
+
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'products.field.description', type: 'textarea', group: 'basic', extra: 'field--full', order: 50)]
     private ?string $description = null;
+
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'products.field.status',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'products.status.',
+        order: 40,
+    )]
     private string $status = 'draft';
+
     #[ORM\Column(length: 32)]
+    #[FormField(required: true, label: 'products.field.unit', group: 'basic', order: 30)]
     private string $unit = 'ks';
+
     /** off | optional | required — customer note on storefront line item */
     #[ORM\Column(name: 'customer_note_mode', length: 16, options: ['default' => 'off'])]
+    #[FormField(
+        label: 'products.field.customer_note_mode',
+        type: 'select',
+        group: 'personalization',
+        choicesFrom: 'NOTE_MODES',
+        choiceLabel: 'products.note_mode.',
+        order: 10,
+    )]
     private string $customerNoteMode = 'off';
+
     /** When true, option groups from the first category are included on the storefront / generator. */
     #[ORM\Column(name: 'inherit_category_options', type: 'boolean', options: ['default' => false])]
     private bool $inheritCategoryOptions = false;
+
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
+
     #[ORM\Column(name: 'updated_at')]
     private \DateTimeImmutable $updatedAt;
+
     /** @var Collection<int, ProductCategory> */
     #[ORM\ManyToMany(targetEntity: ProductCategory::class, inversedBy: 'products')]
     #[ORM\JoinTable(name: 'product_category_links')]

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\ESign\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -12,6 +15,27 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_esign_documents_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_esign_documents_number', columns: ['number'])]
 #[ORM\Index(name: 'idx_esign_documents_source', columns: ['source_type', 'source_id'])]
+#[FormEntity('esign.document.save')]
+#[FormGenerator(
+    exclude: [
+        'id',
+        'status',
+        'providerSignaturePath',
+        'signedBy',
+        'signatureHash',
+        'lockedAt',
+        'lockedHash',
+        'lockedHtml',
+        'executedHtml',
+        'sourceType',
+        'sourceId',
+        'signedAt',
+        'createdAt',
+        'updatedAt',
+    ],
+    form: 'esign.document.save',
+    cols: 2,
+)]
 class SignableDocument
 {
     public const STATUS_DRAFT = 'draft';
@@ -31,24 +55,39 @@ class SignableDocument
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(label: 'esign.field.number', hint: 'esign.hint.number_auto', order: 10)]
     private string $number;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'esign.field.title', order: 20)]
     private string $title;
 
     #[ORM\Column(name: 'body_html', type: 'text')]
+    #[FormField(
+        required: true,
+        name: 'body_html',
+        label: 'esign.field.body',
+        type: 'editor',
+        hint: 'esign.hint.body_tokens',
+        extra: 'field--full',
+        options: ['placeholder' => 'esign.hint.body_placeholder'],
+        order: 60,
+    )]
     private string $bodyHtml;
 
     #[ORM\Column(length: 32)]
     private string $status = self::STATUS_DRAFT;
 
     #[ORM\Column(name: 'counterparty_name', length: 190)]
+    #[FormField(required: true, name: 'counterparty_name', label: 'esign.field.counterparty_name', order: 30)]
     private string $counterpartyName;
 
     #[ORM\Column(name: 'counterparty_email', length: 190, nullable: true)]
+    #[FormField(name: 'counterparty_email', label: 'esign.field.counterparty_email', type: 'email', order: 40)]
     private ?string $counterpartyEmail = null;
 
     #[ORM\Column(name: 'counterparty_company', length: 190, nullable: true)]
+    #[FormField(name: 'counterparty_company', label: 'esign.field.counterparty_company', extra: 'field--full', order: 50)]
     private ?string $counterpartyCompany = null;
 
     #[ORM\Column(name: 'provider_signature_path', length: 255, nullable: true)]

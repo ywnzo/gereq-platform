@@ -34,7 +34,7 @@ final class PortalsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.0';
+        return '1.3.2';
     }
 
     public function register(ModuleContext $context): void
@@ -113,6 +113,7 @@ final class PortalsModule implements ModuleInterface
             'provider_id' => 'required|max:36',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('portals.account.save', \Modules\Portals\Domain\PortalAccount::class);
         $v->ruleset('portals.provider.save', [
             'code' => 'required|min:2|max:64',
             'name' => 'required|min:1|max:190',
@@ -123,6 +124,7 @@ final class PortalsModule implements ModuleInterface
             'sort_order' => 'nullable',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('portals.provider.save', \Modules\Portals\Domain\PortalProvider::class);
         $v->ruleset('portals.queue', [
             'listing_id' => 'required|max:36',
             'portal_account_id' => 'required|max:36',

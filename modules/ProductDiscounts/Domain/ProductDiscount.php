@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\ProductDiscounts\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -15,6 +18,12 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Table(name: 'product_discounts')]
 #[ORM\Index(name: 'idx_product_discounts_scope', columns: ['scope_type', 'scope_id'])]
 #[ORM\Index(name: 'idx_product_discounts_active_window', columns: ['is_active', 'starts_at', 'ends_at'])]
+#[FormEntity('product_discounts.save')]
+#[FormGenerator(
+    exclude: ['id', 'productId', 'scopeType', 'scopeId', 'createdAt', 'updatedAt'],
+    form: 'product_discounts.save',
+    cols: 2,
+)]
 class ProductDiscount
 {
     public const KINDS = ['percent', 'amount'];
@@ -47,27 +56,55 @@ class ProductDiscount
     private string $scopeId;
 
     #[ORM\Column(length: 16)]
+    #[FormField(
+        required: true,
+        label: 'product_discounts.field.kind',
+        type: 'select',
+        choicesFrom: 'KINDS',
+        choiceLabel: 'product_discounts.kind.',
+        order: 10,
+    )]
     private string $kind = 'percent';
 
     #[ORM\Column(type: 'decimal', precision: 14, scale: 2)]
+    #[FormField(required: true, label: 'product_discounts.field.value', order: 20)]
     private string $value = '0.00';
 
     #[ORM\Column(length: 190, nullable: true)]
+    #[FormField(label: 'product_discounts.field.description', order: 50)]
     private ?string $description = null;
 
     #[ORM\Column(name: 'condition_type', length: 32, options: ['default' => 'none'])]
+    #[FormField(
+        label: 'product_discounts.field.condition',
+        type: 'select',
+        name: 'condition_type',
+        choicesFrom: 'CONDITIONS',
+        choiceLabel: 'product_discounts.condition.',
+        order: 30,
+    )]
     private string $conditionType = self::CONDITION_NONE;
 
     #[ORM\Column(name: 'condition_value', type: 'integer', nullable: true)]
+    #[FormField(
+        label: 'product_discounts.field.condition_value',
+        type: 'number',
+        name: 'condition_value',
+        hint: 'product_discounts.field.condition_value.hint',
+        order: 40,
+    )]
     private ?int $conditionValue = null;
 
     #[ORM\Column(name: 'starts_at', nullable: true)]
+    #[FormField(label: 'product_discounts.field.starts_at', type: 'datetime-local', order: 60)]
     private ?\DateTimeImmutable $startsAt = null;
 
     #[ORM\Column(name: 'ends_at', nullable: true)]
+    #[FormField(label: 'product_discounts.field.ends_at', type: 'datetime-local', order: 70)]
     private ?\DateTimeImmutable $endsAt = null;
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'product_discounts.field.active', type: 'switch', order: 80)]
     private bool $active = true;
 
     #[ORM\Column(name: 'created_at')]

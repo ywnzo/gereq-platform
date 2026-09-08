@@ -13,7 +13,6 @@
             {% include 'ui/input.html.twig' with {
                 name: 'name',
                 label: 'media.folder.field.name'|trans,
-                required: true,
                 form: 'media.folder.save',
                 value: ''
             } %}
@@ -37,7 +36,6 @@
             {% include 'ui/input.html.twig' with {
                 name: 'name',
                 label: 'media.folder.field.name'|trans,
-                required: true,
                 form: 'media.folder.save',
                 value: folder.name()
             } %}

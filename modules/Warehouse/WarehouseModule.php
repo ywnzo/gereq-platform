@@ -33,7 +33,7 @@ final class WarehouseModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.0.2';
     }
 
     public function register(ModuleContext $context): void
@@ -181,6 +181,7 @@ final class WarehouseModule implements ModuleInterface
             'name' => 'required|min:2|max:190',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('warehouse.save', \Modules\Warehouse\Domain\Warehouse::class);
         $validation->ruleset('warehouse.movement.save', [
             'warehouse_id' => 'required|max:36',
             'product_id' => 'required|max:36',

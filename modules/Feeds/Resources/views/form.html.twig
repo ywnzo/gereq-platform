@@ -7,47 +7,16 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'feeds.save' } %}
 
-{% set driverOptions = [] %}
-{% for driver in drivers %}
-    {% set driverOptions = driverOptions|merge([{ value: driver, label: ('feeds.driver.' ~ driver)|trans }]) %}
-{% endfor %}
-{% set formatOptions = [] %}
-{% for format in formats %}
-    {% set formatOptions = formatOptions|merge([{ value: format, label: format|upper }]) %}
-{% endfor %}
+{% set feedSource = item ?? 'Modules\\Feeds\\Domain\\FeedDefinition' %}
 
 <form method="post" class="form-grid" action="{{ item ? url('admin.feeds.update', {id: item.id()}) : url('admin.feeds.store') }}" data-form="feeds.save" x-data="gereqForm"{% if form_errors('feeds.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {% include 'ui/input.html.twig' with {
-        name: 'code',
-        label: 'feeds.field.code'|trans,
-        required: true,
+    {{ forms().render(feedSource, {
         form: 'feeds.save',
-        value: item ? item.code() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'name',
-        label: 'feeds.field.name'|trans,
-        required: true,
-        form: 'feeds.save',
-        value: item ? item.name() : ''
-    } %}
-    {% include 'ui/select.html.twig' with {
-        name: 'driver',
-        label: 'feeds.field.driver'|trans,
-        required: true,
-        form: 'feeds.save',
-        value: item ? item.driver() : 'google_merchant',
-        options: driverOptions
-    } %}
-    {% include 'ui/select.html.twig' with {
-        name: 'format',
-        label: 'feeds.field.format'|trans,
-        required: true,
-        form: 'feeds.save',
-        value: item ? item.format() : 'xml',
-        options: formatOptions
-    } %}
+        cols: 1,
+        wrap: false,
+        exclude: ['active']
+    }) }}
     {% include 'ui/textarea.html.twig' with {
         name: 'config_json',
         label: 'feeds.field.config_json'|trans,
@@ -58,10 +27,12 @@
         size: 'mini',
         rows: 8
     } %}
-    <label class="field">
-        <span class="field__label">{{ 'feeds.field.active'|trans }}</span>
-        <input type="checkbox" name="active" value="1" {{ (item is null or item.isActive()) ? 'checked' : '' }}>
-    </label>
+    {{ forms().render(feedSource, {
+        form: 'feeds.save',
+        cols: 1,
+        wrap: false,
+        only: ['active']
+    }) }}
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.feeds.index') }}">{{ 'common.cancel'|trans }}</a>

@@ -6,7 +6,7 @@ return [
     'id' => 'partscatalog',
     'name' => 'PartsCatalog',
     'icon' => 'pc-parts',
-    'version' => '1.13.10',
+    'version' => '1.13.11',
     'description' => 'module.partscatalog.description',
     'class' => Modules\PartsCatalog\PartsCatalogModule::class,
     'author' => 'GEREQ',

@@ -108,7 +108,7 @@ final class AssetManager
         }
 
         if (str_ends_with($entry, '.css')) {
-            return '/build/admin.css';
+            return '/build/kernel.css';
         }
 
         return '/build/admin.js';
@@ -123,7 +123,7 @@ final class AssetManager
 
         if ($this->isHot()) {
             // Blocking <link> prevents FOUC — CSS via JS modules alone paints unstyled HTML first.
-            $css = '/resources/css/admin.css';
+            $css = '/resources/css/kernel.css';
             $client = '/@vite/client';
             $src = '/' . ltrim($entry, '/');
 
@@ -135,7 +135,7 @@ HTML;
         }
 
         $cssEntry = str_ends_with($entry, '.ts')
-            ? 'resources/css/admin.css'
+            ? 'resources/css/kernel.css'
             : $entry;
         $css = htmlspecialchars($this->url($cssEntry), ENT_QUOTES, 'UTF-8');
         $js = htmlspecialchars($this->url($entry), ENT_QUOTES, 'UTF-8');

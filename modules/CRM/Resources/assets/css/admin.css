@@ -1,18 +1,4 @@
 /* CRM */
-.page-header--compact {
-    margin-top: 0;
-    margin-bottom: 0;
-    align-items: center;
-}
-.page-header--compact h2 {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 600;
-}
-.detail-stack + .detail-stack,
-.hook-section + .hook-section {
-    margin-top: 12px;
-}
 .crm-board {
     display: grid;
     grid-template-columns: repeat(5, minmax(200px, 1fr));

@@ -5,7 +5,7 @@
 {% set form = form|default(null) %}
 {% set value = old(name, value|default(''), form) %}
 {% set err = error(name, form) %}
-{% set required = required|default(false) %}
+{% set required = field_required(name, form, required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
 {% set optional = optional|default(false) %}
 {% set extra = extra|default('') %}
 {% set placeholder = placeholder|default('ui.select.placeholder'|trans) %}
@@ -59,10 +59,12 @@
             <ul class="g-select__options">
                 {% for option in options %}
                     {% set optValue = option.value is defined ? option.value : option %}
-                    {% set optLabel = option.label is defined ? option.label : option %}
+                    {% set optLabelRaw = option.label is defined ? option.label : option %}
+                    {% set optLabel = optLabelRaw|trans %}
                     {% set optDesc = option.description|default('') %}
+                    {% set optDescLabel = optDesc ? optDesc|trans : '' %}
                     {% set optTone = option.tone|default('') %}
-                    {% set optSearch = option.search|default(optLabel ~ ' ' ~ optDesc) %}
+                    {% set optSearch = option.search|default(optLabel ~ ' ' ~ optDescLabel) %}
                     <li
                         class="g-select__option{% if optValue == value %} is-selected{% endif %}"
                         role="option"
@@ -77,7 +79,7 @@
                         {% endif %}
                         <span class="g-select__option-text">
                             <span>{{ optLabel }}</span>
-                            {% if optDesc %}<span class="g-select__option-desc">{{ optDesc }}</span>{% endif %}
+                            {% if optDescLabel %}<span class="g-select__option-desc">{{ optDescLabel }}</span>{% endif %}
                         </span>
                     </li>
                 {% endfor %}

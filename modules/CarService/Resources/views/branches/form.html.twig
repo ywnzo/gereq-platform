@@ -1,5 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+{% set branchSource = item ?? 'Modules\\CarService\\Domain\\ServiceBranch' %}
+
 <header class="page-header">
     <div>
         <p class="eyebrow"><a href="{{ url('admin.carservice.branches') }}">{{ 'carservice.branches.title'|trans }}</a></p>
@@ -22,13 +24,11 @@
             <h2>{{ 'carservice.branches.section.basic'|trans }}</h2>
         </div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'name', label:'carservice.field.branch'|trans, required:true, form:'carservice.branch', value: item?item.name():'' } %}
-        {% include 'ui/input.html.twig' with { name:'employee_count', type:'number', label:'carservice.branches.field.employees'|trans, optional:true, form:'carservice.branch', value: item?item.employeeCount():0, min:0 } %}
-        {% include 'ui/checkbox.html.twig' with { name:'active', label:'carservice.branches.field.active'|trans, form:'carservice.branch', checked: item?item.isActive():true } %}
-        {% include 'ui/input.html.twig' with { name:'phone', label:'carservice.branches.field.phone'|trans, optional:true, form:'carservice.branch', value: item?item.phone():'' } %}
-        {% include 'ui/input.html.twig' with { name:'email', type:'email', label:'carservice.branches.field.email'|trans, optional:true, form:'carservice.branch', value: item?item.email():'' } %}
-    </div>
+    {{ forms().render(branchSource, {
+        form: 'carservice.branch',
+        group: 'basic',
+        cols: 2
+    }) }}
 </section>
 
 <section class="panel">
@@ -61,24 +61,12 @@
                 {% include 'ui/ares_address_suggest.html.twig' %}
             </div>
         </div>
-        <div class="g-field" data-field="city">
-            <label class="g-label" for="f-city">
-                <span>{{ 'carservice.branches.field.city'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
-            </label>
-            <input class="g-control" type="text" id="f-city" name="city" data-ares-fill="city" value="{{ item ? item.city() : '' }}">
-        </div>
-        <div class="g-field" data-field="zip">
-            <label class="g-label" for="f-zip">
-                <span>{{ 'carservice.branches.field.zip'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
-            </label>
-            <input class="g-control" type="text" id="f-zip" name="zip" data-ares-fill="zip" value="{{ item ? item.zip() : '' }}">
-        </div>
-        <div class="g-field" data-field="country">
-            <label class="g-label" for="f-country">
-                <span>{{ 'carservice.branches.field.country'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
-            </label>
-            <input class="g-control" type="text" id="f-country" name="country" data-ares-fill="country" value="{{ item ? item.country() : 'CZ' }}">
-        </div>
+        {{ forms().render(branchSource, {
+            form: 'carservice.branch',
+            group: 'address',
+            cols: 2,
+            wrap: false
+        }) }}
     </div>
 </section>
 
@@ -105,7 +93,12 @@
             compact: true,
             extra: 'field--full'
         } %}
-        {% include 'ui/textarea.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, form:'carservice.branch', value: item?item.note():'', extra:'field--full', rows:3 } %}
+        {{ forms().render(branchSource, {
+            form: 'carservice.branch',
+            group: 'logo',
+            cols: 1,
+            wrap: false
+        }) }}
     </div>
 </section>
 </form>

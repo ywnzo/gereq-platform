@@ -7,60 +7,26 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'crm.activity.save' } %}
 
-    <form method="post" class="form-grid" action="{{ item ? url('admin.crm.activities.update', {id: item.id()}) : url('admin.crm.activities.store') }}" data-form="crm.activity.save" x-data="gereqForm"{% if form_errors('crm.activity.save') %} data-server-state="1"{% endif %}>
+    {% set activitySource = item ?? 'Modules\\CRM\\Domain\\Activity' %}
+    {% set dealSelectOptions = [{ value: '', label: 'crm.activities.no_deal'|trans }]|merge(dealOptions|default([])) %}
+    {% set activityValues = {
+        customer_id: item ? item.customerId() : customerId,
+        deal_id: item ? (item.dealId() ?: '') : dealId,
+        type: item ? item.type() : 'task',
+        due_at: item and item.dueAt() ? item.dueAt().format('Y-m-d\\TH:i') : '',
+    } %}
+
+    <form method="post" action="{{ item ? url('admin.crm.activities.update', {id: item.id()}) : url('admin.crm.activities.store') }}" data-form="crm.activity.save" x-data="gereqForm"{% if form_errors('crm.activity.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {% include 'ui/select.html.twig' with {
-            name: 'customer_id',
-            label: 'crm.field.customer'|trans,
-            required: true,
+        {{ forms().render(activitySource, {
             form: 'crm.activity.save',
-            value: item ? item.customerId() : customerId,
-            options: customerOptions
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'deal_id',
-            label: 'crm.field.deal'|trans,
-            optional: true,
-            form: 'crm.activity.save',
-            value: item ? (item.dealId() ?: '') : dealId,
-            options: [{ value: '', label: 'crm.activities.no_deal'|trans }]|merge(dealOptions)
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'type',
-            label: 'crm.field.type'|trans,
-            form: 'crm.activity.save',
-            value: item ? item.type() : 'task',
-            options: [
-                { value: 'call', label: 'crm.activity.type.call'|trans },
-                { value: 'email', label: 'crm.activity.type.email'|trans },
-                { value: 'meeting', label: 'crm.activity.type.meeting'|trans },
-                { value: 'task', label: 'crm.activity.type.task'|trans },
-                { value: 'note', label: 'crm.activity.type.note'|trans }
-            ]
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'subject',
-            label: 'crm.field.subject'|trans,
-            required: true,
-            form: 'crm.activity.save',
-            value: item ? item.subject() : ''
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'due_at',
-            type: 'datetime-local',
-            label: 'crm.field.due'|trans,
-            optional: true,
-            form: 'crm.activity.save',
-            value: item and item.dueAt() ? item.dueAt().format('Y-m-d\\TH:i') : ''
-        } %}
-        {% include 'ui/textarea.html.twig' with {
-            name: 'body',
-            label: 'crm.field.body'|trans,
-            optional: true,
-            extra: 'field--full',
-            form: 'crm.activity.save',
-            value: item ? item.body() : ''
-        } %}
+            cols: 2,
+            values: activityValues,
+            choices: {
+                customer_id: customerOptions,
+                deal_id: dealSelectOptions
+            }
+        }) }}
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.crm.activities.index') }}">{{ 'common.cancel'|trans }}</a>

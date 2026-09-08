@@ -76,6 +76,11 @@ function ui(): \Gereq\Admin\Ui\Ui
     return gereq()->make(\Gereq\Admin\Ui\Ui::class);
 }
 
+function forms(): \Gereq\Admin\Form\Forms
+{
+    return gereq()->make(\Gereq\Admin\Form\Forms::class);
+}
+
 function cache(): \Gereq\Cache\AppCache
 {
     return gereq()->make(\Gereq\Cache\AppCache::class);

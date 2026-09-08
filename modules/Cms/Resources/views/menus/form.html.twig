@@ -7,26 +7,12 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'cms.menu.save' } %}
 
-    <form method="post" class="form-grid" action="{{ item ? url('admin.cms.menus.update', {id: item.id()}) : url('admin.cms.menus.store') }}" data-form="cms.menu.save" x-data="gereqForm"{% if form_errors('cms.menu.save') %} data-server-state="1"{% endif %}>
+    <form method="post" action="{{ item ? url('admin.cms.menus.update', {id: item.id()}) : url('admin.cms.menus.store') }}" data-form="cms.menu.save" x-data="gereqForm"{% if form_errors('cms.menu.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {% include 'ui/input.html.twig' with {
-            name: 'name',
-            label: 'cms.field.name'|trans,
-            required: true,
+        {{ forms().render(item ?? 'Modules\\Cms\\Domain\\SiteMenu', {
             form: 'cms.menu.save',
-            value: item ? item.name() : ''
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'location',
-            label: 'cms.field.location'|trans,
-            required: true,
-            form: 'cms.menu.save',
-            value: item ? item.location() : 'header',
-            options: [
-                {value: 'header', label: 'cms.menu.location.header'|trans},
-                {value: 'footer', label: 'cms.menu.location.footer'|trans}
-            ]
-        } %}
+            cols: 1
+        }) }}
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ item ? url('admin.cms.menus.show', {id: item.id()}) : url('admin.cms.menus.index') }}">{{ 'common.cancel'|trans }}</a>

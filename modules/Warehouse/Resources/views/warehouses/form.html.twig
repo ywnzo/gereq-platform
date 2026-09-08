@@ -7,26 +7,12 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'warehouse.save' } %}
 
-    <form method="post" class="form-grid" action="{{ item ? url('admin.warehouse.update', {id: item.id()}) : url('admin.warehouse.store') }}" data-form="warehouse.save" x-data="gereqForm"{% if form_errors('warehouse.save') %} data-server-state="1"{% endif %}>
+    <form method="post" action="{{ item ? url('admin.warehouse.update', {id: item.id()}) : url('admin.warehouse.store') }}" data-form="warehouse.save" x-data="gereqForm"{% if form_errors('warehouse.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {% include 'ui/input.html.twig' with {
-            name: 'code',
-            label: 'warehouse.field.code'|trans,
-            required: true,
+        {{ forms().render(item ?? 'Modules\\Warehouse\\Domain\\Warehouse', {
             form: 'warehouse.save',
-            value: item ? item.code() : ''
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'name',
-            label: 'warehouse.field.name'|trans,
-            required: true,
-            form: 'warehouse.save',
-            value: item ? item.name() : ''
-        } %}
-        <label class="field">
-            <span class="field__label">{{ 'warehouse.field.active'|trans }}</span>
-            <input type="checkbox" name="active" value="1" {{ (item is null or item.isActive()) ? 'checked' : '' }}>
-        </label>
+            cols: 1
+        }) }}
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.warehouse.index') }}">{{ 'common.cancel'|trans }}</a>

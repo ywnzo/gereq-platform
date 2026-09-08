@@ -73,9 +73,9 @@
             {{ csrf_field()|raw }}
 
             <div class="discount-form__grid">
-                {% include 'ui/select.html.twig' with { name: 'kind', label: 'product_discounts.field.kind'|trans, required: true, form: 'product_discounts.save', value: 'percent', options: kindOptions } %}
-                {% include 'ui/input.html.twig' with { name: 'value', label: 'product_discounts.field.value'|trans, required: true, form: 'product_discounts.save', value: '10' } %}
-                {% include 'ui/select.html.twig' with { name: 'condition_type', label: 'product_discounts.field.condition'|trans, required: true, form: 'product_discounts.save', value: 'none', options: conditionOptions } %}
+                {% include 'ui/select.html.twig' with { name: 'kind', label: 'product_discounts.field.kind'|trans, form: 'product_discounts.save', value: 'percent', options: kindOptions } %}
+                {% include 'ui/input.html.twig' with { name: 'value', label: 'product_discounts.field.value'|trans, form: 'product_discounts.save', value: '10' } %}
+                {% include 'ui/select.html.twig' with { name: 'condition_type', label: 'product_discounts.field.condition'|trans, form: 'product_discounts.save', value: 'none', options: conditionOptions } %}
                 {% include 'ui/input.html.twig' with { name: 'condition_value', type: 'number', label: 'product_discounts.field.condition_value'|trans, optional: true, form: 'product_discounts.save', value: '', placeholder: 'N' } %}
 
                 {% include 'ui/input.html.twig' with { name: 'description', label: 'product_discounts.field.description'|trans, optional: true, form: 'product_discounts.save', value: '', extra: 'discount-form__span-2' } %}

@@ -201,7 +201,7 @@
                             {% include 'ui/error-summary.html.twig' with { form: 'products.image.attach' } %}
                             <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.products.images.attach', {id: item.id()}) }}" data-form="products.image.attach" x-data="gereqForm"{% if form_errors('products.image.attach') %} data-server-state="1"{% endif %}>
                                 {{ csrf_field()|raw }}
-                                {% include 'ui/select.html.twig' with { name: 'media_asset_id', label: 'products.images.attach_existing'|trans, required: true, form: 'products.image.attach', value: '', options: libraryImages } %}
+                                {% include 'ui/select.html.twig' with { name: 'media_asset_id', label: 'products.images.attach_existing'|trans, form: 'products.image.attach', value: '', options: libraryImages } %}
                                 <div class="form-actions">
                                     <button class="btn btn--ghost" type="submit">{{ 'products.images.attach'|trans }}</button>
                                 </div>
@@ -260,8 +260,8 @@
                     {% include 'ui/error-summary.html.twig' with { form: 'products.price.save' } %}
                     <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.products.prices.store', {id: item.id()}) }}" data-form="products.price.save" x-data="gereqForm"{% if form_errors('products.price.save') %} data-server-state="1"{% endif %}>
                         {{ csrf_field()|raw }}
-                        {% include 'ui/select.html.twig' with { name: 'currency_code', label: 'products.prices.currency'|trans, required: true, form: 'products.price.save', value: currency_code(), options: currencyOptions } %}
-                        {% include 'ui/input.html.twig' with { name: 'amount', label: 'products.prices.amount'|trans, required: true, form: 'products.price.save', value: '' } %}
+                        {% include 'ui/select.html.twig' with { name: 'currency_code', label: 'products.prices.currency'|trans, form: 'products.price.save', value: currency_code(), options: currencyOptions } %}
+                        {% include 'ui/input.html.twig' with { name: 'amount', label: 'products.prices.amount'|trans, form: 'products.price.save', value: '' } %}
                         {% include 'ui/input.html.twig' with { name: 'valid_from', type: 'date', label: 'products.prices.valid_from'|trans, optional: true, form: 'products.price.save', value: '' } %}
                         {% include 'ui/input.html.twig' with { name: 'valid_to', type: 'date', label: 'products.prices.valid_to'|trans, optional: true, form: 'products.price.save', value: '' } %}
                         <div class="form-actions">
@@ -359,7 +359,7 @@
                                     <form method="post" class="variant-group-form" action="{{ url('admin.products.option_groups.update', {id: item.id(), groupId: group.id()}) }}" data-form="products.option_group.save">
                                         {{ csrf_field()|raw }}
                                         <div class="variant-group-form__top">
-                                            {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: group.name() } %}
+                                            {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', form: 'products.option_group.save', value: group.name() } %}
                                             <label class="check">
                                                 <input type="hidden" name="required" value="0">
                                                 <input type="checkbox" name="required" value="1" {{ group.isRequired() ? 'checked' : '' }}>
@@ -390,7 +390,7 @@
                         <form method="post" class="variant-group-form" action="{{ url('admin.products.option_groups.store', {id: item.id()}) }}" data-form="products.option_group.save">
                             {{ csrf_field()|raw }}
                             <div class="variant-group-form__top">
-                                {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: '', placeholder: 'Např. Barva látky' } %}
+                                {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', form: 'products.option_group.save', value: '', placeholder: 'Např. Barva látky' } %}
                                 <label class="check">
                                     <input type="hidden" name="required" value="0">
                                     <input type="checkbox" name="required" value="1" checked>

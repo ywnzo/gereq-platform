@@ -1,0 +1,6 @@
+{# Generic HTML container (Athena contentDiv). Prefer grid.html.twig for form layouts. #}
+{% set id = id|default(null) %}
+{% set class = class|default('') %}
+<div{% if id %} id="{{ id }}"{% endif %}{% if class %} class="{{ class }}"{% endif %}>
+{% if body is defined and body %}{{ body|raw }}{% else %}{% block body %}{% endblock %}{% endif %}
+</div>

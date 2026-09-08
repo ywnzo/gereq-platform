@@ -5,10 +5,19 @@ declare(strict_types=1);
 namespace Modules\Cms\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'cms_site_menus')]
+#[FormEntity('cms.menu.save')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt'],
+    form: 'cms.menu.save',
+    cols: 1,
+)]
 class SiteMenu
 {
     public const LOCATIONS = ['header', 'footer'];
@@ -18,9 +27,18 @@ class SiteMenu
     private string $id;
 
     #[ORM\Column(length: 120)]
+    #[FormField(required: true, label: 'cms.field.name', order: 10)]
     private string $name;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'cms.field.location',
+        type: 'select',
+        choicesFrom: 'LOCATIONS',
+        choiceLabel: 'cms.menu.location.',
+        order: 20,
+    )]
     private string $location = 'header';
 
     #[ORM\Column(name: 'created_at')]

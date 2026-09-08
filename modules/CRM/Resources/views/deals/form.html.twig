@@ -7,66 +7,21 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'crm.deal.save' } %}
 
-    <form method="post" class="form-grid" action="{{ item ? url('admin.crm.deals.update', {id: item.id()}) : url('admin.crm.deals.store') }}" data-form="crm.deal.save" x-data="gereqForm"{% if form_errors('crm.deal.save') %} data-server-state="1"{% endif %}>
+    {% set dealSource = item ?? 'Modules\\CRM\\Domain\\Deal' %}
+    {% set dealValues = {
+        currency: item ? item.currency() : currency_code(),
+        customer_id: item ? item.customerId() : customerId,
+        expected_close_at: item and item.expectedCloseAt() ? item.expectedCloseAt().format('Y-m-d') : '',
+    } %}
+
+    <form method="post" action="{{ item ? url('admin.crm.deals.update', {id: item.id()}) : url('admin.crm.deals.store') }}" data-form="crm.deal.save" x-data="gereqForm"{% if form_errors('crm.deal.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {% include 'ui/select.html.twig' with {
-            name: 'customer_id',
-            label: 'crm.field.customer'|trans,
-            required: true,
+        {{ forms().render(dealSource, {
             form: 'crm.deal.save',
-            value: item ? item.customerId() : customerId,
-            options: customerOptions
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'title',
-            label: 'crm.field.title'|trans,
-            required: true,
-            form: 'crm.deal.save',
-            value: item ? item.title() : ''
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'amount',
-            label: 'crm.field.amount'|trans,
-            optional: true,
-            form: 'crm.deal.save',
-            value: item and item.amount() ? item.amount() : ''
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'currency',
-            label: 'crm.field.currency'|trans,
-            optional: true,
-            form: 'crm.deal.save',
-            value: item ? item.currency() : currency_code()
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'stage',
-            label: 'crm.field.stage'|trans,
-            form: 'crm.deal.save',
-            value: item ? item.stage() : 'lead',
-            options: [
-                { value: 'lead', label: 'crm.stage.lead'|trans },
-                { value: 'qualified', label: 'crm.stage.qualified'|trans },
-                { value: 'proposal', label: 'crm.stage.proposal'|trans },
-                { value: 'won', label: 'crm.stage.won'|trans },
-                { value: 'lost', label: 'crm.stage.lost'|trans }
-            ]
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'expected_close_at',
-            type: 'date',
-            label: 'crm.field.expected_close'|trans,
-            optional: true,
-            form: 'crm.deal.save',
-            value: item and item.expectedCloseAt() ? item.expectedCloseAt().format('Y-m-d') : ''
-        } %}
-        {% include 'ui/textarea.html.twig' with {
-            name: 'note',
-            label: 'crm.field.note'|trans,
-            optional: true,
-            extra: 'field--full',
-            form: 'crm.deal.save',
-            value: item ? item.note() : ''
-        } %}
+            cols: 2,
+            values: dealValues,
+            choices: { customer_id: customerOptions }
+        }) }}
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ url('admin.crm.deals.index') }}">{{ 'common.cancel'|trans }}</a>

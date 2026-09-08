@@ -219,7 +219,6 @@
                                 {% include 'ui/editor.html.twig' with {
                                     name: 'body',
                                     label: 'customers.notes.add'|trans,
-                                    required: true,
                                     placeholder: 'customers.notes.placeholder'|trans,
                                     value: '',
                                     form: null,
@@ -381,7 +380,7 @@
                         </div>
                         <form method="post" class="customer-crud__grid" action="{{ url('admin.customers.addresses.store', {id: item.id()}) }}" x-data="gereqAresAddress">
                             {{ csrf_field()|raw }}
-                            {% include 'ui/select.html.twig' with { name: 'type', label: 'customers.field.address_type'|trans, required: true, value: 'billing', options: [
+                            {% include 'ui/select.html.twig' with { name: 'type', label: 'customers.field.address_type'|trans, value: 'billing', options: [
                                 { value: 'billing', label: 'customers.address.type.billing'|trans },
                                 { value: 'shipping', label: 'customers.address.type.shipping'|trans },
                                 { value: 'other', label: 'customers.address.type.other'|trans }

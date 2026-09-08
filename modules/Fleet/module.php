@@ -6,7 +6,7 @@ return [
     'id' => 'fleet',
     'name' => 'Fleet',
     'icon' => 'car',
-    'version' => '1.7.6',
+    'version' => '1.7.7',
     'description' => 'module.fleet.description',
     'class' => Modules\Fleet\FleetModule::class,
     'author' => 'GEREQ',

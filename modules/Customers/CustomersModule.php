@@ -42,7 +42,7 @@ final class CustomersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.4.0';
+        return '1.4.1';
     }
 
     public function register(ModuleContext $context): void
@@ -377,6 +377,7 @@ final class CustomersModule implements ModuleInterface
             'note' => 'nullable|max:20000',
             'status' => 'required|in:active,lead,inactive,archived',
         ]);
+        $context->forms()->entity('customers.save', \Modules\Customers\Domain\Customer::class);
 
         $validation->ruleset('customers.bulk', [
             'action' => 'required|in:activate,lead,deactivate,archive,delete',

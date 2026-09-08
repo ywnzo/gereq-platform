@@ -1,0 +1,194 @@
+.input,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]):not([type="color"]):not(.color-picker__hex-input),
+textarea,
+select,
+select.input {
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    background-color: var(--surface-2);
+    background-image: none;
+    border: var(--control-border) solid var(--border);
+    border-radius: var(--control-radius);
+    padding: var(--control-py) var(--control-px);
+    min-height: var(--control-h);
+    height: var(--control-h);
+    font-family: var(--gereq-font-sans);
+    font-size: var(--control-font);
+    line-height: var(--control-line);
+    color: var(--text, inherit);
+    transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+textarea {
+    height: auto;
+    min-height: 5.5rem;
+    padding: 0.75rem var(--control-px);
+    line-height: 1.45;
+    resize: vertical;
+}
+input[type="checkbox"],
+input[type="radio"] {
+    width: auto;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    accent-color: var(--primary);
+}
+/* Native selects: chevron + same control metrics */
+select,
+select.input {
+    padding-right: 2.25rem;
+    line-height: normal;
+    background-color: var(--surface-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2371717a' stroke-width='1.75'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 12px;
+}
+html.dark select,
+html.dark select.input,
+html[data-theme="gereq-dark"] select,
+html[data-theme="gereq-dark"] select.input {
+    background-color: var(--surface-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23a1a1aa' stroke-width='1.75'%3E%3Cpath d='M3 4.5 6 8l3-3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px 12px;
+}
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+textarea { resize: vertical; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field span, .field legend { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: min(100%, 56rem);
+    max-width: none;
+}
+.form-grid--cols-1 {
+    grid-template-columns: 1fr;
+    width: min(100%, 36rem);
+}
+.form-grid--cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(100%, 72rem);
+}
+.form-grid--cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: min(100%, 88rem);
+}
+.panel .form-grid.form-grid--cols-3,
+.panel .form-grid.form-grid--cols-4 {
+    width: 100%;
+}
+.field--full { grid-column: 1 / -1; }
+.field--span-2 { grid-column: span 2; }
+.field--span-3 { grid-column: span 3; }
+/* Keep 3/4 cols until tablet; only then drop to 2, then 1. */
+@media (max-width: 720px) {
+    .form-grid--cols-3,
+    .form-grid--cols-4 {
+        grid-template-columns: 1fr 1fr;
+    }
+    .field--span-3 { grid-column: span 2; }
+}
+@media (max-width: 520px) {
+    .form-grid,
+    .form-grid--cols-1,
+    .form-grid--cols-3,
+    .form-grid--cols-4 {
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+    .field--span-2,
+    .field--span-3 { grid-column: 1 / -1; }
+}
+.form-actions { grid-column: 1 / -1; display: flex; gap: 8px; margin-top: 8px; }
+.form-actions form { display: inline; margin: 0; }
+.stack { display: flex; flex-direction: column; gap: 12px; width: min(100%, 36rem); max-width: none; }
+
+.ares-field { position: relative; z-index: 0; }
+.ares-field:focus-within,
+.ares-field:has(.ares-suggest.is-open) {
+    z-index: 50;
+}
+.panel:has(.ares-suggest.is-open) {
+    position: relative;
+    z-index: 4;
+}
+.ares-field__control { position: relative; }
+.ares-field__row { display: flex; gap: 8px; align-items: stretch; }
+.ares-field__row .input,
+.ares-field__row .g-control { flex: 1; min-width: 0; }
+.ares-field__control .g-control { width: 100%; }
+.ares-suggest {
+    display: none;
+    position: absolute;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    max-height: 16rem;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 12px 32px color-mix(in srgb, var(--text) 12%, transparent);
+}
+.ares-suggest.is-open { display: block; }
+.ares-suggest__status {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.ares-suggest__status.is-error { color: var(--danger, #b42318); }
+.ares-suggest__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--border-soft);
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+}
+.ares-suggest__item:last-child { border-bottom: 0; }
+.ares-suggest__item:hover,
+.ares-suggest__item.is-active {
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+.ares-suggest__item strong {
+    font-size: 13px;
+    font-weight: 600;
+}
+.ares-suggest__meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.ares-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: auto;
+    width: 100%;
+    max-height: min(90dvh, 64rem);
+    box-shadow: 0 1px 2px rgb(10 11 10 / 0.04);
+}

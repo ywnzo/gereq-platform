@@ -146,7 +146,7 @@ final class ExceptionHandlerTest extends TestCase
         $twig = new Environment($loader, ['autoescape' => 'html']);
         $twig->addFilter(new TwigFilter('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
         $twig->addFunction(new TwigFunction('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
-        $twig->addFunction(new TwigFunction('asset', static fn (): string => '/build/admin.css'));
+        $twig->addFunction(new TwigFunction('asset', static fn (): string => '/build/kernel.css'));
         $twig->addFunction(new TwigFunction('vite_hot', static fn (): bool => false));
         $twig->addFunction(new TwigFunction('vite_tags', static fn (): string => ''));
         $twig->addFunction(new TwigFunction('csp_nonce', static fn (): string => 'test'));

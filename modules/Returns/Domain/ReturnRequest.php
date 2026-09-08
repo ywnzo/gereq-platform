@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Returns\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -12,6 +15,12 @@ use Ramsey\Uuid\Uuid;
 #[ORM\UniqueConstraint(name: 'uniq_return_requests_number', columns: ['number'])]
 #[ORM\Index(name: 'idx_return_requests_order', columns: ['order_id'])]
 #[ORM\Index(name: 'idx_return_requests_status', columns: ['status'])]
+#[FormEntity('returns.save')]
+#[FormGenerator(
+    exclude: ['id', 'number', 'status', 'createdAt', 'updatedAt'],
+    form: 'returns.save',
+    cols: 2,
+)]
 class ReturnRequest
 {
     public const STATUSES = ['requested', 'approved', 'rejected', 'received', 'refunded', 'closed'];
@@ -25,27 +34,41 @@ class ReturnRequest
     private string $number;
 
     #[ORM\Column(name: 'order_id', length: 36)]
+    #[FormField(required: true, name: 'order_id', label: 'returns.field.order', order: 10)]
     private string $orderId;
 
     #[ORM\Column(name: 'customer_id', length: 36, nullable: true)]
+    #[FormField(label: 'returns.field.customer', name: 'customer_id', order: 20)]
     private ?string $customerId = null;
 
     #[ORM\Column(length: 32)]
     private string $status = 'requested';
 
     #[ORM\Column(type: 'text')]
+    #[FormField(required: true, label: 'returns.field.reason', type: 'textarea', extra: 'field--full', order: 30)]
     private string $reason;
 
     #[ORM\Column(length: 32, nullable: true)]
+    #[FormField(
+        label: 'returns.field.resolution',
+        type: 'select',
+        choicesFrom: 'RESOLUTIONS',
+        choiceLabel: 'returns.resolution.',
+        emptyLabel: '—',
+        order: 40,
+    )]
     private ?string $resolution = null;
 
     #[ORM\Column(name: 'refund_amount', type: 'decimal', precision: 14, scale: 2, nullable: true)]
+    #[FormField(label: 'returns.field.refund_amount', name: 'refund_amount', order: 50)]
     private ?string $refundAmount = null;
 
     #[ORM\Column(length: 3)]
+    #[FormField(label: 'returns.field.currency', options: ['maxlength' => 3], order: 60)]
     private string $currency = 'CZK';
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'returns.field.note', type: 'textarea', order: 70)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'created_at')]

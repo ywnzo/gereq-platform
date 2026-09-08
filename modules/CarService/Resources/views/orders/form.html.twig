@@ -1,5 +1,12 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+{% set orderSource = item ?? 'Modules\\CarService\\Domain\\ServiceOrder' %}
+{% set orderValues = {
+    vehicle_id: item ? item.vehicleId() : vehicleId,
+    customer_id: item ? (item.customerId() ?: '') : customerId,
+    branch_id: item ? (item.branchId() ?: '') : (defaultBranchId|default('')),
+} %}
+
 <header class="page-header">
     <div>
         <p class="eyebrow"><a href="{{ url('admin.carservice.index') }}">{{ 'nav.carservice'|trans }}</a></p>
@@ -24,28 +31,17 @@
             <p class="muted">{{ 'carservice.form.section.order_hint'|trans }}</p>
         </div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/select.html.twig' with { name:'vehicle_id', label:'carservice.field.vehicle'|trans, required:true, form:'carservice.save', value: item?item.vehicleId():vehicleId, options:vehicleOptions, extra:'field--full' } %}
-        {% include 'ui/select.html.twig' with { name:'customer_id', label:'carservice.field.customer'|trans, optional:true, form:'carservice.save', value: item?item.customerId():customerId, options:customerOptions } %}
-        {% include 'ui/select.html.twig' with { name:'type', label:'carservice.field.type'|trans, form:'carservice.save', value: item?item.type():'external_customer', options:[
-            {value:'internal_fleet',label:'carservice.type.internal_fleet'|trans},
-            {value:'external_customer',label:'carservice.type.external_customer'|trans},
-            {value:'linked',label:'carservice.type.linked'|trans}
-        ] } %}
-        {% include 'ui/select.html.twig' with { name:'status', label:'carservice.field.status'|trans, form:'carservice.save', value: item?item.status():'intake', options:[
-            {value:'intake',label:'carservice.status.intake'|trans},
-            {value:'in_progress',label:'carservice.status.in_progress'|trans},
-            {value:'waiting',label:'carservice.status.waiting'|trans},
-            {value:'ready',label:'carservice.status.ready'|trans},
-            {value:'done',label:'carservice.status.done'|trans},
-            {value:'cancelled',label:'carservice.status.cancelled'|trans}
-        ] } %}
-        {% include 'ui/select.html.twig' with { name:'team', label:'carservice.field.team'|trans, form:'carservice.save', value: item?item.team():'body_shop', options:[
-            {value:'body_shop',label:'carservice.team.body_shop'|trans},
-            {value:'paint_shop',label:'carservice.team.paint_shop'|trans}
-        ] } %}
-        {% include 'ui/select.html.twig' with { name:'branch_id', label:'carservice.field.branch'|trans, optional:true, form:'carservice.save', value: item ? item.branchId() : defaultBranchId|default(''), options:branchOptions, searchable: true } %}
-    </div>
+    {{ forms().render(orderSource, {
+        form: 'carservice.save',
+        group: 'order',
+        cols: 2,
+        values: orderValues,
+        choices: {
+            vehicle_id: vehicleOptions,
+            customer_id: customerOptions,
+            branch_id: branchOptions
+        }
+    }) }}
 </section>
 
 <section class="panel">
@@ -94,10 +90,11 @@
             <p class="muted">{{ 'carservice.form.section.work_hint'|trans }}</p>
         </div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/textarea.html.twig' with { name:'service_info', label:'carservice.field.service_info'|trans, optional:true, form:'carservice.save', value: item?item.serviceInfo():'', size:'mini', rows:5, extra:'field--full' } %}
-        {% include 'ui/textarea.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, form:'carservice.save', value: item?item.note():'', size:'mini', rows:3, extra:'field--full' } %}
-    </div>
+    {{ forms().render(orderSource, {
+        form: 'carservice.save',
+        group: 'work',
+        cols: 2
+    }) }}
 </section>
 </form>
 {% endblock %}

@@ -34,7 +34,7 @@ final class CurrencyModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.0';
+        return '1.3.1';
     }
 
     public function register(ModuleContext $context): void
@@ -272,6 +272,7 @@ final class CurrencyModule implements ModuleInterface
             'is_active' => 'nullable',
             'is_default' => 'nullable',
         ]);
+        $context->forms()->entity('currency.save', \Modules\Currency\Domain\Currency::class);
 
         $validation->ruleset('currency.api.save', [
             'code' => 'required|min:3|max:3',

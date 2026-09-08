@@ -7,84 +7,15 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'payments.method.save' } %}
 
-{% set typeOptions = [] %}
-{% for type in types %}
-    {% set typeOptions = typeOptions|merge([{ value: type, label: ('payments.type.' ~ type)|trans }]) %}
-{% endfor %}
+{% set methodSource = item ?? 'Modules\\Payments\\Domain\\PaymentMethod' %}
 
-<form method="post" class="form-grid" action="{{ item ? url('admin.payments.methods.update', {id: item.id()}) : url('admin.payments.methods.store') }}" data-form="payments.method.save" x-data="gereqForm"{% if form_errors('payments.method.save') %} data-server-state="1"{% endif %}>
+<form method="post" action="{{ item ? url('admin.payments.methods.update', {id: item.id()}) : url('admin.payments.methods.store') }}" data-form="payments.method.save" x-data="gereqForm"{% if form_errors('payments.method.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {% include 'ui/input.html.twig' with {
-        name: 'code',
-        label: 'payments.field.code'|trans,
-        required: true,
+    {{ forms().render(methodSource, {
         form: 'payments.method.save',
-        value: item ? item.code() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'name',
-        label: 'payments.field.name'|trans,
-        required: true,
-        form: 'payments.method.save',
-        value: item ? item.name() : ''
-    } %}
-    {% include 'ui/select.html.twig' with {
-        name: 'type',
-        label: 'payments.field.type'|trans,
-        required: true,
-        form: 'payments.method.save',
-        value: item ? item.type() : 'bank_transfer',
-        options: typeOptions
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'provider',
-        label: 'payments.field.provider'|trans,
-        optional: true,
-        form: 'payments.method.save',
-        value: item and item.provider() ? item.provider() : '',
-        hint: 'payments.field.provider.hint'|trans
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'fee_fixed',
-        label: 'payments.field.fee_fixed'|trans,
-        optional: true,
-        form: 'payments.method.save',
-        value: item ? item.feeFixed() : '0'
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'fee_percent',
-        label: 'payments.field.fee_percent'|trans,
-        optional: true,
-        form: 'payments.method.save',
-        value: item ? item.feePercent() : '0'
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'currency',
-        label: 'payments.field.currency'|trans,
-        optional: true,
-        form: 'payments.method.save',
-        value: item ? item.currency() : currency_code()
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'sort_order',
-        label: 'payments.field.sort_order'|trans,
-        optional: true,
-        form: 'payments.method.save',
-        value: item ? item.sortOrder() : '0'
-    } %}
-    {% include 'ui/textarea.html.twig' with {
-        name: 'instructions',
-        label: 'payments.field.instructions'|trans,
-        optional: true,
-        form: 'payments.method.save',
-        value: item and item.instructions() ? item.instructions() : '',
-        size: 'mini',
-        rows: 4
-    } %}
-    <label class="field">
-        <span class="field__label">{{ 'payments.field.active'|trans }}</span>
-        <input type="checkbox" name="active" value="1" {{ (item is null or item.isActive()) ? 'checked' : '' }}>
-    </label>
+        cols: 2,
+        values: item ? {} : { currency: currency_code() }
+    }) }}
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.payments.methods.index') }}">{{ 'common.cancel'|trans }}</a>

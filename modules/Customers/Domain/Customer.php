@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Customers\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Gereq\Admin\Resource\AdminField;
 use Gereq\Admin\Resource\AdminResource;
 use Ramsey\Uuid\Uuid;
@@ -19,34 +22,49 @@ use Ramsey\Uuid\Uuid;
     singular: 'Zákazník',
     controller: \Modules\Customers\Http\CustomerController::class,
 )]
+#[FormEntity('customers.save')]
+#[FormGenerator(
+    exclude: ['id', 'company', 'status', 'createdAt', 'updatedAt'],
+    form: 'customers.save',
+    cols: 2,
+)]
 class Customer
 {
+    public const STATUSES = ['active', 'lead', 'inactive', 'archived'];
+
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $id;
 
     #[ORM\Column(length: 180)]
     #[AdminField(type: 'text', label: 'Jméno', searchable: true, sortable: true, required: true)]
+    #[FormField(required: true, label: 'customers.field.name', group: 'profile', attrs: 'autocomplete="name"', order: 10)]
     private string $name;
 
     #[ORM\Column(length: 180)]
     #[AdminField(type: 'email', label: 'E-mail', searchable: true, sortable: true, required: true)]
+    #[FormField(required: true, label: 'customers.field.email', type: 'email', group: 'profile', attrs: 'autocomplete="email"', order: 20)]
     private string $email;
 
     #[ORM\Column(length: 40, nullable: true)]
     #[AdminField(type: 'text', label: 'Telefon', searchable: true)]
+    #[FormField(label: 'customers.field.phone', type: 'tel', group: 'profile', attrs: 'autocomplete="tel"', order: 30)]
     private ?string $phone = null;
 
+    /** ARES subject widget — ruční Twig. */
     #[ORM\Column(length: 180, nullable: true)]
     #[AdminField(type: 'text', label: 'Firma', searchable: true, sortable: true)]
     private ?string $company = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
     #[AdminField(type: 'textarea', label: 'Poznámka', showOnIndex: false)]
+    #[FormField(label: 'customers.field.note', type: 'editor', group: 'note', options: ['placeholder' => 'customers.note.placeholder'], order: 10)]
     private ?string $note = null;
 
+    /** Status picker — ruční Twig. */
     #[ORM\Column(length: 32)]
     #[AdminField(type: 'select', label: 'Stav', sortable: true, filterable: true)]
+    #[FormField(required: true)]
     private string $status = 'active';
 
     #[ORM\Column(name: 'created_at')]

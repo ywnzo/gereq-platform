@@ -6,7 +6,7 @@ return [
     'id' => 'bundles',
     'name' => 'Bundles',
     'icon' => 'layers',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.bundles.description',
     'class' => Modules\Bundles\BundlesModule::class,
     'author' => 'GEREQ',

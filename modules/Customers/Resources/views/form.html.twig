@@ -62,33 +62,14 @@
                             <p class="muted customer-edit__section-hint">{{ 'customers.form.profile.hint'|trans }}</p>
                         </div>
                     </header>
+                    {% set customerSource = item ?? 'Modules\\Customers\\Domain\\Customer' %}
                     <div class="customer-edit__grid">
-                        {% include 'ui/input.html.twig' with {
-                            name: 'name',
-                            label: 'customers.field.name'|trans,
-                            required: true,
+                        {{ forms().render(customerSource, {
                             form: 'customers.save',
-                            value: item ? item.name() : '',
-                            autocomplete: 'name'
-                        } %}
-                        {% include 'ui/input.html.twig' with {
-                            name: 'email',
-                            type: 'email',
-                            label: 'customers.field.email'|trans,
-                            required: true,
-                            form: 'customers.save',
-                            value: item ? item.email() : '',
-                            autocomplete: 'email'
-                        } %}
-                        {% include 'ui/input.html.twig' with {
-                            name: 'phone',
-                            type: 'tel',
-                            label: 'customers.field.phone'|trans,
-                            optional: true,
-                            form: 'customers.save',
-                            value: item ? item.phone() : '',
-                            autocomplete: 'tel'
-                        } %}
+                            group: 'profile',
+                            wrap: false,
+                            cols: 2
+                        }) }}
                         <div class="g-field ares-field" x-data="gereqAresSubject">
                             <span class="g-label">{{ 'customers.field.company'|trans }} · ARES</span>
                             <div class="g-control-wrap">
@@ -117,14 +98,12 @@
                             <p class="muted customer-edit__section-hint">{{ 'customers.form.note.hint'|trans }}</p>
                         </div>
                     </header>
-                    {% include 'ui/editor.html.twig' with {
-                        name: 'note',
-                        label: '',
-                        optional: true,
+                    {{ forms().render(customerSource, {
                         form: 'customers.save',
-                        placeholder: 'customers.note.placeholder'|trans,
-                        value: item ? item.note() : ''
-                    } %}
+                        group: 'note',
+                        cols: 1,
+                        fieldOptions: { note: { placeholder: 'customers.note.placeholder'|trans } }
+                    }) }}
                 </section>
             </div>
 

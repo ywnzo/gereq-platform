@@ -30,7 +30,7 @@ final class WebhooksModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.0.2';
     }
 
     public function register(ModuleContext $context): void
@@ -171,6 +171,7 @@ final class WebhooksModule implements ModuleInterface
             'url' => 'required|url|max:2048',
             'timeout_seconds' => 'nullable|integer',
         ]);
+        $context->forms()->entity('webhooks.save', \Modules\Webhooks\Domain\Webhook::class);
     }
 
     private function registerHooks(ModuleContext $context): void

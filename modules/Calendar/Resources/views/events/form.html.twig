@@ -7,6 +7,17 @@
     ] } %}
 {% endblock %}
 {% block content %}
+{% set eventSource = item ?? 'Modules\\Calendar\\Domain\\CalendarEvent' %}
+{% set eventValues = item ? {
+    starts_at: item.startsAt().format('Y-m-d\\TH:i'),
+    ends_at: item.endsAt().format('Y-m-d\\TH:i'),
+} : {
+    type: 'meeting',
+    starts_at: defaultStarts,
+    ends_at: defaultEnds,
+    timezone: 'Europe/Prague',
+} %}
+
 <header class="page-header">
     <div>
         <h1>{{ item ? 'calendar.edit'|trans : 'calendar.new'|trans }}</h1>
@@ -35,24 +46,12 @@
             <p class="muted">{{ 'calendar.form.section.basic_hint'|trans }}</p>
         </div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'title', label:'calendar.field.title'|trans, required:true, form:'calendar.event.save', value: item?item.title():'', extra:'field--full' } %}
-        {% set typeOptions = [] %}
-        {% for t in types|default(['meeting','deadline','call','task','other']) %}
-            {% set typeOptions = typeOptions|merge([{ value: t, label: ('calendar.type.' ~ t)|trans }]) %}
-        {% endfor %}
-        {% include 'ui/select.html.twig' with { name:'type', label:'calendar.field.type'|trans, form:'calendar.event.save', value: item?item.type():'meeting', options: typeOptions } %}
-        {% include 'ui/select.html.twig' with { name:'status', label:'calendar.field.status'|trans, form:'calendar.event.save', value: item?item.status():'confirmed', options:[
-            {value:'confirmed',label:'calendar.status.confirmed'|trans},
-            {value:'tentative',label:'calendar.status.tentative'|trans},
-            {value:'cancelled',label:'calendar.status.cancelled'|trans}
-        ] } %}
-        {% set colorOptions = [] %}
-        {% for c in colors|default(['blue','green','amber','red','violet','slate']) %}
-            {% set colorOptions = colorOptions|merge([{ value: c, label: ('calendar.color.' ~ c)|trans }]) %}
-        {% endfor %}
-        {% include 'ui/select.html.twig' with { name:'color', label:'calendar.field.color'|trans, form:'calendar.event.save', value: item?item.color():'blue', options: colorOptions } %}
-    </div>
+    {{ forms().render(eventSource, {
+        form: 'calendar.event.save',
+        group: 'basic',
+        cols: 2,
+        values: eventValues
+    }) }}
 </section>
 
 <section class="panel">
@@ -62,16 +61,12 @@
             <p class="muted">{{ 'calendar.form.section.schedule_hint'|trans }}</p>
         </div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'starts_at', type:'datetime-local', label:'calendar.field.starts'|trans, required:true, form:'calendar.event.save', value: item ? item.startsAt().format('Y-m-d\\TH:i') : defaultStarts } %}
-        {% include 'ui/input.html.twig' with { name:'ends_at', type:'datetime-local', label:'calendar.field.ends'|trans, required:true, form:'calendar.event.save', value: item ? item.endsAt().format('Y-m-d\\TH:i') : defaultEnds } %}
-        <label class="field">
-            <span class="field__label">{{ 'calendar.field.all_day'|trans }}</span>
-            <input type="checkbox" name="all_day" value="1" {{ item and item.allDay() ? 'checked' : '' }}>
-        </label>
-        {% include 'ui/input.html.twig' with { name:'timezone', label:'calendar.field.timezone'|trans, optional:true, form:'calendar.event.save', value: item ? (item.timezone() ?: 'Europe/Prague') : 'Europe/Prague' } %}
-        {% include 'ui/input.html.twig' with { name:'rrule', label:'calendar.field.rrule'|trans, optional:true, form:'calendar.event.save', value: item?item.rrule():'', hint: 'calendar.field.rrule_hint'|trans, extra:'field--full' } %}
-    </div>
+    {{ forms().render(eventSource, {
+        form: 'calendar.event.save',
+        group: 'schedule',
+        cols: 2,
+        values: eventValues
+    }) }}
 </section>
 
 <section class="panel">
@@ -81,10 +76,12 @@
             <p class="muted">{{ 'calendar.form.section.details_hint'|trans }}</p>
         </div>
     </header>
-    <div class="form-grid">
-        {% include 'ui/input.html.twig' with { name:'location', label:'calendar.field.location'|trans, optional:true, form:'calendar.event.save', value: item?item.location():'', extra:'field--full' } %}
-        {% include 'ui/textarea.html.twig' with { name:'description', label:'calendar.field.description'|trans, optional:true, extra:'field--full', form:'calendar.event.save', value: item?item.description():'', rows: 6 } %}
-    </div>
+    {{ forms().render(eventSource, {
+        form: 'calendar.event.save',
+        group: 'details',
+        cols: 2,
+        values: eventValues
+    }) }}
 </section>
 
 <section class="panel">

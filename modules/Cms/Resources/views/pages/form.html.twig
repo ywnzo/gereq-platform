@@ -7,75 +7,12 @@
 
     {% include 'ui/error-summary.html.twig' with { form: 'cms.page.save' } %}
 
-    <form method="post" class="form-grid" action="{{ item ? url('admin.cms.pages.update', {id: item.id()}) : url('admin.cms.pages.store') }}" data-form="cms.page.save" x-data="gereqForm"{% if form_errors('cms.page.save') %} data-server-state="1"{% endif %}>
+    <form method="post" action="{{ item ? url('admin.cms.pages.update', {id: item.id()}) : url('admin.cms.pages.store') }}" data-form="cms.page.save" x-data="gereqForm"{% if form_errors('cms.page.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        {% include 'ui/input.html.twig' with {
-            name: 'title',
-            label: 'cms.field.title'|trans,
-            required: true,
+        {{ forms().render(item ?? 'Modules\\Cms\\Domain\\Page', {
             form: 'cms.page.save',
-            value: item ? item.title() : ''
-        } %}
-        {% include 'ui/input.html.twig' with {
-            name: 'slug',
-            label: 'cms.field.slug'|trans,
-            required: true,
-            form: 'cms.page.save',
-            value: item ? item.slug() : '',
-            hint: 'cms.field.slug.hint'|trans
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'status',
-            label: 'cms.field.status'|trans,
-            required: true,
-            form: 'cms.page.save',
-            value: item ? item.status() : 'draft',
-            options: [
-                {value: 'draft', label: 'cms.page.status.draft'|trans},
-                {value: 'published', label: 'cms.page.status.published'|trans},
-                {value: 'archived', label: 'cms.page.status.archived'|trans}
-            ]
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'template',
-            label: 'cms.field.template'|trans,
-            required: true,
-            form: 'cms.page.save',
-            value: item ? item.template() : 'default',
-            options: [
-                {value: 'default', label: 'cms.page.template.default'|trans},
-                {value: 'landing', label: 'cms.page.template.landing'|trans}
-            ]
-        } %}
-        {% include 'ui/select.html.twig' with {
-            name: 'content_mode',
-            label: 'cms.field.content_mode'|trans,
-            required: true,
-            form: 'cms.page.save',
-            value: item ? item.contentMode() : 'blocks',
-            hint: 'cms.field.content_mode.hint'|trans,
-            options: [
-                {value: 'blocks', label: 'cms.page.content_mode.blocks'|trans},
-                {value: 'raw', label: 'cms.page.content_mode.raw'|trans}
-            ]
-        } %}
-        {% include 'ui/textarea.html.twig' with {
-            name: 'body',
-            label: 'cms.field.body'|trans,
-            optional: true,
-            form: 'cms.page.save',
-            value: item ? item.body()|default('') : '',
-            hint: 'cms.field.body.hint'|trans,
-            extra: 'field--full'
-        } %}
-        {% include 'ui/textarea.html.twig' with {
-            name: 'meta_description',
-            label: 'cms.field.meta_description'|trans,
-            optional: true,
-            form: 'cms.page.save',
-            value: item ? item.metaDescription()|default('') : '',
-            size: 'mini'
-        } %}
+            cols: 1
+        }) }}
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
             <a class="btn btn--ghost" href="{{ item ? url('admin.cms.pages.show', {id: item.id()}) : url('admin.cms.pages.index') }}">{{ 'common.cancel'|trans }}</a>

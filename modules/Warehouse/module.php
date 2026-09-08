@@ -6,7 +6,7 @@ return [
     'id' => 'warehouse',
     'name' => 'Warehouse',
     'icon' => 'warehouse',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'description' => 'module.warehouse.description',
     'class' => Modules\Warehouse\WarehouseModule::class,
     'author' => 'GEREQ',

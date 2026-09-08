@@ -1,0 +1,22 @@
+@import "../brand/tokens.css";
+@import "../brand/font.css";
+@import "tailwindcss";
+
+@import "./kernel/base.css";
+@import "./kernel/buttons.css";
+@import "./kernel/feedback.css";
+@import "./kernel/layout.css";
+@import "./kernel/forms-legacy.css";
+@import "./kernel/tables.css";
+@import "./kernel/panels.css";
+@import "./kernel/gallery.css";
+@import "./kernel/palette.css";
+@import "./kernel/auth.css";
+@import "./kernel/forms.css";
+@import "./kernel/finish.css";
+@import "./kernel/overlays.css";
+@import "./kernel/sidebar.css";
+@import "./kernel/dashboard.css";
+@import "./kernel/detail.css";
+@import "./kernel/settings.css";
+@import "./kernel/docs.css";

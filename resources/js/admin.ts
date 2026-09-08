@@ -1,6 +1,6 @@
 import Alpine from '@alpinejs/csp';
 import { registerUi } from './ui';
-import '../css/admin.css';
+import '../css/kernel.css';
 import '../../modules/BikeService/Resources/assets/css/admin.css';
 import '../../modules/CarService/Resources/assets/css/admin.css';
 import '../../modules/SearchEngines/Resources/assets/css/admin.css';

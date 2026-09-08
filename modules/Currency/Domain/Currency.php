@@ -5,28 +5,43 @@ declare(strict_types=1);
 namespace Modules\Currency\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'currencies')]
+#[FormEntity('currency.save')]
+#[FormGenerator(
+    exclude: ['iDokladId', 'createdAt', 'updatedAt'],
+    form: 'currency.save',
+    cols: 1,
+)]
 class Currency
 {
     #[ORM\Id]
     #[ORM\Column(length: 3)]
+    #[FormField(required: true, label: 'currency.field.code', hint: 'currency.hint.code_iso', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 120)]
+    #[FormField(required: true, label: 'currency.field.name', order: 20)]
     private string $name;
 
     #[ORM\Column(length: 16)]
+    #[FormField(required: true, label: 'currency.field.symbol', order: 30)]
     private string $symbol;
 
     #[ORM\Column(name: 'decimal_places', type: 'integer')]
+    #[FormField(label: 'currency.field.decimal_places', type: 'number', order: 40)]
     private int $decimalPlaces = 2;
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(label: 'currency.field.is_active', type: 'switch', order: 50)]
     private bool $isActive = true;
 
     #[ORM\Column(name: 'is_default', type: 'boolean')]
+    #[FormField(label: 'currency.field.is_default', type: 'switch', order: 60)]
     private bool $isDefault = false;
 
     #[ORM\Column(name: 'idoklad_id', type: 'integer', nullable: true)]

@@ -34,9 +34,9 @@
     <header class="panel__head"><h2>{{ 'carservice.costs.add'|trans }}</h2></header>
     <form method="post" class="form-grid" action="{{ url('admin.carservice.costs.store') }}" data-form="carservice.cost">
         {{ csrf_field()|raw }}
-        {% include 'ui/input.html.twig' with { name:'year_month', label:'carservice.field.month'|trans, required:true, form:'carservice.cost', value:month } %}
+        {% include 'ui/input.html.twig' with { name:'year_month', label:'carservice.field.month'|trans, form:'carservice.cost', value:month } %}
         {% include 'ui/input.html.twig' with { name:'category', label:'carservice.field.category'|trans, form:'carservice.cost', value:'general' } %}
-        {% include 'ui/input.html.twig' with { name:'amount', label:'carservice.field.amount'|trans, required:true, form:'carservice.cost', value:'' } %}
+        {% include 'ui/input.html.twig' with { name:'amount', label:'carservice.field.amount'|trans, form:'carservice.cost', value:'' } %}
         {% include 'ui/input.html.twig' with { name:'note', label:'carservice.field.note'|trans, optional:true, form:'carservice.cost', value:'' } %}
         <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button></div>
     </form>

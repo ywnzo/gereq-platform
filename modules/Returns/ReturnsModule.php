@@ -28,7 +28,7 @@ final class ReturnsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.0.2';
     }
 
     public function register(ModuleContext $context): void
@@ -78,6 +78,7 @@ final class ReturnsModule implements ModuleInterface
             'currency' => 'nullable|max:3',
             'note' => 'nullable|max:20000',
         ]);
+        $context->forms()->entity('returns.save', \Modules\Returns\Domain\ReturnRequest::class);
         $v->ruleset('returns.status', [
             'status' => 'required|in:requested,approved,rejected,received,refunded,closed',
         ]);

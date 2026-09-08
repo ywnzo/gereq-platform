@@ -72,9 +72,9 @@
             <form method="post" class="form-grid" action="{{ url('admin.portals.queue',{id:item.id()}) }}">
                 {{ csrf_field()|raw }}
                 {% if listingOptions|length > 1 %}
-                    {% include 'ui/select.html.twig' with { name:'listing_id', label:'portals.field.listing'|trans, required:true, value:'', options: listingOptions, extra: 'field--full' } %}
+                    {% include 'ui/select.html.twig' with { name:'listing_id', label:'portals.field.listing'|trans, value:'', options: listingOptions, extra: 'field--full' } %}
                 {% else %}
-                    {% include 'ui/input.html.twig' with { name:'listing_id', label:'portals.field.listing'|trans, required:true, value:'' } %}
+                    {% include 'ui/input.html.twig' with { name:'listing_id', label:'portals.field.listing'|trans, value:'' } %}
                     <p class="muted">{{ 'portals.queue.no_listings'|trans }}</p>
                 {% endif %}
                 <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'portals.queue'|trans }}</button></div>

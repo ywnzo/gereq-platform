@@ -105,6 +105,7 @@ export function registerTabs(alpine: typeof Alpine): void {
         current: '',
         _onHash: null as (() => void) | null,
         _onClick: null as ((event: Event) => void) | null,
+        _onActivate: null as ((event: Event) => void) | null,
 
         init() {
             const root = this.$el as HTMLElement;
@@ -137,7 +138,23 @@ export function registerTabs(alpine: typeof Alpine): void {
                 }
             };
 
+            this._onActivate = (event: Event) => {
+                const tab = (event as CustomEvent<{ tab?: string }>).detail?.tab || '';
+                if (!tab || tab === this.current) {
+                    return;
+                }
+                // Only react when the field lives under this tabs root
+                const origin = event.target as Node | null;
+                if (origin && !root.contains(origin) && origin !== root) {
+                    return;
+                }
+                this.current = tab;
+                history.replaceState(null, '', '#' + tab);
+                this.sync();
+            };
+
             root.addEventListener('click', this._onClick);
+            root.addEventListener('gereq:activate-tab', this._onActivate);
             window.addEventListener('hashchange', this._onHash);
             this.sync();
         },
@@ -146,6 +163,9 @@ export function registerTabs(alpine: typeof Alpine): void {
             const root = this.$el as HTMLElement;
             if (this._onClick) {
                 root.removeEventListener('click', this._onClick);
+            }
+            if (this._onActivate) {
+                root.removeEventListener('gereq:activate-tab', this._onActivate);
             }
             if (this._onHash) {
                 window.removeEventListener('hashchange', this._onHash);

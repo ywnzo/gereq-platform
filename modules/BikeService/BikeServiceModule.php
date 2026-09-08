@@ -37,7 +37,7 @@ final class BikeServiceModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.11.0';
+        return '1.11.2';
     }
 
     public function register(ModuleContext $context): void
@@ -144,6 +144,7 @@ final class BikeServiceModule implements ModuleInterface
             'bike_index_id' => 'nullable|integer',
             'note' => 'nullable|max:5000',
         ]);
+        $context->forms()->entity('bikeservice.bike', \Modules\BikeService\Domain\Bike::class);
         $v->ruleset('bikeservice.save', [
             'bike_id' => 'required|max:36',
             'customer_id' => 'nullable|max:36',
@@ -159,6 +160,7 @@ final class BikeServiceModule implements ModuleInterface
             'intake_at' => 'nullable',
             'handover_at' => 'nullable',
         ]);
+        $context->forms()->entity('bikeservice.save', \Modules\BikeService\Domain\BikeOrder::class);
         $v->ruleset('bikeservice.job', [
             'type' => 'nullable|max:64',
             'note' => 'nullable|max:2000',

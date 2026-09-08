@@ -6,7 +6,7 @@ return [
     'id' => 'carservice',
     'name' => 'CarService',
     'icon' => 'build',
-    'version' => '1.13.4',
+    'version' => '1.13.5',
     'description' => 'module.carservice.description',
     'class' => Modules\CarService\CarServiceModule::class,
     'author' => 'GEREQ',

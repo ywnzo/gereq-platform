@@ -6,7 +6,7 @@ return [
     'id' => 'bikeservice',
     'name' => 'BikeService',
     'icon' => 'bike',
-    'version' => '1.11.0',
+    'version' => '1.11.2',
     'description' => 'module.bikeservice.description',
     'class' => Modules\BikeService\BikeServiceModule::class,
     'author' => 'GEREQ',

@@ -7,14 +7,12 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'product_discounts.save' } %}
 
-{% set kindOptions = [] %}
-{% for kind in kinds %}
-    {% set kindOptions = kindOptions|merge([{ value: kind, label: ('product_discounts.kind.' ~ kind)|trans }]) %}
-{% endfor %}
-{% set conditionOptions = [] %}
-{% for cond in conditions|default(['none']) %}
-    {% set conditionOptions = conditionOptions|merge([{ value: cond, label: ('product_discounts.condition.' ~ cond)|trans }]) %}
-{% endfor %}
+{% set discountSource = item ?? 'Modules\\ProductDiscounts\\Domain\\ProductDiscount' %}
+{% set discountValues = item ? {
+    starts_at: item.startsAt() ? item.startsAt().format('Y-m-d\\TH:i') : '',
+    ends_at: item.endsAt() ? item.endsAt().format('Y-m-d\\TH:i') : '',
+    value: item.value(),
+} : { value: '10' } %}
 
 <form method="post" class="form-grid" action="{{ item ? url('admin.product_discounts.update', {id: item.id()}) : url('admin.product_discounts.store') }}" data-form="product_discounts.save" x-data="{ scope: '{{ item ? item.scopeType() : 'product' }}' }"{% if form_errors('product_discounts.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
@@ -80,66 +78,13 @@
         </script>
     {% endif %}
 
-    {% include 'ui/select.html.twig' with {
-        name: 'kind',
-        label: 'product_discounts.field.kind'|trans,
-        required: true,
+    {{ forms().render(discountSource, {
         form: 'product_discounts.save',
-        value: item ? item.kind() : 'percent',
-        options: kindOptions
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'value',
-        label: 'product_discounts.field.value'|trans,
-        required: true,
-        form: 'product_discounts.save',
-        value: item ? item.value() : '10'
-    } %}
-    {% include 'ui/select.html.twig' with {
-        name: 'condition_type',
-        label: 'product_discounts.field.condition'|trans,
-        required: true,
-        form: 'product_discounts.save',
-        value: item ? item.conditionType() : 'none',
-        options: conditionOptions
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'condition_value',
-        type: 'number',
-        label: 'product_discounts.field.condition_value'|trans,
-        optional: true,
-        form: 'product_discounts.save',
-        value: item and item.conditionValue() is not null ? item.conditionValue() : '',
-        hint: 'product_discounts.field.condition_value.hint'|trans
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'description',
-        label: 'product_discounts.field.description'|trans,
-        optional: true,
-        form: 'product_discounts.save',
-        value: item and item.description() ? item.description() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'starts_at',
-        type: 'datetime-local',
-        label: 'product_discounts.field.starts_at'|trans,
-        optional: true,
-        form: 'product_discounts.save',
-        value: item and item.startsAt() ? item.startsAt().format('Y-m-d\\TH:i') : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'ends_at',
-        type: 'datetime-local',
-        label: 'product_discounts.field.ends_at'|trans,
-        optional: true,
-        form: 'product_discounts.save',
-        value: item and item.endsAt() ? item.endsAt().format('Y-m-d\\TH:i') : ''
-    } %}
-    <label class="check">
-        <input type="hidden" name="active" value="0">
-        <input type="checkbox" name="active" value="1" {{ (item is null or item.isActive()) ? 'checked' : '' }}>
-        <span class="field__label">{{ 'product_discounts.field.active'|trans }}</span>
-    </label>
+        cols: 2,
+        wrap: false,
+        values: discountValues
+    }) }}
+
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.product_discounts.index') }}">{{ 'common.cancel'|trans }}</a>

@@ -2,25 +2,68 @@
 declare(strict_types=1);
 namespace Modules\Projects\Domain;
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'projects')]
 #[ORM\Index(name: 'idx_projects_customer', columns: ['customer_id'])]
 #[ORM\Index(name: 'idx_projects_status', columns: ['status'])]
+#[FormEntity('projects.save')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt'],
+    form: 'projects.save',
+    cols: 2,
+)]
 class Project
 {
     public const STATUSES = ['planning', 'active', 'done', 'cancelled'];
-    #[ORM\Id] #[ORM\Column(length: 36)] private string $id;
-    #[ORM\Column(name: 'customer_id', length: 36)] private string $customerId;
-    #[ORM\Column(length: 190)] private string $name;
-    #[ORM\Column(length: 32)] private string $status = 'planning';
-    #[ORM\Column(name: 'start_at', type: 'date_immutable', nullable: true)] private ?\DateTimeImmutable $startAt = null;
-    #[ORM\Column(name: 'due_at', type: 'date_immutable', nullable: true)] private ?\DateTimeImmutable $dueAt = null;
-    #[ORM\Column(name: 'owner_user_id', length: 36, nullable: true)] private ?string $ownerUserId = null;
-    #[ORM\Column(name: 'deal_id', length: 36, nullable: true)] private ?string $dealId = null;
-    #[ORM\Column(name: 'created_at')] private \DateTimeImmutable $createdAt;
-    #[ORM\Column(name: 'updated_at')] private \DateTimeImmutable $updatedAt;
+
+    #[ORM\Id]
+    #[ORM\Column(length: 36)]
+    private string $id;
+
+    #[ORM\Column(name: 'customer_id', length: 36)]
+    #[FormField(required: true, name: 'customer_id', label: 'projects.field.customer', type: 'select', order: 10)]
+    private string $customerId;
+
+    #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'projects.field.name', order: 20)]
+    private string $name;
+
+    #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'projects.field.status',
+        type: 'select',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'projects.status.',
+        order: 30,
+    )]
+    private string $status = 'planning';
+
+    #[ORM\Column(name: 'start_at', type: 'date_immutable', nullable: true)]
+    #[FormField(label: 'projects.field.start', type: 'date', order: 40)]
+    private ?\DateTimeImmutable $startAt = null;
+
+    #[ORM\Column(name: 'due_at', type: 'date_immutable', nullable: true)]
+    #[FormField(label: 'projects.field.due', type: 'date', order: 50)]
+    private ?\DateTimeImmutable $dueAt = null;
+
+    #[ORM\Column(name: 'owner_user_id', length: 36, nullable: true)]
+    #[FormField(label: 'projects.field.owner', type: 'select', name: 'owner_user_id', order: 60)]
+    private ?string $ownerUserId = null;
+
+    #[ORM\Column(name: 'deal_id', length: 36, nullable: true)]
+    #[FormField(label: 'projects.field.deal', order: 70)]
+    private ?string $dealId = null;
+
+    #[ORM\Column(name: 'created_at')]
+    private \DateTimeImmutable $createdAt;
+
+    #[ORM\Column(name: 'updated_at')]
+    private \DateTimeImmutable $updatedAt;
 
     public function __construct(string $customerId, string $name) {
         $this->id = Uuid::uuid7()->toString();

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Portals\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -14,6 +17,12 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Table(name: 'portal_providers')]
 #[ORM\UniqueConstraint(name: 'uniq_portal_providers_code', columns: ['code'])]
 #[ORM\Index(name: 'idx_portal_providers_active', columns: ['is_active'])]
+#[FormEntity('portals.provider.save')]
+#[FormGenerator(
+    exclude: ['id', 'fields', 'apiSpec', 'createdAt', 'updatedAt'],
+    form: 'portals.provider.save',
+    cols: 2,
+)]
 class PortalProvider
 {
     public const DRIVERS = ['sreality', 'idnes', 'bezrealitky', 'custom'];
@@ -24,23 +33,50 @@ class PortalProvider
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(required: true, label: 'portals.providers.field.code', group: 'basic', hint: 'portals.providers.field.code.hint', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'portals.providers.field.name', group: 'basic', order: 20)]
     private string $name;
 
     /** Driver key used by export adapters. */
     #[ORM\Column(length: 32)]
+    #[FormField(
+        required: true,
+        label: 'portals.providers.field.driver',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'DRIVERS',
+        choiceLabel: 'portals.driver.',
+        order: 30,
+    )]
     private string $driver = 'custom';
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'portals.providers.field.description', type: 'textarea', group: 'basic', order: 70)]
     private ?string $description = null;
 
     #[ORM\Column(name: 'api_base_url', length: 500, nullable: true)]
+    #[FormField(
+        label: 'portals.providers.field.api_base_url',
+        type: 'url',
+        group: 'basic',
+        hint: 'portals.providers.field.api_base_url.hint',
+        order: 40,
+    )]
     private ?string $apiBaseUrl = null;
 
     /** URL na OpenAPI / Public API specifikaci (JSON). */
     #[ORM\Column(name: 'openapi_url', length: 500, nullable: true)]
+    #[FormField(
+        label: 'portals.providers.field.openapi_url',
+        type: 'url',
+        group: 'basic',
+        hint: 'portals.providers.field.openapi_url.hint',
+        options: ['placeholder' => 'https://…/openapi.json'],
+        order: 50,
+    )]
     private ?string $openapiUrl = null;
 
     /**
@@ -60,9 +96,11 @@ class PortalProvider
     private array $fields = [];
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'portals.field.active', type: 'switch', group: 'status', hint: 'portals.providers.field.active.hint', order: 10)]
     private bool $active = true;
 
     #[ORM\Column(name: 'sort_order', type: 'integer')]
+    #[FormField(label: 'portals.providers.field.sort_order', type: 'number', group: 'basic', order: 60)]
     private int $sortOrder = 100;
 
     #[ORM\Column(name: 'created_at')]

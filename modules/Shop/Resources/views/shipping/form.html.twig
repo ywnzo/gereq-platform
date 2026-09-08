@@ -7,84 +7,15 @@
 
 {% include 'ui/error-summary.html.twig' with { form: 'shop.shipping.save' } %}
 
-{% set typeOptions = [] %}
-{% for type in types %}
-    {% set typeOptions = typeOptions|merge([{ value: type, label: ('shop.shipping.type.' ~ type)|trans }]) %}
-{% endfor %}
+{% set shippingSource = item ?? 'Modules\\Shop\\Domain\\ShippingMethod' %}
 
-<form method="post" class="form-grid" action="{{ item ? url('admin.shop.shipping.update', {id: item.id()}) : url('admin.shop.shipping.store') }}" data-form="shop.shipping.save" x-data="gereqForm"{% if form_errors('shop.shipping.save') %} data-server-state="1"{% endif %}>
+<form method="post" action="{{ item ? url('admin.shop.shipping.update', {id: item.id()}) : url('admin.shop.shipping.store') }}" data-form="shop.shipping.save" x-data="gereqForm"{% if form_errors('shop.shipping.save') %} data-server-state="1"{% endif %}>
     {{ csrf_field()|raw }}
-    {% include 'ui/input.html.twig' with {
-        name: 'code',
-        label: 'shop.field.code'|trans,
-        required: true,
+    {{ forms().render(shippingSource, {
         form: 'shop.shipping.save',
-        value: item ? item.code() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'name',
-        label: 'shop.field.name'|trans,
-        required: true,
-        form: 'shop.shipping.save',
-        value: item ? item.name() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'carrier',
-        label: 'shop.field.carrier'|trans,
-        optional: true,
-        form: 'shop.shipping.save',
-        value: item and item.carrier() ? item.carrier() : '',
-        hint: 'shop.field.carrier.hint'|trans
-    } %}
-    {% include 'ui/select.html.twig' with {
-        name: 'type',
-        label: 'shop.field.shipping_type'|trans,
-        required: true,
-        form: 'shop.shipping.save',
-        value: item ? item.type() : 'courier',
-        options: typeOptions
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'price',
-        label: 'shop.field.price'|trans,
-        required: true,
-        form: 'shop.shipping.save',
-        value: item ? item.price() : '0'
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'currency',
-        label: 'shop.field.currency'|trans,
-        optional: true,
-        form: 'shop.shipping.save',
-        value: item ? item.currency() : currency_code()
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'estimated_days',
-        label: 'shop.field.estimated_days'|trans,
-        optional: true,
-        form: 'shop.shipping.save',
-        value: item and item.estimatedDays() is not null ? item.estimatedDays() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'sort_order',
-        label: 'shop.field.sort_order'|trans,
-        optional: true,
-        form: 'shop.shipping.save',
-        value: item ? item.sortOrder() : '0'
-    } %}
-    {% include 'ui/textarea.html.twig' with {
-        name: 'description',
-        label: 'shop.field.description'|trans,
-        optional: true,
-        form: 'shop.shipping.save',
-        value: item and item.description() ? item.description() : '',
-        size: 'mini',
-        rows: 3
-    } %}
-    <label class="field">
-        <span class="field__label">{{ 'shop.field.active'|trans }}</span>
-        <input type="checkbox" name="active" value="1" {{ (item is null or item.isActive()) ? 'checked' : '' }}>
-    </label>
+        cols: 2,
+        values: item ? {} : { currency: currency_code() }
+    }) }}
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.shop.shipping.index') }}">{{ 'common.cancel'|trans }}</a>

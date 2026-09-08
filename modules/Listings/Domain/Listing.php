@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Listings\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -13,6 +16,12 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_listings_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_listings_city', columns: ['city'])]
 #[ORM\Index(name: 'idx_listings_featured', columns: ['featured'])]
+#[FormEntity('listings.save')]
+#[FormGenerator(
+    exclude: ['id', 'images', 'coverImageUrl', 'publishedAt', 'createdAt', 'updatedAt', 'brokerName', 'brokerEmail', 'brokerPhone', 'brokerPosition', 'brokerPhotoUrl'],
+    form: 'listings.save',
+    cols: 3,
+)]
 class Listing
 {
     public const STATUSES = ['draft', 'published', 'archived'];
@@ -26,67 +35,115 @@ class Listing
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'listings.field.title', group: 'basic', extra: 'field--full', order: 10)]
     private string $title;
 
     #[ORM\Column(length: 190)]
+    #[FormField(label: 'listings.field.slug', group: 'basic', options: ['placeholder' => 'auto'], order: 20)]
     private string $slug;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'listings.field.status',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'listings.status.',
+        order: 30,
+    )]
     private string $status = 'draft';
 
     /** available | reserved | sold | rented */
     #[ORM\Column(name: 'market_status', length: 32)]
+    #[FormField(
+        label: 'listings.field.market_status',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'MARKET_STATUSES',
+        choiceLabel: 'listings.market.',
+        order: 40,
+    )]
     private string $marketStatus = 'available';
 
     #[ORM\Column(name: 'offer_type', length: 16)]
+    #[FormField(
+        label: 'listings.field.offer',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'OFFERS',
+        choiceLabel: 'listings.offer.',
+        order: 50,
+    )]
     private string $offerType = 'sale';
 
     #[ORM\Column(name: 'property_type', length: 32)]
+    #[FormField(
+        label: 'listings.field.type',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'TYPES',
+        choiceLabel: 'listings.type.',
+        order: 60,
+    )]
     private string $propertyType = 'apartment';
 
     #[ORM\Column(type: 'boolean')]
+    #[FormField(label: 'listings.field.featured', type: 'switch', group: 'basic', order: 70)]
     private bool $featured = false;
 
     #[ORM\Column(type: 'decimal', precision: 14, scale: 2)]
+    #[FormField(label: 'listings.field.price', type: 'number', group: 'basic', options: ['step' => '0.01'], order: 80)]
     private string $price = '0.00';
 
     #[ORM\Column(length: 3)]
+    #[FormField(label: 'listings.field.currency', group: 'basic', options: ['maxlength' => 3], order: 90)]
     private string $currency = 'CZK';
 
     #[ORM\Column(name: 'area_m2', type: 'float', nullable: true)]
+    #[FormField(label: 'listings.field.area', type: 'number', group: 'basic', options: ['step' => '0.1'], order: 100)]
     private ?float $areaM2 = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
+    #[FormField(label: 'listings.field.rooms', type: 'number', group: 'basic', order: 110)]
     private ?int $rooms = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
+    #[FormField(label: 'listings.field.floor', type: 'number', group: 'basic', order: 120)]
     private ?int $floor = null;
 
     #[ORM\Column(type: 'integer', nullable: true)]
+    #[FormField(label: 'listings.field.floors', type: 'number', group: 'basic', order: 130)]
     private ?int $floors = null;
 
     #[ORM\Column(length: 120)]
+    #[FormField(label: 'listings.field.city', group: 'location', attrs: 'data-ares-fill="city"', order: 20)]
     private string $city = '';
 
     #[ORM\Column(name: 'city_part', length: 120, nullable: true)]
+    #[FormField(label: 'listings.field.city_part', group: 'location', attrs: 'data-ares-fill="city_part"', order: 30)]
     private ?string $cityPart = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[FormField(label: 'listings.field.street', group: 'location', attrs: 'data-ares-fill="street"', order: 40)]
     private ?string $street = null;
 
     #[ORM\Column(length: 16, nullable: true)]
+    #[FormField(label: 'listings.field.zip', group: 'location', attrs: 'data-ares-fill="zip"', order: 50)]
     private ?string $zip = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $address = null;
 
     #[ORM\Column(type: 'float', nullable: true)]
+    #[FormField(label: 'listings.field.latitude', type: 'number', group: 'location', options: ['step' => 'any'], order: 60)]
     private ?float $latitude = null;
 
     #[ORM\Column(type: 'float', nullable: true)]
+    #[FormField(label: 'listings.field.longitude', type: 'number', group: 'location', options: ['step' => 'any'], order: 70)]
     private ?float $longitude = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'listings.field.description', type: 'editor', group: 'basic', extra: 'field--full', order: 160)]
     private ?string $description = null;
 
     #[ORM\Column(name: 'cover_image_url', length: 500, nullable: true)]
@@ -97,27 +154,50 @@ class Listing
     private array $images = [];
 
     #[ORM\Column(type: 'boolean')]
+    #[FormField(label: 'listings.amenity.balcony', type: 'checkbox', group: 'amenities', order: 10)]
     private bool $balcony = false;
 
     #[ORM\Column(type: 'boolean')]
+    #[FormField(label: 'listings.amenity.terrace', type: 'checkbox', group: 'amenities', order: 20)]
     private bool $terrace = false;
 
     #[ORM\Column(type: 'boolean')]
+    #[FormField(label: 'listings.amenity.cellar', type: 'checkbox', group: 'amenities', order: 30)]
     private bool $cellar = false;
 
     #[ORM\Column(type: 'boolean')]
+    #[FormField(label: 'listings.amenity.garage', type: 'checkbox', group: 'amenities', order: 40)]
     private bool $garage = false;
 
     #[ORM\Column(type: 'boolean')]
+    #[FormField(label: 'listings.amenity.elevator', type: 'checkbox', group: 'amenities', order: 50)]
     private bool $elevator = false;
 
     #[ORM\Column(name: 'parking_lots', type: 'integer', nullable: true)]
+    #[FormField(label: 'listings.field.parking', type: 'number', group: 'amenities', order: 60)]
     private ?int $parkingLots = null;
 
     #[ORM\Column(name: 'energy_rating', length: 1, nullable: true)]
+    #[FormField(
+        label: 'listings.field.energy',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'ENERGY',
+        emptyLabel: '—',
+        order: 150,
+    )]
     private ?string $energyRating = null;
 
     #[ORM\Column(name: 'broker_id', length: 36, nullable: true)]
+    #[FormField(
+        label: 'listings.field.broker',
+        type: 'select',
+        group: 'broker',
+        extra: 'field--full',
+        emptyLabel: 'listings.field.broker.none',
+        options: ['searchable' => true],
+        order: 10,
+    )]
     private ?string $brokerId = null;
 
     #[ORM\Column(name: 'broker_name', length: 120, nullable: true)]

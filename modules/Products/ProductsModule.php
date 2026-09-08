@@ -34,7 +34,7 @@ final class ProductsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.7.4';
+        return '1.8.2';
     }
 
     public function register(ModuleContext $context): void
@@ -312,11 +312,13 @@ final class ProductsModule implements ModuleInterface
             'user_images_max' => 'nullable|max:10',
             'user_images_crop' => 'nullable',
         ]);
+        $context->forms()->entity('products.product.save', \Modules\Products\Domain\Product::class);
 
         $validation->ruleset('products.category.save', [
             'name' => 'required|min:2|max:120',
             'slug' => 'nullable|max:120',
         ]);
+        $context->forms()->entity('products.category.save', \Modules\Products\Domain\ProductCategory::class);
 
         $validation->ruleset('products.price.save', [
             'currency_code' => 'required|min:3|max:3',

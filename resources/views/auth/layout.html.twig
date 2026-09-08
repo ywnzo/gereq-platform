@@ -8,7 +8,7 @@
     {% if vite_hot() %}
         {{ vite_tags() }}
     {% else %}
-        <link rel="stylesheet" href="{{ asset('resources/css/admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('resources/css/kernel.css') }}">
     {% endif %}
     {% include 'partials/brand-overrides.html.twig' %}
 </head>
@@ -36,6 +36,7 @@
         window.__GEREQ_COMMANDS__ = [];
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
+        window.__GEREQ_FORM_FP_CLEARED__ = {{ flash('form_fp_cleared')|json_encode|raw }};
     </script>
     {% if not vite_hot() %}
         <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>

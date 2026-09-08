@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Modules\CarService\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'carservice_branches')]
 #[ORM\Index(name: 'idx_carservice_branches_active', columns: ['is_active'])]
+#[FormEntity('carservice.branch')]
+#[FormGenerator(
+    exclude: ['id', 'street', 'logoFileId', 'createdAt', 'updatedAt'],
+    form: 'carservice.branch',
+    cols: 2,
+)]
 class ServiceBranch
 {
     #[ORM\Id]
@@ -17,36 +26,45 @@ class ServiceBranch
     private string $id;
 
     #[ORM\Column(length: 120)]
+    #[FormField(required: true, label: 'carservice.field.branch', group: 'basic', order: 10)]
     private string $name;
 
     #[ORM\Column(length: 190, nullable: true)]
     private ?string $street = null;
 
     #[ORM\Column(length: 120, nullable: true)]
+    #[FormField(label: 'carservice.branches.field.city', group: 'address', attrs: 'data-ares-fill="city"', order: 10)]
     private ?string $city = null;
 
     #[ORM\Column(length: 32, nullable: true)]
+    #[FormField(label: 'carservice.branches.field.zip', group: 'address', attrs: 'data-ares-fill="zip"', order: 20)]
     private ?string $zip = null;
 
     #[ORM\Column(length: 2)]
+    #[FormField(label: 'carservice.branches.field.country', group: 'address', attrs: 'data-ares-fill="country"', order: 30)]
     private string $country = 'CZ';
 
     #[ORM\Column(length: 40, nullable: true)]
+    #[FormField(label: 'carservice.branches.field.phone', group: 'basic', order: 40)]
     private ?string $phone = null;
 
     #[ORM\Column(length: 190, nullable: true)]
+    #[FormField(label: 'carservice.branches.field.email', type: 'email', group: 'basic', order: 50)]
     private ?string $email = null;
 
     #[ORM\Column(name: 'employee_count', type: 'integer')]
+    #[FormField(label: 'carservice.branches.field.employees', type: 'number', group: 'basic', options: ['min' => 0], order: 20)]
     private int $employeeCount = 0;
 
     #[ORM\Column(name: 'logo_file_id', length: 36, nullable: true)]
     private ?string $logoFileId = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'carservice.field.note', type: 'textarea', group: 'logo', extra: 'field--full', order: 10)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'carservice.branches.field.active', type: 'checkbox', group: 'basic', order: 30)]
     private bool $active = true;
 
     #[ORM\Column(name: 'created_at')]

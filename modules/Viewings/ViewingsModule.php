@@ -29,7 +29,7 @@ final class ViewingsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.0.2';
     }
 
     public function register(ModuleContext $context): void
@@ -88,6 +88,7 @@ final class ViewingsModule implements ModuleInterface
             'contact_phone' => 'nullable|max:64',
             'note' => 'nullable|max:20000',
         ]);
+        $context->forms()->entity('viewings.save', \Modules\Viewings\Domain\Viewing::class);
         $v->ruleset('viewings.status', [
             'status' => 'required|in:requested,scheduled,confirmed,completed,cancelled,no_show',
         ]);

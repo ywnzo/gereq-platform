@@ -5,12 +5,21 @@ declare(strict_types=1);
 namespace Modules\Newsletter\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'newsletter_subscribers')]
 #[ORM\UniqueConstraint(name: 'uniq_newsletter_subscribers_email', columns: ['email'])]
 #[ORM\Index(name: 'idx_newsletter_subscribers_status', columns: ['status'])]
+#[FormEntity('newsletter.subscriber.save')]
+#[FormGenerator(
+    exclude: ['id', 'status', 'subscribedAt', 'unsubscribedAt', 'createdAt'],
+    form: 'newsletter.subscriber.save',
+    cols: 1,
+)]
 class Subscriber
 {
     public const STATUSES = ['subscribed', 'unsubscribed', 'bounced'];
@@ -20,15 +29,18 @@ class Subscriber
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'newsletter.field.email', type: 'email', order: 10)]
     private string $email;
 
     #[ORM\Column(length: 190, nullable: true)]
+    #[FormField(label: 'newsletter.field.name', order: 20)]
     private ?string $name = null;
 
     #[ORM\Column(length: 32)]
     private string $status = 'subscribed';
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[FormField(label: 'newsletter.field.source', order: 30)]
     private ?string $source = null;
 
     #[ORM\Column(name: 'subscribed_at')]

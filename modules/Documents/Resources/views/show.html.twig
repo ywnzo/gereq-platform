@@ -57,7 +57,6 @@
                         {% include 'ui/input.html.twig' with {
                             name: 'entity_type',
                             label: 'documents.field.entity_type'|trans,
-                            required: true,
                             form: 'documents.link',
                             value: 'customer',
                             hint: 'documents.field.entity_type.hint'|trans
@@ -65,7 +64,6 @@
                         {% include 'ui/input.html.twig' with {
                             name: 'entity_id',
                             label: 'documents.field.entity_id'|trans,
-                            required: true,
                             form: 'documents.link',
                             value: ''
                         } %}

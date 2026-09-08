@@ -137,4 +137,9 @@ final class ModuleContext
     {
         return $this->container->get(ValidationRegistry::class);
     }
+
+    public function forms(): \Gereq\Admin\Form\Forms
+    {
+        return $this->container->get(\Gereq\Admin\Form\Forms::class);
+    }
 }

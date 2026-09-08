@@ -28,7 +28,7 @@ final class BundlesModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.0.1';
     }
 
     public function register(ModuleContext $context): void
@@ -149,5 +149,6 @@ final class BundlesModule implements ModuleInterface
             'items_json' => 'nullable|max:100000',
             'active' => 'nullable',
         ]);
+        $context->forms()->entity('bundles.save', \Modules\Bundles\Domain\ProductBundle::class);
     }
 }

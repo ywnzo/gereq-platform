@@ -89,7 +89,32 @@ final class FormState
         }
         if ($session instanceof \Symfony\Component\HttpFoundation\Session\Session) {
             $session->getFlashBag()->add('form_cleared', $form);
+            $fp = $this->requestFingerprint();
+            if ($fp !== null) {
+                $session->getFlashBag()->add('form_fp_cleared', $fp);
+            }
         }
+    }
+
+    /** Client-side submit fingerprint (`_gereq_fp`) for clearing matching sessionStorage draft. */
+    private function requestFingerprint(): ?string
+    {
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request === null) {
+            return null;
+        }
+
+        $raw = $request->request->get('_gereq_fp');
+        if (!is_string($raw)) {
+            return null;
+        }
+
+        $fp = trim($raw);
+        if ($fp === '' || strlen($fp) > 128 || !preg_match('/^[A-Za-z0-9_-]+$/', $fp)) {
+            return null;
+        }
+
+        return $fp;
     }
 
     public function old(string $key, mixed $default = null, ?string $form = null): mixed

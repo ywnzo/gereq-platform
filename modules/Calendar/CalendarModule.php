@@ -32,7 +32,7 @@ final class CalendarModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.2';
+        return '1.2.3';
     }
 
     public function register(ModuleContext $context): void
@@ -96,6 +96,7 @@ final class CalendarModule implements ModuleInterface
             'link_entity_id' => 'nullable|max:36',
             'attendee_email' => 'nullable|email|max:190',
         ]);
+        $context->forms()->entity('calendar.event.save', \Modules\Calendar\Domain\CalendarEvent::class);
 
         $context->settings()->define('calendar.google.client_id', 'string', 'calendar.settings.google_client_id', '', 'calendar');
         $context->settings()->define('calendar.google.client_secret', 'encrypted', 'calendar.settings.google_client_secret', '', 'calendar');

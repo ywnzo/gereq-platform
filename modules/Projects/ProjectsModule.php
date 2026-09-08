@@ -23,7 +23,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ProjectsModule implements ModuleInterface
 {
     public function id(): string { return 'projects'; }
-    public function version(): string { return '1.0.0'; }
+    public function version(): string { return '1.0.1'; }
 
     public function register(ModuleContext $context): void
     {
@@ -71,6 +71,7 @@ final class ProjectsModule implements ModuleInterface
             'customer_id'=>'required|max:36','name'=>'required|min:2|max:190','status'=>'nullable|in:planning,active,done,cancelled',
             'start_at'=>'nullable','due_at'=>'nullable','owner_user_id'=>'nullable|max:36','deal_id'=>'nullable|max:36',
         ]);
+        $context->forms()->entity('projects.save', \Modules\Projects\Domain\Project::class);
         $v->ruleset('projects.task.save', [
             'title'=>'required|min:1|max:190','status'=>'nullable|in:todo,doing,done','assignee_user_id'=>'nullable|max:36','due_at'=>'nullable',
         ]);

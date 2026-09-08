@@ -13,21 +13,11 @@
     {% if not item %}
         <form method="post" class="form-grid" action="{{ url('admin.products.categories.store') }}" data-form="products.category.save" x-data="gereqForm"{% if form_errors('products.category.save') %} data-server-state="1"{% endif %}>
             {{ csrf_field()|raw }}
-            {% include 'ui/input.html.twig' with {
-                name: 'name',
-                label: 'products.categories.field.name'|trans,
-                required: true,
+            {{ forms().render('Modules\\Products\\Domain\\ProductCategory', {
                 form: 'products.category.save',
-                value: ''
-            } %}
-            {% include 'ui/input.html.twig' with {
-                name: 'slug',
-                label: 'products.categories.field.slug'|trans,
-                optional: true,
-                form: 'products.category.save',
-                value: '',
-                hint: 'products.categories.field.slug.hint'|trans
-            } %}
+                cols: 1,
+                wrap: false
+            }) }}
             <div class="form-actions">
                 <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
                 <a class="btn btn--ghost" href="{{ url('admin.products.categories.index') }}">{{ 'common.cancel'|trans }}</a>
@@ -46,21 +36,11 @@
             <section class="design-panel" data-panel="general" role="tabpanel">
                 <form method="post" class="form-grid" action="{{ url('admin.products.categories.update', {id: item.id()}) }}" data-form="products.category.save" x-data="gereqForm"{% if form_errors('products.category.save') %} data-server-state="1"{% endif %}>
                     {{ csrf_field()|raw }}
-                    {% include 'ui/input.html.twig' with {
-                        name: 'name',
-                        label: 'products.categories.field.name'|trans,
-                        required: true,
+                    {{ forms().render(item, {
                         form: 'products.category.save',
-                        value: item.name()
-                    } %}
-                    {% include 'ui/input.html.twig' with {
-                        name: 'slug',
-                        label: 'products.categories.field.slug'|trans,
-                        optional: true,
-                        form: 'products.category.save',
-                        value: item.slug(),
-                        hint: 'products.categories.field.slug.hint'|trans
-                    } %}
+                        cols: 1,
+                        wrap: false
+                    }) }}
                     <div class="form-actions">
                         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
                         <a class="btn btn--ghost" href="{{ url('admin.products.categories.index') }}">{{ 'common.cancel'|trans }}</a>
@@ -99,7 +79,7 @@
                                         <form method="post" class="variant-group-form" action="{{ url('admin.products.categories.option_groups.update', {id: item.id(), groupId: group.id()}) }}">
                                             {{ csrf_field()|raw }}
                                             <div class="variant-group-form__top">
-                                                {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: group.name() } %}
+                                                {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', form: 'products.option_group.save', value: group.name() } %}
                                                 <label class="check">
                                                     <input type="hidden" name="required" value="0">
                                                     <input type="checkbox" name="required" value="1" {{ group.isRequired() ? 'checked' : '' }}>
@@ -127,7 +107,7 @@
                             <form method="post" class="variant-group-form" action="{{ url('admin.products.categories.option_groups.store', {id: item.id()}) }}">
                                 {{ csrf_field()|raw }}
                                 <div class="variant-group-form__top">
-                                    {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', required: true, form: 'products.option_group.save', value: '', placeholder: 'Např. Velikost' } %}
+                                    {% include 'ui/input.html.twig' with { name: 'name', label: 'Label kolonky', form: 'products.option_group.save', value: '', placeholder: 'Např. Velikost' } %}
                                     <label class="check">
                                         <input type="hidden" name="required" value="0">
                                         <input type="checkbox" name="required" value="1" checked>

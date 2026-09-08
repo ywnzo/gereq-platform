@@ -55,29 +55,26 @@
                     </div>
                 </header>
                 <div class="form-grid form-grid--compact">
+                    {% set accountSource = item ?? 'Modules\\Portals\\Domain\\PortalAccount' %}
                     {% if item %}
                         <div class="g-field">
                             <span class="g-label">{{ 'portals.field.code'|trans }}</span>
                             <div class="portal-form__code"><code>{{ item.code() }}</code></div>
                             <input type="hidden" name="code" value="{{ item.code() }}">
                         </div>
-                    {% else %}
-                        {% include 'ui/input.html.twig' with {
-                            name: 'code',
-                            label: 'portals.field.code'|trans,
-                            required: true,
+                        {{ forms().render(accountSource, {
                             form: 'portals.account.save',
-                            value: '',
-                            hint: 'portals.field.code.hint'|trans
-                        } %}
+                            group: 'identity',
+                            wrap: false,
+                            exclude: ['code']
+                        }) }}
+                    {% else %}
+                        {{ forms().render(accountSource, {
+                            form: 'portals.account.save',
+                            group: 'identity',
+                            wrap: false
+                        }) }}
                     {% endif %}
-                    {% include 'ui/input.html.twig' with {
-                        name: 'name',
-                        label: 'portals.field.name'|trans,
-                        required: true,
-                        form: 'portals.account.save',
-                        value: item ? item.name() : ''
-                    } %}
                 </div>
 
                 <div class="portal-form__providers" style="margin-top:1rem">
@@ -155,13 +152,11 @@
         <aside class="detail-layout__aside">
             <section class="panel">
                 <header class="panel__head"><h2>{{ 'portals.form.section.status'|trans }}</h2></header>
-                {% include 'ui/switch.html.twig' with {
-                    name: 'active',
-                    label: 'portals.field.active'|trans,
-                    description: 'portals.field.active.hint'|trans,
-                    on: item is null or item.active(),
-                    form: 'portals.account.save'
-                } %}
+                {{ forms().render(item ?? 'Modules\\Portals\\Domain\\PortalAccount', {
+                    form: 'portals.account.save',
+                    group: 'status',
+                    cols: 1
+                }) }}
             </section>
             <section class="panel">
                 <header class="panel__head"><h2>{{ 'portals.form.section.next'|trans }}</h2></header>

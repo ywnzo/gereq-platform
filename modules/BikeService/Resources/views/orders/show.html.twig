@@ -184,7 +184,7 @@
                             {% set phaseOptions = phaseOptions|merge([{ value: phase, label: ('bikeservice.media.phase.'~phase)|trans }]) %}
                         {% endfor %}
                         {% include 'ui/select.html.twig' with { name: 'phase', label: 'bikeservice.media.phase_label'|trans, value: mediaPhases[0]|default('before'), options: phaseOptions } %}
-                        {% include 'ui/file.html.twig' with { name: 'file', label: 'bikeservice.media.file'|trans, hint: 'bikeservice.media.file.hint'|trans, accept: 'image/*,application/pdf', required: true, compact: true, extra: 'field--full' } %}
+                        {% include 'ui/file.html.twig' with { name: 'file', label: 'bikeservice.media.file'|trans, hint: 'bikeservice.media.file.hint'|trans, accept: 'image/*,application/pdf', compact: true, extra: 'field--full' } %}
                         <div class="form-actions"><button class="btn btn--primary" type="submit">{{ 'bikeservice.media.upload'|trans }}</button></div>
                     </form>
                 {% endif %}

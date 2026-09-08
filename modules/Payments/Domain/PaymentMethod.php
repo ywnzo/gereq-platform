@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Modules\Payments\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'payment_methods')]
 #[ORM\UniqueConstraint(name: 'uniq_payment_methods_code', columns: ['code'])]
+#[FormEntity('payments.method.save')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt'],
+    form: 'payments.method.save',
+    cols: 2,
+)]
 class PaymentMethod
 {
     public const TYPES = [
@@ -25,33 +34,54 @@ class PaymentMethod
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(required: true, label: 'payments.field.code', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'payments.field.name', order: 20)]
     private string $name;
 
     #[ORM\Column(length: 32)]
-    private string $type;
+    #[FormField(
+        required: true,
+        label: 'payments.field.type',
+        type: 'select',
+        choicesFrom: 'TYPES',
+        choiceLabel: 'payments.type.',
+        order: 30,
+    )]
+    private string $type = 'bank_transfer';
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[FormField(
+        label: 'payments.field.provider',
+        hint: 'payments.field.provider.hint',
+        order: 40,
+    )]
     private ?string $provider = null;
 
     #[ORM\Column(name: 'fee_fixed', type: 'decimal', precision: 14, scale: 2)]
+    #[FormField(label: 'payments.field.fee_fixed', type: 'number', options: ['step' => '0.01'], order: 50)]
     private string $feeFixed = '0.00';
 
     #[ORM\Column(name: 'fee_percent', type: 'decimal', precision: 8, scale: 4)]
+    #[FormField(label: 'payments.field.fee_percent', type: 'number', options: ['step' => '0.0001'], order: 60)]
     private string $feePercent = '0.0000';
 
     #[ORM\Column(length: 3)]
+    #[FormField(label: 'payments.field.currency', options: ['maxlength' => 3], order: 70)]
     private string $currency = 'CZK';
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $instructions = null;
-
     #[ORM\Column(name: 'sort_order', type: 'integer')]
+    #[FormField(label: 'payments.field.sort_order', type: 'number', order: 80)]
     private int $sortOrder = 0;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'payments.field.instructions', type: 'textarea', extra: 'field--full', order: 90)]
+    private ?string $instructions = null;
+
     #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'payments.field.active', type: 'switch', order: 100)]
     private bool $active = true;
 
     #[ORM\Column(name: 'created_at')]

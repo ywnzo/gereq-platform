@@ -21,21 +21,26 @@ export function registerPassword(alpine: typeof Alpine): void {
 export function registerSwitch(alpine: typeof Alpine): void {
     alpine.data('gereqSwitch', () => ({
         on: false,
+        onClass: '',
+        checkedAttr: 'false',
 
         init() {
             this.on = (this.$el as HTMLElement).dataset.on === '1';
+            this.refresh();
         },
 
-        get trackClass(): string {
-            return this.on ? 'is-on' : '';
-        },
-
-        get checkedAttr(): string {
-            return this.on ? 'true' : 'false';
+        refresh() {
+            this.onClass = this.on ? 'is-on' : '';
+            this.checkedAttr = this.on ? 'true' : 'false';
+            const btn = (this.$el as HTMLElement).querySelector('.table-switch');
+            if (btn) {
+                btn.classList.toggle('is-on', this.on);
+            }
         },
 
         toggle() {
             this.on = !this.on;
+            this.refresh();
             const input = this.$refs.value as HTMLInputElement | undefined;
             if (input) {
                 input.value = this.on ? '1' : '0';

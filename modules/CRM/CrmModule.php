@@ -36,7 +36,7 @@ final class CrmModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.3';
+        return '1.0.5';
     }
 
     public function register(ModuleContext $context): void
@@ -255,6 +255,7 @@ final class CrmModule implements ModuleInterface
             'expected_close_at' => 'nullable',
             'note' => 'nullable|max:20000',
         ]);
+        $context->forms()->entity('crm.deal.save', \Modules\CRM\Domain\Deal::class);
 
         $validation->ruleset('crm.activity.save', [
             'customer_id' => 'required',
@@ -264,6 +265,7 @@ final class CrmModule implements ModuleInterface
             'body' => 'nullable|max:20000',
             'due_at' => 'nullable',
         ]);
+        $context->forms()->entity('crm.activity.save', \Modules\CRM\Domain\Activity::class);
     }
 
     private function registerHooks(ModuleContext $context): void

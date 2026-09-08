@@ -27,7 +27,7 @@ final class MediaModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.2';
+        return '1.2.3';
     }
 
     public function register(ModuleContext $context): void
@@ -189,12 +189,14 @@ final class MediaModule implements ModuleInterface
             'alt' => 'nullable|max:255',
             'folder_id' => 'nullable|max:36',
         ]);
+        $context->forms()->entity('media.save', \Modules\Media\Domain\MediaAsset::class);
 
         $validation->ruleset('media.upload', [
             'title' => 'nullable|max:190',
             'alt' => 'nullable|max:255',
             'folder_id' => 'nullable|max:36',
         ]);
+        $context->forms()->entity('media.upload', \Modules\Media\Domain\MediaAsset::class);
 
         $validation->ruleset('media.move', [
             'folder_id' => 'nullable|max:36',
@@ -210,6 +212,7 @@ final class MediaModule implements ModuleInterface
             'name' => 'required|min:1|max:190',
             'parent_id' => 'nullable|max:36',
         ]);
+        $context->forms()->entity('media.folder.save', \Modules\Media\Domain\MediaFolder::class);
 
         $validation->ruleset('media.folder.move', [
             'parent_id' => 'nullable|max:36',

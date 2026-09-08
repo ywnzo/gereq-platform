@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Modules\Media\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'media_folders')]
 #[ORM\Index(name: 'idx_media_folders_parent', columns: ['parent_id'])]
 #[ORM\Index(name: 'idx_media_folders_name', columns: ['name'])]
+#[FormEntity('media.folder.save')]
 class MediaFolder
 {
     #[ORM\Id]
@@ -18,6 +21,7 @@ class MediaFolder
     private string $id;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true)]
     private string $name;
 
     #[ORM\Column(name: 'parent_id', length: 36, nullable: true)]

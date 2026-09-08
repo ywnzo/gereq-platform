@@ -46,7 +46,7 @@ final class OrdersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.2';
+        return '1.2.3';
     }
 
     public function register(ModuleContext $context): void
@@ -245,6 +245,7 @@ final class OrdersModule implements ModuleInterface
             'currency' => 'nullable|max:3',
             'note' => 'nullable|max:20000',
         ]);
+        $context->forms()->entity('orders.save', \Modules\Orders\Domain\Order::class);
         $v->ruleset('orders.line.save', [
             'product_id' => 'nullable|max:36',
             'title' => 'nullable|max:190',

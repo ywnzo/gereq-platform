@@ -27,7 +27,7 @@ final class ESignModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.1.2';
+        return '1.1.4';
     }
 
     public function register(ModuleContext $context): void
@@ -80,6 +80,7 @@ final class ESignModule implements ModuleInterface
             'counterparty_company' => 'nullable|max:190',
             'number' => 'nullable|max:64',
         ]);
+        $context->forms()->entity('esign.document.save', \Modules\ESign\Domain\SignableDocument::class);
         $v->ruleset('esign.settings', [
             'provider_name' => 'required|min:1|max:190',
             'provider_email' => 'nullable|email|max:190',

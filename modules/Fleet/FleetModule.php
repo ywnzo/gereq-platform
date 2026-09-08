@@ -34,7 +34,7 @@ final class FleetModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.7.6';
+        return '1.7.7';
     }
 
     public function register(ModuleContext $context): void
@@ -139,6 +139,7 @@ final class FleetModule implements ModuleInterface
             'generation' => 'nullable|max:20',
             'orv_notes' => 'nullable|max:4000',
         ]);
+        $context->forms()->entity('fleet.save', \Modules\Fleet\Domain\Vehicle::class);
         $v->ruleset('fleet.settings', [
             'orv_api_key' => 'nullable|max:255',
         ]);

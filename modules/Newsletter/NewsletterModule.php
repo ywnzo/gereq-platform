@@ -29,7 +29,7 @@ final class NewsletterModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.0.1';
     }
 
     public function register(ModuleContext $context): void
@@ -80,6 +80,7 @@ final class NewsletterModule implements ModuleInterface
             'name' => 'nullable|max:190',
             'source' => 'nullable|max:64',
         ]);
+        $context->forms()->entity('newsletter.subscriber.save', \Modules\Newsletter\Domain\Subscriber::class);
         $v->ruleset('newsletter.subscribe', [
             'email' => 'required|email|max:190',
             'name' => 'nullable|max:190',
@@ -92,6 +93,7 @@ final class NewsletterModule implements ModuleInterface
             'subject' => 'required|min:1|max:190',
             'body_html' => 'required|min:1|max:500000',
         ]);
+        $context->forms()->entity('newsletter.campaign.save', \Modules\Newsletter\Domain\Campaign::class);
     }
 
     public function boot(ModuleContext $context): void

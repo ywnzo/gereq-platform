@@ -46,7 +46,7 @@
                 drawer_id: 'products-filters',
                 label: 'ui.drawer.filters'|trans,
                 variant: advancedFilters ? 'primary' : 'ghost',
-                icon: 'filters',
+                icon: 'filters'
             }) }}
         </div>
     </div>
@@ -125,7 +125,7 @@
                             {% include 'ui/table_thumb.html.twig' with {
                                 src: thumb,
                                 href: url('admin.products.show', {id: item.id()}),
-                                alt: item.name(),
+                                alt: item.name()
                             } %}
                         </td>
                         <td>

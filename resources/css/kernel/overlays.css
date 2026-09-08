@@ -1,0 +1,525 @@
+/* Side drawer (Athena-style) */
+.g-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    visibility: hidden;
+}
+.g-drawer.is-open,
+.g-drawer[data-open="true"] {
+    pointer-events: auto;
+    visibility: visible;
+}
+.g-drawer__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgb(10 11 10 / 0.42);
+    opacity: 0;
+    transition: opacity 0.16s ease;
+}
+.g-drawer.is-open .g-drawer__overlay,
+.g-drawer[data-open="true"] .g-drawer__overlay {
+    opacity: 1;
+}
+.g-drawer__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 28rem);
+    height: 100dvh;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: -12px 0 40px rgb(10 11 10 / 0.14);
+    transform: translateX(100%);
+    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.g-drawer--wide .g-drawer__panel { width: min(100%, 36rem); }
+.g-drawer.is-open .g-drawer__panel,
+.g-drawer[data-open="true"] .g-drawer__panel {
+    transform: none;
+}
+.g-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+    padding: 1rem 1.1rem 0.85rem;
+    border-bottom: 1px solid var(--border-soft);
+}
+.g-drawer__title {
+    margin: 0;
+    font-family: var(--gereq-font-display);
+    font-size: 1.15rem;
+    font-weight: 650;
+    line-height: 1.25;
+}
+.g-drawer__close { flex-shrink: 0; }
+.g-drawer__body {
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.g-drawer__foot {
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    padding: 0.9rem 1.1rem 1.15rem;
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface-2, var(--hover)) 55%, var(--surface));
+}
+.g-drawer__foot.is-empty,
+.g-drawer__foot[hidden] { display: none; }
+.g-drawer__form { gap: 0.85rem; }
+.g-drawer__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.g-drawer__label {
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+body.has-drawer { overflow: hidden; }
+@media (max-width: 640px) {
+    .g-drawer__panel,
+    .g-drawer--wide .g-drawer__panel { width: 100%; }
+}
+
+.g-popover { position: relative; display: inline-flex; }
+.g-popover__panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 50;
+    min-width: 16rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 12px 40px rgb(10 11 10 / 0.08);
+}
+.g-popover__panel.is-open { display: block; }
+
+.g-tip { position: relative; }
+.g-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%) translateY(4px);
+    padding: 0.35rem 0.55rem;
+    background: var(--gereq-ink);
+    color: var(--gereq-paper);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    z-index: 60;
+}
+.g-tip:hover::after,
+.g-tip:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.g-hovercard { position: relative; display: inline-flex; }
+.g-hovercard__panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 50;
+    width: 16.5rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 12px 40px rgb(10 11 10 / 0.08);
+}
+.g-hovercard:hover .g-hovercard__panel,
+.g-hovercard:focus-within .g-hovercard__panel { display: block; }
+
+.g-range { width: 100%; accent-color: var(--gereq-ink); }
+.g-pin { display: flex; gap: 8px; }
+.g-pin .g-control { width: 2.75rem; text-align: center; font-variant-numeric: tabular-nums; }
+
+html.dark .g-control,
+html.dark .g-select__trigger,
+html.dark .g-editor,
+html.dark .g-modal__panel,
+html[data-theme="gereq-dark"] .g-control,
+html[data-theme="gereq-dark"] .g-select__trigger,
+html[data-theme="gereq-dark"] .g-editor,
+html[data-theme="gereq-dark"] .g-modal__panel {
+    background-color: var(--surface);
+}
+html.dark .g-file__shell,
+html[data-theme="gereq-dark"] .g-file__shell {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 88%, var(--primary)) 0%, var(--surface-2) 100%);
+}
+html.dark .g-file__shell.is-filled,
+html.dark .g-file__shell.is-dragging,
+html[data-theme="gereq-dark"] .g-file__shell.is-filled,
+html[data-theme="gereq-dark"] .g-file__shell.is-dragging {
+    background: var(--surface);
+}
+html.dark .g-select__list,
+html.dark .g-popover__panel,
+html.dark .g-hovercard__panel,
+html[data-theme="gereq-dark"] .g-select__list,
+html[data-theme="gereq-dark"] .g-popover__panel,
+html[data-theme="gereq-dark"] .g-hovercard__panel { background: var(--surface); }
+html.dark .g-editor__surface,
+html.dark .g-editor__content,
+html.dark .g-editor__content.ProseMirror,
+html.dark .g-editor__html,
+html[data-theme="gereq-dark"] .g-editor__surface,
+html[data-theme="gereq-dark"] .g-editor__content,
+html[data-theme="gereq-dark"] .g-editor__content.ProseMirror,
+html[data-theme="gereq-dark"] .g-editor__html { background: var(--surface); }
+html.dark .g-editor__btn:hover,
+html[data-theme="gereq-dark"] .g-editor__btn:hover { background: var(--hover-strong); }
+html.dark .g-editor__content > p,
+html.dark .g-editor__content > h1,
+html.dark .g-editor__content > h2,
+html.dark .g-editor__content > h3,
+html.dark .g-editor__content > blockquote,
+html.dark .g-editor__content > ul,
+html.dark .g-editor__content > ol,
+html.dark .g-editor__content > pre,
+html[data-theme="gereq-dark"] .g-editor__content > p,
+html[data-theme="gereq-dark"] .g-editor__content > h1,
+html[data-theme="gereq-dark"] .g-editor__content > h2,
+html[data-theme="gereq-dark"] .g-editor__content > h3,
+html[data-theme="gereq-dark"] .g-editor__content > blockquote,
+html[data-theme="gereq-dark"] .g-editor__content > ul,
+html[data-theme="gereq-dark"] .g-editor__content > ol,
+html[data-theme="gereq-dark"] .g-editor__content > pre {
+    outline-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+html.dark .g-editor__content > p::before,
+html.dark .g-editor__content > h1::before,
+html.dark .g-editor__content > h2::before,
+html.dark .g-editor__content > h3::before,
+html.dark .g-editor__content > blockquote::before,
+html.dark .g-editor__content > ul::before,
+html.dark .g-editor__content > ol::before,
+html.dark .g-editor__content > pre::before,
+html[data-theme="gereq-dark"] .g-editor__content > p::before,
+html[data-theme="gereq-dark"] .g-editor__content > h1::before,
+html[data-theme="gereq-dark"] .g-editor__content > h2::before,
+html[data-theme="gereq-dark"] .g-editor__content > h3::before,
+html[data-theme="gereq-dark"] .g-editor__content > blockquote::before,
+html[data-theme="gereq-dark"] .g-editor__content > ul::before,
+html[data-theme="gereq-dark"] .g-editor__content > ol::before,
+html[data-theme="gereq-dark"] .g-editor__content > pre::before {
+    background: var(--surface);
+}
+
+.design-body { background: var(--gereq-wash); }
+.design-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-height: 48px;
+    padding: 0 1.25rem;
+    background: var(--brand-ink, var(--gereq-brand, #0a0b0a));
+    color: var(--brand-cream, #f5f5ef);
+    box-shadow: inset 0 -2px 0 var(--gereq-signal);
+}
+.design-bar .brand__name { color: var(--brand-cream, #f5f5ef); }
+.design-bar .brand__sub { color: #8a8f84; }
+.design-bar__links { display: flex; gap: 0.25rem; }
+.design-bar__links a {
+    padding: 0.4rem 0.7rem;
+    color: #c5c9bd;
+    font-size: 0.8125rem;
+}
+.design-bar__links a:hover { color: var(--brand-cream, #f5f5ef); }
+
+.design-wrap {
+    width: min(1040px, calc(100% - 2.5rem));
+    margin: 0 auto;
+    padding: 1.5rem 0 3.5rem;
+}
+.design-head { margin-bottom: 1rem; }
+.design-head__kicker {
+    margin: 0 0 0.35rem;
+    font-family: var(--gereq-font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gereq-muted);
+}
+.design-head h1 {
+    margin: 0;
+    font-family: var(--gereq-font-display);
+    font-size: 1.65rem;
+    letter-spacing: -0.03em;
+    font-weight: 650;
+}
+.design-head__lead {
+    margin: 0.45rem 0 0;
+    max-width: 40rem;
+    color: var(--gereq-muted);
+}
+
+.design-notice {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--gereq-border);
+    border-left-width: 4px;
+    background: var(--gereq-paper);
+}
+.design-notice--ok { border-left-color: var(--gereq-signal); }
+
+.design-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    border-bottom: 1px solid var(--gereq-border);
+    background: var(--gereq-wash);
+}
+.design-tab {
+    margin: 0 0 -1px;
+    padding: 0.65rem 1rem;
+    border: 1px solid transparent;
+    border-bottom: 0;
+    background: transparent;
+    color: var(--gereq-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.design-tab:hover { color: var(--gereq-fg); }
+.design-tab.is-active {
+    color: var(--gereq-fg);
+    background: var(--gereq-paper);
+    border-color: var(--gereq-border);
+    border-bottom-color: var(--gereq-paper);
+    box-shadow: inset 0 2px 0 var(--gereq-signal);
+}
+
+.design-panel { display: none; padding-top: 0; }
+.design-panel.is-active { display: block; }
+
+.design-box {
+    background: var(--gereq-paper);
+    border: 1px solid var(--gereq-border);
+    border-top: 0;
+}
+.design-panel .design-box + .design-box {
+    margin-top: 1.25rem;
+    border-top: 1px solid var(--gereq-border);
+}
+.design-box__head {
+    padding: 0.8rem 1.15rem 0.75rem;
+    border-bottom: 1px solid var(--gereq-border);
+}
+.design-box__head h2 {
+    margin: 0;
+    font-family: var(--gereq-font-display);
+    font-size: 1.05rem;
+    font-weight: 650;
+}
+.design-box__head p {
+    margin: 0.3rem 0 0;
+    color: var(--gereq-muted);
+    font-size: 0.875rem;
+}
+.design-box__body { padding: 0.15rem 1.15rem 1rem; }
+
+.design-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 0.85rem; }
+.design-cluster .design-row { padding-top: 0; }
+.design-cluster {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.85rem;
+}
+.design-cluster__label {
+    margin: 0;
+    font-family: var(--gereq-font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gereq-muted);
+}
+.design-code {
+    font-family: var(--gereq-font-mono);
+    font-size: 0.6875rem;
+    color: var(--gereq-muted);
+}
+.design-swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.85rem 1rem;
+    padding-top: 1rem;
+    font-size: 0.8125rem;
+}
+.design-swatches > div { display: flex; align-items: center; gap: 0.6rem; }
+.design-swatch { display: block; width: 2.1rem; height: 2.1rem; border: 1px solid var(--gereq-border); }
+.design-swatch--ink { background: var(--gereq-ink); }
+.design-swatch--paper { background: var(--gereq-paper); }
+.design-swatch--signal { background: var(--gereq-signal); }
+.design-swatch--coral { background: var(--gereq-coral); }
+.design-swatch--sky { background: var(--gereq-sky); }
+.design-swatch--violet { background: var(--gereq-violet); }
+
+/* Settings table: label | control | hint. Keeping the hint in a third column
+   removes a whole row per field and fills the space right of short controls. */
+.design-settings {
+    --settings-label: 10.5rem;
+    --settings-gap: 1.5rem;
+}
+.design-settings > :first-child { border-top: 0; }
+.design-settings > .g-field,
+.design-settings > fieldset.g-field {
+    display: grid;
+    grid-template-columns: var(--settings-label) minmax(0, 23rem) minmax(0, 1fr);
+    column-gap: var(--settings-gap);
+    row-gap: 4px;
+    align-items: start;
+    margin: 0;
+    padding: 0.6rem 0;
+    border: 0;
+    border-top: 1px solid var(--gereq-border);
+    min-width: 0;
+}
+.design-settings > .g-field > .g-label {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: 0.8rem;
+    width: auto;
+}
+/* A legend is only laid out as a normal box — and therefore as a grid item —
+   once its float is something other than none. */
+.design-settings > fieldset.g-field > legend.g-label {
+    grid-column: 1;
+    grid-row: 1;
+    float: left;
+    padding: 0.1rem 0 0;
+    width: auto;
+}
+.design-settings > .g-field > .g-control-wrap,
+.design-settings > .g-field > .g-select,
+.design-settings > .g-field > .g-control,
+.design-settings > .g-field > .g-radios__list,
+.design-settings > .g-field > .g-pin,
+.design-settings > .g-field > .g-range,
+.design-settings > .g-field > .g-field__control {
+    grid-column: 2;
+    grid-row: 1;
+}
+.design-settings > .g-field > .g-editor,
+.design-settings > .g-field > .g-file,
+.design-settings > .g-field > .textarea-shell,
+.design-settings > .g-field > .textarea,
+.design-settings > .g-field > .textarea-mini {
+    grid-column: 2 / -1;
+    grid-row: 1;
+}
+.design-settings > .g-field > .g-range { align-self: center; }
+.design-settings > .g-field > .g-hint {
+    grid-column: 3;
+    grid-row: 1;
+    padding-top: 0.85rem;
+}
+.design-settings > .g-field > .g-error {
+    grid-column: 2;
+    grid-row: 2;
+}
+/* Controls that span both columns push their hint underneath instead. */
+.design-settings > .g-field:has(> .g-editor, > .g-file, > .textarea-shell, > .textarea, > .textarea-mini) > .g-hint {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    padding-top: 0;
+}
+.design-settings > .g-check,
+.design-settings > .g-switch,
+.design-settings > .g-field--switch {
+    margin: 0;
+    padding: 0.6rem 0 0.6rem calc(var(--settings-label) + var(--settings-gap));
+    border-top: 1px solid var(--gereq-border);
+}
+.design-submit {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0.5rem 0 0;
+    padding: 1rem 0 0.25rem;
+    border-top: 1px solid var(--gereq-border);
+}
+
+.dark .design-bar { background: #050605; }
+.dark .design-box,
+.dark .design-tab.is-active { background: #121412; }
+
+@media (max-width: 1100px) {
+    .design-settings > .g-field,
+    .design-settings > fieldset.g-field {
+        grid-template-columns: var(--settings-label) minmax(0, 1fr);
+    }
+    .design-settings > .g-field > .g-hint,
+    .design-settings > .g-field:has(> .g-editor, > .g-file, > .textarea-shell, > .textarea, > .textarea-mini) > .g-hint {
+        grid-column: 2;
+        grid-row: 2;
+        padding-top: 0;
+    }
+    .design-settings > .g-field > .g-editor,
+    .design-settings > .g-field > .g-file,
+    .design-settings > .g-field > .textarea-shell,
+    .design-settings > .g-field > .textarea,
+    .design-settings > .g-field > .textarea-mini {
+        grid-column: 2;
+    }
+}
+
+@media (max-width: 760px) {
+    .design-wrap { width: calc(100% - 1.5rem); }
+    .design-settings > .g-field,
+    .design-settings > fieldset.g-field {
+        grid-template-columns: 1fr;
+    }
+    .design-settings > .g-field > .g-label,
+    .design-settings > .g-field > legend.g-label { padding-top: 0; }
+    .design-settings > .g-field > .g-control-wrap,
+    .design-settings > .g-field > .g-select,
+    .design-settings > .g-field > .g-control,
+    .design-settings > .g-field > .g-radios__list,
+    .design-settings > .g-field > .g-pin,
+    .design-settings > .g-field > .g-range,
+    .design-settings > .g-field > .g-field__control,
+    .design-settings > .g-field > .g-editor,
+    .design-settings > .g-field > .g-file,
+    .design-settings > .g-field > .textarea-shell,
+    .design-settings > .g-field > .textarea,
+    .design-settings > .g-field > .textarea-mini,
+    .design-settings > .g-field > .g-hint,
+    .design-settings > .g-field > .g-error {
+        grid-column: 1;
+    }
+    .design-settings > .g-check,
+    .design-settings > .g-switch,
+    .design-settings > .g-field--switch { padding-left: 0; }
+    .design-bar { padding-inline: 0.85rem; }
+}

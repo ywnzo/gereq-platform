@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Orders\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -12,6 +15,18 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_orders_customer', columns: ['customer_id'])]
 #[ORM\Index(name: 'idx_orders_status', columns: ['status'])]
 #[ORM\UniqueConstraint(name: 'uniq_orders_number', columns: ['number'])]
+#[FormEntity('orders.save')]
+#[FormGenerator(
+    exclude: [
+        'id', 'number', 'status', 'subtotal', 'taxTotal', 'discountTotal', 'total',
+        'couponCode', 'shippingMethodCode', 'shippingMethodName', 'shippingPrice',
+        'parcelPointId', 'parcelPointLabel', 'paymentMethodCode', 'paymentMethodName',
+        'paymentStatus', 'trackingNumber', 'billingAddressJson', 'shippingAddressJson',
+        'accessTokenHash', 'createdAt', 'updatedAt',
+    ],
+    form: 'orders.save',
+    cols: 2,
+)]
 class Order
 {
     public const STATUSES = ['draft', 'confirmed', 'fulfilled', 'cancelled'];
@@ -21,6 +36,7 @@ class Order
     private string $id;
 
     #[ORM\Column(name: 'customer_id', length: 36)]
+    #[FormField(required: true, name: 'customer_id', label: 'orders.field.customer', type: 'select', order: 10)]
     private string $customerId;
 
     #[ORM\Column(length: 64)]
@@ -30,6 +46,7 @@ class Order
     private string $status = 'draft';
 
     #[ORM\Column(length: 3)]
+    #[FormField(label: 'orders.field.currency', options: ['maxlength' => 3], order: 20)]
     private string $currency = 'CZK';
 
     #[ORM\Column(type: 'decimal', precision: 14, scale: 2)]
@@ -84,6 +101,7 @@ class Order
     private ?string $accessTokenHash = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'orders.field.note', type: 'textarea', extra: 'field--full', order: 30)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'created_at')]

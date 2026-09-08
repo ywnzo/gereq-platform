@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\BikeService\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
@@ -13,6 +16,12 @@ use Ramsey\Uuid\Uuid;
 #[ORM\Index(name: 'idx_bikeservice_bikes_serial', columns: ['serial_number'])]
 #[ORM\Index(name: 'idx_bikeservice_bikes_status', columns: ['status'])]
 #[ORM\Index(name: 'idx_bikeservice_bikes_kind', columns: ['kind'])]
+#[FormEntity('bikeservice.bike')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt'],
+    form: 'bikeservice.bike',
+    cols: 2,
+)]
 class Bike
 {
     public const KINDS = ['bike', 'ebike', 'cargo', 'scooter'];
@@ -23,42 +32,69 @@ class Bike
     private string $id;
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'bikeservice.field.kind',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'KINDS',
+        choiceLabel: 'bikeservice.kind.',
+        order: 30,
+    )]
     private string $kind = 'bike';
 
     #[ORM\Column(length: 32)]
+    #[FormField(
+        label: 'bikeservice.field.status',
+        type: 'select',
+        group: 'basic',
+        choicesFrom: 'STATUSES',
+        choiceLabel: 'bikeservice.bike_status.',
+        order: 40,
+    )]
     private string $status = 'active';
 
     #[ORM\Column(length: 120)]
+    #[FormField(required: true, label: 'bikeservice.field.brand', group: 'basic', order: 10)]
     private string $brand;
 
     #[ORM\Column(length: 120, nullable: true)]
+    #[FormField(label: 'bikeservice.field.model', group: 'basic', order: 20)]
     private ?string $model = null;
 
     #[ORM\Column(name: 'serial_number', length: 120, nullable: true)]
+    #[FormField(label: 'bikeservice.field.serial', name: 'serial_number', group: 'basic', order: 50)]
     private ?string $serialNumber = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[FormField(label: 'bikeservice.field.color', group: 'basic', order: 60)]
     private ?string $color = null;
 
     #[ORM\Column(name: 'frame_size', length: 32, nullable: true)]
+    #[FormField(label: 'bikeservice.field.frame_size', name: 'frame_size', group: 'basic', order: 70)]
     private ?string $frameSize = null;
 
     #[ORM\Column(name: 'battery_wh', type: 'integer', nullable: true)]
+    #[FormField(label: 'bikeservice.field.battery_wh', type: 'number', name: 'battery_wh', group: 'ebike', order: 10)]
     private ?int $batteryWh = null;
 
     #[ORM\Column(name: 'motor_w', type: 'integer', nullable: true)]
+    #[FormField(label: 'bikeservice.field.motor_w', type: 'number', name: 'motor_w', group: 'ebike', order: 20)]
     private ?int $motorW = null;
 
     #[ORM\Column(name: 'odometer_km', type: 'integer', nullable: true)]
+    #[FormField(label: 'bikeservice.field.odometer', type: 'number', name: 'odometer_km', group: 'ebike', order: 30)]
     private ?int $odometerKm = null;
 
     #[ORM\Column(name: 'customer_id', length: 36, nullable: true)]
+    #[FormField(label: 'bikeservice.field.customer', type: 'select', name: 'customer_id', group: 'basic', order: 80)]
     private ?string $customerId = null;
 
     #[ORM\Column(name: 'bike_index_id', type: 'integer', nullable: true)]
+    #[FormField(label: 'bikeservice.field.bike_index_id', type: 'number', name: 'bike_index_id', group: 'basic', order: 90)]
     private ?int $bikeIndexId = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'bikeservice.field.note', type: 'textarea', group: 'basic', extra: 'field--full', order: 100)]
     private ?string $note = null;
 
     #[ORM\Column(name: 'created_at')]

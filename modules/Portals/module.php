@@ -6,7 +6,7 @@ return [
     'id' => 'portals',
     'name' => 'Portals',
     'icon' => 'link',
-    'version' => '1.3.0',
+    'version' => '1.3.2',
     'description' => 'module.portals.description',
     'class' => Modules\Portals\PortalsModule::class,
     'author' => 'RealEstates',

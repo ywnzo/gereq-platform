@@ -80,7 +80,7 @@
             {% if user.can('projects.manage') %}
                 <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.projects.tasks.store',{id:item.id()}) }}" data-form="projects.task.save">
                     {{ csrf_field()|raw }}
-                    {% include 'ui/input.html.twig' with { name:'title', label:'projects.field.title'|trans, required:true, form:'projects.task.save', value:'' } %}
+                    {% include 'ui/input.html.twig' with { name:'title', label:'projects.field.title'|trans, form:'projects.task.save', value:'' } %}
                     {% include 'ui/select.html.twig' with { name:'status', label:'projects.field.status'|trans, form:'projects.task.save', value:'todo', options:[
                     {value:'todo',label:'projects.task.status.todo'|trans},{value:'doing',label:'projects.task.status.doing'|trans},{value:'done',label:'projects.task.status.done'|trans}
                     ] } %}

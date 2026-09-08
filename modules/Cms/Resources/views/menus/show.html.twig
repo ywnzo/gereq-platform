@@ -80,7 +80,7 @@
                     {% include 'ui/error-summary.html.twig' with { form: 'cms.menu_item.save' } %}
                     <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.cms.menus.items.store', {id: item.id()}) }}" data-form="cms.menu_item.save" x-data="gereqForm"{% if form_errors('cms.menu_item.save') %} data-server-state="1"{% endif %}>
                         {{ csrf_field()|raw }}
-                        {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.field.label'|trans, required: true, form: 'cms.menu_item.save', value: '' } %}
+                        {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.field.label'|trans, form: 'cms.menu_item.save', value: '' } %}
                         {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.field.url'|trans, optional: true, form: 'cms.menu_item.save', value: '', hint: 'cms.field.url.hint'|trans } %}
                         {% include 'ui/select.html.twig' with {
                             name: 'page_id',

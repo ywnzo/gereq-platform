@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Modules\Shop\Domain;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gereq\Admin\Form\FormEntity;
+use Gereq\Admin\Form\FormField;
+use Gereq\Admin\Form\FormGenerator;
 use Ramsey\Uuid\Uuid;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'shop_shipping_methods')]
 #[ORM\UniqueConstraint(name: 'uniq_shop_shipping_code', columns: ['code'])]
+#[FormEntity('shop.shipping.save')]
+#[FormGenerator(
+    exclude: ['id', 'createdAt', 'updatedAt'],
+    form: 'shop.shipping.save',
+    cols: 2,
+)]
 class ShippingMethod
 {
     public const TYPES = [
@@ -25,34 +34,54 @@ class ShippingMethod
     private string $id;
 
     #[ORM\Column(length: 64)]
+    #[FormField(required: true, label: 'shop.field.code', order: 10)]
     private string $code;
 
     #[ORM\Column(length: 190)]
+    #[FormField(required: true, label: 'shop.field.name', order: 20)]
     private string $name;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[FormField(
+        label: 'shop.field.carrier',
+        hint: 'shop.field.carrier.hint',
+        order: 30,
+    )]
     private ?string $carrier = null;
 
     #[ORM\Column(length: 32, options: ['default' => 'courier'])]
+    #[FormField(
+        label: 'shop.field.shipping_type',
+        type: 'select',
+        choicesFrom: 'TYPES',
+        choiceLabel: 'shop.shipping.type.',
+        order: 40,
+    )]
     private string $type = 'courier';
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $description = null;
-
     #[ORM\Column(type: 'decimal', precision: 14, scale: 2)]
+    #[FormField(required: true, label: 'shop.field.price', type: 'number', options: ['step' => '0.01'], order: 50)]
     private string $price = '0.00';
 
     #[ORM\Column(length: 3)]
+    #[FormField(label: 'shop.field.currency', options: ['maxlength' => 3], order: 60)]
     private string $currency = 'CZK';
 
-    #[ORM\Column(name: 'is_active', type: 'boolean')]
-    private bool $active = true;
-
     #[ORM\Column(name: 'estimated_days', type: 'integer', nullable: true)]
+    #[FormField(label: 'shop.field.estimated_days', type: 'number', order: 70)]
     private ?int $estimatedDays = null;
 
     #[ORM\Column(name: 'sort_order', type: 'integer', options: ['default' => 0])]
+    #[FormField(label: 'shop.field.sort_order', type: 'number', order: 80)]
     private int $sortOrder = 0;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[FormField(label: 'shop.field.description', type: 'textarea', extra: 'field--full', order: 90)]
+    private ?string $description = null;
+
+    #[ORM\Column(name: 'is_active', type: 'boolean')]
+    #[FormField(name: 'active', label: 'shop.field.active', type: 'switch', order: 100)]
+    private bool $active = true;
 
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;

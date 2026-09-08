@@ -136,7 +136,6 @@
                         name: 'action',
                         id: 'bulk-module-action',
                         label: '',
-                        required: true,
                         placeholder: 'admin.modules.bulk.choose'|trans,
                         value: '',
                         extra: 'bulk-bar__select-field',
@@ -146,7 +145,7 @@
                             { value: 'enable', label: 'admin.modules.bulk.action.enable'|trans },
                             { value: 'pause', label: 'admin.modules.bulk.action.pause'|trans },
                             { value: 'disable', label: 'admin.modules.bulk.action.disable'|trans },
-                        ],
+                        ]
                     } %}
                     <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'admin.modules.bulk.apply'|trans }}</button>
                 </div>
@@ -364,7 +363,7 @@
             {% include 'admin/modules/_group_table.html.twig' with {
                 groups: pluginGroups|default([]),
                 empty_title: 'admin.plugins.empty'|trans,
-                empty_hint: 'admin.plugins.empty.hint'|trans,
+                empty_hint: 'admin.plugins.empty.hint'|trans
             } %}
         </div>
     </section>

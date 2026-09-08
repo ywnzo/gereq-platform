@@ -1,5 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 {% block content %}
+{% set documentSource = item ?? 'Modules\\ESign\\Domain\\SignableDocument' %}
+
 <header class="page-header">
     <div>
         <h1>{{ item ? 'esign.documents.edit'|trans : 'esign.documents.new'|trans }}</h1>
@@ -13,7 +15,7 @@
 
 <form
     method="post"
-    class="form-grid"
+    class="form-grid form-grid--cols-2"
     action="{{ item ? url('admin.esign.documents.update', {id: item.id()}) : url('admin.esign.documents.store') }}"
     data-form="esign.document.save"
     x-data="gereqForm"
@@ -21,52 +23,12 @@
 >
     {{ csrf_field()|raw }}
 
-    {% include 'ui/input.html.twig' with {
-        name: 'number',
-        label: 'esign.field.number'|trans,
+    {{ forms().render(documentSource, {
         form: 'esign.document.save',
-        value: item ? item.number() : '',
-        hint: item ? null : 'esign.hint.number_auto'|trans
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'title',
-        label: 'esign.field.title'|trans,
-        required: true,
-        form: 'esign.document.save',
-        value: item ? item.title() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'counterparty_name',
-        label: 'esign.field.counterparty_name'|trans,
-        required: true,
-        form: 'esign.document.save',
-        value: item ? item.counterpartyName() : ''
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'counterparty_email',
-        label: 'esign.field.counterparty_email'|trans,
-        form: 'esign.document.save',
-        value: item ? (item.counterpartyEmail() ?: '') : '',
-        type: 'email'
-    } %}
-    {% include 'ui/input.html.twig' with {
-        name: 'counterparty_company',
-        label: 'esign.field.counterparty_company'|trans,
-        form: 'esign.document.save',
-        value: item ? (item.counterpartyCompany() ?: '') : '',
-        extra: 'field--full'
-    } %}
-
-    {% include 'ui/editor.html.twig' with {
-        name: 'body_html',
-        label: 'esign.field.body'|trans,
-        required: true,
-        form: 'esign.document.save',
-        value: item ? item.bodyHtml() : defaultBody,
-        hint: 'esign.hint.body_tokens'|trans,
-        extra: 'field--full',
-        placeholder: 'esign.hint.body_placeholder'|trans
-    } %}
+        cols: 2,
+        wrap: false,
+        values: item ? {} : { body_html: defaultBody }
+    }) }}
 
     <div class="form-actions">
         <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
