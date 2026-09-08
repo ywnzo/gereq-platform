@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'partscatalog',
     'name' => 'PartsCatalog',
+    'icon' => 'pc-parts',
     'version' => '1.13.10',
     'description' => 'module.partscatalog.description',
     'class' => Modules\PartsCatalog\PartsCatalogModule::class,

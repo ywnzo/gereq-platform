@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'orders',
     'name' => 'Orders',
+    'icon' => 'cart',
     'version' => '1.2.2',
     'description' => 'module.orders.description',
     'class' => Modules\Orders\OrdersModule::class,

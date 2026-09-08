@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'feeds',
     'name' => 'Feeds',
+    'icon' => 'rss',
     'version' => '1.0.0',
     'description' => 'module.feeds.description',
     'class' => Modules\Feeds\FeedsModule::class,

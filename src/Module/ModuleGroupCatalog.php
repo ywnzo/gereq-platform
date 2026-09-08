@@ -128,7 +128,7 @@ final class ModuleGroupCatalog
             fn (string $id): bool => $this->modules->manifest($id) !== null,
         ));
 
-        return $this->topologicalSort($ids);
+        return $this->modules->sortForEnable($ids);
     }
 
     public function has(string $groupId): bool
@@ -199,39 +199,5 @@ final class ModuleGroupCatalog
         }
 
         return $map;
-    }
-
-    /**
-     * @param list<string> $ids
-     * @return list<string>
-     */
-    private function topologicalSort(array $ids): array
-    {
-        $set = array_fill_keys($ids, true);
-        $visited = [];
-        $stack = [];
-
-        $visit = function (string $id) use (&$visit, &$visited, &$stack, $set): void {
-            if (isset($visited[$id])) {
-                return;
-            }
-            $visited[$id] = true;
-            $manifest = $this->modules->manifest($id);
-            if ($manifest !== null) {
-                foreach (array_keys($manifest->requires) as $dep) {
-                    if ($dep === 'core' || !isset($set[$dep])) {
-                        continue;
-                    }
-                    $visit($dep);
-                }
-            }
-            $stack[] = $id;
-        };
-
-        foreach ($ids as $id) {
-            $visit($id);
-        }
-
-        return $stack;
     }
 }

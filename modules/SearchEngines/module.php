@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'searchengines',
     'name' => 'Vyhledávače',
+    'icon' => 'search',
     'version' => '1.3.6',
     'description' => 'module.searchengines.description',
     'class' => Modules\SearchEngines\SearchEnginesModule::class,

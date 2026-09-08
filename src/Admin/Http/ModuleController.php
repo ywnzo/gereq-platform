@@ -9,10 +9,15 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Module\GitLabModuleClient;
 use Gereq\Module\ModuleGroupCatalog;
 use Gereq\Module\ModuleInspector;
 use Gereq\Module\ModuleManager;
+use Gereq\Module\ModuleUninstaller;
 use Gereq\Module\ModuleUpdater;
+use Gereq\Module\ModuleVersionActivator;
+use Gereq\Module\ModuleVersionInstaller;
+use Gereq\Database\Migrator;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +36,12 @@ final class ModuleController extends Controller
         private readonly ModuleManager $modules,
         private readonly ModuleInspector $inspector,
         private readonly ModuleUpdater $updater,
+        private readonly ModuleUninstaller $uninstaller,
+        private readonly Migrator $migrator,
         private readonly ModuleGroupCatalog $groups,
+        private readonly ModuleVersionInstaller $versions,
+        private readonly ModuleVersionActivator $activator,
+        private readonly GitLabModuleClient $gitlab,
         private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -42,6 +52,10 @@ final class ModuleController extends Controller
         $items = [];
         foreach ($this->modules->discover() as $manifest) {
             $report = $this->inspector->inspect($manifest);
+            // First migration filename (YYYY_MM_DD_…) ≈ when the module was introduced.
+            $created = isset($report['migrations'][0]['file'])
+                ? (string) $report['migrations'][0]['file']
+                : '9999_99_99_999999';
             $items[] = [
                 'manifest' => $manifest,
                 'enabled' => $report['overview']['enabled'],
@@ -50,15 +64,19 @@ final class ModuleController extends Controller
                 'health_issues' => $report['counts']['health_issues'],
                 'update_available' => $report['overview']['update_available'],
                 'settings_route' => $report['overview']['settings_route'],
+                'created' => $created,
             ];
         }
 
+        // Chronological (oldest first); pending updates stay on top.
         usort($items, static function (array $a, array $b): int {
             if ($a['update_available'] !== $b['update_available']) {
                 return $a['update_available'] ? -1 : 1;
             }
-            if ($a['enabled'] !== $b['enabled']) {
-                return $a['enabled'] ? -1 : 1;
+
+            $byCreated = $a['created'] <=> $b['created'];
+            if ($byCreated !== 0) {
+                return $byCreated;
             }
 
             return $a['manifest']->name <=> $b['manifest']->name;
@@ -112,6 +130,29 @@ final class ModuleController extends Controller
         }
 
         $report = $this->inspector->inspect($manifest);
+        $versionRows = [];
+        $versionsError = null;
+        $gitlabConfigured = $this->gitlab->configured();
+        try {
+            $versionRows = $this->versions->listVersions($id, true);
+        } catch (\Throwable $e) {
+            $versionsError = $e->getMessage();
+        }
+
+        $remoteLatest = null;
+        $remoteNewer = false;
+        $remoteOlderCount = 0;
+        foreach ($versionRows as $row) {
+            if ($remoteLatest === null) {
+                $remoteLatest = $row['version'];
+            }
+            if (!empty($row['is_upgrade'])) {
+                $remoteNewer = true;
+            }
+            if (!empty($row['is_downgrade'])) {
+                ++$remoteOlderCount;
+            }
+        }
 
         return $this->page('admin/modules/show.html.twig', [
             'pageTitle' => $manifest->name,
@@ -120,13 +161,80 @@ final class ModuleController extends Controller
             'missing' => $report['overview']['missing'],
             'report' => $report,
             'settingsRoute' => $report['overview']['settings_route'],
+            'versionRows' => $versionRows,
+            'versionsError' => $versionsError,
+            'gitlabConfigured' => $gitlabConfigured,
+            'gitlabProject' => $gitlabConfigured ? $this->gitlab->projectPathFor($manifest) : null,
+            'remoteLatest' => $remoteLatest,
+            'remoteNewer' => $remoteNewer,
+            'remoteOlderCount' => $remoteOlderCount,
         ]);
+    }
+
+    public function fetchVersions(string $id): Response
+    {
+        $manifest = $this->modules->manifest($id);
+        if ($manifest === null) {
+            $this->abort(404, $this->translator->trans('admin.modules.not_found'));
+        }
+
+        try {
+            $this->versions->listVersions($id, true);
+            $this->flash('success', $this->translator->trans('admin.modules.versions.refreshed'));
+        } catch (\Throwable $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return $this->redirect('admin.modules.show', ['id' => $id]);
+    }
+
+    public function fetchVersion(Request $request, string $id, string $version): Response
+    {
+        try {
+            $this->versions->fetch($id, $version);
+            $this->flash('success', $this->translator->trans('admin.modules.versions.fetched', [
+                '%version%' => $version,
+            ]));
+        } catch (\Throwable $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return $this->redirect('admin.modules.show', ['id' => $id]);
+    }
+
+    public function activateVersion(Request $request, string $id, string $version): Response
+    {
+        $manifest = $this->modules->manifest($id);
+        if ($manifest === null) {
+            $this->abort(404, $this->translator->trans('admin.modules.not_found'));
+        }
+
+        $target = \Gereq\Module\GitLabModuleClient::normalizeVersion($version);
+        $current = \Gereq\Module\GitLabModuleClient::normalizeVersion($manifest->version);
+        if (version_compare($target, $current) < 0 && !$request->request->getBoolean('confirm_downgrade')) {
+            $this->flash('error', $this->translator->trans('admin.modules.versions.downgrade_required'));
+
+            return $this->redirect('admin.modules.show', ['id' => $id]);
+        }
+
+        try {
+            $messages = $this->activator->activate($id, $version, true);
+            $this->flash('success', $this->translator->trans('admin.modules.versions.activated', [
+                '%version%' => $target,
+                '%count%' => count($messages),
+            ]));
+        } catch (\Throwable $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return $this->redirect('admin.modules.show', ['id' => $id]);
     }
 
     public function enable(string $id): Response
     {
         try {
             $this->modules->enable($id);
+            $this->migrator->migrateModule($id);
             $this->flash('success', $this->translator->trans('admin.modules.activated'));
         } catch (\Throwable $e) {
             $this->flash('error', $e->getMessage());
@@ -135,11 +243,39 @@ final class ModuleController extends Controller
         return $this->modulesReturnRedirect($id);
     }
 
-    public function disable(string $id): Response
+    public function pause(string $id): Response
     {
         try {
-            $this->modules->disable($id);
-            $this->flash('success', $this->translator->trans('admin.modules.deactivated'));
+            $result = $this->modules->pauseMany([$id]);
+            if ($result['ok'] > 0) {
+                $this->flash('success', $this->translator->trans('admin.modules.paused', [
+                    '%count%' => $result['ok'],
+                ]));
+            }
+            if ($result['errors'] !== []) {
+                $this->flash('error', implode(' · ', array_slice($result['errors'], 0, 5)));
+            }
+        } catch (\Throwable $e) {
+            $this->flash('error', $e->getMessage());
+        }
+
+        return $this->modulesReturnRedirect($id);
+    }
+
+    public function disable(Request $request, string $id): Response
+    {
+        $purgeMedia = $request->request->getBoolean('purge_media');
+        try {
+            $result = $this->uninstaller->uninstallMany([$id], $purgeMedia);
+            if ($result['ok'] > 0) {
+                $this->flash('success', $this->translator->trans(
+                    $purgeMedia ? 'admin.modules.deactivated_purged_media' : 'admin.modules.deactivated_purged',
+                    ['%count%' => $result['ok']]
+                ));
+            }
+            if ($result['errors'] !== []) {
+                $this->flash('error', implode(' · ', array_slice($result['errors'], 0, 5)));
+            }
         } catch (\Throwable $e) {
             $this->flash('error', $e->getMessage());
         }
@@ -189,6 +325,7 @@ final class ModuleController extends Controller
             }
             try {
                 $this->modules->enable($id);
+                $this->migrator->migrateModule($id);
                 ++$ok;
             } catch (\Throwable $e) {
                 $errors[] = $id . ': ' . $e->getMessage();
@@ -238,7 +375,7 @@ final class ModuleController extends Controller
             return $this->redirect('admin.modules.index');
         }
 
-        if (!in_array($action, ['update', 'enable', 'disable'], true)) {
+        if (!in_array($action, ['update', 'enable', 'disable', 'pause'], true)) {
             $this->flash('error', $this->translator->trans('admin.modules.bulk.error.action'));
 
             return $this->redirect('admin.modules.index');
@@ -246,21 +383,39 @@ final class ModuleController extends Controller
 
         $ok = 0;
         $errors = [];
-        foreach ($ids as $id) {
-            try {
-                match ($action) {
-                    'update' => $this->updater->update($id),
-                    'enable' => $this->modules->enable($id),
-                    'disable' => $this->modules->disable($id),
-                };
-                ++$ok;
-            } catch (\Throwable $e) {
-                $errors[] = $id . ': ' . $e->getMessage();
+        $purgeMedia = $request->request->getBoolean('purge_media');
+
+        if ($action === 'disable') {
+            $result = $this->uninstaller->uninstallMany($ids, $purgeMedia);
+            $ok = $result['ok'];
+            $errors = $result['errors'];
+        } elseif ($action === 'pause') {
+            $result = $this->modules->pauseMany($ids);
+            $ok = $result['ok'];
+            $errors = $result['errors'];
+        } else {
+            $ordered = $action === 'enable' ? $this->modules->sortForEnable($ids) : $ids;
+            foreach ($ordered as $id) {
+                try {
+                    if ($action === 'update') {
+                        $this->updater->update($id);
+                    } else {
+                        $this->modules->enable($id);
+                        $this->migrator->migrateModule($id);
+                    }
+                    ++$ok;
+                } catch (\Throwable $e) {
+                    $errors[] = $id . ': ' . $e->getMessage();
+                }
             }
         }
 
         if ($ok > 0) {
-            $this->flash('success', $this->translator->trans('admin.modules.bulk.flash.' . $action, [
+            $key = 'admin.modules.bulk.flash.' . $action;
+            if ($action === 'disable' && $purgeMedia) {
+                $key = 'admin.modules.bulk.flash.disable_media';
+            }
+            $this->flash('success', $this->translator->trans($key, [
                 '%count%' => $ok,
             ]));
         }

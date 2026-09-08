@@ -32,6 +32,10 @@ final class ModuleManifest
         public readonly ?string $settingsRoute = null,
         /** module = domain feature; integration = third-party remote adapter (Stripe, Comgate…). */
         public readonly string $kind = 'module',
+        /** Admin UI icon key (Material Symbols via Icons). */
+        public readonly string $icon = 'modules',
+        /** GitLab project path override (e.g. gereq/module-listings). Empty = derived from config. */
+        public readonly ?string $repository = null,
     ) {
     }
 
@@ -77,6 +81,13 @@ final class ModuleManifest
             $kind = 'integration';
         }
 
+        $icon = trim((string) ($data['icon'] ?? ''));
+        if ($icon === '') {
+            $icon = 'modules';
+        }
+
+        $repository = trim((string) ($data['repository'] ?? ''));
+
         return new self(
             id: $id,
             name: (string) ($data['name'] ?? $id),
@@ -93,6 +104,8 @@ final class ModuleManifest
             groups: array_values(array_unique($groups)),
             settingsRoute: $settingsRoute !== '' ? $settingsRoute : null,
             kind: $kind,
+            icon: $icon,
+            repository: $repository !== '' ? $repository : null,
         );
     }
 }

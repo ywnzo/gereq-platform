@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'customers',
     'name' => 'Customers',
+    'icon' => 'users',
     'version' => '1.2.2',
     'description' => 'module.customers.description',
     'class' => Modules\Customers\CustomersModule::class,

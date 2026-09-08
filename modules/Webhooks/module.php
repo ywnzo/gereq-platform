@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'webhooks',
     'name' => 'Webhooks',
+    'icon' => 'zap',
     'version' => '1.0.1',
     'description' => 'module.webhooks.description',
     'class' => Modules\Webhooks\WebhooksModule::class,

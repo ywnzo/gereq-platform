@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Database\Migrator;
 use Gereq\Module\ModuleManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -14,8 +15,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'module:enable', description: 'Aktivovat modul')]
 final class ModuleEnableCommand extends Command
 {
-    public function __construct(private readonly ModuleManager $modules)
-    {
+    public function __construct(
+        private readonly ModuleManager $modules,
+        private readonly Migrator $migrator,
+    ) {
         parent::__construct();
     }
 
@@ -28,6 +31,9 @@ final class ModuleEnableCommand extends Command
     {
         $id = strtolower((string) $input->getArgument('module'));
         $this->modules->enable($id);
+        foreach ($this->migrator->migrateModule($id) as $line) {
+            $output->writeln('  ' . $line);
+        }
         $output->writeln('Modul ' . $id . ' byl aktivován.');
 
         return Command::SUCCESS;

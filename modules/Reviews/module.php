@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'reviews',
     'name' => 'Reviews',
+    'icon' => 'star',
     'version' => '1.3.0',
     'description' => 'module.reviews.description',
     'class' => Modules\Reviews\ReviewsModule::class,

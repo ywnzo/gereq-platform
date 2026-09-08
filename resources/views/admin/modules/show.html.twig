@@ -15,7 +15,10 @@
     <header class="page-header">
         <div>
             <p class="eyebrow"><a href="{{ url('admin.modules.index') }}">{{ 'admin.modules.title'|trans }}</a></p>
-            <h1>{{ manifest.name }}</h1>
+            <h1 class="module-detail__title">
+                <span class="module-row__icon module-row__icon--lg" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
+                {{ manifest.name }}
+            </h1>
             <p class="muted detail-layout__meta">
                 <code>{{ manifest.id }}</code>
                 <span>v{{ manifest.version }}</span>
@@ -39,12 +42,35 @@
                     <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
                 </form>
             {% endif %}
-            <form method="post" action="{{ enabled ? url('admin.modules.disable', {id: manifest.id}) : url('admin.modules.enable', {id: manifest.id}) }}">
-                {{ csrf_field()|raw }}
-                <button class="btn {{ enabled ? 'btn--ghost' : (overview.update_available ? 'btn--ghost' : 'btn--primary') }}" type="submit">
-                    {{ enabled ? 'common.deactivate'|trans : 'common.activate'|trans }}
+            {% if enabled %}
+                <button type="button" class="btn btn--success" disabled title="{{ 'admin.modules.running'|trans }}">
+                    {{ icon('play') }} {{ 'admin.modules.running'|trans }}
                 </button>
-            </form>
+                <form method="post" action="{{ url('admin.modules.pause', {id: manifest.id}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--warn" type="submit" title="{{ 'admin.modules.pause_hint'|trans }}">
+                        {{ icon('pause') }} {{ 'common.pause'|trans }}
+                    </button>
+                </form>
+                <form method="post" action="{{ url('admin.modules.disable', {id: manifest.id}) }}">
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="purge_media" value="0">
+                    <button
+                        class="btn btn--danger"
+                        type="submit"
+                        onclick="return window.gereqConfirmModuleDisable(this.form, {{ 'admin.modules.confirm.disable'|trans|json_encode|raw }}, {{ 'admin.modules.confirm.disable_media'|trans|json_encode|raw }})"
+                    >
+                        {{ icon('trash') }} {{ 'common.deactivate'|trans }}
+                    </button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--success" type="submit">
+                        {{ icon('play') }} {{ 'common.activate'|trans }}
+                    </button>
+                </form>
+            {% endif %}
         </div>
     </header>
 
@@ -83,6 +109,12 @@
             <button type="button" class="design-tab" role="tab" data-tab="files">
                 {{ 'admin.modules.tab.files'|trans }}{% if counts.files %}<span class="module-tab-count">{{ counts.files }}</span>{% endif %}
             </button>
+            <button type="button" class="design-tab" role="tab" data-tab="versions">
+                {{ 'admin.modules.tab.versions'|trans }}
+                {% if versionRows is defined and versionRows %}
+                    <span class="module-tab-count{% if remoteNewer %} module-tab-count--warn{% endif %}">{{ versionRows|length }}</span>
+                {% endif %}
+            </button>
             <button type="button" class="design-tab" role="tab" data-tab="health">
                 {{ 'admin.modules.tab.health'|trans }}{% if counts.health_issues %}<span class="module-tab-count module-tab-count--warn">{{ counts.health_issues }}</span>{% endif %}
             </button>
@@ -98,6 +130,23 @@
                                     <span>{{ 'common.version'|trans }}</span>
                                     <strong>v{{ manifest.version }}{% if overview.installed_version and overview.installed_version != manifest.version %} <span class="muted" style="font-size:0.7em;font-weight:500">{{ 'admin.modules.installed_version'|trans({'%version%': overview.installed_version}) }}</span>{% endif %}</strong>
                                 </div>
+                                {% if gitlabConfigured %}
+                                    <div class="module-versions-callout{% if remoteNewer %} module-versions-callout--warn{% endif %}">
+                                        <div class="module-versions-callout__body">
+                                            <strong>{{ 'admin.modules.versions.gitlab'|trans }}</strong>
+                                            {% if versionsError %}
+                                                <p class="muted">{{ versionsError }}</p>
+                                            {% elseif remoteNewer and remoteLatest %}
+                                                <p>{{ 'admin.modules.versions.newer_available'|trans({'%latest%': remoteLatest, '%current%': manifest.version}) }}</p>
+                                            {% elseif versionRows|length > 1 %}
+                                                <p>{{ 'admin.modules.versions.multiple'|trans({'%count%': versionRows|length, '%latest%': remoteLatest ?: manifest.version}) }}</p>
+                                            {% else %}
+                                                <p>{{ 'admin.modules.versions.up_to_date'|trans({'%version%': remoteLatest ?: manifest.version}) }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <a class="btn btn--{{ remoteNewer ? 'primary' : 'ghost' }} btn-sm" href="#versions" data-tab="versions">{{ 'admin.modules.versions.open_tab'|trans }}</a>
+                                    </div>
+                                {% endif %}
                                 <dl class="detail-hero__facts">
                                     <div>
                                         <dt>{{ 'common.author'|trans }}</dt>
@@ -491,6 +540,109 @@
                                         <td><code class="module-code-soft">{{ file.path }}</code></td>
                                         <td>{{ file.type }}</td>
                                         <td class="muted">{% if file.size is not null %}{{ file.size }} B{% else %}{{ 'common.none'|trans }}{% endif %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </section>
+        </section>
+
+        <section class="design-panel" data-panel="versions" role="tabpanel">
+            <section class="panel">
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ 'admin.modules.versions.title'|trans }}</h2>
+                        <p class="muted">
+                            {% if gitlabConfigured %}
+                                {{ 'admin.modules.versions.hint'|trans({'%project%': gitlabProject}) }}
+                            {% else %}
+                                {{ 'admin.modules.versions.hint_local'|trans }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="panel__actions">
+                        {% if gitlabConfigured %}
+                            <form method="post" action="{{ url('admin.modules.versions.refresh', {id: manifest.id}) }}">
+                                {{ csrf_field()|raw }}
+                                <button class="btn btn--ghost" type="submit">{{ icon('refresh') }} {{ 'admin.modules.versions.refresh'|trans }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </header>
+
+                {% if versionsError %}
+                    <div class="alert alert--warn">{{ versionsError }}</div>
+                {% endif %}
+
+                {% if versionRows is empty %}
+                    <div class="empty">
+                        <h2>{{ 'admin.modules.versions.empty'|trans }}</h2>
+                        <p class="muted">{{ 'admin.modules.versions.empty.hint'|trans }}</p>
+                    </div>
+                {% else %}
+                    {% if not remoteNewer and remoteOlderCount == 0 and versionRows|length <= 1 %}
+                        <div class="alert alert--info">{{ 'admin.modules.versions.only_current'|trans }}</div>
+                    {% endif %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'admin.modules.col.version'|trans }}</th>
+                                    <th>{{ 'admin.modules.versions.col.source'|trans }}</th>
+                                    <th>{{ 'admin.modules.col.status'|trans }}</th>
+                                    <th class="table__actions-head"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in versionRows %}
+                                    <tr class="{{ row.active ? 'is-selected' : '' }}">
+                                        <td>
+                                            <strong>v{{ row.version }}</strong>
+                                            {% if row.committed_at %}
+                                                <div class="table__meta muted">{{ row.committed_at|date('d.m.Y H:i') }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="is-mute">
+                                            {% if row.cached %}
+                                                <span class="badge badge--ok">{{ 'admin.modules.versions.cached'|trans }}</span>
+                                            {% else %}
+                                                <span class="badge badge--muted">{{ 'admin.modules.versions.remote'|trans }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if row.active %}
+                                                <span class="badge badge--ok">{{ 'admin.modules.versions.active'|trans }}</span>
+                                            {% elseif row.is_downgrade %}
+                                                <span class="badge badge--warn">{{ 'admin.modules.versions.older'|trans }}</span>
+                                            {% elseif row.is_upgrade %}
+                                                <span class="badge badge--info">{{ 'admin.modules.versions.newer'|trans }}</span>
+                                            {% else %}
+                                                <span class="muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="table__actions">
+                                            <div class="table__action-btns">
+                                                {% if not row.cached and gitlabConfigured %}
+                                                    <form method="post" action="{{ url('admin.modules.versions.fetch', {id: manifest.id, version: row.version}) }}">
+                                                        {{ csrf_field()|raw }}
+                                                        <button type="submit" class="table__action-btn" title="{{ 'admin.modules.versions.fetch'|trans }}">{{ icon('download') }}</button>
+                                                    </form>
+                                                {% endif %}
+                                                {% if not row.active %}
+                                                    <form
+                                                        method="post"
+                                                        action="{{ url('admin.modules.versions.activate', {id: manifest.id, version: row.version}) }}"
+                                                        onsubmit="return window.gereqConfirmModuleVersion(this, {{ row.is_downgrade ? 'true' : 'false' }}, {{ 'admin.modules.versions.confirm_activate'|trans({'%version%': row.version})|json_encode|raw }}, {{ 'admin.modules.versions.confirm_downgrade'|trans({'%version%': row.version, '%current%': manifest.version})|json_encode|raw }})"
+                                                    >
+                                                        {{ csrf_field()|raw }}
+                                                        <input type="hidden" name="confirm_downgrade" value="0" data-downgrade>
+                                                        <button type="submit" class="table__action-btn table__action-btn--primary" title="{{ 'admin.modules.versions.activate'|trans }}">{{ icon('play') }}</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

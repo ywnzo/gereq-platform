@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+Allways use BUN JS, so not `npm run xxx` but `bun run xxx` or
+`npmx ...` but `bun x`

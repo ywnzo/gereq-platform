@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'currency',
     'name' => 'Currency',
+    'icon' => 'coins',
     'version' => '1.3.0',
     'description' => 'module.currency.description',
     'class' => Modules\Currency\CurrencyModule::class,

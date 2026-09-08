@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'bundles',
     'name' => 'Bundles',
+    'icon' => 'layers',
     'version' => '1.0.0',
     'description' => 'module.bundles.description',
     'class' => Modules\Bundles\BundlesModule::class,

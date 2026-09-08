@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'portals',
     'name' => 'Portals',
+    'icon' => 'link',
     'version' => '1.3.0',
     'description' => 'module.portals.description',
     'class' => Modules\Portals\PortalsModule::class,

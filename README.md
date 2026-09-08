@@ -87,6 +87,10 @@ Migrace:
 | `QUEUE_DRIVER` | `sync`, `redis`, `file` |
 | `SESSION_DRIVER` | `file`, `redis` (Docker `serve-docker` vynutí `redis`) |
 | `FILE_DRIVER` | `local` (S3 driver lze doplnit) |
+| `GITLAB_URL` | GitLab instance (default `https://gitlab.com`) |
+| `GITLAB_TOKEN` | token s `read_api` / `read_repository` pro stahování tagů |
+| `GITLAB_GROUP` | skupina projektů (default `gereq`) |
+| `MODULE_REPO_PREFIX` | prefix repa (`module-` → `gereq/module-listings`) |
 
 MariaDB:
 
@@ -185,6 +189,18 @@ Platforma:
 Moduly mezi sebou **nesahají do cizích tabulek**. Komunikují přes contracts / providers a capabilities.
 
 Příklad: capability `contacts` může poskytovat GEREQ CRM, HubSpot modul i vlastní implementace. Ostatní moduly žádají capability, ne konkrétní tabulku.
+
+### Verze z GitLabu
+
+Každý modul může žít ve vlastním repu `gitlab.com/{GITLAB_GROUP}/{MODULE_REPO_PREFIX}{id}` (např. `gereq/module-listings`). Semver tagy `v1.2.3` musí sedět s `version` v `module.php`.
+
+V adminu (detail modulu → **Verze**):
+
+1. obnoví seznam tagů z GitLab API  
+2. stáhne ZIP do `storage/modules/{id}/{version}/`  
+3. aktivuje vybranou verzi do live `modules/…` (upgrade = migrace up, downgrade = `down()` u migrací chybějících v cíli)
+
+Bez `GITLAB_TOKEN` zůstává lokální monorepo flow beze změny. Override cesty: `'repository' => 'gereq/module-listings'` v `module.php`.
 
 ## Permissions
 

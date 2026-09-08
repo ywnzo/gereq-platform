@@ -202,7 +202,11 @@ final class CoreRegistrar
             $router->post('/modules/bulk', [ModuleController::class, 'bulk'])->name('admin.modules.bulk')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/groups/{group}/enable', [ModuleController::class, 'enableGroup'])->name('admin.modules.group.enable')->middleware('auth')->permission('modules.manage');
             $router->get('/modules/{id}', [ModuleController::class, 'show'])->name('admin.modules.show')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/{id}/versions/refresh', [ModuleController::class, 'fetchVersions'])->name('admin.modules.versions.refresh')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/{id}/versions/{version}/fetch', [ModuleController::class, 'fetchVersion'])->name('admin.modules.versions.fetch')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/{id}/versions/{version}/activate', [ModuleController::class, 'activateVersion'])->name('admin.modules.versions.activate')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/enable', [ModuleController::class, 'enable'])->name('admin.modules.enable')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/{id}/pause', [ModuleController::class, 'pause'])->name('admin.modules.pause')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/disable', [ModuleController::class, 'disable'])->name('admin.modules.disable')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/update', [ModuleController::class, 'update'])->name('admin.modules.update')->middleware('auth')->permission('modules.manage');
 

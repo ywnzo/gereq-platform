@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'returns',
     'name' => 'Returns',
+    'icon' => 'undo',
     'version' => '1.0.1',
     'description' => 'module.returns.description',
     'class' => Modules\Returns\ReturnsModule::class,

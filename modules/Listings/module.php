@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'listings',
     'name' => 'Listings',
+    'icon' => 'home',
     'version' => '1.0.2',
     'description' => 'module.listings.description',
     'class' => Modules\Listings\ListingsModule::class,

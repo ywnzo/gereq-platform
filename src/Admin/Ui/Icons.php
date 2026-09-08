@@ -40,6 +40,8 @@ final class Icons
             'chevron-up' => 'expand_less',
             'trash' => 'delete',
             'eye' => 'visibility',
+            'play' => 'play_arrow',
+            'pause' => 'pause',
             'edit' => 'edit',
             'pencil' => 'edit',
             'download' => 'download',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'vitality',
     'name' => 'Vitality',
+    'icon' => 'heart',
     'version' => '1.0.3',
     'description' => 'module.vitality.description',
     'class' => Modules\Vitality\VitalityModule::class,

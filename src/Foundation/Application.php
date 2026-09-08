@@ -193,6 +193,10 @@ final class Application
             ) use ($basePath): ModuleManager {
                 return new ModuleManager($basePath, $em, $permissions, $auditor, $translator, $hooks);
             }),
+            \Gereq\Module\ModuleVersionStore::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
+            \Gereq\Module\ModuleVersionActivator::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
 
             // Autowire with scalar constructor params
             Renderer::class => \DI\autowire()->constructorParameter('basePath', $basePath),

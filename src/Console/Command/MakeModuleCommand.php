@@ -60,6 +60,7 @@ declare(strict_types=1);
 return [
     'id' => '{$id}',
     'name' => '{$name}',
+    'icon' => 'modules',
     'version' => '0.1.0',
     'description' => '',
     'class' => Modules\\\\{$name}\\\\{$name}Module::class,
@@ -70,6 +71,7 @@ return [
     'provides' => [],
     'capabilities' => [],
     'permissions' => [],
+    // 'repository' => 'gereq/module-{$id}',
 ];
 PHP);
 

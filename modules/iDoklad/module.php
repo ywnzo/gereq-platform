@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'idoklad',
     'name' => 'iDoklad',
+    'icon' => 'receipt',
     'version' => '1.2.0',
     'description' => 'module.idoklad.description',
     'class' => Modules\iDoklad\iDokladModule::class,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'shop',
     'name' => 'Shop',
+    'icon' => 'bag',
     'version' => '1.5.0',
     'description' => 'module.shop.description',
     'class' => Modules\Shop\ShopModule::class,

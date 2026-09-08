@@ -28,7 +28,10 @@
                             {% for m in group.modules %}
                                 {% set row = m.row %}
                                 {% if row %}
-                                    <a class="package-row__mod{% if row.enabled %} is-on{% endif %}" href="{{ url('admin.modules.show', {id: m.id}) }}">{{ row.manifest.name }}</a>
+                                    <a class="package-row__mod{% if row.enabled %} is-on{% endif %}" href="{{ url('admin.modules.show', {id: m.id}) }}">
+                                        <span class="package-row__mod-icon" aria-hidden="true">{{ icon(row.manifest.icon ?: 'modules') }}</span>
+                                        {{ row.manifest.name }}
+                                    </a>
                                 {% else %}
                                     <span class="package-row__mod is-missing">{{ m.id }}</span>
                                 {% endif %}

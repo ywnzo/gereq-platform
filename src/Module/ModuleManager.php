@@ -82,6 +82,14 @@ final class ModuleManager
         return $this->discovered;
     }
 
+    /** Forget discovery / installed caches after live tree swap. */
+    public function rediscover(): void
+    {
+        $this->discovered = null;
+        $this->enabledIds = null;
+        $this->installedById = null;
+    }
+
     public function manifest(string $id): ?ModuleManifest
     {
         return $this->discover()[$id] ?? null;
@@ -162,12 +170,16 @@ final class ModuleManager
         $this->hooks?->doAction('module.enabled', $id);
     }
 
-    public function disable(string $id): void
+    public function disable(string $id, array $alsoDisabling = []): void
     {
         $this->requireManifest($id);
+        $also = array_fill_keys($alsoDisabling, true);
 
         foreach ($this->discover() as $other) {
             if (!$this->isEnabled($other->id) || $other->id === $id) {
+                continue;
+            }
+            if (isset($also[$other->id])) {
                 continue;
             }
 
@@ -188,6 +200,126 @@ final class ModuleManager
         $this->enabledIds = null;
         $this->installedById = null;
         $this->auditor->log('module.disabled', 'module', $id);
+    }
+
+    /**
+     * Pořadí aktivace: závislosti dřív.
+     *
+     * @param list<string> $ids
+     * @return list<string>
+     */
+    public function sortForEnable(array $ids): array
+    {
+        return $this->topologicalSort($ids);
+    }
+
+    /**
+     * Pořadí deaktivace: závislé moduly dřív (obrácený topologický sort).
+     *
+     * @param list<string> $ids
+     * @return list<string>
+     */
+    public function sortForDisable(array $ids): array
+    {
+        return array_reverse($this->topologicalSort($ids));
+    }
+
+    /**
+     * Soft-disable (pause): vypne modul, data v DB zůstanou.
+     *
+     * @param list<string> $ids
+     * @return array{ok: int, errors: list<string>}
+     */
+    public function pauseMany(array $ids): array
+    {
+        $ids = $this->expandWithDependents($ids);
+        $ordered = $this->sortForDisable($ids);
+        $ok = 0;
+        $errors = [];
+
+        foreach ($ordered as $id) {
+            try {
+                if (!$this->isEnabled($id)) {
+                    continue;
+                }
+                $this->disable($id, $ids);
+                ++$ok;
+            } catch (\Throwable $e) {
+                $errors[] = $id . ': ' . $e->getMessage();
+            }
+        }
+
+        return ['ok' => $ok, 'errors' => $errors];
+    }
+
+    /**
+     * Doplní aktivní moduly, které na vybraných závisí (tranzitivně).
+     *
+     * @param list<string> $ids
+     * @return list<string>
+     */
+    public function expandWithDependents(array $ids): array
+    {
+        $set = [];
+        foreach ($ids as $id) {
+            if ($id !== '') {
+                $set[$id] = true;
+            }
+        }
+
+        $changed = true;
+        while ($changed) {
+            $changed = false;
+            foreach ($this->discover() as $other) {
+                if (!$this->isEnabled($other->id) || isset($set[$other->id])) {
+                    continue;
+                }
+                foreach (array_keys($other->requires) as $dep) {
+                    if ($dep === 'core' || !isset($set[$dep])) {
+                        continue;
+                    }
+                    $set[$other->id] = true;
+                    $changed = true;
+                    break;
+                }
+            }
+        }
+
+        return array_keys($set);
+    }
+
+    /**
+     * @param list<string> $ids
+     * @return list<string>
+     */
+    private function topologicalSort(array $ids): array
+    {
+        $set = array_fill_keys($ids, true);
+        $visited = [];
+        $stack = [];
+
+        $visit = function (string $id) use (&$visit, &$visited, &$stack, $set): void {
+            if (isset($visited[$id])) {
+                return;
+            }
+            $visited[$id] = true;
+            $manifest = $this->manifest($id);
+            if ($manifest !== null) {
+                foreach (array_keys($manifest->requires) as $dep) {
+                    if ($dep === 'core' || !isset($set[$dep])) {
+                        continue;
+                    }
+                    $visit($dep);
+                }
+            }
+            $stack[] = $id;
+        };
+
+        foreach ($ids as $id) {
+            $visit($id);
+        }
+
+        return $stack;
     }
 
     public function boot(ModuleContext $context): void

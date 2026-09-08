@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'notifications',
     'name' => 'Notifications',
+    'icon' => 'bell',
     'version' => '1.0.0',
     'description' => 'module.notifications.description',
     'class' => Modules\Notifications\NotificationsModule::class,

@@ -3,6 +3,7 @@ declare(strict_types=1);
 return [
     'id' => 'projects',
     'name' => 'Projects',
+    'icon' => 'clipboard',
     'version' => '1.0.0',
     'description' => 'module.projects.description',
     'class' => Modules\Projects\ProjectsModule::class,

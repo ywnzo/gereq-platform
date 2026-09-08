@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'bikeservice',
     'name' => 'BikeService',
+    'icon' => 'bike',
     'version' => '1.11.0',
     'description' => 'module.bikeservice.description',
     'class' => Modules\BikeService\BikeServiceModule::class,

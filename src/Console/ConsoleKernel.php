@@ -15,6 +15,7 @@ use Gereq\Console\Command\MigrateCommand;
 use Gereq\Console\Command\MigrateStatusCommand;
 use Gereq\Console\Command\ModuleDisableCommand;
 use Gereq\Console\Command\ModuleEnableCommand;
+use Gereq\Console\Command\ModulePauseCommand;
 use Gereq\Console\Command\ModuleListCommand;
 use Gereq\Console\Command\QueueWorkCommand;
 use Gereq\Console\Command\SeedDemoCommand;
@@ -60,6 +61,7 @@ final class ConsoleKernel
             InstallCommand::class,
             ModuleListCommand::class,
             ModuleEnableCommand::class,
+            ModulePauseCommand::class,
             ModuleDisableCommand::class,
             MakeModuleCommand::class,
             MakeResourceCommand::class,

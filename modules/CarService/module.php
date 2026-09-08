@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'carservice',
     'name' => 'CarService',
+    'icon' => 'build',
     'version' => '1.13.4',
     'description' => 'module.carservice.description',
     'class' => Modules\CarService\CarServiceModule::class,

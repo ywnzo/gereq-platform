@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'viewings',
     'name' => 'Viewings',
+    'icon' => 'eye',
     'version' => '1.0.1',
     'description' => 'module.viewings.description',
     'class' => Modules\Viewings\ViewingsModule::class,

@@ -3,6 +3,7 @@ declare(strict_types=1);
 return [
     'id' => 'products',
     'name' => 'Products',
+    'icon' => 'package',
     'version' => '1.7.4',
     'description' => 'module.products.description',
     'class' => Modules\Products\ProductsModule::class,

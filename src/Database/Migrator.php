@@ -56,8 +56,14 @@ final class Migrator
         $messages = [];
         $this->ensureMigrationsTable();
 
+        $installed = $this->modules->installedById();
+        $filterEnabled = $installed !== [];
+
         // Nejdřív souborové migrace (mají DEFAULT / backfill), teprve potom SchemaTool.
         foreach ($this->modules->discover() as $manifest) {
+            if ($filterEnabled && !$this->modules->isEnabled($manifest->id)) {
+                continue;
+            }
             $messages = array_merge($messages, $this->migrateModule($manifest->id, syncSchema: false));
         }
 
@@ -65,14 +71,14 @@ final class Migrator
     }
 
     /**
-     * Sync Doctrine entity metadata to the database.
+     * Sync Doctrine entity metadata to the database (core + enabled modules).
      *
      * @return list<string>
      */
     public function syncSchema(): array
     {
         $messages = [];
-        $metadata = $this->em->getMetadataFactory()->getAllMetadata();
+        $metadata = $this->schemaMetadata();
         if ($metadata === []) {
             return $messages;
         }
@@ -126,6 +132,240 @@ final class Migrator
         }
 
         return $messages;
+    }
+
+    /**
+     * Run migration downs + drop entity tables for a module; remove schema_migrations rows.
+     *
+     * @return list<string>
+     */
+    public function rollbackModule(string $moduleId): array
+    {
+        $this->ensureMigrationsTable();
+        $messages = [];
+
+        $manifest = $this->modules->manifest($moduleId);
+        if ($manifest === null) {
+            return $messages;
+        }
+
+        $dir = $manifest->path . '/Database/Migrations';
+        $conn = $this->em->getConnection();
+        $schemaManager = $conn->createSchemaManager();
+
+        if (is_dir($dir)) {
+            $files = glob($dir . '/*.php') ?: [];
+            rsort($files);
+
+            foreach ($files as $file) {
+                $version = $manifest->id . ':' . basename($file, '.php');
+                if (!$this->ran($version)) {
+                    continue;
+                }
+
+                $migration = require $file;
+                if (is_object($migration) && method_exists($migration, 'down')) {
+                    $fromSchema = $schemaManager->introspectSchema();
+                    $toSchema = $schemaManager->introspectSchema();
+                    $migration->down($toSchema);
+
+                    $diff = $schemaManager->createComparator()->compareSchemas($fromSchema, $toSchema);
+                    if (!$diff->isEmpty()) {
+                        $schemaManager->alterSchema($diff);
+                    }
+                }
+
+                $conn->executeStatement('DELETE FROM schema_migrations WHERE version = ?', [$version]);
+                $this->warmRan();
+                unset($this->ranCache[$version]);
+                $messages[] = 'Rollback ' . $version;
+            }
+        }
+
+        $meta = $this->metadataForModule($moduleId);
+        if ($meta !== []) {
+            $tool = new SchemaTool($this->em);
+            $tool->dropSchema($meta);
+            $messages[] = 'Dropped schema (' . count($meta) . ' entities) for ' . $moduleId;
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Rollback ran migrations whose files exist in $currentDir but not in $targetDir (downgrade prep).
+     * Requires each migration to implement down().
+     *
+     * @return list<string>
+     */
+    public function rollbackMigrationsMissingFrom(string $moduleId, string $currentDir, string $targetDir): array
+    {
+        $this->ensureMigrationsTable();
+        $messages = [];
+
+        $currentMigrations = $this->migrationBasenames($currentDir . '/Database/Migrations');
+        $targetMigrations = array_fill_keys(
+            $this->migrationBasenames($targetDir . '/Database/Migrations'),
+            true,
+        );
+
+        $toRollback = [];
+        foreach ($currentMigrations as $basename) {
+            if (isset($targetMigrations[$basename])) {
+                continue;
+            }
+            $version = $moduleId . ':' . $basename;
+            if ($this->ran($version)) {
+                $toRollback[] = $basename;
+            }
+        }
+
+        rsort($toRollback);
+        $conn = $this->em->getConnection();
+        $schemaManager = $conn->createSchemaManager();
+
+        foreach ($toRollback as $basename) {
+            $file = $currentDir . '/Database/Migrations/' . $basename . '.php';
+            $version = $moduleId . ':' . $basename;
+            if (!is_file($file)) {
+                throw new \RuntimeException('Chybí migrační soubor pro rollback: ' . $basename);
+            }
+
+            $migration = require $file;
+            if (!is_object($migration) || !method_exists($migration, 'down')) {
+                throw new \RuntimeException(
+                    'Downgrade vyžaduje metodu down() v migraci ' . $basename . '.',
+                );
+            }
+
+            $fromSchema = $schemaManager->introspectSchema();
+            $toSchema = $schemaManager->introspectSchema();
+            $migration->down($toSchema);
+
+            $diff = $schemaManager->createComparator()->compareSchemas($fromSchema, $toSchema);
+            if (!$diff->isEmpty()) {
+                $schemaManager->alterSchema($diff);
+            }
+
+            $conn->executeStatement('DELETE FROM schema_migrations WHERE version = ?', [$version]);
+            $this->warmRan();
+            unset($this->ranCache[$version]);
+            $messages[] = 'Rollback ' . $version;
+        }
+
+        return $messages;
+    }
+
+    /** @return list<string> */
+    private function migrationBasenames(string $dir): array
+    {
+        if (!is_dir($dir)) {
+            return [];
+        }
+        $out = [];
+        foreach (glob($dir . '/*.php') ?: [] as $file) {
+            $out[] = basename($file, '.php');
+        }
+        sort($out);
+
+        return $out;
+    }
+
+    /**
+     * @return list<\Doctrine\ORM\Mapping\ClassMetadata<object>>
+     */
+    public function metadataForModule(string $moduleId): array
+    {
+        $manifest = $this->modules->manifest($moduleId);
+        if ($manifest === null) {
+            return [];
+        }
+
+        $root = realpath($manifest->path);
+        if ($root === false) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($this->em->getMetadataFactory()->getAllMetadata() as $meta) {
+            try {
+                $file = (new \ReflectionClass($meta->getName()))->getFileName();
+            } catch (\Throwable) {
+                continue;
+            }
+            if (!is_string($file) || $file === '') {
+                continue;
+            }
+            $real = realpath($file);
+            if ($real === false) {
+                continue;
+            }
+            if (str_starts_with($real, $root . DIRECTORY_SEPARATOR) || $real === $root) {
+                $out[] = $meta;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Metadata managed by SchemaTool: core (`src/`) + enabled modules.
+     * When no modules are installed yet (fresh migrate before seed), include all modules.
+     *
+     * @return list<\Doctrine\ORM\Mapping\ClassMetadata<object>>
+     */
+    private function schemaMetadata(): array
+    {
+        $all = $this->em->getMetadataFactory()->getAllMetadata();
+        $installed = $this->modules->installedById();
+        if ($installed === []) {
+            return $all;
+        }
+
+        $enabled = array_fill_keys($this->modules->enabledIds(), true);
+        $allowedRoots = [];
+        foreach ($this->modules->discover() as $manifest) {
+            if (!isset($enabled[$manifest->id])) {
+                continue;
+            }
+            $real = realpath($manifest->path);
+            if ($real !== false) {
+                $allowedRoots[] = $real;
+            }
+        }
+
+        // Core entities live under src/
+        $coreHint = DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
+
+        $out = [];
+        foreach ($all as $meta) {
+            try {
+                $file = (new \ReflectionClass($meta->getName()))->getFileName();
+            } catch (\Throwable) {
+                continue;
+            }
+            if (!is_string($file) || $file === '') {
+                continue;
+            }
+            $real = realpath($file);
+            if ($real === false) {
+                continue;
+            }
+
+            if (str_contains($real, $coreHint)) {
+                $out[] = $meta;
+                continue;
+            }
+
+            foreach ($allowedRoots as $root) {
+                if (str_starts_with($real, $root . DIRECTORY_SEPARATOR) || $real === $root) {
+                    $out[] = $meta;
+                    continue 2;
+                }
+            }
+        }
+
+        return $out;
     }
 
     /**

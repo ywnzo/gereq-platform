@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'newsletter',
     'name' => 'Newsletter',
+    'icon' => 'mail',
     'version' => '1.0.0',
     'description' => 'module.newsletter.description',
     'class' => Modules\Newsletter\NewsletterModule::class,

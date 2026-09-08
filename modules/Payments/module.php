@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'payments',
     'name' => 'Payments',
+    'icon' => 'credit-card',
     'version' => '1.3.0',
     'description' => 'module.payments.description',
     'class' => Modules\Payments\PaymentsModule::class,

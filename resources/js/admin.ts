@@ -34,8 +34,38 @@ declare global {
         __GEREQ_CSRF__: string;
         __GEREQ_SEARCH_URL__?: string;
         Alpine: typeof Alpine;
+        gereqConfirmModuleDisable?: (form: HTMLFormElement, disableMsg: string, mediaMsg: string) => boolean;
+        gereqConfirmModuleVersion?: (
+            form: HTMLFormElement,
+            isDowngrade: boolean,
+            activateMsg: string,
+            downgradeMsg: string,
+        ) => boolean;
     }
 }
+
+window.gereqConfirmModuleDisable = (form, disableMsg, mediaMsg) => {
+    if (!window.confirm(disableMsg)) {
+        return false;
+    }
+    const purge = window.confirm(mediaMsg);
+    const input = form.querySelector<HTMLInputElement>('input[name="purge_media"]');
+    if (input) {
+        input.value = purge ? '1' : '0';
+    }
+    return true;
+};
+
+window.gereqConfirmModuleVersion = (form, isDowngrade, activateMsg, downgradeMsg) => {
+    if (!window.confirm(isDowngrade ? downgradeMsg : activateMsg)) {
+        return false;
+    }
+    const input = form.querySelector<HTMLInputElement>('input[name="confirm_downgrade"]');
+    if (input) {
+        input.value = isDowngrade ? '1' : '0';
+    }
+    return true;
+};
 
 Alpine.data('gereqAdmin', () => ({
     sidebarOpen: false,

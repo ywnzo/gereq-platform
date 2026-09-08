@@ -124,6 +124,7 @@ final class ImportSqliteCommand extends Command
                 $dstColumns = [];
                 $dstBool = [];
                 $dstNotNull = [];
+                $dstHasDefault = [];
                 $dstByLower = [];
                 foreach ($conn->createSchemaManager()->listTableColumns($table) as $column) {
                     $name = $column->getName();
@@ -135,16 +136,53 @@ final class ImportSqliteCommand extends Command
                     if ($column->getNotnull()) {
                         $dstNotNull[$name] = true;
                     }
+                    if ($column->getDefault() !== null) {
+                        $dstHasDefault[$name] = true;
+                    }
                 }
 
-                /** @var list<array{src: string, dst: string}> $mapped */
+                $srcByLower = [];
+                foreach ($srcColumns as $srcCol) {
+                    $srcByLower[strtolower($srcCol)] = $srcCol;
+                }
+
+                /** @var list<array{src?: string, const?: mixed, dst: string}> $mapped */
                 $mapped = [];
+                $mappedDst = [];
                 foreach ($srcColumns as $srcCol) {
                     $dstCol = $dstByLower[strtolower($srcCol)] ?? null;
                     if ($dstCol !== null) {
                         $mapped[] = ['src' => $srcCol, 'dst' => $dstCol];
+                        $mappedDst[strtolower($dstCol)] = true;
                     }
                 }
+
+                // Legacy SQLite: product_option_groups.product_id → scope_id + scope_type=product
+                if (
+                    isset($srcByLower['product_id'], $dstByLower['scope_id'])
+                    && !isset($mappedDst['scope_id'])
+                    && !isset($dstByLower['product_id'])
+                ) {
+                    $mapped[] = ['src' => $srcByLower['product_id'], 'dst' => $dstByLower['scope_id']];
+                    $mappedDst['scope_id'] = true;
+                    if (isset($dstByLower['scope_type']) && !isset($mappedDst['scope_type'])) {
+                        $mapped[] = ['const' => 'product', 'dst' => $dstByLower['scope_type']];
+                        $mappedDst['scope_type'] = true;
+                    }
+                }
+
+                // Chybějící NOT NULL bez defaultu (novější schéma než SQLite dump)
+                foreach ($dstNotNull as $dstCol => $_) {
+                    if (isset($mappedDst[strtolower($dstCol)]) || isset($dstHasDefault[$dstCol])) {
+                        continue;
+                    }
+                    $asBool = ($boolCols[$table][$dstCol] ?? false)
+                        || ($boolCols[strtolower($table)][$dstCol] ?? false)
+                        || ($dstBool[$dstCol] ?? false);
+                    $mapped[] = ['const' => $asBool ? false : '', 'dst' => $dstCol];
+                    $mappedDst[strtolower($dstCol)] = true;
+                }
+
                 if ($mapped === []) {
                     $output->writeln(sprintf('  %s: skip (žádné společné sloupce)', $table));
                     continue;
@@ -168,8 +206,13 @@ final class ImportSqliteCommand extends Command
                                 $asBool = ($boolCols[$table][$m['dst']] ?? false)
                                     || ($boolCols[strtolower($table)][$m['dst']] ?? false)
                                     || ($dstBool[$m['dst']] ?? false);
+                                if (array_key_exists('const', $m)) {
+                                    $raw = $m['const'];
+                                } else {
+                                    $raw = $row[$m['src'] ?? ''] ?? null;
+                                }
                                 $values[] = $this->castValue(
-                                    $row[$m['src']] ?? null,
+                                    $raw,
                                     $asBool,
                                     isset($dstNotNull[$m['dst']]),
                                 );

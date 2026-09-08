@@ -63,9 +63,11 @@
             data-actions-default="1"
             data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
             data-update-ids="{{ updateIds|json_encode|e('html_attr') }}"
+            data-confirm-disable="{{ 'admin.modules.bulk.confirm_disable'|trans|e('html_attr') }}"
+            data-confirm-disable-media="{{ 'admin.modules.bulk.confirm_disable_media'|trans|e('html_attr') }}"
         >
             <div class="toolbar--table">
-                <form class="toolbar" method="get" @submit.prevent>
+                <div class="toolbar">
                     <input
                         class="input"
                         type="search"
@@ -81,21 +83,32 @@
                         <option value="update">{{ 'admin.modules.update_available'|trans }}</option>
                         <option value="warn">{{ 'common.warnings'|trans }}</option>
                     </select>
-                </form>
-                <div class="toolbar__toggles">
                     {% if stats.updates > 0 %}
-                        <form method="post" action="{{ url('admin.modules.bulk') }}" title="{{ 'admin.modules.update_all'|trans }}">
+                        <form
+                            method="post"
+                            action="{{ url('admin.modules.bulk') }}"
+                            title="{{ 'admin.modules.update_all'|trans }}"
+                        >
                             {{ csrf_field()|raw }}
                             <input type="hidden" name="action" value="update_outdated">
                             <button
                                 type="submit"
                                 class="icon-btn"
+                                :class="refreshBtnClass"
+                                :aria-busy="busyAttr"
+                                :disabled="busy"
                                 aria-label="{{ 'admin.modules.update_all'|trans }}"
                                 onclick="return confirm('{{ 'admin.modules.bulk.confirm_update_all'|trans({'%count%': stats.updates})|e('js') }}')"
                             >{{ icon('refresh') }}</button>
                         </form>
                     {% else %}
-                        <span class="icon-btn" aria-disabled="true" title="{{ 'admin.modules.update_all_none'|trans }}">{{ icon('refresh') }}</span>
+                        <button
+                            type="button"
+                            class="icon-btn"
+                            disabled
+                            aria-label="{{ 'admin.modules.update_all_none'|trans }}"
+                            title="{{ 'admin.modules.update_all_none'|trans }}"
+                        >{{ icon('refresh') }}</button>
                     {% endif %}
                 </div>
             </div>
@@ -104,10 +117,12 @@
                 class="bulk-bar"
                 method="post"
                 action="{{ url('admin.modules.bulk') }}"
-                x-show="selectedCount > 0"
-                x-cloak
+                :class="selectedCount > 0 ? 'is-active' : 'is-idle'"
+                :aria-hidden="selectedCount > 0 ? 'false' : 'true'"
+                @submit="confirmBulk"
             >
                 {{ csrf_field()|raw }}
+                <input type="hidden" name="purge_media" value="0" x-ref="purgeMedia">
                 <template x-for="id in selected" :key="id">
                     <input type="hidden" name="ids[]" :value="id">
                 </template>
@@ -116,13 +131,23 @@
                     <span>{{ 'admin.modules.bulk.selected'|trans }}</span>
                     <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'admin.modules.bulk.clear'|trans }}</button>
                 </div>
-                <div class="bulk-bar__actions">
-                    <select class="input" name="action" x-model="bulkAction" required>
-                        <option value="">{{ 'admin.modules.bulk.choose'|trans }}</option>
-                        <option value="update">{{ 'admin.modules.bulk.action.update'|trans }}</option>
-                        <option value="enable">{{ 'admin.modules.bulk.action.enable'|trans }}</option>
-                        <option value="disable">{{ 'admin.modules.bulk.action.disable'|trans }}</option>
-                    </select>
+                <div class="bulk-bar__actions" @change="syncBulkAction($event)">
+                    {% include 'ui/select.html.twig' with {
+                        name: 'action',
+                        id: 'bulk-module-action',
+                        label: '',
+                        required: true,
+                        placeholder: 'admin.modules.bulk.choose'|trans,
+                        value: '',
+                        extra: 'bulk-bar__select-field',
+                        options: [
+                            { value: '', label: 'admin.modules.bulk.choose'|trans },
+                            { value: 'update', label: 'admin.modules.bulk.action.update'|trans },
+                            { value: 'enable', label: 'admin.modules.bulk.action.enable'|trans },
+                            { value: 'pause', label: 'admin.modules.bulk.action.pause'|trans },
+                            { value: 'disable', label: 'admin.modules.bulk.action.disable'|trans },
+                        ],
+                    } %}
                     <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'admin.modules.bulk.apply'|trans }}</button>
                 </div>
             </form>
@@ -136,7 +161,7 @@
                                     <input
                                         type="checkbox"
                                         x-ref="selectAll"
-                                        @click.prevent="toggleAll"
+                                        @change="toggleAll"
                                         :checked="allSelected"
                                     >
                                     <span class="sr-only">{{ 'admin.modules.bulk.select_all'|trans }}</span>
@@ -164,28 +189,31 @@
                                 data-warn="{{ (row.enabled and (row.health_issues or row.missing is not empty) or row.update_available) ? '1' : '0' }}"
                                 data-update="{{ row.update_available ? '1' : '0' }}"
                                 data-search="{{ searchBlob|e('html_attr') }}"
-                                :class="isSelected('{{ manifest.id }}') ? 'is-selected' : ''"
+                                :class="isSelected($el.dataset.id) ? 'is-selected' : ''"
                             >
                                 <td class="table__check">
                                     <label class="table-check">
                                         <input
                                             type="checkbox"
                                             value="{{ manifest.id }}"
-                                            @click.prevent="toggleId('{{ manifest.id }}')"
-                                            :checked="isSelected('{{ manifest.id }}')"
+                                            @change="toggleFromEvent($event)"
+                                            :checked="isSelected($el.value)"
                                         >
                                         <span class="sr-only">{{ manifest.name }}</span>
                                     </label>
                                 </td>
                                 <td>
-                                    <div class="table__title">
-                                        <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
-                                        <span class="table__meta">
-                                            <code>{{ manifest.id }}</code> · v{{ manifest.version }}
-                                            {% if manifest.kind == 'integration' %}
-                                                · <span class="badge badge--info">{{ 'admin.modules.kind.integration'|trans }}</span>
-                                            {% endif %}
-                                        </span>
+                                    <div class="table__title table__title--with-icon">
+                                        <span class="module-row__icon" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
+                                        <div class="table__title-text">
+                                            <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
+                                            <span class="table__meta">
+                                                <code>{{ manifest.id }}</code> · v{{ manifest.version }}
+                                                {% if manifest.kind == 'integration' %}
+                                                    · <span class="badge badge--info">{{ 'admin.modules.kind.integration'|trans }}</span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="is-mute">{{ (manifest.description ?: 'common.no_description')|trans }}</td>
@@ -222,28 +250,63 @@
                                         {% else %}
                                             {% include 'ui/row_action.html.twig' with { placeholder: true } %}
                                         {% endif %}
-                                        {% include 'ui/row_action.html.twig' with { href: url('admin.modules.show', {id: manifest.id}), label: 'common.detail'|trans, icon: 'eye' } %}
                                         {% if row.update_available %}
                                             <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
                                                 {{ csrf_field()|raw }}
                                                 <input type="hidden" name="return" value="index">
-                                                <button type="submit">{{ 'admin.modules.update'|trans }}</button>
+                                                <button
+                                                    type="submit"
+                                                    class="table__action-btn table__action-btn--primary"
+                                                    title="{{ 'admin.modules.update'|trans }}"
+                                                    aria-label="{{ 'admin.modules.update'|trans }}"
+                                                >{{ icon('refresh') }}</button>
                                             </form>
                                         {% else %}
-                                            <span class="table__action-text-spacer" aria-hidden="true"></span>
+                                            {% include 'ui/row_action.html.twig' with { placeholder: true } %}
                                         {% endif %}
                                         {% if row.enabled %}
+                                            <button
+                                                type="button"
+                                                class="table__action-btn table__action-btn--success"
+                                                disabled
+                                                title="{{ 'admin.modules.running'|trans }}"
+                                                aria-label="{{ 'admin.modules.running'|trans }}"
+                                            >{{ icon('play') }}</button>
+                                            <form method="post" action="{{ url('admin.modules.pause', {id: manifest.id}) }}">
+                                                {{ csrf_field()|raw }}
+                                                <input type="hidden" name="return" value="index">
+                                                <button
+                                                    type="submit"
+                                                    class="table__action-btn table__action-btn--warn"
+                                                    title="{{ 'admin.modules.pause_hint'|trans }}"
+                                                    aria-label="{{ 'common.pause'|trans }}"
+                                                >{{ icon('pause') }}</button>
+                                            </form>
                                             <form method="post" action="{{ url('admin.modules.disable', {id: manifest.id}) }}">
                                                 {{ csrf_field()|raw }}
                                                 <input type="hidden" name="return" value="index">
-                                                <button type="submit">{{ 'common.deactivate'|trans }}</button>
+                                                <input type="hidden" name="purge_media" value="0">
+                                                <button
+                                                    type="submit"
+                                                    class="table__action-btn table__action-btn--danger"
+                                                    title="{{ 'common.deactivate'|trans }}"
+                                                    aria-label="{{ 'common.deactivate'|trans }}"
+                                                    onclick="return window.gereqConfirmModuleDisable(this.form, {{ 'admin.modules.confirm.disable'|trans|json_encode|raw }}, {{ 'admin.modules.confirm.disable_media'|trans|json_encode|raw }})"
+                                                >{{ icon('trash') }}</button>
                                             </form>
                                         {% else %}
                                             <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
                                                 {{ csrf_field()|raw }}
                                                 <input type="hidden" name="return" value="index">
-                                                <button type="submit">{{ 'common.activate'|trans }}</button>
+                                                <button
+                                                    type="submit"
+                                                    class="table__action-btn table__action-btn--success"
+                                                    title="{{ 'common.activate'|trans }}"
+                                                    aria-label="{{ 'common.activate'|trans }}"
+                                                >{{ icon('play') }}</button>
                                             </form>
+                                            {% include 'ui/row_action.html.twig' with { placeholder: true } %}
+                                            {% include 'ui/row_action.html.twig' with { placeholder: true } %}
                                         {% endif %}
                                     {% endblock %}
                                 {% endembed %}

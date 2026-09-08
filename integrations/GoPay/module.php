@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'gopay',
     'name' => 'GoPay',
+    'icon' => 'credit-card',
     'version' => '1.0.0',
     'description' => 'module.gopay.description',
     'class' => Integrations\GoPay\GoPayModule::class,

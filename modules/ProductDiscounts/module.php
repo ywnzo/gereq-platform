@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'product_discounts',
     'name' => 'Product Discounts',
+    'icon' => 'tag',
     'version' => '1.1.5',
     'description' => 'module.product_discounts.description',
     'class' => Modules\ProductDiscounts\ProductDiscountsModule::class,

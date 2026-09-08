@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'fleet',
     'name' => 'Fleet',
+    'icon' => 'car',
     'version' => '1.7.6',
     'description' => 'module.fleet.description',
     'class' => Modules\Fleet\FleetModule::class,

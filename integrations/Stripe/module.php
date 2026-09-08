@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'stripe',
     'name' => 'Stripe',
+    'icon' => 'credit-card',
     'version' => '1.0.0',
     'description' => 'module.stripe.description',
     'class' => Integrations\Stripe\StripeModule::class,

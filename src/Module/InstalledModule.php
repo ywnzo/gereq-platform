@@ -23,12 +23,16 @@ class InstalledModule
     #[ORM\Column(name: 'enabled_at', nullable: true)]
     private ?\DateTimeImmutable $enabledAt = null;
 
-    public function __construct(string $id, string $version, bool $enabled = false)
+    #[ORM\Column(length: 16, options: ['default' => 'local'])]
+    private string $source = 'local';
+
+    public function __construct(string $id, string $version, bool $enabled = false, string $source = 'local')
     {
         $this->id = $id;
         $this->version = $version;
         $this->enabled = $enabled;
         $this->enabledAt = $enabled ? new \DateTimeImmutable() : null;
+        $this->source = $source === 'gitlab' ? 'gitlab' : 'local';
     }
 
     public function id(): string
@@ -66,5 +70,15 @@ class InstalledModule
     public function setVersion(string $version): void
     {
         $this->version = $version;
+    }
+
+    public function source(): string
+    {
+        return $this->source;
+    }
+
+    public function setSource(string $source): void
+    {
+        $this->source = $source === 'gitlab' ? 'gitlab' : 'local';
     }
 }

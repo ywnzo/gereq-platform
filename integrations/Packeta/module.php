@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'packeta',
     'name' => 'Packeta',
+    'icon' => 'truck',
     'version' => '1.0.0',
     'description' => 'module.packeta.description',
     'class' => Integrations\Packeta\PacketaModule::class,

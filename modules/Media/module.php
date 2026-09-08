@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'media',
     'name' => 'Media',
+    'icon' => 'image',
     'version' => '1.2.2',
     'description' => 'module.media.description',
     'class' => Modules\Media\MediaModule::class,

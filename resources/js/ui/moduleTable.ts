@@ -9,6 +9,7 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         pageIds: [] as string[],
         updateIds: [] as string[],
         bulkAction: '',
+        busy: false,
 
         init() {
             const el = this.$el as HTMLElement;
@@ -28,6 +29,26 @@ export function registerModuleTable(alpine: typeof Alpine): void {
             this.$watch('status', () => this.apply());
             this.$watch('selected', () => this.syncSelectAll());
             this.$nextTick(() => this.syncSelectAll());
+
+            el.addEventListener('submit', (event: Event) => {
+                queueMicrotask(() => {
+                    if (!event.defaultPrevented) {
+                        this.markBusy();
+                    }
+                });
+            });
+        },
+
+        markBusy() {
+            this.busy = true;
+        },
+
+        get refreshBtnClass(): string {
+            return this.busy ? 'is-busy' : '';
+        },
+
+        get busyAttr(): string {
+            return this.busy ? 'true' : 'false';
         },
 
         get selectedCount(): number {
@@ -51,7 +72,7 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         },
 
         isSelected(id: string): boolean {
-            return this.selected.includes(id);
+            return id !== '' && this.selected.includes(id);
         },
 
         /** Visible row ids; falls back to pageIds if the DOM query is empty. */
@@ -72,9 +93,31 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         },
 
         toggleId(id: string) {
+            if (id === '') {
+                return;
+            }
             this.selected = this.isSelected(id)
                 ? this.selected.filter((item: string) => item !== id)
                 : [...this.selected, id];
+        },
+
+        /** Sync selection from the checkbox that actually changed (avoids off-by-one). */
+        toggleFromEvent(event: Event) {
+            const input = event.target;
+            if (!(input instanceof HTMLInputElement) || input.type !== 'checkbox') {
+                return;
+            }
+            const id = input.value;
+            if (id === '') {
+                return;
+            }
+            if (input.checked) {
+                if (!this.isSelected(id)) {
+                    this.selected = [...this.selected, id];
+                }
+            } else if (this.isSelected(id)) {
+                this.selected = this.selected.filter((item: string) => item !== id);
+            }
         },
 
         toggleAll() {
@@ -90,6 +133,33 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         clearSelection() {
             this.selected = [];
             this.bulkAction = '';
+        },
+
+        syncBulkAction(event: Event) {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement) || target.name !== 'action') {
+                return;
+            }
+            this.bulkAction = target.value;
+        },
+
+        confirmBulk(event: Event) {
+            if (this.bulkAction !== 'disable') {
+                return;
+            }
+            const root = this.$el as HTMLElement;
+            const tpl = root.dataset.confirmDisable || '';
+            const mediaTpl = root.dataset.confirmDisableMedia || '';
+            const msg = tpl.replace('%count%', String(this.selected.length));
+            if (!window.confirm(msg)) {
+                event.preventDefault();
+                return;
+            }
+            const purge = window.confirm(mediaTpl);
+            const input = this.$refs.purgeMedia as HTMLInputElement | undefined;
+            if (input) {
+                input.value = purge ? '1' : '0';
+            }
         },
 
         apply() {

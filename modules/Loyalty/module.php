@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'id' => 'loyalty',
     'name' => 'Loyalty',
+    'icon' => 'gift',
     'version' => '1.0.1',
     'description' => 'module.loyalty.description',
     'class' => Modules\Loyalty\LoyaltyModule::class,
