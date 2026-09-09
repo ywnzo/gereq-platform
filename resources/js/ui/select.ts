@@ -35,6 +35,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             const selected = root.querySelector('[data-selected="1"]') as HTMLElement | null;
             this.label = selected?.dataset.label || root.dataset.placeholder || 'Vyberte';
             this.tone = selected?.dataset.tone || '';
+            syncSelectIcon(root, selected);
 
             // Nativní click — Alpine CSP @click na option/trigger je nespolehlivý.
             const onRootClick = (event: MouseEvent) => {
@@ -222,6 +223,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             input.value = next;
             this.label = option.dataset.label || '';
             this.tone = option.dataset.tone || '';
+            syncSelectIcon(root, option);
             this.open = false;
             this.query = '';
             const search = root.querySelector<HTMLInputElement>('.g-select__search-input');
@@ -256,6 +258,28 @@ export function registerSelect(alpine: typeof Alpine): void {
 
 function rootUnselect(root: HTMLElement): void {
     root.querySelectorAll('.is-selected').forEach((node) => node.classList.remove('is-selected'));
+}
+
+function syncSelectIcon(root: HTMLElement, option: HTMLElement | null): void {
+    const slot = root.querySelector<HTMLElement>('.g-select__icon-slot');
+    const dot = root.querySelector<HTMLElement>('.g-select__dot');
+    if (!slot) {
+        return;
+    }
+    const iconEl = option?.querySelector('.g-select__icon');
+    if (iconEl) {
+        slot.innerHTML = iconEl.innerHTML;
+        slot.hidden = false;
+        if (dot) {
+            dot.hidden = true;
+        }
+        return;
+    }
+    slot.innerHTML = '';
+    slot.hidden = true;
+    if (dot) {
+        dot.hidden = false;
+    }
 }
 
 /** „66KW“ ≈ „66 kW“, tečky u 1.6 necháváme */

@@ -10,6 +10,10 @@
 {% if variant is not defined or variant is same as('') %}
     {% if icon_name in ['eye', 'visibility', 'detail'] %}
         {% set variant = 'primary' %}
+    {% elseif icon_name in ['external', 'open_in_new', 'preview'] %}
+        {% set variant = 'ghost' %}
+    {% elseif icon_name in ['layout', 'dashboard'] %}
+        {% set variant = 'primary' %}
     {% elseif icon_name in ['edit', 'pencil', 'play'] %}
         {% set variant = 'success' %}
     {% elseif icon_name in ['pause'] %}

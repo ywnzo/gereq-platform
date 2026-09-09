@@ -43,6 +43,8 @@ final class DemoSeeder
         $this->seedCoupons($log);
         $this->seedNewsletter($log);
         $this->seedLoyaltyFeedsBundles($log);
+        // CMS one-page (home) — vždy obnovit obsah landing sekcí
+        $this->ensureCmsHomeOnePage($log);
 
         if ($this->alreadySeeded()) {
             $this->seedReviewsAndReturnsFromExisting($log);
@@ -1316,35 +1318,34 @@ SVG;
             $home = new \Modules\Cms\Domain\Page('home', 'Úvodní stránka');
             $home->setStatus('published');
             $home->setTemplate('landing');
-            $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů.');
+            $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů v Praze a Brně.');
             $this->em->persist($home);
             $this->em->flush();
-            $this->seedHomeBlocks($home->id());
+            $this->replaceHomeBlocks($home->id());
         } elseif ($home->slug() === 'uvod') {
             $home->setSlug('home');
             $home->setTitle('Úvodní stránka');
             $home->setTemplate('landing');
-            $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů.');
+            $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů v Praze a Brně.');
             $this->em->flush();
+            $this->replaceHomeBlocks($home->id());
+        } else {
+            $home->setTemplate('landing');
+            if ($home->metaDescription() === null || $home->metaDescription() === '') {
+                $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů v Praze a Brně.');
+            }
+            $this->em->flush();
+            // Bloky home už řeší ensureCmsHomeOnePage() při každém seed:demo.
         }
 
         $about = $pageRepo->findOneBy(['slug' => 'o-nas']);
         if ($about === null) {
             $about = new \Modules\Cms\Domain\Page('o-nas', 'O nás');
             $about->setStatus('published');
-            $about->setMetaDescription('Kdo jsme a jak pracujeme.');
+            $about->setMetaDescription('Kdo jsme a jak pracujeme s klienty v Praze a Brně.');
             $this->em->persist($about);
             $this->em->flush();
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'heading', 0, [
-                'text' => 'RealEstates',
-                'level' => 2,
-            ]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'text', 1, [
-                'body' => '<p>Jsme realitní kancelář zaměřená na Prahu a Brno. Každou nabídku vede konkrétní makléř, kterého klient kontaktuje přímo.</p>',
-            ]));
-            $this->em->persist(new \Modules\Cms\Domain\PageBlock($about->id(), 'html', 2, [
-                'html' => '<ul><li>Prodej a pronájem</li><li>Odhad ceny</li><li>Prohlídky bez zbytečné administrativy</li></ul>',
-            ]));
+            $this->seedAboutBlocks($about->id());
         }
 
         $draft = $pageRepo->findOneBy(['slug' => 'novinky-draft']);
@@ -1503,32 +1504,78 @@ SVG;
 
     private function seedHomeBlocks(string $pageId): void
     {
+        $this->replaceHomeBlocks($pageId);
+    }
+
+    /** @param list<string> $log */
+    private function ensureCmsHomeOnePage(array &$log): void
+    {
+        if (!class_exists(\Modules\Cms\Domain\Page::class)) {
+            return;
+        }
+
+        $pageRepo = $this->em->getRepository(\Modules\Cms\Domain\Page::class);
+        $home = $pageRepo->findOneBy(['slug' => 'home']) ?? $pageRepo->findOneBy(['slug' => 'uvod']);
+        if ($home === null) {
+            $home = new \Modules\Cms\Domain\Page('home', 'Úvodní stránka');
+            $home->setStatus('published');
+            $home->setTemplate('landing');
+            $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů v Praze a Brně.');
+            $this->em->persist($home);
+            $this->em->flush();
+        } else {
+            if ($home->slug() === 'uvod') {
+                $home->setSlug('home');
+            }
+            $home->setTitle('Úvodní stránka');
+            $home->setTemplate('landing');
+            $home->setStatus('published');
+            if ($home->metaDescription() === null || trim((string) $home->metaDescription()) === '') {
+                $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů v Praze a Brně.');
+            }
+            $this->em->flush();
+        }
+
+        $this->replaceHomeBlocks($home->id());
+        $this->syncHomePublicSnapshot($home);
+        $log[] = 'CMS: úvodní one-page (home, template=landing) obnoven.';
+    }
+
+    private function replaceHomeBlocks(string $pageId): void
+    {
+        foreach ($this->em->getRepository(\Modules\Cms\Domain\PageBlock::class)->findBy(['pageId' => $pageId]) as $block) {
+            $this->em->remove($block);
+        }
+        $this->em->flush();
+
         $blocks = [
             ['divider', 0, ['style' => 'hero']],
             ['text', 1, ['body' => 'Realitní kancelář · Praha a Brno']],
             ['heading', 2, ['text' => 'Najděte byt nebo dům, který sedne', 'level' => 1]],
             ['text', 3, [
-                'body' => 'U každé nabídky najdete cenu, metráž, energetickou třídu i kontakt na makléře, který ji vede.',
+                'body' => 'U každé nabídky najdete cenu, metráž, energetickou třídu i kontakt na makléře, který ji vede. Filtrujte podle města, typu nemovitosti a rozpočtu — bez registrace.',
             ]],
             ['image', 4, [
                 'url' => 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1920&q=80',
-                'alt' => 'Moderní bydlení',
+                'alt' => 'Světlý obývací pokoj s výhledem',
             ]],
             ['divider', 5, ['style' => 'locations']],
-            ['heading', 6, ['text' => 'Lokality', 'level' => 2]],
-            ['text', 7, ['body' => 'Vyberte město a zobrazte dostupné nabídky.']],
+            ['heading', 6, ['text' => 'Lokality, kde působíme', 'level' => 2]],
+            ['text', 7, [
+                'body' => 'Vyberte město a rovnou zobrazte dostupné nabídky. Počty i fotky bereme z aktuálního katalogu.',
+            ]],
             ['divider', 8, ['style' => 'listings']],
             ['heading', 9, ['text' => 'Aktuální nabídky', 'level' => 2]],
             ['divider', 10, ['style' => 'how']],
             ['heading', 11, ['text' => 'Jak to funguje', 'level' => 2]],
-            ['text', 12, ['body' => 'Od hledání k prohlídce ve třech krocích.']],
+            ['text', 12, ['body' => 'Od prvního filtru k prohlídce ve třech jasných krocích.']],
             ['heading', 13, ['text' => 'Vyfiltrujte nabídky', 'level' => 3]],
             ['text', 14, [
-                'body' => 'Zadejte lokalitu, cenové rozpětí, dispozici a plochu. Filtry fungují bez registrace.',
+                'body' => 'Zadejte lokalitu, cenové rozpětí, dispozici a plochu. Filtry fungují okamžitě a bez registrace.',
             ]],
             ['heading', 15, ['text' => 'Kontaktujte makléře', 'level' => 3]],
             ['text', 16, [
-                'body' => 'U každé nabídky je uvedený makléř, který ji vede, včetně telefonu a e-mailu.',
+                'body' => 'U každé nabídky je uvedený makléř, který ji vede — včetně telefonu a e-mailu. Ptáte se přímo u zdroje.',
             ]],
             ['heading', 17, ['text' => 'Domluvte si prohlídku', 'level' => 3]],
             ['text', 18, [
@@ -1537,7 +1584,7 @@ SVG;
             ['divider', 19, ['style' => 'cta']],
             ['heading', 20, ['text' => 'Nenašli jste, co hledáte?', 'level' => 2]],
             ['text', 21, [
-                'body' => 'Napište nám, co potřebujete. Projdeme i nabídky, které zatím nejsou zveřejněné.',
+                'body' => 'Napište nám, co potřebujete. Projdeme i nabídky, které zatím nejsou zveřejněné, a ozveme se s konkrétním tipem.',
             ]],
             ['cta', 22, ['label' => 'Napsat e-mail', 'url' => 'mailto:info@realestates.cz', 'style' => 'primary']],
             ['cta', 23, ['label' => '777 000 000', 'url' => 'tel:+420777000000', 'style' => 'ghost']],
@@ -1546,6 +1593,52 @@ SVG;
         foreach ($blocks as [$type, $order, $payload]) {
             $this->em->persist(new \Modules\Cms\Domain\PageBlock($pageId, $type, $order, $payload));
         }
+        $this->em->flush();
+    }
+
+    private function seedAboutBlocks(string $pageId): void
+    {
+        $blocks = [
+            ['heading', 0, ['text' => 'RealEstates', 'level' => 2]],
+            ['text', 1, [
+                'body' => '<p>Jsme realitní kancelář zaměřená na Prahu a Brno. Každou nabídku vede konkrétní makléř, kterého klient kontaktuje přímo — bez call centra a zbytečných přeposílání.</p>',
+            ]],
+            ['heading', 2, ['text' => 'Co nabízíme', 'level' => 2]],
+            ['html', 3, [
+                'html' => '<ul><li>Prodej a pronájem bytů, domů i pozemků</li><li>Odhad tržní ceny a příprava nabídky</li><li>Prohlídky a jednání bez zbytečné administrativy</li><li>Doporučení ověřených řemeslníků a právníků</li></ul>',
+            ]],
+            ['heading', 4, ['text' => 'Jak s vámi pracujeme', 'level' => 2]],
+            ['text', 5, [
+                'body' => '<p>Nejdřív si ujasníme rozpočet a lokalitu. Pak vybíráme jen nabídky, které dávají smysl — a u těch, které vedeme my, držíme termíny prohlídek a podklady připravené předem.</p>',
+            ]],
+            ['cta', 6, ['label' => 'Napsat e-mail', 'url' => 'mailto:info@realestates.cz', 'style' => 'primary']],
+            ['cta', 7, ['label' => '777 000 000', 'url' => 'tel:+420777000000', 'style' => 'ghost']],
+        ];
+        foreach ($blocks as [$type, $order, $payload]) {
+            $this->em->persist(new \Modules\Cms\Domain\PageBlock($pageId, $type, $order, $payload));
+        }
+        $this->em->flush();
+    }
+
+    /** Po obnovení bloků srovná publikovaný snapshot, ať veřejné API hned čte nový one-page. */
+    private function syncHomePublicSnapshot(\Modules\Cms\Domain\Page $home): void
+    {
+        if (!class_exists(\Gereq\Publish\Entity\ContentStagingEntry::class)
+            || !class_exists(\Gereq\Publish\Adapter\CmsPagePublishAdapter::class)
+        ) {
+            return;
+        }
+
+        $entry = $this->em->getRepository(\Gereq\Publish\Entity\ContentStagingEntry::class)->findOneBy([
+            'category' => 'cms.pages',
+            'resourceKey' => $home->id(),
+        ]);
+        if (!$entry instanceof \Gereq\Publish\Entity\ContentStagingEntry) {
+            return;
+        }
+
+        // Bez stagingu veřejné API bere živou working copy — přesně to po demo seedu chceme.
+        $this->em->remove($entry);
         $this->em->flush();
     }
 

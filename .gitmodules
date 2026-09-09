@@ -115,3 +115,6 @@
 [submodule "modules/Projects"]
 	path = modules/Projects
 	url = git@gitlab.com:gereq/module-projects.git
+[submodule "modules/WebPlus"]
+	path = modules/WebPlus
+	url = git@gitlab.com:gereq/module-webplus.git

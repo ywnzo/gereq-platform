@@ -9,6 +9,9 @@ use Gereq\Publish\Entity\ContentStagingEntry;
 
 final class StagingStore
 {
+    /** @var array<string, ContentStagingEntry|false> */
+    private array $findCache = [];
+
     public function __construct(private readonly EntityManagerInterface $em)
     {
     }
@@ -62,15 +65,25 @@ final class StagingStore
 
     public function find(string $category, string $resourceKey): ?ContentStagingEntry
     {
+        $cacheKey = $category . "\0" . $resourceKey;
+        if (array_key_exists($cacheKey, $this->findCache)) {
+            $hit = $this->findCache[$cacheKey];
+
+            return $hit instanceof ContentStagingEntry ? $hit : null;
+        }
+
         try {
             /** @var ContentStagingEntry|null $row */
             $row = $this->em->getRepository(ContentStagingEntry::class)->findOneBy([
                 'category' => $category,
                 'resourceKey' => $resourceKey,
             ]);
+            $this->findCache[$cacheKey] = $row ?? false;
 
             return $row;
         } catch (\Throwable) {
+            $this->findCache[$cacheKey] = false;
+
             return null;
         }
     }
@@ -117,6 +130,7 @@ final class StagingStore
         if ($existing instanceof ContentStagingEntry) {
             $existing->replace($action, $payload, $label, $createdBy);
             $this->em->flush();
+            $this->findCache[$category . "\0" . $resourceKey] = $existing;
 
             return $existing;
         }
@@ -132,12 +146,14 @@ final class StagingStore
         );
         $this->em->persist($entry);
         $this->em->flush();
+        $this->findCache[$category . "\0" . $resourceKey] = $entry;
 
         return $entry;
     }
 
     public function remove(ContentStagingEntry $entry): void
     {
+        unset($this->findCache[$entry->category() . "\0" . $entry->resourceKey()]);
         $this->em->remove($entry);
         $this->em->flush();
     }
@@ -146,6 +162,7 @@ final class StagingStore
     public function removeMany(array $entries): void
     {
         foreach ($entries as $entry) {
+            unset($this->findCache[$entry->category() . "\0" . $entry->resourceKey()]);
             $this->em->remove($entry);
         }
         $this->em->flush();

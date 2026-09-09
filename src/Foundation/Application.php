@@ -232,6 +232,7 @@ final class Application
             \Modules\CustomerUploads\Application\CustomerUploadService::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
             \Modules\Media\Http\MediaController::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Modules\Ai\Application\AiIntegrationGate::class => \DI\get(\Modules\Ai\Application\ModuleAiIntegrationGate::class),
         ];
     }
 }

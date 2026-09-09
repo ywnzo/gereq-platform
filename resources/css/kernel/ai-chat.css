@@ -692,6 +692,45 @@
   gap: 0.5rem;
 }
 
+.ai-chat__confirm-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface, #fff);
+}
+
+.ai-chat__confirm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.ai-chat__confirm-table th {
+  width: 38%;
+  padding: 0.45rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--border) 35%, transparent);
+}
+
+.ai-chat__confirm-table td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  word-break: break-word;
+}
+
+.ai-chat__confirm-table tr:last-child th,
+.ai-chat__confirm-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ai-chat__confirm-table--result th {
+  background: color-mix(in srgb, var(--success, #16a34a) 8%, var(--surface, #fff));
+}
+
 /* Compact TipTap composer — override forms.css 14rem min-heights */
 .ai-chat__composer-editor {
   position: relative;

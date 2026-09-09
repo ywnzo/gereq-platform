@@ -299,6 +299,24 @@ html[data-theme="gereq-dark"] select.input.g-control {
     line-height: var(--control-line);
 }
 .g-select__label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-select__icon-slot,
+.g-select__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--text-muted);
+}
+.g-select__icon-slot:empty,
+.g-select__icon-slot[hidden] { display: none; }
+.g-select__icon .g-icon { width: 1.05rem; height: 1.05rem; }
+.g-select__icon--inline {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-right: 0.35rem;
+}
 .g-select__dot {
     width: 0.55rem;
     height: 0.55rem;

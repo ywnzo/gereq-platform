@@ -73,7 +73,9 @@ export function registerEditor(alpine: typeof Alpine): void {
                 const textarea = this.$refs.input as HTMLTextAreaElement;
                 const mount = this.$refs.mount as HTMLElement;
                 const placeholder = root.dataset.placeholder || 'Pište…';
-                const initial = textarea.value || '';
+                const seedHost = root.closest('[data-editor-seed]') as HTMLElement | null;
+                const seeded = seedHost?.getAttribute('data-editor-seed');
+                const initial = seeded != null ? seeded : textarea.value || '';
                 const chatMode = root.dataset.chat === '1';
                 const self = this;
                 const extensions: Extensions = [
