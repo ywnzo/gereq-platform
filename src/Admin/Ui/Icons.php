@@ -59,6 +59,7 @@ final class Icons
             'reply' => 'reply',
             'forward' => 'forward',
             'attach' => 'attach_file',
+            'emoji' => 'mood',
             'draft' => 'draft',
             'spam' => 'report',
             'archive' => 'inventory_2',

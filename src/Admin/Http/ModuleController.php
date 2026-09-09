@@ -428,11 +428,52 @@ final class ModuleController extends Controller
 
     private function modulesReturnRedirect(string $id): Response
     {
-        if ($this->request()->request->get('return') === 'index') {
+        $return = $this->request()->request->get('return');
+        if ($return === 'index') {
             return $this->redirect('admin.modules.index');
         }
 
+        if (is_string($return) && $return !== '') {
+            $path = $this->safeReturnPath($return);
+            if ($path !== null) {
+                return $this->redirectTo($path);
+            }
+        }
+
         return $this->redirect('admin.modules.show', ['id' => $id]);
+    }
+
+    /**
+     * Only same-origin / relative paths — blocks open redirects.
+     */
+    private function safeReturnPath(string $url): ?string
+    {
+        if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+            return $url;
+        }
+
+        $request = $this->request();
+        if ($request === null) {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if (!is_array($parts) || !isset($parts['path'])) {
+            return null;
+        }
+
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $expected = strtolower($request->getHost());
+        if ($host !== '' && $host !== $expected) {
+            return null;
+        }
+
+        $path = (string) $parts['path'];
+        if (isset($parts['query'])) {
+            $path .= '?' . $parts['query'];
+        }
+
+        return $path !== '' ? $path : null;
     }
 
     /** @param array<string, mixed> $data */

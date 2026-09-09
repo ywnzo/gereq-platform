@@ -33,6 +33,8 @@ final class ServeLogTui
     private int $cols = 100;
     private int $rows = 30;
     private string $stty = '';
+    /** Pending letter sequence (e.g. `r` → wait for `b` = rebuild). */
+    private string $keySeq = '';
     /** @var resource|null */
     private $viteLogHandle = null;
     private int $viteLogPos = 0;
@@ -314,32 +316,7 @@ final class ServeLogTui
 
     private function handleStreamInput(string $raw): void
     {
-        if ($raw === '') {
-            return;
-        }
-        if (str_contains($raw, "\x03") || str_contains(strtolower($raw), 'q')) {
-            $this->running = false;
-        }
-        if (str_contains(strtolower($raw), 'a')) {
-            $this->showAssets = !$this->showAssets;
-            echo $this->c('dim', '  · assets ' . ($this->showAssets ? 'on' : 'off')) . "\n";
-        }
-        if (str_contains(strtolower($raw), 'p')) {
-            $this->showPhpNoise = !$this->showPhpNoise;
-            echo $this->c('dim', '  · php ' . ($this->showPhpNoise ? 'on' : 'off')) . "\n";
-        }
-        if (str_contains(strtolower($raw), 'n')) {
-            $this->showNoise = !$this->showNoise;
-            echo $this->c('dim', '  · noise ' . ($this->showNoise ? 'on' : 'off')) . "\n";
-        }
-        if ($this->hot && str_contains(strtolower($raw), 'h')) {
-            $this->showHotProxy = !$this->showHotProxy;
-            echo $this->c('dim', '  · hot proxy ' . ($this->showHotProxy ? 'on' : 'off')) . "\n";
-        }
-        if (str_contains($raw, ' ')) {
-            $this->paused = !$this->paused;
-            echo $this->c('warn', $this->paused ? '  · paused' : '  · resumed') . "\n";
-        }
+        $this->feedKeys($raw, stream: true);
     }
 
     private function handleDashboardInput(string $raw): void
@@ -347,32 +324,148 @@ final class ServeLogTui
         if ($raw === '') {
             return;
         }
-        if (str_contains($raw, "\x03")) {
-            $this->running = false;
+        $this->feedKeys($raw, stream: false);
+        $this->render(force: true);
+    }
 
+    private function feedKeys(string $raw, bool $stream): void
+    {
+        if ($raw === '') {
             return;
         }
         foreach (str_split($raw) as $ch) {
+            if ($ch === "\x03") {
+                $this->running = false;
+                $this->keySeq = '';
+
+                continue;
+            }
+            if ($ch === ' ') {
+                $this->keySeq = '';
+                $this->paused = !$this->paused;
+                if ($stream) {
+                    echo $this->c('warn', $this->paused ? '  · paused' : '  · resumed') . "\n";
+                }
+
+                continue;
+            }
+
             $key = strtolower($ch);
             if ($key === 'q') {
                 $this->running = false;
-            } elseif ($key === 'c') {
-                $this->clear();
-            } elseif ($key === 'a') {
+                $this->keySeq = '';
+
+                continue;
+            }
+
+            if (!ctype_alpha($key) && $key !== '?') {
+                $this->keySeq = '';
+
+                continue;
+            }
+
+            if (ctype_alpha($key)) {
+                $this->keySeq .= $key;
+                if (strlen($this->keySeq) > 4) {
+                    $this->keySeq = substr($this->keySeq, -4);
+                }
+                if (str_ends_with($this->keySeq, 'rb')) {
+                    $this->keySeq = '';
+                    $this->rebuildStyles($stream);
+
+                    continue;
+                }
+                // Wait for second letter of [rb] rebuild.
+                if (str_ends_with($this->keySeq, 'r')) {
+                    $this->keySeq = 'r';
+
+                    continue;
+                }
+                $this->keySeq = '';
+            }
+
+            if ($key === 'a') {
                 $this->showAssets = !$this->showAssets;
+                if ($stream) {
+                    echo $this->c('dim', '  · assets ' . ($this->showAssets ? 'on' : 'off')) . "\n";
+                }
             } elseif ($key === 'p') {
                 $this->showPhpNoise = !$this->showPhpNoise;
+                if ($stream) {
+                    echo $this->c('dim', '  · php ' . ($this->showPhpNoise ? 'on' : 'off')) . "\n";
+                }
             } elseif ($key === 'n') {
                 $this->showNoise = !$this->showNoise;
+                if ($stream) {
+                    echo $this->c('dim', '  · noise ' . ($this->showNoise ? 'on' : 'off')) . "\n";
+                }
             } elseif ($key === 'h' && $this->hot) {
                 $this->showHotProxy = !$this->showHotProxy;
-            } elseif ($ch === ' ') {
-                $this->paused = !$this->paused;
-            } elseif ($key === '?' || ($key === 'h' && !$this->hot)) {
+                if ($stream) {
+                    echo $this->c('dim', '  · hot proxy ' . ($this->showHotProxy ? 'on' : 'off')) . "\n";
+                }
+            } elseif ($key === 'c' && !$stream) {
+                $this->clear();
+            } elseif ($key === '?' || ($key === 'h' && !$this->hot && !$stream)) {
                 $this->showHelp = !$this->showHelp;
             }
         }
-        $this->render(force: true);
+    }
+
+    private function rebuildStyles(bool $stream): void
+    {
+        if ($stream) {
+            echo $this->c('lime', '  · rebuild bun run build…') . "\n";
+        } else {
+            $this->pushBuildLine('bun run build…');
+            $this->render(force: true);
+        }
+
+        $cmd = 'cd ' . escapeshellarg($this->basePath) . ' && bun run build 2>&1';
+        $lines = [];
+        $code = 0;
+        exec($cmd, $lines, $code);
+
+        if ($stream) {
+            foreach ($lines as $line) {
+                $trim = trim($line);
+                if ($trim === '') {
+                    continue;
+                }
+                echo $this->c('dim', '  ' . $this->truncate($trim, 100)) . "\n";
+            }
+            echo $code === 0
+                ? $this->c('ok', '  · rebuild ok') . "\n"
+                : $this->c('err', '  · rebuild failed (' . $code . ')') . "\n";
+
+            return;
+        }
+
+        foreach ($lines as $line) {
+            $trim = trim($line);
+            if ($trim === '') {
+                continue;
+            }
+            $this->pushBuildLine($trim);
+        }
+        $this->pushBuildLine($code === 0 ? 'rebuild ok' : 'rebuild failed (' . $code . ')');
+    }
+
+    private function pushBuildLine(string $message): void
+    {
+        $this->lines[] = new AccessLogEntry(
+            service: 'build',
+            method: '',
+            path: $message,
+            status: 0,
+            bytes: null,
+            time: date('H:i:s'),
+            raw: $message,
+            access: false,
+        );
+        if (count($this->lines) > self::MAX_LINES) {
+            $this->lines = array_slice($this->lines, -self::MAX_LINES);
+        }
     }
 
     private function clear(): void
@@ -402,7 +495,7 @@ final class ServeLogTui
         echo $this->c('dim', str_repeat('─', $w)) . "\n";
         echo $this->c('dim', 'TIME      SVC    METHOD  CODE  SIZE   PATH') . "\n";
         echo $this->c('dim', str_repeat('─', $w)) . "\n";
-        $keys = '[q]uit [a]ssets [p]hp [n]oise';
+        $keys = '[q]uit [a]ssets [p]hp [n]oise [rb]uild';
         if ($this->hot) {
             $keys .= ' [h]ot';
         }
@@ -419,7 +512,7 @@ final class ServeLogTui
         if (!$entry->access) {
             $level = str_contains(strtolower($entry->path), 'warn') || str_contains(strtolower($entry->path), 'error')
                 ? 'warn'
-                : ($entry->service === 'hot' ? 'lime' : 'dim');
+                : ($entry->service === 'hot' || $entry->service === 'build' ? 'lime' : 'dim');
             $time = $entry->time ?? '        ';
 
             return sprintf(
@@ -503,7 +596,7 @@ final class ServeLogTui
         if ($this->lanIp !== null) {
             $out[] = $this->boxRow(sprintf('LAN http://%s:%d', $this->lanIp, $this->port), $w);
         }
-        $keys = '[q]uit [c]lear [a]ssets [p]hp [n]oise';
+        $keys = '[q]uit [c]lear [a]ssets [p]hp [n]oise [rb]uild';
         if ($this->hot) {
             $keys .= ' [h]ot';
         }
@@ -522,6 +615,7 @@ final class ServeLogTui
                 '  a  assety (/build, /media…/file)',
                 '  p  php /index.php',
                 '  n  nginx/redis systémový šum',
+                '  rb bun run build (rebuild stylů)',
             ];
             if ($this->hot) {
                 $help[] = '  h  Vite proxy access (304 /@vite…)';

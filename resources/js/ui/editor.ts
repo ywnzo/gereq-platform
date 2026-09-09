@@ -1,6 +1,7 @@
 import type Alpine from '@alpinejs/csp';
 import { Editor, type Extensions } from '@tiptap/core';
 import { FontFamily } from '@tiptap/extension-font-family';
+import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
@@ -11,6 +12,7 @@ import {
     varsByPath,
     workflowVarDecorations,
 } from '../../../modules/CRM/Resources/assets/js/workflowVars';
+import { ChatVideo } from './chatVideo';
 import { FontWeight } from './fontWeight';
 
 type EditorMode = 'editor' | 'html';
@@ -72,17 +74,20 @@ export function registerEditor(alpine: typeof Alpine): void {
                 const mount = this.$refs.mount as HTMLElement;
                 const placeholder = root.dataset.placeholder || 'Pište…';
                 const initial = textarea.value || '';
+                const chatMode = root.dataset.chat === '1';
                 const self = this;
                 const extensions: Extensions = [
                     StarterKit.configure({
-                        heading: { levels: [1, 2, 3] },
+                        heading: chatMode ? false : { levels: [1, 2, 3] },
                         link: false,
+                        horizontalRule: !chatMode,
+                        blockquote: !chatMode,
                     }),
                     TextStyle,
                     FontFamily,
                     FontWeight,
                     TextAlign.configure({
-                        types: ['heading', 'paragraph'],
+                        types: chatMode ? ['paragraph'] : ['heading', 'paragraph'],
                         alignments: ['left', 'center', 'right', 'justify'],
                     }),
                     Link.configure({
@@ -93,6 +98,16 @@ export function registerEditor(alpine: typeof Alpine): void {
                     }),
                     Placeholder.configure({ placeholder }),
                 ];
+                if (chatMode) {
+                    extensions.push(
+                        Image.configure({
+                            inline: false,
+                            allowBase64: false,
+                            HTMLAttributes: { class: 'ai-chat__embed-img' },
+                        }),
+                        ChatVideo,
+                    );
+                }
                 if (root.dataset.highlightVars === '1') {
                     extensions.push(workflowVarDecorations(findCanvasVars(root)));
                 }
@@ -105,8 +120,39 @@ export function registerEditor(alpine: typeof Alpine): void {
                     extensions,
                     editorProps: {
                         attributes: {
-                            class: 'g-editor__content',
+                            class: 'g-editor__content' + (chatMode ? ' g-editor__content--chat' : ''),
                         },
+                        handlePaste: chatMode
+                            ? (_view, event) => {
+                                  const files = event.clipboardData?.files;
+                                  if (files && files.length > 0) {
+                                      root.dispatchEvent(
+                                          new CustomEvent('gereq-editor-files', {
+                                              detail: { files: Array.from(files) },
+                                              bubbles: true,
+                                          }),
+                                      );
+                                      return true;
+                                  }
+                                  return false;
+                              }
+                            : undefined,
+                        handleDrop: chatMode
+                            ? (_view, event) => {
+                                  const files = event.dataTransfer?.files;
+                                  if (files && files.length > 0) {
+                                      event.preventDefault();
+                                      root.dispatchEvent(
+                                          new CustomEvent('gereq-editor-files', {
+                                              detail: { files: Array.from(files) },
+                                              bubbles: true,
+                                          }),
+                                      );
+                                      return true;
+                                  }
+                                  return false;
+                              }
+                            : undefined,
                     },
                     onUpdate: ({ editor: ed }) => {
                         self.syncFromEditor(ed);

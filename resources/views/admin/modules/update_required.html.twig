@@ -28,6 +28,9 @@
         {% if user and user.can('modules.manage') %}
             <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
                 {{ csrf_field()|raw }}
+                {% if returnUrl|default('') %}
+                    <input type="hidden" name="return" value="{{ returnUrl }}">
+                {% endif %}
                 <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
             </form>
         {% endif %}

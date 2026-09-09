@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Gereq\Database;
 
+use Doctrine\DBAL\Schema\AbstractSchemaManager;
+use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Gereq\Module\ModuleManager;
@@ -156,6 +158,7 @@ final class Migrator
         if (is_dir($dir)) {
             $files = glob($dir . '/*.php') ?: [];
             rsort($files);
+            $workingSchema = null;
 
             foreach ($files as $file) {
                 $version = $manifest->id . ':' . basename($file, '.php');
@@ -165,14 +168,14 @@ final class Migrator
 
                 $migration = require $file;
                 if (is_object($migration) && method_exists($migration, 'down')) {
-                    $fromSchema = $schemaManager->introspectSchema();
-                    $toSchema = $schemaManager->introspectSchema();
+                    [$fromSchema, $toSchema] = $this->schemaPair($schemaManager, $workingSchema);
                     $migration->down($toSchema);
 
                     $diff = $schemaManager->createComparator()->compareSchemas($fromSchema, $toSchema);
                     if (!$diff->isEmpty()) {
                         $schemaManager->alterSchema($diff);
                     }
+                    $workingSchema = $toSchema;
                 }
 
                 $conn->executeStatement('DELETE FROM schema_migrations WHERE version = ?', [$version]);
@@ -223,6 +226,7 @@ final class Migrator
         rsort($toRollback);
         $conn = $this->em->getConnection();
         $schemaManager = $conn->createSchemaManager();
+        $workingSchema = null;
 
         foreach ($toRollback as $basename) {
             $file = $currentDir . '/Database/Migrations/' . $basename . '.php';
@@ -238,14 +242,14 @@ final class Migrator
                 );
             }
 
-            $fromSchema = $schemaManager->introspectSchema();
-            $toSchema = $schemaManager->introspectSchema();
+            [$fromSchema, $toSchema] = $this->schemaPair($schemaManager, $workingSchema);
             $migration->down($toSchema);
 
             $diff = $schemaManager->createComparator()->compareSchemas($fromSchema, $toSchema);
             if (!$diff->isEmpty()) {
                 $schemaManager->alterSchema($diff);
             }
+            $workingSchema = $toSchema;
 
             $conn->executeStatement('DELETE FROM schema_migrations WHERE version = ?', [$version]);
             $this->warmRan();
@@ -389,6 +393,7 @@ final class Migrator
             sort($files);
             $conn = $this->em->getConnection();
             $schemaManager = $conn->createSchemaManager();
+            $workingSchema = null;
 
             foreach ($files as $file) {
                 $version = $manifest->id . ':' . basename($file, '.php');
@@ -401,8 +406,7 @@ final class Migrator
                     continue;
                 }
 
-                $fromSchema = $schemaManager->introspectSchema();
-                $toSchema = $schemaManager->introspectSchema();
+                [$fromSchema, $toSchema] = $this->schemaPair($schemaManager, $workingSchema);
                 $migration->up($toSchema);
 
                 $diff = $schemaManager->createComparator()->compareSchemas($fromSchema, $toSchema);
@@ -412,6 +416,10 @@ final class Migrator
 
                 if (method_exists($migration, 'afterUp')) {
                     $migration->afterUp($conn);
+                    // afterUp smí měnit schéma raw SQL — další migrace musí znovu introspektovat.
+                    $workingSchema = null;
+                } else {
+                    $workingSchema = $toSchema;
                 }
 
                 $ranAt = (new \DateTimeImmutable())->format('c');
@@ -484,6 +492,20 @@ final class Migrator
         return $items;
     }
 
+    /**
+     * Jedna introspekce (+ clone) místo dvou plných introspectSchema() na migraci.
+     * Při řetězení migrací znovu použije aktuální in-memory schéma.
+     *
+     * @param AbstractSchemaManager<\Doctrine\DBAL\Connection> $schemaManager
+     * @return array{0: Schema, 1: Schema}
+     */
+    private function schemaPair(AbstractSchemaManager $schemaManager, ?Schema $current = null): array
+    {
+        $fromSchema = $current ?? $schemaManager->introspectSchema();
+
+        return [$fromSchema, clone $fromSchema];
+    }
+
     private function ensureMigrationsTable(): void
     {
         if ($this->migrationsTableReady) {
@@ -497,7 +519,7 @@ final class Migrator
             return;
         }
 
-        $schema = new \Doctrine\DBAL\Schema\Schema();
+        $schema = new Schema();
         $table = $schema->createTable('schema_migrations');
         $table->addColumn('version', 'string', ['length' => 190]);
         $table->addColumn('ran_at', 'string', ['length' => 40]);

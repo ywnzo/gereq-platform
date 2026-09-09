@@ -30,6 +30,7 @@ final class ServeDockerCommand extends Command
             ->addOption('build', null, InputOption::VALUE_NONE, 'Přestavět Docker image před startem')
             ->addOption('detach', 'd', InputOption::VALUE_NONE, 'Běžet na pozadí (docker compose up -d)')
             ->addOption('down', null, InputOption::VALUE_NONE, 'Zastavit Docker stack a ukončit')
+            ->addOption('reuse', null, InputOption::VALUE_NONE, 'Nejdřív zastavit běžící stack, pak znovu spustit (změna portu / --https bez ručního --down)')
             ->addOption('raw', null, InputOption::VALUE_NONE, 'Surové docker compose logy (bez formátování)')
             ->addOption('dashboard', null, InputOption::VALUE_NONE, 'Fullscreen TUI dashboard (místo scroll streamu)')
             ->addOption('keep', null, InputOption::VALUE_NONE, 'Při ukončení logů nenechat stack padnout (compose down přeskočit)');
@@ -54,12 +55,17 @@ final class ServeDockerCommand extends Command
         $hot = (bool) $input->getOption('hot');
         // --down: prefer HTTPS override when present so project matches last --https start
         if ($input->getOption('down')) {
-            if ($hot || is_file($this->basePath . '/storage/tmp/vite-dev.pid')) {
-                (new ViteHotProcess($this->basePath))->stopFromPidFile($output);
-            }
-            $useHttps = $https || is_file($this->basePath . '/docker-compose.https.yml');
+            return $this->stopStack($output, $https, $hot);
+        }
 
-            return $this->runCompose($output, ['down'], $useHttps && is_file($this->basePath . '/docker-compose.https.yml'));
+        if ($input->getOption('reuse')) {
+            $output->writeln('<comment>Reuse: zastavuji běžící stack…</comment>');
+            $downCode = $this->stopStack($output, $https, $hot);
+            if ($downCode !== Command::SUCCESS) {
+                return $downCode;
+            }
+            $output->writeln('<info>Reuse: stack zastaven, spouštím znovu…</info>');
+            $output->writeln('');
         }
 
         $requested = (int) $input->getOption('port');
@@ -206,7 +212,7 @@ final class ServeDockerCommand extends Command
         }
 
         $output->writeln('<info>Stack běží.</info> ' . ($dashboard ? 'Otevírám dashboard…' : 'Otevírám log stream…'));
-        $hint = '  [q] ukončit  [a] assety  [p] php  [n]oise';
+        $hint = '  [q] ukončit  [a] assety  [p] php  [n]oise  [rb]uild';
         if ($hot) {
             $hint .= '  [h]ot';
         }
@@ -291,6 +297,21 @@ final class ServeDockerCommand extends Command
     private function cDim(string $text): string
     {
         return '<fg=gray>' . $text . '</>';
+    }
+
+    /** Zastavit compose stack (+ Vite z --hot / -d). */
+    private function stopStack(OutputInterface $output, bool $https, bool $hot): int
+    {
+        if ($hot || is_file($this->basePath . '/storage/tmp/vite-dev.pid')) {
+            (new ViteHotProcess($this->basePath))->stopFromPidFile($output);
+        }
+        $useHttps = $https || is_file($this->basePath . '/docker-compose.https.yml');
+
+        return $this->runCompose(
+            $output,
+            ['down'],
+            $useHttps && is_file($this->basePath . '/docker-compose.https.yml'),
+        );
     }
 
     /** @param list<string> $args */

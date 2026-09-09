@@ -59,9 +59,27 @@ Agent musí mít `published=true`, surface `api`/`public`, a token scope `ai.age
 2. Extrakce textu → chunking → embedding → `ai_chunks`
 3. Chat agenta s přiřazenou KB → retrieve top-K → citace ve system promptu
 
-## Tools (read-only MVP)
+## Tools
 
-Built-in: `customers.search/get`, `crm.get_deal`, `crm.list_activities`, `listings.get/search`, `documents.search/read_text`, `agents.list/ask`
+Built-in read tools: `customers.search/get`, `crm.get_deal/search_deals/list_activities`, `crm.list_workflows/get_workflow`, `media.search/get`, `cms.search_pages/get_page`, `emailing.list_accounts/search_messages`, `listings.get/search`, `documents.search/read_text`, `agents.list/ask`.
+
+### Write tools (souhlas uživatele)
+
+Mutating tools (`create` / `update` / `delete`) **vždy** vyžadují explicitní souhlas v admin chatu (tlačítko Souhlasit / Odmítnout), bez ohledu na to, zda agent má `write_mode=draft` nebo `confirm`.
+
+- `write_mode=none` — write tools se agentovi vůbec nenabízí
+- `write_mode=draft|confirm` — tool se zavolá, ale spustí se až po UI potvrzení (`POST /admin/ai/chat/{id}/confirm`)
+
+Write tools:
+
+| Oblast | Tools |
+|--------|-------|
+| Customers | `customers.create`, `customers.update` |
+| CRM | `crm.create_deal`, `crm.update_deal`, `crm.create_activity` |
+| Automatizace | `crm.create_workflow`, `crm.set_workflow_active`, `crm.run_workflow` |
+| Media | `media.update`, `media.import_url` |
+| CMS | `cms.create_page`, `cms.update_page` |
+| Emailing | `emailing.send` |
 
 ### Vlastní tools
 

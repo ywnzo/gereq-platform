@@ -94,6 +94,7 @@ final class ModuleCurrentMiddleware implements MiddlewareInterface
             'pageTitle' => $this->translator->trans('admin.modules.gate.title'),
             'manifest' => $manifest,
             'installedVersion' => $installed,
+            'returnUrl' => $request->getRequestUri(),
             'menu' => $this->menu->tree($user, $this->router, $request),
             'commands' => $this->palette->all($user),
             'user' => $user,

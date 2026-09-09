@@ -133,6 +133,7 @@ php gereq serve-docker -d               # na pozadí
 php gereq serve-docker --raw            # surové compose logy
 php gereq serve-docker --dashboard      # fullscreen TUI (volitelné)
 php gereq serve-docker --keep           # ukončení logů neshodí stack
+php gereq serve-docker --reuse          # down + up (změna portu / --https bez ručního --down)
 php gereq serve-docker --down           # zastavit stack (+ Vite z --hot -d)
 ```
 
