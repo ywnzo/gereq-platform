@@ -1,0 +1,140 @@
+{# Compose dialog — GEREQ fields + TipTap editor; minimize → debug-bar-like pill #}
+{% if user.can('emailing.send') %}
+{% set accountOptions = [] %}
+{% for a in accounts %}
+    {% set accountOptions = accountOptions|merge([{
+        value: a.id(),
+        label: a.name() ~ ' <' ~ a.email() ~ '>'
+    }]) %}
+{% endfor %}
+{% set defaultAccountId = account ? account.id() : (accounts|length ? accounts|first.id() : '') %}
+
+<div
+    class="ol-compose-layer"
+    x-show="composeOpen && !composeMinimized"
+    x-cloak
+    @keydown.escape.window="onEscape()"
+>
+    <div class="ol-compose-backdrop" @click="minimizeCompose()" aria-hidden="true"></div>
+    <div
+        class="ol-compose-dock"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ol-compose-title"
+        :style="composeDockStyle()"
+        @click.stop
+    >
+        <header class="ol-compose-dock__bar" @pointerdown="startComposeDrag($event)">
+            <strong id="ol-compose-title" class="ol-compose-dock__title">
+                {{ icon('edit') }}
+                <span>{{ 'emailing.compose.title'|trans }}</span>
+            </strong>
+            <div class="ol-compose-dock__actions" @pointerdown.stop>
+                <button type="button" class="btn btn--ghost btn-sm ol-compose-dock__iconbtn" @click="minimizeCompose()" title="{{ 'emailing.compose.minimize'|trans }}" aria-label="{{ 'emailing.compose.minimize'|trans }}">
+                    {{ icon('minimize') }}
+                </button>
+                <button type="button" class="btn btn--ghost btn-sm ol-compose-dock__iconbtn" @click="closeCompose()" title="{{ 'emailing.compose.close'|trans }}" aria-label="{{ 'emailing.compose.close'|trans }}">
+                    {{ icon('close') }}
+                </button>
+            </div>
+        </header>
+
+        {% if accounts is empty %}
+            <div class="ol-compose-dock__empty">
+                <p class="muted">{{ 'emailing.mailbox.no_account'|trans }}</p>
+            </div>
+        {% else %}
+            <template x-if="composeOpen">
+                <form
+                    method="post"
+                    action="{{ url('admin.emailing.send') }}"
+                    class="ol-compose"
+                    @change="onComposeFieldChange($event)"
+                >
+                    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                    <input type="hidden" name="in_reply_to" x-bind:value="draft.inReplyTo">
+                    <input type="hidden" name="references" x-bind:value="draft.references">
+
+                    <div class="ol-compose__fields design-settings">
+                        {% include 'ui/select.html.twig' with {
+                            name: 'account_id',
+                            label: 'emailing.field.from'|trans,
+                            required: true,
+                            value: defaultAccountId,
+                            options: accountOptions,
+                            extra: 'ol-compose__field'
+                        } %}
+
+                        {% include 'ui/input.html.twig' with {
+                            name: 'to',
+                            label: 'emailing.field.to'|trans,
+                            required: true,
+                            value: '',
+                            autocomplete: 'email',
+                            attrs: 'x-model="draft.to" data-compose-focus',
+                            extra: 'ol-compose__field'
+                        } %}
+
+                        {% include 'ui/input.html.twig' with {
+                            name: 'cc',
+                            label: 'emailing.field.cc'|trans,
+                            optional: true,
+                            value: '',
+                            autocomplete: 'email',
+                            attrs: 'x-model="draft.cc"',
+                            extra: 'ol-compose__field'
+                        } %}
+
+                        {% include 'ui/input.html.twig' with {
+                            name: 'subject',
+                            label: 'emailing.field.subject'|trans,
+                            required: true,
+                            value: '',
+                            attrs: 'x-model="draft.subject"',
+                            extra: 'ol-compose__field'
+                        } %}
+                    </div>
+
+                    {% include 'ui/editor.html.twig' with {
+                        name: 'body_html',
+                        label: 'emailing.field.body'|trans,
+                        placeholder: 'ui.editor.placeholder'|trans,
+                        value: '',
+                        required: false,
+                        extra: 'ol-compose__field ol-compose__editor'
+                    } %}
+
+                    <div class="ol-compose__footer">
+                        <button class="btn btn--primary" type="submit">{{ icon('send') }} {{ 'emailing.compose.send'|trans }}</button>
+                    </div>
+                </form>
+            </template>
+        {% endif %}
+
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--n" data-edge="n" @pointerdown="startComposeResize($event)"></div>
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--s" data-edge="s" @pointerdown="startComposeResize($event)"></div>
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--e" data-edge="e" @pointerdown="startComposeResize($event)"></div>
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--w" data-edge="w" @pointerdown="startComposeResize($event)"></div>
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--ne" data-edge="ne" @pointerdown="startComposeResize($event)"></div>
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--nw" data-edge="nw" @pointerdown="startComposeResize($event)"></div>
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--se" data-edge="se" @pointerdown="startComposeResize($event)"></div>
+        <div class="ol-compose-dock__resize ol-compose-dock__resize--sw" data-edge="sw" @pointerdown="startComposeResize($event)"></div>
+    </div>
+</div>
+
+<button
+    type="button"
+    class="ol-compose-pill"
+    x-show="composeOpen && composeMinimized"
+    x-cloak
+    @click="restoreCompose()"
+    title="{{ 'emailing.compose.restore'|trans }}"
+>
+    <span class="ol-compose-pill__ico" aria-hidden="true">{{ icon('edit') }}</span>
+    <span class="ol-compose-pill__meta">
+        <b x-text="pillLabel()"></b>
+        <span>{{ 'emailing.compose.draft'|trans }}</span>
+    </span>
+    <span class="ol-compose-pill__hint" aria-hidden="true">{{ icon('chevron-up') }}</span>
+</button>
+{% endif %}

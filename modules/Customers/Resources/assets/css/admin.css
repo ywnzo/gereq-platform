@@ -431,6 +431,33 @@
     display: grid;
     gap: .65rem;
 }
+.customer-edit__photo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.customer-edit__photo > .avatar,
+.customer-edit__photo > img.avatar {
+    flex-shrink: 0;
+}
+.customer-edit__photo-actions {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    min-width: min(100%, 16rem);
+    flex: 1 1 14rem;
+}
+.customer-edit__photo-actions .g-field {
+    margin: 0;
+}
+.customer-edit img.avatar,
+.customer-profile img.avatar,
+.table--customers img.avatar {
+    object-fit: cover;
+    display: block;
+}
 .customer-edit__company-toggle {
     margin: 0;
 }

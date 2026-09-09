@@ -115,7 +115,7 @@ final class ActivityController extends Controller
         $this->forgetForm('crm.activity.save');
         $this->flash('success', $this->translator->trans('crm.flash.activity_created'));
 
-        return $this->redirect('admin.crm.activities.index');
+        return $this->redirectAfterActivity($request, $activity->dealId());
     }
 
     public function edit(string $id): Response
@@ -155,10 +155,10 @@ final class ActivityController extends Controller
         $this->forgetForm('crm.activity.save');
         $this->flash('success', $this->translator->trans('crm.flash.activity_saved'));
 
-        return $this->redirect('admin.crm.activities.index');
+        return $this->redirectAfterActivity($request, $activity->dealId());
     }
 
-    public function complete(string $id): Response
+    public function complete(Request $request, string $id): Response
     {
         $activity = $this->find($id);
         if ($activity === null) {
@@ -180,7 +180,12 @@ final class ActivityController extends Controller
         $this->events->emit('activity.updated', ['type' => 'activity', 'id' => $activity->id()], $payload);
         $this->auditor->log('crm.activity.toggled', 'crm_activity', $id);
 
-        return $this->redirect('admin.crm.activities.index');
+        $dealId = $activity->dealId();
+        if ($dealId === null || $dealId === '') {
+            $dealId = trim((string) $request->request->get('deal_id', '')) ?: null;
+        }
+
+        return $this->redirectAfterActivity($request, $dealId);
     }
 
     public function destroy(string $id): Response
@@ -205,6 +210,15 @@ final class ActivityController extends Controller
         $activity = $this->em->find(Activity::class, $id);
 
         return $activity instanceof Activity ? $activity : null;
+    }
+
+    private function redirectAfterActivity(Request $request, ?string $dealId): Response
+    {
+        if ((string) $request->request->get('_return') === 'deal' && $dealId !== null && $dealId !== '') {
+            return $this->redirect('admin.crm.deals.show', ['id' => $dealId]);
+        }
+
+        return $this->redirect('admin.crm.activities.index');
     }
 
     /** @return array<string, mixed> */

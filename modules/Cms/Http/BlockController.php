@@ -48,7 +48,8 @@ final class BlockController extends Controller
 
     private function freezePageIfPublished(Page $page): void
     {
-        if (!$page->isPublished()) {
+        // Any public-facing / already-staged page must stay behind ProductionFreeze.
+        if (!$page->isPublished() && !$this->freeze->hasFreeze('cms.pages', $page->id())) {
             return;
         }
         $this->freeze->freezeIfNeeded(

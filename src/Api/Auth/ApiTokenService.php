@@ -39,6 +39,37 @@ final class ApiTokenService
         return ['token' => $token, 'plain' => $plain];
     }
 
+    /**
+     * Ephemeral full-access token for the Developer API tester (one plain value kept in session).
+     *
+     * @return array{token: ApiToken, plain: string}
+     */
+    public function issueTesterToken(User $user): array
+    {
+        $name = self::TESTER_TOKEN_NAME;
+        /** @var list<ApiToken> $existing */
+        $existing = $this->em->getRepository(ApiToken::class)->findBy([
+            'userId' => $user->id(),
+            'name' => $name,
+        ]);
+        foreach ($existing as $token) {
+            if ($token->isActive()) {
+                $token->revoke();
+            }
+        }
+        $this->em->flush();
+
+        return $this->create(
+            $name,
+            $user,
+            ['*'],
+            true,
+            new \DateTimeImmutable('+12 hours'),
+        );
+    }
+
+    public const TESTER_TOKEN_NAME = 'API Tester';
+
     public function findByPlain(string $plain): ?ApiToken
     {
         $hash = hash('sha256', $plain);

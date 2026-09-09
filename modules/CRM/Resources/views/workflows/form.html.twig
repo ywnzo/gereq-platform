@@ -1,0 +1,85 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="customer-edit emailing-edit crm-workflow-edit">
+    <header class="customer-edit__header">
+        <div class="customer-edit__identity">
+            <a class="text-link customer-profile__back" href="{{ url('admin.crm.workflows.index') }}">
+                ← {{ 'crm.workflows.title'|trans }}
+            </a>
+            <div class="cell-user cell-user--lg">
+                <span class="avatar avatar--xl">A</span>
+                <div>
+                    <p class="customer-edit__eyebrow">{{ 'crm.workflows.new'|trans }}</p>
+                    <h1>{{ 'crm.workflows.new'|trans }}</h1>
+                    <p class="customer-profile__sub">{{ 'crm.workflows.form.lead'|trans }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="customer-edit__header-actions">
+            <button class="btn btn--primary" type="submit" form="crm-workflow-form">{{ 'common.save'|trans }}</button>
+        </div>
+    </header>
+
+    <form
+        id="crm-workflow-form"
+        method="post"
+        class="customer-edit__form"
+        action="{{ url('admin.crm.workflows.store') }}"
+    >
+        {{ csrf_field()|raw }}
+
+        <div class="customer-edit__layout">
+            <div class="customer-edit__main">
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'crm.workflows.section.profile'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'crm.workflows.form.profile.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/input.html.twig' with {
+                            name: 'name',
+                            label: 'crm.field.title'|trans,
+                            required: true,
+                            value: '',
+                            extra: 'field--full'
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'description',
+                            label: 'crm.workflows.description'|trans,
+                            optional: true,
+                            value: '',
+                            size: 'mini',
+                            rows: 4,
+                            extra: 'field--full'
+                        } %}
+                    </div>
+                </section>
+            </div>
+
+            <aside class="customer-edit__aside">
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'crm.workflows.status'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'crm.workflows.form.options.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    {% include 'ui/switch.html.twig' with {
+                        name: 'is_active',
+                        label: 'crm.workflows.active'|trans,
+                        on: false
+                    } %}
+                </section>
+
+                <div class="customer-edit__aside-actions">
+                    <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ url('admin.crm.workflows.index') }}">{{ 'common.cancel'|trans }}</a>
+                </div>
+            </aside>
+        </div>
+    </form>
+</div>
+{% endblock %}

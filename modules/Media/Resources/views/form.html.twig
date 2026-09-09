@@ -2,7 +2,10 @@
 
 {% block content %}
     <header class="page-header">
-        <h1>{{ 'media.upload'|trans }}</h1>
+        <div>
+            <h1>{{ 'media.upload'|trans }}</h1>
+            <p class="muted">{{ 'media.upload.intro'|trans }}</p>
+        </div>
     </header>
 
     {% include 'ui/error-summary.html.twig' with { form: 'media.upload' } %}

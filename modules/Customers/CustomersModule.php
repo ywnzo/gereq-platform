@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\CommandPalette\PaletteCommand;
 use Gereq\Admin\Menu\MenuItem;
 use Gereq\Api\ApiModule;
+use Gereq\Automation\WorkflowVariableDefinition;
 use Gereq\Event\EventDefinition;
 use Gereq\Hook\HookPriority;
 use Gereq\Http\Router;
@@ -43,7 +44,7 @@ final class CustomersModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.5.0';
+        return '1.6.3';
     }
 
     public function register(ModuleContext $context): void
@@ -85,6 +86,9 @@ final class CustomersModule implements ModuleInterface
             $routes->get('/{id}/edit', [CustomerController::class, 'edit'])
                 ->name('admin.customers.edit')
                 ->permission('customers.edit');
+            $routes->get('/{id}/avatar', [CustomerController::class, 'avatar'])
+                ->name('admin.customers.avatar')
+                ->permission('customers.view');
             $routes->post('/{id}', [CustomerController::class, 'update'])
                 ->name('admin.customers.update')
                 ->permission('customers.edit');
@@ -114,6 +118,39 @@ final class CustomersModule implements ModuleInterface
         $this->registerApi($context);
         $this->registerPlatformEvents($context);
         $this->registerStorefrontAuth($context);
+        $this->registerWorkflowVariables($context);
+    }
+
+    private function registerWorkflowVariables(ModuleContext $context): void
+    {
+        $context->workflowVariables()->registerMany(
+            (new WorkflowVariableDefinition('customer.id', $this->id()))
+                ->withLabel('ID zákazníka')
+                ->withDescription('Unikátní identifikátor zákazníka.')
+                ->withGroup('customer'),
+            (new WorkflowVariableDefinition('customer.name', $this->id()))
+                ->withLabel('Jméno zákazníka')
+                ->withDescription('Zobrazené jméno zákazníka.')
+                ->withGroup('customer')
+                ->withExample('Jan Novák'),
+            (new WorkflowVariableDefinition('customer.email', $this->id()))
+                ->withLabel('E-mail zákazníka')
+                ->withDescription('Primární e-mailová adresa.')
+                ->withGroup('customer')
+                ->withExample('jan@firma.cz'),
+            (new WorkflowVariableDefinition('customer.phone', $this->id()))
+                ->withLabel('Telefon zákazníka')
+                ->withDescription('Kontaktní telefon.')
+                ->withGroup('customer'),
+            (new WorkflowVariableDefinition('customer.company', $this->id()))
+                ->withLabel('Firma')
+                ->withDescription('Název firmy zákazníka.')
+                ->withGroup('customer'),
+            (new WorkflowVariableDefinition('customer.ico', $this->id()))
+                ->withLabel('IČO')
+                ->withDescription('Identifikační číslo organizace.')
+                ->withGroup('customer'),
+        );
     }
 
     private function registerStorefrontAuth(ModuleContext $context): void
@@ -276,45 +313,75 @@ final class CustomersModule implements ModuleInterface
     private function registerApi(ModuleContext $context): void
     {
         $context->api()->module('customers', function (ApiModule $api): void {
-            $api->get('/', [CustomerApiController::class, 'index'])->scope('customers.read');
-            $api->post('/', [CustomerApiController::class, 'store'])->scope('customers.write');
-            $api->get('/{id}', [CustomerApiController::class, 'show'])->scope('customers.read');
-            $api->patch('/{id}', [CustomerApiController::class, 'update'])->scope('customers.write');
-            $api->delete('/{id}', [CustomerApiController::class, 'destroy'])->scope('customers.write');
-            $api->post('/{id}/archive', [CustomerApiController::class, 'archive'])->scope('customers.write');
-            $api->post('/{id}/restore', [CustomerApiController::class, 'restore'])->scope('customers.write');
+            $api->get('/', [CustomerApiController::class, 'index'])->scope('customers.read')
+                ->summary('List customers');
+            $api->post('/', [CustomerApiController::class, 'store'])->scope('customers.write')
+                ->summary('Create customer')->ruleset('customers.save');
+            $api->get('/{id}', [CustomerApiController::class, 'show'])->scope('customers.read')
+                ->summary('Get customer');
+            $api->patch('/{id}', [CustomerApiController::class, 'update'])->scope('customers.write')
+                ->summary('Update customer')->ruleset('customers.save');
+            $api->delete('/{id}', [CustomerApiController::class, 'destroy'])->scope('customers.write')
+                ->summary('Delete customer');
+            $api->post('/{id}/archive', [CustomerApiController::class, 'archive'])->scope('customers.write')
+                ->summary('Archive customer');
+            $api->post('/{id}/restore', [CustomerApiController::class, 'restore'])->scope('customers.write')
+                ->summary('Restore customer');
 
-            $api->get('/{id}/addresses', [CustomerApiController::class, 'addressesIndex'])->scope('customers.read');
-            $api->post('/{id}/addresses', [CustomerApiController::class, 'addressesStore'])->scope('customers.write');
-            $api->get('/{id}/addresses/{addressId}', [CustomerApiController::class, 'addressesShow'])->scope('customers.read');
-            $api->patch('/{id}/addresses/{addressId}', [CustomerApiController::class, 'addressesUpdate'])->scope('customers.write');
-            $api->delete('/{id}/addresses/{addressId}', [CustomerApiController::class, 'addressesDestroy'])->scope('customers.write');
+            $api->get('/{id}/addresses', [CustomerApiController::class, 'addressesIndex'])->scope('customers.read')
+                ->summary('List customer addresses');
+            $api->post('/{id}/addresses', [CustomerApiController::class, 'addressesStore'])->scope('customers.write')
+                ->summary('Create customer address')->ruleset('customers.address.save');
+            $api->get('/{id}/addresses/{addressId}', [CustomerApiController::class, 'addressesShow'])->scope('customers.read')
+                ->summary('Get customer address');
+            $api->patch('/{id}/addresses/{addressId}', [CustomerApiController::class, 'addressesUpdate'])->scope('customers.write')
+                ->summary('Update customer address')->ruleset('customers.address.save');
+            $api->delete('/{id}/addresses/{addressId}', [CustomerApiController::class, 'addressesDestroy'])->scope('customers.write')
+                ->summary('Delete customer address');
 
-            $api->get('/{id}/contacts', [CustomerApiController::class, 'contactsIndex'])->scope('customers.read');
-            $api->post('/{id}/contacts', [CustomerApiController::class, 'contactsStore'])->scope('customers.write');
-            $api->get('/{id}/contacts/{contactId}', [CustomerApiController::class, 'contactsShow'])->scope('customers.read');
-            $api->patch('/{id}/contacts/{contactId}', [CustomerApiController::class, 'contactsUpdate'])->scope('customers.write');
-            $api->delete('/{id}/contacts/{contactId}', [CustomerApiController::class, 'contactsDestroy'])->scope('customers.write');
+            $api->get('/{id}/contacts', [CustomerApiController::class, 'contactsIndex'])->scope('customers.read')
+                ->summary('List customer contacts');
+            $api->post('/{id}/contacts', [CustomerApiController::class, 'contactsStore'])->scope('customers.write')
+                ->summary('Create customer contact')->ruleset('customers.contact.save');
+            $api->get('/{id}/contacts/{contactId}', [CustomerApiController::class, 'contactsShow'])->scope('customers.read')
+                ->summary('Get customer contact');
+            $api->patch('/{id}/contacts/{contactId}', [CustomerApiController::class, 'contactsUpdate'])->scope('customers.write')
+                ->summary('Update customer contact')->ruleset('customers.contact.save');
+            $api->delete('/{id}/contacts/{contactId}', [CustomerApiController::class, 'contactsDestroy'])->scope('customers.write')
+                ->summary('Delete customer contact');
 
-            $api->get('/{id}/notes', [CustomerApiController::class, 'notesIndex'])->scope('customers.read');
-            $api->post('/{id}/notes', [CustomerApiController::class, 'notesStore'])->scope('customers.write');
-            $api->get('/{id}/notes/{noteId}', [CustomerApiController::class, 'notesShow'])->scope('customers.read');
-            $api->patch('/{id}/notes/{noteId}', [CustomerApiController::class, 'notesUpdate'])->scope('customers.write');
-            $api->delete('/{id}/notes/{noteId}', [CustomerApiController::class, 'notesDestroy'])->scope('customers.write');
+            $api->get('/{id}/notes', [CustomerApiController::class, 'notesIndex'])->scope('customers.read')
+                ->summary('List customer notes');
+            $api->post('/{id}/notes', [CustomerApiController::class, 'notesStore'])->scope('customers.write')
+                ->summary('Create customer note')->ruleset('customers.note.save');
+            $api->get('/{id}/notes/{noteId}', [CustomerApiController::class, 'notesShow'])->scope('customers.read')
+                ->summary('Get customer note');
+            $api->patch('/{id}/notes/{noteId}', [CustomerApiController::class, 'notesUpdate'])->scope('customers.write')
+                ->summary('Update customer note')->ruleset('customers.note.save');
+            $api->delete('/{id}/notes/{noteId}', [CustomerApiController::class, 'notesDestroy'])->scope('customers.write')
+                ->summary('Delete customer note');
 
-            $api->get('/{id}/relations', [CustomerApiController::class, 'relationsIndex'])->scope('customers.read');
-            $api->post('/{id}/relations', [CustomerApiController::class, 'relationsStore'])->scope('customers.write');
-            $api->delete('/{id}/relations/{relationId}', [CustomerApiController::class, 'relationsDestroy'])->scope('customers.write');
+            $api->get('/{id}/relations', [CustomerApiController::class, 'relationsIndex'])->scope('customers.read')
+                ->summary('List customer relations');
+            $api->post('/{id}/relations', [CustomerApiController::class, 'relationsStore'])->scope('customers.write')
+                ->summary('Create customer relation')->ruleset('customers.relation.save');
+            $api->delete('/{id}/relations/{relationId}', [CustomerApiController::class, 'relationsDestroy'])->scope('customers.write')
+                ->summary('Delete customer relation');
 
-            $api->post('/{id}/tags', [CustomerTagApiController::class, 'attach'])->scope('customers.write');
-            $api->delete('/{id}/tags/{tagId}', [CustomerTagApiController::class, 'detach'])->scope('customers.write');
+            $api->post('/{id}/tags', [CustomerTagApiController::class, 'attach'])->scope('customers.write')
+                ->summary('Attach tag')->ruleset('customers.tag.attach');
+            $api->delete('/{id}/tags/{tagId}', [CustomerTagApiController::class, 'detach'])->scope('customers.write')
+                ->summary('Detach tag');
 
-            $api->get('/{id}/activity', [CustomerActivityApiController::class, 'index'])->scope('customers.read');
+            $api->get('/{id}/activity', [CustomerActivityApiController::class, 'index'])->scope('customers.read')
+                ->summary('Customer activity feed');
         });
 
         $context->api()->module('customer-tags', function (ApiModule $api): void {
-            $api->get('/', [CustomerTagApiController::class, 'index'])->scope('customers.read');
-            $api->post('/', [CustomerTagApiController::class, 'store'])->scope('customers.write');
+            $api->get('/', [CustomerTagApiController::class, 'index'])->scope('customers.read')
+                ->summary('List customer tags');
+            $api->post('/', [CustomerTagApiController::class, 'store'])->scope('customers.write')
+                ->summary('Create customer tag')->ruleset('customers.tag.save');
         });
     }
 

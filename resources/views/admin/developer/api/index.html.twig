@@ -1,13 +1,18 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-<div class="developer-page">
+<div class="developer-page" x-data="apiTester"
+     data-api-base="{{ apiBase|e('html_attr') }}"
+     data-tester-token-url="{{ testerTokenUrl|e('html_attr') }}"
+     data-tester-user-id="{{ testerUserId|e('html_attr') }}"
+     data-label-copy="{{ 'admin.api.tester.copy'|trans|e('html_attr') }}"
+     data-label-copied="{{ 'admin.api.tester.copied'|trans|e('html_attr') }}">
     <header class="page-header">
         <div>
             <h1>{{ 'admin.api.title'|trans }}</h1>
             <p class="muted">{{ 'admin.api.auth_hint'|trans }}</p>
         </div>
-        <a class="btn btn--ghost" href="/api/openapi.json" target="_blank">{{ 'admin.api.openapi'|trans }}</a>
+        <a class="btn btn--ghost" href="/api/openapi.json" target="_blank" rel="noopener">{{ 'admin.api.openapi'|trans }}</a>
     </header>
 
     <div class="developer-stack">
@@ -23,6 +28,7 @@
                             <col class="col-path">
                             <col class="col-scopes">
                             <col class="col-summary">
+                            <col class="col-actions">
                         </colgroup>
                         <thead>
                             <tr>
@@ -30,18 +36,28 @@
                                 <th>{{ 'admin.api.col.path'|trans }}</th>
                                 <th>{{ 'admin.api.col.scopes'|trans }}</th>
                                 <th>{{ 'admin.api.col.summary'|trans }}</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for route in routes %}
-                                {% for method in route.methods %}
-                                    <tr>
-                                        <td><span class="method-pill method-pill--{{ method|lower }}">{{ method }}</span></td>
-                                        <td class="table__path"><code>/api/v1/{{ route.module }}{% if route.path != '/' %}{{ route.path }}{% endif %}</code></td>
-                                        <td class="table__wrap-cell muted">{{ route.scopes|join(', ') ?: 'common.none'|trans }}</td>
-                                        <td class="table__wrap-cell">{{ route.summary ?: '—' }}</td>
-                                    </tr>
-                                {% endfor %}
+                                <tr>
+                                    <td><span class="method-pill method-pill--{{ route.method|lower }}">{{ route.method }}</span></td>
+                                    <td class="table__path"><code>{{ route.path }}</code></td>
+                                    <td class="table__wrap-cell muted">{{ route.scopes|join(', ') ?: 'common.none'|trans }}</td>
+                                    <td class="table__wrap-cell">{{ route.summary ?: '—' }}</td>
+                                    <td class="table__actions">
+                                        <button
+                                            type="button"
+                                            class="btn btn--ghost btn-sm"
+                                            data-method="{{ route.method|e('html_attr') }}"
+                                            data-path="{{ route.path|e('html_attr') }}"
+                                            data-summary="{{ route.summary|e('html_attr') }}"
+                                            data-scopes="{{ route.scopes|json_encode|e('html_attr') }}"
+                                            @click="openTestFromButton($event)"
+                                        >{{ icon('play') }} {{ 'admin.api.test'|trans }}</button>
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -51,5 +67,7 @@
             <div class="empty"><h2>{{ 'empty.api_routes'|trans }}</h2><p>{{ 'empty.api_routes_hint'|trans }}</p></div>
         {% endfor %}
     </div>
+
+    {% include 'admin/developer/api/_tester_dialog.html.twig' %}
 </div>
 {% endblock %}

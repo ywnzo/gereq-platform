@@ -10,6 +10,7 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Resource\ResourceRegistrar;
 use Gereq\Admin\Search\AdminSearchRegistry;
 use Gereq\Api\ApiRegistry;
+use Gereq\Automation\WorkflowVariableRegistry;
 use Gereq\Config\Repository;
 use Gereq\Event\EventBus;
 use Gereq\Event\EventRegistry;
@@ -40,6 +41,7 @@ final class ModuleContext
         private readonly ApiRegistry $api,
         private readonly EventRegistry $eventRegistry,
         private readonly PublishableRegistry $publishables,
+        private readonly WorkflowVariableRegistry $workflowVariables,
     ) {
     }
 
@@ -66,6 +68,11 @@ final class ModuleContext
     public function platformEvents(): EventRegistry
     {
         return $this->eventRegistry;
+    }
+
+    public function workflowVariables(): WorkflowVariableRegistry
+    {
+        return $this->workflowVariables;
     }
 
     public function api(): ApiRegistry

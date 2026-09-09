@@ -124,6 +124,7 @@ final class CustomerApiController extends AbstractCustomerApiController
             return ApiResponse::notFound();
         }
 
+        $raw = $this->body($request);
         $data = $this->validateBody($request, 'customers.save', ['ignore_id' => $customer->id()]);
         $previousStatus = $customer->status();
         $this->freeze->freezeIfNeeded(
@@ -136,7 +137,7 @@ final class CustomerApiController extends AbstractCustomerApiController
         );
         $customer->setName(trim((string) $data['name']));
         $customer->setEmail(strtolower(trim((string) $data['email'])));
-        $this->applyCustomerFields($customer, $data);
+        $this->applyCustomerFields($customer, $data, array_keys($raw));
         $this->em->flush();
 
         $payload = $this->serializeCustomer($customer);
@@ -281,18 +282,24 @@ final class CustomerApiController extends AbstractCustomerApiController
             return ApiResponse::notFound();
         }
 
+        $raw = $this->body($request);
         $data = $this->validateBody($request, 'customers.address.save');
         $address->setType((string) $data['type']);
         $address->setLine1(trim((string) $data['line1']));
-        $address->setLine2(isset($data['line2']) ? (string) $data['line2'] : null);
+        if (array_key_exists('line2', $raw)) {
+            $line2 = $data['line2'] ?? null;
+            $address->setLine2($line2 !== null && $line2 !== '' ? (string) $line2 : null);
+        }
         $address->setCity(trim((string) $data['city']));
         $address->setZip(trim((string) $data['zip']));
         $address->setCountry(trim((string) $data['country']));
-        $isPrimary = $this->boolValue($data['is_primary'] ?? false);
-        if ($isPrimary) {
-            $this->clearPrimaryAddresses($id, $address->id());
+        if (array_key_exists('is_primary', $raw)) {
+            $isPrimary = $this->boolValue($data['is_primary'] ?? false);
+            if ($isPrimary) {
+                $this->clearPrimaryAddresses($id, $address->id());
+            }
+            $address->setIsPrimary($isPrimary);
         }
-        $address->setIsPrimary($isPrimary);
         $this->em->flush();
 
         $payload = $this->serializeAddress($address);
@@ -374,16 +381,28 @@ final class CustomerApiController extends AbstractCustomerApiController
             return ApiResponse::notFound();
         }
 
+        $raw = $this->body($request);
         $data = $this->validateBody($request, 'customers.contact.save');
         $contact->setName(trim((string) $data['name']));
-        $contact->setEmail(isset($data['email']) ? (string) $data['email'] : null);
-        $contact->setPhone(isset($data['phone']) ? (string) $data['phone'] : null);
-        $contact->setRole(isset($data['role']) ? (string) $data['role'] : null);
-        $isPrimary = $this->boolValue($data['is_primary'] ?? false);
-        if ($isPrimary) {
-            $this->clearPrimaryContacts($id, $contact->id());
+        if (array_key_exists('email', $raw)) {
+            $email = $data['email'] ?? null;
+            $contact->setEmail($email !== null && $email !== '' ? (string) $email : null);
         }
-        $contact->setIsPrimary($isPrimary);
+        if (array_key_exists('phone', $raw)) {
+            $phone = $data['phone'] ?? null;
+            $contact->setPhone($phone !== null && $phone !== '' ? (string) $phone : null);
+        }
+        if (array_key_exists('role', $raw)) {
+            $role = $data['role'] ?? null;
+            $contact->setRole($role !== null && $role !== '' ? (string) $role : null);
+        }
+        if (array_key_exists('is_primary', $raw)) {
+            $isPrimary = $this->boolValue($data['is_primary'] ?? false);
+            if ($isPrimary) {
+                $this->clearPrimaryContacts($id, $contact->id());
+            }
+            $contact->setIsPrimary($isPrimary);
+        }
         $this->em->flush();
 
         $payload = $this->serializeContact($contact);
@@ -589,29 +608,50 @@ final class CustomerApiController extends AbstractCustomerApiController
         return $note;
     }
 
-    /** @param array<string, mixed> $data */
-    private function applyCustomerFields(Customer $customer, array $data): void
+    /**
+     * @param array<string, mixed> $data
+     * @param list<string|int>|null $presentKeys Keys from the raw request body. Null = create (apply all).
+     */
+    private function applyCustomerFields(Customer $customer, array $data, ?array $presentKeys = null): void
     {
-        $customer->setPhone(isset($data['phone']) ? (string) $data['phone'] : null);
-        if (array_key_exists('is_company', $data)) {
-            $customer->setIsCompany((bool) $data['is_company']);
+        $has = static function (string $key) use ($presentKeys): bool {
+            return $presentKeys === null || in_array($key, $presentKeys, true);
+        };
+
+        if ($has('phone')) {
+            $phone = $data['phone'] ?? null;
+            $customer->setPhone($phone !== null && $phone !== '' ? (string) $phone : null);
         }
-        $customer->setCompany(isset($data['company']) ? (string) $data['company'] : null);
-        if (array_key_exists('ico', $data)) {
-            $customer->setIco(isset($data['ico']) ? (string) $data['ico'] : null);
+        if ($has('is_company')) {
+            $customer->setIsCompany($this->boolValue($data['is_company'] ?? false));
         }
-        if (array_key_exists('dic', $data)) {
-            $customer->setDic(isset($data['dic']) ? (string) $data['dic'] : null);
+        if ($has('company')) {
+            $company = $data['company'] ?? null;
+            $customer->setCompany($company !== null && $company !== '' ? (string) $company : null);
         }
-        if (array_key_exists('company_address', $data)) {
-            $customer->setCompanyAddress(isset($data['company_address']) ? (string) $data['company_address'] : null);
+        if ($has('ico')) {
+            $ico = $data['ico'] ?? null;
+            $customer->setIco($ico !== null && $ico !== '' ? (string) $ico : null);
         }
-        $customer->setNote(isset($data['note']) ? (string) $data['note'] : null);
-        $status = (string) ($data['status'] ?? 'active');
-        if (!in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
-            $status = 'active';
+        if ($has('dic')) {
+            $dic = $data['dic'] ?? null;
+            $customer->setDic($dic !== null && $dic !== '' ? (string) $dic : null);
         }
-        $customer->setStatus($status);
+        if ($has('company_address')) {
+            $address = $data['company_address'] ?? null;
+            $customer->setCompanyAddress($address !== null && $address !== '' ? (string) $address : null);
+        }
+        if ($has('note')) {
+            $note = $data['note'] ?? null;
+            $customer->setNote($note !== null && $note !== '' ? (string) $note : null);
+        }
+        if ($has('status') || $presentKeys === null) {
+            $status = (string) ($data['status'] ?? 'active');
+            if (!in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
+                $status = 'active';
+            }
+            $customer->setStatus($status);
+        }
     }
 
     private function clearPrimaryAddresses(string $customerId, ?string $exceptId = null): void
@@ -653,6 +693,7 @@ final class CustomerApiController extends AbstractCustomerApiController
             'company_address' => $customer->companyAddress(),
             'note' => $customer->note(),
             'status' => $customer->status(),
+            'avatar_file_id' => $customer->avatarFileId(),
             'created_at' => $customer->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $customer->updatedAt()->format(\DateTimeInterface::ATOM),
         ];

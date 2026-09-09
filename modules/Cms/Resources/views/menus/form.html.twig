@@ -1,13 +1,37 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.cms'|trans, url: url('admin.cms.pages.index') },
+        { label: 'nav.cms.menus'|trans, url: url('admin.cms.menus.index') },
+        { label: item ? item.name() : ('cms.menus.new'|trans) },
+    ] } %}
+{% endblock %}
+
 {% block content %}
     <header class="page-header">
-        <h1>{{ item ? 'cms.menus.edit'|trans : 'cms.menus.new'|trans }}</h1>
+        <div>
+            <h1>{{ item ? 'cms.menus.edit'|trans : 'cms.menus.new'|trans }}</h1>
+            <p class="muted">{{ 'cms.pages.form.intro'|trans }}</p>
+        </div>
+        <div class="actions">
+            <button class="btn btn--primary" type="submit" form="cms-menu-form">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ item ? url('admin.cms.menus.show', {id: item.id()}) : url('admin.cms.menus.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
     </header>
 
     {% include 'ui/error-summary.html.twig' with { form: 'cms.menu.save' } %}
 
-    <form method="post" class="detail-stack" action="{{ item ? url('admin.cms.menus.update', {id: item.id()}) : url('admin.cms.menus.store') }}" data-form="cms.menu.save" x-data="gereqForm"{% if form_errors('cms.menu.save') %} data-server-state="1"{% endif %}>
+    <form
+        id="cms-menu-form"
+        method="post"
+        class="detail-stack"
+        action="{{ item ? url('admin.cms.menus.update', {id: item.id()}) : url('admin.cms.menus.store') }}"
+        data-form="cms.menu.save"
+        x-data="gereqForm"
+        {% if form_errors('cms.menu.save') %}data-server-state="1"{% endif %}
+    >
         {{ csrf_field()|raw }}
         <section class="panel">
             <header class="panel__head">

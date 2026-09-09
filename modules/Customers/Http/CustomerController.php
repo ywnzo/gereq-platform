@@ -10,6 +10,8 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
+use Gereq\File\FileManager;
+use Gereq\File\StoredFile;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
@@ -25,6 +27,7 @@ use Modules\Customers\Domain\CustomerNote;
 use Modules\Customers\Domain\Events\CustomerArchived;
 use Modules\Customers\Domain\Events\CustomerRestored;
 use Modules\Customers\Domain\Events\CustomerUpdated;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -47,6 +50,7 @@ final class CustomerController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly HtmlSanitizer $html,
         private readonly ProductionFreeze $freeze,
+        private readonly FileManager $files,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -128,6 +132,7 @@ final class CustomerController extends Controller
         $customer->setCompanyAddress($data['company_address']);
         $customer->setNote($data['note']);
         $customer->setStatus($data['status']);
+        $this->storeAvatar($request, $customer);
         $this->em->persist($customer);
         $this->em->flush();
         $this->freeze->stageCreate(
@@ -382,6 +387,13 @@ final class CustomerController extends Controller
         $customer->setCompanyAddress($data['company_address']);
         $customer->setNote($data['note']);
         $customer->setStatus($data['status']);
+        $this->storeAvatar($request, $customer);
+        if ($request->request->getBoolean('remove_avatar')) {
+            $upload = $request->files->get('avatar');
+            if (!$upload instanceof UploadedFile || !$upload->isValid()) {
+                $customer->setAvatarFileId(null);
+            }
+        }
         $this->em->flush();
         $payload = $this->publicCustomer($customer);
         $this->events->dispatch(CustomerUpdated::make($customer->id(), $payload));
@@ -415,6 +427,29 @@ final class CustomerController extends Controller
         $this->flash('success', $this->translator->trans('publish.flash.staged'));
 
         return $this->redirect('admin.customers.index');
+    }
+
+    public function avatar(string $id): Response
+    {
+        $customer = $this->find($id);
+        if ($customer === null || $this->freeze->isPendingDelete('customers', $id) || $customer->avatarFileId() === null) {
+            $this->abort(404, $this->translator->trans('customers.error.avatar_missing'));
+        }
+        $file = $this->em->find(StoredFile::class, $customer->avatarFileId());
+        if (!$file instanceof StoredFile) {
+            $this->abort(404, $this->translator->trans('customers.error.avatar_missing'));
+        }
+        try {
+            $contents = $this->files->filesystem()->read($file->path());
+        } catch (\Throwable) {
+            $this->abort(404, $this->translator->trans('customers.error.avatar_missing'));
+        }
+
+        return new Response($contents, 200, [
+            'Content-Type' => $file->mime(),
+            'Cache-Control' => 'private, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function bulk(Request $request): Response
@@ -517,6 +552,20 @@ final class CustomerController extends Controller
         return $this->redirect('admin.customers.index');
     }
 
+    private function storeAvatar(Request $request, Customer $customer): void
+    {
+        $upload = $request->files->get('avatar');
+        if (!$upload instanceof UploadedFile || !$upload->isValid()) {
+            return;
+        }
+        try {
+            $stored = $this->files->store($upload, $this->auth->user());
+            $customer->setAvatarFileId($stored->id());
+        } catch (\Throwable $e) {
+            $this->flash('error', $e->getMessage());
+        }
+    }
+
     private function find(string $id): ?Customer
     {
         $customer = $this->em->find(Customer::class, $id);
@@ -578,6 +627,7 @@ final class CustomerController extends Controller
             'company_address' => $customer->companyAddress(),
             'note' => $customer->note(),
             'status' => $customer->status(),
+            'avatar_file_id' => $customer->avatarFileId(),
             'created_at' => $customer->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $customer->updatedAt()->format(\DateTimeInterface::ATOM),
         ];

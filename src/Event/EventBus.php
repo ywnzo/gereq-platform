@@ -23,7 +23,7 @@ final class EventBus
     ) {
     }
 
-    /** @param callable(string, float): void|null $tracer */
+    /** @param callable(string, float, object|null): void|null $tracer */
     public function setTracer(?callable $tracer): void
     {
         $this->tracer = $tracer;
@@ -62,7 +62,7 @@ final class EventBus
         }
 
         if (is_callable($this->tracer)) {
-            ($this->tracer)($event::class, (hrtime(true) - $start) / 1_000_000);
+            ($this->tracer)($event::class, (hrtime(true) - $start) / 1_000_000, $event);
         }
 
         return $event;

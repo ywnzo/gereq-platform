@@ -1,26 +1,79 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.cms'|trans, url: url('admin.cms.pages.index') },
+        { label: 'nav.cms.pages'|trans, url: url('admin.cms.pages.index') },
+        { label: item ? item.title() : ('cms.pages.new'|trans) },
+    ] } %}
+{% endblock %}
+
 {% block content %}
     <header class="page-header">
-        <h1>{{ item ? 'cms.pages.edit'|trans : 'cms.pages.new'|trans }}</h1>
+        <div>
+            <h1>{{ item ? 'cms.pages.edit'|trans : 'cms.pages.new'|trans }}</h1>
+            {% if item %}
+                <p class="muted detail-layout__meta">
+                    <code>/{{ item.slug() }}</code>
+                    <span class="badge">{{ item.statusLabel()|trans }}</span>
+                </p>
+            {% else %}
+                <p class="muted">{{ 'cms.pages.form.intro'|trans }}</p>
+            {% endif %}
+        </div>
+        <div class="actions">
+            {% if item %}
+                <a class="btn btn--ghost" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank" rel="noopener">{{ 'cms.pages.preview'|trans }}</a>
+            {% endif %}
+            <button class="btn btn--primary" type="submit" form="cms-page-form">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ item ? url('admin.cms.pages.show', {id: item.id()}) : url('admin.cms.pages.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
     </header>
 
     {% include 'ui/error-summary.html.twig' with { form: 'cms.page.save' } %}
 
-    <form method="post" class="detail-stack" action="{{ item ? url('admin.cms.pages.update', {id: item.id()}) : url('admin.cms.pages.store') }}" data-form="cms.page.save" x-data="gereqForm"{% if form_errors('cms.page.save') %} data-server-state="1"{% endif %}>
+    {% set pageSource = item ?? 'Modules\\Cms\\Domain\\Page' %}
+    <form
+        id="cms-page-form"
+        method="post"
+        class="detail-layout"
+        action="{{ item ? url('admin.cms.pages.update', {id: item.id()}) : url('admin.cms.pages.store') }}"
+        data-form="cms.page.save"
+        x-data="gereqForm"
+        {% if form_errors('cms.page.save') %}data-server-state="1"{% endif %}
+    >
         {{ csrf_field()|raw }}
-        <section class="panel">
-            <header class="panel__head">
-                <h2>{{ 'common.details'|trans }}</h2>
-            </header>
-            {{ forms().render(item ?? 'Modules\\Cms\\Domain\\Page', {
-                form: 'cms.page.save',
-                cols: 1
-            }) }}
-        </section>
-        <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ item ? url('admin.cms.pages.show', {id: item.id()}) : url('admin.cms.pages.index') }}">{{ 'common.cancel'|trans }}</a>
+
+        <div class="detail-layout__main">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'common.details'|trans }}</h2>
+                </header>
+                {{ forms().render(pageSource, {
+                    form: 'cms.page.save',
+                    group: 'content',
+                    cols: 1
+                }) }}
+            </section>
         </div>
+
+        <aside class="detail-layout__aside">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'cms.pages.section.publishing'|trans }}</h2>
+                </header>
+                <p class="muted" style="margin:0 0 0.75rem">{{ 'cms.pages.section.publishing_hint'|trans }}</p>
+                {{ forms().render(pageSource, {
+                    form: 'cms.page.save',
+                    group: 'publishing',
+                    cols: 1
+                }) }}
+            </section>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ item ? url('admin.cms.pages.show', {id: item.id()}) : url('admin.cms.pages.index') }}">{{ 'common.cancel'|trans }}</a>
+            </div>
+        </aside>
     </form>
 {% endblock %}

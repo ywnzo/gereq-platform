@@ -1,11 +1,40 @@
 import type Alpine from '@alpinejs/csp';
-import { Editor } from '@tiptap/core';
+import { Editor, type Extensions } from '@tiptap/core';
+import { FontFamily } from '@tiptap/extension-font-family';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style';
 import StarterKit from '@tiptap/starter-kit';
+import {
+    type WorkflowVarMeta,
+    varsByPath,
+    workflowVarDecorations,
+} from '../../../modules/CRM/Resources/assets/js/workflowVars';
+import { FontWeight } from './fontWeight';
 
 type EditorMode = 'editor' | 'html';
+
+type CanvasLike = {
+    variables?: WorkflowVarMeta[];
+};
+
+function findCanvasVars(el: HTMLElement): () => Record<string, WorkflowVarMeta> {
+    return () => {
+        let cur: HTMLElement | null = el;
+        while (cur) {
+            const stack = (cur as HTMLElement & { _x_dataStack?: unknown[] })._x_dataStack;
+            if (Array.isArray(stack) && stack[0] && typeof stack[0] === 'object') {
+                const data = stack[0] as CanvasLike;
+                if (Array.isArray(data.variables)) {
+                    return varsByPath(data.variables);
+                }
+            }
+            cur = cur.parentElement;
+        }
+        return {};
+    };
+}
 
 /**
  * TipTap's Editor/ProseMirror must NOT live on Alpine reactive state —
@@ -14,6 +43,7 @@ type EditorMode = 'editor' | 'html';
 export function registerEditor(alpine: typeof Alpine): void {
     alpine.data('gereqEditor', () => {
         let editor: Editor | null = null;
+        let insertHandler: ((event: Event) => void) | null = null;
 
         return {
             mode: 'editor' as EditorMode,
@@ -21,6 +51,8 @@ export function registerEditor(alpine: typeof Alpine): void {
             htmlVisible: false,
             htmlSource: '',
             heading: 'paragraph',
+            fontFamily: '',
+            fontWeight: '',
             tabEditorClass: 'g-editor__mode-btn is-active',
             tabHtmlClass: 'g-editor__mode-btn',
             boldClass: 'g-editor__btn',
@@ -41,30 +73,36 @@ export function registerEditor(alpine: typeof Alpine): void {
                 const placeholder = root.dataset.placeholder || 'Pište…';
                 const initial = textarea.value || '';
                 const self = this;
+                const extensions: Extensions = [
+                    StarterKit.configure({
+                        heading: { levels: [1, 2, 3] },
+                        link: false,
+                    }),
+                    TextStyle,
+                    FontFamily,
+                    FontWeight,
+                    TextAlign.configure({
+                        types: ['heading', 'paragraph'],
+                        alignments: ['left', 'center', 'right', 'justify'],
+                    }),
+                    Link.configure({
+                        openOnClick: false,
+                        autolink: true,
+                        protocols: ['http', 'https', 'mailto'],
+                        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+                    }),
+                    Placeholder.configure({ placeholder }),
+                ];
+                if (root.dataset.highlightVars === '1') {
+                    extensions.push(workflowVarDecorations(findCanvasVars(root)));
+                }
 
                 this.htmlSource = initial;
                 editor = new Editor({
                     element: mount,
                     content: initial,
                     injectCSS: false,
-                    extensions: [
-                        // StarterKit v3 already ships underline.
-                        StarterKit.configure({
-                            heading: { levels: [1, 2, 3] },
-                            link: false,
-                        }),
-                        TextAlign.configure({
-                            types: ['heading', 'paragraph'],
-                            alignments: ['left', 'center', 'right', 'justify'],
-                        }),
-                        Link.configure({
-                            openOnClick: false,
-                            autolink: true,
-                            protocols: ['http', 'https', 'mailto'],
-                            HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-                        }),
-                        Placeholder.configure({ placeholder }),
-                    ],
+                    extensions,
                     editorProps: {
                         attributes: {
                             class: 'g-editor__content',
@@ -81,11 +119,30 @@ export function registerEditor(alpine: typeof Alpine): void {
                     },
                 });
 
+                insertHandler = (event: Event) => {
+                    const detail = (event as CustomEvent<{ text?: string; html?: string }>).detail;
+                    if (!editor || !detail) {
+                        return;
+                    }
+                    if (detail.html) {
+                        editor.chain().focus().insertContent(detail.html).run();
+                        return;
+                    }
+                    if (detail.text) {
+                        editor.chain().focus().insertContent(detail.text).run();
+                    }
+                };
+                root.addEventListener('gereq-editor-insert', insertHandler);
+
                 this.refreshModeClasses();
                 this.refreshActive(editor);
             },
 
             destroy() {
+                const root = this.$el as HTMLElement;
+                if (insertHandler) {
+                    root.removeEventListener('gereq-editor-insert', insertHandler);
+                }
                 editor?.destroy();
                 editor = null;
             },
@@ -185,6 +242,32 @@ export function registerEditor(alpine: typeof Alpine): void {
                 editor.chain().focus().toggleHeading({ level }).run();
             },
 
+            onFontFamilyChange(event: Event) {
+                const value = (event.target as HTMLSelectElement).value;
+                this.fontFamily = value;
+                if (!editor) {
+                    return;
+                }
+                if (value === '') {
+                    editor.chain().focus().unsetFontFamily().run();
+                    return;
+                }
+                editor.chain().focus().setFontFamily(value).run();
+            },
+
+            onFontWeightChange(event: Event) {
+                const value = (event.target as HTMLSelectElement).value;
+                this.fontWeight = value;
+                if (!editor) {
+                    return;
+                }
+                if (value === '') {
+                    editor.chain().focus().unsetFontWeight().run();
+                    return;
+                }
+                editor.chain().focus().setFontWeight(value).run();
+            },
+
             syncFromEditor(ed: Editor) {
                 if (this.mode !== 'editor') {
                     return;
@@ -228,6 +311,10 @@ export function registerEditor(alpine: typeof Alpine): void {
                 } else {
                     this.heading = 'paragraph';
                 }
+
+                const attrs = ed.getAttributes('textStyle') as { fontFamily?: string; fontWeight?: string };
+                this.fontFamily = attrs.fontFamily || '';
+                this.fontWeight = attrs.fontWeight || '';
 
                 let align = 'left';
                 if (ed.isActive({ textAlign: 'center' })) {

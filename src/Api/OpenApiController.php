@@ -15,6 +15,14 @@ final class OpenApiController
 
     public function show(): JsonResponse
     {
-        return new JsonResponse($this->generator->generate());
+        return new JsonResponse(
+            $this->generator->generate(),
+            200,
+            [
+                'Content-Type' => 'application/json; charset=UTF-8',
+                'Cache-Control' => 'no-store',
+            ],
+            false,
+        );
     }
 }

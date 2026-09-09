@@ -1,0 +1,10 @@
+{% macro avatar(row, size = '') %}
+    {% set cls = 'ol-mail__avatar' ~ (size ? ' ol-mail__avatar--' ~ size : '') %}
+    {% if row.avatar_url %}
+        <span class="{{ cls }} ol-mail__avatar--logo" aria-hidden="true">
+            <img src="{{ row.avatar_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" decoding="async">
+        </span>
+    {% else %}
+        <span class="{{ cls }}" aria-hidden="true">{{ row.initials }}</span>
+    {% endif %}
+{% endmacro %}

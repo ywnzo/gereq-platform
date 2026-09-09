@@ -132,6 +132,7 @@ final class CustomerPublishAdapter implements PublishableAdapterInterface
             'company_address' => $customer->companyAddress(),
             'note' => $customer->note(),
             'status' => $customer->status(),
+            'avatar_file_id' => $customer->avatarFileId(),
             'created_at' => $customer->createdAt()->format(\DateTimeInterface::ATOM),
             'updated_at' => $customer->updatedAt()->format(\DateTimeInterface::ATOM),
         ];

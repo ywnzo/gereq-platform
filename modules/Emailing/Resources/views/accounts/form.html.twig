@@ -1,0 +1,248 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+{% set emptyLabel = account ? 'emailing.accounts.edit'|trans : 'emailing.accounts.new'|trans %}
+{% set parts = account ? account.name()|trim|split(' ') : [] %}
+{% set initials = account
+    ? ((parts|first|slice(0, 1) ~ (parts|length > 1 ? parts|last|slice(0, 1) : ''))|upper)
+    : '?' %}
+{% set encOptions = [] %}
+{% for e in encryptions %}
+    {% set encOptions = encOptions|merge([{ value: e, label: e|upper }]) %}
+{% endfor %}
+{% set protoOptions = [] %}
+{% for p in protocols %}
+    {% set protoOptions = protoOptions|merge([{ value: p, label: p|upper }]) %}
+{% endfor %}
+
+<div class="customer-edit emailing-edit">
+    <header class="customer-edit__header">
+        <div class="customer-edit__identity">
+            <a class="text-link customer-profile__back" href="{{ url('admin.emailing.accounts.index') }}">
+                ← {{ 'nav.emailing.accounts'|trans }}
+            </a>
+            <div class="cell-user cell-user--lg">
+                <span class="avatar avatar--xl">{{ initials }}</span>
+                <div>
+                    <p class="customer-edit__eyebrow">{{ emptyLabel }}</p>
+                    <h1>{{ account ? account.name() : 'emailing.accounts.new'|trans }}</h1>
+                    <p class="customer-profile__sub">{{ 'emailing.accounts.form.lead'|trans }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="customer-edit__header-actions">
+            <button class="btn btn--primary" type="submit" form="emailing-account-form">{{ 'common.save'|trans }}</button>
+        </div>
+    </header>
+
+    <form
+        id="emailing-account-form"
+        method="post"
+        class="customer-edit__form"
+        action="{{ account ? url('admin.emailing.accounts.update', {id: account.id()}) : url('admin.emailing.accounts.store') }}"
+    >
+        {{ csrf_field()|raw }}
+
+        <div class="customer-edit__layout">
+            <div class="customer-edit__main">
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'emailing.section.profile'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'emailing.accounts.form.profile.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/input.html.twig' with {
+                            name: 'name',
+                            label: 'emailing.field.name'|trans,
+                            required: true,
+                            value: account ? account.name() : '',
+                            autocomplete: 'organization'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'email',
+                            label: 'emailing.field.email'|trans,
+                            type: 'email',
+                            required: true,
+                            value: account ? account.email() : '',
+                            autocomplete: 'email'
+                        } %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'emailing.field.smtp'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'emailing.accounts.form.smtp.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/input.html.twig' with {
+                            name: 'smtp_host',
+                            label: 'emailing.field.host'|trans,
+                            required: true,
+                            value: account ? account.smtpHost() : 'mail.vas-hosting.cz',
+                            placeholder: 'mail.vas-hosting.cz',
+                            extra: 'field--full'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'smtp_port',
+                            label: 'emailing.field.port'|trans,
+                            type: 'number',
+                            required: true,
+                            value: account ? account.smtpPort() : 465
+                        } %}
+                        {% include 'ui/select.html.twig' with {
+                            name: 'smtp_encryption',
+                            label: 'emailing.field.encryption'|trans,
+                            required: true,
+                            value: account ? account.smtpEncryption() : 'ssl',
+                            options: encOptions
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'smtp_username',
+                            label: 'emailing.field.username'|trans,
+                            optional: true,
+                            value: account ? account.smtpUsername() : '',
+                            autocomplete: 'username'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'smtp_password',
+                            label: 'emailing.field.password'|trans,
+                            type: 'password',
+                            optional: true,
+                            value: '',
+                            placeholder: account ? '••••••' : '',
+                            autocomplete: 'new-password'
+                        } %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'emailing.field.incoming'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'emailing.accounts.form.incoming.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/select.html.twig' with {
+                            name: 'incoming_protocol',
+                            label: 'emailing.field.protocol'|trans,
+                            required: true,
+                            value: account ? account.incomingProtocol() : 'imap',
+                            options: protoOptions
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'incoming_host',
+                            label: 'emailing.field.host'|trans,
+                            optional: true,
+                            value: account ? account.incomingHost() : 'mail.vas-hosting.cz',
+                            placeholder: 'mail.vas-hosting.cz'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'incoming_port',
+                            label: 'emailing.field.port'|trans,
+                            type: 'number',
+                            optional: true,
+                            value: account ? account.incomingPort() : 993
+                        } %}
+                        {% include 'ui/select.html.twig' with {
+                            name: 'incoming_encryption',
+                            label: 'emailing.field.encryption'|trans,
+                            required: true,
+                            value: account ? account.incomingEncryption() : 'ssl',
+                            options: encOptions
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'incoming_username',
+                            label: 'emailing.field.username'|trans,
+                            optional: true,
+                            value: account ? account.incomingUsername() : '',
+                            autocomplete: 'username'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'incoming_password',
+                            label: 'emailing.field.password'|trans,
+                            type: 'password',
+                            optional: true,
+                            value: '',
+                            placeholder: account ? '••••••' : '',
+                            autocomplete: 'new-password'
+                        } %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'emailing.field.signature'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'emailing.accounts.form.signature.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    {% include 'ui/textarea.html.twig' with {
+                        name: 'signature_html',
+                        label: 'emailing.field.signature'|trans,
+                        optional: true,
+                        value: account ? account.signatureHtml() : '',
+                        rows: 8,
+                        placeholder: '<p>S pozdravem<br>…</p>'
+                    } %}
+                </section>
+            </div>
+
+            <aside class="customer-edit__aside">
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'emailing.section.options'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'emailing.accounts.form.options.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    {% include 'ui/switch.html.twig' with {
+                        name: 'is_default',
+                        label: 'emailing.field.default'|trans,
+                        on: account and account.isDefault()
+                    } %}
+                    {% include 'ui/switch.html.twig' with {
+                        name: 'is_active',
+                        label: 'emailing.field.active'|trans,
+                        on: account is null or account.isActive()
+                    } %}
+                </section>
+
+                {% if account %}
+                    <section class="customer-section customer-edit__meta">
+                        <header class="customer-section__head">
+                            <h2>{{ 'emailing.section.meta'|trans }}</h2>
+                        </header>
+                        <dl class="customer-edit__meta-list">
+                            <div>
+                                <dt>{{ 'emailing.field.created'|trans }}</dt>
+                                <dd>{{ account.createdAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'emailing.field.updated'|trans }}</dt>
+                                <dd>{{ account.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                            {% if account.lastSyncedAt() %}
+                                <div>
+                                    <dt>{{ 'emailing.field.last_synced'|trans }}</dt>
+                                    <dd>{{ account.lastSyncedAt().format('d. m. Y H:i') }}</dd>
+                                </div>
+                            {% endif %}
+                        </dl>
+                    </section>
+                {% endif %}
+
+                <div class="customer-edit__aside-actions">
+                    <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ url('admin.emailing.accounts.index') }}">{{ 'common.cancel'|trans }}</a>
+                </div>
+            </aside>
+        </div>
+    </form>
+</div>
+{% endblock %}

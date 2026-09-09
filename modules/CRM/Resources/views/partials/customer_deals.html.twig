@@ -30,5 +30,10 @@
             </tbody>
         </table>
     </div>
-    <p class="muted"><a href="{{ url('admin.crm.deals.index') }}?customer={{ customer.id() }}">{{ 'crm.deals.partial.all'|trans }}</a></p>
+    <div class="crm-partial__foot">
+        {% if user is defined and user.can('crm.deals.manage') %}
+            <a class="btn btn--ghost btn-sm" href="{{ url('admin.crm.deals.create') }}?customer={{ customer.id() }}">{{ 'crm.deals.partial.add'|trans }}</a>
+        {% endif %}
+        <p class="muted"><a href="{{ url('admin.crm.deals.index') }}?customer={{ customer.id() }}">{{ 'crm.deals.partial.all'|trans }}</a></p>
+    </div>
 {% endif %}

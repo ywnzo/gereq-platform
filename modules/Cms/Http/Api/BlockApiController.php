@@ -6,9 +6,12 @@ namespace Modules\Cms\Http\Api;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Api\ApiResponse;
+use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Publish\Adapter\CmsPagePublishAdapter;
+use Gereq\Publish\ProductionFreeze;
 use Gereq\Validation\ValidationRegistry;
 use Modules\Cms\Domain\Events\BlockCreated;
 use Modules\Cms\Domain\Events\BlockDeleted;
@@ -29,8 +32,25 @@ final class BlockApiController extends Controller
         RequestStack $requestStack,
         private readonly EntityManagerInterface $em,
         private readonly EventBus $events,
+        private readonly ProductionFreeze $freeze,
+        private readonly Authenticator $auth,
     ) {
         parent::__construct($twig, $router, $requestStack);
+    }
+
+    private function freezePageIfNeeded(Page $page): void
+    {
+        if (!$page->isPublished() && !$this->freeze->hasFreeze('cms.pages', $page->id())) {
+            return;
+        }
+        $this->freeze->freezeIfNeeded(
+            'cms.pages',
+            'page',
+            $page->id(),
+            fn (): array => CmsPagePublishAdapter::capture($this->em, $page),
+            $page->title(),
+            $this->auth->user()?->id(),
+        );
     }
 
     public function index(string $id): JsonResponse
@@ -50,9 +70,10 @@ final class BlockApiController extends Controller
     public function store(Request $request, string $id): JsonResponse
     {
         $page = $this->findPage($id);
-        if ($page === null) {
+        if ($page === null || $this->freeze->isPendingDelete('cms.pages', $id)) {
             return ApiResponse::notFound();
         }
+        $this->freezePageIfNeeded($page);
 
         $data = $this->validateBody($request, 'cms.block.save');
         $type = (string) $data['type'];
@@ -81,13 +102,14 @@ final class BlockApiController extends Controller
     public function update(Request $request, string $id, string $blockId): JsonResponse
     {
         $page = $this->findPage($id);
-        if ($page === null) {
+        if ($page === null || $this->freeze->isPendingDelete('cms.pages', $id)) {
             return ApiResponse::notFound();
         }
         $block = $this->findBlock($id, $blockId);
         if ($block === null) {
             return ApiResponse::notFound();
         }
+        $this->freezePageIfNeeded($page);
 
         $data = $this->validateBody($request, 'cms.block.save');
         $type = (string) ($data['type'] ?? $block->type());
@@ -111,13 +133,14 @@ final class BlockApiController extends Controller
     public function destroy(string $id, string $blockId): JsonResponse
     {
         $page = $this->findPage($id);
-        if ($page === null) {
+        if ($page === null || $this->freeze->isPendingDelete('cms.pages', $id)) {
             return ApiResponse::notFound();
         }
         $block = $this->findBlock($id, $blockId);
         if ($block === null) {
             return ApiResponse::notFound();
         }
+        $this->freezePageIfNeeded($page);
 
         $serialized = $this->serialize($block);
         $this->em->remove($block);

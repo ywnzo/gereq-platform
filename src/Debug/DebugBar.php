@@ -7,6 +7,7 @@ namespace Gereq\Debug;
 use Gereq\Auth\Authenticator;
 use Gereq\Config\Repository;
 use Gereq\Event\EventBus;
+use Gereq\Event\PlatformEvent;
 use Gereq\Http\Router;
 use Gereq\Publish\ContentVersion;
 use Gereq\Publish\StagingStore;
@@ -50,8 +51,19 @@ final class DebugBar
         private readonly ?ContentVersion $contentVersion = null,
     ) {
         $this->mark('start');
-        $this->eventsBus->setTracer(function (string $class, float $ms): void {
-            $this->events[] = ['event' => $class, 'duration' => round($ms, 2)];
+        $this->eventsBus->setTracer(function (string $class, float $ms, ?object $event = null): void {
+            $row = [
+                'event' => $class,
+                'duration' => round($ms, 2),
+            ];
+            if ($event instanceof PlatformEvent) {
+                $row['type'] = $event->type();
+                $data = $event->data();
+                if ($data !== []) {
+                    $row['summary'] = $this->summarizeEventData($data);
+                }
+            }
+            $this->events[] = $row;
         });
     }
 
@@ -118,6 +130,10 @@ final class DebugBar
         $this->applyNPlusOneHeaders($response);
         $this->reportNPlusOnes($request);
 
+        if ($response instanceof JsonResponse || $this->wantsAjaxDebug($request, $response)) {
+            $this->attachAjaxDebugHeader($request, $response);
+        }
+
         if ($this->injected) {
             return $response;
         }
@@ -152,6 +168,112 @@ final class DebugBar
         return $response;
     }
 
+    private function wantsAjaxDebug(Request $request, Response $response): bool
+    {
+        if ($request->isXmlHttpRequest()) {
+            return true;
+        }
+        $accept = (string) $request->headers->get('Accept', '');
+        if (str_contains($accept, 'application/json')) {
+            return true;
+        }
+        $requestedWith = strtolower((string) $request->headers->get('X-Requested-With', ''));
+        if ($requestedWith === 'xmlhttprequest') {
+            return true;
+        }
+        $contentType = (string) $response->headers->get('Content-Type', '');
+
+        return str_contains($contentType, 'application/json');
+    }
+
+    private function attachAjaxDebugHeader(Request $request, Response $response): void
+    {
+        try {
+            $payload = $this->ajaxPayload($request, $response);
+            $json = json_encode($payload, JSON_THROW_ON_ERROR);
+            // Nginx / prohlížeče: držet header pod ~6 KiB
+            if (strlen($json) > 6000) {
+                $payload['events'] = array_slice($payload['events'] ?? [], 0, 20);
+                $payload['truncated'] = true;
+                $json = json_encode($payload, JSON_THROW_ON_ERROR);
+            }
+            $response->headers->set('X-Gereq-Debug', $json);
+            $expose = (string) $response->headers->get('Access-Control-Expose-Headers', '');
+            $parts = array_filter(array_map('trim', explode(',', $expose)));
+            if (!in_array('X-Gereq-Debug', $parts, true)) {
+                $parts[] = 'X-Gereq-Debug';
+                $response->headers->set('Access-Control-Expose-Headers', implode(', ', $parts));
+            }
+        } catch (\Throwable) {
+            // debug nesmí shodit request
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function ajaxPayload(Request $request, Response $response): array
+    {
+        $started = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
+
+        return [
+            'path' => $request->getPathInfo(),
+            'method' => $request->getMethod(),
+            'status' => $response->getStatusCode(),
+            'duration' => round((microtime(true) - $started) * 1000, 1),
+            'queryCount' => $this->queries->count(),
+            'queryMs' => $this->queries->totalMs(),
+            'events' => $this->events,
+            'exceptions' => array_map(static fn (array $e): array => [
+                'class' => $e['class'],
+                'message' => $e['message'],
+            ], $this->exceptions),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function summarizeEventData(array $data): array
+    {
+        $keep = [
+            'changed_count',
+            'changed_folder_ids',
+            'synced',
+            'action',
+            'added_count',
+            'removed_count',
+            'updated_count',
+            'message_id',
+            'from_folder_id',
+            'folder_id',
+        ];
+        $out = [];
+        foreach ($keep as $key) {
+            if (array_key_exists($key, $data)) {
+                $out[$key] = $data[$key];
+            }
+        }
+        if ($out === [] && $data !== []) {
+            $i = 0;
+            foreach ($data as $k => $v) {
+                if ($i >= 6) {
+                    break;
+                }
+                if (is_scalar($v) || $v === null) {
+                    $out[(string) $k] = $v;
+                    $i++;
+                } elseif (is_array($v) && count($v) <= 8 && array_is_list($v)) {
+                    $out[(string) $k] = $v;
+                    $i++;
+                }
+            }
+        }
+
+        return $out;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -177,6 +299,8 @@ final class DebugBar
             'nPlusOneCount' => $this->queries->nPlusOneCount(),
             'nPlusOneThreshold' => $this->queries->nPlusOneThreshold(),
             'views' => $this->views(),
+            'projectRoot' => $this->editorProjectRoot(),
+            'serverRoot' => $this->basePath,
             'route' => $this->route($request),
             'request' => $this->requestBag($request),
             'session' => $this->sessionBag($request),
@@ -188,6 +312,21 @@ final class DebugBar
             'config' => $this->configBag(),
             'staging' => $this->stagingBag(),
         ];
+    }
+
+    /**
+     * Absolute project root for opening files in a local IDE.
+     * Prefer app.debug_editor_root when the app runs in Docker (/var/www/html)
+     * but the editor is on the host machine.
+     */
+    private function editorProjectRoot(): string
+    {
+        $override = trim((string) $this->config->get('app.debug_editor_root', ''));
+        if ($override !== '') {
+            return rtrim($override, "/\\");
+        }
+
+        return rtrim($this->basePath, "/\\");
     }
 
     /**
@@ -250,7 +389,7 @@ final class DebugBar
         }
     }
 
-    /** @return list<array{name: string, duration: float}> */
+    /** @return list<array{name: string, file: ?string, duration: float}> */
     private function views(): array
     {
         if ($this->twigProfile === null) {
@@ -261,14 +400,16 @@ final class DebugBar
     }
 
     /**
-     * @return list<array{name: string, duration: float}>
+     * @return list<array{name: string, file: ?string, duration: float}>
      */
     private function collectViews(Profile $profile): array
     {
         $items = [];
         if ($profile->isTemplate()) {
+            $name = $profile->getTemplate();
             $items[] = [
-                'name' => $profile->getTemplate(),
+                'name' => $name,
+                'file' => $this->resolveTwigRelativePath($name),
                 'duration' => round($profile->getDuration() * 1000, 2),
             ];
         }
@@ -277,6 +418,52 @@ final class DebugBar
         }
 
         return $items;
+    }
+
+    /**
+     * Map a Twig logical name (@ns/… or resources/views path) to a path
+     * relative to the project root, mirroring TwigFactory loader paths.
+     */
+    private function resolveTwigRelativePath(string $name): ?string
+    {
+        $absolute = $this->locateTwigTemplate($name);
+        if ($absolute === null) {
+            return null;
+        }
+
+        $rel = $this->rel($absolute);
+
+        return $rel !== '' ? $rel : null;
+    }
+
+    private function locateTwigTemplate(string $name): ?string
+    {
+        $name = str_replace('\\', '/', $name);
+        if (preg_match('#^@([^/]+)/(.+)$#', $name, $m) === 1) {
+            $namespace = strtolower($m[1]);
+            $relative = $m[2];
+            foreach (['modules', 'integrations'] as $bucket) {
+                $root = $this->basePath . '/' . $bucket;
+                if (!is_dir($root)) {
+                    continue;
+                }
+                foreach (scandir($root) ?: [] as $entry) {
+                    if ($entry === '.' || $entry === '..' || strtolower($entry) !== $namespace) {
+                        continue;
+                    }
+                    $path = $root . '/' . $entry . '/Resources/views/' . $relative;
+                    if (is_file($path)) {
+                        return $path;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        $path = $this->basePath . '/resources/views/' . ltrim($name, '/');
+
+        return is_file($path) ? $path : null;
     }
 
     /** @return array<string, mixed> */
@@ -410,6 +597,7 @@ final class DebugBar
             'app.name' => $this->config->get('app.name'),
             'app.env' => $this->config->get('app.env'),
             'app.debug' => $this->config->get('app.debug'),
+            'app.debug_editor_root' => $this->config->get('app.debug_editor_root'),
             'app.n_plus_one_threshold' => $this->config->get('app.n_plus_one_threshold'),
             'app.url' => $this->config->get('app.url'),
             'app.version' => $this->config->get('app.version'),

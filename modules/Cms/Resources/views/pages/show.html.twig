@@ -15,21 +15,27 @@
             <p class="eyebrow"><a href="{{ url('admin.cms.pages.index') }}">{{ 'nav.cms.pages'|trans }}</a></p>
             <h1>{{ item.title() }}</h1>
             <p class="muted detail-layout__meta">
-                <code>/api/public/pages/{{ item.slug() }}</code>
+                <code>/{{ item.slug() }}</code>
                 <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
                 <span class="badge badge--muted">{{ item.templateLabel()|trans }}</span>
+                {% if staged %}
+                    <span class="badge badge--warn">{{ 'cms.staging.pending'|trans }}</span>
+                {% endif %}
             </p>
         </div>
         <div class="actions">
-            <a class="btn btn--ghost" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank">{{ 'cms.pages.preview_json'|trans }}</a>
+            {% if user.can('cms.manage') and not item.isRaw() %}
+                <a class="btn btn--primary" href="{{ url('admin.cms.pages.builder', {id: item.id()}) }}">{{ 'cms.builder.open'|trans }}</a>
+            {% endif %}
+            <a class="btn {{ user.can('cms.manage') and not item.isRaw() ? 'btn--ghost' : 'btn--primary' }}" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank" rel="noopener">{{ 'cms.pages.preview'|trans }}</a>
             {% if user.can('cms.manage') %}
                 <form method="post" action="{{ url('admin.cms.pages.publish', {id: item.id()}) }}">
                     {{ csrf_field()|raw }}
-                    <button class="btn {{ item.isPublished() ? 'btn--ghost' : 'btn--primary' }}" type="submit">
-                        {{ item.isPublished() ? 'cms.pages.unpublish'|trans : 'cms.pages.publish'|trans }}
+                    <button class="btn btn--ghost" type="submit" title="{{ 'cms.pages.publish_hint'|trans }}">
+                        {{ item.isPublished() ? 'cms.pages.unpublish'|trans : 'cms.pages.stage_publish'|trans }}
                     </button>
                 </form>
-                <a class="btn btn--primary" href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <a class="btn btn--ghost" href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
                 <form method="post" action="{{ url('admin.cms.pages.destroy', {id: item.id()}) }}" data-confirm="{{ 'cms.confirm_delete_page'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                     {{ csrf_field()|raw }}
                     <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
@@ -101,6 +107,10 @@
                                 <dd>{{ item.statusLabel()|trans }}</dd>
                             </div>
                             <div>
+                                <dt>{{ 'cms.staging.pending'|trans }}</dt>
+                                <dd>{% if staged %}{{ 'common.yes'|trans|default('Ano') }}{% else %}—{% endif %}</dd>
+                            </div>
+                            <div>
                                 <dt>{{ 'cms.field.updated'|trans }}</dt>
                                 <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
                             </div>
@@ -135,17 +145,26 @@
                 <section class="panel">
                     <header class="panel__head">
                         <h2>{{ 'cms.blocks.title'|trans }}</h2>
-                        {% if blocks %}
-                            <span class="muted">{{ blocks|length }}</span>
-                        {% endif %}
+                        <div class="actions">
+                            {% if blocks %}
+                                <span class="muted">{{ blocks|length }}</span>
+                            {% endif %}
+                            {% if user.can('cms.manage') %}
+                                <a class="btn btn--primary btn--sm" href="{{ url('admin.cms.pages.builder', {id: item.id()}) }}">{{ 'cms.builder.open'|trans }}</a>
+                            {% endif %}
+                        </div>
                     </header>
 
                     {% if blocks is empty %}
                         <div class="empty">
                             <h2>{{ 'cms.blocks.empty'|trans }}</h2>
-                            <p>{{ 'cms.blocks.empty.hint'|trans }}</p>
+                            <p>{{ 'cms.builder.canvas.empty_hint'|trans }}</p>
+                            {% if user.can('cms.manage') %}
+                                <a class="btn btn--primary" href="{{ url('admin.cms.pages.builder', {id: item.id()}) }}">{{ 'cms.builder.open'|trans }}</a>
+                            {% endif %}
                         </div>
                     {% else %}
+                        <p class="muted">{{ 'cms.builder.show.hint'|trans }}</p>
                         <div class="cms-block-list">
                             {% for block in blocks %}
                                 {% set p = block.payload() %}
@@ -182,141 +201,11 @@
                                             {% endif %}
                                         </div>
                                     </div>
-                                    {% if user.can('cms.manage') %}
-                                        <div class="cms-block-card__actions">
-                                            <form method="post" action="{{ url('admin.cms.blocks.up', {id: item.id(), blockId: block.id()}) }}">
-                                                {{ csrf_field()|raw }}
-                                                <button class="btn btn--ghost btn-sm" type="submit" title="{{ 'cms.blocks.move_up'|trans }}">↑</button>
-                                            </form>
-                                            <form method="post" action="{{ url('admin.cms.blocks.down', {id: item.id(), blockId: block.id()}) }}">
-                                                {{ csrf_field()|raw }}
-                                                <button class="btn btn--ghost btn-sm" type="submit" title="{{ 'cms.blocks.move_down'|trans }}">↓</button>
-                                            </form>
-                                            <a class="btn btn--ghost btn-sm" href="{{ url('admin.cms.blocks.edit', {id: item.id(), blockId: block.id()}) }}">{{ 'common.edit'|trans }}</a>
-                                            <form method="post" action="{{ url('admin.cms.blocks.destroy', {id: item.id(), blockId: block.id()}) }}" data-confirm="{{ 'cms.confirm_delete_block'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
-                                                {{ csrf_field()|raw }}
-                                                <button class="btn btn--ghost btn-sm" type="submit">{{ 'common.delete'|trans }}</button>
-                                            </form>
-                                        </div>
-                                    {% endif %}
                                 </article>
                             {% endfor %}
                         </div>
                     {% endif %}
                 </section>
-
-                {% if user.can('cms.manage') %}
-                    <section class="panel">
-                        <header class="panel__head">
-                            <h2>{{ 'cms.blocks.add'|trans }}</h2>
-                        </header>
-                        {% include 'ui/error-summary.html.twig' with { form: 'cms.block.save' } %}
-                        <form
-                            method="post"
-                            class="cms-block-form form-grid"
-                            action="{{ url('admin.cms.blocks.store', {id: item.id()}) }}"
-                            data-form="cms.block.save"
-                            x-data="gereqForm"
-                            {% if form_errors('cms.block.save') %} data-server-state="1"{% endif %}
-                        >
-                            {{ csrf_field()|raw }}
-                            <div class="field--full" x-data="cmsBlockForm">
-                            <label class="g-field field--full" data-field="type">
-                                <span class="g-label"><span>{{ 'cms.field.block_type'|trans }} <span class="g-req" aria-hidden="true">*</span></span></span>
-                                <select class="input" name="type" required x-model="type">
-                                    {% for opt in blockTypeOptions %}
-                                        <option value="{{ opt.value }}" {{ opt.value == 'text' ? 'selected' : '' }}>{{ opt.label }}</option>
-                                    {% endfor %}
-                                </select>
-                            </label>
-
-                            <template x-if="isHeading">
-                                <div class="cms-block-form__fields form-grid">
-                                    {% include 'ui/input.html.twig' with { name: 'text', label: 'cms.block.field.text'|trans, optional: true, form: 'cms.block.save', value: '', extra: 'field--full' } %}
-                                    {% include 'ui/select.html.twig' with {
-                                        name: 'level',
-                                        label: 'cms.block.field.level'|trans,
-                                        optional: true,
-                                        form: 'cms.block.save',
-                                        value: '2',
-                                        options: [{value:'1',label:'H1'},{value:'2',label:'H2'},{value:'3',label:'H3'}]
-                                    } %}
-                                </div>
-                            </template>
-
-                            <template x-if="isText">
-                                <div class="cms-block-form__fields">
-                                    {% include 'ui/textarea.html.twig' with { name: 'body', label: 'cms.block.field.body'|trans, optional: true, form: 'cms.block.save', value: '', extra: 'field--full' } %}
-                                </div>
-                            </template>
-
-                            <template x-if="isHtml">
-                                <div class="cms-block-form__fields">
-                                    {% include 'ui/textarea.html.twig' with { name: 'html', label: 'cms.block.field.html'|trans, optional: true, form: 'cms.block.save', value: '', extra: 'field--full' } %}
-                                </div>
-                            </template>
-
-                            <template x-if="isImage">
-                                <div class="cms-block-form__fields form-grid">
-                                    {% if hasMedia %}
-                                        {% include 'ui/select.html.twig' with {
-                                            name: 'media_id',
-                                            label: 'cms.block.field.media_id'|trans,
-                                            optional: true,
-                                            form: 'cms.block.save',
-                                            value: '',
-                                            options: mediaOptions,
-                                            extra: 'field--full'
-                                        } %}
-                                    {% endif %}
-                                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, optional: true, form: 'cms.block.save', value: '', extra: 'field--full' } %}
-                                    {% include 'ui/input.html.twig' with { name: 'alt', label: 'cms.block.field.alt'|trans, optional: true, form: 'cms.block.save', value: '' } %}
-                                    {% include 'ui/input.html.twig' with { name: 'caption', label: 'cms.block.field.caption'|trans, optional: true, form: 'cms.block.save', value: '' } %}
-                                </div>
-                            </template>
-
-                            <template x-if="isCta">
-                                <div class="cms-block-form__fields form-grid">
-                                    {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.block.field.label'|trans, optional: true, form: 'cms.block.save', value: '' } %}
-                                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, optional: true, form: 'cms.block.save', value: '', extra: 'field--full' } %}
-                                    {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: 'primary' } %}
-                                </div>
-                            </template>
-
-                            <template x-if="isColumns">
-                                <div class="cms-block-form__fields form-grid">
-                                    {% include 'ui/textarea.html.twig' with { name: 'left', label: 'cms.block.field.left'|trans, optional: true, form: 'cms.block.save', value: '', extra: 'field--full' } %}
-                                    {% include 'ui/textarea.html.twig' with { name: 'right', label: 'cms.block.field.right'|trans, optional: true, form: 'cms.block.save', value: '', extra: 'field--full' } %}
-                                </div>
-                            </template>
-
-                            <template x-if="isDivider">
-                                <div class="cms-block-form__fields">
-                                    {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: 'solid' } %}
-                                </div>
-                            </template>
-
-                            {% if hasProducts %}
-                                <template x-if="isProducts">
-                                    <div class="cms-block-form__fields">
-                                        {% include 'ui/input.html.twig' with { name: 'product_ids', label: 'cms.block.field.product_ids'|trans, optional: true, form: 'cms.block.save', value: '', hint: 'cms.block.hint.product_ids'|trans, extra: 'field--full' } %}
-                                    </div>
-                                </template>
-                            {% endif %}
-
-                            <template x-if="isGallery">
-                                <div class="cms-block-form__fields">
-                                    {% include 'ui/input.html.twig' with { name: 'media_ids', label: 'cms.block.field.media_ids'|trans, optional: true, form: 'cms.block.save', value: '', hint: 'cms.block.hint.media_ids'|trans, extra: 'field--full' } %}
-                                </div>
-                            </template>
-                            </div>
-
-                            <div class="form-actions field--full">
-                                <button class="btn btn--primary" type="submit">{{ 'cms.blocks.add'|trans }}</button>
-                            </div>
-                        </form>
-                    </section>
-                {% endif %}
             </div>
         </section>
         {% endif %}

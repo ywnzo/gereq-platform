@@ -1,0 +1,93 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="ai-agents" data-actions-default="1">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'ai.agents.title'|trans }}</h1>
+            <p class="muted">{{ 'ai.agents.list.hint'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% if user.can('ai.manage') %}
+                <a class="btn btn--ghost" href="{{ url('admin.ai.knowledge.index') }}">{{ 'nav.ai.knowledge'|trans }}</a>
+                <a class="btn btn--ghost" href="{{ url('admin.ai.settings') }}">{{ 'nav.ai.settings'|trans }}</a>
+                <a class="btn btn--primary" href="{{ url('admin.ai.agents.create') }}">{{ icon('plus') }} {{ 'ai.agents.new'|trans }}</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="toolbar--table">
+        <form class="toolbar" method="get">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'ai.agents.search'|trans }}">
+        </form>
+    </div>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    {% include 'ui/sort_th.html.twig' with { label: 'ai.field.name'|trans, column: 'name' } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'ai.field.slug'|trans, column: 'slug' } %}
+                    <th>{{ 'ai.field.surfaces'|trans }}</th>
+                    <th>{{ 'ai.field.published'|trans }}</th>
+                    {% include 'ui/sort_th.html.twig' with { label: 'ai.field.updated'|trans, column: 'updatedAt' } %}
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>
+                            <div class="table__title">
+                                <a href="{{ url('admin.ai.chat', {id: item.id()}) }}"><strong>{{ item.name() }}</strong></a>
+                                {% if item.description() %}
+                                    <span class="muted">{{ item.description()|slice(0, 80) }}{% if item.description()|length > 80 %}…{% endif %}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="is-mute"><code>{{ item.slug() }}</code></td>
+                        <td>
+                            {% for s in item.surfaces() %}
+                                <span class="badge badge--muted">{{ s }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if item.published() %}
+                                <span class="badge badge--ok">{{ 'ai.status.published'|trans }}</span>
+                            {% else %}
+                                <span class="badge badge--muted">{{ 'ai.status.draft'|trans }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="is-mute">{{ item.updatedAt().format('d. m. Y') }}</td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.ai.chat', {id: item.id()}), label: 'ai.action.chat'|trans, icon: 'mail' } %}
+                                {% if user.can('ai.manage') %}
+                                    {% include 'ui/row_action.html.twig' with { href: url('admin.ai.agents.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                                    {% include 'ui/row_action_destroy.html.twig' with {
+                                        action: url('admin.ai.agents.destroy', {id: item.id()}),
+                                        confirm: 'ai.agents.confirm_delete'|trans
+                                    } %}
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty">
+                                <h2>{{ 'ai.agents.empty'|trans }}</h2>
+                                <p>{{ 'ai.agents.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

@@ -16,6 +16,7 @@ They share the same lifecycle as modules (enable / migrate / settings), but:
 |----------|-------|----------|
 | `plugin.payments` | Platby | Comgate, Stripe, GoPay |
 | `plugin.shipping` | Doprava | Packeta |
+| `plugin.ai` | AI | Ollama, OpenAiCompat, Zai, DeepSeek, Gemini, Anthropic, OpenAi |
 
 ## Layout
 
@@ -40,6 +41,7 @@ integrations/
 | Stripe | Payments | `PaymentGatewayRegistry` + notify |
 | GoPay | Payments | `PaymentGatewayRegistry` + notify |
 | Packeta | Shop | `ShippingCarrierRegistry` + widget API |
+| Ollama / OpenAiCompat / Zai / DeepSeek / Gemini / Anthropic / OpenAi | Ai | plug-in markers (`plugin.ai`); drivers live in `modules/Ai` |
 
 Enable example:
 

@@ -45,8 +45,6 @@ return new class {
                 $table->addColumn('created_by', Types::STRING)->setLength(36)->setNotnull(false);
             }
             if (!$table->hasIndex('idx_calendar_external')) {
-                // ok
-            } elseif (method_exists($table, 'addIndex')) {
                 $table->addIndex(['external_provider', 'external_id'], 'idx_calendar_external');
             }
         }

@@ -25,5 +25,10 @@
             </li>
         {% endfor %}
     </ul>
-    <p class="muted"><a href="{{ url('admin.crm.activities.index') }}?customer={{ customer.id() }}">{{ 'crm.activities.partial.all'|trans }}</a></p>
+    <div class="crm-partial__foot">
+        {% if user is defined and user.can('crm.activities.manage') %}
+            <a class="btn btn--ghost btn-sm" href="{{ url('admin.crm.activities.create') }}?customer={{ customer.id() }}">{{ 'crm.activities.partial.add'|trans }}</a>
+        {% endif %}
+        <p class="muted"><a href="{{ url('admin.crm.activities.index') }}?customer={{ customer.id() }}">{{ 'crm.activities.partial.all'|trans }}</a></p>
+    </div>
 {% endif %}

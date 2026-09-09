@@ -41,7 +41,7 @@ final class PublicCmsController
             return $this->cors(ApiResponse::notFound('page_not_found', 'Stránka neexistuje.'), $request);
         }
 
-        return $this->cors(ApiResponse::data($this->provider->serializePage($page, true)), $request);
+        return $this->cors(ApiResponse::data($this->provider->serializePage($page, true, true)), $request);
     }
 
     public function menus(Request $request): Response

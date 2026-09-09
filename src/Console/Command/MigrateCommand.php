@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'migrate', description: 'Spustit migrace a seed')]
+#[AsCommand(name: 'migrate', description: 'Spustit migrace (seed jen s --seed)')]
 final class MigrateCommand extends Command
 {
     public function __construct(
@@ -28,14 +28,15 @@ final class MigrateCommand extends Command
     {
         $this
             ->addOption('fresh', null, InputOption::VALUE_NONE, 'Smazat schéma a vytvořit znovu (čistá DB)')
-            ->addOption('no-demo', null, InputOption::VALUE_NONE, 'Bez demo obchodních dat')
-            ->addOption('no-sample', null, InputOption::VALUE_NONE, 'Bez ukázkových zákazníků')
-            ->addOption('seed', null, InputOption::VALUE_NONE, 'Vynutit seed (výchozí vždy běží)');
+            ->addOption('seed', null, InputOption::VALUE_NONE, 'Po migraci spustit seed (jinak se nespouští)')
+            ->addOption('no-demo', null, InputOption::VALUE_NONE, 'Se seedem: bez demo obchodních dat')
+            ->addOption('no-sample', null, InputOption::VALUE_NONE, 'Se seedem: bez ukázkových zákazníků');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $fresh = (bool) $input->getOption('fresh');
+        $doSeed = (bool) $input->getOption('seed');
         $withDemo = !(bool) $input->getOption('no-demo');
         $withSample = !(bool) $input->getOption('no-sample');
 
@@ -48,6 +49,12 @@ final class MigrateCommand extends Command
             foreach ($this->migrator->migrate() as $message) {
                 $output->writeln($message);
             }
+        }
+
+        if (!$doSeed) {
+            $output->writeln('Migrace hotové (bez seedu).');
+
+            return Command::SUCCESS;
         }
 
         $this->seeder->seed($withDemo, $withSample);

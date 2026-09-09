@@ -12,9 +12,11 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Modules\CRM\Domain\Activity;
 use Modules\CRM\Domain\Deal;
 use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Customers\Domain\Customer;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -84,6 +86,7 @@ final class DealController extends Controller
             'items' => $items,
             'columns' => $columns,
             'customers' => $customers,
+            'openActivityCounts' => $this->openActivityCounts($items),
             'view' => $view,
             'stage' => $stage,
             'customerId' => $customerId,
@@ -134,11 +137,22 @@ final class DealController extends Controller
         }
 
         $customer = $this->em->find(Customer::class, $deal->customerId());
+        $activities = $this->em->getRepository(Activity::class)->createQueryBuilder('a')
+            ->addSelect('(CASE WHEN a.completedAt IS NULL THEN 0 ELSE 1 END) AS HIDDEN open_first')
+            ->where('a.dealId = :deal')
+            ->setParameter('deal', $deal->id())
+            ->orderBy('open_first', 'ASC')
+            ->addOrderBy('a.dueAt', 'ASC')
+            ->addOrderBy('a.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
 
         return $this->page('@crm/deals/show.html.twig', [
             'pageTitle' => $deal->title(),
             'item' => $deal,
             'customer' => $customer instanceof Customer ? $customer : null,
+            'activities' => $activities,
+            'activityTypes' => Activity::TYPES,
             'stages' => Deal::STAGES,
         ]);
     }
@@ -202,6 +216,9 @@ final class DealController extends Controller
 
         $stage = (string) $request->request->get('stage', '');
         if (!in_array($stage, Deal::STAGES, true)) {
+            if ($this->wantsJson($request)) {
+                return new JsonResponse(['ok' => false, 'error' => 'invalid_stage'], 422);
+            }
             $this->flash('error', $this->translator->trans('crm.flash.stage_invalid'));
 
             return $this->redirect('admin.crm.deals.show', ['id' => $id]);
@@ -216,6 +233,16 @@ final class DealController extends Controller
         ]));
         $this->events->emit('deal.updated', ['type' => 'deal', 'id' => $deal->id()], $payload);
         $this->auditor->log('crm.deal.stage', 'crm_deal', $deal->id(), ['stage' => $old], ['stage' => $stage]);
+
+        if ($this->wantsJson($request)) {
+            return new JsonResponse([
+                'ok' => true,
+                'id' => $deal->id(),
+                'stage' => $deal->stage(),
+                'previous_stage' => $old,
+            ]);
+        }
+
         $this->flash('success', $this->translator->trans('crm.flash.stage_changed', [
             '%stage%' => $this->translator->trans($deal->stageLabel()),
         ]));
@@ -237,8 +264,12 @@ final class DealController extends Controller
 
         $title = $deal->title();
         $payload = $this->publicDeal($deal);
+        $removedActivities = $this->detachDealActivities($deal->id());
         $this->em->remove($deal);
         $this->em->flush();
+        foreach ($removedActivities as $activityPayload) {
+            $this->events->emit('activity.deleted', ['type' => 'activity', 'id' => $activityPayload['id']], $activityPayload);
+        }
         $this->events->emit('deal.deleted', ['type' => 'deal', 'id' => $id], $payload);
         $this->auditor->log('crm.deal.deleted', 'crm_deal', $id);
         $this->flash('success', $this->translator->trans('crm.flash.deal_deleted', ['%title%' => $title]));
@@ -251,6 +282,61 @@ final class DealController extends Controller
         $deal = $this->em->find(Deal::class, $id);
 
         return $deal instanceof Deal ? $deal : null;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function detachDealActivities(string $dealId): array
+    {
+        /** @var list<Activity> $activities */
+        $activities = $this->em->getRepository(Activity::class)->findBy(['dealId' => $dealId]);
+        $payloads = [];
+        foreach ($activities as $activity) {
+            $payloads[] = [
+                'id' => $activity->id(),
+                'customer_id' => $activity->customerId(),
+                'deal_id' => $activity->dealId(),
+                'type' => $activity->type(),
+                'subject' => $activity->subject(),
+                'body' => $activity->body(),
+                'due_at' => $activity->dueAt()?->format(\DateTimeInterface::ATOM),
+                'completed_at' => $activity->completedAt()?->format(\DateTimeInterface::ATOM),
+                'created_at' => $activity->createdAt()->format(\DateTimeInterface::ATOM),
+                'updated_at' => $activity->updatedAt()->format(\DateTimeInterface::ATOM),
+            ];
+            $this->em->remove($activity);
+        }
+
+        return $payloads;
+    }
+
+    /**
+     * @param list<Deal> $deals
+     * @return array<string, int>
+     */
+    private function openActivityCounts(array $deals): array
+    {
+        $ids = array_values(array_unique(array_map(static fn (Deal $d): string => $d->id(), $deals)));
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<array{dealId: string, cnt: string|int}> $rows */
+        $rows = $this->em->createQueryBuilder()
+            ->select('a.dealId AS dealId, COUNT(a.id) AS cnt')
+            ->from(Activity::class, 'a')
+            ->where('a.dealId IN (:ids)')
+            ->andWhere('a.completedAt IS NULL')
+            ->groupBy('a.dealId')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getArrayResult();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string) $row['dealId']] = (int) $row['cnt'];
+        }
+
+        return $map;
     }
 
     /** @return array<string, mixed> */

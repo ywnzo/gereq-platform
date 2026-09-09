@@ -45,6 +45,14 @@ final class ApiRouteDefinition
         return $this;
     }
 
+    /** OpenAPI request body schema from ValidationRegistry ruleset name. */
+    public function ruleset(string $ruleset): self
+    {
+        $this->meta['ruleset'] = $ruleset;
+
+        return $this;
+    }
+
     public function fullPath(string $apiPrefix): string
     {
         return rtrim($apiPrefix, '/') . '/' . trim($this->module, '/') . '/' . ltrim($this->path, '/');

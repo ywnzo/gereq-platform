@@ -93,6 +93,8 @@ export default defineConfig({
     outDir: 'public/build',
     emptyOutDir: true,
     manifest: true,
+    minify: 'esbuild',
+    cssMinify: true,
     rollupOptions: {
       input: {
         admin: 'resources/js/admin.ts',

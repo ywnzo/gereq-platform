@@ -1,9 +1,12 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-<div class="list-shell" x-data="dataTable" data-table-id="crm-deals" data-actions-default="1">
+<div class="list-shell" {% if view == 'list' %}x-data="dataTable" data-table-id="crm-deals" data-actions-default="1"{% endif %}>
     <header class="page-header">
-        <h1>{{ 'crm.deals.title'|trans }}</h1>
+        <div>
+            <h1>{{ 'crm.deals.title'|trans }}</h1>
+            <p class="muted">{{ 'crm.deals.board.hint'|trans }}</p>
+        </div>
         <div class="actions">
             <a class="btn {{ view == 'board' ? 'btn--primary' : 'btn--ghost' }}" href="?{{ { view: 'board', q: search, stage: stage, customer: customerId, sort: sort, dir: dir }|url_encode }}">{{ 'crm.deals.view.board'|trans }}</a>
             <a class="btn {{ view == 'list' ? 'btn--primary' : 'btn--ghost' }}" href="?{{ { view: 'list', q: search, stage: stage, customer: customerId, sort: sort, dir: dir }|url_encode }}">{{ 'crm.deals.view.list'|trans }}</a>
@@ -18,49 +21,77 @@
             <input type="hidden" name="view" value="{{ view }}">
             <input type="hidden" name="sort" value="{{ sort }}">
             <input type="hidden" name="dir" value="{{ dir }}">
+            {% if customerId %}
+                <input type="hidden" name="customer" value="{{ customerId }}">
+            {% endif %}
             <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'crm.deals.search'|trans }}">
-            <select name="stage" class="input" onchange="this.form.submit()">
-                <option value="">{{ 'crm.deals.all_stages'|trans }}</option>
-                {% for s in stages %}
-                    <option value="{{ s }}" {{ stage == s ? 'selected' : '' }}>{{ ('crm.stage.' ~ s)|trans }}</option>
-                {% endfor %}
-            </select>
+            {% if view == 'list' %}
+                <select name="stage" class="input" onchange="this.form.submit()">
+                    <option value="">{{ 'crm.deals.all_stages'|trans }}</option>
+                    {% for s in stages %}
+                        <option value="{{ s }}" {{ stage == s ? 'selected' : '' }}>{{ ('crm.stage.' ~ s)|trans }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            {% if customerId %}
+                <a class="btn btn--ghost btn-sm" href="?{{ { view: view, q: search, sort: sort, dir: dir }|url_encode }}">{{ 'crm.deals.clear_customer'|trans }}</a>
+            {% endif %}
         </form>
-        {% if view == 'list' %}
-        {% endif %}
     </div>
 
     {% if view == 'board' %}
-        <div class="crm-board">
+        <div
+            class="crm-board"
+            x-data="crmBoard"
+            data-can-manage="{{ user.can('crm.deals.manage') ? '1' : '0' }}"
+            data-empty-label="{{ 'crm.board.column_empty'|trans|e('html_attr') }}"
+        >
             {% for s in stages %}
-                <section class="crm-board__col">
+                <section
+                    class="crm-board__col"
+                    data-stage="{{ s }}"
+                    :class="colClass('{{ s }}')"
+                    @dragover="onDragOver($event, '{{ s }}')"
+                    @dragleave="onDragLeave"
+                    @drop="onDrop($event, '{{ s }}')"
+                >
                     <header>
                         <h2>{{ ('crm.stage.' ~ s)|trans }}</h2>
-                        <span class="muted">{{ columns[s]|length }}</span>
+                        <span class="muted" data-stage-count>{{ columns[s]|length }}</span>
                     </header>
-                    <div class="crm-board__cards">
+                    <div class="crm-board__cards" data-stage-cards="{{ s }}">
                         {% for deal in columns[s] %}
-                            <article class="crm-card">
-                                <a href="{{ url('admin.crm.deals.show', {id: deal.id()}) }}"><strong>{{ deal.title() }}</strong></a>
-                                {% set c = customers[deal.customerId()]|default(null) %}
-                                {% if c %}
-                                    <a class="muted" href="{{ url('admin.customers.show', {id: c.id()}) }}">{{ c.name() }}</a>
-                                {% endif %}
-                                <div class="crm-card__meta">{{ deal.amountFormatted() }}</div>
+                            {% set c = customers[deal.customerId()]|default(null) %}
+                            {% set openCount = openActivityCounts[deal.id()]|default(0) %}
+                            <article
+                                class="crm-card"
+                                data-deal-id="{{ deal.id() }}"
+                                data-stage="{{ s }}"
+                                data-stage-url="{{ url('admin.crm.deals.stage', {id: deal.id()}) }}"
                                 {% if user.can('crm.deals.manage') %}
-                                    <form method="post" action="{{ url('admin.crm.deals.stage', {id: deal.id()}) }}" class="crm-card__stage">
-                                        {{ csrf_field()|raw }}
-                                        <input type="hidden" name="_redirect" value="index">
-                                        <select name="stage" class="input" onchange="this.form.submit()">
-                                            {% for opt in stages %}
-                                                <option value="{{ opt }}" {{ deal.stage() == opt ? 'selected' : '' }}>{{ ('crm.stage.' ~ opt)|trans }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </form>
+                                    :draggable="canDrag()"
+                                    @dragstart="onDragStart($event, '{{ deal.id() }}', '{{ s }}')"
+                                    @dragend="onDragEnd"
+                                    :class="cardClass('{{ deal.id() }}')"
                                 {% endif %}
+                            >
+                                <a
+                                    class="crm-card__title"
+                                    href="{{ url('admin.crm.deals.show', {id: deal.id()}) }}"
+                                    @click="guardNav($event)"
+                                >{{ deal.title() }}</a>
+                                {% if c %}
+                                    <a class="crm-card__customer muted" href="{{ url('admin.customers.show', {id: c.id()}) }}">{{ c.name() }}</a>
+                                {% endif %}
+                                <div class="crm-card__meta">
+                                    <span>{{ deal.amountFormatted() }}</span>
+                                    {% if openCount > 0 %}
+                                        <span class="crm-card__tasks" title="{{ 'crm.board.open_tasks'|trans }}">{{ openCount }}</span>
+                                    {% endif %}
+                                </div>
                             </article>
                         {% else %}
-                            <p class="muted">—</p>
+                            <p class="crm-board__empty muted">{{ 'crm.board.column_empty'|trans }}</p>
                         {% endfor %}
                     </div>
                 </section>
@@ -111,6 +142,9 @@
                                 <div class="empty">
                                     <h2>{{ 'crm.deals.empty'|trans }}</h2>
                                     <p>{{ 'crm.deals.empty.hint'|trans }}</p>
+                                    {% if user.can('crm.deals.manage') %}
+                                        <a class="btn btn--primary" href="{{ url('admin.crm.deals.create') }}">{{ icon('plus') }} {{ 'crm.deals.new'|trans }}</a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

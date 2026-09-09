@@ -631,10 +631,107 @@ html[data-theme="gereq"] #gereq-debug.gdb {
   padding: 6px 0 8px;
   background: var(--gdb-ink-2);
 }
+#gereq-debug.gdb .gdb-toolbar--flush {
+  position: static;
+  margin: 8px 0 0;
+  padding: 0;
+  background: transparent;
+  justify-content: flex-start;
+}
 #gereq-debug.gdb .gdb-toolbar__label {
   color: var(--gdb-mute);
   font-family: var(--gdb-mono);
   font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#gereq-debug.gdb .gdb-toolbar__label code {
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-file {
+  display: inline;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--gdb-accent-text) !important;
+  font-family: var(--gdb-mono);
+  font-size: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--gdb-accent-text) 35%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+  word-break: break-all;
+}
+#gereq-debug.gdb .gdb-file:hover {
+  color: var(--gdb-paper) !important;
+  text-decoration-color: var(--gdb-signal);
+}
+#gereq-debug.gdb .gdb-card--settings {
+  margin: 10px 14px 12px;
+}
+#gereq-debug.gdb .gdb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0;
+  color: var(--gdb-mute);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+#gereq-debug.gdb .gdb-field input,
+#gereq-debug.gdb .gdb-field select {
+  font: inherit;
+  font-family: var(--gdb-mono);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gdb-paper);
+  background: var(--gdb-fill-soft);
+  border: 1px solid var(--gdb-line);
+  border-radius: var(--gdb-radius);
+  padding: 8px 10px;
+  width: 100%;
+}
+#gereq-debug.gdb .gdb-field input:focus,
+#gereq-debug.gdb .gdb-field select:focus {
+  outline: none;
+  border-color: var(--gdb-hover-border);
+}
+#gereq-debug.gdb .gdb-hint {
+  margin: 0 0 8px;
+  color: var(--gdb-mute);
+  font-size: 11px;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: 0;
+}
+#gereq-debug.gdb .gdb-hint code {
+  font-family: var(--gdb-mono);
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--gdb-line);
+  border-radius: var(--gdb-radius-lg);
+  background: var(--gdb-ink);
+  color: var(--gdb-paper);
+  box-shadow: var(--gdb-shadow);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+#gereq-debug.gdb .gdb-toast[hidden] {
+  display: none !important;
 }
 #gereq-debug.gdb .gdb-mini {
   flex-shrink: 0;
@@ -672,5 +769,32 @@ html[data-theme="gereq"] #gereq-debug.gdb {
 #gereq-debug.gdb .gdb-exc__class { color: var(--gdb-err); font-family: var(--gdb-mono); font-weight: 600; }
 #gereq-debug.gdb .gdb-exc__msg { margin: 4px 0; }
 #gereq-debug.gdb .gdb-exc__file { color: var(--gdb-mute); font-family: var(--gdb-mono); font-size: 11px; }
+
+#gereq-debug.gdb .gdb-event__name {
+  font-weight: 600;
+  color: var(--gdb-paper);
+}
+#gereq-debug.gdb .gdb-event__class {
+  font-family: var(--gdb-mono);
+  font-size: 10px;
+  margin-top: 2px;
+  word-break: break-all;
+}
+#gereq-debug.gdb .gdb-muted {
+  color: var(--gdb-mute);
+  font-size: 11px;
+  margin-top: 2px;
+}
+#gereq-debug.gdb .gdb-pre {
+  margin: 4px 0 0;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--gdb-fill-strong);
+  font-family: var(--gdb-mono);
+  font-size: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 52rem;
+}
 
 body.gdb-pad { padding-bottom: 72px; }

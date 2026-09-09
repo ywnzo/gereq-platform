@@ -1,0 +1,88 @@
+{% set placeholder = placeholder|default('ui.editor.placeholder'|trans) %}
+{% set id = id|default('') %}
+{% set name = name|default('') %}
+{% set value = value|default('') %}
+{% set extra_class = extra_class|default('') %}
+{% set highlight_vars = highlight_vars|default(false) %}
+{% set wf_body = wf_body|default(false) %}
+
+<div
+    class="g-editor{{ extra_class ? ' ' ~ extra_class : '' }}"
+    x-data="gereqEditor"
+    data-placeholder="{{ placeholder }}"
+    {% if highlight_vars %}data-highlight-vars="1"{% endif %}
+>
+    <div class="g-editor__bar" role="toolbar" aria-label="{{ 'ui.editor.formatting'|trans }}">
+        <div class="g-editor__tools" x-show="editorVisible" x-cloak>
+            <select class="g-editor__select" :value="heading" @change="onHeadingChange" title="{{ 'ui.editor.style'|trans }}">
+                <option value="paragraph">{{ 'ui.editor.paragraph'|trans }}</option>
+                <option value="h1">H1</option>
+                <option value="h2">H2</option>
+                <option value="h3">H3</option>
+            </select>
+            <select class="g-editor__select g-editor__select--ff" :value="fontFamily" @change="onFontFamilyChange" title="{{ 'ui.editor.font_family'|trans }}">
+                <option value="">{{ 'ui.editor.font_default'|trans }}</option>
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Times New Roman', Times, serif">Times</option>
+                <option value="'Courier New', Courier, monospace">Courier</option>
+                <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+            </select>
+            <select class="g-editor__select g-editor__select--fw" :value="fontWeight" @change="onFontWeightChange" title="{{ 'ui.editor.font_weight'|trans }}">
+                <option value="">{{ 'ui.editor.weight_default'|trans }}</option>
+                <option value="300">300</option>
+                <option value="400">400</option>
+                <option value="500">500</option>
+                <option value="600">600</option>
+                <option value="700">700</option>
+                <option value="800">800</option>
+            </select>
+            <span class="g-editor__sep" aria-hidden="true"></span>
+            <button type="button" :class="boldClass" @click="bold" title="{{ 'ui.editor.bold'|trans }}">{{ icon('format-bold') }}</button>
+            <button type="button" :class="italicClass" @click="italic" title="{{ 'ui.editor.italic'|trans }}">{{ icon('format-italic') }}</button>
+            <button type="button" :class="underlineClass" @click="underline" title="{{ 'ui.editor.underline'|trans }}">{{ icon('format-underline') }}</button>
+            <button type="button" :class="strikeClass" @click="strike" title="{{ 'ui.editor.strike'|trans }}">{{ icon('format-strike') }}</button>
+            <button type="button" class="g-editor__btn" @click="toggleLink" title="{{ 'ui.editor.link'|trans }}">{{ icon('link') }}</button>
+            <span class="g-editor__sep" aria-hidden="true"></span>
+            <button type="button" :class="alignLeftClass" @click="alignLeft" title="{{ 'ui.editor.align_left'|trans }}">{{ icon('format-align-left') }}</button>
+            <button type="button" :class="alignCenterClass" @click="alignCenter" title="{{ 'ui.editor.align_center'|trans }}">{{ icon('format-align-center') }}</button>
+            <button type="button" :class="alignRightClass" @click="alignRight" title="{{ 'ui.editor.align_right'|trans }}">{{ icon('format-align-right') }}</button>
+            <button type="button" :class="alignJustifyClass" @click="alignJustify" title="{{ 'ui.editor.align_justify'|trans }}">{{ icon('format-align-justify') }}</button>
+            <span class="g-editor__sep" aria-hidden="true"></span>
+            <button type="button" :class="bulletClass" @click="bullet" title="{{ 'ui.editor.bullet'|trans }}">{{ icon('format-list-bulleted') }}</button>
+            <button type="button" :class="orderedClass" @click="ordered" title="{{ 'ui.editor.ordered'|trans }}">{{ icon('format-list-numbered') }}</button>
+            <button type="button" class="g-editor__btn" @click="blockquote" title="{{ 'ui.editor.quote'|trans }}">{{ icon('format-quote') }}</button>
+            <button type="button" class="g-editor__btn" @click="hr" title="{{ 'ui.editor.hr'|trans }}">{{ icon('horizontal-rule') }}</button>
+            <button type="button" class="g-editor__btn" @click="clearFormat" title="{{ 'ui.editor.clear'|trans }}">{{ icon('format-clear') }}</button>
+            <span class="g-editor__sep" aria-hidden="true"></span>
+            <button type="button" class="g-editor__btn" @click="undo" title="{{ 'ui.editor.undo'|trans }}">{{ icon('undo') }}</button>
+            <button type="button" class="g-editor__btn" @click="redo" title="{{ 'ui.editor.redo'|trans }}">{{ icon('redo') }}</button>
+        </div>
+        <div class="g-editor__mode" role="tablist">
+            <button type="button" :class="tabEditorClass" @click="showEditor" role="tab">{{ 'ui.editor.tab.editor'|trans }}</button>
+            <button type="button" :class="tabHtmlClass" @click="showHtml" role="tab">{{ 'ui.editor.tab.html'|trans }}</button>
+        </div>
+    </div>
+
+    <div class="g-editor__body">
+        <div class="g-editor__surface" x-ref="mount"></div>
+        <textarea
+            class="g-editor__html"
+            x-ref="html"
+            x-show="htmlVisible"
+            x-cloak
+            @input="onHtmlInput"
+            spellcheck="false"
+            aria-label="{{ 'ui.editor.tab.html'|trans }}"
+        ></textarea>
+    </div>
+    <textarea
+        class="g-editor__input"
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if name %}name="{{ name }}"{% endif %}
+        x-ref="input"
+        {% if wf_body %}data-wf-body-input{% endif %}
+        {% if required|default(false) %}required{% endif %}
+    >{{ value }}</textarea>
+</div>

@@ -39,7 +39,7 @@
         window.__GEREQ_FORM_FP_CLEARED__ = {{ flash('form_fp_cleared')|json_encode|raw }};
     </script>
     {% if not vite_hot() %}
-        <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+        <script type="module" nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
     {% endif %}
 </body>
 </html>

@@ -43,7 +43,7 @@
                 {% for item in items %}
                     <tr>
                         <td><a href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ item.title() }}</a></td>
-                        <td><code>/api/public/pages/{{ item.slug() }}</code></td>
+                        <td><code>/{{ item.slug() }}</code></td>
                         <td>{{ item.templateLabel()|trans }}</td>
                         <td>{{ item.updatedAt().format('d. m. Y H:i') }}</td>
                         {% if user.can('cms.manage') %}
@@ -61,8 +61,11 @@
                         {% embed 'ui/row_actions.html.twig' %}
                             {% block items %}
                                 {% include 'ui/row_action.html.twig' with { href: url('admin.cms.pages.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
-                                <a href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank">{{ 'cms.pages.preview_json'|trans }}</a>
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.cms.pages.preview', {id: item.id()}), label: 'cms.pages.preview'|trans, icon: 'eye', target: '_blank' } %}
                                 {% if user.can('cms.manage') %}
+                                    {% if not item.isRaw() %}
+                                        {% include 'ui/row_action.html.twig' with { href: url('admin.cms.pages.builder', {id: item.id()}), label: 'cms.builder.open'|trans, icon: 'layout' } %}
+                                    {% endif %}
                                     {% include 'ui/row_action.html.twig' with { href: url('admin.cms.pages.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
                                     {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.cms.pages.destroy', {id: item.id()}), confirm: 'cms.confirm_delete_page'|trans } %}
                                 {% endif %}

@@ -21,8 +21,12 @@ final class StartSessionMiddleware implements MiddlewareInterface
 
     public function process(Request $request, callable $next): Response
     {
-        // Public/storefront API is token-based — do not require Redis/file session.
-        if (str_starts_with($request->getPathInfo(), '/api/')) {
+        $isApi = str_starts_with($request->getPathInfo(), '/api/');
+        $cookieName = (string) $this->config->get('session.cookie', 'gereq_session');
+
+        // Public/storefront API is token-based — skip session unless browser sent admin cookie
+        // (so Developer API tester / same-origin fetch with credentials works).
+        if ($isApi && !$request->cookies->has($cookieName)) {
             return $next($request);
         }
 
@@ -36,7 +40,7 @@ final class StartSessionMiddleware implements MiddlewareInterface
             $secure = $request->isSecure();
             $storage = new NativeSessionStorage(
                 [
-                    'name' => (string) $this->config->get('session.cookie', 'gereq_session'),
+                    'name' => $cookieName,
                     'cookie_lifetime' => $lifetime,
                     'cookie_httponly' => true,
                     'cookie_secure' => $secure,

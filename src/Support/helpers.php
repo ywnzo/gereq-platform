@@ -37,9 +37,11 @@ function env_value(string $key, mixed $default = null): mixed
     };
 }
 
-function e(mixed $value): string
-{
-    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+if (!function_exists('e')) {
+    function e(mixed $value): string
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
 }
 
 /** @param array<string, string> $headers */

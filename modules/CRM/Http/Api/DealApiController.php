@@ -11,6 +11,7 @@ use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Validation\ValidationRegistry;
+use Modules\CRM\Domain\Activity;
 use Modules\CRM\Domain\Deal;
 use Modules\Currency\Application\CurrencyBuilder;
 use Modules\Customers\Domain\Customer;
@@ -105,6 +106,7 @@ final class DealApiController extends Controller
             return ApiResponse::notFound();
         }
 
+        $raw = $this->body($request);
         $data = $this->validateBody($request, 'crm.deal.save');
         $parsed = $this->parseDealData($data);
         if ($parsed instanceof JsonResponse) {
@@ -114,11 +116,19 @@ final class DealApiController extends Controller
         $previousStage = $deal->stage();
         $deal->setCustomerId($parsed['customer_id']);
         $deal->setTitle($parsed['title']);
-        $deal->setAmount($parsed['amount']);
-        $deal->setCurrency($parsed['currency']);
+        if (array_key_exists('amount', $raw)) {
+            $deal->setAmount($parsed['amount']);
+        }
+        if (array_key_exists('currency', $raw)) {
+            $deal->setCurrency($parsed['currency']);
+        }
         $deal->setStage($parsed['stage']);
-        $deal->setExpectedCloseAt($parsed['expected_close_at']);
-        $deal->setNote($parsed['note']);
+        if (array_key_exists('expected_close_at', $raw)) {
+            $deal->setExpectedCloseAt($parsed['expected_close_at']);
+        }
+        if (array_key_exists('note', $raw)) {
+            $deal->setNote($parsed['note']);
+        }
         $this->em->flush();
 
         $payload = $this->serialize($deal);
@@ -140,8 +150,12 @@ final class DealApiController extends Controller
         }
 
         $payload = $this->serialize($deal);
+        $removedActivities = $this->detachDealActivities($deal->id());
         $this->em->remove($deal);
         $this->em->flush();
+        foreach ($removedActivities as $activityPayload) {
+            $this->events->emit('activity.deleted', ['type' => 'activity', 'id' => $activityPayload['id']], $activityPayload);
+        }
         $this->events->emit('deal.deleted', ['type' => 'deal', 'id' => $id], $payload);
 
         return ApiResponse::data(['id' => $id, 'deleted' => true]);
@@ -178,6 +192,31 @@ final class DealApiController extends Controller
         $deal = $this->em->find(Deal::class, $id);
 
         return $deal instanceof Deal ? $deal : null;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function detachDealActivities(string $dealId): array
+    {
+        /** @var list<Activity> $activities */
+        $activities = $this->em->getRepository(Activity::class)->findBy(['dealId' => $dealId]);
+        $payloads = [];
+        foreach ($activities as $activity) {
+            $payloads[] = [
+                'id' => $activity->id(),
+                'customer_id' => $activity->customerId(),
+                'deal_id' => $activity->dealId(),
+                'type' => $activity->type(),
+                'subject' => $activity->subject(),
+                'body' => $activity->body(),
+                'due_at' => $activity->dueAt()?->format(\DateTimeInterface::ATOM),
+                'completed_at' => $activity->completedAt()?->format(\DateTimeInterface::ATOM),
+                'created_at' => $activity->createdAt()->format(\DateTimeInterface::ATOM),
+                'updated_at' => $activity->updatedAt()->format(\DateTimeInterface::ATOM),
+            ];
+            $this->em->remove($activity);
+        }
+
+        return $payloads;
     }
 
     /**

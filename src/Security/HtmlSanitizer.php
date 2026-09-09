@@ -31,8 +31,8 @@ final class HtmlSanitizer
         'li' => ['style'],
     ];
 
-    /** Allowed inline CSS properties (text-align from TipTap). */
-    private const ALLOWED_STYLES = ['text-align'];
+    /** Allowed inline CSS properties (TipTap text-align / font-family / font-weight). */
+    private const ALLOWED_STYLES = ['text-align', 'font-family', 'font-weight'];
 
     public function sanitize(?string $html): string
     {
@@ -172,6 +172,21 @@ final class HtmlSanitizer
                 continue;
             }
             if ($prop === 'text-align' && !in_array(strtolower($val), ['left', 'center', 'right', 'justify'], true)) {
+                continue;
+            }
+            if ($prop === 'font-weight') {
+                $lw = strtolower($val);
+                if (!preg_match('/^(normal|bold|bolder|lighter|[1-9]00)$/', $lw)) {
+                    continue;
+                }
+                $parts[] = $prop . ': ' . $lw;
+                continue;
+            }
+            if ($prop === 'font-family') {
+                if (!preg_match("/^[a-zA-Z0-9\\s,\"'_\\-]+$/", $val) || str_contains(strtolower($val), 'expression')) {
+                    continue;
+                }
+                $parts[] = $prop . ': ' . $val;
                 continue;
             }
             $parts[] = $prop . ': ' . strtolower($val);

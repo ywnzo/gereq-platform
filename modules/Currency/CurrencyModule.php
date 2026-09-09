@@ -34,7 +34,7 @@ final class CurrencyModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.3.2';
+        return '1.3.3';
     }
 
     public function register(ModuleContext $context): void
@@ -223,19 +223,26 @@ final class CurrencyModule implements ModuleInterface
         $context->api()->registerKnownScope('currency.write');
 
         $context->api()->module('currencies', function (ApiModule $api): void {
-            $api->get('/', [CurrencyApiController::class, 'index'])->scope('currency.read');
-            $api->post('/', [CurrencyApiController::class, 'store'])->scope('currency.write');
-            $api->get('/{code}', [CurrencyApiController::class, 'show'])->scope('currency.read');
-            $api->patch('/{code}', [CurrencyApiController::class, 'update'])->scope('currency.write');
+            $api->get('/', [CurrencyApiController::class, 'index'])->scope('currency.read')
+                ->summary('List currencies');
+            $api->post('/', [CurrencyApiController::class, 'store'])->scope('currency.write')
+                ->summary('Create currency')->ruleset('currency.api.save');
+            $api->get('/{code}', [CurrencyApiController::class, 'show'])->scope('currency.read')
+                ->summary('Get currency');
+            $api->patch('/{code}', [CurrencyApiController::class, 'update'])->scope('currency.write')
+                ->summary('Update currency')->ruleset('currency.api.update');
         });
 
         $context->api()->module('exchange-rates', function (ApiModule $api): void {
-            $api->get('/', [ExchangeRateApiController::class, 'index'])->scope('currency.read');
-            $api->post('/', [ExchangeRateApiController::class, 'store'])->scope('currency.write');
+            $api->get('/', [ExchangeRateApiController::class, 'index'])->scope('currency.read')
+                ->summary('List exchange rates');
+            $api->post('/', [ExchangeRateApiController::class, 'store'])->scope('currency.write')
+                ->summary('Create exchange rate')->ruleset('currency.exchange_rate.save');
         });
 
         $context->api()->module('currency', function (ApiModule $api): void {
-            $api->post('/convert', [ConvertApiController::class, 'convert'])->scope('currency.read');
+            $api->post('/convert', [ConvertApiController::class, 'convert'])->scope('currency.read')
+                ->summary('Convert amount')->ruleset('currency.convert');
         });
     }
 

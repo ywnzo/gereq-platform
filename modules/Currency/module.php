@@ -6,7 +6,7 @@ return [
     'id' => 'currency',
     'name' => 'Currency',
     'icon' => 'coins',
-    'version' => '1.3.2',
+    'version' => '1.3.3',
     'description' => 'module.currency.description',
     'class' => Modules\Currency\CurrencyModule::class,
     'author' => 'GEREQ',

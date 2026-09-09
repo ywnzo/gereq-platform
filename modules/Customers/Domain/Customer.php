@@ -24,7 +24,7 @@ use Ramsey\Uuid\Uuid;
 )]
 #[FormEntity('customers.save')]
 #[FormGenerator(
-    exclude: ['id', 'isCompany', 'company', 'ico', 'dic', 'companyAddress', 'createdAt', 'updatedAt'],
+    exclude: ['id', 'avatarFileId', 'isCompany', 'company', 'ico', 'dic', 'companyAddress', 'createdAt', 'updatedAt'],
     form: 'customers.save',
     cols: 2,
 )]
@@ -35,6 +35,9 @@ class Customer
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $id;
+
+    #[ORM\Column(name: 'avatar_file_id', length: 36, nullable: true)]
+    private ?string $avatarFileId = null;
 
     #[ORM\Column(length: 180)]
     #[AdminField(type: 'text', label: 'Jméno', searchable: true, sortable: true, required: true)]
@@ -103,6 +106,11 @@ class Customer
         return $this->id;
     }
 
+    public function avatarFileId(): ?string
+    {
+        return $this->avatarFileId;
+    }
+
     public function name(): string
     {
         return $this->name;
@@ -161,6 +169,12 @@ class Customer
     public function updatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function setAvatarFileId(?string $avatarFileId): void
+    {
+        $this->avatarFileId = $avatarFileId !== null && $avatarFileId !== '' ? $avatarFileId : null;
+        $this->touch();
     }
 
     public function setName(string $name): void

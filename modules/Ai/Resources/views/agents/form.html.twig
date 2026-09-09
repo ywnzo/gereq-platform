@@ -1,0 +1,301 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+{% set emptyLabel = item ? 'ai.agents.edit'|trans : 'ai.agents.new'|trans %}
+{% set currentName = item ? item.name() : '' %}
+{% set selectedSurfaces = item ? item.surfaces() : ['admin'] %}
+<div class="customer-edit">
+    <header class="customer-edit__header">
+        <div class="customer-edit__identity">
+            <a class="text-link customer-profile__back" href="{{ url('admin.ai.agents.index') }}">
+                ← {{ 'nav.ai.agents'|trans }}
+            </a>
+            <div class="cell-user cell-user--lg">
+                <span class="avatar avatar--xl">{{ (currentName|default('A'))|slice(0, 1)|upper }}</span>
+                <div>
+                    <p class="customer-edit__eyebrow">{{ emptyLabel }}</p>
+                    <h1>{{ currentName ?: 'ai.agents.new'|trans }}</h1>
+                    <p class="customer-profile__sub">{{ 'ai.agents.form.lead'|trans }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="customer-edit__header-actions">
+            {% if item %}
+                <a class="btn btn--ghost" href="{{ url('admin.ai.chat', {id: item.id()}) }}">{{ icon('mail') }} {{ 'ai.action.chat'|trans }}</a>
+            {% endif %}
+            <button class="btn btn--primary" type="submit" form="ai-agent-form">{{ 'common.save'|trans }}</button>
+        </div>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'ai.agent.save' } %}
+
+    <form
+        id="ai-agent-form"
+        method="post"
+        class="customer-edit__form"
+        action="{{ item ? url('admin.ai.agents.update', {id: item.id()}) : url('admin.ai.agents.store') }}"
+        data-form="ai.agent.save"
+        x-data="gereqForm"
+        {% if form_errors('ai.agent.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+
+        <div class="customer-edit__layout">
+            <div class="customer-edit__main">
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.section.profile'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.agents.form.profile.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/input.html.twig' with {
+                            name: 'name',
+                            label: 'ai.field.name'|trans,
+                            required: true,
+                            value: item ? item.name() : '',
+                            form: 'ai.agent.save'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'slug',
+                            label: 'ai.field.slug'|trans,
+                            required: true,
+                            value: item ? item.slug() : '',
+                            hint: 'ai.field.slug.hint'|trans,
+                            form: 'ai.agent.save'
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'description',
+                            label: 'ai.field.description'|trans,
+                            optional: true,
+                            value: item ? (item.description() ?: '') : '',
+                            size: 'mini',
+                            rows: 2,
+                            extra: 'field--full',
+                            form: 'ai.agent.save'
+                        } %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.section.prompt'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.agents.form.prompt.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'system_prompt',
+                            label: 'ai.field.system_prompt'|trans,
+                            required: true,
+                            value: item ? item.systemPrompt() : 'Jsi asistent GEREQ. Odpovídej česky, srozumitelně a konkrétně. Strukturuj odpovědi Markdownem. Necituj interní data bez kontextu.',
+                            size: 'mini',
+                            rows: 6,
+                            extra: 'field--full',
+                            form: 'ai.agent.save'
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'playbook',
+                            label: 'ai.field.playbook'|trans,
+                            optional: true,
+                            value: item ? (item.playbook() ?: '') : '',
+                            size: 'mini',
+                            rows: 4,
+                            extra: 'field--full',
+                            form: 'ai.agent.save'
+                        } %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.section.models'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.agents.form.models.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        <div class="g-field">
+                            <label class="g-label" for="f-chat_model_id">{{ 'ai.field.chat_model'|trans }}</label>
+                            <div class="g-control-wrap">
+                                <select class="g-control" id="f-chat_model_id" name="chat_model_id">
+                                    <option value="">{{ 'ai.model.default'|trans }}</option>
+                                    {% for m in models %}
+                                        {% if m.role() != 'embed' %}
+                                        <option value="{{ m.id() }}" {{ item and item.chatModelId() == m.id() ? 'selected' : '' }}>
+                                            {{ m.family() ?: '—' }} / {{ m.modelId() }} ({{ m.role() }})
+                                        </option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="g-field">
+                            <label class="g-label" for="f-embed_model_id">{{ 'ai.field.embed_model'|trans }}</label>
+                            <div class="g-control-wrap">
+                                <select class="g-control" id="f-embed_model_id" name="embed_model_id">
+                                    <option value="">{{ 'ai.model.default'|trans }}</option>
+                                    {% for m in models %}
+                                        {% if m.role() == 'embed' %}
+                                        <option value="{{ m.id() }}" {{ item and item.embedModelId() == m.id() ? 'selected' : '' }}>{{ m.modelId() }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="g-field">
+                            <label class="g-label" for="f-write_mode">{{ 'ai.field.write_mode'|trans }}</label>
+                            <div class="g-control-wrap">
+                                <select class="g-control" id="f-write_mode" name="write_mode">
+                                    {% for mode in writeModes %}
+                                        <option value="{{ mode }}" {{ item and item.writeMode() == mode ? 'selected' : (mode == 'none' and not item ? 'selected' : '') }}>{{ mode }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        {% include 'ui/input.html.twig' with {
+                            name: 'temperature',
+                            type: 'number',
+                            label: 'ai.field.temperature'|trans,
+                            value: item ? item.temperature() : 0.3,
+                            step: 0.1,
+                            min: 0,
+                            max: 2,
+                            form: 'ai.agent.save'
+                        } %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.field.tools'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.agents.form.tools.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% for tool in tools %}
+                            <label class="check field--full">
+                                <input type="checkbox" name="tools[]" value="{{ tool.name() }}" {{ tool.name() in selectedTools ? 'checked' : '' }}>
+                                <span><code>{{ tool.name() }}</code> — {{ tool.description() }}</span>
+                            </label>
+                        {% else %}
+                            <p class="muted">{{ 'ai.tools.empty'|trans }}</p>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.field.peers'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.agents.form.peers.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% for peer in peerAgents %}
+                            {% if not item or peer.id() != item.id() %}
+                            <label class="check field--full">
+                                <input type="checkbox" name="peers[]" value="{{ peer.id() }}" {{ peer.id() in selectedPeers ? 'checked' : '' }}>
+                                <span><strong>{{ peer.name() }}</strong> <code>{{ peer.slug() }}</code>
+                                    {% if peer.description() %}<span class="muted">— {{ peer.description() }}</span>{% endif %}
+                                </span>
+                            </label>
+                            {% endif %}
+                        {% else %}
+                            <p class="muted">{{ 'ai.peers.empty'|trans }}</p>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.field.knowledge'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.agents.form.knowledge.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% for kb in knowledgeBases %}
+                            <label class="check field--full">
+                                <input type="checkbox" name="knowledge_bases[]" value="{{ kb.id() }}" {{ kb.id() in selectedKb ? 'checked' : '' }}>
+                                <span>{{ kb.name() }} <span class="muted">({{ kb.visibility() }})</span></span>
+                            </label>
+                        {% else %}
+                            <p class="muted">{{ 'ai.knowledge.empty'|trans }}
+                                <a class="text-link" href="{{ url('admin.ai.knowledge.index') }}">{{ 'ai.knowledge.create'|trans }}</a>
+                            </p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <aside class="customer-edit__aside">
+                <section class="customer-section customer-edit__status-card">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.section.publish'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.agents.form.publish.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    {% include 'ui/switch.html.twig' with {
+                        name: 'published',
+                        label: 'ai.field.published'|trans,
+                        on: item ? item.published() : false,
+                        description: 'ai.field.published.hint'|trans
+                    } %}
+                    <fieldset class="customer-status-picks" style="margin-top:1rem;border:0;padding:0">
+                        <legend class="g-label">{{ 'ai.field.surfaces'|trans }}</legend>
+                        {% for s in ['admin', 'api', 'public'] %}
+                            <label class="customer-status-pick customer-status-pick--muted" style="margin-top:.5rem">
+                                <input type="checkbox" name="surfaces[]" value="{{ s }}" {{ s in selectedSurfaces ? 'checked' : '' }}>
+                                <span class="customer-status-pick__dot" aria-hidden="true"></span>
+                                <span class="customer-status-pick__body">
+                                    <strong>{{ s }}</strong>
+                                    <small>{{ ('ai.surface.' ~ s ~ '.hint')|trans }}</small>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </fieldset>
+                </section>
+
+                {% if item %}
+                    <section class="customer-section customer-edit__meta">
+                        <header class="customer-section__head">
+                            <h2>{{ 'ai.section.meta'|trans }}</h2>
+                        </header>
+                        <dl class="customer-edit__meta-list">
+                            <div>
+                                <dt>{{ 'ai.field.created'|trans }}</dt>
+                                <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'ai.field.updated'|trans }}</dt>
+                                <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                    </section>
+                {% endif %}
+
+                <div class="customer-edit__aside-actions">
+                    <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ url('admin.ai.agents.index') }}">{{ 'common.cancel'|trans }}</a>
+                    {% if item and user.can('ai.manage') %}
+                        <button
+                            class="btn btn--danger"
+                            type="submit"
+                            formaction="{{ url('admin.ai.agents.destroy', {id: item.id()}) }}"
+                            formnovalidate
+                            data-confirm="{{ 'ai.agents.confirm_delete'|trans }}"
+                            data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}"
+                            data-confirm-danger="1"
+                        >{{ 'common.delete'|trans }}</button>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </form>
+</div>
+{% endblock %}

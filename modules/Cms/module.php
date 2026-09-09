@@ -6,7 +6,7 @@ return [
     'id' => 'cms',
     'name' => 'CMS',
     'icon' => 'layout',
-    'version' => '1.2.3',
+    'version' => '1.5.0',
     'description' => 'module.cms.description',
     'class' => Modules\Cms\CmsModule::class,
     'author' => 'GEREQ',
@@ -14,6 +14,7 @@ return [
         'core' => '^1.0',
     ],
     'optional' => [
+        'documents' => '^1.0',
         'media' => '^1.0',
         'products' => '^1.0',
     ],

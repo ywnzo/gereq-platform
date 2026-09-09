@@ -31,11 +31,11 @@ class Page
     private string $id;
 
     #[ORM\Column(length: 180)]
-    #[FormField(required: true, label: 'cms.field.slug', hint: 'cms.field.slug.hint', order: 20)]
+    #[FormField(required: true, label: 'cms.field.slug', hint: 'cms.field.slug.hint', order: 20, group: 'content')]
     private string $slug;
 
     #[ORM\Column(length: 190)]
-    #[FormField(required: true, label: 'cms.field.title', order: 10)]
+    #[FormField(required: true, label: 'cms.field.title', order: 10, group: 'content')]
     private string $title;
 
     #[ORM\Column(length: 32)]
@@ -46,6 +46,7 @@ class Page
         choicesFrom: 'STATUSES',
         choiceLabel: 'cms.page.status.',
         order: 30,
+        group: 'publishing',
     )]
     private string $status = 'draft';
 
@@ -57,6 +58,7 @@ class Page
         choicesFrom: 'TEMPLATES',
         choiceLabel: 'cms.page.template.',
         order: 40,
+        group: 'publishing',
     )]
     private string $template = 'default';
 
@@ -70,6 +72,7 @@ class Page
         choiceLabel: 'cms.page.content_mode.',
         hint: 'cms.field.content_mode.hint',
         order: 50,
+        group: 'publishing',
     )]
     private string $contentMode = 'blocks';
 
@@ -81,6 +84,7 @@ class Page
         hint: 'cms.field.body.hint',
         extra: 'field--full',
         order: 60,
+        group: 'content',
     )]
     private ?string $body = null;
 
@@ -89,6 +93,7 @@ class Page
         label: 'cms.field.meta_description',
         type: 'textarea',
         order: 70,
+        group: 'content',
     )]
     private ?string $metaDescription = null;
 

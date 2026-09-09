@@ -107,6 +107,7 @@ final class ActivityApiController extends Controller
             return ApiResponse::notFound();
         }
 
+        $raw = $this->body($request);
         $data = $this->validateBody($request, 'crm.activity.save');
         $parsed = $this->parseActivityData($data);
         if ($parsed instanceof JsonResponse) {
@@ -114,11 +115,17 @@ final class ActivityApiController extends Controller
         }
 
         $activity->setCustomerId($parsed['customer_id']);
-        $activity->setDealId($parsed['deal_id']);
         $activity->setType($parsed['type']);
         $activity->setSubject($parsed['subject']);
-        $activity->setBody($parsed['body']);
-        $activity->setDueAt($parsed['due_at']);
+        if (array_key_exists('deal_id', $raw)) {
+            $activity->setDealId($parsed['deal_id']);
+        }
+        if (array_key_exists('body', $raw)) {
+            $activity->setBody($parsed['body']);
+        }
+        if (array_key_exists('due_at', $raw)) {
+            $activity->setDueAt($parsed['due_at']);
+        }
         $this->em->flush();
 
         $payload = $this->serialize($activity);

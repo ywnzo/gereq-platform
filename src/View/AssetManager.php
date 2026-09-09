@@ -142,7 +142,7 @@ HTML;
 
         return <<<HTML
 <link rel="stylesheet" href="{$css}">
-<script{$nonceAttr} src="{$js}"></script>
+<script type="module"{$nonceAttr} src="{$js}"></script>
 HTML;
     }
 }

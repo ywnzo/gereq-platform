@@ -1,0 +1,176 @@
+{# API tester dock — Postman-like, similar to emailing compose #}
+<div
+    class="api-tester-layer"
+    x-show="open && !minimized"
+    x-cloak
+    @keydown.escape.window="onEscape()"
+>
+    <div class="api-tester-backdrop" @click="minimize()" aria-hidden="true"></div>
+    <div
+        class="api-tester-dock"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="api-tester-title"
+        :style="dockStyle()"
+        @click.stop
+        :class="dockPanelClass()"
+    >
+        <header class="api-tester-dock__bar" @pointerdown="startDrag($event)">
+            <strong id="api-tester-title" class="api-tester-dock__title">
+                {{ icon('play') }}
+                <span>{{ 'admin.api.tester.title'|trans }}</span>
+                <span class="method-pill" :class="methodPillClass()" x-text="method" x-show="method"></span>
+            </strong>
+            <div class="api-tester-dock__actions" @pointerdown.stop>
+                <button type="button" class="btn btn--ghost btn-sm api-tester-dock__iconbtn" @click="minimize()" title="{{ 'admin.api.tester.minimize'|trans }}" aria-label="{{ 'admin.api.tester.minimize'|trans }}">
+                    {{ icon('minimize') }}
+                </button>
+                <button type="button" class="btn btn--ghost btn-sm api-tester-dock__iconbtn" @click="close()" title="{{ 'admin.api.tester.close'|trans }}" aria-label="{{ 'admin.api.tester.close'|trans }}">
+                    {{ icon('close') }}
+                </button>
+            </div>
+        </header>
+
+        <div class="api-tester">
+            <div class="api-tester__urlrow">
+                <label class="sr-only" for="api-tester-method">{{ 'admin.api.col.method'|trans }}</label>
+                <select id="api-tester-method" class="input api-tester__method" x-model="method">
+                    <option>GET</option>
+                    <option>POST</option>
+                    <option>PUT</option>
+                    <option>PATCH</option>
+                    <option>DELETE</option>
+                </select>
+                <label class="sr-only" for="api-tester-path">{{ 'admin.api.col.path'|trans }}</label>
+                <input id="api-tester-path" class="input api-tester__path" type="text" x-model="path" spellcheck="false" autocomplete="off" placeholder="/api/v1/…">
+                <button type="button" class="btn btn--primary" @click="send()" :disabled="sending">
+                    <span x-show="!sending">{{ icon('send') }} {{ 'admin.api.tester.send'|trans }}</span>
+                    <span x-show="sending" x-cloak>{{ 'admin.api.tester.sending'|trans }}</span>
+                </button>
+            </div>
+
+            <div class="api-tester__split">
+                <div class="api-tester__request">
+                    <p class="api-tester__hint muted" x-show="summary" x-text="summary"></p>
+                    <p class="api-tester__scopes muted" x-show="scopesLabel" x-text="scopesLabel"></p>
+
+                    <div class="api-tester__block">
+                        <div class="api-tester__block-head">
+                            <h3>{{ 'admin.api.tester.variables'|trans }}</h3>
+                            <div class="api-tester__block-actions">
+                                <button type="button" class="btn btn--ghost btn-sm" @click="useMyToken()" :disabled="ensuringToken">
+                                    <span x-show="!ensuringToken">{{ icon('key') }} {{ 'admin.api.tester.use_token'|trans }}</span>
+                                    <span x-show="ensuringToken" x-cloak>{{ 'admin.api.tester.token_loading'|trans }}</span>
+                                </button>
+                                <button type="button" class="btn btn--ghost btn-sm" @click="addVariableRow()">{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}</button>
+                            </div>
+                        </div>
+                        <p class="muted api-tester__auth-hint">{{ 'admin.api.tester.variables_hint'|trans }}</p>
+                        <div class="api-tester__kv">
+                            <template x-for="(row, idx) in variables" :key="idx">
+                                <div class="api-tester__kv-row">
+                                    <input class="input" type="text" x-model="row.key" placeholder="name" spellcheck="false" @change="persistVariables()" :readonly="isBuiltInVar(row.key)">
+                                    <input
+                                        class="input"
+                                        :type="varInputType(row.key)"
+                                        x-model="row.value"
+                                        placeholder="value"
+                                        spellcheck="false"
+                                        @change="persistVariables()"
+                                        :readonly="isTokenVar(row.key)"
+                                    >
+                                    <button type="button" class="btn btn--ghost btn-sm" x-show="isTokenVar(row.key)" @click="toggleShowToken()">
+                                        <span x-show="!showToken">{{ icon('eye') }}</span>
+                                        <span x-show="showToken" x-cloak>{{ icon('close') }}</span>
+                                    </button>
+                                    <button type="button" class="btn btn--ghost btn-sm" x-show="!isBuiltInVar(row.key)" @click="removeVariableRow(idx)">{{ icon('close') }}</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <template x-if="pathParams.length">
+                        <div class="api-tester__block">
+                            <h3>{{ 'admin.api.tester.path_params'|trans }}</h3>
+                            <div class="api-tester__kv">
+                                <template x-for="param in pathParams" :key="param.name">
+                                    <label class="api-tester__field">
+                                        <span x-text="param.name"></span>
+                                        <input class="input" type="text" x-model="param.value" :placeholder="param.name" spellcheck="false">
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <div class="api-tester__block">
+                        <div class="api-tester__block-head">
+                            <h3>{{ 'admin.api.tester.query'|trans }}</h3>
+                            <button type="button" class="btn btn--ghost btn-sm" @click="addQueryRow()">{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}</button>
+                        </div>
+                        <div class="api-tester__kv">
+                            <template x-for="(row, idx) in query" :key="idx">
+                                <div class="api-tester__kv-row">
+                                    <input class="input" type="text" x-model="row.key" placeholder="key" spellcheck="false">
+                                    <input class="input" type="text" x-model="row.value" placeholder="value" spellcheck="false">
+                                    <button type="button" class="btn btn--ghost btn-sm" @click="removeQueryRow(idx)">{{ icon('close') }}</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="api-tester__block">
+                        <div class="api-tester__block-head">
+                            <h3>{{ 'admin.api.tester.headers'|trans }}</h3>
+                            <button type="button" class="btn btn--ghost btn-sm" @click="addHeaderRow()">{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}</button>
+                        </div>
+                        <div class="api-tester__kv">
+                            <template x-for="(row, idx) in headers" :key="idx">
+                                <div class="api-tester__kv-row">
+                                    <input class="input" type="text" x-model="row.key" placeholder="Header" spellcheck="false">
+                                    <input class="input" type="text" x-model="row.value" placeholder="Bearer {{ '{{token}}' }}" spellcheck="false">
+                                    <button type="button" class="btn btn--ghost btn-sm" @click="removeHeaderRow(idx)">{{ icon('close') }}</button>
+                                </div>
+                            </template>
+                        </div>
+                        <p class="muted api-tester__auth-hint">{{ 'admin.api.tester.auth_hint'|trans }}</p>
+                    </div>
+
+                    <div class="api-tester__block" x-show="needsBody">
+                        <h3>{{ 'admin.api.tester.body'|trans }}</h3>
+                        <textarea class="input api-tester__body" x-model="body" rows="10" spellcheck="false" placeholder='{ "key": "value" }'></textarea>
+                    </div>
+                </div>
+
+                <div class="api-tester__response" x-show="hasResponse" x-cloak>
+                    <div class="api-tester__response-head">
+                        <h3>{{ 'admin.api.tester.response'|trans }}</h3>
+                        <div class="api-tester__meta">
+                            <span class="api-tester__chip" :class="statusClass" x-text="statusLabel"></span>
+                            <span class="api-tester__chip api-tester__chip--mute" x-text="timingLabel"></span>
+                            <button type="button" class="btn btn--ghost btn-sm" @click="copyResponse()" x-text="copyButtonLabel()"></button>
+                        </div>
+                    </div>
+                    <div class="api-tester__dump" x-ref="responseTree"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-tester-dock__resize api-tester-dock__resize--n" data-edge="n" @pointerdown="startResize($event)"></div>
+        <div class="api-tester-dock__resize api-tester-dock__resize--s" data-edge="s" @pointerdown="startResize($event)"></div>
+        <div class="api-tester-dock__resize api-tester-dock__resize--e" data-edge="e" @pointerdown="startResize($event)"></div>
+        <div class="api-tester-dock__resize api-tester-dock__resize--w" data-edge="w" @pointerdown="startResize($event)"></div>
+        <div class="api-tester-dock__resize api-tester-dock__resize--se" data-edge="se" @pointerdown="startResize($event)"></div>
+    </div>
+</div>
+
+<button
+    type="button"
+    class="api-tester-pill"
+    x-show="open && minimized"
+    x-cloak
+    @click="restore()"
+>
+    {{ icon('play') }}
+    <span x-text="pillLabel"></span>
+</button>

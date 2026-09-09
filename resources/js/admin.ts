@@ -10,6 +10,7 @@ import '../../modules/Customers/Resources/assets/css/admin.css';
 import '../../modules/PartsCatalog/Resources/assets/css/admin.css';
 import '../../modules/Cms/Resources/assets/css/admin.css';
 import '../../modules/CRM/Resources/assets/css/admin.css';
+import '../../modules/Emailing/Resources/assets/css/admin.css';
 import '../../modules/Products/Resources/assets/css/admin.css';
 import '../../modules/ProductDiscounts/Resources/assets/css/admin.css';
 import '../../modules/Vitality/Resources/assets/css/admin.css';

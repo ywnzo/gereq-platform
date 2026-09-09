@@ -12,6 +12,13 @@
 
   const KEY = "gereq.debugbar.v1";
   const POS_KEY = "gereq.debugbar.pos";
+  const EDITOR_KEY = "gereq.debugbar.editor";
+  const EDITORS = [
+    { id: "cursor", label: "Cursor" },
+    { id: "vscode", label: "VS Code" },
+    { id: "phpstorm", label: "PhpStorm" },
+    { id: "idea", label: "IntelliJ IDEA" },
+  ];
   const nPlusOneCount = data.nPlusOneCount || 0;
   const staging = data.staging || { count: 0, version: "—", entries: [] };
   const stagingCount = staging.count || 0;
@@ -42,6 +49,187 @@
     }
   })();
 
+  const loadEditorSettings = () => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(EDITOR_KEY) || "{}");
+      return raw && typeof raw === "object" ? raw : {};
+    } catch {
+      return {};
+    }
+  };
+
+  let editorSettings = loadEditorSettings();
+  const defaultProjectRoot = String(data.projectRoot || data.serverRoot || "").replace(/[/\\]+$/, "");
+
+  const getProjectRoot = () => {
+    const custom = String(editorSettings.projectRoot || "").trim().replace(/[/\\]+$/, "");
+    return custom || defaultProjectRoot;
+  };
+
+  const getEditorId = () => {
+    const id = String(editorSettings.editor || "").trim();
+    return EDITORS.some((e) => e.id === id) ? id : "cursor";
+  };
+
+  const getOpenMode = () =>
+    String(editorSettings.openMode || "").trim() === "ssh-remote" ? "ssh-remote" : "local";
+
+  const getSshHost = () => String(editorSettings.sshHost || "").trim();
+
+  const saveEditorSettings = (next) => {
+    editorSettings = { ...editorSettings, ...next };
+    try {
+      localStorage.setItem(EDITOR_KEY, JSON.stringify(editorSettings));
+    } catch {}
+  };
+
+  const joinPath = (root, rel) => {
+    const remote = getOpenMode() === "ssh-remote";
+    const r = String(root || "").replace(/[/\\]+$/, "");
+    const f = String(rel || "").replace(/^[/\\]+/, "").replace(/\\/g, "/");
+    if (!r) return remote ? (f.startsWith("/") ? f : `/${f}`) : f;
+    if (remote || r.includes("/")) {
+      return `${r.replace(/\\/g, "/")}/${f}`;
+    }
+    return `${r}\\${f.replace(/\//g, "\\")}`;
+  };
+
+  /** Path form expected by vscode:// / cursor:// file handlers. */
+  const toIdeFilePath = (abs) => {
+    let p = String(abs || "").replace(/\\/g, "/");
+    if (/^[A-Za-z]:\//.test(p)) return "/" + p;
+    if (!p.startsWith("/")) p = "/" + p;
+    return p;
+  };
+
+  const encodeRemotePath = (absPath) => {
+    const p = toIdeFilePath(absPath);
+    return p
+      .split("/")
+      .map((seg, i) => (i === 0 ? seg : encodeURIComponent(seg)))
+      .join("/");
+  };
+
+  const buildSshDeeplink = (absPath, line) => {
+    const editor = getEditorId();
+    const host = getSshHost();
+    if (!host) return "";
+    const path = encodeRemotePath(absPath);
+    const lineNum = Number(line);
+    const row = Number.isFinite(lineNum) && lineNum > 0 ? lineNum : 1;
+    // :line:col je nutný, jinak Cursor bere cestu jako folder connect
+    return `${editor}://vscode-remote/ssh-remote+${host}${path}:${row}:1`;
+  };
+
+  const buildEditorUrl = (absPath, line) => {
+    const editor = getEditorId();
+    const lineNum = Number(line);
+    const hasLine = Number.isFinite(lineNum) && lineNum > 0;
+    if (editor === "phpstorm" || editor === "idea") {
+      let url = `${editor}://open?file=${encodeURIComponent(absPath)}`;
+      if (hasLine) url += `&line=${lineNum}`;
+      return url;
+    }
+    if (getOpenMode() === "ssh-remote") {
+      if (getSshStrategy() === "cli") return "";
+      return buildSshDeeplink(absPath, line);
+    }
+    const file = toIdeFilePath(absPath);
+    return `${editor}://file${file}${hasLine ? `:${lineNum}` : ""}`;
+  };
+
+  const getSshStrategy = () => {
+    const s = String(editorSettings.sshStrategy || "").trim();
+    // staré "command" z prohlížeče nefungovalo → deeplink
+    if (s === "cli") return "cli";
+    if (s === "both") return "both";
+    return "deeplink";
+  };
+
+  const buildCliCommand = (absPath, line) => {
+    const host = getSshHost();
+    const lineNum = Number(line);
+    const hasLine = Number.isFinite(lineNum) && lineNum > 0;
+    const target = hasLine ? `${absPath}:${lineNum}` : absPath;
+    const editor = getEditorId() === "vscode" ? "code" : "cursor";
+    return `${editor} -r --remote ssh-remote+${host} "${target}"`;
+  };
+
+  const flashEditorToast = (msg) => {
+    let el = root.querySelector(".gdb-toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "gdb-toast";
+      root.appendChild(el);
+    }
+    el.textContent = msg;
+    el.hidden = false;
+    window.clearTimeout(flashEditorToast._t);
+    flashEditorToast._t = window.setTimeout(() => {
+      el.hidden = true;
+    }, 3200);
+  };
+
+  const launchUrl = (url) => {
+    if (!url) return false;
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return true;
+  };
+
+  const openInEditor = (relOrAbs, line) => {
+    const raw = String(relOrAbs || "").trim();
+    if (!raw) return false;
+    if (getOpenMode() === "ssh-remote" && !getSshHost()) {
+      window.alert("V Config nastavte SSH host (jméno z ~/.ssh/config, např. dev-vm).");
+      return false;
+    }
+    const isAbs =
+      raw.startsWith("/") ||
+      /^[A-Za-z]:[\\/]/.test(raw) ||
+      raw.startsWith("\\\\");
+    const abs = isAbs ? raw : joinPath(getProjectRoot(), raw);
+    if (!abs) return false;
+
+    const strategy = getOpenMode() === "ssh-remote" ? getSshStrategy() : "deeplink";
+
+    if (strategy === "cli") {
+      const cmd = buildCliCommand(abs, line);
+      copyText(cmd)
+        .then(() => flashEditorToast("CLI ve schránce — vlož do Windows terminálu."))
+        .catch(() => window.prompt("Spusť ve Windows terminálu:", cmd));
+      return true;
+    }
+
+    const url =
+      getOpenMode() === "ssh-remote" ? buildSshDeeplink(abs, line) : buildEditorUrl(abs, line);
+    if (!launchUrl(url)) {
+      flashEditorToast("Nepodařilo se sestavit odkaz do editoru.");
+      return false;
+    }
+
+    flashEditorToast(`Otevírám: ${abs.split(/[/\\]/).pop() || abs}`);
+
+    if (strategy === "both") {
+      const cmd = buildCliCommand(abs, line);
+      copyText(cmd).catch(() => {});
+    }
+    return true;
+  };
+
+  const fileLink = (label, file, line) => {
+    if (!file) return esc(label);
+    const mode = getOpenMode() === "ssh-remote" ? `ssh:${getSshHost() || "?"}` : getEditorId();
+    const title = `Otevřít (${mode}): ${joinPath(getProjectRoot(), file)}${line ? ":" + line : ""}`;
+    const lineAttr = line ? ` data-line="${esc(line)}"` : "";
+    return `<button type="button" class="gdb-file" data-act="open-file" data-file="${esc(file)}"${lineAttr} title="${esc(title)}">${esc(label)}</button>`;
+  };
+
   let open = stored.open !== false;
   let tab = stored.tab && tabs.some((t) => t.id === stored.tab) ? stored.tab : tabs[0].id;
 
@@ -51,6 +239,12 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+
+  const shortEventName = (fqcn) => {
+    const s = String(fqcn || "");
+    const parts = s.split("\\");
+    return parts[parts.length - 1] || s;
+  };
 
   const statusTone = (status) => {
     if (status >= 500) return "err";
@@ -211,7 +405,7 @@
       return data.exceptions
         .map(
           (ex) =>
-            `<div class="gdb-exc"><div class="gdb-exc__class">${esc(ex.class)}</div><div class="gdb-exc__msg">${esc(ex.message)}</div><div class="gdb-exc__file">${esc(ex.file)}:${esc(ex.line)}</div></div>`
+            `<div class="gdb-exc"><div class="gdb-exc__class">${esc(ex.class)}</div><div class="gdb-exc__msg">${esc(ex.message)}</div><div class="gdb-exc__file">${fileLink(`${ex.file}:${ex.line}`, ex.file, ex.line)}</div></div>`
         )
         .join("");
     },
@@ -308,7 +502,8 @@
       const rows = views
         .map((v) => {
           const width = Math.max(4, Math.round((v.duration / maxView) * 100));
-          return `<tr><td>${esc(v.name)}</td><td class="gdb-ms">${esc(v.duration)} ms<div class="gdb-barline"><i style="width:${width}%"></i></div></td></tr>`;
+          const name = v.file ? fileLink(v.name, v.file) : esc(v.name);
+          return `<tr><td>${name}</td><td class="gdb-ms">${esc(v.duration)} ms<div class="gdb-barline"><i style="width:${width}%"></i></div></td></tr>`;
         })
         .join("");
       return `<table class="gdb-table"><thead><tr><th>Šablona</th><th>Čas</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -328,7 +523,17 @@
       const events = data.events || [];
       if (!events.length) return `<div class="gdb-empty">Žádné eventy.</div>`;
       const rows = events
-        .map((e) => `<tr><td>${esc(e.event)}</td><td class="gdb-ms">${esc(e.duration)} ms</td></tr>`)
+        .map((e) => {
+          const label = e.type || shortEventName(e.event);
+          const ajax = e.ajax
+            ? `<div class="gdb-muted">${esc(e.method || "AJAX")} ${esc(e.ajax)}${e.status ? ` · ${esc(e.status)}` : ""}${e.ajaxMs != null ? ` · ${esc(e.ajaxMs)} ms` : ""}</div>`
+            : "";
+          const summary =
+            e.summary && typeof e.summary === "object"
+              ? `<pre class="gdb-pre">${esc(JSON.stringify(e.summary))}</pre>`
+              : "";
+          return `<tr><td><div class="gdb-event__name">${esc(label)}</div>${ajax}${summary}<div class="gdb-muted gdb-event__class">${esc(e.event || "")}</div></td><td class="gdb-ms">${esc(e.duration)} ms</td></tr>`;
+        })
         .join("");
       return `<table class="gdb-table"><thead><tr><th>Event</th><th>Čas</th></tr></thead><tbody>${rows}</tbody></table>`;
     },
@@ -350,7 +555,9 @@
       }
       const cards = dumps
         .map((d, i) => {
-          const meta = d.file ? `${esc(d.file)}:${esc(d.line)}` : "dump()";
+          const meta = d.file
+            ? fileLink(`${d.file}:${d.line}`, d.file, d.line)
+            : "dump()";
           const tree =
             Object.prototype.hasOwnProperty.call(d, "value")
               ? jsonTree(d.value)
@@ -362,7 +569,43 @@
     },
     config: () => {
       const cfg = data.config || {};
-      return kv(Object.keys(cfg).map((k) => [k, cfg[k]]));
+      const editorOpts = EDITORS.map(
+        (e) =>
+          `<option value="${esc(e.id)}"${e.id === getEditorId() ? " selected" : ""}>${esc(e.label)}</option>`,
+      ).join("");
+      const customRoot = String(editorSettings.projectRoot || "");
+      const effective = getProjectRoot();
+      const mode = getOpenMode();
+      const sshHost = getSshHost();
+      const isDocker =
+        String(data.serverRoot || "").includes("/var/www") ||
+        String(data.serverRoot || "") === "/var/www/html";
+      const rootLabel =
+        mode === "ssh-remote"
+          ? "Project root (absolutní cesta na SSH serveru)"
+          : "Project root (absolutní cesta na tomto PC)";
+      const rootPlaceholder =
+        mode === "ssh-remote"
+          ? "/home/dev/private/RealEstates"
+          : defaultProjectRoot || "/cesta/k/RealEstates";
+      let pathHint;
+      if (mode === "ssh-remote") {
+        pathHint = `<p class="gdb-hint">Windows + Cursor Remote SSH: root = linuxová cesta na serveru (např. <code>/home/dev/private/RealEstates</code>), ne <code>C:\\…</code>${isDocker ? ` a ne Docker <code>${esc(data.serverRoot || "")}</code>` : ""}.</p>`;
+      } else if (isDocker) {
+        pathHint = `<p class="gdb-hint">Server běží v Dockeru (<code>${esc(data.serverRoot || "")}</code>). Nastavte absolutní cestu k projektu na tomto PC, nebo přepněte na SSH Remote.</p>`;
+      } else {
+        pathHint = `<p class="gdb-hint">Default root ze serveru: <code>${esc(defaultProjectRoot || "—")}</code>. Prázdné pole = použít default.</p>`;
+      }
+      const sshField =
+        mode === "ssh-remote"
+          ? `<label class="gdb-field"><span>SSH host (Host z ~/.ssh/config nebo user@host)</span><input type="text" data-editor-field="sshHost" value="${esc(sshHost)}" placeholder="dev-vm" spellcheck="false" autocomplete="off"></label><label class="gdb-field"><span>Strategie otevření (SSH)</span><select data-editor-field="sshStrategy"><option value="deeplink"${getSshStrategy() === "deeplink" ? " selected" : ""}>Deeplink (otevře soubor, často nové okno)</option><option value="both"${getSshStrategy() === "both" ? " selected" : ""}>Deeplink + zkopírovat CLI</option><option value="cli"${getSshStrategy() === "cli" ? " selected" : ""}>Jen zkopírovat CLI (cursor -r …)</option></select></label>`
+          : "";
+      const preview =
+        mode === "ssh-remote" && sshHost && effective
+          ? `<p class="gdb-hint">Reuse jednoho okna deeplinkem Cursor teď spolehlivě neumí (bug). Pro tab ve stávajícím okně: strategii CLI / both a ve Windows spusť zkopírovaný příkaz.</p><p class="gdb-hint">CLI: <code>${esc(`cursor -r --remote ssh-remote+${sshHost} "${effective}/…"`)}</code></p>`
+          : `<p class="gdb-hint">Efektivní root: <code>${esc(effective || "—")}</code></p>`;
+      const editorForm = `<div class="gdb-card gdb-card--settings"><div class="gdb-card__meta"><b>Otevření souborů v editoru</b></div><label class="gdb-field"><span>Editor</span><select data-editor-field="editor">${editorOpts}</select></label><label class="gdb-field"><span>Režim cesty</span><select data-editor-field="openMode"><option value="local"${mode === "local" ? " selected" : ""}>Lokální disk</option><option value="ssh-remote"${mode === "ssh-remote" ? " selected" : ""}>SSH Remote (Cursor / VS Code)</option></select></label>${sshField}<label class="gdb-field"><span>${esc(rootLabel)}</span><input type="text" data-editor-field="projectRoot" value="${esc(customRoot)}" placeholder="${esc(rootPlaceholder)}" spellcheck="false" autocomplete="off"></label>${pathHint}${preview}<div class="gdb-toolbar gdb-toolbar--flush"><button type="button" class="gdb-copybtn" data-act="editor-save">Uložit</button><button type="button" class="gdb-copybtn" data-act="editor-reset" title="Vymazat lokální override">Reset</button></div></div>`;
+      return `${editorForm}${kv(Object.keys(cfg).map((k) => [k, cfg[k]]))}`;
     },
   };
 
@@ -701,6 +944,26 @@
     }
   };
 
+  root.addEventListener("change", (e) => {
+    const field = e.target.closest("[data-editor-field]");
+    if (!field || !root.contains(field)) return;
+    const name = field.getAttribute("data-editor-field");
+    if (name !== "openMode" && name !== "sshStrategy") return;
+    const hostInput = panel.querySelector('[data-editor-field="sshHost"]');
+    const rootInput = panel.querySelector('[data-editor-field="projectRoot"]');
+    const editorSel = panel.querySelector('[data-editor-field="editor"]');
+    const modeSel = panel.querySelector('[data-editor-field="openMode"]');
+    const strategySel = panel.querySelector('[data-editor-field="sshStrategy"]');
+    saveEditorSettings({
+      editor: editorSel ? editorSel.value : getEditorId(),
+      openMode: modeSel && modeSel.value === "ssh-remote" ? "ssh-remote" : "local",
+      sshHost: hostInput ? String(hostInput.value || "").trim() : getSshHost(),
+      sshStrategy: strategySel ? strategySel.value : getSshStrategy(),
+      projectRoot: rootInput ? String(rootInput.value || "").trim() : String(editorSettings.projectRoot || ""),
+    });
+    renderPanel();
+  });
+
   root.addEventListener("click", (e) => {
     const jump = e.target.closest("[data-tab-jump]");
     if (jump && root.contains(jump)) {
@@ -711,6 +974,47 @@
         setOpen(true);
         renderPanel();
       }
+      return;
+    }
+
+    const openFile = e.target.closest("[data-act='open-file']");
+    if (openFile && root.contains(openFile)) {
+      e.preventDefault();
+      e.stopPropagation();
+      openInEditor(openFile.getAttribute("data-file"), openFile.getAttribute("data-line"));
+      return;
+    }
+
+    const editorSave = e.target.closest("[data-act='editor-save']");
+    if (editorSave && root.contains(editorSave)) {
+      e.preventDefault();
+      const editorSel = panel.querySelector('[data-editor-field="editor"]');
+      const modeSel = panel.querySelector('[data-editor-field="openMode"]');
+      const hostInput = panel.querySelector('[data-editor-field="sshHost"]');
+      const strategySel = panel.querySelector('[data-editor-field="sshStrategy"]');
+      const rootInput = panel.querySelector('[data-editor-field="projectRoot"]');
+      saveEditorSettings({
+        editor: editorSel ? editorSel.value : getEditorId(),
+        openMode: modeSel && modeSel.value === "ssh-remote" ? "ssh-remote" : "local",
+        sshHost: hostInput ? String(hostInput.value || "").trim() : getSshHost(),
+        sshStrategy: strategySel ? strategySel.value : getSshStrategy(),
+        projectRoot: rootInput ? String(rootInput.value || "").trim() : "",
+      });
+      renderPanel();
+      return;
+    }
+
+    const editorReset = e.target.closest("[data-act='editor-reset']");
+    if (editorReset && root.contains(editorReset)) {
+      e.preventDefault();
+      saveEditorSettings({
+        editor: "cursor",
+        openMode: "local",
+        sshHost: "",
+        sshStrategy: "deeplink",
+        projectRoot: "",
+      });
+      renderPanel();
       return;
     }
 
@@ -762,4 +1066,105 @@
 
   enableDrag();
   setOpen(open);
+
+  const syncEventsTabCount = () => {
+    const n = (data.events || []).length;
+    const btn = root.querySelector('.gdb-tab[data-tab="events"]');
+    if (!btn) return;
+    let span = btn.querySelector(".gdb-tab__n");
+    if (n > 0) {
+      if (!span) {
+        span = document.createElement("span");
+        span.className = "gdb-tab__n";
+        btn.appendChild(span);
+      }
+      span.textContent = String(n);
+    } else if (span) {
+      span.remove();
+    }
+  };
+
+  const mergeAjaxDebug = (payload) => {
+    if (!payload || typeof payload !== "object") return;
+    const path = String(payload.path || "");
+    const method = String(payload.method || "GET");
+    const status = payload.status;
+    const ajaxMs = payload.duration;
+    const incoming = Array.isArray(payload.events) ? payload.events : [];
+    if (!data.events) data.events = [];
+    if (incoming.length === 0 && path) {
+      // i bez eventů ukaž poll tick
+      data.events.push({
+        event: "ajax.request",
+        type: path.includes("/emailing/poll") ? "emailing.mailbox.poll_tick" : "http.ajax",
+        duration: ajaxMs != null ? ajaxMs : 0,
+        ajax: path,
+        method,
+        status,
+        ajaxMs,
+        summary: {
+          queryCount: payload.queryCount || 0,
+          queryMs: payload.queryMs || 0,
+        },
+      });
+    } else {
+      for (const e of incoming) {
+        data.events.push({
+          ...e,
+          ajax: path || e.ajax,
+          method,
+          status,
+          ajaxMs,
+        });
+      }
+    }
+    // drž historii rozumně krátkou
+    if (data.events.length > 200) {
+      data.events = data.events.slice(-200);
+    }
+    syncEventsTabCount();
+    if (open && tab === "events") {
+      renderPanel();
+    }
+  };
+
+  const ingestDebugHeader = (res) => {
+    try {
+      const raw = res.headers.get("X-Gereq-Debug");
+      if (!raw) return;
+      mergeAjaxDebug(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  };
+
+  if (typeof window.fetch === "function") {
+    const origFetch = window.fetch.bind(window);
+    window.fetch = (...args) =>
+      origFetch(...args).then((res) => {
+        ingestDebugHeader(res);
+        return res;
+      });
+  }
+
+  const XHR = window.XMLHttpRequest;
+  if (XHR && XHR.prototype) {
+    const origOpen = XHR.prototype.open;
+    const origSend = XHR.prototype.send;
+    XHR.prototype.open = function (...args) {
+      this.__gereqDebugUrl = args[1];
+      return origOpen.apply(this, args);
+    };
+    XHR.prototype.send = function (...args) {
+      this.addEventListener("loadend", () => {
+        try {
+          const raw = this.getResponseHeader("X-Gereq-Debug");
+          if (raw) mergeAjaxDebug(JSON.parse(raw));
+        } catch {
+          // ignore
+        }
+      });
+      return origSend.apply(this, args);
+    };
+  }
 })();

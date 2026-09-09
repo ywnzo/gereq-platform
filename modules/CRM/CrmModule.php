@@ -12,6 +12,8 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventDefinition;
 use Gereq\Hook\HookPriority;
 use Gereq\Http\Router;
+use Gereq\Automation\WorkflowVariableDefinition;
+use Gereq\Event\EventEnvelope;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
 use Modules\CRM\Domain\Activity;
@@ -20,6 +22,8 @@ use Modules\CRM\Http\ActivityController;
 use Modules\CRM\Http\Api\ActivityApiController;
 use Modules\CRM\Http\Api\DealApiController;
 use Modules\CRM\Http\DealController;
+use Modules\CRM\Http\WorkflowController;
+use Modules\CRM\Application\AutomationEngine;
 use Modules\Customers\Domain\Customer;
 use Modules\Customers\Domain\CustomerCreated;
 use Twig\Environment;
@@ -36,7 +40,7 @@ final class CrmModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.6';
+        return '1.3.7';
     }
 
     public function register(ModuleContext $context): void
@@ -44,6 +48,7 @@ final class CrmModule implements ModuleInterface
         $context->permissions()->register('crm.view', 'perm.crm.view', 'perm.group.crm');
         $context->permissions()->register('crm.deals.manage', 'perm.crm.deals.manage', 'perm.group.crm');
         $context->permissions()->register('crm.activities.manage', 'perm.crm.activities.manage', 'perm.group.crm');
+        $context->permissions()->register('crm.workflows.manage', 'perm.crm.workflows.manage', 'perm.group.crm');
 
         $context->router()->group('/admin/crm/deals', function (Router $routes): void {
             $routes->get('', [DealController::class, 'index'])
@@ -96,6 +101,33 @@ final class CrmModule implements ModuleInterface
                 ->permission('crm.activities.manage');
         }, ['middleware' => ['auth']]);
 
+        $context->router()->group('/admin/crm/workflows', function (Router $routes): void {
+            $routes->get('', [WorkflowController::class, 'index'])
+                ->name('admin.crm.workflows.index')
+                ->permission('crm.view');
+            $routes->get('/create', [WorkflowController::class, 'create'])
+                ->name('admin.crm.workflows.create')
+                ->permission('crm.workflows.manage');
+            $routes->post('', [WorkflowController::class, 'store'])
+                ->name('admin.crm.workflows.store')
+                ->permission('crm.workflows.manage');
+            $routes->get('/{id}/edit', [WorkflowController::class, 'edit'])
+                ->name('admin.crm.workflows.edit')
+                ->permission('crm.workflows.manage');
+            $routes->post('/{id}', [WorkflowController::class, 'update'])
+                ->name('admin.crm.workflows.update')
+                ->permission('crm.workflows.manage');
+            $routes->post('/{id}/graph', [WorkflowController::class, 'saveGraph'])
+                ->name('admin.crm.workflows.graph')
+                ->permission('crm.workflows.manage');
+            $routes->post('/{id}/toggle', [WorkflowController::class, 'toggle'])
+                ->name('admin.crm.workflows.toggle')
+                ->permission('crm.workflows.manage');
+            $routes->post('/{id}/delete', [WorkflowController::class, 'destroy'])
+                ->name('admin.crm.workflows.destroy')
+                ->permission('crm.workflows.manage');
+        }, ['middleware' => ['auth']]);
+
         $this->registerApi($context);
         $this->registerPlatformEvents($context);
     }
@@ -139,12 +171,20 @@ final class CrmModule implements ModuleInterface
             order: 27,
         ));
         $context->menu()->add(new MenuItem(
+            id: 'crm.workflows',
+            label: 'nav.crm.workflows',
+            route: 'admin.crm.workflows.index',
+            permission: 'crm.view',
+            parent: 'crm',
+            order: 28,
+        ));
+        $context->menu()->add(new MenuItem(
             id: 'crm.deals.create',
             label: 'nav.crm.deals.create',
             route: 'admin.crm.deals.create',
             permission: 'crm.deals.manage',
             parent: 'crm',
-            order: 28,
+            order: 29,
             hidden: true,
         ));
         $context->menu()->add(new MenuItem(
@@ -153,7 +193,7 @@ final class CrmModule implements ModuleInterface
             route: 'admin.crm.activities.create',
             permission: 'crm.activities.manage',
             parent: 'crm',
-            order: 29,
+            order: 30,
             hidden: true,
         ));
 
@@ -189,10 +229,116 @@ final class CrmModule implements ModuleInterface
             permission: 'crm.activities.manage',
             group: 'Akce',
         ));
+        $context->commandPalette()->add(new PaletteCommand(
+            id: 'crm.workflows.index',
+            label: 'palette.crm.workflows',
+            url: '/admin/crm/workflows',
+            icon: 'briefcase',
+            permission: 'crm.view',
+            keywords: ['crm', 'automation', 'workflow', 'automatizace'],
+        ));
 
         $this->registerValidation($context);
         $this->registerHooks($context);
         $this->registerEvents($context);
+        $this->registerAutomations($context);
+        $this->registerWorkflowVariables($context);
+    }
+
+    private function registerWorkflowVariables(ModuleContext $context): void
+    {
+        $vars = $context->workflowVariables();
+        $vars->registerMany(
+            (new WorkflowVariableDefinition('event', $this->id()))
+                ->withLabel('Typ události')
+                ->withDescription('Technický kód spouštěcí události (např. deal.created).')
+                ->withGroup('event')
+                ->withExample('deal.created'),
+            (new WorkflowVariableDefinition('deal.id', $this->id()))
+                ->withLabel('ID obchodu')
+                ->withDescription('Unikátní identifikátor obchodu.')
+                ->withGroup('deal'),
+            (new WorkflowVariableDefinition('deal.title', $this->id()))
+                ->withLabel('Název obchodu')
+                ->withDescription('Titulek obchodu v pipeline.')
+                ->withGroup('deal')
+                ->withExample('Rekonstrukce bytu'),
+            (new WorkflowVariableDefinition('deal.stage', $this->id()))
+                ->withLabel('Fáze obchodu')
+                ->withDescription('Aktuální fáze (lead, qualified, proposal, won, lost).')
+                ->withGroup('deal')
+                ->withExample('won'),
+            (new WorkflowVariableDefinition('deal.amount', $this->id()))
+                ->withLabel('Částka')
+                ->withDescription('Hodnota obchodu.')
+                ->withGroup('deal'),
+            (new WorkflowVariableDefinition('deal.currency', $this->id()))
+                ->withLabel('Měna')
+                ->withDescription('Měna obchodu (např. CZK).')
+                ->withGroup('deal')
+                ->withExample('CZK'),
+            (new WorkflowVariableDefinition('deal.customer_id', $this->id()))
+                ->withLabel('ID zákazníka obchodu')
+                ->withDescription('Vazba obchodu na zákazníka.')
+                ->withGroup('deal'),
+            (new WorkflowVariableDefinition('deal.note', $this->id()))
+                ->withLabel('Poznámka obchodu')
+                ->withDescription('Interní poznámka u obchodu.')
+                ->withGroup('deal'),
+            (new WorkflowVariableDefinition('activity.id', $this->id()))
+                ->withLabel('ID aktivity')
+                ->withDescription('Unikátní identifikátor aktivity.')
+                ->withGroup('activity'),
+            (new WorkflowVariableDefinition('activity.subject', $this->id()))
+                ->withLabel('Předmět aktivity')
+                ->withDescription('Název / předmět aktivity.')
+                ->withGroup('activity'),
+            (new WorkflowVariableDefinition('activity.type', $this->id()))
+                ->withLabel('Typ aktivity')
+                ->withDescription('task, call, email, meeting, note…')
+                ->withGroup('activity')
+                ->withExample('task'),
+            (new WorkflowVariableDefinition('activity.customer_id', $this->id()))
+                ->withLabel('ID zákazníka aktivity')
+                ->withDescription('Zákazník přiřazený k aktivitě.')
+                ->withGroup('activity'),
+            (new WorkflowVariableDefinition('activity.deal_id', $this->id()))
+                ->withLabel('ID obchodu aktivity')
+                ->withDescription('Obchod přiřazený k aktivitě (pokud je).')
+                ->withGroup('activity'),
+            (new WorkflowVariableDefinition('message.id', $this->id()))
+                ->withLabel('ID e-mailové zprávy')
+                ->withDescription('Interní ID zprávy v Emailing.')
+                ->withGroup('message'),
+            (new WorkflowVariableDefinition('message.from', $this->id()))
+                ->withLabel('E-mail odesílatele')
+                ->withDescription('Adresa From u přijaté zprávy.')
+                ->withGroup('message')
+                ->withExample('client@example.com'),
+            (new WorkflowVariableDefinition('message.from_name', $this->id()))
+                ->withLabel('Jméno odesílatele')
+                ->withGroup('message'),
+            (new WorkflowVariableDefinition('message.subject', $this->id()))
+                ->withLabel('Předmět e-mailu')
+                ->withGroup('message'),
+            (new WorkflowVariableDefinition('message.account_id', $this->id()))
+                ->withLabel('ID e-mailového účtu')
+                ->withGroup('message'),
+        );
+    }
+
+    private function registerAutomations(ModuleContext $context): void
+    {
+        $context->hooks()->addAction(
+            'platform.event.dispatched',
+            static function (EventEnvelope $envelope, mixed $event = null) use ($context): void {
+                unset($event);
+                /** @var AutomationEngine $engine */
+                $engine = $context->get(AutomationEngine::class);
+                $engine->onPlatformEvent($envelope);
+            },
+            HookPriority::NORMAL,
+        );
     }
 
     private function registerApi(ModuleContext $context): void
@@ -203,19 +349,31 @@ final class CrmModule implements ModuleInterface
         $context->api()->registerKnownScope('crm.activities.write');
 
         $context->api()->module('crm', function (ApiModule $api): void {
-            $api->get('/deals', [DealApiController::class, 'index'])->scope('crm.deals.read');
-            $api->post('/deals', [DealApiController::class, 'store'])->scope('crm.deals.write');
-            $api->get('/deals/{id}', [DealApiController::class, 'show'])->scope('crm.deals.read');
-            $api->patch('/deals/{id}', [DealApiController::class, 'update'])->scope('crm.deals.write');
-            $api->delete('/deals/{id}', [DealApiController::class, 'destroy'])->scope('crm.deals.write');
-            $api->post('/deals/{id}/stage', [DealApiController::class, 'updateStage'])->scope('crm.deals.write');
+            $api->get('/deals', [DealApiController::class, 'index'])->scope('crm.deals.read')
+                ->summary('List deals');
+            $api->post('/deals', [DealApiController::class, 'store'])->scope('crm.deals.write')
+                ->summary('Create deal')->ruleset('crm.deal.save');
+            $api->get('/deals/{id}', [DealApiController::class, 'show'])->scope('crm.deals.read')
+                ->summary('Get deal');
+            $api->patch('/deals/{id}', [DealApiController::class, 'update'])->scope('crm.deals.write')
+                ->summary('Update deal')->ruleset('crm.deal.save');
+            $api->delete('/deals/{id}', [DealApiController::class, 'destroy'])->scope('crm.deals.write')
+                ->summary('Delete deal');
+            $api->post('/deals/{id}/stage', [DealApiController::class, 'updateStage'])->scope('crm.deals.write')
+                ->summary('Change deal stage');
 
-            $api->get('/activities', [ActivityApiController::class, 'index'])->scope('crm.activities.read');
-            $api->post('/activities', [ActivityApiController::class, 'store'])->scope('crm.activities.write');
-            $api->get('/activities/{id}', [ActivityApiController::class, 'show'])->scope('crm.activities.read');
-            $api->patch('/activities/{id}', [ActivityApiController::class, 'update'])->scope('crm.activities.write');
-            $api->delete('/activities/{id}', [ActivityApiController::class, 'destroy'])->scope('crm.activities.write');
-            $api->post('/activities/{id}/complete', [ActivityApiController::class, 'complete'])->scope('crm.activities.write');
+            $api->get('/activities', [ActivityApiController::class, 'index'])->scope('crm.activities.read')
+                ->summary('List activities');
+            $api->post('/activities', [ActivityApiController::class, 'store'])->scope('crm.activities.write')
+                ->summary('Create activity')->ruleset('crm.activity.save');
+            $api->get('/activities/{id}', [ActivityApiController::class, 'show'])->scope('crm.activities.read')
+                ->summary('Get activity');
+            $api->patch('/activities/{id}', [ActivityApiController::class, 'update'])->scope('crm.activities.write')
+                ->summary('Update activity')->ruleset('crm.activity.save');
+            $api->delete('/activities/{id}', [ActivityApiController::class, 'destroy'])->scope('crm.activities.write')
+                ->summary('Delete activity');
+            $api->post('/activities/{id}/complete', [ActivityApiController::class, 'complete'])->scope('crm.activities.write')
+                ->summary('Complete activity');
         });
     }
 
@@ -350,6 +508,10 @@ final class CrmModule implements ModuleInterface
             static function (Customer $customer) use ($em): void {
                 $deals = $em->getRepository(Deal::class)->findBy(['customerId' => $customer->id()]);
                 foreach ($deals as $deal) {
+                    $linked = $em->getRepository(Activity::class)->findBy(['dealId' => $deal->id()]);
+                    foreach ($linked as $activity) {
+                        $em->remove($activity);
+                    }
                     $em->remove($deal);
                 }
                 $activities = $em->getRepository(Activity::class)->findBy(['customerId' => $customer->id()]);

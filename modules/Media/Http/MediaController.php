@@ -19,6 +19,7 @@ use Modules\Media\Domain\Events\MediaUpdated;
 use Modules\Media\Domain\Events\MediaUploaded;
 use Modules\Media\Domain\MediaAsset;
 use Modules\Media\Domain\MediaFolder;
+use Modules\Media\Domain\MediaLink;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -109,7 +110,7 @@ final class MediaController extends Controller
             'mime' => $mime,
             'folder' => $currentFolder?->id() ?? '',
             'currentFolder' => $currentFolder,
-            'breadcrumbs' => $this->folderBreadcrumbs($currentFolder),
+            'breadcrumbs' => $this->mediaBreadcrumbs($currentFolder),
             'folderOptions' => $this->folderOptions(),
         ]));
     }
@@ -123,6 +124,7 @@ final class MediaController extends Controller
             'pageTitle' => $this->translator->trans('media.upload'),
             'folder' => $folder?->id() ?? '',
             'folderOptions' => $this->folderOptions(),
+            'breadcrumbs' => $this->mediaBreadcrumbs($folder, $this->translator->trans('media.upload')),
         ]);
     }
 
@@ -192,9 +194,18 @@ final class MediaController extends Controller
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
+        $folder = $asset->folderId() !== null ? $this->findFolder($asset->folderId()) : null;
+        $links = $this->em->getRepository(MediaLink::class)->findBy(
+            ['mediaAssetId' => $asset->id()],
+            ['createdAt' => 'DESC'],
+        );
+
         return $this->page('@media/show.html.twig', [
             'pageTitle' => $asset->title(),
             'item' => $asset,
+            'folder' => $folder,
+            'links' => $links,
+            'breadcrumbs' => $this->mediaBreadcrumbs($folder, $asset->title()),
         ]);
     }
 
@@ -205,10 +216,13 @@ final class MediaController extends Controller
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
+        $folder = $asset->folderId() !== null ? $this->findFolder($asset->folderId()) : null;
+
         return $this->page('@media/edit.html.twig', [
             'pageTitle' => $this->translator->trans('media.edit'),
             'item' => $asset,
             'folderOptions' => $this->folderOptions(),
+            'breadcrumbs' => $this->mediaBreadcrumbs($folder, $this->translator->trans('media.edit'), $asset),
         ]);
     }
 
@@ -251,10 +265,13 @@ final class MediaController extends Controller
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
+        $folder = $asset->folderId() !== null ? $this->findFolder($asset->folderId()) : null;
+
         return $this->page('@media/move.html.twig', [
             'pageTitle' => $this->translator->trans('media.move'),
             'item' => $asset,
             'folderOptions' => $this->folderOptions(),
+            'breadcrumbs' => $this->mediaBreadcrumbs($folder, $this->translator->trans('media.move'), $asset),
         ]);
     }
 
@@ -403,6 +420,7 @@ final class MediaController extends Controller
             'parent' => $parent,
             'parentId' => $parent?->id() ?? '',
             'folderOptions' => $this->folderOptions(),
+            'breadcrumbs' => $this->mediaBreadcrumbs($parent, $this->translator->trans('media.folder.create')),
         ]);
     }
 
@@ -437,13 +455,16 @@ final class MediaController extends Controller
             $this->abort(404, $this->translator->trans('media.folder.error.not_found'));
         }
 
+        $parent = $folder->parentId() !== null ? $this->findFolder($folder->parentId()) : null;
+
         return $this->page('@media/folder_form.html.twig', [
             'pageTitle' => $this->translator->trans('media.folder.rename'),
             'mode' => 'rename',
             'folder' => $folder,
-            'parent' => $folder->parentId() !== null ? $this->findFolder($folder->parentId()) : null,
+            'parent' => $parent,
             'parentId' => $folder->parentId() ?? '',
             'folderOptions' => $this->folderOptions($folder->id()),
+            'breadcrumbs' => $this->mediaBreadcrumbs($folder, $this->translator->trans('media.folder.rename')),
         ]);
     }
 
@@ -478,6 +499,7 @@ final class MediaController extends Controller
             'pageTitle' => $this->translator->trans('media.folder.move'),
             'folder' => $folder,
             'folderOptions' => $this->folderOptions($folder->id()),
+            'breadcrumbs' => $this->mediaBreadcrumbs($folder, $this->translator->trans('media.folder.move')),
         ]);
     }
 
@@ -661,36 +683,50 @@ final class MediaController extends Controller
     /**
      * @return list<array{label: string, url?: string|null}>
      */
-    private function folderBreadcrumbs(?MediaFolder $current): array
+    private function mediaBreadcrumbs(?MediaFolder $folder, ?string $currentLabel = null, ?MediaAsset $asset = null): array
     {
         $crumbs = [
+            [
+                'label' => $this->translator->trans('nav.overview'),
+                'url' => $this->router->url('admin.dashboard'),
+            ],
             [
                 'label' => $this->translator->trans('media.title'),
                 'url' => $this->router->url('admin.media.index'),
             ],
         ];
-        if ($current === null) {
-            return $crumbs;
+
+        if ($folder !== null) {
+            $chain = [];
+            $cursor = $folder;
+            $guard = 0;
+            while ($cursor !== null && $guard < 50) {
+                array_unshift($chain, $cursor);
+                $cursor = $cursor->parentId() !== null ? $this->findFolder($cursor->parentId()) : null;
+                $guard++;
+            }
+
+            foreach ($chain as $row) {
+                $crumbs[] = [
+                    'label' => $row->name(),
+                    'url' => $this->router->url('admin.media.index', ['folder' => $row->id()]),
+                ];
+            }
         }
 
-        $chain = [];
-        $cursor = $current;
-        $guard = 0;
-        while ($cursor !== null && $guard < 50) {
-            array_unshift($chain, $cursor);
-            $cursor = $cursor->parentId() !== null ? $this->findFolder($cursor->parentId()) : null;
-            $guard++;
-        }
-
-        foreach ($chain as $folder) {
+        if ($asset !== null) {
             $crumbs[] = [
-                'label' => $folder->name(),
-                'url' => $this->router->url('admin.media.index', ['folder' => $folder->id()]),
+                'label' => $asset->title(),
+                'url' => $this->router->url('admin.media.show', ['id' => $asset->id()]),
             ];
         }
 
-        $last = count($crumbs) - 1;
-        unset($crumbs[$last]['url']);
+        if ($currentLabel !== null && $currentLabel !== '') {
+            $crumbs[] = ['label' => $currentLabel];
+        } else {
+            $last = count($crumbs) - 1;
+            unset($crumbs[$last]['url']);
+        }
 
         return array_values($crumbs);
     }

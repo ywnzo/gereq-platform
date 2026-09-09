@@ -134,7 +134,7 @@ final class PageApiController extends Controller
         $data = $this->validateBody($request, 'cms.page.save', ['ignore_id' => $id]);
         $wasPublished = $page->isPublished();
         $wantPublished = (string) $data['status'] === 'published';
-        if ($wasPublished || ($wantPublished && !$wasPublished)) {
+        if ($wasPublished || $this->freeze->hasFreeze('cms.pages', $page->id())) {
             $this->freeze->freezeIfNeeded(
                 'cms.pages',
                 'page',
@@ -180,14 +180,6 @@ final class PageApiController extends Controller
         }
 
         if (!$page->isPublished()) {
-            $this->freeze->freezeIfNeeded(
-                'cms.pages',
-                'page',
-                $page->id(),
-                fn (): array => CmsPagePublishAdapter::capture($this->em, $page),
-                $page->title(),
-                $this->auth->user()?->id(),
-            );
             $page->setStatus('published');
             $this->em->flush();
             if (!$this->freeze->hasFreeze('cms.pages', $page->id())) {

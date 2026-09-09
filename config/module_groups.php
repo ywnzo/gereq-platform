@@ -106,4 +106,21 @@ return [
         ],
         'required' => [],
     ],
+    'plugin.ai' => [
+        'name' => 'AI',
+        'label' => 'admin.plugins.group.ai',
+        'description' => 'admin.plugins.group.ai.desc',
+        'surface' => 'plugins',
+        'order' => 30,
+        'modules' => [
+            'ollama',
+            'openai_compat',
+            'zai',
+            'deepseek',
+            'gemini',
+            'anthropic',
+            'openai',
+        ],
+        'required' => [],
+    ],
 ];

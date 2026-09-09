@@ -1,0 +1,150 @@
+{# Outlook-like context menus — folder + message #}
+<div
+    class="ol-ctx"
+    x-show="ctxOpen"
+    x-cloak
+    :style="ctxStyle()"
+    @click.outside="closeCtx()"
+    @keydown.escape.window="closeCtx()"
+    role="menu"
+>
+    <template x-if="ctxKind === 'folder' && ctxFolder">
+        <div class="ol-ctx__panel">
+            <div class="ol-ctx__meta" x-text="ctxFolderMeta()"></div>
+            <div class="ol-ctx__sep"></div>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxFolderCreate()">
+                <span class="ol-ctx__ico">{{ icon('folder') }}</span>
+                <span>{{ 'emailing.ctx.folder.create'|trans }}</span>
+            </button>
+            <div class="ol-ctx__sep"></div>
+            <button type="button" class="ol-ctx__item" role="menuitem" :disabled="ctxFolder.system" @click="ctxFolderRename()">
+                <span class="ol-ctx__ico">{{ icon('edit') }}</span>
+                <span>{{ 'emailing.ctx.folder.rename'|trans }}</span>
+            </button>
+            <div class="ol-ctx__submenu">
+                <button type="button" class="ol-ctx__item" role="menuitem" @click="toggleCtxSub('color')">
+                    <span class="ol-ctx__ico">{{ icon('palette') }}</span>
+                    <span>{{ 'emailing.ctx.folder.color'|trans }}</span>
+                    <span class="ol-ctx__chev">{{ icon('chevron-right') }}</span>
+                </button>
+                <div class="ol-ctx__flyout" x-show="ctxSubIs('color')" x-cloak>
+                    <template x-for="c in folderColors" :key="c">
+                        <button type="button" class="ol-ctx__swatch" :style="swatchStyle(c)" @click="ctxFolderColor(c)" :title="c"></button>
+                    </template>
+                    <button type="button" class="ol-ctx__item" @click="ctxFolderColor(null)">{{ 'emailing.ctx.folder.color_clear'|trans }}</button>
+                </div>
+            </div>
+            <button type="button" class="ol-ctx__item" role="menuitem" :disabled="ctxFolder.system" @click="ctxFolderDelete()">
+                <span class="ol-ctx__ico">{{ icon('trash') }}</span>
+                <span>{{ 'emailing.ctx.folder.delete'|trans }}</span>
+            </button>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxFolderEmpty()">
+                <span class="ol-ctx__ico">{{ icon('inbox') }}</span>
+                <span>{{ 'emailing.ctx.folder.empty'|trans }}</span>
+            </button>
+            <div class="ol-ctx__sep"></div>
+            <button type="button" class="ol-ctx__item" role="menuitem" :disabled="ctxFolderMarkReadDisabled()" @click="ctxFolderMarkRead()">
+                <span class="ol-ctx__ico">{{ icon('mail') }}</span>
+                <span>{{ 'emailing.ctx.folder.mark_read'|trans }}</span>
+            </button>
+            <div class="ol-ctx__sep"></div>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxFolderFavorite()">
+                <span class="ol-ctx__ico">{{ icon('star') }}</span>
+                <span x-text="ctxFolderFavoriteLabel()"></span>
+            </button>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxFolderOrder('up')">
+                <span class="ol-ctx__ico">{{ icon('chevron-up') }}</span>
+                <span>{{ 'emailing.ctx.folder.up'|trans }}</span>
+            </button>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxFolderOrder('down')">
+                <span class="ol-ctx__ico">{{ icon('chevron-down') }}</span>
+                <span>{{ 'emailing.ctx.folder.down'|trans }}</span>
+            </button>
+            <div class="ol-ctx__sep"></div>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxFolderOpenWindow()">
+                <span class="ol-ctx__ico">{{ icon('external') }}</span>
+                <span>{{ 'emailing.ctx.folder.new_window'|trans }}</span>
+            </button>
+        </div>
+    </template>
+
+    <template x-if="ctxKind === 'message' && ctxMessage">
+        <div class="ol-ctx__panel">
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessageReply()">
+                <span class="ol-ctx__ico ol-ctx__ico--accent">{{ icon('reply') }}</span>
+                <span>{{ 'emailing.mailbox.reply'|trans }}</span>
+            </button>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessageReplyAll()">
+                <span class="ol-ctx__ico ol-ctx__ico--accent">{{ icon('reply') }}</span>
+                <span>{{ 'emailing.ctx.message.reply_all'|trans }}</span>
+            </button>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessageForward()">
+                <span class="ol-ctx__ico ol-ctx__ico--accent">{{ icon('forward') }}</span>
+                <span>{{ 'emailing.mailbox.forward'|trans }}</span>
+            </button>
+            <div class="ol-ctx__sep"></div>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessageDelete()">
+                <span class="ol-ctx__ico">{{ icon('trash') }}</span>
+                <span>{{ 'emailing.ctx.message.delete'|trans }}</span>
+            </button>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessageArchive()">
+                <span class="ol-ctx__ico">{{ icon('archive') }}</span>
+                <span>{{ 'emailing.ctx.message.archive'|trans }}</span>
+            </button>
+            <div class="ol-ctx__submenu">
+                <button type="button" class="ol-ctx__item" role="menuitem" @click="toggleCtxSub('move')">
+                    <span class="ol-ctx__ico">{{ icon('folder') }}</span>
+                    <span>{{ 'emailing.ctx.message.move'|trans }}</span>
+                    <span class="ol-ctx__chev">{{ icon('chevron-right') }}</span>
+                </button>
+                <div class="ol-ctx__flyout ol-ctx__flyout--list" x-show="ctxSubIs('move')" x-cloak>
+                    <template x-for="f in ctxFolders" :key="f.id">
+                        <button type="button" class="ol-ctx__item" @click="ctxMessageMove(f.id)" x-text="f.name"></button>
+                    </template>
+                </div>
+            </div>
+            <div class="ol-ctx__submenu">
+                <button type="button" class="ol-ctx__item" role="menuitem" @click="toggleCtxSub('copy')">
+                    <span class="ol-ctx__ico">{{ icon('copy') }}</span>
+                    <span>{{ 'emailing.ctx.message.copy'|trans }}</span>
+                    <span class="ol-ctx__chev">{{ icon('chevron-right') }}</span>
+                </button>
+                <div class="ol-ctx__flyout ol-ctx__flyout--list" x-show="ctxSubIs('copy')" x-cloak>
+                    <template x-for="f in ctxFolders" :key="f.id">
+                        <button type="button" class="ol-ctx__item" @click="ctxMessageCopy(f.id)" x-text="f.name"></button>
+                    </template>
+                </div>
+            </div>
+            <div class="ol-ctx__sep"></div>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessageSeenToggle()">
+                <span class="ol-ctx__ico">{{ icon('mail') }}</span>
+                <span x-text="ctxMessageSeenLabel()"></span>
+            </button>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessagePin()">
+                <span class="ol-ctx__ico">{{ icon('pin') }}</span>
+                <span x-text="ctxMessagePinLabel()"></span>
+            </button>
+            <div class="ol-ctx__submenu">
+                <button type="button" class="ol-ctx__item" role="menuitem" @click="toggleCtxSub('label')">
+                    <span class="ol-ctx__ico">{{ icon('tag') }}</span>
+                    <span>{{ 'emailing.ctx.message.labels'|trans }}</span>
+                    <span class="ol-ctx__chev">{{ icon('chevron-right') }}</span>
+                </button>
+                <div class="ol-ctx__flyout ol-ctx__flyout--list" x-show="ctxSubIs('label')" x-cloak>
+                    <template x-for="l in ctxLabels" :key="l.keyword">
+                        <button type="button" class="ol-ctx__item" @click="ctxMessageLabel(l.keyword)">
+                            <span class="ol-ctx__dot" :style="dotStyle(l.color)"></span>
+                            <span x-text="l.name"></span>
+                            <span class="ol-ctx__check" x-show="ctxMessageHasKeyword(l.keyword)">✓</span>
+                        </button>
+                    </template>
+                    <button type="button" class="ol-ctx__item" @click="ctxMessageLabelCreate()">{{ 'emailing.ctx.message.label_new'|trans }}</button>
+                </div>
+            </div>
+            <button type="button" class="ol-ctx__item" role="menuitem" @click="ctxMessageFlag()">
+                <span class="ol-ctx__ico">{{ icon('flag') }}</span>
+                <span x-text="ctxMessageFlagLabel()"></span>
+            </button>
+        </div>
+    </template>
+</div>

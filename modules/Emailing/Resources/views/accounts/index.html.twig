@@ -1,0 +1,98 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="emailing-accounts" data-actions-default="1">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'emailing.accounts.title'|trans }}</h1>
+            <p class="muted">{{ 'emailing.accounts.hint'|trans }}</p>
+        </div>
+        <div class="actions">
+            <a class="btn btn--primary" href="{{ url('admin.emailing.accounts.create') }}">{{ icon('plus') }} {{ 'emailing.accounts.new'|trans }}</a>
+        </div>
+    </header>
+
+    <div class="table-wrap" data-table>
+        <table class="table table--emailing">
+            <thead>
+                <tr>
+                    <th>{{ 'emailing.field.name'|trans }}</th>
+                    <th>{{ 'emailing.field.email'|trans }}</th>
+                    <th>SMTP</th>
+                    <th>IMAP / POP</th>
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in accounts %}
+                    {% set parts = a.name()|trim|split(' ') %}
+                    {% set initials = (parts|first|slice(0, 1) ~ (parts|length > 1 ? parts|last|slice(0, 1) : ''))|upper %}
+                    <tr>
+                        <td>
+                            <a class="cell-user cell-user--stack" href="{{ url('admin.emailing.accounts.edit', {id: a.id()}) }}">
+                                <span class="avatar avatar--sm">{{ initials ?: '?' }}</span>
+                                <span class="cell-user__text">
+                                    <strong>{{ a.name() }}</strong>
+                                    <span class="table__chips">
+                                        {% if a.isDefault() %}
+                                            <span class="badge badge--ok">{{ 'emailing.badge.default'|trans }}</span>
+                                        {% endif %}
+                                        {% if not a.isActive() %}
+                                            <span class="badge badge--muted">{{ 'emailing.badge.inactive'|trans }}</span>
+                                        {% endif %}
+                                    </span>
+                                </span>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="mailto:{{ a.email() }}">{{ a.email() }}</a>
+                        </td>
+                        <td>
+                            <div class="table__title">
+                                <span>{{ a.smtpHost() }}:{{ a.smtpPort() }}</span>
+                                <span class="muted">{{ a.smtpEncryption()|upper }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="table__title">
+                                <span>{{ a.incomingProtocol()|upper }} · {{ a.incomingHost() }}:{{ a.incomingPort() }}</span>
+                                <span class="muted">{{ a.incomingEncryption()|upper }}</span>
+                            </div>
+                        </td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% include 'ui/row_action.html.twig' with {
+                                    href: url('admin.emailing.accounts.edit', {id: a.id()}),
+                                    label: 'common.edit'|trans,
+                                    icon: 'edit'
+                                } %}
+                                <form method="post" action="{{ url('admin.emailing.accounts.sync', {id: a.id()}) }}" class="table__action-form">
+                                    {{ csrf_field()|raw }}
+                                    <button type="submit" class="table__action-btn" title="{{ 'emailing.mailbox.sync'|trans }}" aria-label="{{ 'emailing.mailbox.sync'|trans }}">
+                                        {{ icon('refresh') }}
+                                        <span class="table__action-btn__label">{{ 'emailing.mailbox.sync'|trans }}</span>
+                                    </button>
+                                </form>
+                                {% include 'ui/row_action_destroy.html.twig' with {
+                                    action: url('admin.emailing.accounts.destroy', {id: a.id()}),
+                                    confirm: 'emailing.accounts.confirm_delete'|trans
+                                } %}
+                            {% endblock %}
+                        {% endembed %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty">
+                                <h2>{{ 'emailing.accounts.empty'|trans }}</h2>
+                                <p>{{ 'emailing.accounts.empty.hint'|trans }}</p>
+                                <a class="btn btn--primary" href="{{ url('admin.emailing.accounts.create') }}">{{ icon('plus') }} {{ 'emailing.accounts.new'|trans }}</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

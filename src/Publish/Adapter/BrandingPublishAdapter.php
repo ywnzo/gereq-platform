@@ -30,6 +30,7 @@ final class BrandingPublishAdapter implements PublishableAdapterInterface
         'brand.tagline',
         'brand.footnote',
         'cms.site_title',
+        'cms.home_page_id',
         'cms.custom_css_public',
     ];
 

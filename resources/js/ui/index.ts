@@ -1,6 +1,7 @@
 import type Alpine from '@alpinejs/csp';
 import { registerAres } from './ares';
 import { registerCmsBlockForm } from '../../../modules/Cms/Resources/assets/js/cmsBlockForm';
+import { registerCmsBuilder } from '../../../modules/Cms/Resources/assets/js/cmsBuilder';
 import { registerPassword, registerSwitch, registerTableToggle, registerTextarea } from './controls';
 import { registerDrawer } from './drawer';
 import { registerEditor } from './editor';
@@ -20,6 +21,11 @@ import { registerSeSearch } from '../../../modules/SearchEngines/Resources/asset
 import { registerCssEditor } from './cssEditor';
 import { registerDashboardSettings } from './dashboardSettings';
 import { registerCalendarBoard } from '../../../modules/Calendar/Resources/assets/js/calendarBoard';
+import { registerCrmBoard } from '../../../modules/CRM/Resources/assets/js/crmBoard';
+import { registerCrmWorkflowCanvas } from '../../../modules/CRM/Resources/assets/js/crmWorkflowCanvas';
+import { registerCrmWorkflowEmailEditor } from '../../../modules/CRM/Resources/assets/js/crmWorkflowEmailEditor';
+import { registerCrmWorkflowTplField } from '../../../modules/CRM/Resources/assets/js/crmWorkflowTplField';
+import { registerEmailingMailbox } from '../../../modules/Emailing/Resources/assets/js/emailingMailbox';
 import { registerFleetBrandCatalog } from '../../../modules/Fleet/Resources/assets/js/fleetBrandCatalog';
 import { registerChart } from './chart';
 import { registerPageProgress } from './pageProgress';
@@ -34,6 +40,8 @@ import { registerPortalForm } from '../../../modules/Portals/Resources/assets/js
 
 import { registerWebauthn } from './webauthn';
 import { registerPublishBadge } from './publishBadge';
+import { registerAiChat } from '../../../modules/Ai/Resources/assets/js/aiChat';
+import { registerApiTester } from './apiTester';
 
 export function registerUi(alpine: typeof Alpine): void {
     registerPageProgress();
@@ -64,8 +72,14 @@ export function registerUi(alpine: typeof Alpine): void {
     registerCssEditor(alpine);
     registerDashboardSettings(alpine);
     registerCalendarBoard(alpine);
+    registerCrmBoard(alpine);
+    registerCrmWorkflowCanvas(alpine);
+    registerCrmWorkflowEmailEditor(alpine);
+    registerCrmWorkflowTplField(alpine);
+    registerEmailingMailbox(alpine);
     registerAres(alpine);
     registerCmsBlockForm(alpine);
+    registerCmsBuilder(alpine);
     registerModuleTable(alpine);
     registerFleetBrandCatalog(alpine);
     registerChart(alpine);
@@ -74,4 +88,6 @@ export function registerUi(alpine: typeof Alpine): void {
     registerCustomerContactForm(alpine);
     registerPortalForm(alpine);
     registerPublishBadge(alpine);
+    registerApiTester(alpine);
+    registerAiChat(alpine);
 }

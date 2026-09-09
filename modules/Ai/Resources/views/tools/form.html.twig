@@ -1,0 +1,199 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+{% set emptyLabel = item ? 'ai.tools.edit'|trans : 'ai.tools.new'|trans %}
+{% set currentName = item ? item.label() : '' %}
+<div class="customer-edit">
+    <header class="customer-edit__header">
+        <div class="customer-edit__identity">
+            <a class="text-link customer-profile__back" href="{{ url('admin.ai.tools.index') }}">
+                ← {{ 'nav.ai.tools'|trans }}
+            </a>
+            <div class="cell-user cell-user--lg">
+                <span class="avatar avatar--xl">{{ (currentName|default('T'))|slice(0, 1)|upper }}</span>
+                <div>
+                    <p class="customer-edit__eyebrow">{{ emptyLabel }}</p>
+                    <h1>{{ currentName ?: 'ai.tools.new'|trans }}</h1>
+                    <p class="customer-profile__sub">{{ 'ai.tools.form.lead'|trans }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="customer-edit__header-actions">
+            <button class="btn btn--primary" type="submit" form="ai-custom-tool-form">{{ 'common.save'|trans }}</button>
+        </div>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'ai.custom_tool.save' } %}
+
+    <form
+        id="ai-custom-tool-form"
+        method="post"
+        class="customer-edit__form"
+        action="{{ item ? url('admin.ai.tools.update', {id: item.id()}) : url('admin.ai.tools.store') }}"
+        data-form="ai.custom_tool.save"
+        x-data="gereqForm"
+        {% if form_errors('ai.custom_tool.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+
+        <div class="customer-edit__layout">
+            <div class="customer-edit__main">
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.section.profile'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.tools.form.profile.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        {% include 'ui/input.html.twig' with {
+                            name: 'label',
+                            label: 'ai.field.label'|trans,
+                            required: true,
+                            value: item ? item.label() : '',
+                            form: 'ai.custom_tool.save'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'name',
+                            label: 'ai.field.tool_name'|trans,
+                            required: true,
+                            value: item ? item.name() : 'custom.',
+                            hint: 'ai.field.tool_name.hint'|trans,
+                            form: 'ai.custom_tool.save'
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'description',
+                            label: 'ai.field.description'|trans,
+                            required: true,
+                            value: item ? item.description() : '',
+                            size: 'mini',
+                            rows: 3,
+                            extra: 'field--full',
+                            form: 'ai.custom_tool.save'
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'parameters_schema',
+                            label: 'ai.field.parameters_schema'|trans,
+                            required: true,
+                            value: schema_json,
+                            size: 'mini',
+                            rows: 10,
+                            extra: 'field--full',
+                            hint: 'ai.field.parameters_schema.hint'|trans,
+                            form: 'ai.custom_tool.save'
+                        } %}
+                    </div>
+                </section>
+
+                <section class="customer-section">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.section.handler'|trans }}</h2>
+                            <p class="muted customer-edit__section-hint">{{ 'ai.tools.form.handler.hint'|trans }}</p>
+                        </div>
+                    </header>
+                    <div class="customer-edit__grid">
+                        <div class="g-field">
+                            <label class="g-label" for="f-handler_type">{{ 'ai.field.handler'|trans }}</label>
+                            <div class="g-control-wrap">
+                                <select class="g-control" id="f-handler_type" name="handler_type">
+                                    {% for h in handlers %}
+                                        <option value="{{ h }}" {{ (item and item.handlerType() == h) or (not item and h == 'static') ? 'selected' : '' }}>{{ h }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        {% include 'ui/input.html.twig' with {
+                            name: 'http_url',
+                            label: 'ai.field.http_url'|trans,
+                            value: http_url,
+                            hint: 'ai.field.http_url.hint'|trans,
+                            form: 'ai.custom_tool.save'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'http_method',
+                            label: 'ai.field.http_method'|trans,
+                            value: http_method,
+                            form: 'ai.custom_tool.save'
+                        } %}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'http_timeout',
+                            type: 'number',
+                            label: 'ai.field.http_timeout'|trans,
+                            value: http_timeout,
+                            min: 1,
+                            max: 30,
+                            form: 'ai.custom_tool.save'
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'static_response',
+                            label: 'ai.field.static_response'|trans,
+                            value: static_response,
+                            size: 'mini',
+                            rows: 8,
+                            extra: 'field--full',
+                            hint: 'ai.field.static_response.hint'|trans,
+                            form: 'ai.custom_tool.save'
+                        } %}
+                        <label class="check field--full">
+                            <input type="checkbox" name="echo_args" value="1" {{ item and item.config().echo_args|default(false) ? 'checked' : '' }}>
+                            <span>{{ 'ai.field.echo_args'|trans }}</span>
+                        </label>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="customer-edit__aside">
+                <section class="customer-section customer-edit__status-card">
+                    <header class="customer-section__head">
+                        <div>
+                            <h2>{{ 'ai.section.publish'|trans }}</h2>
+                        </div>
+                    </header>
+                    {% include 'ui/switch.html.twig' with {
+                        name: 'enabled',
+                        label: 'ai.field.enabled'|trans,
+                        on: item ? item.enabled() : true,
+                        description: 'ai.field.enabled.hint'|trans
+                    } %}
+                    {% include 'ui/input.html.twig' with {
+                        name: 'permission',
+                        label: 'ai.field.permission'|trans,
+                        optional: true,
+                        value: item ? (item.permission() ?: '') : '',
+                        hint: 'ai.field.permission.hint'|trans,
+                        form: 'ai.custom_tool.save'
+                    } %}
+                    <fieldset class="customer-status-picks" style="margin-top:1rem;border:0;padding:0">
+                        <legend class="g-label">{{ 'ai.field.surfaces'|trans }}</legend>
+                        {% for s in ['admin', 'api', 'public'] %}
+                            <label class="customer-status-pick customer-status-pick--muted" style="margin-top:.5rem">
+                                <input type="checkbox" name="surfaces[]" value="{{ s }}" {{ s in selectedSurfaces ? 'checked' : '' }}>
+                                <span class="customer-status-pick__dot" aria-hidden="true"></span>
+                                <span class="customer-status-pick__body">
+                                    <strong>{{ s }}</strong>
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </fieldset>
+                </section>
+                <div class="customer-edit__aside-actions">
+                    <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                    <a class="btn btn--ghost" href="{{ url('admin.ai.tools.index') }}">{{ 'common.cancel'|trans }}</a>
+                    {% if item %}
+                        <button
+                            class="btn btn--danger"
+                            type="submit"
+                            formaction="{{ url('admin.ai.tools.destroy', {id: item.id()}) }}"
+                            formnovalidate
+                            data-confirm="{{ 'ai.tools.confirm_delete'|trans }}"
+                            data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}"
+                            data-confirm-danger="1"
+                        >{{ 'common.delete'|trans }}</button>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </form>
+</div>
+{% endblock %}

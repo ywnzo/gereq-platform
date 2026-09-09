@@ -106,21 +106,34 @@ final class ApiAuthMiddleware implements MiddlewareInterface
             return true;
         }
         foreach ($scopes as $scope) {
-            // customers.read -> customers.view; customers.write -> customers.edit or create
+            if ($user->can($scope)) {
+                return true;
+            }
+            // customers.read -> customers.view / customers.manage; crm.deals.read -> crm.view / crm.deals.manage
             if (str_ends_with($scope, '.read')) {
                 $base = substr($scope, 0, -5);
-                if ($user->can($base . '.view') || $user->can($scope)) {
+                $module = explode('.', $base)[0] ?? $base;
+                if (
+                    $user->can($base . '.view')
+                    || $user->can($base . '.manage')
+                    || $user->can($module . '.view')
+                    || $user->can($module . '.manage')
+                ) {
                     return true;
                 }
             }
             if (str_ends_with($scope, '.write')) {
                 $base = substr($scope, 0, -6);
-                if ($user->can($base . '.edit') || $user->can($base . '.create') || $user->can($base . '.manage') || $user->can($scope)) {
+                $module = explode('.', $base)[0] ?? $base;
+                if (
+                    $user->can($base . '.edit')
+                    || $user->can($base . '.create')
+                    || $user->can($base . '.manage')
+                    || $user->can($module . '.manage')
+                    || $user->can($module . '.edit')
+                ) {
                     return true;
                 }
-            }
-            if ($user->can($scope)) {
-                return true;
             }
         }
 

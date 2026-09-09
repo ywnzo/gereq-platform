@@ -15,60 +15,77 @@
         <div>
             <p class="eyebrow"><a href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ item.title() }}</a></p>
             <h1>{{ 'cms.blocks.edit'|trans }}</h1>
-            <p class="muted"><span class="badge badge--info">{{ block.typeLabel()|trans }}</span></p>
+            <p class="muted detail-layout__meta">
+                <span class="badge badge--info">{{ block.typeLabel()|trans }}</span>
+            </p>
+        </div>
+        <div class="actions">
+            <a class="btn btn--ghost" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank" rel="noopener">{{ 'cms.pages.preview'|trans }}</a>
+            <button class="btn btn--primary" type="submit" form="cms-block-form">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>
         </div>
     </header>
 
     {% include 'ui/error-summary.html.twig' with { form: 'cms.block.save' } %}
     {% set p = block.payload() %}
 
-    <section class="panel">
-        <header class="panel__head">
-            <h2>{{ block.typeLabel()|trans }}</h2>
-        </header>
-        <form method="post" class="form-grid" action="{{ url('admin.cms.blocks.update', {id: item.id(), blockId: block.id()}) }}" data-form="cms.block.save" x-data="gereqForm"{% if form_errors('cms.block.save') %} data-server-state="1"{% endif %}>
-            {{ csrf_field()|raw }}
-            <input type="hidden" name="type" value="{{ block.type() }}">
+    <form
+        id="cms-block-form"
+        method="post"
+        class="detail-stack"
+        action="{{ url('admin.cms.blocks.update', {id: item.id(), blockId: block.id()}) }}"
+        data-form="cms.block.save"
+        x-data="gereqForm"
+        {% if form_errors('cms.block.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+        <input type="hidden" name="type" value="{{ block.type() }}">
 
-            {% if block.type() == 'heading' %}
-                {% include 'ui/input.html.twig' with { name: 'text', label: 'cms.block.field.text'|trans, form: 'cms.block.save', value: p.text|default(''), extra: 'field--full' } %}
-                {% include 'ui/select.html.twig' with {
-                    name: 'level',
-                    label: 'cms.block.field.level'|trans,
-                    form: 'cms.block.save',
-                    value: p.level|default('2'),
-                    options: [{value:'1',label:'H1'},{value:'2',label:'H2'},{value:'3',label:'H3'}]
-                } %}
-            {% elseif block.type() == 'text' %}
-                {% include 'ui/textarea.html.twig' with { name: 'body', label: 'cms.block.field.body'|trans, form: 'cms.block.save', value: p.body|default(''), extra: 'field--full' } %}
-            {% elseif block.type() == 'image' %}
-                {% if hasMedia %}
-                    {% include 'ui/select.html.twig' with { name: 'media_id', label: 'cms.block.field.media_id'|trans, optional: true, form: 'cms.block.save', value: p.media_id|default(''), options: mediaOptions, extra: 'field--full' } %}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            <div class="form-grid">
+                {% if block.type() == 'heading' %}
+                    {% include 'ui/input.html.twig' with { name: 'text', label: 'cms.block.field.text'|trans, form: 'cms.block.save', value: p.text|default(''), extra: 'field--full' } %}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'level',
+                        label: 'cms.block.field.level'|trans,
+                        form: 'cms.block.save',
+                        value: p.level|default('2'),
+                        options: [{value:'1',label:'H1'},{value:'2',label:'H2'},{value:'3',label:'H3'}]
+                    } %}
+                {% elseif block.type() == 'text' %}
+                    {% include 'ui/textarea.html.twig' with { name: 'body', label: 'cms.block.field.body'|trans, form: 'cms.block.save', value: p.body|default(''), extra: 'field--full' } %}
+                {% elseif block.type() == 'image' %}
+                    {% if hasMedia %}
+                        {% include 'ui/select.html.twig' with { name: 'media_id', label: 'cms.block.field.media_id'|trans, optional: true, form: 'cms.block.save', value: p.media_id|default(''), options: mediaOptions, extra: 'field--full' } %}
+                    {% endif %}
+                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, optional: true, form: 'cms.block.save', value: p.url|default(''), extra: 'field--full' } %}
+                    {% include 'ui/input.html.twig' with { name: 'alt', label: 'cms.block.field.alt'|trans, optional: true, form: 'cms.block.save', value: p.alt|default('') } %}
+                    {% include 'ui/input.html.twig' with { name: 'caption', label: 'cms.block.field.caption'|trans, optional: true, form: 'cms.block.save', value: p.caption|default('') } %}
+                {% elseif block.type() == 'html' %}
+                    {% include 'ui/textarea.html.twig' with { name: 'html', label: 'cms.block.field.html'|trans, form: 'cms.block.save', value: p.html|default(''), extra: 'field--full' } %}
+                {% elseif block.type() == 'cta' %}
+                    {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.block.field.label'|trans, form: 'cms.block.save', value: p.label|default('') } %}
+                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, form: 'cms.block.save', value: p.url|default(''), extra: 'field--full' } %}
+                    {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: p.style|default('primary') } %}
+                {% elseif block.type() == 'columns' %}
+                    {% include 'ui/textarea.html.twig' with { name: 'left', label: 'cms.block.field.left'|trans, form: 'cms.block.save', value: p.left|default(''), extra: 'field--full' } %}
+                    {% include 'ui/textarea.html.twig' with { name: 'right', label: 'cms.block.field.right'|trans, form: 'cms.block.save', value: p.right|default(''), extra: 'field--full' } %}
+                {% elseif block.type() == 'divider' %}
+                    {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: p.style|default('solid') } %}
+                {% elseif block.type() == 'products' %}
+                    {% include 'ui/input.html.twig' with { name: 'product_ids', label: 'cms.block.field.product_ids'|trans, form: 'cms.block.save', value: p.product_ids|default(''), hint: 'cms.block.hint.product_ids'|trans, extra: 'field--full' } %}
+                {% elseif block.type() == 'gallery' %}
+                    {% include 'ui/input.html.twig' with { name: 'media_ids', label: 'cms.block.field.media_ids'|trans, form: 'cms.block.save', value: p.media_ids|default(''), hint: 'cms.block.hint.media_ids'|trans, extra: 'field--full' } %}
                 {% endif %}
-                {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, optional: true, form: 'cms.block.save', value: p.url|default(''), extra: 'field--full' } %}
-                {% include 'ui/input.html.twig' with { name: 'alt', label: 'cms.block.field.alt'|trans, optional: true, form: 'cms.block.save', value: p.alt|default('') } %}
-                {% include 'ui/input.html.twig' with { name: 'caption', label: 'cms.block.field.caption'|trans, optional: true, form: 'cms.block.save', value: p.caption|default('') } %}
-            {% elseif block.type() == 'html' %}
-                {% include 'ui/textarea.html.twig' with { name: 'html', label: 'cms.block.field.html'|trans, form: 'cms.block.save', value: p.html|default(''), extra: 'field--full' } %}
-            {% elseif block.type() == 'cta' %}
-                {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.block.field.label'|trans, form: 'cms.block.save', value: p.label|default('') } %}
-                {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, form: 'cms.block.save', value: p.url|default(''), extra: 'field--full' } %}
-                {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: p.style|default('primary') } %}
-            {% elseif block.type() == 'columns' %}
-                {% include 'ui/textarea.html.twig' with { name: 'left', label: 'cms.block.field.left'|trans, form: 'cms.block.save', value: p.left|default(''), extra: 'field--full' } %}
-                {% include 'ui/textarea.html.twig' with { name: 'right', label: 'cms.block.field.right'|trans, form: 'cms.block.save', value: p.right|default(''), extra: 'field--full' } %}
-            {% elseif block.type() == 'divider' %}
-                {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: p.style|default('solid') } %}
-            {% elseif block.type() == 'products' %}
-                {% include 'ui/input.html.twig' with { name: 'product_ids', label: 'cms.block.field.product_ids'|trans, form: 'cms.block.save', value: p.product_ids|default(''), hint: 'cms.block.hint.product_ids'|trans, extra: 'field--full' } %}
-            {% elseif block.type() == 'gallery' %}
-                {% include 'ui/input.html.twig' with { name: 'media_ids', label: 'cms.block.field.media_ids'|trans, form: 'cms.block.save', value: p.media_ids|default(''), hint: 'cms.block.hint.media_ids'|trans, extra: 'field--full' } %}
-            {% endif %}
-
-            <div class="form-actions field--full">
-                <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-                <a class="btn btn--ghost" href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>
             </div>
-        </form>
-    </section>
+        </section>
+
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
 {% endblock %}

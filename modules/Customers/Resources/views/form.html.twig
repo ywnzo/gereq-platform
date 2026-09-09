@@ -24,7 +24,11 @@
                 ← {{ item ? item.name() : 'nav.customers'|trans }}
             </a>
             <div class="cell-user cell-user--lg">
-                <span class="avatar avatar--xl" x-text="initials()"></span>
+                {% if item and item.avatarFileId() %}
+                    <img class="avatar avatar--xl" src="{{ url('admin.customers.avatar', {id: item.id()}) }}" alt="{{ item.name() }}">
+                {% else %}
+                    <span class="avatar avatar--xl" x-text="initials()"></span>
+                {% endif %}
                 <div>
                     <p class="customer-edit__eyebrow">{{ emptyLabel }}</p>
                     <h1 x-text="title()"></h1>
@@ -46,6 +50,7 @@
         id="customer-form"
         method="post"
         class="customer-edit__form"
+        enctype="multipart/form-data"
         action="{{ item ? url('admin.customers.update', {id: item.id()}) : url('admin.customers.store') }}"
         data-form="customers.save"
         x-data="gereqForm"
@@ -64,6 +69,31 @@
                     </header>
                     {% set customerSource = item ?? 'Modules\\Customers\\Domain\\Customer' %}
                     {% set isCompany = old('is_company', item ? (item.isCompany() ? '1' : ''), 'customers.save') in ['1', 1, true, 'on', 'yes'] %}
+                    <div class="customer-edit__photo">
+                        {% if item and item.avatarFileId() %}
+                            <img class="avatar avatar--xl" src="{{ url('admin.customers.avatar', {id: item.id()}) }}" alt="">
+                        {% else %}
+                            <span class="avatar avatar--xl" x-text="initials()"></span>
+                        {% endif %}
+                        <div class="customer-edit__photo-actions">
+                            {% include 'ui/file.html.twig' with {
+                                name: 'avatar',
+                                id: 'f-customer-avatar',
+                                label: 'customers.field.photo'|trans,
+                                optional: true,
+                                hint: 'customers.field.photo.hint'|trans,
+                                accept: 'image/*',
+                                compact: true,
+                                form: 'customers.save'
+                            } %}
+                            {% if item and item.avatarFileId() %}
+                                <label class="check">
+                                    <input type="checkbox" name="remove_avatar" value="1">
+                                    <span>{{ 'customers.field.photo_remove'|trans }}</span>
+                                </label>
+                            {% endif %}
+                        </div>
+                    </div>
                     <div class="customer-edit__grid">
                         {{ forms().render(customerSource, {
                             form: 'customers.save',

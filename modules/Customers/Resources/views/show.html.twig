@@ -15,7 +15,11 @@
             <header class="customer-profile__header">
                 <div class="customer-profile__identity">
                     <div class="cell-user cell-user--lg">
-                        <span class="avatar avatar--xl">{{ item.initials() }}</span>
+                        {% if item.avatarFileId() %}
+                            <img class="avatar avatar--xl" src="{{ url('admin.customers.avatar', {id: item.id()}) }}" alt="{{ item.name() }}">
+                        {% else %}
+                            <span class="avatar avatar--xl">{{ item.initials() }}</span>
+                        {% endif %}
                         <div>
                             <h1>{{ item.name() }}</h1>
                             <p class="customer-profile__sub">

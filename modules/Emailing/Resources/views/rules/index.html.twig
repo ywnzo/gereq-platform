@@ -1,0 +1,87 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="emailing-rules" data-actions-default="1">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'emailing.rules.title'|trans }}</h1>
+            <p class="muted">{{ 'emailing.rules.subtitle'|trans }}</p>
+        </div>
+        <div class="actions">
+            <a class="btn btn--primary" href="{{ url('admin.emailing.rules.create') }}">{{ icon('plus') }} {{ 'emailing.rules.new'|trans }}</a>
+        </div>
+    </header>
+
+    <div class="table-wrap" data-table>
+        <table class="table table--emailing">
+            <thead>
+                <tr>
+                    <th>{{ 'emailing.rules.col.priority'|trans }}</th>
+                    <th>{{ 'emailing.field.name'|trans }}</th>
+                    <th>{{ 'emailing.mailbox.title'|trans }}</th>
+                    <th>{{ 'emailing.rules.col.conditions'|trans }}</th>
+                    <th>{{ 'emailing.rules.col.actions'|trans }}</th>
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in rules %}
+                    <tr>
+                        <td class="is-mute">{{ rule.priority() }}</td>
+                        <td>
+                            <a class="cell-user cell-user--stack" href="{{ url('admin.emailing.rules.edit', {id: rule.id()}) }}">
+                                <span class="avatar avatar--sm">{{ rule.name()|slice(0, 1)|upper }}</span>
+                                <span class="cell-user__text">
+                                    <strong>{{ rule.name() }}</strong>
+                                    <span class="table__chips">
+                                        {% if not rule.isActive() %}
+                                            <span class="badge badge--muted">{{ 'emailing.badge.inactive'|trans }}</span>
+                                        {% else %}
+                                            <span class="badge badge--ok">{{ 'emailing.badge.active'|trans }}</span>
+                                        {% endif %}
+                                        {% if rule.stopProcessing() %}
+                                            <span class="badge badge--warn">{{ 'emailing.badge.stop'|trans }}</span>
+                                        {% endif %}
+                                    </span>
+                                </span>
+                            </a>
+                        </td>
+                        <td class="is-mute">
+                            {% if rule.accountId() and accounts[rule.accountId()] is defined %}
+                                {{ accounts[rule.accountId()].name() }}
+                            {% else %}
+                                {{ 'emailing.rules.all_accounts'|trans }}
+                            {% endif %}
+                        </td>
+                        <td>{{ rule.conditions()|length }}</td>
+                        <td>{{ rule.actions()|length }}</td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% include 'ui/row_action.html.twig' with {
+                                    href: url('admin.emailing.rules.edit', {id: rule.id()}),
+                                    label: 'common.edit'|trans,
+                                    icon: 'edit'
+                                } %}
+                                {% include 'ui/row_action_destroy.html.twig' with {
+                                    action: url('admin.emailing.rules.destroy', {id: rule.id()}),
+                                    confirm: 'emailing.rules.confirm_delete'|trans
+                                } %}
+                            {% endblock %}
+                        {% endembed %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty">
+                                <h2>{{ 'emailing.rules.empty'|trans }}</h2>
+                                <p>{{ 'emailing.rules.empty.hint'|trans }}</p>
+                                <a class="btn btn--primary" href="{{ url('admin.emailing.rules.create') }}">{{ icon('plus') }} {{ 'emailing.rules.new'|trans }}</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

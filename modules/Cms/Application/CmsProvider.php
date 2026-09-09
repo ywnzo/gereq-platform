@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Publish\ContentReadContext;
 use Gereq\Publish\FrozenPublicReader;
 use Gereq\Security\HtmlSanitizer;
+use Gereq\Setting\Settings;
 use Modules\Cms\Domain\Page;
 use Modules\Cms\Domain\PageBlock;
 use Modules\Cms\Domain\SiteMenu;
@@ -21,6 +22,7 @@ final class CmsProvider
         private readonly HtmlSanitizer $html,
         private readonly ContentReadContext $readContext,
         private readonly FrozenPublicReader $frozen,
+        private readonly Settings $settings,
     ) {
     }
 
@@ -188,12 +190,12 @@ final class CmsProvider
     }
 
     /** @return array<string, mixed> */
-    public function serializePage(Page $page, bool $withBlocks = false): array
+    public function serializePage(Page $page, bool $withBlocks = false, bool $expandVariables = false): array
     {
         if ($this->readContext->isProduction()) {
             $snap = $this->frozen->snapshot('cms.pages', $page->id());
             if (is_array($snap)) {
-                return $this->serializePageSnapshot($snap, $withBlocks);
+                return $this->serializePageSnapshot($snap, $withBlocks, $expandVariables ? $page : null);
             }
         }
 
@@ -215,8 +217,9 @@ final class CmsProvider
                 $data['blocks'] = [];
             } else {
                 $data['body'] = null;
+                $pageRef = $expandVariables ? $page : null;
                 $data['blocks'] = array_map(
-                    fn (PageBlock $block): array => $this->serializeBlock($block),
+                    fn (PageBlock $block): array => $this->serializeBlock($block, $pageRef),
                     $this->blocksForPage($page->id()),
                 );
             }
@@ -252,13 +255,18 @@ final class CmsProvider
     }
 
     /** @return array<string, mixed> */
-    public function serializeBlock(PageBlock $block): array
+    public function serializeBlock(PageBlock $block, ?Page $page = null): array
     {
+        $payload = $this->publicPayload($block->type(), $block->payload());
+        if ($page !== null) {
+            $payload = $this->expandPayloadVariables($payload, $this->variableMap($page));
+        }
+
         return [
             'id' => $block->id(),
             'type' => $block->type(),
             'sort_order' => $block->sortOrder(),
-            'payload' => $this->publicPayload($block->type(), $block->payload()),
+            'payload' => $payload,
         ];
     }
 
@@ -266,7 +274,7 @@ final class CmsProvider
      * @param array<string, mixed> $snap
      * @return array<string, mixed>
      */
-    private function serializePageSnapshot(array $snap, bool $withBlocks): array
+    private function serializePageSnapshot(array $snap, bool $withBlocks, ?Page $expandFor = null): array
     {
         $data = [
             'id' => (string) ($snap['id'] ?? ''),
@@ -288,17 +296,22 @@ final class CmsProvider
                 $data['body'] = null;
                 $blocks = is_array($snap['blocks'] ?? null) ? $snap['blocks'] : [];
                 $data['blocks'] = [];
+                $vars = $expandFor !== null ? $this->variableMap($expandFor) : null;
                 foreach ($blocks as $block) {
                     if (!is_array($block)) {
                         continue;
                     }
                     $type = (string) ($block['type'] ?? 'text');
                     $payload = is_array($block['payload'] ?? null) ? $block['payload'] : [];
+                    $payload = $this->publicPayload($type, $payload);
+                    if ($vars !== null) {
+                        $payload = $this->expandPayloadVariables($payload, $vars);
+                    }
                     $data['blocks'][] = [
                         'id' => (string) ($block['id'] ?? ''),
                         'type' => $type,
                         'sort_order' => (int) ($block['sort_order'] ?? 0),
-                        'payload' => $this->publicPayload($type, $payload),
+                        'payload' => $payload,
                     ];
                 }
             }
@@ -456,5 +469,59 @@ final class CmsProvider
         }
 
         return '/media/' . $asset->id() . '/file';
+    }
+
+    /** @return array<string, string> */
+    private function variableMap(Page $page): array
+    {
+        $siteTitle = (string) $this->settings->get('cms.site_title', 'GEREQ Site');
+        $brandName = (string) $this->settings->get('brand.name', '');
+
+        return [
+            'page.title' => $page->title(),
+            'page.slug' => $page->slug(),
+            'page.meta' => (string) ($page->metaDescription() ?? ''),
+            'page.url' => '/' . ltrim($page->slug(), '/'),
+            'site.title' => $siteTitle !== '' ? $siteTitle : ($brandName !== '' ? $brandName : 'Site'),
+            'site.home' => '/',
+            'brand.name' => $brandName !== '' ? $brandName : $siteTitle,
+            'brand.logo' => (string) $this->settings->get('brand.logo_url', ''),
+            'brand.signal' => (string) $this->settings->get('brand.color_signal', '#d7ff45'),
+            'brand.ink' => (string) $this->settings->get('brand.color_ink', '#0a0b0a'),
+            'brand.cream' => (string) $this->settings->get('brand.color_cream', '#f5f5ef'),
+            'brand.primary' => (string) $this->settings->get('brand.site_primary', '#17375a'),
+            'layout.gap' => '16',
+            'layout.columns' => '12',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param array<string, string> $vars
+     * @return array<string, mixed>
+     */
+    private function expandPayloadVariables(array $payload, array $vars): array
+    {
+        foreach ($payload as $key => $value) {
+            if (is_string($value)) {
+                $payload[$key] = $this->expandVariables($value, $vars);
+            }
+        }
+
+        return $payload;
+    }
+
+    /** @param array<string, string> $vars */
+    private function expandVariables(string $text, array $vars): string
+    {
+        return (string) preg_replace_callback(
+            '/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/',
+            static function (array $match) use ($vars): string {
+                $path = $match[1];
+
+                return array_key_exists($path, $vars) ? $vars[$path] : $match[0];
+            },
+            $text,
+        );
     }
 }

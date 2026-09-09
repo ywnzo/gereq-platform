@@ -158,6 +158,54 @@ final class DebugBarTest extends TestCase
         self::assertTrue($payload['user']['guest']);
     }
 
+    public function testPayloadIncludesProjectRootAndResolvedTwigFiles(): void
+    {
+        $bar = $this->bar();
+        $profile = new \Twig\Profiler\Profile('main', \Twig\Profiler\Profile::ROOT);
+        $tpl = new \Twig\Profiler\Profile(
+            '@crm/workflows/index.html.twig',
+            \Twig\Profiler\Profile::TEMPLATE,
+            '@crm/workflows/index.html.twig',
+        );
+        $profile->addProfile($tpl);
+        $bar->setTwigProfile($profile);
+
+        $payload = $bar->payload(Request::create('/admin'), new Response('ok'));
+
+        self::assertSame(dirname(__DIR__, 2), $payload['projectRoot']);
+        self::assertSame(dirname(__DIR__, 2), $payload['serverRoot']);
+        self::assertNotEmpty($payload['views']);
+        self::assertSame('@crm/workflows/index.html.twig', $payload['views'][0]['name']);
+        self::assertSame(
+            'modules/CRM/Resources/views/workflows/index.html.twig',
+            $payload['views'][0]['file'],
+        );
+    }
+
+    public function testDebugEditorRootOverrideIsPreferred(): void
+    {
+        $bar = $this->bar(configExtra: [
+            'debug_editor_root' => 'C:\\Users\\dev\\RealEstates',
+        ]);
+        $payload = $bar->payload(Request::create('/'), new Response('ok'));
+
+        self::assertSame('C:\\Users\\dev\\RealEstates', $payload['projectRoot']);
+        self::assertSame(dirname(__DIR__, 2), $payload['serverRoot']);
+    }
+
+    public function testResolvesCoreTwigTemplatePath(): void
+    {
+        $bar = $this->bar();
+        $method = new \ReflectionMethod(DebugBar::class, 'resolveTwigRelativePath');
+        $method->setAccessible(true);
+
+        self::assertSame(
+            'resources/views/admin/layout.html.twig',
+            $method->invoke($bar, 'admin/layout.html.twig'),
+        );
+        self::assertNull($method->invoke($bar, '@missing/nope.html.twig'));
+    }
+
     public function testDumperEscapesHtml(): void
     {
         $html = (new Dumper(new Redactor()))->dump('<script>alert(1)</script>');
@@ -165,20 +213,24 @@ final class DebugBarTest extends TestCase
         self::assertStringNotContainsString('<script>alert', $html);
     }
 
-    private function bar(bool $debug = true, ?Router $router = null): DebugBar
+    /**
+     * @param array<string, mixed> $configExtra
+     */
+    private function bar(bool $debug = true, ?Router $router = null, array $configExtra = []): DebugBar
     {
         $base = dirname(__DIR__, 2);
         $redactor = new Redactor();
 
         return new DebugBar(
             new Repository([
-                'app' => [
+                'app' => array_merge([
                     'debug' => $debug,
                     'env' => 'testing',
                     'name' => 'GEREQ',
                     'n_plus_one_log' => false,
                     'n_plus_one_threshold' => 2,
-                ],
+                    'debug_editor_root' => '',
+                ], $configExtra),
             ]),
             new QueryCollector(),
             new Dumper($redactor),

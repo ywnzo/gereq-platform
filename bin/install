@@ -351,7 +351,7 @@ ok "Assets v public/build"
 
 # ── migrate fresh ───────────────────────────────────────────────────────────
 info "Migrace + seed (čistá DB)…"
-MIG_ARGS=(migrate --fresh --no-interaction)
+MIG_ARGS=(migrate --fresh --seed --no-interaction)
 [[ "$WITH_DEMO" != "y" ]] && MIG_ARGS+=(--no-demo)
 [[ "$WITH_SAMPLE" != "y" ]] && MIG_ARGS+=(--no-sample)
 php gereq "${MIG_ARGS[@]}"
@@ -383,7 +383,7 @@ printf '  Heslo:   (zadali jste při instalaci)\n'
 printf '\n'
 printf '  Užitečné příkazy:\n'
 printf '    php gereq about\n'
-printf '    php gereq migrate --fresh --no-demo --no-sample\n'
+printf '    php gereq migrate --fresh --seed --no-demo --no-sample\n'
 printf '    php gereq install\n'
 printf '    php gereq serve-docker -d\n'
 printf '    php gereq queue:work\n'

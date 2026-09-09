@@ -307,6 +307,7 @@ final class CoreRegistrar
             $router->post('/profile/passkeys/{id}/delete', [SecurityController::class, 'passkeyDelete'])->name('admin.profile.passkeys.delete')->middleware('auth');
 
             $router->get('/developer/api', [DeveloperController::class, 'api'])->name('admin.developer.api')->middleware('auth')->permission('developer.api.view');
+            $router->post('/developer/api/tester-token', [DeveloperController::class, 'testerToken'])->name('admin.developer.api.tester_token')->middleware('auth')->permission('developer.api.view');
             $router->get('/developer/events', [DeveloperController::class, 'events'])->name('admin.developer.events')->middleware('auth')->permission('developer.events.view');
             $router->get('/developer/tokens', [ApiTokenController::class, 'index'])->name('admin.developer.tokens.index')->middleware('auth')->permission('developer.tokens.manage');
             $router->get('/developer/tokens/create', [ApiTokenController::class, 'create'])->name('admin.developer.tokens.create')->middleware('auth')->permission('developer.tokens.manage');

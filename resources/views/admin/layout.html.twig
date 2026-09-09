@@ -115,8 +115,10 @@
     {% include 'ui/drawer.html.twig' with {
         id: 'gereq-drawer',
         title: '',
+        body: '',
+        footer: null,
         host: true
-    } %}
+    } only %}
     {% include 'ui/confirm_dialog.html.twig' %}
 
     <script nonce="{{ csp_nonce() }}">
@@ -138,7 +140,7 @@
         window.__GEREQ_SEARCH_URL__ = {{ url('admin.search')|json_encode|raw }};
     </script>
     {% if not vite_hot() %}
-        <script nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
+        <script type="module" nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
     {% endif %}
 </body>
 </html>

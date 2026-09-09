@@ -1,0 +1,84 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="customer-edit">
+    <header class="customer-edit__header">
+        <div class="customer-edit__identity">
+            <a class="text-link customer-profile__back" href="{{ url('admin.ai.knowledge.index') }}">
+                ← {{ 'nav.ai.knowledge'|trans }}
+            </a>
+            <div class="cell-user cell-user--lg">
+                <span class="avatar avatar--xl">{{ source.title()|slice(0, 1)|upper }}</span>
+                <div>
+                    <p class="customer-edit__eyebrow">{{ 'ai.knowledge.source.edit'|trans }}</p>
+                    <h1>{{ source.title() }}</h1>
+                    <p class="customer-profile__sub">
+                        {% if kb %}<code>{{ kb.slug() }}</code> · {% endif %}
+                        {{ source.sourceType() }}
+                        ·
+                        <span class="badge badge--{{ source.status() == 'ready' ? 'ok' : (source.status() == 'failed' ? 'danger' : 'warn') }}">
+                            {{ source.status() }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="customer-edit__header-actions">
+            <button class="btn btn--primary" type="submit" form="ai-source-form">{{ 'common.save'|trans }}</button>
+        </div>
+    </header>
+
+    {% if source.errorMessage() %}
+        <div class="alert alert--danger" style="margin-bottom:1rem">{{ source.errorMessage() }}</div>
+    {% endif %}
+
+    <form id="ai-source-form" method="post" action="{{ url('admin.ai.knowledge.source.update', {id: source.id()}) }}" class="customer-edit__form">
+        {{ csrf_field()|raw }}
+        <section class="customer-section">
+            <header class="customer-section__head">
+                <div>
+                    <h2>{{ 'ai.section.source'|trans }}</h2>
+                    <p class="muted customer-edit__section-hint">{{ 'ai.knowledge.source.hint'|trans }}</p>
+                </div>
+            </header>
+            <div class="customer-edit__grid">
+                {% include 'ui/input.html.twig' with {
+                    name: 'title',
+                    label: 'ai.field.title'|trans,
+                    required: true,
+                    value: source.title()
+                } %}
+                {% if source.sourceType() == 'manual_text' %}
+                    {% include 'ui/textarea.html.twig' with {
+                        name: 'text',
+                        label: 'ai.field.text'|trans,
+                        required: true,
+                        value: text,
+                        size: 'mini',
+                        rows: 16,
+                        extra: 'field--full'
+                    } %}
+                {% else %}
+                    <p class="muted field--full">{{ 'ai.knowledge.source.non_manual'|trans }}</p>
+                {% endif %}
+            </div>
+            <div class="form-actions" style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+                <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                <button class="btn btn--ghost" type="submit" formaction="{{ url('admin.ai.knowledge.source.reingest', {id: source.id()}) }}">
+                    {{ 'ai.action.reingest'|trans }}
+                </button>
+                <a class="btn btn--ghost" href="{{ url('admin.ai.knowledge.index') }}">{{ 'common.back'|trans }}</a>
+                <button
+                    class="btn btn--danger"
+                    type="submit"
+                    formaction="{{ url('admin.ai.knowledge.source.destroy', {id: source.id()}) }}"
+                    formnovalidate
+                    data-confirm="{{ 'ai.knowledge.source.confirm_delete'|trans }}"
+                    data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}"
+                    data-confirm-danger="1"
+                >{{ 'common.delete'|trans }}</button>
+            </div>
+        </section>
+    </form>
+</div>
+{% endblock %}

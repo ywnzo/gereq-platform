@@ -36,7 +36,7 @@ final class CmsModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.2.3';
+        return '1.5.0';
     }
 
     public function register(ModuleContext $context): void
@@ -68,12 +68,15 @@ final class CmsModule implements ModuleInterface
             $routes->get('', [PageController::class, 'index'])->name('admin.cms.pages.index')->permission('cms.view');
             $routes->get('/create', [PageController::class, 'create'])->name('admin.cms.pages.create')->permission('cms.manage');
             $routes->post('', [PageController::class, 'store'])->name('admin.cms.pages.store')->permission('cms.manage');
-            $routes->get('/{id}', [PageController::class, 'show'])->name('admin.cms.pages.show')->permission('cms.view');
             $routes->get('/{id}/edit', [PageController::class, 'edit'])->name('admin.cms.pages.edit')->permission('cms.manage');
             $routes->post('/{id}', [PageController::class, 'update'])->name('admin.cms.pages.update')->permission('cms.manage');
             $routes->post('/{id}/publish', [PageController::class, 'publish'])->name('admin.cms.pages.publish')->permission('cms.manage');
+            $routes->get('/{id}/builder', [PageController::class, 'builder'])->name('admin.cms.pages.builder')->permission('cms.manage');
+            $routes->post('/{id}/builder', [PageController::class, 'builderSave'])->name('admin.cms.pages.builder.save')->permission('cms.manage');
             $routes->get('/{id}/preview', [PageController::class, 'preview'])->name('admin.cms.pages.preview')->permission('cms.view');
+            $routes->get('/{id}/preview.json', [PageController::class, 'previewJson'])->name('admin.cms.pages.preview_json')->permission('cms.view');
             $routes->post('/{id}/delete', [PageController::class, 'destroy'])->name('admin.cms.pages.destroy')->permission('cms.manage');
+            $routes->get('/{id}', [PageController::class, 'show'])->name('admin.cms.pages.show')->permission('cms.view');
 
             $routes->post('/{id}/blocks', [BlockController::class, 'store'])->name('admin.cms.blocks.store')->permission('cms.manage');
             $routes->get('/{id}/blocks/{blockId}/edit', [BlockController::class, 'edit'])->name('admin.cms.blocks.edit')->permission('cms.manage');

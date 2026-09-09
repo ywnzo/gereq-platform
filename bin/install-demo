@@ -162,7 +162,7 @@ fi
 ok "Assets v public/build"
 
 info "Migrace + demo data (nabídky, prohlídky, portály, katalog…)…"
-php gereq migrate --fresh --no-interaction
+php gereq migrate --fresh --seed --no-interaction
 ok "Databáze s demo daty"
 
 printf '\n'

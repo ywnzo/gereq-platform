@@ -41,7 +41,7 @@ Nebo non-interactive po ručním `.env`:
 ```bash
 composer install
 cp .env.example .env   # doplňte APP_KEY, ADMIN_*
-php gereq migrate --fresh --no-demo --no-sample
+php gereq migrate --fresh --seed --no-demo --no-sample
 bun install && bun run build   # nebo npm
 ```
 
@@ -57,7 +57,7 @@ cp .env.example .env
 Do `.env` doplňte `APP_KEY` (náhodný 64znakový hex) a přístupové údaje.
 
 ```bash
-php gereq migrate --fresh --no-demo --no-sample
+php gereq migrate --fresh --seed --no-demo --no-sample
 npm install
 npm run build
 php gereq serve
@@ -71,8 +71,9 @@ Migrace:
 
 | Příkaz | Význam |
 | --- | --- |
-| `php gereq migrate` | update schema + seed (včetně dema) |
-| `php gereq migrate --fresh --no-demo --no-sample` | čistý klient |
+| `php gereq migrate` | jen migrace / sync schématu (bez seedu) |
+| `php gereq migrate --seed` | migrace + seed (včetně dema) |
+| `php gereq migrate --fresh --seed --no-demo --no-sample` | čistý klient |
 | `php gereq seed:demo` | dodatečně demo data |
 
 ## Environment
@@ -147,7 +148,7 @@ npm run build
 ```bash
 php gereq about
 php gereq install
-php gereq migrate --fresh --no-demo --no-sample
+php gereq migrate --fresh --seed --no-demo --no-sample
 php gereq module:list
 php gereq module:enable customers
 php gereq module:disable customers
