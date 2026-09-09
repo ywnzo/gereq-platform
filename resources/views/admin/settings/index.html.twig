@@ -11,7 +11,7 @@
     {% set firstGroup = groups|keys|first %}
     {% set wideKeys = [
         'admin.dashboard.layout',
-        'cms.custom_css_admin',
+        'brand.custom_css',
         'cms.custom_css_public',
         'brand.logo_url',
         'brand.favicon_url'
@@ -99,7 +99,7 @@
                                             {% include 'admin/settings/_color_picker.html.twig' %}
                                         {% elseif key in ['brand.logo_url', 'brand.favicon_url'] %}
                                             {% include 'admin/settings/_brand_asset.html.twig' %}
-                                        {% elseif key in ['cms.custom_css_admin', 'cms.custom_css_public'] %}
+                                        {% elseif key in ['brand.custom_css', 'cms.custom_css_public'] %}
                                             {% include 'admin/settings/_css_editor.html.twig' %}
                                         {% elseif key == 'admin.dashboard.layout' %}
                                             {% include 'admin/settings/_dashboard_widgets.html.twig' %}

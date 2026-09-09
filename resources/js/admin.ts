@@ -14,6 +14,7 @@ import '../../modules/Emailing/Resources/assets/css/admin.css';
 import '../../modules/Products/Resources/assets/css/admin.css';
 import '../../modules/ProductDiscounts/Resources/assets/css/admin.css';
 import '../../modules/Vitality/Resources/assets/css/admin.css';
+import '../../modules/WebPlus/Resources/assets/css/admin.css';
 import '../../modules/ESign/Resources/assets/css/admin.css';
 import '../../modules/Portals/Resources/assets/css/admin.css';
 

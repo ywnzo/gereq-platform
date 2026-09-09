@@ -443,10 +443,8 @@ a.package-row__mod:hover {
     background: color-mix(in srgb, var(--info, #3b82f6) 10%, var(--surface));
 }
 .module-tabs {
-    /* keep with detail-tabs — no sticky overlay over content */
-    position: relative;
-    top: auto;
-    z-index: 2;
+    /* inherits sticky from .detail-tabs when used on detail pages */
+    z-index: 12;
 }
 .module-tab-count {
     display: inline-flex;

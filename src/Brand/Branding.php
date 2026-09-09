@@ -142,9 +142,13 @@ final class Branding
 
     public function customCssAdmin(): string
     {
+        if ($this->settings->has('brand.custom_css')) {
+            return $this->sanitizeCss($this->string('brand.custom_css', ''));
+        }
+
+        // Legacy keys (CMS / shared CSS) until first save under brand.custom_css.
         $raw = $this->string('cms.custom_css_admin', '');
         if ($raw === '') {
-            // Legacy shared field → admin.
             $raw = $this->string('cms.custom_css', '');
         }
 

@@ -287,9 +287,10 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
 .design-notice--ok { border-left-color: var(--gereq-signal); }
 
 .design-tabs {
-    position: sticky;
-    top: 0;
-    z-index: 20;
+    /* Not sticky — fights .page-header sticky and left a scroll gap under the topbar. */
+    position: relative;
+    top: auto;
+    z-index: 2;
     display: flex;
     flex-wrap: wrap;
     gap: 0;

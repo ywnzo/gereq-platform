@@ -474,9 +474,15 @@ button.icon-btn.topbar__menu { display: none; }
     background: var(--surface-2);
 }
 
-/* Content: fill main area */
+/* Content: fill main area.
+   --page-pad-* lets sticky chrome (detail.css) cancel the top/side padding
+   so nothing scrolls through a gap above a stuck .page-header. */
 .page {
-    padding: 1rem 1.25rem 1rem;
+    --page-pad-top: 1rem;
+    --page-pad-x: 1.25rem;
+    --page-pad-bottom: 1rem;
+    --page-header-sticky-h: 0px;
+    padding: var(--page-pad-top) var(--page-pad-x) var(--page-pad-bottom);
     width: 100%;
     max-width: none;
     box-sizing: border-box;
@@ -488,7 +494,10 @@ button.icon-btn.topbar__menu { display: none; }
     overscroll-behavior: contain;
 }
 .page:has(.list-shell) {
-    padding: 0.85rem 1rem 0.85rem;
+    --page-pad-top: 0.85rem;
+    --page-pad-x: 1rem;
+    --page-pad-bottom: 0.85rem;
+    padding: var(--page-pad-top) var(--page-pad-x) var(--page-pad-bottom);
 }
 
 /* Index / list pages: table consumes remaining viewport */

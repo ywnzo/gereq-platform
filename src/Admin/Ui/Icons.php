@@ -100,6 +100,7 @@ final class Icons
             'gift' => 'card_giftcard',
             'layers' => 'layers',
             'rss' => 'rss_feed',
+            'globe' => 'public',
             'warehouse' => 'warehouse',
             'coins' => 'monetization_on',
             'image' => 'image',

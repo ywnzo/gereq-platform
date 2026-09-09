@@ -50,13 +50,22 @@ final class SettingsController extends Controller
         foreach ($definitions as $key => $definition) {
             $values[$key] = $this->settings->get($key, $definition['default']);
         }
-        // Migrate legacy shared CSS into split fields when empty.
-        $legacy = trim((string) ($values['cms.custom_css'] ?? ''));
-        if ($legacy !== '') {
-            if (trim((string) ($values['cms.custom_css_admin'] ?? '')) === '') {
-                $values['cms.custom_css_admin'] = $legacy;
+        // Migrate legacy admin CSS into brand.custom_css when not yet stored.
+        if (!$this->settings->has('brand.custom_css')) {
+            $fromCmsAdmin = trim((string) $this->settings->get('cms.custom_css_admin', ''));
+            $fromLegacy = trim((string) $this->settings->get('cms.custom_css', ''));
+            if ($fromCmsAdmin !== '') {
+                $values['brand.custom_css'] = $fromCmsAdmin;
+            } elseif ($fromLegacy !== '') {
+                $values['brand.custom_css'] = $fromLegacy;
             }
-            if (trim((string) ($values['cms.custom_css_public'] ?? '')) === '') {
+        }
+        if (
+            !$this->settings->has('cms.custom_css_public')
+            && trim((string) ($values['cms.custom_css_public'] ?? '')) === ''
+        ) {
+            $legacy = trim((string) $this->settings->get('cms.custom_css', ''));
+            if ($legacy !== '') {
                 $values['cms.custom_css_public'] = $legacy;
             }
         }

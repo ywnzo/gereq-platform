@@ -1,47 +1,85 @@
 /* ——— Detail hub / tabs ——— */
-/* Sticky chrome inside .page scroll (topbar is already outside). */
+/* Stacked sticky: page-header then tabs under it.
+   --page-header-sticky-h is set by resources/js/ui/stickyChrome.ts.
+   Negative top cancels .page padding so nothing shows through above. */
 .detail-sticky {
     position: sticky;
-    top: 0;
+    top: calc(-1 * var(--page-pad-top, 1rem));
     z-index: 12;
+    align-self: stretch;
+    box-sizing: border-box;
+    margin-inline: calc(-1 * var(--page-pad-x, 1.25rem));
+    padding-inline: var(--page-pad-x, 1.25rem);
+    padding-top: var(--page-pad-top, 1rem);
     background: var(--background);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
 }
 .page > .page-header,
 .page > form > .page-header {
     position: sticky;
-    top: 0;
-    z-index: 12;
+    top: calc(-1 * var(--page-pad-top, 1rem));
+    z-index: 13;
+    align-self: stretch;
+    box-sizing: border-box;
+    width: auto;
+    max-width: none;
     margin-top: 0;
-    padding-top: 0.15rem;
+    margin-inline: calc(-1 * var(--page-pad-x, 1.25rem));
+    margin-bottom: 1.5rem;
+    padding-top: 0.85rem;
+    padding-inline: var(--page-pad-x, 1.25rem);
     padding-bottom: 0.85rem;
     background: var(--background);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
+}
+.page > .page-header:first-child {
+    margin-top: calc(-1 * var(--page-pad-top, 1rem));
+    padding-top: calc(var(--page-pad-top, 1rem) + 0.15rem);
+}
+.page > form:first-child:has(> .page-header:first-child) {
+    margin-top: calc(-1 * var(--page-pad-top, 1rem));
+}
+.page > form:first-child:has(> .page-header:first-child) > .page-header:first-child {
+    margin-top: 0;
+    padding-top: calc(var(--page-pad-top, 1rem) + 0.15rem);
+}
+/* Tighter gap before sticky tabs — margin collapses out of the sticky stack. */
+.page > .page-header:has(+ .detail-hub) {
+    margin-bottom: 0.65rem;
 }
 
 .detail-hub {
     display: flex;
     flex-direction: column;
     gap: 0;
-    margin-top: 0.25rem;
+    margin-top: 0;
 }
-.detail-hub > .design-tabs,
-.detail-tabs {
-    position: relative;
-    top: auto;
-    z-index: 2;
+/* Only tabs inside detail-hub (not list-shell tabs). */
+.detail-hub > .design-tabs {
+    position: sticky;
+    top: calc(var(--page-header-sticky-h, 0px) - var(--page-pad-top, 1rem));
+    z-index: 12;
+    align-self: stretch;
+    box-sizing: border-box;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 4px;
     margin: 0 0 1.25rem;
-    padding: 5px;
-    border: 1px solid var(--border);
+    margin-inline: calc(-1 * var(--page-pad-x, 1.25rem));
+    padding: 0.45rem var(--page-pad-x, 1.25rem);
+    border: 0;
     border-bottom: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
+    border-radius: 0;
+    background: var(--background);
     backdrop-filter: none;
-    box-shadow: none;
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
+}
+.detail-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
 }
 .detail-hub .design-tab,
 .detail-tabs .design-tab {

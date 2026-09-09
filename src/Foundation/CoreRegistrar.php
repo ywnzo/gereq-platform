@@ -191,6 +191,12 @@ final class CoreRegistrar
         $this->settings->define('brand.site_mark', SettingRecord::TYPE_STRING, 'settings.brand.site_mark', '');
         $this->settings->define('brand.tagline', SettingRecord::TYPE_STRING, 'settings.brand.tagline', '');
         $this->settings->define('brand.footnote', SettingRecord::TYPE_STRING, 'settings.brand.footnote', '');
+        $this->settings->define(
+            'brand.custom_css',
+            SettingRecord::TYPE_STRING,
+            'settings.brand.custom_css',
+            "/* Admin CSS — přepište tokeny nebo doplňte pravidla */\n:root {\n  /* --primary: #47c2ff; */\n}\n",
+        );
     }
 
     private function validation(): void

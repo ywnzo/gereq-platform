@@ -13,6 +13,7 @@ import { registerToast } from './toast';
 import { registerModal, registerPopover } from './overlay';
 import { registerSelect } from './select';
 import { registerTabs } from './tabs';
+import { registerStickyChrome } from './stickyChrome';
 import { registerSettingsBrandPreview } from './settingsBrandPreview';
 import { registerColorField } from './colorField';
 import { registerBrandAsset } from './brandAsset';
@@ -60,6 +61,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerForm(alpine);
     registerEditor(alpine);
     registerTabs(alpine);
+    registerStickyChrome();
     registerWebauthn(alpine);
     registerSettingsBrandPreview(alpine);
     registerColorField(alpine);
