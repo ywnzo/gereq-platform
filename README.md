@@ -50,7 +50,7 @@ Nebo non-interactive po ručním `.env`:
 composer install
 cp .env.example .env   # doplňte APP_KEY, ADMIN_*
 php gereq migrate --fresh --seed --no-demo --no-sample
-bun install && bun run build   # nebo npm
+bun install && bun run build
 ```
 
 `php gereq install` — interaktivní fresh seed (když už běží vendor).
@@ -66,8 +66,7 @@ Do `.env` doplňte `APP_KEY` (náhodný 64znakový hex) a přístupové údaje.
 
 ```bash
 php gereq migrate --fresh --seed --no-demo --no-sample
-npm install
-npm run build
+bun install && bun run build
 php gereq serve
 ```
 
@@ -97,7 +96,7 @@ Migrace:
 | `SESSION_DRIVER` | `file`, `redis` (Docker `serve-docker` vynutí `redis`) |
 | `FILE_DRIVER` | `local` (S3 driver lze doplnit) |
 | `GITLAB_URL` | GitLab instance (default `https://gitlab.com`) |
-| `GITLAB_TOKEN` | token s `read_api` / `read_repository` pro stahování tagů |
+| `GITLAB_TOKEN` | token s `read_api` / `read_repository` (+ `api` pro zakládání modulů) |
 | `GITLAB_GROUP` | skupina projektů (default `gereq`) |
 | `MODULE_REPO_PREFIX` | prefix repa (`module-` → `gereq/module-listings`) |
 
@@ -118,7 +117,7 @@ Vestavěný PHP server (rychlé lokální zkoušení):
 
 ```bash
 php gereq serve --port=8080
-npm run dev
+bun run dev
 ```
 
 Docker stack s nginx + PHP-FPM + Redis (bližší produkci, připravené na frontu):
@@ -148,7 +147,7 @@ Pro Redis frontu v aplikaci nastavte v `.env` `QUEUE_DRIVER=redis` (v Dockeru je
 Frontend build do `public/build`:
 
 ```bash
-npm run build
+bun run build
 ```
 
 ## CLI
@@ -172,12 +171,23 @@ php gereq user:create
 ```
 
 Shell instalátor: `./bin/install`
+
 ## Moduly
 
-Každý modul je samostatné GitLab repo `gereq/module-<id>`, v platformě napojené jako **submodule** pod `modules/<Dir>` (pin na semver tag `vX.Y.Z`).
+Každý modul je **vlastní GitLab projekt** `gitlab.com/gereq/module-<id>` a v platformě (`GEREQ_PLATFORM`) je napojený jako **git submodule** pod `modules/<Dir>`, pinovaný na semver tag `vX.Y.Z`.
 
 ```text
-modules/Customers/          → gitlab.com/gereq/module-customers @ v…
+GEREQ_PLATFORM                    → gitlab.com/gereq/GEREQ_PLATFORM
+└── modules/
+    ├── Customers/                → submodule gereq/module-customers @ v1.6.3
+    ├── Listings/                 → submodule gereq/module-listings @ …
+    └── …
+```
+
+Struktura uvnitř modulu:
+
+```text
+modules/Customers/
     Domain/
     Application/
     Infrastructure/
@@ -190,13 +200,11 @@ modules/Customers/          → gitlab.com/gereq/module-customers @ v…
     CustomersModule.php
 ```
 
-Manifest `module.php` popisuje id, verzi, závislosti, capabilities a permissions.
-
-Modul implementuje `ModuleInterface` (`register` / `boot`).
+Manifest `module.php` popisuje id, verzi, závislosti, capabilities a permissions. Modul implementuje `ModuleInterface` (`register` / `boot`).
 
 Platforma:
 
-- najde nainstalované moduly
+- najde nainstalované moduly (složky v `modules/` se `module.php`)
 - umí je aktivovat a deaktivovat
 - zkontroluje závislosti
 - nepovolí vypnout modul, který jiný aktivní modul vyžaduje
@@ -206,17 +214,40 @@ Moduly mezi sebou **nesahají do cizích tabulek**. Komunikují přes contracts 
 
 Příklad: capability `contacts` může poskytovat GEREQ CRM, HubSpot modul i vlastní implementace. Ostatní moduly žádají capability, ne konkrétní tabulku.
 
-### Verze z GitLabu
+IDE tip: po převodu na submodules Cursor/VS Code může u souborů uvnitř `modules/*` ukazovat **D** (deleted) vůči parent repu — soubory na disku jsou, jen je parent už nesleduje jako běžné soubory (sleduje gitlink). Badge **S** = submodule.
 
-Každý modul může žít ve vlastním repu `gitlab.com/{GITLAB_GROUP}/{MODULE_REPO_PREFIX}{id}` (např. `gereq/module-listings`). Semver tagy `v1.2.3` musí sedět s `version` v `module.php`.
+### Práce se submodulem
 
-V adminu (detail modulu → **Verze**):
+```bash
+# aktualizovat jeden modul na nový tag
+cd modules/Customers
+git fetch --tags
+git checkout v1.6.4
+cd ../..
+git add modules/Customers
+git commit -m "chore: pin Customers to v1.6.4"
+git push
+
+# srovnání lokálních verzí vs GitLab tagy (TUI)
+./tools/gereq-modules/gereq-modules.sh
+./tools/gereq-modules/gereq-modules.sh --plain
+```
+
+Commit kódu modulu patří do **module repo** (`module-customers`). Commit v `GEREQ_PLATFORM` jen posouvá pin submodule (SHA/tag).
+
+### Verze a instalace z GitLabu
+
+Semver tagy `v1.2.3` musí sedět s `version` v `module.php` i s `Module::version()`.
+
+V adminu (detail modulu → **Verze**), pokud je nastavený `GITLAB_TOKEN`:
 
 1. obnoví seznam tagů z GitLab API  
 2. stáhne ZIP do `storage/modules/{id}/{version}/`  
 3. aktivuje vybranou verzi do live `modules/…` (upgrade = migrace up, downgrade = `down()` u migrací chybějících v cíli)
 
-Bez `GITLAB_TOKEN` zůstává lokální monorepo flow beze změny. Override cesty: `'repository' => 'gereq/module-listings'` v `module.php`.
+Override cesty repa: `'repository' => 'gereq/module-listings'` v `module.php`.
+
+Po změně kódu/migrací v modulu **vždy bumpni verzi** (viz checklist) — admin UI modulu se zablokuje, dokud neproběhne „Aktualizovat“.
 
 ## Permissions
 
@@ -254,31 +285,82 @@ $events->dispatch(new CustomerCreated($customer->id()));
 
 ## Nový modul
 
+### 1. Kostra v platformě
+
 ```bash
 php gereq make:module Warehouse
 ```
 
-Potom doplňte `register()` (služby, routes, permissions, **API**, **events**) a `boot()` (menu, hooky, widgety). Po `php gereq migrate` modul aktivujte v administraci nebo přes CLI.
+Doplňte `register()` (služby, routes, permissions, **API**, **events**, případně **publishables**) a `boot()` (menu, hooky, widgety).
+
+### 2. GitLab repo + submodule
+
+```bash
+# vytvořit private projekt ve skupině gereq (path = module-<id>)
+# např. gereq/module-warehouse
+
+cd modules/Warehouse
+git init -b main
+git add -A
+git commit -m "chore: initial Warehouse v0.1.0"
+git tag -a v0.1.0 -m "Release v0.1.0"
+git remote add origin git@gitlab.com:gereq/module-warehouse.git
+git push -u origin main --tags
+cd ../..
+
+# z platformy: nahradit běžnou složku submodulem (pokud ještě není)
+git submodule add git@gitlab.com:gereq/module-warehouse.git modules/Warehouse
+# URL v .gitmodules sjednoť na https://gitlab.com/gereq/module-warehouse.git
+git add .gitmodules modules/Warehouse
+git commit -m "chore: add Warehouse submodule @ v0.1.0"
+git push
+```
+
+### 3. Aktivace
+
+```bash
+php gereq migrate
+php gereq module:enable warehouse
+# nebo Administrace → Moduly
+```
 
 ### Checklist nového modulu
 
 Každý modul má být plnohodnotná platform capability, ne jen admin CRUD:
 
-```text
-[ ] Domain + Admin UI
-[ ] Public API endpoints (/api/v1/…)
-[ ] API scopes (resource.read / resource.write)
-[ ] API serializers + whitelisted filters
-[ ] Domain / platform events (resource.action)
-[ ] Webhook-enabled event registrace
-[ ] Event payload version (ne Doctrine entity)
-[ ] Audit integration
-[ ] Queue jobs (pokud async)
-[ ] Idempotency (finanční / kritické POST)
-[ ] Extension points (hooks)
-[ ] Permissions
-[ ] Tests
-```
+
+### Repo / verze
+- [x] GitLab projekt gereq/module-<id> (private)
+- [x] Napojený jako submodule v GEREQ_PLATFORM (modules/<Dir>)
+- [x] version v module.php == Module::version() == git tag vX.Y.Z
+- [x] .gitmodules URL bez tokenu (https://gitlab.com/gereq/…)
+
+### Produkt
+- [x] Domain + Admin UI
+- [x] Permissions (+ sync po enable/update)
+- [x] Extension points (hooks) kde dává smysl
+- [x] Audit integration u kritických mutací
+
+### API / Events
+- [x] Public API endpoints (/api/v1/…) — pokud má modul data ven
+- [x] API scopes (resource.read / resource.write)
+- [x] API serializers + whitelisted filters
+- [x] Domain / platform events (resource.action)
+- [x] Webhook-enabled event registrace
+- [x] Event payload version (ne Doctrine entity)
+- [x] Idempotency (finanční / kritické POST)
+- [x] Queue jobs (pokud async)
+
+### Publishables (pokud sahá na /api/public nebo CRM content)
+- [x] register() → publishables()->register(…)
+- [x] create / update / delete přes staging (ne hard delete public obsahu)
+
+### Kvalita
+- [x] Migrace jen přes Database/Migrations/
+- [x] Tests (unit / feature dle rozsahu)
+- [x] i18n cs + en
+- [x] Kontrola: ./tools/gereq-modules/gereq-modules.sh — modul OK na GitLabu
+
 
 ## API, Events, Webhooks
 
@@ -311,15 +393,18 @@ vendor/bin/phpcs
 ## Architektura
 
 ```text
-GEREQ Platform
-Core
-├── Auth, Users, Roles, Permissions
-├── Modules, Events, Hooks
-├── Database, Cache, Queue
-├── Notifications, Files, Settings
-├── API, Audit, Admin UI
-Modules
-└── Customers, CRM, Currency, Webhooks + další
+GEREQ_PLATFORM (gitlab.com/gereq/GEREQ_PLATFORM)
+├── Core
+│   ├── Auth, Users, Roles, Permissions
+│   ├── Modules, Events, Hooks, Publish
+│   ├── Database, Cache, Queue
+│   ├── Notifications, Files, Settings
+│   └── API, Audit, Admin UI
+└── modules/   (git submodules)
+    ├── Customers  → gereq/module-customers
+    ├── CRM        → gereq/module-crm
+    ├── Currency   → gereq/module-currency
+    └── …          → gereq/module-<id>
 ```
 
 Platforma je od začátku navržena jako integrační vrstva: **Admin + Domain + API + Events + Webhooks**.
