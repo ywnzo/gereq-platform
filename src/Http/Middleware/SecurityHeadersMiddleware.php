@@ -33,7 +33,9 @@ final class SecurityHeadersMiddleware implements MiddlewareInterface
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set(
             'Content-Security-Policy',
-            is_string($customCsp) && $customCsp !== '' ? $customCsp : $this->csp->header($nonce),
+            is_string($customCsp) && $customCsp !== ''
+                ? $customCsp
+                : $this->csp->header($nonce, $allowFrame),
         );
 
         if ($request->isSecure()) {

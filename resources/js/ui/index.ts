@@ -41,6 +41,7 @@ import { registerPortalForm } from '../../../modules/Portals/Resources/assets/js
 import { registerWebauthn } from './webauthn';
 import { registerPublishBadge } from './publishBadge';
 import { registerAiChat } from '../../../modules/Ai/Resources/assets/js/aiChat';
+import { registerAiFloat } from '../../../modules/Ai/Resources/assets/js/aiFloat';
 import { registerApiTester } from './apiTester';
 
 export function registerUi(alpine: typeof Alpine): void {
@@ -90,4 +91,5 @@ export function registerUi(alpine: typeof Alpine): void {
     registerPublishBadge(alpine);
     registerApiTester(alpine);
     registerAiChat(alpine);
+    registerAiFloat(alpine);
 }

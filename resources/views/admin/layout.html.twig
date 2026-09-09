@@ -112,6 +112,8 @@
         <div class="toasts" id="toasts"></div>
     </div>
 
+    {{ apply_filters('admin.layout.end', '')|raw }}
+
     {% include 'ui/drawer.html.twig' with {
         id: 'gereq-drawer',
         title: '',

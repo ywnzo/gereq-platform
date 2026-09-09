@@ -121,6 +121,8 @@ final class DebugBar
         }
     }
 
+    public const HEADER_SKIP = 'X-Gereq-No-Debug';
+
     public function inject(Request $request, Response $response): Response
     {
         if (!$this->enabled()) {
@@ -138,6 +140,11 @@ final class DebugBar
             return $response;
         }
         if ($response instanceof JsonResponse || $response instanceof RedirectResponse) {
+            return $response;
+        }
+        if ($this->shouldSkipHtmlBar($request, $response)) {
+            $response->headers->remove(self::HEADER_SKIP);
+
             return $response;
         }
 
@@ -166,6 +173,25 @@ final class DebugBar
         $this->injected = true;
 
         return $response;
+    }
+
+    private function shouldSkipHtmlBar(Request $request, Response $response): bool
+    {
+        if ($response->headers->get(self::HEADER_SKIP) === '1') {
+            return true;
+        }
+        if ($request->attributes->get('_gereq_skip_debug') === true) {
+            return true;
+        }
+        // Floating / embedded admin shells (AI float iframe, etc.).
+        if (strtolower((string) $request->headers->get('Sec-Fetch-Dest', '')) === 'iframe') {
+            return true;
+        }
+        if (in_array($request->query->get('embed'), [true, 1, '1', 'true', 'yes'], true)) {
+            return true;
+        }
+
+        return false;
     }
 
     private function wantsAjaxDebug(Request $request, Response $response): bool

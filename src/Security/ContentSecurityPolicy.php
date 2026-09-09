@@ -42,7 +42,7 @@ final class ContentSecurityPolicy
         ]);
     }
 
-    public function header(string $nonce): string
+    public function header(string $nonce, bool $allowSameOriginFrame = false): string
     {
         $hot = $this->assets->isHot();
 
@@ -75,7 +75,7 @@ final class ContentSecurityPolicy
             "font-src 'self' https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https:",
             'connect-src ' . implode(' ', array_unique([...$connectSrc, 'https://cdn.jsdelivr.net'])),
-            "frame-ancestors 'none'",
+            $allowSameOriginFrame ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",
             "object-src 'none'",
