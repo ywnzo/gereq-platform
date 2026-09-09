@@ -1,4 +1,0 @@
-{% if projects is empty %}<div class="empty"><p>{{ 'projects.partial.empty'|trans }}</p>
-{% if user is defined and user.can('projects.manage') %}<a class="btn btn--ghost" href="{{ url('admin.projects.create') }}?customer={{ customer.id() }}">{{ 'projects.partial.add'|trans }}</a>{% endif %}</div>
-{% else %}<div class="table-wrap"><table class="table"><thead><tr><th>{{ 'projects.field.name'|trans }}</th><th>{{ 'projects.field.status'|trans }}</th></tr></thead>
-<tbody>{% for p in projects %}<tr><td><a href="{{ url('admin.projects.show',{id:p.id()}) }}">{{ p.name() }}</a></td><td>{{ p.statusLabel()|trans }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}

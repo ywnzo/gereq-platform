@@ -1,0 +1,117 @@
+[submodule "modules/BikeService"]
+	path = modules/BikeService
+	url = https://gitlab.com/gereq/module-bikeservice.git
+[submodule "modules/Bundles"]
+	path = modules/Bundles
+	url = https://gitlab.com/gereq/module-bundles.git
+[submodule "modules/CarService"]
+	path = modules/CarService
+	url = https://gitlab.com/gereq/module-carservice.git
+[submodule "modules/Coupons"]
+	path = modules/Coupons
+	url = https://gitlab.com/gereq/module-coupons.git
+[submodule "modules/CRM"]
+	path = modules/CRM
+	url = https://gitlab.com/gereq/module-crm.git
+[submodule "modules/Currency"]
+	path = modules/Currency
+	url = https://gitlab.com/gereq/module-currency.git
+[submodule "modules/CustomerUploads"]
+	path = modules/CustomerUploads
+	url = https://gitlab.com/gereq/module-customer_uploads.git
+[submodule "modules/Documents"]
+	path = modules/Documents
+	url = https://gitlab.com/gereq/module-documents.git
+[submodule "modules/ESign"]
+	path = modules/ESign
+	url = https://gitlab.com/gereq/module-esign.git
+[submodule "modules/Feeds"]
+	path = modules/Feeds
+	url = https://gitlab.com/gereq/module-feeds.git
+[submodule "modules/Fleet"]
+	path = modules/Fleet
+	url = https://gitlab.com/gereq/module-fleet.git
+[submodule "modules/iDoklad"]
+	path = modules/iDoklad
+	url = https://gitlab.com/gereq/module-idoklad.git
+[submodule "modules/Loyalty"]
+	path = modules/Loyalty
+	url = https://gitlab.com/gereq/module-loyalty.git
+[submodule "modules/Media"]
+	path = modules/Media
+	url = https://gitlab.com/gereq/module-media.git
+[submodule "modules/MoneyS3"]
+	path = modules/MoneyS3
+	url = https://gitlab.com/gereq/module-moneys3.git
+[submodule "modules/Newsletter"]
+	path = modules/Newsletter
+	url = https://gitlab.com/gereq/module-newsletter.git
+[submodule "modules/Orders"]
+	path = modules/Orders
+	url = https://gitlab.com/gereq/module-orders.git
+[submodule "modules/PartsCatalog"]
+	path = modules/PartsCatalog
+	url = https://gitlab.com/gereq/module-partscatalog.git
+[submodule "modules/Portals"]
+	path = modules/Portals
+	url = https://gitlab.com/gereq/module-portals.git
+[submodule "modules/ProductDiscounts"]
+	path = modules/ProductDiscounts
+	url = https://gitlab.com/gereq/module-product_discounts.git
+[submodule "modules/Products"]
+	path = modules/Products
+	url = https://gitlab.com/gereq/module-products.git
+[submodule "modules/Returns"]
+	path = modules/Returns
+	url = https://gitlab.com/gereq/module-returns.git
+[submodule "modules/Reviews"]
+	path = modules/Reviews
+	url = https://gitlab.com/gereq/module-reviews.git
+[submodule "modules/SearchEngines"]
+	path = modules/SearchEngines
+	url = https://gitlab.com/gereq/module-searchengines.git
+[submodule "modules/Shop"]
+	path = modules/Shop
+	url = https://gitlab.com/gereq/module-shop.git
+[submodule "modules/Translate"]
+	path = modules/Translate
+	url = https://gitlab.com/gereq/module-translate.git
+[submodule "modules/Viewings"]
+	path = modules/Viewings
+	url = https://gitlab.com/gereq/module-viewings.git
+[submodule "modules/Vitality"]
+	path = modules/Vitality
+	url = https://gitlab.com/gereq/module-vitality.git
+[submodule "modules/Warehouse"]
+	path = modules/Warehouse
+	url = https://gitlab.com/gereq/module-warehouse.git
+[submodule "modules/Webhooks"]
+	path = modules/Webhooks
+	url = https://gitlab.com/gereq/module-webhooks.git
+[submodule "modules/Ai"]
+	path = modules/Ai
+	url = https://gitlab.com/gereq/module-ai.git
+[submodule "modules/Calendar"]
+	path = modules/Calendar
+	url = https://gitlab.com/gereq/module-calendar.git
+[submodule "modules/Cms"]
+	path = modules/Cms
+	url = https://gitlab.com/gereq/module-cms.git
+[submodule "modules/Customers"]
+	path = modules/Customers
+	url = https://gitlab.com/gereq/module-customers.git
+[submodule "modules/Emailing"]
+	path = modules/Emailing
+	url = https://gitlab.com/gereq/module-emailing.git
+[submodule "modules/Listings"]
+	path = modules/Listings
+	url = https://gitlab.com/gereq/module-listings.git
+[submodule "modules/Notifications"]
+	path = modules/Notifications
+	url = https://gitlab.com/gereq/module-notifications.git
+[submodule "modules/Payments"]
+	path = modules/Payments
+	url = https://gitlab.com/gereq/module-payments.git
+[submodule "modules/Projects"]
+	path = modules/Projects
+	url = https://gitlab.com/gereq/module-projects.git

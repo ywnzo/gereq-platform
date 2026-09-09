@@ -28,6 +28,14 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 
 ## Instalace
 
+Clone (moduly jsou **git submodules** → `gereq/module-<id>`):
+
+```bash
+git clone --recurse-submodules git@gitlab.com:gereq/GEREQ_PLATFORM.git
+# nebo po klasickém clone:
+git submodule update --init --recursive
+```
+
 ### Nový klient (doporučeno)
 
 Interaktivní TUI — Composer, `.env`, assets, **čistá DB**, admin účet:
@@ -166,10 +174,10 @@ php gereq user:create
 Shell instalátor: `./bin/install`
 ## Moduly
 
-Každý modul je samostatný balík v `modules/`:
+Každý modul je samostatné GitLab repo `gereq/module-<id>`, v platformě napojené jako **submodule** pod `modules/<Dir>` (pin na semver tag `vX.Y.Z`).
 
 ```text
-modules/Customers/
+modules/Customers/          → gitlab.com/gereq/module-customers @ v…
     Domain/
     Application/
     Infrastructure/

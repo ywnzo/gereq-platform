@@ -1,9 +1,0 @@
-{% extends '@esign/public/layout.html.twig' %}
-{% block content %}
-<h1>{{ 'esign.public.complete_title'|trans }}</h1>
-<p class="esign-lead">{{ document.number() }} · {{ document.title() }}</p>
-<p>{{ 'esign.public.complete_body'|trans }}</p>
-{% if document.lockedHash() %}
-<p class="esign-meta">{{ 'esign.public.hash'|trans }}: <code>{{ document.lockedHash() }}</code></p>
-{% endif %}
-{% endblock %}
