@@ -137,7 +137,7 @@ function loadIndex(workspaceRoot) {
 }
 
 /**
- * Při otevření Twig souboru — dump známých typů (jako textDocument/didOpen).
+ * On Twig file open — dump known types (like textDocument/didOpen).
  */
 function onTwigOpened(document, workspaceRoot) {
   if (!document.fileName.endsWith('.twig')) {
@@ -193,7 +193,7 @@ function varsForDocument(document, workspaceRoot) {
   const rel = path.relative(workspaceRoot, document.uri.fsPath).replace(/\\/g, '/');
   const merged = { ...(templateIndex[rel] || {}), ...typesFromDocument(document) };
 
-  // for-loop inference (když index ještě nemá item)
+  // for-loop inference (when index does not have item yet)
   const text = document.getText();
   const forRe = /\{%\s*for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\s+([A-Za-z_][A-Za-z0-9_]*)/g;
   let fm;
@@ -485,7 +485,7 @@ function twigFunctionAt(document, position) {
 }
 
 /**
- * Kontext: member podle wordRange (hover na metodě za tečkou).
+ * Context: member from wordRange (hover on method after dot).
  */
 function cursorContext(document, position) {
   const line = document.lineAt(position.line).text;
@@ -764,7 +764,7 @@ function activate(context) {
     }),
   );
 
-  // otevření Twig → LSP-like dump typů
+  // opening Twig → LSP-like type dump
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((doc) => {
       const workspaceRoot = root();
@@ -786,7 +786,7 @@ function activate(context) {
     }
   }
 
-  // sleduj controllery → soft reload cache
+  // watch controllers → soft reload cache
   const watcher = vscode.workspace.createFileSystemWatcher('**/*Controller.php');
   let reloadTimer = null;
   const reload = (uri) => {

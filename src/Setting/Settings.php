@@ -16,7 +16,7 @@ final class Settings
     /** @var array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}> */
     private array $definitions = [];
 
-    /** @var array<string, mixed>|null null = ještě nenačteno */
+    /** @var array<string, mixed>|null null = not loaded yet */
     private ?array $values = null;
 
     /** @var array<string, mixed> in-request overlay from staging (settings keys) */
@@ -35,7 +35,7 @@ final class Settings
 
     /**
      * @param array<string, string> $options Select options (value => label); not UI flags
-     * @param bool $global Zobrazit v globálním admin Nastavení (false = jen vlastní UI modulu)
+     * @param bool $global Show in global admin Settings (false = module's own UI only)
      */
     public function define(
         string $key,
@@ -164,7 +164,7 @@ final class Settings
     }
 
     /**
-     * Definice viditelné v globálním admin Nastavení.
+     * Definitions visible in global admin Settings.
      *
      * @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}>
      */
@@ -176,7 +176,7 @@ final class Settings
         );
     }
 
-    /** Jedním SELECT * načte všechna nastavení pro request (eliminuje N+1 z find-per-key). */
+    /** Loads all settings for the request in one SELECT * (eliminates N+1 from find-per-key). */
     private function warm(): void
     {
         if ($this->values !== null) {
@@ -191,7 +191,7 @@ final class Settings
                 $this->values[$record->keyName()] = $this->cast($record->value(), $record->type());
             }
         } catch (\Throwable) {
-            // tabulka ještě nemusí existovat (install / migrate)
+            // table may not exist yet (install / migrate)
             $this->values = [];
         }
     }

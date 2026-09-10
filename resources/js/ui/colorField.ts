@@ -104,7 +104,7 @@ export function registerColorField(alpine: typeof Alpine): void {
                 pickByField.set(this.fieldName, (hex: string) => this.pick(hex));
             }
 
-            // Nativní listenery — Alpine CSP @input/@blur na color/hex je nespolehlivý.
+            // Native listeners — Alpine CSP @input/@blur on color/hex is unreliable.
             const native = this.$el.querySelector<HTMLInputElement>('input[type="color"]');
             const draft = this.$el.querySelector<HTMLInputElement>('.color-picker__hex-input');
             this._onNative = () => this.fromNative();

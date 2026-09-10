@@ -149,7 +149,7 @@ function catalogKeysOnLine(line) {
 }
 
 /**
- * Klíč pod kurzorem: 'key'|trans / ->trans('key') / label: 'key' / 'label' => 'key'
+ * Key under cursor: 'key'|trans / ->trans('key') / label: 'key' / 'label' => 'key'
  * @returns {{ key: string, range: vscode.Range } | null}
  */
 function keyAtPosition(document, position) {
@@ -174,7 +174,7 @@ function keyAtPosition(document, position) {
 
 /**
  * Autocomplete kontext: |trans / ->trans( / label: '…' / 'placeholder' => '…'
- * V .twig i bez |trans (klíče se píšou jako 'foo.bar').
+ * In .twig even without |trans (keys are written as 'foo.bar').
  * @returns {{ prefix: string, range: vscode.Range } | null}
  */
 function completionContext(document, position) {
@@ -214,7 +214,7 @@ function completionContext(document, position) {
     || after.includes('| trans')
     || new RegExp(`^${quote}\\s*\\|\\s*trans\\b`).test(after);
 
-  // Twig: jen když je na řádku |trans, nebo prefix už vypadá jako klíč (má tečku)
+  // Twig: only when the line has |trans, or the prefix already looks like a key (contains a dot)
   if (isTwig) {
     if (hasTransAfter || prefix.includes('.')) {
       const start = position.character - prefix.length;
@@ -230,7 +230,7 @@ function completionContext(document, position) {
       range: new vscode.Range(position.line, start, position.line, position.character),
     };
   } else if (isPhp && prefix.includes('.')) {
-    // PHP: string už vypadá jako klíč (např. return 'customers.status.active')
+    // PHP: string already looks like a key (e.g. return 'customers.status.active')
     const start = position.character - prefix.length;
     return {
       prefix,
@@ -263,7 +263,7 @@ function hoverMarkdown(key) {
     const val = entry[loc].value.replace(/\|/g, '\\|').replace(/\n/g, ' ');
     rows.push(`| **${loc}** | ${val} |`);
   }
-  // zbylé locale
+  // remaining locales
   for (const loc of Object.keys(entry)) {
     if (order.includes(loc)) {
       continue;

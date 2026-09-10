@@ -15,7 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
-#[AsCommand(name: 'user:create', description: 'Vytvořit uživatele')]
+#[AsCommand(name: 'user:create', description: 'Create a user')]
 final class UserCreateCommand extends Command
 {
     public function __construct(

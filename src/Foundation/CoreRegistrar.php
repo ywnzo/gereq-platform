@@ -75,6 +75,7 @@ final class CoreRegistrar
         private readonly BrandingPublishAdapter $brandingPublishAdapter,
         private readonly StagingStore $stagingStore,
         private readonly \Gereq\Hook\HookManager $hooks,
+        private readonly \Gereq\View\TwigRuntime $twigRuntime,
     ) {
     }
 
@@ -195,7 +196,7 @@ final class CoreRegistrar
             'brand.custom_css',
             SettingRecord::TYPE_STRING,
             'settings.brand.custom_css',
-            "/* Admin CSS — přepište tokeny nebo doplňte pravidla */\n:root {\n  /* --primary: #47c2ff; */\n}\n",
+            "/* Admin CSS — override tokens or add rules */\n:root {\n  /* --primary: #47c2ff; */\n}\n",
         );
     }
 
@@ -407,7 +408,7 @@ final class CoreRegistrar
     {
         $this->dashboard->addWidget(new ModulesStatsWidget($this->twig, $this->modules, $this->translator, $this->router));
         $this->dashboard->addWidget(new UsersStatsWidget($this->twig, $this->em, $this->translator, $this->router));
-        $this->dashboard->addWidget(new ActivityWidget($this->twig, $this->em, $this->auth, $this->translator));
+        $this->dashboard->addWidget(new ActivityWidget($this->twig, $this->em, $this->translator, $this->router, $this->twigRuntime));
         $this->dashboard->addWidget(new ActivityChartWidget($this->twig, $this->em, $this->translator, $this->router));
         $this->dashboard->addWidget(new SettingsShortcutWidget($this->twig, $this->translator, $this->router));
         $this->dashboard->addWidget(new SearchHeroWidget($this->twig, $this->translator));

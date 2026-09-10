@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'make:module', description: 'Vygenerovat kostru nového modulu')]
+#[AsCommand(name: 'make:module', description: 'Generate a new module skeleton')]
 final class MakeModuleCommand extends Command
 {
     public function __construct(private readonly string $basePath)

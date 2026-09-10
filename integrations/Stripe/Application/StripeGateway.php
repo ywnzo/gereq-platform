@@ -69,7 +69,7 @@ final class StripeGateway implements PaymentGatewayInterface
             $params['customer_email'] = (string) $context['customer_email'];
         }
 
-        // Apple Pay / Google Pay jsou u Stripe Checkout automaticky, pokud jsou povolené v Dashboardu.
+        // Apple Pay / Google Pay are enabled automatically in Stripe Checkout when allowed in the Dashboard.
         $wallet = strtoupper($method->code());
         if (str_contains($wallet, 'APPLE') || str_contains($wallet, 'GOOGLE')) {
             $params['payment_method_types[0]'] = 'card';

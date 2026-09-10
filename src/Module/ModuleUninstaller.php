@@ -11,7 +11,7 @@ use Modules\Media\Domain\MediaAsset;
 use Modules\Media\Domain\MediaLink;
 
 /**
- * Deaktivace = soft-disable + smazání DB schématu modulu (+ volitelně médií).
+ * Deactivation = soft-disable + drop module DB schema (+ optional media).
  */
 final class ModuleUninstaller
 {
@@ -24,7 +24,7 @@ final class ModuleUninstaller
     }
 
     /**
-     * @param list<string> $alsoDisabling IDs vypínané ve stejné dávce (přeskočí dependent check)
+     * @param list<string> $alsoDisabling IDs disabled in the same batch (skips dependent check)
      * @return list<string> log messages
      */
     public function uninstall(string $id, bool $purgeMedia = false, array $alsoDisabling = []): array
@@ -38,7 +38,7 @@ final class ModuleUninstaller
             }
         }
 
-        // Nejdřív vypnout (syncSchema pak modul přeskočí), potom drop tabulek.
+        // Disable first (syncSchema then skips the module), then drop tables.
         $this->modules->disable($id, $alsoDisabling);
         $messages = array_merge($messages, $this->migrator->rollbackModule($id));
 

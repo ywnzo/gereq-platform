@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'module:enable', description: 'Aktivovat modul')]
+#[AsCommand(name: 'module:enable', description: 'Enable a module')]
 final class ModuleEnableCommand extends Command
 {
     public function __construct(

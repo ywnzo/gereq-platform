@@ -117,7 +117,7 @@
     const path = encodeRemotePath(absPath);
     const lineNum = Number(line);
     const row = Number.isFinite(lineNum) && lineNum > 0 ? lineNum : 1;
-    // :line:col je nutný, jinak Cursor bere cestu jako folder connect
+    // :line:col is required; otherwise Cursor treats the path as a folder connect
     return `${editor}://vscode-remote/ssh-remote+${host}${path}:${row}:1`;
   };
 
@@ -140,7 +140,7 @@
 
   const getSshStrategy = () => {
     const s = String(editorSettings.sshStrategy || "").trim();
-    // staré "command" z prohlížeče nefungovalo → deeplink
+    // legacy browser "command" did not work → deeplink
     if (s === "cli") return "cli";
     if (s === "both") return "both";
     return "deeplink";
@@ -1093,7 +1093,7 @@
     const incoming = Array.isArray(payload.events) ? payload.events : [];
     if (!data.events) data.events = [];
     if (incoming.length === 0 && path) {
-      // i bez eventů ukaž poll tick
+      // show poll tick even without events
       data.events.push({
         event: "ajax.request",
         type: path.includes("/emailing/poll") ? "emailing.mailbox.poll_tick" : "http.ajax",
@@ -1118,7 +1118,7 @@
         });
       }
     }
-    // drž historii rozumně krátkou
+    // keep history reasonably short
     if (data.events.length > 200) {
       data.events = data.events.slice(-200);
     }

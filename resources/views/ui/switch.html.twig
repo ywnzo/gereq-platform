@@ -9,7 +9,7 @@
 {% set extra = extra|default('') %}
 {% set onBool = on is same as(true) or on is same as(1) or on is same as('1') or on is same as('on') %}
 
-{# Stejný layout jako input/select: label nahoře → control ve stejné výšce jako sousední pole #}
+{# Same layout as input/select: label on top → control aligned with neighboring fields #}
 <div class="g-field g-field--switch{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
     {% if label %}
         <span class="g-label" id="{{ id }}-label">

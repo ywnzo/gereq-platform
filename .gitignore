@@ -29,6 +29,7 @@
 .phpunit.result.cache
 /var/
 frontend/
+FE2/
 /.env.new
 /.env.tmpkey
 /README-*.md

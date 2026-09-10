@@ -20,7 +20,7 @@ echo "→ building UI"
 
 rm -rf "${HOME}/.cursor-server/extensions/${EXT_ID}-"*
 mkdir -p "$TARGET"
-# kopíruj extension bez node_modules UI
+# copy extension without UI node_modules
 cp "$ROOT/package.json" "$ROOT/extension.js" "$ROOT/README.md" "$TARGET/"
 cp -r "$ROOT/lib" "$TARGET/"
 mkdir -p "$TARGET/ui"

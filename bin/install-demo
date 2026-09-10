@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# GEREQ / RealEstates — non-interactive demo instalace (SQLite + demo data).
-# Použití po rozbalení zipu:
+# GEREQ / RealEstates — non-interactive demo install (SQLite + demo data).
+# Usage after unpacking the zip:
 #   ./INSTALACE.sh
 #   ./bin/install-demo
-#   ./bin/install-demo --serve          # po instalaci spustí PHP server
+#   ./bin/install-demo --serve          # start PHP server after install
 #   ./bin/install-demo --port=8080
 set -euo pipefail
 
@@ -79,7 +79,7 @@ else
 fi
 
 COMPOSER_FLAGS=(--no-interaction --prefer-dist)
-# Demo běží na SQLite bez Redis — ext-redis není nutný za běhu.
+# Demo runs on SQLite without Redis — ext-redis is not required at runtime.
 if ! php -m | grep -qi '^redis$'; then
   warn "ext-redis chybí — composer ignore-platform-req (pro demo OK)."
   COMPOSER_FLAGS+=(--ignore-platform-req=ext-redis)
@@ -91,6 +91,7 @@ ok "PHP závislosti"
 
 APP_KEY="$(php -r 'echo bin2hex(random_bytes(32));')"
 APP_URL="http://127.0.0.1:${PORT}"
+PUB_KEY="grq_pub_$(openssl rand -hex 24 2>/dev/null || php -r 'echo bin2hex(random_bytes(24));')"
 
 if [[ -f .env ]]; then
   cp .env ".env.bak.$(date +%Y%m%d%H%M%S)"
@@ -98,7 +99,7 @@ if [[ -f .env ]]; then
 fi
 
 cat > .env <<EOF
-# GEREQ RealEstates — demo balíček ($(date -Iseconds 2>/dev/null || date))
+# GEREQ RealEstates — demo package ($(date -Iseconds 2>/dev/null || date))
 
 APP_NAME="RealEstates Demo"
 APP_ENV=local
@@ -143,7 +144,11 @@ SESSION_SAME_SITE=lax
 WEBHOOKS_ALLOW_PRIVATE_URLS=true
 
 FRONTEND_ORIGIN=http://127.0.0.1:5173,http://localhost:5173
+
+API_PUBLIC_KEY=${PUB_KEY}
 EOF
+mkdir -p FE2
+printf 'VITE_API_URL=http://127.0.0.1:%s\nVITE_API_PUBLIC_KEY=%s\n' "$PORT" "$PUB_KEY" > FE2/.env
 ok ".env (SQLite, demo účet)"
 
 mkdir -p storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}

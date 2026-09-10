@@ -7,7 +7,7 @@ namespace Gereq\Module;
 use Gereq\Config\Repository as Config;
 
 /**
- * Katalog skupin modulů (balíčky typu ECS).
+ * Catalog of module groups (ECS-style packages).
  */
 final class ModuleGroupCatalog
 {
@@ -18,7 +18,7 @@ final class ModuleGroupCatalog
     }
 
     /**
-     * @param array<string, array<string, mixed>> $rowsById index řádků z ModuleController::index
+     * @param array<string, array<string, mixed>> $rowsById row index from ModuleController::index
      * @param 'packages'|'plugins' $surface
      * @return list<array{
      *   id: string,
@@ -105,7 +105,7 @@ final class ModuleGroupCatalog
     }
 
     /**
-     * ID modulů k zapnutí ve správném pořadí (závislosti dřív).
+     * Module IDs to enable in the correct order (dependencies first).
      *
      * @return list<string>
      */

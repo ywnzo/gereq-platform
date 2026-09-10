@@ -12,8 +12,97 @@ final class StagingStore
     /** @var array<string, ContentStagingEntry|false> */
     private array $findCache = [];
 
+    /** @var array<string, true> Categories whose full set is already in findCache (misses = null). */
+    private array $categoryFullyLoaded = [];
+
+    private bool $allLoaded = false;
+
     public function __construct(private readonly EntityManagerInterface $em)
     {
+    }
+
+    /**
+     * Load every staging row once (request-scoped). Prefer over multiple preloadCategory calls.
+     */
+    public function preloadAll(): void
+    {
+        if ($this->allLoaded) {
+            return;
+        }
+
+        try {
+            /** @var list<ContentStagingEntry> $rows */
+            $rows = $this->em->getRepository(ContentStagingEntry::class)->findBy([]);
+            foreach ($rows as $row) {
+                $this->findCache[$row->category() . "\0" . $row->resourceKey()] = $row;
+                $this->categoryFullyLoaded[$row->category()] = true;
+            }
+        } catch (\Throwable) {
+            // table missing / mid-migrate — treat as empty
+        }
+
+        $this->allLoaded = true;
+    }
+
+    /**
+     * Load all staging rows for a category in one query and fill the find cache.
+     * Subsequent find() / isPending* for that category hit memory only.
+     */
+    public function preloadCategory(string $category): void
+    {
+        $this->preloadCategories([$category]);
+    }
+
+    /**
+     * @param list<string> $categories
+     */
+    public function preloadCategories(array $categories): void
+    {
+        if ($this->allLoaded) {
+            return;
+        }
+
+        $pending = [];
+        foreach ($categories as $category) {
+            if (!is_string($category) || $category === '' || isset($this->categoryFullyLoaded[$category])) {
+                continue;
+            }
+            $pending[$category] = true;
+        }
+        $pending = array_keys($pending);
+        if ($pending === []) {
+            return;
+        }
+
+        // Multiple category preloads share one SQL fingerprint → false N+1 in the detector.
+        // When more than one category is needed, load the whole table once.
+        if (count($pending) > 1) {
+            $this->preloadAll();
+
+            return;
+        }
+
+        try {
+            /** @var list<ContentStagingEntry> $rows */
+            $rows = $this->em->createQueryBuilder()
+                ->select('e')
+                ->from(ContentStagingEntry::class, 'e')
+                ->where('e.category IN (:categories)')
+                ->setParameter('categories', $pending)
+                ->getQuery()
+                ->getResult();
+
+            foreach ($rows as $row) {
+                $this->findCache[$row->category() . "\0" . $row->resourceKey()] = $row;
+            }
+            foreach ($pending as $category) {
+                $this->categoryFullyLoaded[$category] = true;
+            }
+        } catch (\Throwable) {
+            foreach ($pending as $category) {
+                $this->categoryFullyLoaded[$category] = true;
+            }
+        }
     }
 
     public function count(): int
@@ -36,6 +125,13 @@ final class StagingStore
             /** @var list<ContentStagingEntry> $rows */
             $rows = $this->em->getRepository(ContentStagingEntry::class)
                 ->findBy([], ['category' => 'ASC', 'updatedAt' => 'DESC']);
+
+            foreach ($rows as $row) {
+                $this->findCache[$row->category() . "\0" . $row->resourceKey()] = $row;
+                $this->categoryFullyLoaded[$row->category()] = true;
+            }
+            // Whole table is in memory now — later find() misses must not hit the DB again.
+            $this->allLoaded = true;
 
             return $rows;
         } catch (\Throwable) {
@@ -60,6 +156,10 @@ final class StagingStore
             ->getQuery()
             ->getResult();
 
+        foreach ($rows as $row) {
+            $this->findCache[$row->category() . "\0" . $row->resourceKey()] = $row;
+        }
+
         return $rows;
     }
 
@@ -70,6 +170,12 @@ final class StagingStore
             $hit = $this->findCache[$cacheKey];
 
             return $hit instanceof ContentStagingEntry ? $hit : null;
+        }
+
+        if ($this->allLoaded || isset($this->categoryFullyLoaded[$category])) {
+            $this->findCache[$cacheKey] = false;
+
+            return null;
         }
 
         try {
@@ -199,9 +305,15 @@ final class StagingStore
     /** @return list<string> */
     private function keysWithAction(string $category, string $action): array
     {
+        // Prefer full table once — avoids a second same-fingerprint category preload later in the request.
+        $this->preloadAll();
         $keys = [];
-        foreach ($this->all() as $entry) {
-            if ($entry->category() === $category && $entry->action() === $action) {
+        $prefix = $category . "\0";
+        foreach ($this->findCache as $cacheKey => $entry) {
+            if (!str_starts_with((string) $cacheKey, $prefix)) {
+                continue;
+            }
+            if ($entry instanceof ContentStagingEntry && $entry->action() === $action) {
                 $keys[] = $entry->resourceKey();
             }
         }

@@ -15,6 +15,7 @@
 @import "./kernel/forms.css";
 @import "./kernel/finish.css";
 @import "./kernel/overlays.css";
+@import "./kernel/image-viewer.css";
 @import "./kernel/sidebar.css";
 @import "./kernel/dashboard.css";
 @import "./kernel/detail.css";

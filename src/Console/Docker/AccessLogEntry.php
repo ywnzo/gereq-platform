@@ -26,7 +26,7 @@ final class AccessLogEntry
         if ((bool) preg_match('#^/(build|assets|brand|favicon)/#', $this->path)) {
             return true;
         }
-        // Mediální soubory i admin thumbnaily (…/media/{id}/file)
+        // Media files and admin thumbnails (…/media/{id}/file)
         if ((bool) preg_match('#/media/[^/]+/file$#', $this->path)) {
             return true;
         }
@@ -39,8 +39,8 @@ final class AccessLogEntry
     }
 
     /**
-     * Nginx → Vite HMR proxy (viz docker/nginx: /@vite, /resources, /modules, …).
-     * Typicky 304 spam při každém page loadu.
+     * Nginx → Vite HMR proxy (see docker/nginx: /@vite, /resources, /modules, …).
+     * Typically 304 spam on every page load.
      */
     public function isHotProxy(): bool
     {

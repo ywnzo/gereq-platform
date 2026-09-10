@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Zabali RealEstates demo zip (bez vendor/node_modules/.git).
-# Výstup: dist/gereq-realestates-demo.zip
+# Pack RealEstates demo zip (without vendor/node_modules/.git).
+# Output: dist/gereq-realestates-demo.zip
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -47,7 +47,7 @@ rsync -a \
   --exclude='docs/proposals/' \
   ./ "$STAGE/${NAME}/"
 
-# Zachovat strukturu storage + seed média
+# Preserve storage layout + seed media
 mkdir -p \
   "$STAGE/${NAME}/storage/cache" \
   "$STAGE/${NAME}/storage/logs" \
@@ -62,10 +62,10 @@ touch \
   "$STAGE/${NAME}/storage/sessions/.gitkeep" \
   "$STAGE/${NAME}/storage/tmp/.gitkeep"
 
-# Snadný vstupní bod po rozbalení
+# Easy entry point after unpacking
 cat > "$STAGE/${NAME}/INSTALACE.sh" <<'EOF'
 #!/usr/bin/env bash
-# RealEstates demo — rozbalte zip a spusťte:
+# RealEstates demo — unpack the zip and run:
 #   ./INSTALACE.sh
 #   ./INSTALACE.sh --serve
 set -euo pipefail

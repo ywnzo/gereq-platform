@@ -7,9 +7,9 @@ namespace Gereq\Admin\Search;
 use Gereq\User\Entity\User;
 
 /**
- * Registry živých search zdrojů pro Ctrl+K.
+ * Registry of live search sources for Ctrl+K.
  *
- * Použití v modulu:
+ * Usage in a module:
  * ```php
  * $context->adminSearch()->add(
  *     'fleet.vehicles',
@@ -26,7 +26,7 @@ final class AdminSearchRegistry
     private array $sources = [];
 
     /**
-     * @param list<string>|string $fields pole nebo CSV / "entity.field, entity.field"
+     * @param list<string>|string $fields field list or CSV / "entity.field, entity.field"
      * @param callable(string, int): list<AdminSearchHit> $search
      */
     public function add(

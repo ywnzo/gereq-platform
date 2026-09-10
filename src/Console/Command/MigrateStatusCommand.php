@@ -10,7 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'migrate:status', description: 'Stav migrací modulů')]
+#[AsCommand(name: 'migrate:status', description: 'Module migration status')]
 final class MigrateStatusCommand extends Command
 {
     public function __construct(private readonly Migrator $migrator)

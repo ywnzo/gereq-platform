@@ -276,7 +276,7 @@ final class OpenApiGenerator
 
     public function inferSummary(string $method, string $path, string $module): string
     {
-        $relative = preg_replace('#^/api/v\d+/[^/]+#', '', $path) ?: '';
+        $relative = preg_replace('#^/api/(?:v\d+/[^/]+|public)#', '', $path) ?: '';
         $relative = trim($relative, '/');
         $segments = $relative === '' ? [] : explode('/', $relative);
         $actions = [];

@@ -6,7 +6,7 @@ function countLines(text) {
 }
 
 /**
- * Heuristika: velké jednorázové změny = spíš AI (Cursor apply / agent).
+ * Heuristic: large one-off changes are more likely AI (Cursor apply / agent).
  * @param {{ linesAdded: number, linesRemoved: number, changeCount: number, totalChars: number, reason?: number }} p
  * @returns {'ai'|'user'}
  */

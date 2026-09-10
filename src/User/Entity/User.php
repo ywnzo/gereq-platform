@@ -74,7 +74,7 @@ class User
     #[ORM\Column(length: 32)]
     private string $status = 'active';
 
-    /** Preferovaný jazyk uživatele; null = výchozí jazyk aplikace. */
+    /** User preferred locale; null = application default locale. */
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $locale = null;
 

@@ -37,7 +37,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             this.tone = selected?.dataset.tone || '';
             syncSelectIcon(root, selected);
 
-            // Nativní click — Alpine CSP @click na option/trigger je nespolehlivý.
+            // Native click — Alpine CSP @click on option/trigger is unreliable.
             const onRootClick = (event: MouseEvent) => {
                 const target = event.target as HTMLElement | null;
                 if (!target) {
@@ -239,9 +239,9 @@ export function registerSelect(alpine: typeof Alpine): void {
             if (root.dataset.autosubmit === '1' && changed) {
                 const form = root.closest('form');
                 if (form) {
-                    // Po microtasku — ať stihne Alpine přepsat label před navigací.
-                    // requestSubmit() spustí submit event (nativní submit() ne) → loading bar.
-                    // Prázdná hodnota (např. „Všechny pobočky“) musí submitnout taky.
+                    // After microtask — let Alpine update the label before navigation.
+                    // requestSubmit() fires submit event (native submit() does not) → loading bar.
+                    // Empty value (e.g. "All branches") must submit too.
                     queueMicrotask(() => {
                         window.gereq?.pageProgress?.start?.();
                         if (typeof form.requestSubmit === 'function') {
@@ -282,7 +282,7 @@ function syncSelectIcon(root: HTMLElement, option: HTMLElement | null): void {
     }
 }
 
-/** „66KW“ ≈ „66 kW“, tečky u 1.6 necháváme */
+/** "66KW" ≈ "66 kW"; keep dots in 1.6 */
 function normalizeSearch(value: string): string {
     return value
         .toLocaleLowerCase('cs')

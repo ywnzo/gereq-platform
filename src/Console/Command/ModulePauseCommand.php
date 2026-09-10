@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'module:pause', description: 'Pozastavit modul (vypnout, data zůstanou)')]
+#[AsCommand(name: 'module:pause', description: 'Pause a module (disable; data kept)')]
 final class ModulePauseCommand extends Command
 {
     public function __construct(private readonly ModuleManager $modules)

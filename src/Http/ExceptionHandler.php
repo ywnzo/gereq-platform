@@ -116,7 +116,7 @@ final class ExceptionHandler
         try {
             $this->hooks->doAction('http.error.report', $exception);
         } catch (\Throwable) {
-            // reporting nesmí shodit request
+            // reporting must not break the request
         }
 
         $this->writeLog($exception);

@@ -133,7 +133,7 @@
     color: color-mix(in srgb, #f59e0b 75%, var(--text));
 }
 
-/* Top loading bar (full-page navigace / pomalé načtení) */
+/* Top loading bar (full-page navigation / slow load) */
 .g-page-progress {
     position: fixed;
     top: 0;

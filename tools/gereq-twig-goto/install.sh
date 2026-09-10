@@ -6,7 +6,7 @@ EXT_ID="gereq.twig-goto"
 VERSION="0.3.4"
 TARGET="${HOME}/.cursor-server/extensions/${EXT_ID}-${VERSION}"
 
-# odstraň starší verze
+# remove older versions
 rm -rf "${HOME}/.cursor-server/extensions/${EXT_ID}-"*
 
 mkdir -p "$TARGET"

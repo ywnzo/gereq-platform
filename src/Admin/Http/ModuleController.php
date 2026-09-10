@@ -344,7 +344,15 @@ final class ModuleController extends Controller
             $this->flash('error', implode(' · ', array_slice($errors, 0, 5)));
         }
 
-        return $this->redirect('admin.modules.index');
+        $return = $this->request()?->request->get('return');
+        if (is_string($return) && $return !== '') {
+            $path = $this->safeReturnPath($return);
+            if ($path !== null) {
+                return $this->redirectTo($path);
+            }
+        }
+
+        return $this->redirectTo($this->router->url('admin.modules.index', [], $this->request()) . '#packages');
     }
 
     public function bulk(Request $request): Response
@@ -384,6 +392,7 @@ final class ModuleController extends Controller
         $ok = 0;
         $errors = [];
         $purgeMedia = $request->request->getBoolean('purge_media');
+        $needSchemaSync = false;
 
         if ($action === 'disable') {
             $result = $this->uninstaller->uninstallMany($ids, $purgeMedia);
@@ -398,14 +407,22 @@ final class ModuleController extends Controller
             foreach ($ordered as $id) {
                 try {
                     if ($action === 'update') {
-                        $this->updater->update($id);
+                        $this->updater->update($id, syncSchema: false);
                     } else {
                         $this->modules->enable($id);
-                        $this->migrator->migrateModule($id);
+                        $this->migrator->migrateModule($id, syncSchema: false);
                     }
+                    $needSchemaSync = true;
                     ++$ok;
                 } catch (\Throwable $e) {
                     $errors[] = $id . ': ' . $e->getMessage();
+                }
+            }
+            if ($needSchemaSync) {
+                try {
+                    $this->migrator->syncSchema();
+                } catch (\Throwable $e) {
+                    $errors[] = 'schema: ' . $e->getMessage();
                 }
             }
         }
@@ -471,6 +488,9 @@ final class ModuleController extends Controller
         $path = (string) $parts['path'];
         if (isset($parts['query'])) {
             $path .= '?' . $parts['query'];
+        }
+        if (isset($parts['fragment']) && $parts['fragment'] !== '') {
+            $path .= '#' . $parts['fragment'];
         }
 
         return $path !== '' ? $path : null;

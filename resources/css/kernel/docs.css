@@ -16,6 +16,11 @@
     display: grid;
     gap: 1rem;
 }
+.developer-tab-hint {
+    margin: 0 0 1rem;
+    max-width: 52rem;
+    line-height: 1.45;
+}
 .developer-card {
     border: 1px solid var(--border);
     border-radius: var(--radius);

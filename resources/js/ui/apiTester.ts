@@ -162,6 +162,18 @@ export function registerApiTester(alpine: typeof Alpine): void {
             if (this.testerUserId) {
                 this.setVar('user_id', this.testerUserId);
             }
+            const publicKey = (root.dataset.publicApiKey || '').trim();
+            if (publicKey) {
+                this.setVar('public_key', publicKey);
+            }
+            // Delegated so Test works inside nested gereqTabs Alpine scope
+            root.addEventListener('click', (event: Event) => {
+                const btn = (event.target as HTMLElement | null)?.closest?.('[data-api-test]') as HTMLElement | null;
+                if (!btn || !root.contains(btn)) {
+                    return;
+                }
+                this.openTestFromButton({ currentTarget: btn } as unknown as Event);
+            });
         },
 
         paintResponseTree(parsed: unknown | null, fallbackText: string) {
@@ -390,8 +402,22 @@ export function registerApiTester(alpine: typeof Alpine): void {
             this.minimized = false;
             this.open = true;
             this.ensureGeo();
-            if (!this.hasToken) {
-                await this.ensureUserToken(false);
+            const isPublic = this.path.startsWith('/api/public');
+            if (isPublic) {
+                this.headers = this.headers.map((row: KvRow) =>
+                    row.key.toLowerCase() === 'authorization'
+                        ? { key: 'Authorization', value: 'Bearer {{public_key}}' }
+                        : row,
+                );
+            } else {
+                this.headers = this.headers.map((row: KvRow) =>
+                    row.key.toLowerCase() === 'authorization'
+                        ? { key: 'Authorization', value: 'Bearer {{token}}' }
+                        : row,
+                );
+                if (!this.hasToken) {
+                    await this.ensureUserToken(false);
+                }
             }
             this.$nextTick(() => {
                 const focus = (this.$el as HTMLElement).querySelector<HTMLInputElement>('#api-tester-path');

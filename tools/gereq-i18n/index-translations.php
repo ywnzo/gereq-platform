@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Index překladových klíčů z resources/ + modules/ + integrations/.
+ * Index translation keys from resources/ + modules/ + integrations/.
  *
- * Výstup: .cache/i18n/catalog.json
+ * Output: .cache/i18n/catalog.json
  *
  * Usage:
  *   php tools/gereq-i18n/index-translations.php

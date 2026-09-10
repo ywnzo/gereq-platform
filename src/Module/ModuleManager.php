@@ -25,6 +25,9 @@ final class ModuleManager
     /** @var array<string, InstalledModule>|null */
     private ?array $installedById = null;
 
+    /** @var array<string, Permission>|null request memo for permission sync */
+    private ?array $permissionsByName = null;
+
     public function __construct(
         private readonly string $basePath,
         private readonly EntityManagerInterface $em,
@@ -161,13 +164,26 @@ final class ModuleManager
             $row->enable();
         }
 
-        $this->syncManifestPermissions($manifest);
         $this->syncPermissions($manifest);
         $this->em->flush();
-        $this->enabledIds = null;
-        $this->installedById = null;
+        $this->rememberInstalled($row);
         $this->auditor->log('module.enabled', 'module', $id);
         $this->hooks?->doAction('module.enabled', $id);
+    }
+
+    /** Persist missing Permission rows for a manifest (request-memoized findAll). */
+    public function syncPermissions(ModuleManifest $manifest): void
+    {
+        $this->syncManifestPermissions($manifest);
+
+        $existing = $this->permissionsByName();
+        foreach ($this->permissionRegistry->all() as $item) {
+            if (!isset($existing[$item['name']])) {
+                $permission = new Permission($item['name'], $item['label'], $item['group']);
+                $this->em->persist($permission);
+                $this->permissionsByName[$item['name']] = $permission;
+            }
+        }
     }
 
     public function disable(string $id, array $alsoDisabling = []): void
@@ -195,15 +211,16 @@ final class ModuleManager
         if ($row !== null) {
             $row->disable();
             $this->em->flush();
+            $this->rememberInstalled($row);
+        } else {
+            $this->enabledIds = null;
         }
 
-        $this->enabledIds = null;
-        $this->installedById = null;
         $this->auditor->log('module.disabled', 'module', $id);
     }
 
     /**
-     * Pořadí aktivace: závislosti dřív.
+     * Activation order: dependencies first.
      *
      * @param list<string> $ids
      * @return list<string>
@@ -214,7 +231,7 @@ final class ModuleManager
     }
 
     /**
-     * Pořadí deaktivace: závislé moduly dřív (obrácený topologický sort).
+     * Deactivation order: dependent modules first (reverse topological sort).
      *
      * @param list<string> $ids
      * @return list<string>
@@ -225,7 +242,7 @@ final class ModuleManager
     }
 
     /**
-     * Soft-disable (pause): vypne modul, data v DB zůstanou.
+     * Soft-disable (pause): disables the module; DB data remains.
      *
      * @param list<string> $ids
      * @return array{ok: int, errors: list<string>}
@@ -253,7 +270,7 @@ final class ModuleManager
     }
 
     /**
-     * Doplní aktivní moduly, které na vybraných závisí (tranzitivně).
+     * Adds active modules that depend on the selected ones (transitively).
      *
      * @param list<string> $ids
      * @return list<string>
@@ -391,6 +408,22 @@ final class ModuleManager
         return $manifest;
     }
 
+    /** Updates request cache after enable/disable — without another SELECT * FROM modules. */
+    private function rememberInstalled(InstalledModule $row): void
+    {
+        if ($this->installedById === null) {
+            $this->installedById = [];
+        }
+        $this->installedById[$row->id()] = $row;
+
+        $this->enabledIds = [];
+        foreach ($this->installedById as $installed) {
+            if ($installed->enabled()) {
+                $this->enabledIds[] = $installed->id();
+            }
+        }
+    }
+
     private function assertDependencies(ModuleManifest $manifest): void
     {
         $missing = $this->missingDependencies($manifest);
@@ -417,22 +450,26 @@ final class ModuleManager
         }
     }
 
-    private function syncPermissions(ModuleManifest $manifest): void
+    /**
+     * @return array<string, Permission>
+     */
+    private function permissionsByName(): array
     {
-        $this->syncManifestPermissions($manifest);
-
-        /** @var array<string, Permission> $existing */
-        $existing = [];
-        foreach ($this->em->getRepository(Permission::class)->findAll() as $permission) {
-            if ($permission instanceof Permission) {
-                $existing[$permission->name()] = $permission;
-            }
+        if ($this->permissionsByName !== null) {
+            return $this->permissionsByName;
         }
 
-        foreach ($this->permissionRegistry->all() as $item) {
-            if (!isset($existing[$item['name']])) {
-                $this->em->persist(new Permission($item['name'], $item['label'], $item['group']));
+        $this->permissionsByName = [];
+        try {
+            foreach ($this->em->getRepository(Permission::class)->findAll() as $permission) {
+                if ($permission instanceof Permission) {
+                    $this->permissionsByName[$permission->name()] = $permission;
+                }
             }
+        } catch (\Throwable) {
+            $this->permissionsByName = [];
         }
+
+        return $this->permissionsByName;
     }
 }

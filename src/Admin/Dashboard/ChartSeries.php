@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Admin\Dashboard;
 
-/** Pomocník pro denní časové řady v dashboard grafech. */
+/** Helper for daily time series in dashboard charts. */
 final class ChartSeries
 {
     /**

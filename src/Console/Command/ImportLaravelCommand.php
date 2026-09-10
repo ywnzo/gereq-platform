@@ -20,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * Product keys: sku, name, description?, status?, unit?, price?, currency?
  * Customer keys: email, name, phone?
  */
-#[AsCommand(name: 'migrate:import-laravel', description: 'Import produktů/zákazníků z Laravel JSON dump (scaffold)')]
+#[AsCommand(name: 'migrate:import-laravel', description: 'Import products/customers from a Laravel JSON dump (scaffold)')]
 final class ImportLaravelCommand extends Command
 {
     public function __construct(private readonly EntityManagerInterface $em)

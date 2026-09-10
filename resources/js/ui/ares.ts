@@ -44,7 +44,7 @@ export function registerAres(alpine: typeof Alpine): void {
         _onPointer: null as ((event: PointerEvent) => void) | null,
 
         init() {
-            // $el při init = kořen x-data; při kliku na návrh by $el byl button.
+            // $el at init = x-data root; on suggestion click $el would be the button.
             this.rootEl = this.$el as HTMLElement;
             const root = this.rootEl;
             const input = this.inputEl();

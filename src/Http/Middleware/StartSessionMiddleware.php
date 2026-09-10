@@ -65,7 +65,7 @@ final class StartSessionMiddleware implements MiddlewareInterface
         $response = $next($request);
         if ($request->hasSession()) {
             $session = $request->getSession();
-            // Kontroler může session záměrně uzavřít před dlouhým I/O (session_write_close).
+            // Controller may intentionally close the session before long I/O (session_write_close).
             if ($session->isStarted()) {
                 $session->save();
             }

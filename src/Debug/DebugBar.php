@@ -57,10 +57,10 @@ final class DebugBar
                 'duration' => round($ms, 2),
             ];
             if ($event instanceof PlatformEvent) {
-                $row['type'] = $event->type();
-                $data = $event->data();
-                if ($data !== []) {
-                    $row['summary'] = $this->summarizeEventData($data);
+                $envelope = $event->envelope();
+                $row['type'] = $envelope->type;
+                if ($envelope->data !== []) {
+                    $row['summary'] = $this->summarizeEventData($envelope->data);
                 }
             }
             $this->events[] = $row;
@@ -217,7 +217,7 @@ final class DebugBar
         try {
             $payload = $this->ajaxPayload($request, $response);
             $json = json_encode($payload, JSON_THROW_ON_ERROR);
-            // Nginx / prohlížeče: držet header pod ~6 KiB
+            // Nginx / browsers: keep header under ~6 KiB
             if (strlen($json) > 6000) {
                 $payload['events'] = array_slice($payload['events'] ?? [], 0, 20);
                 $payload['truncated'] = true;
@@ -231,7 +231,7 @@ final class DebugBar
                 $response->headers->set('Access-Control-Expose-Headers', implode(', ', $parts));
             }
         } catch (\Throwable) {
-            // debug nesmí shodit request
+            // debug must not break the request
         }
     }
 
@@ -670,7 +670,10 @@ final class DebugBar
         }
 
         $this->nPlusOneReported = true;
-        $path = $request->getMethod() . ' ' . $request->getPathInfo();
+        $method = $request->getMethod();
+        $pathInfo = $request->getPathInfo();
+        NPlusOneLog::record($method, $pathInfo, $hits);
+        $path = $method . ' ' . $pathInfo;
         foreach ($hits as $hit) {
             $origins = $hit['origins'] !== [] ? implode(', ', $hit['origins']) : '—';
             $sql = strlen($hit['sql']) > 240 ? substr($hit['sql'], 0, 240) . '…' : $hit['sql'];

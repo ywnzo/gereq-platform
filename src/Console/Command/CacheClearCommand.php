@@ -10,7 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'cache:clear', description: 'Vymazat cache (app, Twig, Doctrine metadata)')]
+#[AsCommand(name: 'cache:clear', description: 'Clear cache (app, Twig, Doctrine metadata)')]
 final class CacheClearCommand extends Command
 {
     public function __construct(

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Gereq\Admin\Dashboard;
 
 /**
- * Widget na admin dashboard. Moduly registrují implementace v boot()
- * přes $context->dashboard()->addWidget(...) — konvence: Application/Widgets/.
+ * Admin dashboard widget. Modules register implementations in boot()
+ * via $context->dashboard()->addWidget(...) — convention: Application/Widgets/.
  */
 interface DashboardWidget
 {

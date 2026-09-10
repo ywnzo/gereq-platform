@@ -39,12 +39,14 @@ final class Migrator
         }
 
         $conn = $this->em->getConnection();
-        $sm = $conn->createSchemaManager();
-        if ($sm->tablesExist(['schema_migrations'])) {
+        try {
+            $conn->fetchOne('SELECT 1 FROM schema_migrations LIMIT 1 /* gereq:warm */');
             $conn->executeStatement('DELETE FROM schema_migrations');
             $this->ranCache = [];
             $this->migrationsTableReady = true;
             $messages[] = 'Tabulka schema_migrations vyčištěna.';
+        } catch (\Throwable) {
+            // Table does not exist — migrate() will create it.
         }
 
         return array_merge($messages, $this->migrate());
@@ -61,7 +63,7 @@ final class Migrator
         $installed = $this->modules->installedById();
         $filterEnabled = $installed !== [];
 
-        // Nejdřív souborové migrace (mají DEFAULT / backfill), teprve potom SchemaTool.
+        // File migrations first (they have DEFAULT / backfill), then SchemaTool.
         foreach ($this->modules->discover() as $manifest) {
             if ($filterEnabled && !$this->modules->isEnabled($manifest->id)) {
                 continue;
@@ -99,7 +101,7 @@ final class Migrator
             }
         }
 
-        // Porovnávat jen entity tabulky — jinak SchemaTool DROPNE např. schema_migrations.
+        // Compare entity tables only — otherwise SchemaTool DROPs e.g. schema_migrations.
         $config->setSchemaAssetsFilter(static function (string|\Doctrine\DBAL\Schema\AbstractAsset $asset) use ($managed): bool {
             $name = is_string($asset) ? $asset : $asset->getName();
 
@@ -111,8 +113,8 @@ final class Migrator
             $sql = array_values(array_filter(
                 $tool->getUpdateSchemaSQL($metadata),
                 static function (string $statement) use ($managed): bool {
-                    // Povolit DROP jen pro entity tabulky / SQLite __temp__ rebuild.
-                    // Jinak SchemaTool umí smazat např. schema_migrations.
+                    // Allow DROP only for entity tables / SQLite __temp__ rebuild.
+                    // Otherwise SchemaTool may drop e.g. schema_migrations.
                     if (!preg_match('/^\s*DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?["`\[]?(\w+)/i', $statement, $m)) {
                         return true;
                     }
@@ -416,7 +418,7 @@ final class Migrator
 
                 if (method_exists($migration, 'afterUp')) {
                     $migration->afterUp($conn);
-                    // afterUp smí měnit schéma raw SQL — další migrace musí znovu introspektovat.
+                    // afterUp may alter schema via raw SQL — next migrations must re-introspect.
                     $workingSchema = null;
                 } else {
                     $workingSchema = $toSchema;
@@ -493,8 +495,8 @@ final class Migrator
     }
 
     /**
-     * Jedna introspekce (+ clone) místo dvou plných introspectSchema() na migraci.
-     * Při řetězení migrací znovu použije aktuální in-memory schéma.
+     * One introspection (+ clone) instead of two full introspectSchema() calls per migration.
+     * When chaining migrations, reuses the current in-memory schema.
      *
      * @param AbstractSchemaManager<\Doctrine\DBAL\Connection> $schemaManager
      * @return array{0: Schema, 1: Schema}
@@ -512,11 +514,15 @@ final class Migrator
             return;
         }
 
-        $sm = $this->em->getConnection()->createSchemaManager();
-        if ($sm->tablesExist(['schema_migrations'])) {
+        $conn = $this->em->getConnection();
+        try {
+            // Cheaper than tablesExist() → listTableNames() → CURRENT_DATABASE()+current_schema().
+            $conn->fetchOne('SELECT 1 FROM schema_migrations LIMIT 1 /* gereq:warm */');
             $this->migrationsTableReady = true;
 
             return;
+        } catch (\Throwable) {
+            // Table does not exist yet — created below.
         }
 
         $schema = new Schema();
@@ -525,8 +531,8 @@ final class Migrator
         $table->addColumn('ran_at', 'string', ['length' => 40]);
         $table->setPrimaryKey(['version']);
 
-        foreach ($schema->toSql($this->em->getConnection()->getDatabasePlatform()) as $sql) {
-            $this->em->getConnection()->executeStatement($sql);
+        foreach ($schema->toSql($conn->getDatabasePlatform()) as $sql) {
+            $conn->executeStatement($sql);
         }
 
         $this->migrationsTableReady = true;
@@ -544,7 +550,7 @@ final class Migrator
         return $this->ranCache[$version] ?? null;
     }
 
-    /** Jedním SELECT načte všechny záznamy schema_migrations (místo N× WHERE version = ?). */
+    /** Loads all schema_migrations rows in one SELECT (instead of N× WHERE version = ?). */
     private function warmRan(): void
     {
         if ($this->ranCache !== null) {

@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-/** Dočasné hardcoded credentials — později napojíme na API. */
+/** Temporary hardcoded credentials — wire to API later. */
 const DEMO_USER = {
   email: 'test@gereq.cz',
   password: 'heslo',
@@ -77,7 +77,7 @@ function clearSessionCookie() {
 function tryLogin(email, password) {
   const e = String(email || '').trim().toLowerCase();
   const p = String(password || '');
-  // TODO: nahradit voláním GEREQ API
+  // TODO: replace with GEREQ API call
   if (e === DEMO_USER.email && p === DEMO_USER.password) {
     return { ok: true, user: { email: DEMO_USER.email, name: DEMO_USER.name } };
   }

@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 /**
- * Index Twig typů z controllerů + for-smyček.
+ * Index Twig types from controllers + for-loops.
  *
- * Výstup (mimo šablony):
+ * Output (outside templates):
  *  - .cache/twig/types.json
- *  - .cache/twig/vars/<cesta-k-sablone>.twig   (@var stuby jen pro IDE/debug)
+ *  - .cache/twig/vars/<path-to-template>.twig   (@var stubs for IDE/debug only)
  *
- * Zároveň odstraní staré BEGIN-GEREQ-TWIG-TYPES bloky ze šablon.
+ * Also removes legacy BEGIN-GEREQ-TWIG-TYPES blocks from templates.
  *
  * Usage:
  *   php tools/gereq-twig-goto/index-templates.php
@@ -122,7 +122,7 @@ foreach ($phpFiles as $file) {
     }
 }
 
-// Doplň typy z {% for x in y %} podle y[] / shape
+// Fill types from {% for x in y %} based on y[] / shape
 foreach ($index as $rel => $vars) {
     $abs = $basePath . '/' . $rel;
     if (!is_file($abs)) {
@@ -146,7 +146,7 @@ foreach ($index as $rel => $vars) {
             ];
             if (!empty($col['shape']) && is_array($col['shape'])) {
                 $entry['shape'] = $col['shape'];
-                // prvek list<array{...}> je asociativní pole, ne třída
+                // list<array{...}> element is an associative array, not a class
                 if (($col['class'] ?? '') === 'array' || str_starts_with((string) ($col['class'] ?? ''), 'array{')) {
                     $entry['class'] = 'array';
                 }
@@ -183,7 +183,7 @@ file_put_contents($outFile, json_encode([
     'classes' => $classes,
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 
-// zpětná kompatibilita se starší cestou extension
+// backward compatibility with older extension path
 @mkdir($basePath . '/.cache', 0775, true);
 @copy($outFile, $basePath . '/.cache/twig-goto-types.json');
 
@@ -251,7 +251,7 @@ function stripVarBlock(string $path): bool
         return false;
     }
 
-    // ukliď vícenásobné prázdné řádky hned po extends
+    // trim multiple blank lines right after extends
     $next = preg_replace('/(\{% extends [^%]+%\})\n{3,}/u', "$1\n\n", $next) ?? $next;
 
     return file_put_contents($path, $next) !== false;
@@ -512,7 +512,7 @@ function typeNodeToType(Node $type, array $uses): ?array
 }
 
 /**
- * Najdi ClassMethod obsahující $call podle pozice v AST souboru.
+ * Find the ClassMethod containing $call by position in the file AST.
  */
 function findEnclosingMethod(array $ast, Node\Expr\MethodCall $call, NodeFinder $finder): ?Node\Stmt\ClassMethod
 {
@@ -958,7 +958,7 @@ function inferExprType(Node\Expr $expr, array $ctx): ?array
         return ['class' => ltrim($raw, '\\'), 'array' => false];
     }
     if ($expr instanceof Node\Expr\Ternary) {
-        // $x instanceof Foo ? $x : null  — jen když if-větev je stejná proměnná
+        // $x instanceof Foo ? $x : null  — only when the if branch is the same variable
         if (
             $expr->cond instanceof Node\Expr\Instanceof_
             && $expr->cond->class instanceof Node\Name
@@ -1031,7 +1031,7 @@ function inferExprType(Node\Expr $expr, array $ctx): ?array
             }
         }
 
-        // $customer->email() — metoda na lokální typované proměnné
+        // $customer->email() — method on a locally typed variable
         if ($expr->var instanceof Node\Expr\Variable && is_string($expr->var->name)) {
             $obj = $locals[$expr->var->name] ?? null;
             if ($obj !== null && !isScalarClass($obj['class']) && empty($obj['array'])) {
@@ -1042,7 +1042,7 @@ function inferExprType(Node\Expr $expr, array $ctx): ?array
             }
         }
 
-        // $this->orderForBranchMutate($id) — native/@return na metodě ve stejné třídě
+        // $this->orderForBranchMutate($id) — native/@return on method in same class
         if ($expr->var instanceof Node\Expr\Variable && $expr->var->name === 'this') {
             if (isset($methodReturns[$method])) {
                 return $methodReturns[$method];
@@ -1050,7 +1050,7 @@ function inferExprType(Node\Expr $expr, array $ctx): ?array
         }
     }
     if ($expr instanceof Node\Expr\ClassConstFetch && $expr->class instanceof Node\Name) {
-        // Foo::STATUSES / KINDS — typicky list stringů
+        // Foo::STATUSES / KINDS — typically a list of strings
         if ($expr->name instanceof Node\Identifier) {
             $const = $expr->name->toString();
             if (in_array($const, ['STATUSES', 'KINDS', 'TYPES', 'TEAMS', 'PAYMENT_TYPES', 'FUEL_LEVELS'], true)) {
@@ -1114,7 +1114,7 @@ function reflectMethodReturn(?string $fqcn, string $method): ?array
                     return null;
                 }
                 if ($name === 'array') {
-                    return null; // bez generics neuhádneme
+                    return null; // cannot infer without generics
                 }
                 if (in_array($name, ['string', 'int', 'float', 'bool', 'mixed', 'iterable', 'object', 'callable'], true)) {
                     return ['class' => $name, 'array' => false];
@@ -1195,7 +1195,7 @@ function qualifyType(array $type, string $namespace): array
 }
 
 /**
- * Preferuj konkrétní class typ před chybějícím / skalárem při merge více page() volání.
+ * Prefer a concrete class type over missing / scalar when merging multiple page() calls.
  *
  * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $base
  * @param array<string, array{class: string, array: bool, shape?: array<string, string>}> $overlay

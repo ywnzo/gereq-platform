@@ -518,7 +518,7 @@ function colorForProject(name) {
 }
 
 /**
- * Seskupí aktivitu do time entries (gap > 4 min = nový entry).
+ * Group activity into time entries (gap > 4 min = new entry).
  * @param {object[]} events
  */
 function buildTimeEntries(events) {

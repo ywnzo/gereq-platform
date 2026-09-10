@@ -1,0 +1,59 @@
+{#
+    Panel se skóre 0–100 (kruhový indikátor), souhrnem kontrol a doporučeními.
+
+    score: int, color: css color, grade: string (label)
+    checks: list<{label: string, value: string, tone: 'ok'|'warn'|'danger'}>
+    recommendations: list<string>
+#}
+<section class="panel panel--score">
+    <header class="panel__head">
+        <div>
+            <h2>{{ title }}</h2>
+            {% if subtitle|default('') != '' %}
+                <p class="muted panel__sub">{{ subtitle }}</p>
+            {% endif %}
+        </div>
+        {% if href|default(null) %}
+            <a class="btn btn--ghost btn-sm" href="{{ href }}">{{ link_label|default('common.open'|trans) }}</a>
+        {% endif %}
+    </header>
+    <div class="dash-score">
+        <div
+            class="dash-score__ring"
+            style="--score: {{ score }}; --score-color: {{ color }};"
+            role="meter"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="{{ score }}"
+            aria-label="{{ title }}"
+        >
+            <span class="dash-score__value">{{ score }}<small>%</small></span>
+        </div>
+        <div class="dash-score__body">
+            <strong class="dash-score__grade" style="color: {{ color }};">{{ grade }}</strong>
+            {% if checks|default([]) is not empty %}
+                <ul class="dash-score__checks">
+                    {% for check in checks %}
+                        <li>
+                            <span class="dash-score__dot dash-score__dot--{{ check.tone }}" aria-hidden="true"></span>
+                            <span class="muted">{{ check.label }}</span>
+                            <strong>{{ check.value }}</strong>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+    {% if recommendations|default([]) is not empty %}
+        <div class="dash-recos">
+            <span class="dash-recos__label muted">{{ recommendations_label|default('') }}</span>
+            <ul>
+                {% for reco in recommendations %}
+                    <li>{{ reco }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% elseif all_ok_message|default('') != '' %}
+        <p class="dash-recos__ok muted">{{ all_ok_message }}</p>
+    {% endif %}
+</section>

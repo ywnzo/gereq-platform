@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Index GEREQ permissions z module.php + core seeder.
+ * Index GEREQ permissions from module.php + core seeder.
  *
- * Výstup: .cache/permissions/catalog.json
+ * Output: .cache/permissions/catalog.json
  *
  * Usage:
  *   php tools/gereq-permissions/index-permissions.php

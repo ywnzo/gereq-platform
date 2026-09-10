@@ -188,7 +188,7 @@ final class Validator
             $normalized = '+' . substr($normalized, 2);
         }
 
-        // CZ: +420 + 9 číslic (první 2–9 — mobil/pevná, bez 0/1)
+        // CZ: +420 + 9 digits (first 2–9 — mobile/landline, not 0/1)
         if (preg_match('/^\+420[2-9]\d{8}$/', $normalized) === 1) {
             return null;
         }

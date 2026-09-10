@@ -1,4 +1,5 @@
-{# Shared package / plugin group rows. Expects: groups (list) #}
+{# Shared package / plugin group rows. Expects: groups (list), optional return_tab #}
+{% set returnUrl = url('admin.modules.index') ~ '#' ~ (return_tab|default('packages')) %}
 <div class="table-wrap" data-table>
     <table class="table table--packages">
         <thead>
@@ -24,11 +25,28 @@
                     </td>
                     <td class="is-mute">
                         <div>{{ group.description ? group.description|trans : '—' }}</div>
-                        <div class="package-row__mods">
+                        <div class="package-row__mods" title="{{ 'admin.modules.group.mod_toggle_hint'|trans }}">
                             {% for m in group.modules %}
                                 {% set row = m.row %}
                                 {% if row %}
-                                    <a class="package-row__mod{% if row.enabled %} is-on{% endif %}" href="{{ url('admin.modules.show', {id: m.id}) }}">
+                                    <a
+                                        class="package-row__mod{% if row.enabled %} is-on{% endif %}"
+                                        href="{{ url('admin.modules.show', {id: m.id}) }}"
+                                        data-module-toggle
+                                        data-module-id="{{ m.id }}"
+                                        data-module-name="{{ row.manifest.name|e('html_attr') }}"
+                                        data-enabled="{{ row.enabled ? '1' : '0' }}"
+                                        data-enable-url="{{ url('admin.modules.enable', {id: m.id}) }}"
+                                        data-pause-url="{{ url('admin.modules.pause', {id: m.id}) }}"
+                                        data-return-url="{{ returnUrl|e('html_attr') }}"
+                                        data-confirm-enable-title="{{ 'admin.modules.group.confirm_enable_one_title'|trans|e('html_attr') }}"
+                                        data-confirm-enable="{{ 'admin.modules.group.confirm_enable_one'|trans|e('html_attr') }}"
+                                        data-confirm-enable-label="{{ 'common.activate'|trans|e('html_attr') }}"
+                                        data-confirm-pause-title="{{ 'admin.modules.group.confirm_pause_one_title'|trans|e('html_attr') }}"
+                                        data-confirm-pause="{{ 'admin.modules.group.confirm_pause_one'|trans|e('html_attr') }}"
+                                        data-confirm-pause-label="{{ 'common.pause'|trans|e('html_attr') }}"
+                                        title="{{ 'admin.modules.group.mod_toggle_hint'|trans }}"
+                                    >
                                         <span class="package-row__mod-icon" aria-hidden="true">{{ icon(row.manifest.icon ?: 'modules') }}</span>
                                         {{ row.manifest.name }}
                                     </a>
@@ -56,12 +74,16 @@
                     {% embed 'ui/row_actions.html.twig' %}
                         {% block items %}
                             {% if not group.all_enabled and group.disabled_ids is not empty %}
-                                <form method="post" action="{{ url('admin.modules.group.enable', {group: group.id}) }}">
+                                <form
+                                    method="post"
+                                    action="{{ url('admin.modules.group.enable', {group: group.id}) }}"
+                                    data-confirm="{{ 'admin.modules.group.confirm_enable'|trans({'%name%': group.name, '%count%': group.disabled_ids|length}) }}"
+                                    data-confirm-title="{{ 'admin.modules.group.enable_all'|trans }}"
+                                    data-confirm-danger="0"
+                                >
                                     {{ csrf_field()|raw }}
-                                    <button
-                                        type="submit"
-                                        onclick="return confirm('{{ 'admin.modules.group.confirm_enable'|trans({'%name%': group.name, '%count%': group.disabled_ids|length})|e('js') }}')"
-                                    >{{ 'admin.modules.group.enable_all'|trans }}</button>
+                                    <input type="hidden" name="return" value="{{ returnUrl|e('html_attr') }}">
+                                    <button type="submit">{{ 'admin.modules.group.enable_all'|trans }}</button>
                                 </form>
                             {% else %}
                                 <button type="button" disabled>{{ 'admin.modules.group.all_on'|trans }}</button>

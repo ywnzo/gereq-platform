@@ -93,6 +93,10 @@ final class Kernel
             $middleware[] = \Modules\Vitality\Http\Middleware\VitalityTimingMiddleware::class;
         }
 
+        if (PublicCors::isPublicApiPath((string) $route->getPath())) {
+            $middleware[] = \Gereq\Api\Http\PublicApiAuthMiddleware::class;
+        }
+
         foreach ($route->getMiddleware() as $item) {
             $middleware[] = $aliases[$item] ?? $item;
         }
@@ -119,7 +123,7 @@ final class Kernel
             return null;
         }
 
-        // admin.calendar.index → calendar; admin.modules.* se nebere (není v modules/)
+        // admin.calendar.index → calendar; admin.modules.* is excluded (not under modules/)
         if (!preg_match('/^admin\.([a-z0-9_]+)(?:\.|$)/', $routeName, $m)) {
             return null;
         }

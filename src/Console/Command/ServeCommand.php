@@ -10,7 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'serve', description: 'Spustit vestavěný PHP server')]
+#[AsCommand(name: 'serve', description: 'Run the built-in PHP server')]
 final class ServeCommand extends Command
 {
     public function __construct(private readonly string $basePath)

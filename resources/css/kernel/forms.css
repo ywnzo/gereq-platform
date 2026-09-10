@@ -508,7 +508,7 @@ html[data-theme="gereq-dark"] select.input.g-control {
     gap: 12px;
     min-height: var(--control-h);
 }
-/* Track = stejný komponent jako v tabulkách (.table-switch) */
+/* Track = same component as in tables (.table-switch) */
 .g-switch .table-switch {
     flex-shrink: 0;
 }

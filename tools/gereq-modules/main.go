@@ -68,7 +68,7 @@ func loadConfig() (config, error) {
 		Prefix: envOr("MODULE_REPO_PREFIX", "module-"),
 	}
 	if cfg.Token == "" {
-		return cfg, fmt.Errorf("GITLAB_TOKEN chybí v .env")
+		return cfg, fmt.Errorf("GITLAB_TOKEN missing in .env")
 	}
 	return cfg, nil
 }
@@ -505,7 +505,7 @@ func (m *model) refreshViewport() {
 
 func (m model) tabContent() string {
 	if m.loading {
-		return m.spin.View() + "  Načítám lokální moduly + GitLab…"
+		return m.spin.View() + "  Loading local modules + GitLab…"
 	}
 	if m.errMsg != "" && len(m.result.Compare) == 0 {
 		return errorStyle.Render("Chyba: " + m.errMsg)
@@ -515,17 +515,17 @@ func (m model) tabContent() string {
 	case tabCompare:
 		return m.renderCompare()
 	case tabMissing:
-		return m.renderList("MISSING ON GITLAB", m.result.Missing, "Žádné — všechno je na GitLabu.")
+		return m.renderList("MISSING ON GITLAB", m.result.Missing, "None — everything is on GitLab.")
 	case tabExtra:
-		return m.renderList("EXTRA ON GITLAB (no local)", m.result.Extra, "Žádné extra projekty.")
+		return m.renderList("EXTRA ON GITLAB (no local)", m.result.Extra, "No extra projects.")
 	case tabLocal:
 		var lines []string
 		for _, mod := range m.result.Local {
 			lines = append(lines, fmt.Sprintf("%s|%s|%s|%s", mod.Dir, mod.ID, mod.Version, mod.Name))
 		}
-		return m.renderList("LOCAL MODULES", lines, "(prázdné)")
+		return m.renderList("LOCAL MODULES", lines, "(empty)")
 	case tabGitLab:
-		return m.renderList(fmt.Sprintf("GITLAB PROJECTS (group=%s, prefix=%s)", m.cfg.Group, m.cfg.Prefix), m.result.GitLab, "(prázdné)")
+		return m.renderList(fmt.Sprintf("GITLAB PROJECTS (group=%s, prefix=%s)", m.cfg.Group, m.cfg.Prefix), m.result.GitLab, "(empty)")
 	}
 	return ""
 }
@@ -596,7 +596,7 @@ func (m model) View() string {
 	if m.loading {
 		status = m.spin.View() + " scanning…"
 	} else if !m.scanned.IsZero() {
-		status = mutedStyle.Render("aktualizováno " + m.scanned.Format("15:04:05") + "  ·  r refresh  ·  q quit  ·  ←/→ tabs")
+		status = mutedStyle.Render("updated " + m.scanned.Format("15:04:05") + "  ·  r refresh  ·  q quit  ·  ←/→ tabs")
 	}
 	if m.errMsg != "" && len(m.result.Compare) > 0 {
 		status += "\n" + errorStyle.Render("warn: "+m.errMsg)
@@ -680,17 +680,17 @@ func main() {
 		case "-plain", "--plain":
 			plain = true
 		case "-h", "--help":
-			fmt.Println(`gereq-modules — porovnání lokálních modulů s GitLabem
+			fmt.Println(`gereq-modules — compare local modules with GitLab
 
 Usage:
-  gereq-modules          interaktivní TUI
-  gereq-modules --plain  textový výstup (jako shell skript)
+  gereq-modules          interactive TUI
+  gereq-modules --plain  text output (like the shell script)
 
-Env (.env v rootu projektu):
+Env (.env in project root):
   GITLAB_URL, GITLAB_TOKEN, GITLAB_GROUP, MODULE_REPO_PREFIX
-  GEREQ_ROOT  (volitelně absolutní cesta k projektu)
+  GEREQ_ROOT  (optional absolute path to the project)
 
-Klávesy TUI: 1–5 / ←→ tabs · r refresh · q quit`)
+TUI keys: 1–5 / ←→ tabs · r refresh · q quit`)
 			return
 		}
 	}

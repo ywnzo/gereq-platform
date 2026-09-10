@@ -87,7 +87,7 @@ final class QueryCollector
         return $this->nPlusOneThreshold;
     }
 
-    /** @return array<int, int> index → počet výskytů stejného fingerprintu */
+    /** @return array<int, int> index → count of occurrences for the same fingerprint */
     private function indexCounts(): array
     {
         $counts = [];

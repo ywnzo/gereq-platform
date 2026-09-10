@@ -7,8 +7,6 @@ namespace Gereq\Module;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Audit\Auditor;
 use Gereq\Database\Migrator;
-use Gereq\User\Entity\Permission;
-use Gereq\User\PermissionRegistry;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class ModuleUpdater
@@ -20,7 +18,6 @@ final class ModuleUpdater
         private readonly ModuleManager $modules,
         private readonly Migrator $migrator,
         private readonly EntityManagerInterface $em,
-        private readonly PermissionRegistry $permissionRegistry,
         private readonly Auditor $auditor,
         private readonly TranslatorInterface $translator,
     ) {
@@ -60,7 +57,7 @@ final class ModuleUpdater
      *
      * @return list<string>
      */
-    public function update(string $id): array
+    public function update(string $id, bool $syncSchema = true): array
     {
         $manifest = $this->modules->manifest($id);
         if ($manifest === null) {
@@ -72,11 +69,11 @@ final class ModuleUpdater
             throw new \RuntimeException($this->translator->trans('modules.error.not_installed', ['%id%' => $id]));
         }
 
-        $messages = $this->migrator->migrateModule($id);
+        $messages = $this->migrator->migrateModule($id, syncSchema: $syncSchema);
 
         $from = $row->version();
         $row->setVersion($manifest->version);
-        $this->syncPermissions($manifest);
+        $this->modules->syncPermissions($manifest);
         $this->em->flush();
 
         $this->auditor->log('module.updated', 'module', $id, [
@@ -89,35 +86,5 @@ final class ModuleUpdater
         unset($this->updateAvailableCache[$id]);
 
         return $messages;
-    }
-
-    private function syncPermissions(ModuleManifest $manifest): void
-    {
-        foreach ($manifest->permissions as $item) {
-            $name = (string) ($item['name'] ?? '');
-            if ($name === '') {
-                continue;
-            }
-
-            $this->permissionRegistry->register(
-                $name,
-                (string) ($item['label'] ?? $name),
-                (string) ($item['group'] ?? $manifest->name),
-            );
-        }
-
-        /** @var array<string, Permission> $existing */
-        $existing = [];
-        foreach ($this->em->getRepository(Permission::class)->findAll() as $permission) {
-            if ($permission instanceof Permission) {
-                $existing[$permission->name()] = $permission;
-            }
-        }
-
-        foreach ($this->permissionRegistry->all() as $item) {
-            if (!isset($existing[$item['name']])) {
-                $this->em->persist(new Permission($item['name'], $item['label'], $item['group']));
-            }
-        }
     }
 }

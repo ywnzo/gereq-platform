@@ -8,6 +8,7 @@ use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Dashboard\Dashboard;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Auth\Authenticator;
+use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -25,6 +26,7 @@ final class DashboardController extends Controller
         private readonly Menu $menu,
         private readonly Dashboard $dashboard,
         private readonly CommandPalette $palette,
+        private readonly HookManager $hooks,
         private readonly TranslatorInterface $translator,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -39,6 +41,7 @@ final class DashboardController extends Controller
     {
         $user = $this->auth->user();
         $request = $this->request();
+        $this->hooks->doAction('admin.dashboard.warmup');
 
         return $this->render('admin/dashboard.html.twig', [
             'pageTitle' => $this->translator->trans('nav.overview'),

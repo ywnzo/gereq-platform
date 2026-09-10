@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Ares;
 
 /**
- * Doménová vrstva nad ARES — vyhledání subjektů a standardizovaných adres RÚIAN.
+ * Domain layer over ARES — entity lookup and standardized RÚIAN addresses.
  */
 final class AresService
 {
@@ -74,7 +74,7 @@ final class AresService
 
         $limit = max(1, min(30, $limit));
 
-        // Jednoslovný název obce → obec; když nic, zkus ulici (Karlova ≠ obec).
+        // Single-word municipality name → municipality; if nothing, try street (Karlova ≠ municipality).
         if ($this->looksLikeCityOnly($query)) {
             $cities = $this->searchCity($query, $limit);
             if ($cities !== []) {
@@ -92,7 +92,7 @@ final class AresService
                 'start' => 0,
             ]);
         } catch (AresException $e) {
-            // Příliš široký dotaz — nejdřív ulice, pak obec.
+            // Query too broad — street first, then municipality.
             if ($this->isTooManyResults($e)) {
                 $street = $this->guessStreetToken($query);
                 if ($street !== null) {
@@ -281,7 +281,7 @@ final class AresService
 
         $words = preg_split('/\s+/u', $query) ?: [];
 
-        // Jedno slovo = obec. Dvě slova (např. „Nový Jičín“) jen pokud začíná přívlastkem.
+        // One word = municipality. Two words (e.g. "Nový Jičín") only when starting with an adjective.
         if (count($words) === 1) {
             return true;
         }
@@ -305,7 +305,7 @@ final class AresService
         return mb_substr((string) end($parts), 0, 48);
     }
 
-    /** První nečíselný token — typicky název ulice při širokém textovém dotazu. */
+    /** First non-numeric token — typically a street name in a broad text query. */
     private function guessStreetToken(string $query): ?string
     {
         $parts = preg_split('/[,\s]+/u', $query) ?: [];

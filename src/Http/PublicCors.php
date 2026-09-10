@@ -44,7 +44,7 @@ final class PublicCors
         }
 
         $response->headers->set('Access-Control-Allow-Methods', $methods);
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Api-Key');
         $response->headers->set('Access-Control-Max-Age', '86400');
 
         return $response;

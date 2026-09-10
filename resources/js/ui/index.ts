@@ -8,12 +8,15 @@ import { registerDrawer } from './drawer';
 import { registerEditor } from './editor';
 import { registerForm } from './form';
 import { registerModuleTable } from './moduleTable';
+import { registerPackageModuleToggle } from './packageModuleToggle';
 import { registerConfirm } from './confirm';
+import { registerImageViewer } from './imageViewer';
 import { registerToast } from './toast';
 import { registerModal, registerPopover } from './overlay';
 import { registerSelect } from './select';
 import { registerTabs } from './tabs';
 import { registerStickyChrome } from './stickyChrome';
+import { registerDashboardGrid } from './dashboardGrid';
 import { registerSettingsBrandPreview } from './settingsBrandPreview';
 import { registerColorField } from './colorField';
 import { registerBrandAsset } from './brandAsset';
@@ -32,6 +35,7 @@ import { registerFleetBrandCatalog } from '../../../modules/Fleet/Resources/asse
 import { registerChart } from './chart';
 import { registerPageProgress } from './pageProgress';
 import { registerFile } from './file';
+import { registerToolbarAutosubmit } from './toolbarAutosubmit';
 import { registerCustomerEdit } from '../../../modules/Customers/Resources/assets/js/customerEdit';
 import { registerCustomerNotes } from '../../../modules/Customers/Resources/assets/js/customerNotes';
 import { registerCustomerContactForm } from '../../../modules/Customers/Resources/assets/js/customerContactForm';
@@ -40,6 +44,7 @@ import { registerCarserviceFinishWizard } from '../../../modules/CarService/Reso
 import { registerEsignSignaturePad } from '../../../modules/ESign/Resources/assets/js/signaturePad';
 import { registerPortalForm } from '../../../modules/Portals/Resources/assets/js/portalForm';
 
+import { registerDocumentsEntityLink } from '../../../modules/Documents/Resources/assets/js/documentsEntityLink';
 import { registerWebauthn } from './webauthn';
 import { registerPublishBadge } from './publishBadge';
 import { registerAiChat } from '../../../modules/Ai/Resources/assets/js/aiChat';
@@ -48,10 +53,12 @@ import { registerApiTester } from './apiTester';
 
 export function registerUi(alpine: typeof Alpine): void {
     registerPageProgress();
+    registerToolbarAutosubmit();
     registerSelect(alpine);
     registerModal(alpine);
     registerPopover(alpine);
     registerConfirm(alpine);
+    registerImageViewer(alpine);
     registerToast();
     registerDrawer(alpine);
     registerPassword(alpine);
@@ -62,6 +69,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerEditor(alpine);
     registerTabs(alpine);
     registerStickyChrome();
+    registerDashboardGrid();
     registerWebauthn(alpine);
     registerSettingsBrandPreview(alpine);
     registerColorField(alpine);
@@ -82,10 +90,12 @@ export function registerUi(alpine: typeof Alpine): void {
     registerCrmWorkflowTplField(alpine);
     registerEmailingMailbox(alpine);
     registerAres(alpine);
+    registerDocumentsEntityLink(alpine);
     registerCmsBlockForm(alpine);
     registerCmsPageForm(alpine);
     registerCmsBuilder(alpine);
     registerModuleTable(alpine);
+    registerPackageModuleToggle();
     registerFleetBrandCatalog(alpine);
     registerChart(alpine);
     registerCustomerEdit(alpine);

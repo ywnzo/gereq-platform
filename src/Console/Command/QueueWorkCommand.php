@@ -10,7 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'queue:work', description: 'Zpracovat frontu úloh')]
+#[AsCommand(name: 'queue:work', description: 'Process the job queue')]
 final class QueueWorkCommand extends Command
 {
     public function __construct(private readonly Queue $queue)

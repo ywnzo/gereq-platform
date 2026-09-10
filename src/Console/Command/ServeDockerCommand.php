@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Api\Auth\PublicApiKey;
 use Gereq\Console\Docker\ServeLogTui;
 use Gereq\Console\Docker\ViteHotProcess;
+use Gereq\Support\EnvFile;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'serve-docker', description: 'Spustit GEREQ přes Docker (nginx + PHP-FPM + Redis)')]
+#[AsCommand(name: 'serve-docker', description: 'Run GEREQ via Docker (nginx + PHP-FPM + Redis)')]
 final class ServeDockerCommand extends Command
 {
     public function __construct(private readonly string $basePath)
@@ -135,6 +137,9 @@ final class ServeDockerCommand extends Command
         if ($https) {
             $origins[] = 'https://127.0.0.1';
             $origins[] = 'https://localhost';
+            foreach (['realestates.local', 'realestates.dev', 'gereq.local', 'gereq.dev'] as $host) {
+                $origins[] = 'https://' . $host;
+            }
         }
         if ($lanIp !== null && $lanIp !== '') {
             foreach ([5173, 5174, 5175] as $fePort) {
@@ -156,6 +161,10 @@ final class ServeDockerCommand extends Command
         $frontendOrigin = implode(',', $origins);
         putenv('FRONTEND_ORIGIN=' . $frontendOrigin);
         $_ENV['FRONTEND_ORIGIN'] = $frontendOrigin;
+
+        $publicKey = $this->ensurePublicApiKey($output);
+        putenv('API_PUBLIC_KEY=' . $publicKey);
+        $_ENV['API_PUBLIC_KEY'] = $publicKey;
 
         if ($detach || $raw) {
             $output->writeln('GEREQ Platform (Docker): nginx + PHP-FPM + PostgreSQL + Redis + queue');
@@ -185,7 +194,7 @@ final class ServeDockerCommand extends Command
             try {
                 return $this->runCompose($output, $args, $https);
             } finally {
-                // Detach: Vite zůstane (pid file); raw/Ctrl+C: Vite vypnout.
+                // Detach: Vite keeps running (pid file); raw/Ctrl+C: stop Vite.
                 if ($vite !== null && !$detach) {
                     $vite->stop($output);
                 }
@@ -270,7 +279,7 @@ final class ServeDockerCommand extends Command
         }
         $lines[] = '  <fg=gray>PostgreSQL + Redis + queue jsou součástí stacku.</>';
         if ($https) {
-            $lines[] = '  <fg=gray>Passkeys / zelený zámek: hosts → realestates.local, stáhněte https://realestates.local/dev-ca.crt a naimportujte do Trusted Root (Windows).</>';
+            $lines[] = '  <fg=gray>Passkeys / zelený zámek: hosts → realestates.local / realestates.dev, stáhněte https://realestates.dev/dev-ca.crt a naimportujte do Trusted Root (Windows/Mac).</>';
         }
 
         return implode("\n", $lines);
@@ -299,7 +308,7 @@ final class ServeDockerCommand extends Command
         return '<fg=gray>' . $text . '</>';
     }
 
-    /** Zastavit compose stack (+ Vite z --hot / -d). */
+    /** Stop compose stack (+ Vite from --hot / -d). */
     private function stopStack(OutputInterface $output, bool $https, bool $hot): int
     {
         if ($hot || is_file($this->basePath . '/storage/tmp/vite-dev.pid')) {
@@ -386,7 +395,7 @@ final class ServeDockerCommand extends Command
             $this->exportMkcertRootCa($rootCa);
             $output->writeln('<info>Vygenerován mkcert certifikát (důvěryhodný po instalaci rootCA).</info>');
             $output->writeln('<comment>Windows (prohlížeč): naimportujte docker/nginx/certs/rootCA.pem → Local Computer → Trusted Root Certification Authorities.</comment>');
-            $output->writeln('<comment>Pak restart prohlížeče a otevřete https://realestates.local/admin</comment>');
+            $output->writeln('<comment>Pak restart prohlížeče a otevřete https://realestates.dev/admin (nebo https://realestates.local/admin)</comment>');
 
             return true;
         }
@@ -436,7 +445,15 @@ final class ServeDockerCommand extends Command
             $output->writeln('<fg=gray>mkcert -install: ' . implode(' ', $installOut) . '</>');
         }
 
-        $names = ['localhost', '127.0.0.1', '::1', 'realestates.local', 'gereq.local'];
+        $names = [
+            'localhost',
+            '127.0.0.1',
+            '::1',
+            'realestates.local',
+            'realestates.dev',
+            'gereq.local',
+            'gereq.dev',
+        ];
         $envName = trim((string) (getenv('WEBAUTHN_LOCAL_HOSTNAME') ?: ($_ENV['WEBAUTHN_LOCAL_HOSTNAME'] ?? '')));
         if ($envName !== '') {
             $names[] = $envName;
@@ -444,6 +461,7 @@ final class ServeDockerCommand extends Command
         $appName = strtolower((string) (getenv('APP_NAME') ?: ($_ENV['APP_NAME'] ?? 'gereq')));
         $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', $appName), '-') ?: 'gereq';
         $names[] = $slug . '.local';
+        $names[] = $slug . '.dev';
         if ($lanIp !== null && filter_var($lanIp, FILTER_VALIDATE_IP)) {
             $names[] = $lanIp;
         }
@@ -536,7 +554,7 @@ CNF;
             $sans[] = 'IP:' . $lanIp;
         }
 
-        $names = ['realestates.local', 'gereq.local'];
+        $names = ['realestates.local', 'realestates.dev', 'gereq.local', 'gereq.dev'];
         $envName = trim((string) (getenv('WEBAUTHN_LOCAL_HOSTNAME') ?: ($_ENV['WEBAUTHN_LOCAL_HOSTNAME'] ?? '')));
         if ($envName !== '') {
             $names[] = $envName;
@@ -544,6 +562,7 @@ CNF;
         $appName = strtolower((string) (getenv('APP_NAME') ?: ($_ENV['APP_NAME'] ?? 'gereq')));
         $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', $appName), '-') ?: 'gereq';
         $names[] = $slug . '.local';
+        $names[] = $slug . '.dev';
 
         foreach ($names as $name) {
             $name = strtolower(trim($name));
@@ -584,6 +603,33 @@ CNF;
         }
 
         return true;
+    }
+
+    private function ensurePublicApiKey(OutputInterface $output): string
+    {
+        $rootEnv = new EnvFile($this->basePath . '/.env');
+        $fromFile = $rootEnv->get('API_PUBLIC_KEY');
+        $fromEnv = (string) ($_ENV['API_PUBLIC_KEY'] ?? (getenv('API_PUBLIC_KEY') ?: ''));
+        $existing = trim((string) ($fromFile ?? $fromEnv));
+        if ($existing !== '' && str_starts_with($existing, PublicApiKey::PREFIX)) {
+            $key = $existing;
+        } else {
+            $key = PublicApiKey::generate();
+            $rootEnv->set('API_PUBLIC_KEY', $key);
+            $output->writeln('<info>Vygenerován API_PUBLIC_KEY (grq_pub_*) do .env</info>');
+        }
+
+        $feEnv = new EnvFile($this->basePath . '/FE2/.env');
+        $feKey = trim((string) ($feEnv->get('VITE_API_PUBLIC_KEY') ?? ''));
+        if ($feKey !== $key) {
+            $feEnv->set('VITE_API_PUBLIC_KEY', $key);
+            if ($feEnv->get('VITE_API_URL') === null) {
+                $feEnv->set('VITE_API_URL', 'http://127.0.0.1:8083');
+            }
+            $output->writeln('<comment>FE2/.env: VITE_API_PUBLIC_KEY synchronizován (restart Vite / bun run dev).</comment>');
+        }
+
+        return $key;
     }
 
     private function dockerAvailable(): bool

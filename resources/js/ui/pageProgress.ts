@@ -1,5 +1,5 @@
 /**
- * Tenký progress bar nahoře při full-page navigaci / pomalém načtení.
+ * Thin progress bar at the top during full-page navigation / slow loads.
  */
 type PageProgressApi = {
     start: () => void;
@@ -168,10 +168,10 @@ export function registerPageProgress(): void {
 
     window.addEventListener('pageshow', () => done());
     window.addEventListener('pagehide', () => {
-        // nechat bar běžet při odchodu — nová stránka ho zruší
+        // Keep the bar running on leave — the next page clears it.
     });
 
-    // Pomalejší první render: bar jen když load trvá déle než ~120 ms.
+    // Delay first paint: show the bar only when load takes longer than ~120 ms.
     let bootTimer: ReturnType<typeof setTimeout> | null = null;
     if (document.readyState !== 'complete') {
         bootTimer = setTimeout(() => start(), 120);

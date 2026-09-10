@@ -18,7 +18,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'db:import-sqlite', description: 'Importovat data ze SQLite souboru do aktuální DB (typicky PostgreSQL)')]
+#[AsCommand(name: 'db:import-sqlite', description: 'Import data from an SQLite file into the current DB (typically PostgreSQL)')]
 final class ImportSqliteCommand extends Command
 {
     public function __construct(
@@ -171,7 +171,7 @@ final class ImportSqliteCommand extends Command
                     }
                 }
 
-                // Chybějící NOT NULL bez defaultu (novější schéma než SQLite dump)
+                // Missing NOT NULL without default (newer schema than SQLite dump)
                 foreach ($dstNotNull as $dstCol => $_) {
                     if (isset($mappedDst[strtolower($dstCol)]) || isset($dstHasDefault[$dstCol])) {
                         continue;

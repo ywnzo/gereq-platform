@@ -15,6 +15,26 @@ final class FrozenPublicReader
     {
     }
 
+    /** Warm staging cache for a category (one query) before per-key lookups. */
+    public function preloadCategory(string $category): void
+    {
+        $this->store->preloadCategory($category);
+    }
+
+    /**
+     * @param list<string> $categories
+     */
+    public function preloadCategories(array $categories): void
+    {
+        $this->store->preloadCategories($categories);
+    }
+
+    /** Load entire staging table once (avoids multi-category preload N+1 fingerprint). */
+    public function preloadAll(): void
+    {
+        $this->store->preloadAll();
+    }
+
     /** @return array<string, mixed>|null */
     public function snapshot(string $category, string $resourceKey): ?array
     {

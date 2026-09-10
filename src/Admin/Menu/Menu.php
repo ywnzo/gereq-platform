@@ -56,8 +56,8 @@ final class Menu
             $rootsByGroup[$group][] = $item;
         }
 
-        // Sidebar spojuje sousední stejné group — proto nejdřív shluknout skupiny.
-        // Prázdná group = položky mimo sekce (např. Přehled) — vždy první.
+        // Sidebar merges adjacent same groups — cluster groups first.
+        // Empty group = items outside sections (e.g. Overview) — always first.
         $groupRanks = [];
         foreach ($rootsByGroup as $group => $roots) {
             usort($roots, static fn (MenuItem $a, MenuItem $b): int => $a->order <=> $b->order ?: strcmp($a->id, $b->id));
@@ -104,7 +104,7 @@ final class Menu
     }
 
     /**
-     * Trail: Přehled → modul(y) → aktuální stránka.
+     * Trail: Overview → module(s) → current page.
      *
      * @return list<array{label: string, url?: string|null}>
      */
@@ -175,7 +175,7 @@ final class Menu
             }
         }
 
-        // Poslední crumb nikdy není odkaz.
+        // Last crumb is never a link.
         $last = array_key_last($crumbs);
         if ($last !== null) {
             unset($crumbs[$last]['url']);

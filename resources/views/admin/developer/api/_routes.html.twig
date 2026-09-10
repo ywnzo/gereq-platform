@@ -1,0 +1,52 @@
+<div class="developer-stack">
+    {% for module, routes in modules %}
+        <section class="developer-card">
+            <header class="developer-card__head">
+                <h2>{{ module }}</h2>
+            </header>
+            <div class="table-wrap table-wrap--flush">
+                <table class="table table--developer table--api">
+                    <colgroup>
+                        <col class="col-method">
+                        <col class="col-path">
+                        <col class="col-scopes">
+                        <col class="col-summary">
+                        <col class="col-actions">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>{{ 'admin.api.col.method'|trans }}</th>
+                            <th>{{ 'admin.api.col.path'|trans }}</th>
+                            <th>{{ 'admin.api.col.scopes'|trans }}</th>
+                            <th>{{ 'admin.api.col.summary'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for route in routes %}
+                            <tr>
+                                <td><span class="method-pill method-pill--{{ route.method|lower }}">{{ route.method }}</span></td>
+                                <td class="table__path"><code>{{ route.path }}</code></td>
+                                <td class="table__wrap-cell muted">{{ route.scopes|join(', ') ?: 'common.none'|trans }}</td>
+                                <td class="table__wrap-cell">{{ route.summary ?: '—' }}</td>
+                                <td class="table__actions">
+                                    <button
+                                        type="button"
+                                        class="btn btn--ghost btn-sm"
+                                        data-api-test
+                                        data-method="{{ route.method|e('html_attr') }}"
+                                        data-path="{{ route.path|e('html_attr') }}"
+                                        data-summary="{{ route.summary|e('html_attr') }}"
+                                        data-scopes="{{ route.scopes|json_encode|e('html_attr') }}"
+                                    >{{ icon('play') }} {{ 'admin.api.test'|trans }}</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% else %}
+        <div class="empty"><h2>{{ 'empty.api_routes'|trans }}</h2><p>{{ empty_hint }}</p></div>
+    {% endfor %}
+</div>

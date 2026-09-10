@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Gereq\Debug;
 
 /**
- * Detekuje pravděpodobné N+1: stejný (normalizovaný) SQL fingerprint
- * se v requestu opakuje alespoň {@see $threshold}-krát.
+ * Detects likely N+1: the same (normalized) SQL fingerprint
+ * repeats at least {@see $threshold} times in the request.
  */
 final class NPlusOneDetector
 {
@@ -77,16 +77,16 @@ final class NPlusOneDetector
     }
 
     /**
-     * Sjednotí SQL tak, aby se lišící literály / bind hodnoty v predikátech
-     * počítaly jako stejný dotaz (typické Doctrine N+1 s různými id).
+     * Normalizes SQL so differing literals / bind values in predicates
+     * count as the same query (typical Doctrine N+1 with different ids).
      */
     public static function fingerprint(string $sql): string
     {
         $normalized = preg_replace('/\s+/u', ' ', trim($sql)) ?? trim($sql);
-        // string literály
+        // string literals
         $normalized = preg_replace("/'(?:''|\\\\'|[^'])*'/u", '?', $normalized) ?? $normalized;
         $normalized = preg_replace('/"(?:\\\\"|[^"])*"/u', '?', $normalized) ?? $normalized;
-        // čísla jen v predikátech / seznamech hodnot (=, <, >, ,, ()), ne SELECT 1 / LIMIT n
+        // numbers only in predicates / value lists (=, <, >, ,, ()), not SELECT 1 / LIMIT n
         $normalized = preg_replace('/([=<>,\(]\s*)-?\d+(?:\.\d+)?\b/u', '${1}?', $normalized) ?? $normalized;
         // IN (?, ?, ?) → IN (?)
         $normalized = preg_replace('/\(\s*\?(?:\s*,\s*\?)*\s*\)/u', '(?)', $normalized) ?? $normalized;

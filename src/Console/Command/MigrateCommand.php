@@ -13,7 +13,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'migrate', description: 'Spustit migrace (seed jen s --seed)')]
+#[AsCommand(name: 'migrate', description: 'Run migrations (seed only with --seed)')]
 final class MigrateCommand extends Command
 {
     public function __construct(

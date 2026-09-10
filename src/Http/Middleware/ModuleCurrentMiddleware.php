@@ -17,8 +17,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 /**
- * Blokuje admin UI zapnutého modulu, dokud není nainstalovaná verze = verze ze souborů
- * (a nejsou pending migrace). Nový Twig/JS se tak neukáže před „Aktualizovat“.
+ * Blocks admin UI for an enabled module until the installed version matches the files
+ * (and there are no pending migrations). New Twig/JS is hidden until "Update" is applied.
  */
 final class ModuleCurrentMiddleware implements MiddlewareInterface
 {

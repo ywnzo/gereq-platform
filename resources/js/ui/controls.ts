@@ -50,7 +50,7 @@ export function registerSwitch(alpine: typeof Alpine): void {
         },
     }));
 
-    /** Checkbox „stejné jako…“ — CSP-safe náhrada za x-data="{ same: … }". */
+    /** Checkbox "same as…" — CSP-safe replacement for x-data="{ same: … }". */
     alpine.data('gereqSameAs', () => ({
         same: false,
 

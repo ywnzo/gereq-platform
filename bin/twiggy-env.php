@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Bootstrap Twig Environment for Twiggy Language Server.
- * Používá stejný TwigRuntime jako aplikace (pojmenované metody = Go to Definition).
+ * Uses the same TwigRuntime as the app (named methods = Go to Definition).
  *
  * @see https://github.com/moetelo/twiggy/issues/52
  */

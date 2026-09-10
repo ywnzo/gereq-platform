@@ -14,7 +14,7 @@ do
     mkdir -p "$dir" 2>/dev/null || true
 done
 
-# Dev bind-mount: ponech UID hostitele, jen povol zápis PHP-FPM (www-data).
+# Dev bind-mount: keep host UID; only grant PHP-FPM (www-data) write access.
 chmod -R a+rwX storage 2>/dev/null || true
 
 # Tunable FPM pool size (defaults suit ~4–8 CPU / 8+ GiB RAM).

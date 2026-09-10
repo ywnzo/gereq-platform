@@ -123,12 +123,18 @@
     font-family: var(--gereq-font-sans);
     font-size: 11px;
     font-weight: 700;
+    flex-shrink: 0;
+}
+img.avatar {
+    object-fit: cover;
+    display: block;
 }
 html:not(.dark) .avatar {
     background: #18181b;
     color: var(--primary);
 }
 .avatar--sm { width: 24px; height: 24px; font-size: 10px; }
+.avatar--md { width: 36px; height: 36px; font-size: 12px; }
 .avatar--xl { width: 56px; height: 56px; font-size: 1.05rem; font-weight: 700; }
 .avatar-btn { border: 0; background: transparent; cursor: pointer; padding: 0; }
 .cell-user { display: flex; align-items: center; gap: 10px; }
@@ -320,6 +326,10 @@ html:not(.dark) .avatar {
 a.package-row__mod:hover {
     color: var(--text);
     border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+a.package-row__mod.is-busy {
+    opacity: 0.55;
+    pointer-events: none;
 }
 .package-row__mod.is-on {
     color: color-mix(in srgb, var(--success, #16a34a) 70%, var(--text));

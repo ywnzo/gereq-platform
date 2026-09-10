@@ -2,5 +2,44 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Ai" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/BikeService" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Bundles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/CRM" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Calendar" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/CarService" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Cms" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Coupons" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Currency" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/CustomerUploads" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Customers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Documents" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/ESign" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Emailing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Feeds" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Fleet" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Listings" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Loyalty" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Media" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/MoneyS3" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Newsletter" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Notifications" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Orders" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/PartsCatalog" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Payments" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Portals" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/ProductDiscounts" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Products" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Projects" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Returns" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Reviews" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/SearchEngines" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Shop" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Translate" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Viewings" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Vitality" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Warehouse" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/Webhooks" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/modules/iDoklad" vcs="Git" />
   </component>
 </project>

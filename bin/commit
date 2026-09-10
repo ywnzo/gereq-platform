@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# GEREQ — commit bez Co-authored-by (Cursor ani jiné trailery).
+# GEREQ — commit without Co-authored-by (Cursor or other trailers).
 #
-# Použití:
-#   bin/commit "feat: krátký popis"
+# Usage:
+#   bin/commit "feat: short description"
 #   bin/commit -m "fix: …"
-#   bin/commit -a -m "chore: …"     # stage tracked změn (git commit -a)
-#   bin/commit --all -m "…"         # git add -A před commitem
-#   bin/commit --install-hooks      # jen nastaví core.hooksPath=.githooks
+#   bin/commit -a -m "chore: …"     # stage tracked changes (git commit -a)
+#   bin/commit --all -m "…"         # git add -A before commit
+#   bin/commit --install-hooks      # only sets core.hooksPath=.githooks
 #
-# Message se vyčistí od Co-authored-by; hook to hlídá i u běžného `git commit`.
+# Message is stripped of Co-authored-by; the hook enforces this for plain `git commit` too.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -121,7 +121,7 @@ fi
 args=(commit)
 [[ "$COMMIT_ALL" -eq 1 ]] && args+=(-a)
 
-# HEREDOC → žádný Cursor trailer v -m z agenta; hook ještě jednou vyčistí
+# HEREDOC → no Cursor trailer in -m from agent; hook strips again
 msg_file="$(mktemp)"
 trap 'rm -f "$msg_file"' EXIT
 printf '%s\n' "$MSG" > "$msg_file"

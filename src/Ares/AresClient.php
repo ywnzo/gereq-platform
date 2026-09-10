@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Ares;
 
 /**
- * Tenký HTTP klient na veřejné REST API ARES (MF ČR).
+ * Thin HTTP client for the public ARES REST API (Czech Ministry of Finance).
  *
  * @see https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/v3/api-docs
  */

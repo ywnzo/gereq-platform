@@ -1,13 +1,15 @@
 {
   "name": "twig-goto",
   "displayName": "GEREQ Twig IDE",
-  "description": "Hover, autocomplete a Go to Definition pro Twig objekty z GEREQ controllerů",
-  "version": "0.3.4",
+  "description": "Hover, autocomplete a Go to Definition pro Twig objekty z GEREQ controller\u016f",
+  "version": "0.3.5",
   "publisher": "gereq",
   "engines": {
     "vscode": "^1.88.0"
   },
-  "categories": ["Programming Languages"],
+  "categories": [
+    "Programming Languages"
+  ],
   "activationEvents": [
     "onStartupFinished",
     "workspaceContains:**/*.twig"

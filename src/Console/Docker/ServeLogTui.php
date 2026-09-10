@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Docker;
 
+use Gereq\Debug\NPlusOneLog;
+
 /**
  * Compact Docker log viewer.
  * Default: pretty scrolling stream (Cursor / IDE friendly).
@@ -25,7 +27,7 @@ final class ServeLogTui
     private bool $showAssets = false;
     private bool $showPhpNoise = false;
     private bool $showNoise = false;
-    /** Nginx→Vite proxy access (304 spam); výchozí skryté. Vite log řádky (svc hot) zůstávají. */
+    /** Nginx→Vite proxy access (304 spam); hidden by default. Vite log lines (svc hot) remain visible. */
     private bool $showHotProxy = false;
     private bool $paused = false;
     private bool $showHelp = false;
@@ -33,8 +35,9 @@ final class ServeLogTui
     private int $cols = 100;
     private int $rows = 30;
     private string $stty = '';
-    /** Pending letter sequence (e.g. `r` → wait for `b` = rebuild). */
+    /** Pending letter sequence (e.g. `r` → wait for `b` = rebuild, `n` → `nn` = N+1). */
     private string $keySeq = '';
+    private float $keySeqAt = 0.0;
     /** @var resource|null */
     private $viteLogHandle = null;
     private int $viteLogPos = 0;
@@ -124,6 +127,9 @@ final class ServeLogTui
                 }
 
                 $this->pollViteLog(stream: true);
+                if ($interactive) {
+                    $this->flushPendingKeySeq(stream: true);
+                }
 
                 $status = proc_get_status($proc);
                 if (!$status['running'] && $bufOut === '' && $bufErr === '') {
@@ -214,6 +220,7 @@ final class ServeLogTui
                 }
 
                 $this->pollViteLog(stream: false);
+                $this->flushPendingKeySeq(stream: false);
 
                 $status = proc_get_status($proc);
                 if (!$status['running'] && $bufOut === '' && $bufErr === '') {
@@ -296,8 +303,8 @@ final class ServeLogTui
 
     private function shouldHide(AccessLogEntry $entry): bool
     {
-        // Vite access přes nginx (304 /@vite, /resources/*.ts …) — výchozí skryté.
-        // Řádky z vite-dev.log (access=false, svc hot) se vždy ukazují.
+        // Vite access via nginx (304 /@vite, /resources/*.ts …) — hidden by default.
+        // Lines from vite-dev.log (access=false, svc hot) are always shown.
         if ($entry->access && $entry->isHotProxy() && !$this->showHotProxy) {
             return true;
         }
@@ -369,15 +376,22 @@ final class ServeLogTui
                 if (strlen($this->keySeq) > 4) {
                     $this->keySeq = substr($this->keySeq, -4);
                 }
+                if (str_ends_with($this->keySeq, 'nn')) {
+                    $this->keySeq = '';
+                    $this->dumpNPlusOnes($stream);
+
+                    continue;
+                }
                 if (str_ends_with($this->keySeq, 'rb')) {
                     $this->keySeq = '';
                     $this->rebuildStyles($stream);
 
                     continue;
                 }
-                // Wait for second letter of [rb] rebuild.
-                if (str_ends_with($this->keySeq, 'r')) {
-                    $this->keySeq = 'r';
+                // Wait for second letter of [nn] / [rb].
+                if (str_ends_with($this->keySeq, 'n') || str_ends_with($this->keySeq, 'r')) {
+                    $this->keySeq = str_ends_with($this->keySeq, 'n') ? 'n' : 'r';
+                    $this->keySeqAt = microtime(true);
 
                     continue;
                 }
@@ -394,11 +408,6 @@ final class ServeLogTui
                 if ($stream) {
                     echo $this->c('dim', '  · php ' . ($this->showPhpNoise ? 'on' : 'off')) . "\n";
                 }
-            } elseif ($key === 'n') {
-                $this->showNoise = !$this->showNoise;
-                if ($stream) {
-                    echo $this->c('dim', '  · noise ' . ($this->showNoise ? 'on' : 'off')) . "\n";
-                }
             } elseif ($key === 'h' && $this->hot) {
                 $this->showHotProxy = !$this->showHotProxy;
                 if ($stream) {
@@ -410,6 +419,51 @@ final class ServeLogTui
                 $this->showHelp = !$this->showHelp;
             }
         }
+    }
+
+    /** After ~450 ms without a second key: lone `n` = toggle noise, lone `r` is discarded. */
+    private function flushPendingKeySeq(bool $stream): void
+    {
+        if ($this->keySeq !== 'n' && $this->keySeq !== 'r') {
+            return;
+        }
+        if ((microtime(true) - $this->keySeqAt) < 0.45) {
+            return;
+        }
+
+        $pending = $this->keySeq;
+        $this->keySeq = '';
+        if ($pending !== 'n') {
+            return;
+        }
+
+        $this->showNoise = !$this->showNoise;
+        if ($stream) {
+            echo $this->c('dim', '  · noise ' . ($this->showNoise ? 'on' : 'off')) . "\n";
+        } else {
+            $this->render(force: true);
+        }
+    }
+
+    private function dumpNPlusOnes(bool $stream): void
+    {
+        NPlusOneLog::setPath($this->basePath . '/storage/logs/nplusone.log');
+        $lines = NPlusOneLog::formatRecent(20);
+
+        if ($stream) {
+            echo $this->c('warn', '  · nn N+1 (20 min)') . "\n";
+            foreach ($lines as $line) {
+                echo $this->c('lime', $line) . "\n";
+            }
+
+            return;
+        }
+
+        $this->pushBuildLine('nn N+1 (20 min)');
+        foreach ($lines as $line) {
+            $this->pushBuildLine($line);
+        }
+        $this->render(force: true);
     }
 
     private function rebuildStyles(bool $stream): void
@@ -495,7 +549,7 @@ final class ServeLogTui
         echo $this->c('dim', str_repeat('─', $w)) . "\n";
         echo $this->c('dim', 'TIME      SVC    METHOD  CODE  SIZE   PATH') . "\n";
         echo $this->c('dim', str_repeat('─', $w)) . "\n";
-        $keys = '[q]uit [a]ssets [p]hp [n]oise [rb]uild';
+        $keys = '[q]uit [a]ssets [p]hp [n]oise [nn] N+1 [rb]uild';
         if ($this->hot) {
             $keys .= ' [h]ot';
         }
@@ -596,7 +650,7 @@ final class ServeLogTui
         if ($this->lanIp !== null) {
             $out[] = $this->boxRow(sprintf('LAN http://%s:%d', $this->lanIp, $this->port), $w);
         }
-        $keys = '[q]uit [c]lear [a]ssets [p]hp [n]oise [rb]uild';
+        $keys = '[q]uit [c]lear [a]ssets [p]hp [n]oise [nn] N+1 [rb]uild';
         if ($this->hot) {
             $keys .= ' [h]ot';
         }
@@ -615,6 +669,7 @@ final class ServeLogTui
                 '  a  assety (/build, /media…/file)',
                 '  p  php /index.php',
                 '  n  nginx/redis systémový šum',
+                '  nn N+1 za 20 min (plné SQL)',
                 '  rb bun run build (rebuild stylů)',
             ];
             if ($this->hot) {
@@ -846,7 +901,7 @@ final class ServeLogTui
         $time = date('H:i:s');
         $message = $line;
 
-        // `10:07:19 AM [vite] (client) hmr update …` nebo `9:15:08 AM [vite] …`
+        // `10:07:19 AM [vite] (client) hmr update …` or `9:15:08 AM [vite] …`
         if (preg_match(
             '/^(?P<h>\d{1,2}):(?P<m>\d{2}):(?P<s>\d{2})\s*(?P<ampm>AM|PM)?\s*\[vite\]\s*(?P<msg>.+)$/i',
             $line,

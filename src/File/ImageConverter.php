@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Gereq\File;
 
 /**
- * Preferuje AVIF; když není k dispozici nebo selže, použije WebP.
- * GIF a ne-obrázky nechá beze změny (animace / nepodporovaný vstup).
+ * Prefers AVIF; falls back to WebP when unavailable or on failure.
+ * Leaves GIFs and non-images unchanged (animation / unsupported input).
  */
 final class ImageConverter
 {
@@ -39,7 +39,7 @@ final class ImageConverter
             return null;
         }
 
-        // Už AVIF — nic nepřekódovávat.
+        // Already AVIF — skip re-encoding.
         if ($mime === 'image/avif' && $this->supportsAvif()) {
             return null;
         }
@@ -70,7 +70,7 @@ final class ImageConverter
             }
 
             if ($this->supportsWebp()) {
-                // Už WebP a AVIF nejde — nechat originál.
+                // Already WebP and AVIF unavailable — keep original.
                 if ($mime === 'image/webp') {
                     return null;
                 }

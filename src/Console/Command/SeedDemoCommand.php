@@ -10,7 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'seed:demo', description: 'Vytvořit demo uživatele a realistická data pro klikání')]
+#[AsCommand(name: 'seed:demo', description: 'Create a demo user and realistic click-through data')]
 final class SeedDemoCommand extends Command
 {
     public function __construct(private readonly DemoSeeder $demoSeeder)

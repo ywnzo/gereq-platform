@@ -11,7 +11,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'about', description: 'Informace o GEREQ Platform')]
+#[AsCommand(name: 'about', description: 'Information about GEREQ Platform')]
 final class AboutCommand extends Command
 {
     public function __construct(private readonly ModuleManager $modules)

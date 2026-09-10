@@ -14,6 +14,7 @@ use Gereq\Console\Command\MakeResourceCommand;
 use Gereq\Console\Command\MigrateCommand;
 use Gereq\Console\Command\MigrateStatusCommand;
 use Gereq\Console\Command\ModuleDisableCommand;
+use Gereq\Console\Command\NnCommand;
 use Gereq\Console\Command\ModuleEnableCommand;
 use Gereq\Console\Command\ModulePauseCommand;
 use Gereq\Console\Command\ModuleListCommand;
@@ -74,6 +75,7 @@ final class ConsoleKernel
             SeedDemoCommand::class,
             ServeCommand::class,
             ServeDockerCommand::class,
+            NnCommand::class,
             TwigTypesCommand::class,
             SyncRatesCommand::class,
             SyncJamaCatalogCommand::class,

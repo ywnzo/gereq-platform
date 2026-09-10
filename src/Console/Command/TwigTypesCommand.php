@@ -11,7 +11,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
     name: 'twig:types',
-    description: 'Vygenerovat Twig typy do .cache/twig/ (hover/completion/goto v IDE)',
+    description: 'Generate Twig types into .cache/twig/ (hover/completion/goto in IDE)',
 )]
 final class TwigTypesCommand extends Command
 {

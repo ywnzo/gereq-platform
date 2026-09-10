@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Standalone Pulse server (bez VS Code) — pro test UI.
+ * Standalone Pulse server (without VS Code) — for UI testing.
  * Usage: node tools/gereq-monitor/standalone.js
  */
 const path = require('path');
@@ -11,7 +11,7 @@ const workspaceRoot = path.resolve(__dirname, '../..');
 const log = { appendLine: (m) => console.log(m) };
 const store = new Store(path.join(workspaceRoot, '.cache', 'worklog'), log);
 
-// demo event pokud prázdné
+// demo event when empty
 if (store.readEvents({ limit: 1 }).length === 0) {
   store.append({
     type: 'session_start',

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Admin\Search;
 
 /**
- * Zdroj živého hledání — registruje se z modulu přes adminSearch()->add(...).
+ * Live search source — registered from a module via adminSearch()->add(...).
  *
  * @phpstan-type SearchFn callable(string, int): list<AdminSearchHit>
  */

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Api\OpenApi;
 
 /**
- * Převod GEREQ validation rulesetů na OpenAPI 3 JSON Schema (properties).
+ * Converts GEREQ validation rulesets to OpenAPI 3 JSON Schema (properties).
  */
 final class ValidationRulesToSchema
 {

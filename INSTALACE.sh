@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# RealEstates demo — rozbalte zip a spusťte:
+# RealEstates demo — unpack the zip and run:
 #   ./INSTALACE.sh
 #   ./INSTALACE.sh --serve
 set -euo pipefail

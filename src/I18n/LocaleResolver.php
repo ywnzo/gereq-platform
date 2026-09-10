@@ -10,7 +10,7 @@ use Gereq\Setting\Settings;
 use Gereq\User\Entity\User;
 
 /**
- * Priorita: uživatel → globální nastavení → config → fallback.
+ * Priority: user → global settings → config → fallback.
  */
 final class LocaleResolver
 {

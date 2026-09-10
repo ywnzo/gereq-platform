@@ -1,2 +1,2 @@
-{# Musí jít AŽ za kernel.css, jinak výchozí tokeny přepíšou klientské barvy. #}
+{# Must come AFTER kernel.css, otherwise default tokens override client colors. #}
 <style nonce="{{ csp_nonce() }}">{{ brand_css() }}</style>

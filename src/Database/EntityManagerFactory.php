@@ -45,7 +45,7 @@ final class EntityManagerFactory
         $setup->enableNativeLazyObjects(true);
         $setup->addCustomStringFunction('REPLACE', Dql\ReplaceFunction::class);
 
-        // V debugu necacheovat metadata na disk — jinak po změně entit zůstane stale mapa.
+        // In debug, do not cache metadata to disk — otherwise the map stays stale after entity changes.
         if (!$isDev) {
             $metaCache = new FilesystemAdapter('doctrine_meta', 0, $this->basePath . '/storage/cache/doctrine');
             $setup->setMetadataCache($metaCache);
@@ -80,6 +80,7 @@ final class EntityManagerFactory
                 'user' => $this->config->get('database.username'),
                 'password' => $this->config->get('database.password'),
                 'charset' => 'utf8mb4',
+                'wrapperClass' => CachingConnection::class,
             ],
             'pgsql' => [
                 'driver' => 'pdo_pgsql',
@@ -89,10 +90,12 @@ final class EntityManagerFactory
                 'user' => $this->config->get('database.username'),
                 'password' => $this->config->get('database.password'),
                 'charset' => 'utf8',
+                'wrapperClass' => CachingConnection::class,
             ],
             default => [
                 'driver' => 'pdo_sqlite',
                 'path' => $this->sqlitePath(),
+                'wrapperClass' => CachingConnection::class,
             ],
         };
     }

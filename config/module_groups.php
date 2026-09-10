@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 /**
- * Skupiny balíčků / pluginů.
+ * Package / plugin groups.
  *
- * - `surface`: packages (doménové balíčky) | plugins (třetí strany)
- * - `modules`: pořadí zobrazení a zapnutí
- * - `required`: bez kterých není „kompletní“ (prázdné = všechny)
- * - manifest `groups` v module.php se sem doplní
+ * - `surface`: packages (domain bundles) | plugins (third parties)
+ * - `modules`: display order and enablement
+ * - `required`: required for a "complete" setup (empty = all)
+ * - manifest `groups` in module.php are merged here
  */
 return [
     'ecs' => [
@@ -68,10 +68,7 @@ return [
             'calendar',
             'viewings',
             'documents',
-            'notifications',
             'reviews',
-            'newsletter',
-            'portals',
         ],
         'required' => [
             'currency',
@@ -81,7 +78,7 @@ return [
         ],
     ],
 
-    // ——— Plug-iny (třetí strany) ———
+    // ——— Plug-ins (third parties) ———
     'plugin.payments' => [
         'name' => 'Platby',
         'label' => 'admin.plugins.group.payments',

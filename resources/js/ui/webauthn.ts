@@ -122,11 +122,11 @@ async function postJson(url: string, body: Record<string, unknown> = {}): Promis
 
 function formatWebAuthnError(err: unknown): string | null {
     if (typeof window !== 'undefined' && !window.isSecureContext) {
-        return 'Passkeys vyžadují secure context. Na realestates.local použijte HTTPS a v prohlížeči certifikát jednou přijměte (nebo mkcert). Doména *.localhost z hosts na LAN nefunguje — prohlížeč ji vždy pošle na 127.0.0.1.';
+        return 'Passkeys vyžadují secure context. Na realestates.dev / realestates.local použijte HTTPS a v prohlížeči certifikát jednou přijměte (nebo mkcert). Doména *.localhost z hosts na LAN nefunguje — prohlížeč ji vždy pošle na 127.0.0.1.';
     }
     if (err instanceof DOMException) {
         if (err.name === 'AbortError' || err.name === 'NotAllowedError') {
-            return 'Passkey byl zrušen, nebo ho prohlížeč nepovolil. Ověřte, že v URL je zelený/zámek HTTPS (ne „Nezabezpečeno“) na hostname z hosts (např. https://realestates.local).';
+            return 'Passkey byl zrušen, nebo ho prohlížeč nepovolil. Ověřte, že v URL je zelený/zámek HTTPS (ne „Nezabezpečeno“) na hostname z hosts (např. https://realestates.dev).';
         }
         if (err.name === 'InvalidStateError') {
             return 'Tento passkey je už zaregistrovaný.';
@@ -135,7 +135,7 @@ function formatWebAuthnError(err: unknown): string | null {
             return 'Tento prohlížeč nebo zařízení passkeys nepodporuje.';
         }
         if (err.name === 'SecurityError') {
-            return 'Neplatná doména pro passkeys. Použijte hostname (ne IP). Na LAN: hosts → realestates.local a https://realestates.local (cert musí obsahovat toto jméno).';
+            return 'Neplatná doména pro passkeys. Použijte hostname (ne IP). Na LAN: hosts → realestates.dev a https://realestates.dev (cert musí obsahovat toto jméno).';
         }
         return err.message ? `${err.name}: ${err.message}` : err.name;
     }

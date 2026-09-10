@@ -336,7 +336,7 @@
     {% if groups is defined and groups is not empty %}
     <section class="design-panel" data-panel="packages" role="tabpanel">
         <div class="list-shell__panel">
-            {% include 'admin/modules/_group_table.html.twig' with { groups: groups } %}
+            {% include 'admin/modules/_group_table.html.twig' with { groups: groups, return_tab: 'packages' } %}
         </div>
     </section>
     {% endif %}
@@ -363,7 +363,8 @@
             {% include 'admin/modules/_group_table.html.twig' with {
                 groups: pluginGroups|default([]),
                 empty_title: 'admin.plugins.empty'|trans,
-                empty_hint: 'admin.plugins.empty.hint'|trans
+                empty_hint: 'admin.plugins.empty.hint'|trans,
+                return_tab: 'plugins'
             } %}
         </div>
     </section>

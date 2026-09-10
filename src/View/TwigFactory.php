@@ -17,6 +17,7 @@ use Gereq\Http\Router;
 use Gereq\I18n\LocaleCatalog;
 use Gereq\Security\Csrf;
 use Gereq\Support\AppVersion;
+use Gereq\Support\SimpleMarkdown;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -145,6 +146,11 @@ final class TwigFactory
         $twig->addFilter(new TwigFilter('trans', [$runtime, 'trans']));
         $twig->addFilter(new TwigFilter('audit_action', [$runtime, 'auditAction']));
         $twig->addFilter(new TwigFilter('audit_action_tone', [$runtime, 'auditActionTone']));
+        $twig->addFilter(new TwigFilter(
+            'simple_markdown',
+            static fn (?string $value): string => SimpleMarkdown::toHtml($value),
+            ['is_safe' => ['html']],
+        ));
 
         if ($this->debugBar !== null && $this->debugBar->enabled()) {
             $profile = new Profile();

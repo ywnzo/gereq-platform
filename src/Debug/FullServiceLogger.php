@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Debug;
 
 /**
- * Append-only debug log servisních toků (CarService / BikeService / iDoklad / dokumenty).
+ * Append-only debug log of service flows (CarService / BikeService / iDoklad / documents).
  * Soubor: storage/logs/full-service.log
  */
 final class FullServiceLogger

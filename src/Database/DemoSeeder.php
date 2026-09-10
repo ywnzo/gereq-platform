@@ -11,8 +11,8 @@ use Gereq\User\Entity\Role;
 use Gereq\User\Entity\User;
 
 /**
- * Idempotentní demo data pro klikání v administraci.
- * Marker: produkt SKU GRQ-SVC-IMPL — pokud existuje, business data se znovu nevytváří.
+ * Idempotent demo data for clicking through the admin UI.
+ * Marker: product SKU GRQ-SVC-IMPL — when present, business data is not recreated.
  */
 final class DemoSeeder
 {
@@ -37,14 +37,19 @@ final class DemoSeeder
         $manager = $users['manager'];
         $editor = $users['editor'];
 
-        // Katalog dopravy/plateb/kupónů/newsletteru — vždy upsert (i při existujícím markeru)
+        // Shipping/payment/coupon/newsletter catalog — always upsert (even with existing marker)
         $this->seedShipping($log);
         $this->seedPayments($log);
         $this->seedCoupons($log);
         $this->seedNewsletter($log);
         $this->seedLoyaltyFeedsBundles($log);
-        // CMS one-page (home) — vždy obnovit obsah landing sekcí
+        // CMS one-page (home) — always refresh landing section content
         $this->ensureCmsHomeOnePage($log);
+        // Real-estate CRM + listing → e-mail automation — always upsert
+        $automation = new RealEstateAutomationDemoSeeder($this->em);
+        foreach ($automation->seed() as $line) {
+            $log[] = $line;
+        }
 
         if ($this->alreadySeeded()) {
             $this->seedReviewsAndReturnsFromExisting($log);
@@ -385,7 +390,7 @@ final class DemoSeeder
             $products[] = $product;
         }
 
-        // Jeden draft produkt pro UI stavů
+        // One draft product for UI states
         $draft = new \Modules\Products\Domain\Product('GRQ-DRAFT-AI', 'AI asistent (připravujeme)');
         $draft->setDescription('Interní draft — ještě neprodávat.');
         $draft->setStatus('draft');
@@ -442,7 +447,7 @@ final class DemoSeeder
             $this->em->persist($mov);
         }
 
-        // Low stock položka
+        // Low stock item
         $low = null;
         foreach ($products as $p) {
             if ($p->sku() === 'GRQ-MON-27') {
@@ -574,7 +579,7 @@ final class DemoSeeder
             $m->setSortOrder($sort);
             $m->setActive(true);
         }
-        // Staré demo kódy (např. CP) vypnout
+        // Disable legacy demo codes (e.g. CP)
         foreach ($repo->findAll() as $legacy) {
             if (!in_array($legacy->code(), $keep, true) && $legacy->isActive()) {
                 $legacy->setActive(false);
@@ -605,7 +610,7 @@ final class DemoSeeder
             ['COD', 'Dobírka', 'cod', 'manual', '39', '0', 'Platba hotově nebo kartou při převzetí. Poplatek 39 Kč.', 20],
         ];
 
-        // Staré demo metody bez gatewaye nechat neaktivní, ať nematou.
+        // Keep legacy demo methods without a gateway inactive so they do not confuse.
         foreach (['TWISTO', 'SKIPPAY', 'PAYPAL'] as $dead) {
             $old = $repo->findOneBy(['code' => $dead]);
             if ($old instanceof \Modules\Payments\Domain\PaymentMethod) {
@@ -980,7 +985,7 @@ final class DemoSeeder
 
         $year = (new \DateTimeImmutable())->format('Y');
 
-        // 1) uhrazená objednávka
+        // 1) paid order
         $c1 = $byEmail['helena.richter@logistik-cz.eu'] ?? $customers[0];
         $o1 = new \Modules\Orders\Domain\Order($c1->id(), "ORD-{$year}-0001", 'CZK');
         $o1->setStatus('fulfilled');
@@ -1000,7 +1005,7 @@ final class DemoSeeder
         $this->em->persist(new \Modules\Orders\Domain\InvoicePayment($inv1->id(), $inv1->total(), 'bank_transfer', new \DateTimeImmutable('-12 days')));
         $inv1->markPaid();
 
-        // 2) potvrzená, vydaná faktura neuhrazená
+        // 2) confirmed order, issued invoice unpaid
         $c2 = $byEmail['petra.dvorakova@moravia.cz'] ?? $customers[0];
         $o2 = new \Modules\Orders\Domain\Order($c2->id(), "ORD-{$year}-0002", 'CZK');
         $o2->setStatus('confirmed');
@@ -1335,7 +1340,7 @@ SVG;
                 $home->setMetaDescription('Realitní kancelář RealEstates — prodej a pronájem bytů a domů v Praze a Brně.');
             }
             $this->em->flush();
-            // Bloky home už řeší ensureCmsHomeOnePage() při každém seed:demo.
+            // Home blocks are handled by ensureCmsHomeOnePage() on every seed:demo.
         }
 
         $about = $pageRepo->findOneBy(['slug' => 'o-nas']);
@@ -1620,7 +1625,7 @@ SVG;
         $this->em->flush();
     }
 
-    /** Po obnovení bloků srovná publikovaný snapshot, ať veřejné API hned čte nový one-page. */
+    /** After refreshing blocks, syncs the published snapshot so the public API reads the new one-page immediately. */
     private function syncHomePublicSnapshot(\Modules\Cms\Domain\Page $home): void
     {
         if (!class_exists(\Gereq\Publish\Entity\ContentStagingEntry::class)
@@ -1637,7 +1642,7 @@ SVG;
             return;
         }
 
-        // Bez stagingu veřejné API bere živou working copy — přesně to po demo seedu chceme.
+        // Without staging, the public API uses the live working copy — exactly what we want after demo seed.
         $this->em->remove($entry);
         $this->em->flush();
     }

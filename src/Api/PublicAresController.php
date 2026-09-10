@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
 
-/** Veřejný proxy na ARES (adresy) pro storefront — s rate limitem. */
+/** Public ARES proxy (addresses) for the storefront — rate limited. */
 final class PublicAresController extends Controller
 {
     public function __construct(

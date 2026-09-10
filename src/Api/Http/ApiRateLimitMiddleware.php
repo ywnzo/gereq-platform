@@ -34,25 +34,37 @@ final class ApiRateLimitMiddleware implements MiddlewareInterface
 
         $isWrite = in_array(strtoupper($request->getMethod()), ['POST', 'PUT', 'PATCH', 'DELETE'], true);
         $path = $request->getPathInfo();
+        $isPublic = str_starts_with($path, '/api/public/') || $path === '/api/public';
         $isStore = str_starts_with($path, '/api/v1/store/')
             || str_starts_with($path, '/api/v1/uploads/');
-        $limit = $isStore
-            ? (int) $this->config->get('api.rate_limit.store', 60)
-            : ($isWrite
+
+        if ($isPublic) {
+            $limit = $isWrite
+                ? (int) $this->config->get('api.rate_limit.public_write', 30)
+                : (int) $this->config->get('api.rate_limit.public', 120);
+        } elseif ($isStore) {
+            $limit = (int) $this->config->get('api.rate_limit.store', 60);
+        } else {
+            $limit = $isWrite
                 ? (int) $this->config->get('api.rate_limit.write', 120)
-                : (int) $this->config->get('api.rate_limit.standard', 600));
+                : (int) $this->config->get('api.rate_limit.standard', 600);
+        }
         $window = (int) $this->config->get('api.rate_limit.window', 60);
 
         $key = 'api:' . ($request->attributes->get('_api_token')?->id() ?? $request->getClientIp() ?? 'anon');
-        // Token not yet set before auth — use IP for pre-auth limit key
+        // Token not yet set before auth — use IP / Authorization hash for pre-auth limit key
         if ($request->attributes->get('_api_token') === null) {
             $auth = (string) $request->headers->get('Authorization', '');
-            $key = 'api:' . ($auth !== '' ? hash('sha256', $auth) : ($request->getClientIp() ?? 'anon'));
+            $apiKey = (string) $request->headers->get('X-Api-Key', '');
+            $bucket = $auth !== '' ? $auth : ($apiKey !== '' ? $apiKey : '');
+            $key = 'api:' . ($bucket !== '' ? hash('sha256', $bucket) : ($request->getClientIp() ?? 'anon'));
         }
         if ($isStore) {
             $key = 'store:' . ($request->getClientIp() ?? 'anon');
         }
-
+        if ($isPublic) {
+            $key = 'public:' . ($request->getClientIp() ?? 'anon') . ':' . hash('sha256', (string) $request->headers->get('Authorization', '') . '|' . (string) $request->headers->get('X-Api-Key', ''));
+        }
         $ok = $this->limiter->hit($key . ($isWrite ? ':w' : ':r'), $limit, $window);
         if (!$ok) {
             $response = ApiResponse::error('rate_limited', 'Too many requests.', [], 429);

@@ -26,7 +26,7 @@ final class GeoDistanceTest extends TestCase
 
     public function testPragueDistanceIsReasonable(): void
     {
-        // Václavské nám. → Karlův most ~1.5–2 km
+        // Wenceslas Square → Charles Bridge ~1.5–2 km
         $meters = GeoDistance::meters(50.081, 14.427, 50.086, 14.411);
         self::assertGreaterThan(1000, $meters);
         self::assertLessThan(2500, $meters);

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Admin\Search;
 
 /**
- * Jedna položka výsledku živého admin search (Ctrl+K).
+ * One live admin search result item (Ctrl+K).
  */
 final class AdminSearchHit
 {

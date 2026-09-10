@@ -1,13 +1,15 @@
 {
   "name": "work-monitor",
   "displayName": "GEREQ Pulse",
-  "description": "GEREQ Pulse — Toggl-style time tracking z Cursoru (Timer / Day / Week). UI :8772",
-  "version": "0.3.0",
+  "description": "GEREQ Pulse \u2014 Toggl-style time tracking z Cursoru (Timer / Day / Week). UI :8772",
+  "version": "0.3.1",
   "publisher": "gereq",
   "engines": {
     "vscode": "^1.88.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],

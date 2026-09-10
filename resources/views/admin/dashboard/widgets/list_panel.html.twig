@@ -1,0 +1,72 @@
+{#
+    Generický seznamový panel pro dashboard.
+
+    items: list<{
+        title: string,
+        href?: string,
+        icon?: string,
+        meta?: string,
+        badge?: {label: string, tone?: 'ok'|'warn'|'danger'|'muted'|'info'|'signal'},
+        aside?: string,
+        aside_hint?: string,
+    }>
+    stats: list<{label: string, value: string}> (volitelný souhrn pod seznamem)
+#}
+<section class="panel panel--list">
+    <header class="panel__head">
+        <div>
+            <h2>{{ title }}</h2>
+            {% if subtitle|default('') != '' %}
+                <p class="muted panel__sub">{{ subtitle }}</p>
+            {% endif %}
+        </div>
+        {% if href|default(null) %}
+            <a class="btn btn--ghost btn-sm" href="{{ href }}">{{ link_label|default('common.open'|trans) }}</a>
+        {% endif %}
+    </header>
+    {% if items|default([]) is empty %}
+        <div class="empty"><p>{{ empty_message|default('empty.generic'|trans) }}</p></div>
+    {% else %}
+        <ul class="dash-list">
+            {% for item in items %}
+                <li class="dash-list__item">
+                    {% set tag = item.href|default(null) ? 'a' : 'div' %}
+                    <{{ tag }}{% if tag == 'a' %} href="{{ item.href }}"{% endif %} class="dash-list__row">
+                        {% if item.icon|default('') != '' %}
+                            <span class="dash-list__icon" aria-hidden="true">{{ icon(item.icon) }}</span>
+                        {% endif %}
+                        <span class="dash-list__body">
+                            <strong class="dash-list__title">{{ item.title }}</strong>
+                            {% if item.meta|default('') != '' %}
+                                <span class="dash-list__meta muted">{{ item.meta }}</span>
+                            {% endif %}
+                        </span>
+                        {% if item.badge|default(null) or item.aside|default('') != '' %}
+                            <span class="dash-list__aside">
+                                {% if item.aside|default('') != '' %}
+                                    <span class="dash-list__aside-value">{{ item.aside }}</span>
+                                {% endif %}
+                                {% if item.aside_hint|default('') != '' %}
+                                    <span class="dash-list__aside-hint muted">{{ item.aside_hint }}</span>
+                                {% endif %}
+                                {% if item.badge|default(null) %}
+                                    <span class="badge badge--{{ item.badge.tone|default('muted') }}">{{ item.badge.label }}</span>
+                                {% endif %}
+                            </span>
+                        {% endif %}
+                    </{{ tag }}>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% if stats|default([]) is not empty %}
+        <div class="dash-chart__stats">
+            {% for stat in stats %}
+                <div>
+                    <span class="muted">{{ stat.label }}</span>
+                    <strong>{{ stat.value }}</strong>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>

@@ -410,4 +410,8 @@ GEREQ_PLATFORM (gitlab.com/gereq/GEREQ_PLATFORM)
 
 Platforma je od začátku navržena jako integrační vrstva: **Admin + Domain + API + Events + Webhooks**.
 
+## Dokumentace
+
+Kompletní anglická dokumentace: [docs/index.md](docs/index.md) (architektura, moduly, infrastruktura, API, dashboard widgety, …).
+
 Admin formuláře (atributy `#[FormField]` / `#[FormGenerator]`, `forms()->render()`): viz [docs/FORMS.md](docs/FORMS.md).

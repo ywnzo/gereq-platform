@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Twig funkce platformy — cíle pro Go to Definition z .twig šablon.
+ * Platform Twig functions — Go to Definition targets from .twig templates.
  */
 final class TwigRuntime
 {

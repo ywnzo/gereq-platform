@@ -1,0 +1,78 @@
+{#
+  Fullscreen image viewer. Include once in admin layout.
+  Use: window.gereq.openImage(src, { alt })
+  Auto: clicks on image links / [data-gereq-image] / [data-pc-lightbox-open]
+#}
+<div
+    id="gereq-image-viewer"
+    class="g-image-viewer"
+    x-data="gereqImageViewer"
+    x-cloak
+    :class="open ? 'is-open' : ''"
+    data-i18n-close="{{ 'ui.image_viewer.close'|trans|e('html_attr') }}"
+    data-i18n-zoom-in="{{ 'ui.image_viewer.zoom_in'|trans|e('html_attr') }}"
+    data-i18n-zoom-out="{{ 'ui.image_viewer.zoom_out'|trans|e('html_attr') }}"
+    data-i18n-rotate-left="{{ 'ui.image_viewer.rotate_left'|trans|e('html_attr') }}"
+    data-i18n-rotate-right="{{ 'ui.image_viewer.rotate_right'|trans|e('html_attr') }}"
+    data-i18n-reset="{{ 'ui.image_viewer.reset'|trans|e('html_attr') }}"
+    role="presentation"
+>
+    <div class="g-image-viewer__backdrop" @click="close"></div>
+    <div
+        class="g-image-viewer__dialog"
+        role="dialog"
+        aria-modal="true"
+        :aria-hidden="open ? 'false' : 'true'"
+        aria-labelledby="gereq-image-viewer-title"
+        @click.self="close"
+    >
+        <header class="g-image-viewer__bar">
+            <h2 id="gereq-image-viewer-title" class="g-image-viewer__title" x-text="alt || ''"></h2>
+            <div class="g-image-viewer__tools">
+                <button type="button" class="g-image-viewer__btn" @click="zoomOut" :title="labels.zoomOut" :aria-label="labels.zoomOut">
+                    {{ icon('zoom-out') }}
+                </button>
+                <span class="g-image-viewer__zoom" x-text="zoomLabel" aria-live="polite"></span>
+                <button type="button" class="g-image-viewer__btn" @click="zoomIn" :title="labels.zoomIn" :aria-label="labels.zoomIn">
+                    {{ icon('zoom-in') }}
+                </button>
+                <span class="g-image-viewer__sep" aria-hidden="true"></span>
+                <button type="button" class="g-image-viewer__btn" @click="rotateLeft" :title="labels.rotateLeft" :aria-label="labels.rotateLeft">
+                    {{ icon('rotate-left') }}
+                </button>
+                <button type="button" class="g-image-viewer__btn" @click="rotateRight" :title="labels.rotateRight" :aria-label="labels.rotateRight">
+                    {{ icon('rotate-right') }}
+                </button>
+                <button type="button" class="g-image-viewer__btn" @click="resetView" :title="labels.reset" :aria-label="labels.reset">
+                    {{ icon('refresh') }}
+                </button>
+                <span class="g-image-viewer__sep" aria-hidden="true"></span>
+                <button type="button" class="g-image-viewer__btn" @click="close" :title="labels.close" :aria-label="labels.close" x-ref="closeBtn">
+                    {{ icon('close') }}
+                </button>
+            </div>
+        </header>
+        <div
+            class="g-image-viewer__stage"
+            :class="stageClass"
+            x-ref="stage"
+            @wheel.prevent="onWheel"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerUp"
+            @dblclick.prevent="onDblClick"
+        >
+            <img
+                class="g-image-viewer__img"
+                x-ref="img"
+                :src="src"
+                :alt="alt"
+                :style="imgStyle"
+                draggable="false"
+                @load="onImgLoad"
+                @dragstart.prevent
+            >
+        </div>
+    </div>
+</div>

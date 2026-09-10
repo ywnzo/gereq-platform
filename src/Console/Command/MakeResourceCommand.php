@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'make:resource', description: 'Vygenerovat Admin Resource entitu')]
+#[AsCommand(name: 'make:resource', description: 'Generate an Admin Resource entity')]
 final class MakeResourceCommand extends Command
 {
     public function __construct(private readonly string $basePath)

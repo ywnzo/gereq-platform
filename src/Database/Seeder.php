@@ -64,7 +64,7 @@ final class Seeder
             $seeder = gereq()->make(\Modules\Portals\Application\PortalDemoSeeder::class);
             $seeder->seed();
         } catch (\Throwable) {
-            // Portals modul nemusí být zapnutý / DI ještě nepřipravené.
+            // Portals module may not be enabled / DI not ready yet.
         }
     }
 
@@ -185,11 +185,12 @@ final class Seeder
 
     private function seedModules(): void
     {
-        // RealEstates balíček (viz config/module_groups.php → realestates).
+        // RealEstates package (see config/module_groups.php → realestates).
         $defaultEnabled = [
             'currency', 'customers', 'media', 'cms', 'listings',
             'crm', 'calendar', 'viewings', 'documents', 'notifications',
             'reviews', 'newsletter', 'portals', 'translate', 'webhooks',
+            'emailing',
         ];
 
         foreach ($this->modules->discover() as $manifest) {
@@ -415,7 +416,7 @@ final class Seeder
             }
         }
 
-        // Doplnění centerů, pokud by první listing ve městě nebyl reprezentativní.
+        // Fill in map centers when the first listing in a city would not be representative.
         $cityCenters = [
             'Praha' => [50.0755, 14.4378],
             'Brno' => [49.2105, 16.5750],
@@ -697,7 +698,22 @@ final class Seeder
                 'zip' => $zip,
                 'lat' => $lat,
                 'lng' => $lng,
-                'desc' => $desc,
+                'desc' => $this->buildListingDescription([
+                    'title' => $title,
+                    'slug' => $slug,
+                    'offer' => $offer,
+                    'type' => $type,
+                    'area' => $area,
+                    'rooms' => $rooms,
+                    'floor' => $floor,
+                    'floors' => $floors,
+                    'city' => $city,
+                    'city_part' => $part,
+                    'street' => $street,
+                    'blurb' => $desc,
+                    'amenities' => $amenities,
+                    'energy' => $energy,
+                ]),
                 'images' => $this->pickGallery($imgs, $i + 3, 8),
                 'featured' => $featured,
                 'amenities' => $amenities,
@@ -708,6 +724,166 @@ final class Seeder
         }
 
         return $out;
+    }
+
+    /**
+     * Formatted description for the frontend (paragraphs, ## headings, bullets, **bold**).
+     *
+     * @param array{
+     *   title: string,
+     *   slug: string,
+     *   offer: string,
+     *   type: string,
+     *   area: float|int,
+     *   rooms: int|null,
+     *   floor: int|null,
+     *   floors: int|null,
+     *   city: string,
+     *   city_part: string,
+     *   street: string,
+     *   blurb: string,
+     *   amenities: array<string, bool>,
+     *   energy: string|null
+     * } $row
+     */
+    private function buildListingDescription(array $row): string
+    {
+        $custom = $this->customListingDescriptions();
+        if (isset($custom[$row['slug']])) {
+            return $custom[$row['slug']];
+        }
+
+        $offerLabel = $row['offer'] === 'rent' ? 'k pronájmu' : 'k prodeji';
+        $typeLabel = match ($row['type']) {
+            'house' => 'rodinný dům',
+            'land' => 'pozemek',
+            'commercial' => 'komerční prostor',
+            default => 'byt',
+        };
+        $amenityLines = [];
+        if (!empty($row['amenities']['balcony'])) {
+            $amenityLines[] = 'balkon / lodžie';
+        }
+        if (!empty($row['amenities']['terrace'])) {
+            $amenityLines[] = 'terasa';
+        }
+        if (!empty($row['amenities']['elevator'])) {
+            $amenityLines[] = 'výtah';
+        }
+        if (!empty($row['amenities']['cellar'])) {
+            $amenityLines[] = 'sklep';
+        }
+        if (!empty($row['amenities']['garage'])) {
+            $amenityLines[] = 'garáž';
+        }
+
+        $parts = [];
+        $parts[] = sprintf(
+            'Nabízíme **%s** %s v lokalitě **%s%s**. %s',
+            $typeLabel,
+            $offerLabel,
+            $row['city'],
+            $row['city_part'] !== '' ? ' – ' . $row['city_part'] : '',
+            rtrim($row['blurb'], '.') . '.'
+        );
+
+        $parts[] = '## Dispozice a technické údaje';
+        $detail = [];
+        if ($row['area']) {
+            $detail[] = sprintf('užitná plocha **%s m²**', $row['area']);
+        }
+        if ($row['rooms']) {
+            $detail[] = sprintf('**%s** pokoje / místnosti', $row['rooms']);
+        }
+        if ($row['floor'] !== null) {
+            $detail[] = $row['floors'] !== null
+                ? sprintf('patro **%s** z %s', $row['floor'], $row['floors'])
+                : sprintf('patro **%s**', $row['floor']);
+        }
+        if ($row['energy']) {
+            $detail[] = sprintf('energetická náročnost **%s**', $row['energy']);
+        }
+        $parts[] = 'Nemovitost nabízí ' . implode(', ', $detail) . '. Dispozice je praktická a světlo jde do hlavních obytných místností.';
+
+        if ($amenityLines !== []) {
+            $parts[] = "## Co je součástí";
+            foreach ($amenityLines as $line) {
+                $parts[] = '- ' . $line;
+            }
+        }
+
+        $parts[] = "## Lokalita";
+        $parts[] = sprintf(
+            'Adresa **%s, %s**. V okolí najdete občanskou vybavenost, MHD a denní služby – ideální volba pro bydlení i investici.',
+            $row['street'],
+            $row['city']
+        );
+
+        $parts[] = "## Proč se ozvat";
+        $parts[] = '- aktuální stav nabídky ověříme při prohlídce';
+        $parts[] = '- rádi připravíme hypotéční / financování konzultaci';
+        $parts[] = '- nezávazná prohlídka po domluvě termínu';
+
+        return implode("\n\n", $parts);
+    }
+
+    /** @return array<string, string> */
+    private function customListingDescriptions(): array
+    {
+        return [
+            'byt-3kk-hlucin' => <<<'TXT'
+Slunný **byt 3+kk** v samém centru Hlučína – pár minut od Mírového náměstí a zároveň v docházkové vzdálenosti k **Hlučínskému jezeru**. Ideální pro rodinu, pár i investici s výnosným pronájmem.
+
+## Dispozice
+Byt o užitné ploše **70 m²** je ve **2. patře** čtyřpodlažního domu s **výtahem**. Dispozice 3+kk nabízí oddělené ložnice, světlý obývací pokoj propojený s kuchyní a praktickou předsíň.
+
+- obývací pokoj s kuchyní a jídelním koutem
+- dvě ložnice / dětské pokoje
+- koupelna + WC
+- **balkon** pro ranní kávu i večerní posezení
+
+## Stav a technika
+Byt je připravený k nastěhování. Okna jsou plastová, vytápění centrální, energetická náročnost budovy **PENB C**. Společné prostory domu jsou udržované, dům má výtah.
+
+## Lokalita Hlučín
+**Mírové nám. 8** – peší dostupnost úřadu, školky, MHD i polikliniky. O víkendu je to kousek k jezeru, cyklostezkám a zeleni. Do Ostravy dojíždíte autem i MHD během desítek minut.
+
+## Pro koho se hodí
+- rodiny, které chtějí klidnější město a přitom kontakt s Ostravskem
+- investory hledající stabilní lokalitu s poptávkou po nájmu
+- zájemce o první větší byt bez nutnosti okamžité rekonstrukce
+
+## Další kroky
+Rádi domluvíme prohlídku, připravíme podklady k financování a projdeme si okolní vybavenost přímo na místě. Ozvěte se přes formulář nebo makléři – ozveme se obvykle do jednoho pracovního dne.
+TXT,
+            'byt-3-1-ostrava-poruba' => <<<'TXT'
+Prostorný **byt 3+1** v Ostravě-Porubě blízko kampusu VŠB. Světlé pokoje, **výtah**, **balkon** i **sklep** – praktická volba pro rodinu nebo spolubydlení studentů.
+
+## Dispozice
+Užitná plocha **72 m²**, 4. patro z 8. Oddělené pokoje dávají soukromí; kuchyň a obývák lze provozovat jako denní zónu.
+
+## Lokalita
+Hlavní třída – MHD, obchody a služby v docházkové vzdálenosti. Snadné spojení do centra Ostravy i na dálnici.
+
+## Shrnutí
+- balkon a sklep
+- výtah v domě
+- PENB **C**
+- vhodné i jako investice u univerzity
+TXT,
+            'dum-slezska-ostrava' => <<<'TXT'
+**Rodinný dům** ve Slezské Ostravě se zahradou, **garáží** a **terasou**. Výhled na město, prostor pro rodinu i hobby zónu.
+
+## Co nabízí
+Užitná plocha cca **140 m²**, dispozice pro více generací. Na pozemku je místo na grilování, děti i parkování mimo ulici.
+
+## Technika a stav
+Dům je připravený k bydlení; energetický štítek **D**. Garáž a sklep usnadní skladování i sezónní věci.
+
+## Lokalita
+Muglinovská – klidnější část s rychlým napojením do centra. Ideální, když chcete dům ve městě bez vzdáleného dojíždění.
+TXT,
+        ];
     }
 
     /**

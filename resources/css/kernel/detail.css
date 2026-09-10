@@ -191,7 +191,37 @@
     font-size: 14px;
     line-height: 1.55;
     color: var(--text);
+}
+.listing-desc:not(.listing-prose),
+.detail-prose:not(.listing-prose) {
     white-space: pre-wrap;
+}
+.listing-prose {
+    line-height: 1.65;
+}
+.listing-prose p {
+    margin: 0 0 0.85rem;
+}
+.listing-prose h2,
+.listing-prose h3,
+.listing-prose h4 {
+    margin: 1.1rem 0 0.45rem;
+    font-weight: 650;
+    line-height: 1.3;
+    color: var(--text);
+}
+.listing-prose h2 { font-size: 1.05rem; }
+.listing-prose h3 { font-size: 0.98rem; }
+.listing-prose h4 { font-size: 0.92rem; }
+.listing-prose ul {
+    margin: 0 0 0.85rem;
+    padding-left: 1.2rem;
+}
+.listing-prose li {
+    margin: 0.2rem 0;
+}
+.listing-prose strong {
+    font-weight: 650;
 }
 
 /* Shared two-column detail layout (listings + all entity shows) */
@@ -246,6 +276,10 @@
     background: var(--surface-2);
     border-bottom: 1px solid var(--border);
     overflow: hidden;
+}
+/* ~40% shorter than 16/9 (16 / (9 × 0.6) = 16 / 5.4) */
+.listing-hero__media {
+    aspect-ratio: 16 / 5.4;
 }
 .detail-hero__media img,
 .listing-hero__media img {

@@ -17,7 +17,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Interactive client install (expects vendor + .env already present, or use bin/install).
  */
-#[AsCommand(name: 'install', description: 'Interaktivní instalace / čistá DB pro nového klienta')]
+#[AsCommand(name: 'install', description: 'Interactive install / clean DB for a new client')]
 final class InstallCommand extends Command
 {
     public function __construct(

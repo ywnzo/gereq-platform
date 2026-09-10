@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'module:disable', description: 'Deaktivovat modul a smazat jeho DB tabulky')]
+#[AsCommand(name: 'module:disable', description: 'Disable a module and drop its DB tables')]
 final class ModuleDisableCommand extends Command
 {
     public function __construct(private readonly ModuleUninstaller $uninstaller)

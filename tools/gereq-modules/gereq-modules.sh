@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Spouštěč TUI / plain porovnání modulů vs GitLab.
+# TUI / plain launcher — compare modules vs GitLab.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
