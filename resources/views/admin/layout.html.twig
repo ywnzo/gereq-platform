@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app_locale() }}" class="dark" data-theme="gereq-dark" data-csp-nonce="{{ csp_nonce() }}" style="{{ brand_html_style() }}">
+<html lang="{{ app_locale() }}" class="dark" data-theme="gereq-dark" data-csp-nonce="{{ csp_nonce() }}" data-url-prefix="{{ config('app.url_prefix') }}" style="{{ brand_html_style() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -125,6 +125,7 @@
     {% include 'ui/image_viewer.html.twig' %}
 
     <script nonce="{{ csp_nonce() }}">
+        window.__GEREQ_URL_PREFIX__ = {{ config('app.url_prefix')|json_encode|raw }};
         window.__GEREQ_COMMANDS__ = [
             {%- for command in commands|default([]) -%}
             {

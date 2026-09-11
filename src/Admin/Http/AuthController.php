@@ -10,6 +10,7 @@ use Gereq\Auth\Entity\PasswordResetToken;
 use Gereq\Auth\PasskeyService;
 use Gereq\Auth\PasswordHasher;
 use Gereq\Auth\TotpService;
+use Gereq\Config\Repository as ConfigRepository;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Security\RateLimiter;
@@ -18,6 +19,9 @@ use Gereq\User\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -35,6 +39,8 @@ final class AuthController extends Controller
         private readonly SetupState $setup,
         private readonly TotpService $totp,
         private readonly PasskeyService $passkeys,
+        private readonly MailerInterface $mailer,
+        private readonly ConfigRepository $config,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -249,14 +255,49 @@ final class AuthController extends Controller
 
     public function sendReset(Request $request): Response
     {
+        $ip = (string) ($request->getClientIp() ?? 'unknown');
         $email = strtolower(trim((string) $request->request->get('email')));
-        $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
 
-        if ($user instanceof User) {
+        if (!$this->limiter->hit('password-reset:ip:' . $ip, 5, 600)) {
+            $this->flash('error', $this->translator->trans('auth.forgot.rate_limited'));
+
+            return $this->redirect('admin.password.forgot');
+        }
+        if ($email !== '' && !$this->limiter->hit('password-reset:email:' . $email, 3, 3600)) {
+            $this->flash('error', $this->translator->trans('auth.forgot.rate_limited'));
+
+            return $this->redirect('admin.password.forgot');
+        }
+
+        $user = $email !== ''
+            ? $this->em->getRepository(User::class)->findOneBy(['email' => $email])
+            : null;
+
+        if ($user instanceof User && $user->isActive()) {
+            $existing = $this->em->getRepository(PasswordResetToken::class)->findBy(['user' => $user]);
+            foreach ($existing as $old) {
+                $this->em->remove($old);
+            }
+
             $plain = bin2hex(random_bytes(32));
             $token = new PasswordResetToken($user, hash('sha256', $plain), new \DateTimeImmutable('+1 hour'));
             $this->em->persist($token);
             $this->em->flush();
+
+            $resetUrl = $this->router->url('admin.password.reset', ['token' => $plain], $request);
+            $fromAddress = (string) $this->config->get('mail.from.address', 'noreply@gereq.cz');
+            $fromName = (string) $this->config->get('mail.from.name', 'GEREQ Platform');
+            $message = (new Email())
+                ->from(new Address($fromAddress, $fromName))
+                ->to($user->email())
+                ->subject($this->translator->trans('auth.forgot.mail_subject'))
+                ->text($this->translator->trans('auth.forgot.mail_body', ['%url%' => $resetUrl]));
+
+            try {
+                $this->mailer->send($message);
+            } catch (\Throwable) {
+                // Still show the generic success flash — do not reveal delivery failures.
+            }
         }
 
         $this->flash('success', $this->translator->trans('auth.forgot.sent'));
@@ -314,8 +355,19 @@ final class AuthController extends Controller
 
         $intended = $request->getSession()->get('_intended');
         $request->getSession()->remove('_intended');
-        if (is_string($intended) && str_starts_with($intended, '/admin') && !str_starts_with($intended, '/admin/setup')) {
-            return $intended;
+        if (is_string($intended) && $intended !== '') {
+            $path = (string) (parse_url($intended, PHP_URL_PATH) ?? $intended);
+            $prefix = \Gereq\Support\UrlPrefix::get();
+            $internal = $path;
+            if ($prefix !== '' && (str_starts_with($internal, $prefix . '/') || $internal === $prefix)) {
+                $internal = substr($internal, strlen($prefix)) ?: '/';
+            }
+            if (str_starts_with($internal, '/admin') && !str_starts_with($internal, '/admin/setup')) {
+                $query = parse_url($intended, PHP_URL_QUERY);
+                $target = \Gereq\Support\UrlPrefix::path($internal);
+
+                return is_string($query) && $query !== '' ? $target . '?' . $query : $target;
+            }
         }
 
         return $this->router->url('admin.dashboard', [], $request);

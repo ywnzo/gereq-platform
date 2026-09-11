@@ -34,8 +34,13 @@ final class RateLimiter
         }
 
         $attempts[] = $now;
-        if (is_dir($this->path) && is_writable($this->path)) {
-            @file_put_contents($file, json_encode($attempts), LOCK_EX);
+        // Fail closed when the rate-limit store is not writable.
+        if (!is_dir($this->path) || !is_writable($this->path)) {
+            return false;
+        }
+        $written = @file_put_contents($file, json_encode($attempts), LOCK_EX);
+        if ($written === false) {
+            return false;
         }
 
         return true;

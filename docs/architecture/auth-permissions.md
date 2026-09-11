@@ -7,7 +7,7 @@ Admin users authenticate with e-mail + password (optionally followed by TOTP or 
 | Entity | File | Notes |
 | --- | --- | --- |
 | `User` | `src/User/Entity/User.php` | e-mail (lower-cased), password hash, `isActive()`, locale, avatar/banner, MFA fields (`hasMfa()`), roles (many-to-many) |
-| `Role` | `src/User/Entity/Role.php` | `name`, `label`, `description`, permissions (many-to-many); `isPrivileged()` is true for `superadmin` and legacy `administrator` |
+| `Role` | `src/User/Entity/Role.php` | `name`, `label`, `description`, permissions (many-to-many); `isPrivileged()` is true for `superadmin`, `admin`, and legacy `administrator` |
 | `Permission` | `src/User/Entity/Permission.php` | `name` (`listings.manage`), `label` and `group` (translation keys) |
 
 Authorization helpers on `User`:
@@ -21,11 +21,17 @@ Seeded roles (`Gereq\Database\Seeder::seedRoles()`, `src/Database/Seeder.php`):
 | Role | Description | Permissions |
 | --- | --- | --- |
 | `superadmin` | full access | implicit (privileged) |
-| `admin` | day-to-day operations | everything except `modules.*` and `roles.*` |
+| `admin` | full access (developer) | implicit (privileged); seeder also assigns all permissions |
+| `admin-client` | client system owner (realityV3) | everything except `modules.*` (can manage roles/users; cannot enable/disable modules) |
 | `editor` | content edits | `*.view`, `*.edit`, `*.create` except `users.*`, `modules.*`, `roles.*`, `settings.*` |
 | `view` | read-only | `*.view` |
+| `broker` | Makléř — vlastní kalendář, prohlídky, nabídky, klienti, dokumenty (scoped) a média; bez CRM/automatizace | `calendar.view|manage`, `viewings.view|manage`, `listings.view|manage`, `customers.view`, `documents.view|manage`, `media.view|manage` |
 
 The seeder renames legacy roles (`administrator` → `superadmin`, `manager` → `admin`, `viewer` → `view`). `README.md` still describes the roles as Administrator / Manager / Editor / Viewer.
+
+### Broker ↔ User link
+
+`Modules\Listings\Domain\Broker` has optional unique `user_id` pointing at an admin `User`. Assign the `broker` role to that user and link them on the broker form. `Modules\Listings\Application\BrokerIdentity` then scopes listings / viewings / CRM deals / calendar to that broker’s data (`created_by`, attendee `user_id`/email, or calendar link `entityType=broker`).
 
 ### Permission registry
 

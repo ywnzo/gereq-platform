@@ -13,6 +13,10 @@ use Modules\Payments\Domain\PaymentIntent;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Stripe server webhook only. Browser return URLs hit the storefront
+ * /checkout/result page and must never mutate payment status here.
+ */
 final class StripeInboundProvider implements InboundWebhookProviderInterface
 {
     public function __construct(
@@ -30,27 +34,24 @@ final class StripeInboundProvider implements InboundWebhookProviderInterface
     public function verify(Request $request): bool
     {
         $sig = (string) $request->headers->get('Stripe-Signature', '');
-        if ($sig === '') {
-            return true; // browser return
+        $raw = (string) $request->getContent();
+        if ($sig === '' || $raw === '') {
+            return false;
         }
 
-        return $this->gateway->parseWebhook((string) $request->getContent(), $sig) !== null;
+        return $this->gateway->parseWebhook($raw, $sig) !== null;
     }
 
     public function handle(Request $request): Response
     {
         $sig = (string) $request->headers->get('Stripe-Signature', '');
         $raw = (string) $request->getContent();
-        if ($sig !== '' && $raw !== '') {
-            $event = $this->gateway->parseWebhook($raw, $sig);
-            if ($event === null) {
-                return ApiResponse::error('invalid', 'Invalid Stripe signature', [], 400);
-            }
-            $result = $this->gateway->handleNotify($event);
-        } else {
-            $result = $this->gateway->handleNotify(array_merge($request->query->all(), $request->request->all()));
+        $event = $this->gateway->parseWebhook($raw, $sig);
+        if ($event === null) {
+            return ApiResponse::error('unauthorized', 'Invalid Stripe signature', [], 401);
         }
 
+        $result = $this->gateway->handleNotify($event);
         if (!$result['ok']) {
             return ApiResponse::error('invalid', $result['message'], [], 400);
         }
@@ -86,14 +87,17 @@ final class StripeInboundProvider implements InboundWebhookProviderInterface
                 return $byExt;
             }
         }
+
         $ref = is_string($refId) ? $refId : '';
         if ($ref === '') {
             return null;
         }
+
         $order = $this->em->getRepository(Order::class)->findOneBy(['number' => $ref]);
         if (!$order instanceof Order) {
             return null;
         }
+
         $intent = $this->em->getRepository(PaymentIntent::class)->findOneBy(
             ['orderId' => $order->id(), 'provider' => 'stripe'],
             ['createdAt' => 'DESC'],

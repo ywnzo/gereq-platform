@@ -56,6 +56,8 @@ final class Branding
         $logoCustom = $customLogoRaw !== '';
         $logo = $logoCustom ? $this->urlOrDefault($customLogoRaw, self::DEFAULT_LOGO) : self::DEFAULT_LOGO;
         $favicon = $this->urlOrDefault($this->string('brand.favicon_url', ''), $logo);
+        $logo = \Gereq\Support\UrlPrefix::path($logo);
+        $favicon = \Gereq\Support\UrlPrefix::path($favicon);
 
         $signal = $this->hex('brand.color_signal', self::DEFAULT_SIGNAL);
         $ink = $this->hex('brand.color_ink', self::DEFAULT_INK);

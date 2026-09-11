@@ -146,10 +146,10 @@ final class SettingsController extends Controller
 
         $mime = (string) ($uploaded->getMimeType() ?? '');
         $allowed = [
-            'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml',
+            'image/png', 'image/jpeg', 'image/webp', 'image/gif',
             'image/x-icon', 'image/vnd.microsoft.icon',
         ];
-        if (!in_array($mime, $allowed, true) && !str_starts_with($mime, 'image/')) {
+        if (!in_array($mime, $allowed, true)) {
             $this->flash('error', $this->translator->trans('settings.brand.upload_image_only'));
 
             return;
@@ -159,8 +159,10 @@ final class SettingsController extends Controller
         if ($ext === 'jpeg') {
             $ext = 'jpg';
         }
-        if (!in_array($ext, ['png', 'jpg', 'webp', 'svg', 'gif', 'ico'], true)) {
-            $ext = 'png';
+        if (!in_array($ext, ['png', 'jpg', 'webp', 'gif', 'ico'], true)) {
+            $this->flash('error', $this->translator->trans('settings.brand.upload_image_only'));
+
+            return;
         }
 
         $dir = $this->basePath . '/storage/uploads/brand';
@@ -190,7 +192,7 @@ final class SettingsController extends Controller
         }
 
         @chmod($dir . '/' . $filename, 0664);
-        $url = '/brand/asset/' . $filename . '?v=' . time();
+        $url = \Gereq\Support\UrlPrefix::path('/brand/asset/' . $filename) . '?v=' . time();
         $this->settings->set($settingKey, $url, SettingRecord::TYPE_STRING, 'core');
         $this->flash('success', $this->translator->trans('settings.brand.upload_ok', ['%file%' => $filename]));
     }

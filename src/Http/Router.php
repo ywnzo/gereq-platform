@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Gereq\Http;
 
+use Gereq\Support\UrlPrefix;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGenerator;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
@@ -113,7 +115,19 @@ final class Router
         $context = new RequestContext();
         $context->fromRequest($request);
         $matcher = new UrlMatcher($collection, $context);
-        $parameters = $matcher->match($request->getPathInfo());
+        $path = $request->getPathInfo();
+
+        try {
+            $parameters = $matcher->match($path);
+        } catch (ResourceNotFoundException $exception) {
+            // Browsers may keep a cached 301 to a trailing slash; accept /path/ as /path.
+            if ($path !== '/' && str_ends_with($path, '/')) {
+                $parameters = $matcher->match(rtrim($path, '/') ?: '/');
+            } else {
+                throw $exception;
+            }
+        }
+
         $name = $parameters['_route'];
         unset($parameters['_route'], $parameters['_controller']);
 
@@ -133,21 +147,45 @@ final class Router
 
         $generator = new UrlGenerator($collection, $context);
 
-        return $generator->generate($name, $parameters);
+        return UrlPrefix::path($generator->generate($name, $parameters));
     }
 
     /** Absolute URL for OAuth / webhooks (Google requires full https/http URI). */
     public function absoluteUrl(string $name, array $parameters = [], ?Request $request = null): string
     {
+        $path = $this->url($name, $parameters, $request);
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
         $collection = $this->collection();
         $context = new RequestContext();
         if ($request !== null) {
             $context->fromRequest($request);
+        } else {
+            $appUrl = rtrim((string) env_value('APP_URL', ''), '/');
+            if ($appUrl !== '') {
+                $parts = parse_url($appUrl) ?: [];
+                if (!empty($parts['scheme'])) {
+                    $context->setScheme((string) $parts['scheme']);
+                }
+                if (!empty($parts['host'])) {
+                    $context->setHost((string) $parts['host']);
+                }
+                if (!empty($parts['port'])) {
+                    $context->setHttpPort((int) $parts['port']);
+                    $context->setHttpsPort((int) $parts['port']);
+                }
+            }
         }
 
-        $generator = new UrlGenerator($collection, $context);
+        $origin = $context->getScheme() . '://' . $context->getHost();
+        $port = $context->getScheme() === 'https' ? $context->getHttpsPort() : $context->getHttpPort();
+        if (($context->getScheme() === 'http' && $port !== 80) || ($context->getScheme() === 'https' && $port !== 443)) {
+            $origin .= ':' . $port;
+        }
 
-        return $generator->generate($name, $parameters, UrlGeneratorInterface::ABSOLUTE_URL);
+        return $origin . $path;
     }
 
     public function has(string $name): bool

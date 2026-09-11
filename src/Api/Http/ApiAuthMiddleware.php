@@ -45,23 +45,28 @@ final class ApiAuthMiddleware implements MiddlewareInterface
         $route = $this->currentRoute($request);
         if ($route !== null) {
             $scopes = $route->getScopes();
-            if ($scopes !== []) {
-                $apiToken = $request->attributes->get('_api_token');
-                if ($apiToken instanceof ApiToken) {
-                    if (!$apiToken->hasAnyScope($scopes)) {
-                        return ApiResponse::forbidden('Missing required API scope.');
-                    }
-                } else {
-                    // Session user: map *.read/*.write to module permissions where possible
-                    $user = $this->auth->user();
-                    if ($user === null || !$this->sessionAllows($user, $scopes, $route->getPermission())) {
-                        return ApiResponse::forbidden();
-                    }
-                }
+            $user = $this->auth->user();
+            if ($user === null) {
+                return ApiResponse::forbidden();
             }
-            if ($route->getPermission() !== null && $request->attributes->get('_api_token') === null) {
-                $user = $this->auth->user();
-                if ($user === null || !$user->can($route->getPermission())) {
+
+            $apiToken = $request->attributes->get('_api_token');
+            if ($apiToken instanceof ApiToken) {
+                if ($scopes !== [] && !$apiToken->hasAnyScope($scopes)) {
+                    return ApiResponse::forbidden('Missing required API scope.');
+                }
+                // Token scopes are an upper bound; owner RBAC still applies.
+                if ($scopes !== [] && !$this->sessionAllows($user, $scopes, $route->getPermission())) {
+                    return ApiResponse::forbidden();
+                }
+                if ($route->getPermission() !== null && !$user->can($route->getPermission())) {
+                    return ApiResponse::forbidden();
+                }
+            } else {
+                if ($scopes !== [] && !$this->sessionAllows($user, $scopes, $route->getPermission())) {
+                    return ApiResponse::forbidden();
+                }
+                if ($route->getPermission() !== null && !$user->can($route->getPermission())) {
                     return ApiResponse::forbidden();
                 }
             }

@@ -23,6 +23,7 @@ final class Seeder
         private readonly PermissionRegistry $permissions,
         private readonly ModuleManager $modules,
         private readonly DemoSeeder $demoSeeder,
+        private readonly RealityV3Seeder $realityV3Seeder,
     ) {
     }
 
@@ -51,6 +52,9 @@ final class Seeder
         $this->seedPortalsDemo();
         if ($withDemo) {
             $this->demoSeeder->seed();
+        }
+        if (RealityV3Seeder::isActive()) {
+            $this->realityV3Seeder->seed();
         }
     }
 
@@ -100,21 +104,31 @@ final class Seeder
     private function seedRoles(): void
     {
         $this->ensureRole('superadmin', 'Superadmin', 'Plný přístup ke všemu (včetně uživatelů a rolí).', ['administrator']);
-        $this->ensureRole('admin', 'Admin', 'Správa běžného provozu bez systémových modulů a rolí.', ['manager']);
+        $this->ensureRole('admin', 'Admin', 'Plný přístup ke všemu (developer) — včetně modulů, rolí a systémových částí.', ['manager']);
+        $this->ensureRole('admin-client', 'Admin klient', 'Plný provozní přístup jako superadmin, bez zapínání a vypínání modulů.', []);
         $this->ensureRole('editor', 'Editor', 'Úpravy obsahu bez správy uživatelů.', []);
         $this->ensureRole('view', 'View', 'Pouze čtení.', ['viewer']);
+        $this->ensureRole('broker', 'Makléř', 'Vlastní kalendář, prohlídky, nabídky a CRM dealy přiřazeného makléře.', []);
 
         $this->em->flush();
 
         $admin = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin']);
+        $adminClient = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin-client']);
         $editor = $this->em->getRepository(Role::class)->findOneBy(['name' => 'editor']);
         $view = $this->em->getRepository(Role::class)->findOneBy(['name' => 'view']);
+        $broker = $this->em->getRepository(Role::class)->findOneBy(['name' => 'broker']);
 
         $all = $this->em->getRepository(Permission::class)->findAll();
+        // Admin is privileged (isPrivileged); permissions are still synced for UI/DB consistency.
         if ($admin instanceof Role) {
             foreach ($all as $permission) {
-                if (!str_starts_with($permission->name(), 'modules.') && !str_starts_with($permission->name(), 'roles.')) {
-                    $admin->givePermission($permission);
+                $admin->givePermission($permission);
+            }
+        }
+        if ($adminClient instanceof Role) {
+            foreach ($all as $permission) {
+                if (!str_starts_with($permission->name(), 'modules.')) {
+                    $adminClient->givePermission($permission);
                 }
             }
         }
@@ -133,6 +147,32 @@ final class Seeder
                     $view->givePermission($permission);
                 }
             }
+        }
+        if ($broker instanceof Role) {
+            $brokerPerms = [
+                'calendar.view',
+                'calendar.manage',
+                'viewings.view',
+                'viewings.manage',
+                'listings.view',
+                'listings.manage',
+                'customers.view',
+                'documents.view',
+                'documents.manage',
+                'media.view',
+                'media.manage',
+            ];
+            $byName = [];
+            foreach ($all as $permission) {
+                $byName[$permission->name()] = $permission;
+            }
+            $synced = [];
+            foreach ($brokerPerms as $name) {
+                if (isset($byName[$name])) {
+                    $synced[] = $byName[$name];
+                }
+            }
+            $broker->syncPermissions(...$synced);
         }
     }
 
@@ -175,7 +215,12 @@ final class Seeder
             $this->hasher->hash((string) env_value('ADMIN_PASSWORD', 'change-me')),
         );
 
-        $adminRole = $this->em->getRepository(Role::class)->findOneBy(['name' => 'superadmin']);
+        $roleName = strtolower(trim((string) env_value('ADMIN_ROLE', 'superadmin'))) ?: 'superadmin';
+        if (RealityV3Seeder::isActive()) {
+            $roleName = 'admin-client';
+        }
+        $adminRole = $this->em->getRepository(Role::class)->findOneBy(['name' => $roleName])
+            ?? $this->em->getRepository(Role::class)->findOneBy(['name' => 'superadmin']);
         if ($adminRole instanceof Role) {
             $user->assignRole($adminRole);
         }
@@ -192,6 +237,10 @@ final class Seeder
             'reviews', 'newsletter', 'portals', 'translate', 'webhooks',
             'emailing',
         ];
+        if (RealityV3Seeder::isActive()) {
+            $defaultEnabled = array_values(array_unique(array_merge($defaultEnabled, RealityV3Seeder::MODULES)));
+            $defaultEnabled = array_values(array_diff($defaultEnabled, RealityV3Seeder::MODULES_OFF));
+        }
 
         foreach ($this->modules->discover() as $manifest) {
             $row = $this->em->find(InstalledModule::class, $manifest->id);

@@ -76,6 +76,10 @@ final class ModuleUpdater
         $this->modules->syncPermissions($manifest);
         $this->em->flush();
 
+        if ($id === 'listings') {
+            $this->ensureBrokerRole();
+        }
+
         $this->auditor->log('module.updated', 'module', $id, [
             'version' => $from,
         ], [
@@ -86,5 +90,46 @@ final class ModuleUpdater
         unset($this->updateAvailableCache[$id]);
 
         return $messages;
+    }
+
+    /** Ensure the Makléř (broker) role exists with the expected permissions. */
+    private function ensureBrokerRole(): void
+    {
+        $roleRepo = $this->em->getRepository(\Gereq\User\Entity\Role::class);
+        $role = $roleRepo->findOneBy(['name' => 'broker']);
+        if (!$role instanceof \Gereq\User\Entity\Role) {
+            $role = new \Gereq\User\Entity\Role(
+                'broker',
+                'Makléř',
+                'Vlastní kalendář, prohlídky, nabídky, klienti, dokumenty a média — bez CRM/automatizace.',
+            );
+            $this->em->persist($role);
+        } else {
+            $role->setLabel('Makléř');
+            $role->setDescription('Vlastní kalendář, prohlídky, nabídky, klienti, dokumenty a média — bez CRM/automatizace.');
+        }
+
+        $names = [
+            'calendar.view',
+            'calendar.manage',
+            'viewings.view',
+            'viewings.manage',
+            'listings.view',
+            'listings.manage',
+            'customers.view',
+            'documents.view',
+            'documents.manage',
+            'media.view',
+            'media.manage',
+        ];
+        $permissions = [];
+        foreach ($names as $name) {
+            $permission = $this->em->getRepository(\Gereq\User\Entity\Permission::class)->findOneBy(['name' => $name]);
+            if ($permission instanceof \Gereq\User\Entity\Permission) {
+                $permissions[] = $permission;
+            }
+        }
+        $role->syncPermissions(...$permissions);
+        $this->em->flush();
     }
 }

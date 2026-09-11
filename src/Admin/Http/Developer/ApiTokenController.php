@@ -71,8 +71,14 @@ final class ApiTokenController extends Controller
         }
         $scopes = array_values(array_filter(array_map('strval', $scopes)));
         if ($request->request->get('full_access')) {
+            if (!$user->isAdministrator()) {
+                $this->flash('error', $this->translator->trans('admin.tokens.full_access_denied'));
+
+                return $this->redirect('admin.developer.tokens.create');
+            }
             $scopes = ['*'];
         }
+        $scopes = $this->tokens->constrainScopes($user, $scopes);
         $test = (bool) $request->request->get('test');
         $expires = trim((string) $request->request->get('expires_at', ''));
         $expiresAt = $expires !== '' ? new \DateTimeImmutable($expires) : null;

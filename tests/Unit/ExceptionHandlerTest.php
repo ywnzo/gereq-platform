@@ -168,9 +168,9 @@ final class ExceptionHandlerTest extends TestCase
             new ContentSecurityPolicy(new AssetManager($base)),
             new Repository(['app' => ['debug' => $debug]]),
             $router,
+            $translator,
             $base,
             null,
-            $translator,
         );
     }
 }

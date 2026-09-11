@@ -42,9 +42,9 @@ final class ExceptionHandler
         private readonly ContentSecurityPolicy $csp,
         private readonly Repository $config,
         private readonly Router $router,
+        private readonly TranslatorInterface $translator,
         private readonly string $basePath,
         private readonly ?DebugBar $debugBar = null,
-        private readonly ?TranslatorInterface $translator = null,
     ) {
     }
 
@@ -323,7 +323,7 @@ final class ExceptionHandler
 
     private function t(string $key, array $parameters = []): string
     {
-        return $this->translator?->trans($key, $parameters) ?? $key;
+        return $this->translator->trans($key, $parameters);
     }
 
     private function errorCode(int $status): string
@@ -350,7 +350,7 @@ final class ExceptionHandler
         } catch (\Throwable) {
         }
 
-        return '/admin';
+        return \Gereq\Support\UrlPrefix::path('/admin');
     }
 
     private function applySecurityHeaders(Request $request, Response $response): void

@@ -124,6 +124,9 @@ final class UserController extends Controller
     public function update(Request $request, string $id): Response
     {
         $user = $this->findUser($id);
+        if ($denied = $this->denyPrivilegedMutation($user, $id)) {
+            return $denied;
+        }
 
         $old = [
             'name' => $user->name(),
@@ -203,6 +206,10 @@ final class UserController extends Controller
             return $this->redirect('admin.users.index');
         }
 
+        if ($denied = $this->denyPrivilegedMutation($user)) {
+            return $denied;
+        }
+
         $this->em->remove($user);
         $this->em->flush();
         $this->auditor->log('user.deleted', 'user', $id);
@@ -214,6 +221,9 @@ final class UserController extends Controller
     public function resetMfa(string $id): Response
     {
         $user = $this->findUser($id);
+        if ($denied = $this->denyPrivilegedMutation($user, $id, 'security')) {
+            return $denied;
+        }
         $this->passkeys->deleteAllFor($user);
         $user->resetMfa();
         $this->auth->revokeRememberTokens($user);
@@ -335,6 +345,27 @@ final class UserController extends Controller
         }
 
         return $user;
+    }
+
+    /**
+     * Non-privileged actors must not change password, status, MFA, or roles of privileged users.
+     */
+    private function denyPrivilegedMutation(User $target, ?string $redirectId = null, string $tab = 'profile'): ?Response
+    {
+        if (!$target->isAdministrator()) {
+            return null;
+        }
+        $actor = $this->auth->user();
+        if ($actor instanceof User && $actor->isAdministrator()) {
+            return null;
+        }
+
+        $this->flash('error', $this->translator->trans('admin.users.cannot_edit_privileged'));
+        if ($redirectId !== null) {
+            return $this->redirect('admin.users.edit', ['id' => $redirectId, 'tab' => $tab]);
+        }
+
+        return $this->redirect('admin.users.index');
     }
 
     /** @param list<string> $roleIds */

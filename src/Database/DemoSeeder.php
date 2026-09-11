@@ -85,20 +85,28 @@ final class DemoSeeder
     private function syncRolePermissions(array &$log): void
     {
         $this->ensureRole('superadmin', 'Superadmin', 'Plný přístup ke všemu (včetně uživatelů a rolí).', ['administrator']);
-        $this->ensureRole('admin', 'Admin', 'Správa běžného provozu bez systémových modulů a rolí.', ['manager']);
+        $this->ensureRole('admin', 'Admin', 'Plný přístup ke všemu (developer) — včetně modulů, rolí a systémových částí.', ['manager']);
+        $this->ensureRole('admin-client', 'Admin klient', 'Plný provozní přístup jako superadmin, bez zapínání a vypínání modulů.', []);
         $this->ensureRole('editor', 'Editor', 'Úpravy obsahu bez správy uživatelů.', []);
         $this->ensureRole('view', 'View', 'Pouze čtení.', ['viewer']);
         $this->em->flush();
 
         $admin = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin']);
+        $adminClient = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin-client']);
         $editorRole = $this->em->getRepository(Role::class)->findOneBy(['name' => 'editor']);
         $view = $this->em->getRepository(Role::class)->findOneBy(['name' => 'view']);
         $all = $this->em->getRepository(\Gereq\User\Entity\Permission::class)->findAll();
 
+        // Admin is privileged (isPrivileged); permissions are still synced for UI/DB consistency.
         if ($admin instanceof Role) {
             foreach ($all as $permission) {
-                if (!str_starts_with($permission->name(), 'modules.') && !str_starts_with($permission->name(), 'roles.')) {
-                    $admin->givePermission($permission);
+                $admin->givePermission($permission);
+            }
+        }
+        if ($adminClient instanceof Role) {
+            foreach ($all as $permission) {
+                if (!str_starts_with($permission->name(), 'modules.')) {
+                    $adminClient->givePermission($permission);
                 }
             }
         }
@@ -126,7 +134,7 @@ final class DemoSeeder
         }
 
         $this->em->flush();
-        $log[] = 'Oprávnění rolí admin/editor/view synchronizována.';
+        $log[] = 'Oprávnění rolí admin/admin-client/editor/view synchronizována.';
     }
 
     /** @param list<string> $legacyNames */

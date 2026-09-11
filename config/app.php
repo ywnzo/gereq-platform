@@ -9,6 +9,27 @@ return [
     'env' => env_value('APP_ENV', 'production'),
     'debug' => (bool) env_value('APP_DEBUG', false),
     'url' => rtrim((string) env_value('APP_URL', 'http://localhost:8080'), '/'),
+    /**
+     * Public URL path prefix for subdirectory deploy (auto from APP_URL path).
+     * Example: APP_URL=https://host/realityV3/admin → /realityV3
+     */
+    'url_prefix' => (static function (): string {
+        $explicit = trim((string) env_value('APP_URL_PREFIX', ''));
+        if ($explicit !== '') {
+            $p = '/' . trim($explicit, '/');
+
+            return $p === '/' ? '' : $p;
+        }
+        $path = rtrim((string) (parse_url((string) env_value('APP_URL', ''), PHP_URL_PATH) ?? ''), '/');
+        if ($path === '' || $path === '/') {
+            return '';
+        }
+        if (str_ends_with($path, '/admin')) {
+            $path = substr($path, 0, -strlen('/admin'));
+        }
+
+        return ($path === '' || $path === '/') ? '' : $path;
+    })(),
     'key' => env_value('APP_KEY', ''),
     'timezone' => 'Europe/Prague',
     'locale' => 'cs',

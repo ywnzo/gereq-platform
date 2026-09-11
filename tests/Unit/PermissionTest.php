@@ -30,6 +30,17 @@ final class PermissionTest extends TestCase
         self::assertTrue($user->can('roles.manage'));
     }
 
+    public function testAdminIsPrivilegedWithFullAccess(): void
+    {
+        $user = new User('Dev Admin', 'admin@gereq.cz', 'hash');
+        $user->assignRole(new Role('admin', 'Admin'));
+
+        self::assertTrue($user->isAdministrator());
+        self::assertTrue($user->can('modules.manage'));
+        self::assertTrue($user->can('roles.manage'));
+        self::assertTrue($user->can('developer.tokens.manage'));
+    }
+
     public function testRolePermissionIsChecked(): void
     {
         $user = new User('Petra Dvořáková', 'petra.dvorakova@gereq.cz', 'hash');

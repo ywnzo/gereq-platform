@@ -120,6 +120,7 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('app_locale', [$runtime, 'appLocale']));
         $twig->addFunction(new TwigFunction('app_env', static fn (): string => (string) config('app.env', 'local')));
         $twig->addFunction(new TwigFunction('app_version', static fn (): string => (string) config('app.version', AppVersion::DEFAULT)));
+        $twig->addFunction(new TwigFunction('config', static fn (string $key, mixed $default = null): mixed => config($key, $default)));
         $twig->addFunction(new TwigFunction('available_locales', [$runtime, 'availableLocales']));
         $twig->addFunction(new TwigFunction('brand', [$runtime, 'brand']));
         $twig->addFunction(new TwigFunction('brand_css', [$runtime, 'brandCss'], ['is_safe' => ['css']]));

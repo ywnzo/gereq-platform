@@ -10,6 +10,26 @@ Při releasu: bump `VERSION` (+ `composer.json` / `package.json`), zápis do té
 
 ## [Unreleased]
 
+## [0.2.6] — 2026-09-11
+
+### Added
+
+- realityV3 installer/packager (`bin/install-realityV3`, `bin/pack-realityV3`) a seed profile
+- URL path prefix support (`UrlPrefix`) for admin/FE behind reverse-proxy paths
+- Broker scoping across CRM / Listings / Documents / Calendar / Viewings / Customers
+
+### Changed
+
+- Platforma `VERSION` 0.2.5 → 0.2.6
+- Stripe inbound: require signature verification
+- Pin dirty modules na nové semver tagy
+- VS Code rozšíření: i18n / twig-goto / monitor / permissions (patch bump)
+
+### Security
+
+- Stripe webhook unsigned payloads rejected
+- API auth / idempotency / rate-limit hardening
+
 ## [0.2.5] — 2026-09-10
 
 ### Added

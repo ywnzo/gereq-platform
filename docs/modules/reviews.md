@@ -7,7 +7,7 @@ The Reviews module stores customer reviews and ratings (1–5 stars) for product
 | Item | Value |
 | --- | --- |
 | Module id | `reviews` |
-| Version | `1.5.0` (`modules/Reviews/module.php`, `ReviewsModule::version()`) |
+| Version | `1.6.0` (`modules/Reviews/module.php`, `ReviewsModule::version()`) |
 | Directory | `modules/Reviews/` |
 | Requires | `core ^1.0` |
 | Optional | `products ^1.0`, `customers ^1.0` (declared only; no code references to those modules) |
@@ -98,6 +98,8 @@ Command palette: `reviews.index` (`palette.reviews.index`, `/admin/reviews`), `r
 | GET | `/admin/reviews/{id}` | `admin.reviews.show` | `ReviewController::show` | `reviews.view` |
 | POST | `/admin/reviews/{id}/approve` | `admin.reviews.approve` | `ReviewController::approve` | `reviews.manage` |
 | POST | `/admin/reviews/{id}/reject` | `admin.reviews.reject` | `ReviewController::reject` | `reviews.manage` |
+| POST | `/admin/reviews/{id}/replies` | `admin.reviews.replies.store` | `ReviewController::storeReply` | `reviews.manage` |
+| POST | `/admin/reviews/{id}/replies/{replyId}/delete` | `admin.reviews.replies.destroy` | `ReviewController::destroyReply` | `reviews.manage` |
 | POST | `/admin/reviews/{id}/delete` | `admin.reviews.destroy` | `ReviewController::destroy` | `reviews.manage` |
 
 Controllers: `modules/Reviews/Http/ReviewController.php`, `ReviewSettingsController.php`.
@@ -106,7 +108,7 @@ Controllers: `modules/Reviews/Http/ReviewController.php`, `ReviewSettingsControl
 
 - **Index** (`Resources/views/index.html.twig`): `ListQuery` list, sortable `rating`, `createdAt`, `status` (default `createdAt desc`), search over `authorName`, `title`, `body`, `productId`, filter `status`.
 - **Create** (`form.html.twig`): admin-entered review; ruleset `reviews.admin.create`. Empty `product_id` becomes `site`; status defaults to `approved`; `locale` optional. Emits `review.created` and, when approved, also `review.approved`.
-- **Detail** (`show.html.twig`): review body, rating, source, product average rating (`ReviewsProvider::averageRating()`), approve / reject / delete actions, and a read-only list of `ProductReviewReply` rows (`reviews.replies.*` labels). There is no UI or route to create a reply.
+- **Detail** (`show.html.twig`): review body, rating, source, product average rating (`ReviewsProvider::averageRating()`), approve / reject / delete actions, list of `ProductReviewReply` rows with create/delete forms when `reviews.manage` and `reviews.replies_enabled` (`reviews.replies.*` labels). Author defaults to `brand.name`, then signed-in user name, then `reviews.replies.default_author`.
 - **Settings** (`settings.html.twig`): three sections — Google (`reviews.google_enabled`, `reviews.google_place_id`, `reviews.google_api_key`), Facebook (`reviews.facebook_enabled`, `reviews.facebook_page_id`, `reviews.facebook_access_token`), General (`reviews.replies_enabled`, `reviews.default_locale`). Secrets (encrypted type or key containing `token`/`api_key`/`secret`/`password`) are not overwritten when submitted empty. Field names are the key with `.` replaced by `__`. Saving logs audit `reviews.settings.updated`.
 
 ## Public / REST API
@@ -149,13 +151,13 @@ Platform events (`EventDefinition`, source `reviews`, all `webhookEnabled(true)`
 | `review.rejected` | Recenze zamítnuta | admin `reject`; API `moderate` |
 | `review.deleted` | Recenze smazána | admin `destroy` (payload `{id}`) |
 | `review.imported` | Externí recenze importována | API `store` with `source` `google`/`facebook` |
-| `review.replied` | Odpověď na recenzi vytvořena | registered but never emitted (no reply creation code) |
+| `review.replied` | Odpověď na recenzi vytvořena | admin `storeReply` |
 
 Subject passed to `EventBus::emit()` is `['type' => 'product_review', 'id' => ...]`. See `../architecture/hooks-events-webhooks.md` and [Webhooks](webhooks.md).
 
-Audit entries: `reviews.created`, `reviews.approved`, `reviews.rejected`, `reviews.deleted`, `reviews.settings.updated`.
+Audit entries: `reviews.created`, `reviews.approved`, `reviews.rejected`, `reviews.deleted`, `reviews.replied`, `reviews.reply_deleted`, `reviews.settings.updated`.
 
-Validation rulesets: `reviews.create` (API), `reviews.admin.create` (admin form; `product_id` optional, `status`, `locale`), `reviews.moderate`.
+Validation rulesets: `reviews.create` (API), `reviews.admin.create` (admin form; `product_id` optional, `status`, `locale`), `reviews.moderate`, `reviews.reply.create` (`body`, optional `author_name`).
 
 Hooks, queue jobs, scheduled tasks, publishables: None.
 
@@ -198,7 +200,7 @@ Settings defined in `register()` (all owned by module `reviews`):
 | `reviews.replies_enabled` | boolean | `true` | `reviews.settings.replies_enabled` |
 | `reviews.default_locale` | string | `cs` | `reviews.settings.default_locale` |
 
-None of these keys is read anywhere outside `ReviewSettingsController` (the settings page); they are configuration placeholders for importers that are not part of this module. Environment variables: none.
+`reviews.replies_enabled` is enforced on the review detail reply form and `storeReply`. Google / Facebook keys remain configuration placeholders for importers that are not part of this module. Environment variables: none.
 
 Translations: `Resources/translations/messages.cs.php`, `messages.en.php`; prefixes `module.reviews.*`, `nav.reviews*`, `palette.reviews.*`, `perm.reviews.*`, `perm.group.reviews`, `reviews.*` (`reviews.status.*`, `reviews.source.*`, `reviews.settings.*`, `reviews.replies.*`, `reviews.widget.*`, `reviews.flash.*`, `reviews.error.*`). `admin.dashboard.hint.reviews` and `admin.dashboard.chart.total` come from core.
 
@@ -215,10 +217,9 @@ Translations: `Resources/translations/messages.cs.php`, `messages.en.php`; prefi
 
 ## Notes
 
-- Replies are half-implemented: the entity, table, `reviews.replies_enabled` setting, event `review.replied` and the read-only list on the detail page exist, but there is no route/controller/API to create, edit or delete a reply.
+- Merchant replies: create/delete on the review detail page when `reviews.replies_enabled` is on; emits `review.replied` and audits `reviews.replied` / `reviews.reply_deleted`.
 - `is_verified_purchase` and `helpful_count` are stored and serialized but never written by any code path (`setVerifiedPurchase()` / `markHelpful()` are unused).
 - Google / Facebook settings are defined and editable but there is no importer in this module; imports are expected to arrive via `POST /api/v1/reviews/` with `source` + `external_id` (unique per source).
 - Admin-created reviews default to `approved` and skip moderation; API-created reviews are always `pending`.
 - Public endpoint defaults to `product_id=site`, so a storefront wanting product reviews must pass the product id explicitly.
-- `README.md` states v1.4.0 while the manifest is 1.5.0.
 - Event descriptions are Czech literals rather than translation keys.

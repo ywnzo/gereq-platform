@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Integrations\Stripe\Http;
 
+use Gereq\Api\ApiResponse;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Integrations\Stripe\Application\StripeInboundProvider;
@@ -25,6 +26,10 @@ final class StripeNotifyController extends Controller
 
     public function notify(Request $request): Response
     {
+        if (!$this->inbound->verify($request)) {
+            return ApiResponse::error('unauthorized', 'Invalid Stripe signature', [], 401);
+        }
+
         return $this->inbound->handle($request);
     }
 }

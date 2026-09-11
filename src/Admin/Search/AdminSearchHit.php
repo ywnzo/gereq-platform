@@ -29,7 +29,7 @@ final class AdminSearchHit
         return [
             'id' => $this->id,
             'label' => $this->label,
-            'url' => $this->url,
+            'url' => \Gereq\Support\UrlPrefix::path($this->url),
             'group' => $this->group,
             'subtitle' => $this->subtitle,
             'icon' => $this->icon,

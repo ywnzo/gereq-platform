@@ -6,7 +6,7 @@ return [
     'id' => 'stripe',
     'name' => 'Stripe',
     'icon' => 'credit-card',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.stripe.description',
     'class' => Integrations\Stripe\StripeModule::class,
     'author' => 'GEREQ',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\View;
 
+use Gereq\Support\UrlPrefix;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 final class AssetManager
@@ -74,7 +75,7 @@ final class AssetManager
     public function url(string $entry): string
     {
         if ($this->isHot()) {
-            return '/' . ltrim($entry, '/');
+            return UrlPrefix::path('/' . ltrim($entry, '/'));
         }
 
         $candidates = [
@@ -99,19 +100,19 @@ final class AssetManager
 
             if (isset($manifest[$key])) {
                 if (str_ends_with($entry, '.css') && isset($manifest[$key]['css'][0])) {
-                    return '/build/' . ltrim((string) $manifest[$key]['css'][0], '/');
+                    return UrlPrefix::path('/build/' . ltrim((string) $manifest[$key]['css'][0], '/'));
                 }
                 if (isset($manifest[$key]['file'])) {
-                    return '/build/' . ltrim((string) $manifest[$key]['file'], '/');
+                    return UrlPrefix::path('/build/' . ltrim((string) $manifest[$key]['file'], '/'));
                 }
             }
         }
 
         if (str_ends_with($entry, '.css')) {
-            return '/build/kernel.css';
+            return UrlPrefix::path('/build/kernel.css');
         }
 
-        return '/build/admin.js';
+        return UrlPrefix::path('/build/admin.js');
     }
 
     /**
@@ -123,9 +124,9 @@ final class AssetManager
 
         if ($this->isHot()) {
             // Blocking <link> prevents FOUC — CSS via JS modules alone paints unstyled HTML first.
-            $css = '/resources/css/kernel.css';
-            $client = '/@vite/client';
-            $src = '/' . ltrim($entry, '/');
+            $css = UrlPrefix::path('/resources/css/kernel.css');
+            $client = UrlPrefix::path('/@vite/client');
+            $src = UrlPrefix::path('/' . ltrim($entry, '/'));
 
             return <<<HTML
 <link rel="stylesheet" href="{$css}">

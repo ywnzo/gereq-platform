@@ -13,7 +13,7 @@
             <h1>{{ 'admin.api.title'|trans }}</h1>
             <p class="muted">{{ 'admin.api.auth_hint'|trans }}</p>
         </div>
-        <a class="btn btn--ghost" href="/api/openapi.json" target="_blank" rel="noopener">{{ 'admin.api.openapi'|trans }}</a>
+        <a class="btn btn--ghost" href="{% if route_exists('api.openapi') %}{{ url('api.openapi') }}{% else %}/realityV3/api/openapi.json{% endif %}" target="_blank" rel="noopener">{{ 'admin.api.openapi'|trans }}</a>
     </header>
 
     <div class="detail-hub" x-data="gereqTabs" data-initial="private" data-breadcrumbs="0">

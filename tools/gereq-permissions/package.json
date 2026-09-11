@@ -1,8 +1,8 @@
 {
   "name": "permissions",
   "displayName": "GEREQ Permissions",
-  "description": "Hover, autocomplete a Go to Definition pro permission kl\u00ed\u010de (user.can / ->permission)",
-  "version": "0.1.1",
+  "description": "Hover, autocomplete a Go to Definition pro permission klíče (user.can / ->permission)",
+  "version": "0.1.2",
   "publisher": "gereq",
   "engines": {
     "vscode": "^1.88.0"

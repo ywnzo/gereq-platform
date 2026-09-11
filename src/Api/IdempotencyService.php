@@ -15,6 +15,23 @@ final class IdempotencyService
     {
     }
 
+    /** Namespace a client key to the current API actor so keys cannot be shared across clients. */
+    public function actorKey(string $clientKey, Request $request): string
+    {
+        $actor = $request->attributes->get('_api_actor');
+        $actorPart = 'anon';
+        if (is_array($actor)) {
+            $actorPart = (string) ($actor['type'] ?? 'anon') . ':' . (string) ($actor['id'] ?? '');
+        }
+
+        return hash('sha256', $actorPart . '|' . $clientKey);
+    }
+
+    public function requestHash(Request $request): string
+    {
+        return hash('sha256', $request->getMethod() . '|' . $request->getPathInfo() . '|' . $request->getContent());
+    }
+
     public function find(string $key): ?IdempotencyRecord
     {
         $row = $this->em->find(IdempotencyRecord::class, $key);
@@ -24,7 +41,7 @@ final class IdempotencyService
 
     public function remember(string $key, Request $request, JsonResponse $response): void
     {
-        $hash = hash('sha256', $request->getMethod() . '|' . $request->getPathInfo() . '|' . $request->getContent());
+        $hash = $this->requestHash($request);
         $existing = $this->find($key);
         if ($existing !== null) {
             return;

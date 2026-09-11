@@ -174,7 +174,7 @@ final class DeveloperController extends Controller
             }
         }
 
-        $created = $this->tokens->issueTesterToken($user);
+        $created = $this->tokens->issueTesterToken($user, $this->api->scopes());
         $session->set(self::SESSION_TESTER_PLAIN, $created['plain']);
         $session->set(self::SESSION_TESTER_ID, $created['token']->id());
 

@@ -45,7 +45,22 @@ final class Queue
             return null;
         }
 
-        $job = unserialize($payload);
+        $job = $this->unserializeJob($payload);
+
+        return $job instanceof Job ? $job : null;
+    }
+
+    private function unserializeJob(string $payload): ?Job
+    {
+        if (!preg_match('/^O:\d+:"([^"]+)"/', $payload, $m)) {
+            return null;
+        }
+        $class = $m[1];
+        if (!is_a($class, Job::class, true)) {
+            return null;
+        }
+
+        $job = @unserialize($payload, ['allowed_classes' => [$class]]);
 
         return $job instanceof Job ? $job : null;
     }

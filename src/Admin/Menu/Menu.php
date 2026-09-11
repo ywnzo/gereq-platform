@@ -230,7 +230,7 @@ final class Menu
     private function resolveUrl(MenuItem $item, Router $router, ?Request $request): string
     {
         if ($item->url !== null) {
-            return $item->url;
+            return \Gereq\Support\UrlPrefix::path($item->url);
         }
 
         if ($item->route !== null && $router->has($item->route)) {

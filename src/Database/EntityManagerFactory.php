@@ -41,13 +41,17 @@ final class EntityManagerFactory
         }
 
         $isDev = (bool) $this->config->get('app.debug', false);
-        $setup = ORMSetup::createAttributeMetadataConfiguration($paths, $isDev);
+        $metaCache = null;
+        if (!$isDev) {
+            // Pass cache into ORMSetup — otherwise Doctrine tries Redis on 127.0.0.1 when isDev=false.
+            $metaCache = new FilesystemAdapter('doctrine_meta', 0, $this->basePath . '/storage/cache/doctrine');
+        }
+        $setup = ORMSetup::createAttributeMetadataConfiguration($paths, $isDev, null, $metaCache);
         $setup->enableNativeLazyObjects(true);
         $setup->addCustomStringFunction('REPLACE', Dql\ReplaceFunction::class);
 
         // In debug, do not cache metadata to disk — otherwise the map stays stale after entity changes.
-        if (!$isDev) {
-            $metaCache = new FilesystemAdapter('doctrine_meta', 0, $this->basePath . '/storage/cache/doctrine');
+        if ($metaCache !== null) {
             $setup->setMetadataCache($metaCache);
             $setup->setQueryCache($metaCache);
         }

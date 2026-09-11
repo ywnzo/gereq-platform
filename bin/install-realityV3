@@ -1,0 +1,476 @@
+#!/usr/bin/env bash
+# GEREQ RealEstates — realityV3 interactive install (Docker).
+# Usage after unpacking the zip:
+#   ./INSTALACE.sh
+#   ./bin/install-realityV3
+#   ./bin/install-realityV3 --non-interactive   # use defaults / env already set
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+NON_INTERACTIVE=0
+SKIP_DOCKER=0
+for arg in "$@"; do
+  case "$arg" in
+    --non-interactive) NON_INTERACTIVE=1 ;;
+    --skip-docker) SKIP_DOCKER=1 ;;
+    -h|--help)
+      cat <<'EOF'
+GEREQ RealEstates — realityV3 instalace
+
+  ./bin/install-realityV3 [--non-interactive] [--skip-docker]
+
+Interaktivně nastaví Admin URL, FE URL (včetně path prefixů), SMTP a IMAP,
+nainstaluje závislosti, zapne RealEstates moduly, vytvoří účty admin-client
+a makléře, buildne FE2 a (volitelně) spustí Docker Compose.
+
+Příklad URL s path:
+  https://client.gereq.cz/realityV3/admin
+  https://client.gereq.cz/realityV3/frontend
+EOF
+      exit 0
+      ;;
+  esac
+done
+
+if [[ -t 1 ]]; then
+  C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'
+  C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_CYAN=$'\033[36m'; C_RED=$'\033[31m'
+else
+  C_RESET= C_BOLD= C_DIM= C_GREEN= C_YELLOW= C_CYAN= C_RED=
+fi
+
+ok()   { printf '%s✓%s %s\n' "$C_GREEN" "$C_RESET" "$*"; }
+warn() { printf '%s!%s %s\n' "$C_YELLOW" "$C_RESET" "$*"; }
+err()  { printf '%s✗%s %s\n' "$C_RED" "$C_RESET" "$*" >&2; }
+info() { printf '%s→%s %s\n' "$C_CYAN" "$C_RESET" "$*"; }
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || { err "Chybí příkaz: $1"; return 1; }
+}
+
+# Prompt with default. Empty input keeps default.
+ask() {
+  local prompt="$1" default="${2-}" var
+  if (( NON_INTERACTIVE )); then
+    printf '%s\n' "$default"
+    return
+  fi
+  if [[ -n "$default" ]]; then
+    read -r -p "$prompt [$default]: " var || true
+  else
+    read -r -p "$prompt: " var || true
+  fi
+  if [[ -z "${var:-}" ]]; then
+    printf '%s\n' "$default"
+  else
+    printf '%s\n' "$var"
+  fi
+}
+
+ask_secret() {
+  local prompt="$1" default="${2-}" var
+  if (( NON_INTERACTIVE )); then
+    printf '%s\n' "$default"
+    return
+  fi
+  if [[ -n "$default" ]]; then
+    read -r -s -p "$prompt [****]: " var || true
+    printf '\n' >&2
+  else
+    read -r -s -p "$prompt: " var || true
+    printf '\n' >&2
+  fi
+  if [[ -z "${var:-}" ]]; then
+    printf '%s\n' "$default"
+  else
+    printf '%s\n' "$var"
+  fi
+}
+
+# Normalize URL: add https:// if missing scheme; strip trailing slash.
+normalize_url() {
+  local u="$1"
+  u="${u%%/}"
+  if [[ ! "$u" =~ ^https?:// ]]; then
+    u="https://${u}"
+  fi
+  printf '%s\n' "$u"
+}
+
+# Path of URL (no trailing slash), or empty for root.
+url_path() {
+  local u="$1"
+  local path
+  path="$(php -r 'echo parse_url($argv[1], PHP_URL_PATH) ?? "";' "$u")"
+  path="${path%%/}"
+  printf '%s\n' "$path"
+}
+
+url_origin() {
+  php -r '$p=parse_url($argv[1]); echo ($p["scheme"]??"https")."://".($p["host"]??""); if(!empty($p["port"])) echo ":".$p["port"];' "$1"
+}
+
+# Escape value for double-quoted .env assignment.
+env_quote() {
+  local v="$1"
+  v="${v//\\/\\\\}"
+  v="${v//\"/\\\"}"
+  v="${v//$'\n'/\\n}"
+  printf '%s' "$v"
+}
+
+printf '\n%s%s GEREQ RealEstates%s — realityV3 instalace\n\n' "$C_BOLD" "$C_CYAN" "$C_RESET"
+
+info "Kontrola závislostí…"
+need_cmd php || exit 1
+php -r 'exit(version_compare(PHP_VERSION, "8.4.0", ">=") ? 0 : 1);' \
+  || { err "Potřebujete PHP 8.4+ (máte $(php -r 'echo PHP_VERSION;'))"; exit 1; }
+ok "PHP $(php -r 'echo PHP_VERSION;')"
+
+for ext in pdo_sqlite mbstring json gd; do
+  php -m | grep -qi "^${ext}$" || { err "Chybí PHP extension: $ext"; exit 1; }
+done
+ok "PHP extensions"
+
+need_cmd composer || exit 1
+ok "Composer"
+
+JS_PKG=""
+if command -v bun >/dev/null 2>&1; then
+  JS_PKG=bun
+  ok "bun"
+elif command -v npm >/dev/null 2>&1; then
+  JS_PKG=npm
+  ok "npm"
+else
+  err "Chybí bun nebo npm (frontend build)."
+  exit 1
+fi
+
+if (( ! SKIP_DOCKER )); then
+  if command -v docker >/dev/null 2>&1; then
+    ok "Docker"
+  else
+    warn "Docker není k dispozici — instalace doběhne bez compose (použijte --skip-docker pro ticho)."
+    SKIP_DOCKER=1
+  fi
+fi
+
+printf '\n%sURL a cesty%s\n' "$C_BOLD" "$C_RESET"
+printf '%sPodporovány jsou i path URL, např. client.gereq.cz/realityV3/admin%s\n\n' "$C_DIM" "$C_RESET"
+
+ADMIN_URL="$(normalize_url "$(ask "Admin URL" "https://client.gereq.cz/realityV3/admin")")"
+FE_URL="$(normalize_url "$(ask "Frontend (FE2) URL" "https://client.gereq.cz/realityV3/frontend")")"
+HUB_URL="$(normalize_url "$(ask "Rozcestník URL (hub)" "https://client.gereq.cz/realityV3")")"
+
+ADMIN_PATH="$(url_path "$ADMIN_URL")"
+FE_PATH="$(url_path "$FE_URL")"
+HUB_PATH="$(url_path "$HUB_URL")"
+ORIGIN="$(url_origin "$ADMIN_URL")"
+
+# APP_URL = origin + admin path (public base for absolute links / reverse proxy).
+if [[ -n "$ADMIN_PATH" ]]; then
+  APP_URL="${ORIGIN}${ADMIN_PATH}"
+else
+  APP_URL="$ORIGIN"
+fi
+
+# FE Vite base must end with /
+if [[ -n "$FE_PATH" ]]; then
+  VITE_BASE="${FE_PATH}/"
+else
+  VITE_BASE="/"
+fi
+
+FRONTEND_ORIGIN="$ORIGIN"
+# Also allow FE origin if different host
+FE_ORIGIN="$(url_origin "$FE_URL")"
+if [[ "$FE_ORIGIN" != "$ORIGIN" ]]; then
+  FRONTEND_ORIGIN="${ORIGIN},${FE_ORIGIN}"
+fi
+
+ok "Admin: $ADMIN_URL"
+ok "FE:    $FE_URL (base ${VITE_BASE})"
+ok "Hub:   $HUB_URL"
+
+printf '\n%sEmailing — SMTP%s\n' "$C_BOLD" "$C_RESET"
+EMAILING_ACCOUNT_EMAIL="$(ask "E-mail účtu" "rakad@realityv3.dev")"
+EMAILING_ACCOUNT_NAME="$(ask "Název účtu" "Reality V3")"
+EMAILING_SMTP_HOST="$(ask "SMTP host" "smtp.example.com")"
+EMAILING_SMTP_PORT="$(ask "SMTP port" "587")"
+EMAILING_SMTP_ENCRYPTION="$(ask "SMTP encryption (tls|ssl|none)" "tls")"
+EMAILING_SMTP_USERNAME="$(ask "SMTP username" "$EMAILING_ACCOUNT_EMAIL")"
+EMAILING_SMTP_PASSWORD="$(ask_secret "SMTP password" "")"
+
+printf '\n%sEmailing — IMAP%s\n' "$C_BOLD" "$C_RESET"
+EMAILING_IMAP_PROTOCOL="$(ask "Incoming protocol (imap|pop3)" "imap")"
+EMAILING_IMAP_HOST="$(ask "IMAP host" "imap.example.com")"
+EMAILING_IMAP_PORT="$(ask "IMAP port" "993")"
+EMAILING_IMAP_ENCRYPTION="$(ask "IMAP encryption (ssl|tls|none)" "ssl")"
+EMAILING_IMAP_USERNAME="$(ask "IMAP username" "$EMAILING_ACCOUNT_EMAIL")"
+EMAILING_IMAP_PASSWORD="$(ask_secret "IMAP password (Enter = stejné jako SMTP)" "$EMAILING_SMTP_PASSWORD")"
+
+GEREQ_PORT="$(ask "Docker host port" "8080")"
+DB_PASSWORD="$(ask "Postgres heslo (Docker)" "realityv3")"
+
+USE_DOCKER=1
+if (( SKIP_DOCKER )); then
+  USE_DOCKER=0
+fi
+
+APP_KEY="$(php -r 'echo bin2hex(random_bytes(32));')"
+PUB_KEY="grq_pub_$(openssl rand -hex 24 2>/dev/null || php -r 'echo bin2hex(random_bytes(24));')"
+
+COMPOSER_FLAGS=(--no-interaction --prefer-dist)
+if ! php -m | grep -qi '^redis$'; then
+  warn "ext-redis chybí — composer ignore-platform-req (pro demo OK)."
+  COMPOSER_FLAGS+=(--ignore-platform-req=ext-redis)
+fi
+
+info "composer install…"
+composer install "${COMPOSER_FLAGS[@]}"
+ok "PHP závislosti"
+
+if [[ -f .env ]]; then
+  cp .env ".env.bak.$(date +%Y%m%d%H%M%S)"
+  warn "Existující .env zálohován."
+fi
+
+if (( USE_DOCKER )); then
+  DB_BLOCK=$(cat <<EOF
+DB_CONNECTION=pgsql
+DB_DATABASE=storage/database.sqlite
+DB_HOST=postgres
+DB_PORT=5432
+DB_DATABASE_NAME=gereq
+DB_USERNAME=gereq
+DB_PASSWORD=$(env_quote "$DB_PASSWORD")
+
+CACHE_DRIVER=file
+QUEUE_DRIVER=redis
+SESSION_DRIVER=redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=
+EOF
+)
+else
+  DB_BLOCK=$(cat <<EOF
+DB_CONNECTION=sqlite
+DB_DATABASE=storage/database.sqlite
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE_NAME=gereq
+DB_USERNAME=gereq
+DB_PASSWORD=$(env_quote "$DB_PASSWORD")
+
+CACHE_DRIVER=file
+QUEUE_DRIVER=sync
+SESSION_DRIVER=file
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+EOF
+)
+fi
+
+cat > .env <<EOF
+# GEREQ RealEstates — realityV3 ($(date -Iseconds 2>/dev/null || date))
+
+APP_NAME="Reality V3"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=$(env_quote "$APP_URL")
+APP_KEY=${APP_KEY}
+
+DEMO_PROFILE=realityV3
+TRUSTED_PROXIES=*
+
+${DB_BLOCK}
+
+CACHE_TTL=3600
+CACHE_TWIG=true
+CACHE_DOCTRINE_RESULT=true
+
+SEARCH_DRIVER=self_repair
+FILE_DRIVER=local
+
+MAIL_DSN=null://null
+
+ADMIN_NAME="Anes Rakad"
+ADMIN_EMAIL=rakad@realityv3.dev
+ADMIN_PASSWORD=$(env_quote '5nAc,Ji43?5x')
+ADMIN_ROLE=admin-client
+
+REALITYV3_ADMIN_NAME="Anes Rakad"
+REALITYV3_ADMIN_PASSWORD=$(env_quote '5nAc,Ji43?5x')
+REALITYV3_BROKER_NAME="Anes Rakad (makléř)"
+REALITYV3_BROKER_PASSWORD=$(env_quote '1xYg,Ji22?5y')
+
+EMAILING_ACCOUNT_NAME=$(env_quote "$EMAILING_ACCOUNT_NAME")
+EMAILING_ACCOUNT_EMAIL=$(env_quote "$EMAILING_ACCOUNT_EMAIL")
+EMAILING_SMTP_HOST=$(env_quote "$EMAILING_SMTP_HOST")
+EMAILING_SMTP_PORT=${EMAILING_SMTP_PORT}
+EMAILING_SMTP_ENCRYPTION=${EMAILING_SMTP_ENCRYPTION}
+EMAILING_SMTP_USERNAME=$(env_quote "$EMAILING_SMTP_USERNAME")
+EMAILING_SMTP_PASSWORD=$(env_quote "$EMAILING_SMTP_PASSWORD")
+EMAILING_IMAP_PROTOCOL=${EMAILING_IMAP_PROTOCOL}
+EMAILING_IMAP_HOST=$(env_quote "$EMAILING_IMAP_HOST")
+EMAILING_IMAP_PORT=${EMAILING_IMAP_PORT}
+EMAILING_IMAP_ENCRYPTION=${EMAILING_IMAP_ENCRYPTION}
+EMAILING_IMAP_USERNAME=$(env_quote "$EMAILING_IMAP_USERNAME")
+EMAILING_IMAP_PASSWORD=$(env_quote "$EMAILING_IMAP_PASSWORD")
+
+SESSION_LIFETIME=120
+SESSION_SAME_SITE=lax
+
+WEBHOOKS_ALLOW_PRIVATE_URLS=true
+
+FRONTEND_ORIGIN=$(env_quote "$FRONTEND_ORIGIN")
+
+API_PUBLIC_KEY=${PUB_KEY}
+
+GEREQ_PORT=${GEREQ_PORT}
+REALITYV3_ADMIN_URL=$(env_quote "$ADMIN_URL")
+REALITYV3_FE_URL=$(env_quote "$FE_URL")
+REALITYV3_HUB_URL=$(env_quote "$HUB_URL")
+REALITYV3_ADMIN_PATH=$(env_quote "$ADMIN_PATH")
+REALITYV3_FE_PATH=$(env_quote "$FE_PATH")
+REALITYV3_HUB_PATH=$(env_quote "$HUB_PATH")
+EOF
+ok ".env (DEMO_PROFILE=realityV3)"
+
+mkdir -p FE2
+cat > FE2/.env <<EOF
+VITE_API_URL=$(env_quote "$APP_URL")
+VITE_API_PUBLIC_KEY=${PUB_KEY}
+VITE_BASE=$(env_quote "$VITE_BASE")
+VITE_API_DIRECT=1
+EOF
+ok "FE2/.env (base ${VITE_BASE})"
+
+# Hub with resolved URLs + both accounts
+mkdir -p public/realityV3
+if [[ -f output/demo/realityV3/index.html ]]; then
+  sed \
+    -e "s|https://client.gereq.cz/realityV3/frontend|${FE_URL}|g" \
+    -e "s|https://client.gereq.cz/realityV3/admin|${ADMIN_URL}|g" \
+    -e "s|client.gereq.cz/realityV3/admin|${ADMIN_URL#https://}|g" \
+    -e "s|client.gereq.cz/realityV3/frontend|${FE_URL#https://}|g" \
+    output/demo/realityV3/index.html > public/realityV3/index.html
+else
+  warn "output/demo/realityV3/index.html chybí — hub přeskočen."
+fi
+
+# Nginx path-aware config for Docker / reverse proxy
+mkdir -p docker/nginx
+ADMIN_PATH_ESC="${ADMIN_PATH:-/admin}"
+FE_PATH_ESC="${FE_PATH:-/frontend}"
+HUB_PATH_ESC="${HUB_PATH:-/realityV3}"
+[[ "$ADMIN_PATH_ESC" == /* ]] || ADMIN_PATH_ESC="/$ADMIN_PATH_ESC"
+[[ "$FE_PATH_ESC" == /* ]] || FE_PATH_ESC="/$FE_PATH_ESC"
+[[ "$HUB_PATH_ESC" == /* ]] || HUB_PATH_ESC="/$HUB_PATH_ESC"
+
+TEMPLATE="$ROOT/docker/nginx/realityV3.conf.template"
+if [[ -f "$TEMPLATE" ]]; then
+  sed \
+    -e "s|__HUB_PATH__|${HUB_PATH_ESC}|g" \
+    -e "s|__ADMIN_PATH__|${ADMIN_PATH_ESC}|g" \
+    -e "s|__FE_PATH__|${FE_PATH_ESC}|g" \
+    "$TEMPLATE" > docker/nginx/realityV3.conf
+else
+  err "Chybí $TEMPLATE"
+  exit 1
+fi
+ok "docker/nginx/realityV3.conf"
+
+# Point compose nginx at realityV3 conf when present (sidecar override)
+cat > docker-compose.realityV3.yml <<'YAML'
+# Override: use path-aware nginx for realityV3 demo.
+services:
+  nginx:
+    volumes:
+      - ./docker/nginx/realityV3.conf:/etc/nginx/conf.d/default.conf:ro,z
+YAML
+ok "docker-compose.realityV3.yml"
+
+mkdir -p storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}
+chmod -R a+rwX storage 2>/dev/null || true
+if (( ! USE_DOCKER )); then
+  : > storage/database.sqlite
+  ok "Prázdný SQLite"
+fi
+
+info "Admin assets ($JS_PKG)…"
+if [[ "$JS_PKG" == "bun" ]]; then
+  bun install
+  bun run build
+else
+  npm install
+  npm run build
+fi
+ok "Assets v public/build"
+
+info "FE2 build ($JS_PKG, base ${VITE_BASE})…"
+(
+  cd FE2
+  if [[ "$JS_PKG" == "bun" ]]; then
+    bun install
+    bun run build
+  else
+    npm install
+    npm run build
+  fi
+)
+ok "FE2 dist"
+
+run_seed() {
+  info "Migrace + demo data + realityV3 účet…"
+  "$@" migrate --fresh --seed --no-interaction
+  ok "Databáze"
+  "$@" seed:realityV3
+  ok "seed:realityV3"
+}
+
+if (( USE_DOCKER )); then
+  info "Spouštím Docker (postgres + redis + nginx + php)…"
+  export GEREQ_PORT APP_URL TRUSTED_PROXIES FRONTEND_ORIGIN DB_PASSWORD
+  docker compose -f docker-compose.yml -f docker-compose.realityV3.yml up -d --build
+  ok "Docker kontejnery"
+
+  info "Čekám na Postgres…"
+  for i in $(seq 1 60); do
+    if docker compose -f docker-compose.yml -f docker-compose.realityV3.yml exec -T postgres \
+      pg_isready -U gereq -d gereq >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
+  ok "Postgres ready"
+
+  run_seed docker compose -f docker-compose.yml -f docker-compose.realityV3.yml exec -T php php gereq
+else
+  run_seed php gereq
+fi
+
+printf '\n'
+printf '%s%s Hotovo — realityV3%s\n\n' "$C_BOLD" "$C_GREEN" "$C_RESET"
+printf '  Hub:          %s\n' "$HUB_URL"
+printf '  Admin:        %s\n' "$ADMIN_URL"
+printf '  Frontend:     %s\n' "$FE_URL"
+printf '\n'
+printf '  Admin-client: rakad@realityv3.dev / 5nAc,Ji43?5x\n'
+printf '  Makléř:       rakad2@realityv3.dev / 1xYg,Ji22?5y\n'
+printf '\n'
+
+if (( USE_DOCKER )); then
+  printf '  Lokálně přes Docker: http://127.0.0.1:%s%s/\n' "$GEREQ_PORT" "$HUB_PATH_ESC"
+  printf '  Reverse proxy na produkci mapujte stejně jako docker/nginx/realityV3.conf\n'
+else
+  printf '  Spuštění bez Dockeru:\n'
+  printf '    php gereq serve --port=%s\n' "$GEREQ_PORT"
+  printf '    (cd FE2 && bunx vite preview --host --port 5174)\n'
+fi
+printf '\n'

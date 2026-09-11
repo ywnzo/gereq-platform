@@ -69,6 +69,7 @@ return [
             'viewings',
             'documents',
             'reviews',
+            'emailing',
         ],
         'required' => [
             'currency',

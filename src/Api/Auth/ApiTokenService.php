@@ -23,6 +23,7 @@ final class ApiTokenService
      */
     public function create(string $name, User $user, array $scopes, bool $test = false, ?\DateTimeImmutable $expiresAt = null): array
     {
+        $scopes = $this->constrainScopes($user, $scopes);
         $prefix = $test
             ? (string) $this->config->get('api.token_prefix_test', 'grq_test_')
             : (string) $this->config->get('api.token_prefix_live', 'grq_live_');
@@ -40,11 +41,13 @@ final class ApiTokenService
     }
 
     /**
-     * Ephemeral full-access token for the Developer API tester (one plain value kept in session).
+     * Ephemeral token for the Developer API tester (one plain value kept in session).
+     * Privileged admins get `*`; others get the listed known scopes (RBAC still enforced).
      *
+     * @param list<string> $knownScopes
      * @return array{token: ApiToken, plain: string}
      */
-    public function issueTesterToken(User $user): array
+    public function issueTesterToken(User $user, array $knownScopes = []): array
     {
         $name = self::TESTER_TOKEN_NAME;
         /** @var list<ApiToken> $existing */
@@ -59,10 +62,14 @@ final class ApiTokenService
         }
         $this->em->flush();
 
+        $scopes = $user->isAdministrator()
+            ? ['*']
+            : array_values(array_unique(array_filter(array_map('strval', $knownScopes))));
+
         return $this->create(
             $name,
             $user,
-            ['*'],
+            $scopes,
             true,
             new \DateTimeImmutable('+12 hours'),
         );
@@ -85,5 +92,30 @@ final class ApiTokenService
     {
         $token->markUsed();
         $this->em->flush();
+    }
+
+    /**
+     * Drop `*` / full unless the owner is privileged; otherwise keep requested scopes
+     * (RBAC on the owner is enforced again at request time).
+     *
+     * @param list<string> $scopes
+     * @return list<string>
+     */
+    public function constrainScopes(User $user, array $scopes): array
+    {
+        $scopes = array_values(array_unique(array_filter(array_map('strval', $scopes))));
+        $wantsFull = in_array('*', $scopes, true) || in_array('full', $scopes, true);
+        if ($wantsFull) {
+            if (!$user->isAdministrator()) {
+                return array_values(array_filter(
+                    $scopes,
+                    static fn (string $s): bool => $s !== '*' && $s !== 'full',
+                ));
+            }
+
+            return ['*'];
+        }
+
+        return $scopes;
     }
 }

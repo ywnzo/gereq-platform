@@ -20,6 +20,7 @@ use Gereq\Console\Command\ModulePauseCommand;
 use Gereq\Console\Command\ModuleListCommand;
 use Gereq\Console\Command\QueueWorkCommand;
 use Gereq\Console\Command\SeedDemoCommand;
+use Gereq\Console\Command\SeedRealityV3Command;
 use Gereq\Console\Command\ServeCommand;
 use Gereq\Console\Command\ServeDockerCommand;
 use Gereq\Console\Command\TwigTypesCommand;
@@ -73,6 +74,7 @@ final class ConsoleKernel
             QueueWorkCommand::class,
             UserCreateCommand::class,
             SeedDemoCommand::class,
+            SeedRealityV3Command::class,
             ServeCommand::class,
             ServeDockerCommand::class,
             NnCommand::class,

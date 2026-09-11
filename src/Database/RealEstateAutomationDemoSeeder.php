@@ -286,6 +286,7 @@ final class RealEstateAutomationDemoSeeder
 
         $defs = [
             $this->workflowWelcome(),
+            $this->workflowTourRequested(),
             $this->workflowQualified(),
             $this->workflowWon(),
             $this->workflowLostWinback(),
@@ -323,7 +324,7 @@ final class RealEstateAutomationDemoSeeder
     {
         return [
             'name' => 'Welcome po poptávce (listing → CRM)',
-            'description' => 'Po vytvoření obchodu z webové poptávky: krátké potvrzení e-mailem a úkol makléři zavolat.',
+            'description' => 'Po vytvoření obchodu z webového dotazu: krátké potvrzení e-mailem a úkol makléři zavolat.',
             'active' => true,
             'graph' => [
                 'nodes' => [
@@ -335,7 +336,8 @@ final class RealEstateAutomationDemoSeeder
                         'data' => [
                             'event' => 'deal.created',
                             'conditions' => [
-                                ['field' => 'title', 'op' => 'contains', 'value' => 'Poptávka'],
+                                ['field' => 'source', 'op' => 'eq', 'value' => 'listing.inquiry'],
+                                ['field' => 'intent', 'op' => 'eq', 'value' => 'info'],
                             ],
                         ],
                     ],
@@ -355,8 +357,8 @@ final class RealEstateAutomationDemoSeeder
                             'to' => '{{customer.email}}',
                             'subject' => 'Děkujeme za zájem o {{deal.title}}',
                             'body_html' => '<p>Dobrý den {{customer.name}},</p>'
-                                . '<p>děkujeme za poptávku <strong>{{deal.title}}</strong>. '
-                                . 'Makléř se vám ozve do jednoho pracovního dne a domluví prohlídku.</p>'
+                                . '<p>děkujeme za dotaz k <strong>{{deal.title}}</strong>. '
+                                . 'Makléř se vám ozve do jednoho pracovního dne.</p>'
                                 . '<p>S pozdravem,<br>tým RealEstates</p>',
                         ],
                     ],
@@ -368,13 +370,68 @@ final class RealEstateAutomationDemoSeeder
                         'data' => [
                             'subject' => 'Zavolat zájemci: {{customer.name}}',
                             'activity_type' => 'task',
-                            'body' => 'Nová poptávka z webu. Ověřit rozpočet a navrhnout termín prohlídky.',
+                            'body' => 'Nový webový dotaz. Ověřit potřeby a navrhnout další krok.',
                         ],
                     ],
                 ],
                 'edges' => [
                     ['from' => 't1', 'to' => 'd1', 'from_port' => 'out'],
                     ['from' => 'd1', 'to' => 'e1', 'from_port' => 'out'],
+                    ['from' => 'e1', 'to' => 'a1', 'from_port' => 'out'],
+                ],
+            ],
+        ];
+    }
+
+    /** @return array{name: string, description: string, active?: bool, graph: array{nodes: list<array<string, mixed>>, edges: list<array<string, mixed>>}} */
+    private function workflowTourRequested(): array
+    {
+        return [
+            'name' => 'Prohlídka z webu (viewing.requested)',
+            'description' => 'Po žádosti o prohlídku z detailu nabídky: potvrzení klientovi a připomenutí makléři naplánovat termín.',
+            'active' => true,
+            'graph' => [
+                'nodes' => [
+                    [
+                        'id' => 't1',
+                        'type' => 'trigger.event',
+                        'x' => 60,
+                        'y' => 180,
+                        'data' => [
+                            'event' => 'viewing.requested',
+                            'conditions' => [
+                                ['field' => 'source', 'op' => 'eq', 'value' => 'listing.inquiry'],
+                            ],
+                        ],
+                    ],
+                    [
+                        'id' => 'e1',
+                        'type' => 'action.send_email',
+                        'x' => 320,
+                        'y' => 180,
+                        'data' => [
+                            'to' => '{{customer.email}}',
+                            'subject' => 'Přijali jsme žádost o prohlídku',
+                            'body_html' => '<p>Dobrý den {{customer.name}},</p>'
+                                . '<p>děkujeme — žádost o prohlídku <strong>{{listing.title}}</strong> '
+                                . '({{viewing.number}}) jsme přijali. Makléř se ozve s termíny.</p>'
+                                . '<p>S pozdravem,<br>tým RealEstates</p>',
+                        ],
+                    ],
+                    [
+                        'id' => 'a1',
+                        'type' => 'action.create_activity',
+                        'x' => 560,
+                        'y' => 180,
+                        'data' => [
+                            'subject' => 'Potvrdit termín prohlídky: {{customer.name}}',
+                            'activity_type' => 'task',
+                            'body' => 'Webová žádost o prohlídku. Otevřít Viewings, zvolit termín a potvrdit klientovi.',
+                        ],
+                    ],
+                ],
+                'edges' => [
+                    ['from' => 't1', 'to' => 'e1', 'from_port' => 'out'],
                     ['from' => 'e1', 'to' => 'a1', 'from_port' => 'out'],
                 ],
             ],

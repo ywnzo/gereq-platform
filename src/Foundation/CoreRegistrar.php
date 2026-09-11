@@ -359,14 +359,15 @@ final class CoreRegistrar
 
     private function commands(): void
     {
-        $this->palette->add(new PaletteCommand('go-dashboard', 'palette.go_dashboard', '/admin', 'home', keywords: ['home', 'dashboard']));
-        $this->palette->add(new PaletteCommand('go-users', 'palette.go_users', '/admin/users', 'users', 'users.view'));
-        $this->palette->add(new PaletteCommand('go-roles', 'palette.go_roles', '/admin/users/roles', 'shield', 'roles.view', keywords: ['role', 'opravneni', 'permissions']));
-        $this->palette->add(new PaletteCommand('go-modules', 'palette.go_modules', '/admin/modules', 'modules', 'modules.manage'));
-        $this->palette->add(new PaletteCommand('go-settings', 'palette.go_settings', '/admin/settings', 'settings', 'settings.manage', keywords: ['konfigurace', 'settings']));
-        $this->palette->add(new PaletteCommand('go-audit', 'palette.go_audit', '/admin/settings/audit', 'activity', 'audit.view', keywords: ['audit', 'log', 'historie']));
-        $this->palette->add(new PaletteCommand('go-profile', 'palette.go_profile', '/admin/profile', 'user'));
-        $this->palette->add(new PaletteCommand('logout', 'palette.logout', '/admin/logout', 'logout', group: 'Účet'));
+        $p = static fn (string $path): string => \Gereq\Support\UrlPrefix::path($path);
+        $this->palette->add(new PaletteCommand('go-dashboard', 'palette.go_dashboard', $p('/admin'), 'home', keywords: ['home', 'dashboard']));
+        $this->palette->add(new PaletteCommand('go-users', 'palette.go_users', $p('/admin/users'), 'users', 'users.view'));
+        $this->palette->add(new PaletteCommand('go-roles', 'palette.go_roles', $p('/admin/users/roles'), 'shield', 'roles.view', keywords: ['role', 'opravneni', 'permissions']));
+        $this->palette->add(new PaletteCommand('go-modules', 'palette.go_modules', $p('/admin/modules'), 'modules', 'modules.manage'));
+        $this->palette->add(new PaletteCommand('go-settings', 'palette.go_settings', $p('/admin/settings'), 'settings', 'settings.manage', keywords: ['konfigurace', 'settings']));
+        $this->palette->add(new PaletteCommand('go-audit', 'palette.go_audit', $p('/admin/settings/audit'), 'activity', 'audit.view', keywords: ['audit', 'log', 'historie']));
+        $this->palette->add(new PaletteCommand('go-profile', 'palette.go_profile', $p('/admin/profile'), 'user'));
+        $this->palette->add(new PaletteCommand('logout', 'palette.logout', $p('/admin/logout'), 'logout', group: 'Účet'));
     }
 
     private function adminSearch(): void
@@ -388,7 +389,7 @@ final class CoreRegistrar
                     $hits[] = new AdminSearchHit(
                         id: 'user.' . $user->id(),
                         label: $user->name(),
-                        url: '/admin/users/' . $user->id() . '/edit',
+                        url: \Gereq\Support\UrlPrefix::path('/admin/users/' . $user->id() . '/edit'),
                         group: 'nav.users',
                         subtitle: $user->email(),
                         icon: 'user',

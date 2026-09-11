@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+# Pack realityV3 demo zip (admin + FE2, without vendor/node_modules/.git).
+# Output: dist/realityV3-YYYYMMDD.zip
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+OUT_DIR="${ROOT}/dist"
+STAMP="$(date +%Y%m%d)"
+NAME="realityV3"
+ZIP="${OUT_DIR}/${NAME}-${STAMP}.zip"
+STAGE="${OUT_DIR}/.stage-${NAME}"
+
+mkdir -p "$OUT_DIR"
+rm -rf "$STAGE"
+mkdir -p "$STAGE/${NAME}"
+
+echo "→ Kopíruji soubory do staging…"
+rsync -a \
+  --exclude='.git/' \
+  --exclude='.idea/' \
+  --exclude='.vscode/' \
+  --exclude='.cursor/' \
+  --exclude='.cache/' \
+  --exclude='.phpunit.cache/' \
+  --exclude='.phpstan-tmp/' \
+  --exclude='vendor/' \
+  --exclude='node_modules/' \
+  --exclude='FE2/node_modules/' \
+  --exclude='FE2/dist/' \
+  --exclude='frontend/node_modules/' \
+  --exclude='frontend/dist/' \
+  --exclude='public/build/' \
+  --exclude='public/hot' \
+  --exclude='dist/' \
+  --exclude='.env' \
+  --exclude='.env.bak*' \
+  --exclude='.env copy' \
+  --exclude='.env.new' \
+  --exclude='.env.tmpkey' \
+  --exclude='FE2/.env' \
+  --exclude='storage/database.sqlite' \
+  --exclude='storage/database.sqlite-journal' \
+  --exclude='storage/logs/*' \
+  --exclude='storage/cache/*' \
+  --exclude='storage/sessions/*' \
+  --exclude='storage/tmp/*' \
+  --exclude='*.log' \
+  --exclude='.DS_Store' \
+  --exclude='docs/proposals/' \
+  --exclude='output/demo/*.mp4' \
+  --exclude='output/demo/*.webm' \
+  --exclude='output/demo/*.gif' \
+  --exclude='output/demo/.pw-video/' \
+  --exclude='output/demo/.pw-video-mobile/' \
+  --exclude='output/demo/frames/' \
+  --exclude='output/pdf/' \
+  --exclude='tmp/' \
+  --exclude='tools/gereq-monitor/ui/node_modules/' \
+  ./ "$STAGE/${NAME}/"
+
+mkdir -p \
+  "$STAGE/${NAME}/storage/cache" \
+  "$STAGE/${NAME}/storage/logs" \
+  "$STAGE/${NAME}/storage/sessions" \
+  "$STAGE/${NAME}/storage/tmp/queue" \
+  "$STAGE/${NAME}/storage/uploads" \
+  "$STAGE/${NAME}/storage/invoices" \
+  "$STAGE/${NAME}/storage/database" \
+  "$STAGE/${NAME}/public/realityV3"
+touch \
+  "$STAGE/${NAME}/storage/cache/.gitkeep" \
+  "$STAGE/${NAME}/storage/logs/.gitkeep" \
+  "$STAGE/${NAME}/storage/sessions/.gitkeep" \
+  "$STAGE/${NAME}/storage/tmp/.gitkeep"
+
+# Hub into package root for convenience
+if [[ -f output/demo/realityV3/index.html ]]; then
+  cp -a output/demo/realityV3/index.html "$STAGE/${NAME}/public/realityV3/index.html"
+  cp -a output/demo/realityV3/README.md "$STAGE/${NAME}/REALITYV3-HUB.md" 2>/dev/null || true
+fi
+
+# realityV3-only FE2 SEO (keep FE2/index.html generic in the main repo)
+FE2_INDEX="$STAGE/${NAME}/FE2/index.html"
+if [[ -f "$FE2_INDEX" ]]; then
+  FE2_INDEX="$FE2_INDEX" python3 - <<'PY'
+from pathlib import Path
+import os
+path = Path(os.environ["FE2_INDEX"])
+html = path.read_text(encoding="utf-8")
+seo = """    <title>Anes Rakad · Realitní portál</title>
+    <meta name="description" content="Nabídky nemovitostí — prodej i pronájem v Praze a okolí. Demo RealEstates + Web+ na platformě GEREQ." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Anes Rakad · Realitní portál" />
+    <meta property="og:title" content="Anes Rakad · Realitní portál" />
+    <meta property="og:description" content="Nabídky nemovitostí — prodej i pronájem v Praze a okolí. Demo RealEstates + Web+ na platformě GEREQ." />
+    <meta property="og:url" content="https://client.gereq.cz/realityV3/frontend/" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&h=630&q=80" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="cs_CZ" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Anes Rakad · Realitní portál" />
+    <meta name="twitter:description" content="Nabídky nemovitostí — prodej i pronájem v Praze a okolí. Demo RealEstates + Web+ na platformě GEREQ." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&h=630&q=80" />
+"""
+needle = "    <title>RealEstates</title>\n"
+if needle not in html:
+    raise SystemExit("FE2/index.html: expected <title>RealEstates</title> for SEO patch")
+path.write_text(html.replace(needle, seo, 1), encoding="utf-8")
+print("→ FE2 SEO (Anes Rakad) injected into package")
+PY
+fi
+
+# Demo package compose project name; keep repo docker-compose.yml generic (gereq).
+COMPOSE_YML="$STAGE/${NAME}/docker-compose.yml"
+if [[ -f "$COMPOSE_YML" ]]; then
+  COMPOSE_YML="$COMPOSE_YML" python3 - <<'PY'
+from pathlib import Path
+import os
+p = Path(os.environ["COMPOSE_YML"])
+text = p.read_text(encoding="utf-8")
+if text.startswith("name: gereq"):
+    text = "name: realityV3\n" + text[len("name: gereq\n"):]
+    p.write_text(text, encoding="utf-8")
+    print("→ docker-compose project name → realityV3 (package only)")
+PY
+fi
+
+cat > "$STAGE/${NAME}/INSTALACE.sh" <<'EOF'
+#!/usr/bin/env bash
+# realityV3 demo — unpack the zip and run:
+#   ./INSTALACE.sh
+#   ./INSTALACE.sh --non-interactive
+#   ./INSTALACE.sh --skip-docker
+set -euo pipefail
+cd "$(dirname "$0")"
+chmod +x bin/install-realityV3 bin/pack-realityV3 2>/dev/null || true
+exec ./bin/install-realityV3 "$@"
+EOF
+chmod +x "$STAGE/${NAME}/INSTALACE.sh" \
+  "$STAGE/${NAME}/bin/install-realityV3" \
+  "$STAGE/${NAME}/bin/pack-realityV3" \
+  "$STAGE/${NAME}/bin/install-demo" \
+  "$STAGE/${NAME}/bin/pack-demo" 2>/dev/null || true
+
+cat > "$STAGE/${NAME}/DEMO-README.txt" <<EOF
+GEREQ RealEstates — realityV3 demo
+==================================
+
+Obsah: admin (GEREQ) + FE2 + Docker + interaktivní instalace.
+
+Požadavky:
+  - PHP 8.4+ (pdo_sqlite, mbstring, json, gd; ext-redis volitelné)
+  - Composer
+  - bun nebo npm
+  - Docker + Docker Compose (doporučeno pro server)
+
+Instalace:
+  1. Rozbalte tento zip
+  2. ./INSTALACE.sh
+     — nastavíte Admin URL, FE URL (včetně path, např.
+       client.gereq.cz/realityV3/admin a …/frontend),
+       SMTP a IMAP pro emailing
+  3. Skript nainstaluje závislosti, zapne moduly, seedne data,
+     buildne FE2 a spustí Docker
+
+Účty:
+  Admin-client (vše kromě zapínání modulů):
+    rakad@realityv3.dev
+    5nAc,Ji43?5x
+
+  Makléř:
+    rakad2@realityv3.dev
+    1xYg,Ji22?5y
+
+Moduly (default zapnuto):
+  calendar, crm, currency, customers, cms, documents, media,
+  listings, reviews, webplus, vitality, portals, viewings, emailing
+
+Volby:
+  ./INSTALACE.sh --non-interactive   # default URL + prázdné SMTP (doplňte v .env)
+  ./INSTALACE.sh --skip-docker       # jen soubory + SQLite, bez compose
+EOF
+
+echo "→ Zipuji…"
+rm -f "$ZIP"
+if command -v zip >/dev/null 2>&1; then
+  ( cd "$STAGE" && zip -rq "$ZIP" "$NAME" )
+else
+  python3 - <<PY
+import zipfile
+from pathlib import Path
+root = Path(${STAGE@Q}) / ${NAME@Q}
+out = Path(${ZIP@Q})
+with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+    for path in root.rglob("*"):
+        if path.is_file():
+            zf.write(path, path.relative_to(root.parent).as_posix())
+print("python zip ok")
+PY
+fi
+
+rm -rf "$STAGE"
+
+SIZE="$(du -h "$ZIP" | awk '{print $1}')"
+echo "✓ Hotovo: $ZIP ($SIZE)"
+echo
+echo "  Na serveru: rozbalit → ./INSTALACE.sh"
