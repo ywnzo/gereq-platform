@@ -1,2 +1,5 @@
+# Disable CI pipelines for this repo until a real job is defined.
+# `when` must be under `rules:`, not directly under `workflow:`.
 workflow:
-  when: never
+  rules:
+    - when: never
