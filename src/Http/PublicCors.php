@@ -57,10 +57,7 @@ final class PublicCors
 
     /**
      * Browser storefront on the same site (or allowlisted Origin) — no public API key required.
-     * Bare curl / scripts without Origin / Sec-Fetch-Site / Referer still need Bearer grq_pub_*.
-     *
-     * Same-origin GETs often omit Origin. Chromium on non-loopback hosts (LAN IP) may also omit
-     * Sec-Fetch-Site when the page is opened via http://192.168.x.x:5174 — fall back to Referer.
+     * Bare curl / scripts without Origin or Sec-Fetch-Site still need Bearer grq_pub_*.
      */
     public static function isFirstPartyRequest(Request $request): bool
     {
@@ -69,58 +66,23 @@ final class PublicCors
             return true;
         }
 
-        $candidates = [];
         $origin = trim((string) $request->headers->get('Origin', ''));
-        if ($origin !== '') {
-            $candidates[] = $origin;
-        }
-
-        $referer = trim((string) $request->headers->get('Referer', ''));
-        if ($referer !== '') {
-            $fromReferer = self::originFromUrl($referer);
-            if ($fromReferer !== null) {
-                $candidates[] = $fromReferer;
-            }
-        }
-
-        if ($candidates === []) {
+        if ($origin === '') {
             return false;
         }
 
-        $allowed = self::allowedOrigins();
-        $debug = (bool) env_value('APP_DEBUG', false);
-
-        foreach ($candidates as $candidate) {
-            foreach ($allowed as $entry) {
-                if (strcasecmp($candidate, $entry) === 0) {
-                    return true;
-                }
-            }
-            if ($debug && self::isLocalDevOrigin($candidate)) {
+        foreach (self::allowedOrigins() as $allowed) {
+            if (strcasecmp($origin, $allowed) === 0) {
                 return true;
             }
         }
 
+        $debug = (bool) env_value('APP_DEBUG', false);
+        if ($debug && self::isLocalDevOrigin($origin)) {
+            return true;
+        }
+
         return false;
-    }
-
-    /** @return non-empty-string|null */
-    private static function originFromUrl(string $url): ?string
-    {
-        $parts = parse_url($url);
-        if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])) {
-            return null;
-        }
-
-        $scheme = strtolower((string) $parts['scheme']);
-        if (!in_array($scheme, ['http', 'https'], true)) {
-            return null;
-        }
-
-        $host = strtolower((string) $parts['host']);
-        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
-
-        return $scheme . '://' . $host . $port;
     }
 
     /** @return list<string> */

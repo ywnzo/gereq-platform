@@ -1,4 +1,11 @@
-<link rel="icon" href="{{ brand('favicon_url') }}" type="image/svg+xml">
+{% set faviconHref = brand('favicon_url') %}
+{% set faviconPath = faviconHref|split('?')|first|lower %}
+{% set faviconType = faviconPath ends with '.svg' ? 'image/svg+xml'
+    : (faviconPath ends with '.ico' ? 'image/x-icon'
+    : (faviconPath ends with '.webp' ? 'image/webp'
+    : (faviconPath ends with '.gif' ? 'image/gif' : 'image/png'))) %}
+<link rel="icon" href="{{ faviconHref }}" type="{{ faviconType }}">
+
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=ibm-plex-sans:400,450,500,600,700|dm-sans:400,500,600,700|space-grotesk:500,600,700|jetbrains-mono:400,500|material-symbols-outlined" rel="stylesheet">
 <script nonce="{{ csp_nonce() }}">

@@ -12,10 +12,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Auth for /api/public/*:
- * - Bearer / X-Api-Key grq_pub_* (external clients), or
- * - first-party browser (same-origin / allowlisted Origin) without a key — like baby-naty shop API.
- */
+* Auth for /api/public/*:
+* - Bearer / X-Api-Key grq_pub_* (external clients), or
+* - first-party browser (same-origin / allowlisted Origin) without a key — like baby-naty shop API.
+*/
 final class PublicApiAuthMiddleware implements MiddlewareInterface
 {
     public function __construct(private readonly PublicApiKey $publicKey)
