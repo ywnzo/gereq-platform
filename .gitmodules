@@ -118,3 +118,9 @@
 [submodule "modules/WebPlus"]
 	path = modules/WebPlus
 	url = git@gitlab.com:gereq/module-webplus.git
+[submodule "modules/Engage"]
+	path = modules/Engage
+	url = git@gitlab.com:gereq/module-engage.git
+[submodule "modules/Gereq"]
+	path = modules/Gereq
+	url = git@gitlab.com:gereq/module-gereq.git
