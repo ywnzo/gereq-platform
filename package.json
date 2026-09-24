@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build"
+    "dev": "bun ./scripts/build.ts --watch",
+    "build": "bun ./scripts/build.ts"
   },
   "dependencies": {
     "@alpinejs/csp": "^3.14.9",
@@ -22,19 +22,23 @@
     "@tiptap/extension-underline": "^3.31.3",
     "@tiptap/pm": "^3.31.0",
     "@tiptap/starter-kit": "^3.31.0",
+    "@types/alpinejs": "^3.13.11",
     "chart.js": "^4.5.1",
     "codemirror": "^6.0.2",
     "dompurify": "^3.4.15",
     "marked": "^18.0.12"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.12",
+    "@types/bun": "^1.4.2",
     "@types/dompurify": "^3.2.0",
     "@types/marked": "^6.0.0",
+    "bun-plugin-tailwind": "^0.1.2",
     "tailwindcss": "^4.1.12",
-    "terser": "^5.51.2",
-    "typescript": "^5.9.2",
-    "vite": "^6.3.5",
-    "vite-plugin-bundle-obfuscator": "^1.13.1"
+    "typescript": "^5.9.2"
+  },
+  "peerDependenciesMeta": {
+    "bun": {
+      "optional": true
+    }
   }
 }

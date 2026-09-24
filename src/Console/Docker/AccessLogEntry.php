@@ -39,8 +39,8 @@ final class AccessLogEntry
     }
 
     /**
-     * Nginx → Vite HMR proxy (see docker/nginx: /@vite, /resources, /modules, …).
-     * Typically 304 spam on every page load.
+     * Legacy Vite HMR paths (nginx no longer proxies /@vite).
+     * Kept so old access logs still filter as "hot" noise.
      */
     public function isHotProxy(): bool
     {
@@ -48,7 +48,7 @@ final class AccessLogEntry
             return false;
         }
 
-        return (bool) preg_match('#^/(@vite|@fs|@id|node_modules|resources|modules)(/|$)#', $this->path);
+        return (bool) preg_match('#^/(@vite|@fs|@id)(/|$)#', $this->path);
     }
 
     public function isPhpIndexNoise(): bool

@@ -125,8 +125,8 @@ Docker stack s nginx + PHP-FPM + Redis (bližší produkci, připravené na fron
 ```bash
 php gereq serve-docker --port=8080
 php gereq serve-docker --https          # HTTPS na :443 (self-signed) + HTTP na --port
-php gereq serve-docker --hot            # + Vite HMR (bun run dev na :5173)
-php gereq serve-docker --https --hot    # HTTPS + HMR
+php gereq serve-docker --hot            # + Bun asset watch (bun run dev → public/build)
+php gereq serve-docker --https --hot    # HTTPS + Bun watch
 php gereq serve-docker --build          # první start / po změně Dockerfile
 php gereq serve-docker --queue          # + worker (queue profil)
 php gereq serve-docker -d               # na pozadí
@@ -134,12 +134,12 @@ php gereq serve-docker --raw            # surové compose logy
 php gereq serve-docker --dashboard      # fullscreen TUI (volitelné)
 php gereq serve-docker --keep           # ukončení logů neshodí stack
 php gereq serve-docker --reuse          # down + up (změna portu / --https bez ručního --down)
-php gereq serve-docker --down           # zastavit stack (+ Vite z --hot -d)
+php gereq serve-docker --down           # zastavit stack (+ Bun watch z --hot -d)
 ```
 
 S `--https` nginx poslouchá na host portu **443** (self-signed cert v `docker/nginx/certs/`). Prohlížeč jednou varuje — přidejte výjimku. HTTP zůstává na `--port`.
 
-S `--hot` se na hostu spustí `bun run dev` (port **5173**, `host 0.0.0.0` z `vite.config.ts`). Nginx proxyuje `/@vite` → `host.docker.internal:5173`. Ukončení TUI / `--down` Vite vypne (u `-d` zůstane do `--down`).
+S `--hot` se na hostu spustí `bun run dev` (Bun bundler watch → `public/build`). Nginx servíruje `/build/` přímo; po změně assets stačí refresh v prohlížeči. Ukončení TUI / `--down` watch vypne (u `-d` zůstane do `--down`).
 
 Ve výchozím režimu běží compact log stream (HTTP řádky, filtry assetů/php/nginx šumu). Klávesy: `q` `a` `p` `n` `space`.
 

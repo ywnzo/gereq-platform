@@ -56,7 +56,7 @@ help: ## Show help
 	@printf '  make assets           bun install + build (Docker image)\n'
 	@printf '  make composer         composer install (Docker)\n'
 	@printf '  make adminer          Adminer na :8086\n'
-	@printf '  make hot              Vite HMR na :5173 (Docker bun)\n'
+	@printf '  make hot              Bun asset watch (Docker bun → public/build)\n'
 	@printf '  make urls             vypsat URL\n'
 	@printf '\n  Proměnné: PORT=8080 HTTPS=0 BUILD=1\n'
 	@printf '  Příklad:  make up PORT=8090 HTTPS=1 BUILD=1\n\n'
@@ -130,7 +130,7 @@ up: check-docker env ## Start stack in background
 
 down: check-docker ## Stop stack
 	@$(COMPOSE) down
-	@rm -f "$(ROOT)/storage/tmp/vite-dev.pid" 2>/dev/null || true
+	@rm -f "$(ROOT)/storage/tmp/bun-assets.pid" "$(ROOT)/storage/tmp/vite-dev.pid" 2>/dev/null || true
 	@echo '✓ Stack zastaven'
 
 restart: down up ## Restart stack
@@ -201,15 +201,14 @@ adminer-down: check-docker
 	@$(COMPOSE) --profile tools stop adminer 2>/dev/null || true
 	@$(COMPOSE) --profile tools rm -f adminer 2>/dev/null || true
 
-hot: check-docker ## Vite HMR via Docker bun (:5173)
-	@echo '→ Vite HMR (Ctrl+C ukončí jen Vite, stack nechá běžet)…'
+hot: check-docker ## Bun asset watch via Docker bun (rebuilds public/build)
+	@echo '→ Bun watch (Ctrl+C ukončí jen watch, stack nechá běžet)…'
 	@docker run --rm -it \
 		-u "$$(id -u):$$(id -g)" \
-		-p 5173:5173 \
 		-v "$(ROOT):/app" \
 		-w /app \
 		$(BUN_IMG) \
-		bun run dev -- --host 0.0.0.0 --port 5173
+		bun run dev
 
 urls: ## Print access URLs
 	@printf '\n'

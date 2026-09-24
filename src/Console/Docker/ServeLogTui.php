@@ -303,8 +303,7 @@ final class ServeLogTui
 
     private function shouldHide(AccessLogEntry $entry): bool
     {
-        // Vite access via nginx (304 /@vite, /resources/*.ts …) — hidden by default.
-        // Lines from vite-dev.log (access=false, svc hot) are always shown.
+        // Hidden by default: static /build traffic. Bun watch lines (svc hot) always shown.
         if ($entry->access && $entry->isHotProxy() && !$this->showHotProxy) {
             return true;
         }
@@ -673,7 +672,7 @@ final class ServeLogTui
                 '  rb bun run build (rebuild stylů)',
             ];
             if ($this->hot) {
-                $help[] = '  h  Vite proxy access (304 /@vite…)';
+                $help[] = '  h  Bun asset watch log';
             }
             $help[] = '  c  clear · mezerník pause';
             foreach ($help as $line) {
@@ -810,7 +809,7 @@ final class ServeLogTui
 
     private function viteLogPath(): string
     {
-        return $this->basePath . '/storage/logs/vite-dev.log';
+        return $this->basePath . '/storage/logs/bun-assets.log';
     }
 
     private function openViteLog(bool $seekEnd): void

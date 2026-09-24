@@ -17,7 +17,7 @@ final class AssetManager
     ) {
     }
 
-    /** True when `bun run dev` left a `public/hot` marker. */
+    /** True when a legacy Vite-era `public/hot` marker is present (Bun watch does not write it). */
     public function isHot(): bool
     {
         return is_file($this->basePath . '/public/hot');
@@ -43,7 +43,7 @@ final class AssetManager
     }
 
     /**
-     * Public origin for Vite tags. Empty string = same-origin (nginx proxies to Vite).
+     * Public origin for legacy hot tags. Empty string = same-origin.
      * Returns null when not in hot mode.
      */
     public function hotOrigin(): ?string
@@ -65,7 +65,7 @@ final class AssetManager
             return [];
         }
 
-        // Same-origin HMR is covered by 'self'; keep localhost Vite as fallback.
+        // Same-origin hot is covered by 'self'; keep localhost ports as fallback.
         return [
             'http://127.0.0.1:' . $this->hotPort(),
             'http://localhost:' . $this->hotPort(),
@@ -116,7 +116,7 @@ final class AssetManager
     }
 
     /**
-     * Script/link tags for admin entry — Vite client in hot mode, hashed build otherwise.
+     * Script/link tags for admin entry — legacy hot client, or hashed Bun build.
      */
     public function tags(string $entry = 'resources/js/admin.ts', string $nonce = ''): string
     {

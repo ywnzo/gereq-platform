@@ -7,7 +7,8 @@ namespace Gereq\Console\Docker;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Host-side Vite HMR (`bun run dev`) for Docker nginx → host.docker.internal:5173.
+ * Host-side Bun watch rebuild (`bun run dev` → public/build) for Docker --hot.
+ * No Vite HMR / public/hot — AssetManager serves hashed /build assets.
  */
 final class ViteHotProcess
 {
@@ -27,29 +28,29 @@ final class ViteHotProcess
 
     public function start(OutputInterface $output): bool
     {
-        if ($this->isListening(self::PORT)) {
-            if (!$this->hotMarkerPresent()) {
-                $this->writeHotMarker();
-            }
-            $output->writeln(sprintf(
-                '<comment>Vite HMR už běží na :%d — používám ho (nespoustím nový).</comment>',
-                self::PORT
-            ));
+        if ($this->watchAlreadyRunning()) {
+            $output->writeln('<comment>Bun asset watch už běží — používám ho (nespoustím nový).</comment>');
 
             return true;
         }
 
         if (!$this->bunAvailable()) {
-            $output->writeln('<error>bun není v PATH. Nainstalujte Bun, nebo spusťte Vite ručně: bun run dev</error>');
+            $output->writeln('<error>bun není v PATH. Nainstalujte Bun, nebo spusťte: bun run build</error>');
 
             return false;
         }
 
-        if (!is_dir($this->basePath . '/node_modules/vite')) {
+        if (!is_file($this->basePath . '/scripts/build.ts')) {
+            $output->writeln('<error>Chybí scripts/build.ts (Bun bundler).</error>');
+
+            return false;
+        }
+
+        if (!is_dir($this->basePath . '/node_modules')) {
             $output->writeln('<comment>Chybí node_modules — spouštím bun install…</comment>');
             $install = sprintf('cd %s && bun install', escapeshellarg($this->basePath));
             passthru($install, $installCode);
-            if ($installCode !== 0 || !is_dir($this->basePath . '/node_modules/vite')) {
+            if ($installCode !== 0 || !is_dir($this->basePath . '/node_modules')) {
                 $output->writeln('<error>bun install selhal. Spusťte ho ručně v kořeni projektu.</error>');
 
                 return false;
@@ -66,28 +67,29 @@ final class ViteHotProcess
             }
         }
 
-        $logFile = $logDir . '/vite-dev.log';
+        // Never leave a Vite-era hot marker — PHP would request /@vite/client.
+        $this->clearHotMarker();
+
+        $logFile = $logDir . '/bun-assets.log';
         $pidFile = $this->pidFile();
-        $launcher = $tmpDir . '/vite-hot-start.sh';
+        $launcher = $tmpDir . '/bun-assets-start.sh';
         @unlink($pidFile);
 
         $script = <<<'SH'
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$1"
-export VITE_PORT="$2"
-# nohup + background; script exits so PHP never blocks on Vite
-nohup bun run dev >>"$3" 2>&1 </dev/null &
-echo $! > "$4"
+# nohup + background; script exits so PHP never blocks on the watch process
+nohup bun run dev >>"$2" 2>&1 </dev/null &
+echo $! > "$3"
 SH;
         file_put_contents($launcher, $script);
         chmod($launcher, 0755);
 
         $cmd = sprintf(
-            '%s %s %d %s %s',
+            '%s %s %s %s',
             escapeshellarg($launcher),
             escapeshellarg($this->basePath),
-            self::PORT,
             escapeshellarg($logFile),
             escapeshellarg($pidFile)
         );
@@ -98,7 +100,7 @@ SH;
         if ($code !== 0 || $pidRaw === '' || !ctype_digit($pidRaw)) {
             $output->writeln('<error>Nepodařilo se spustit bun run dev.</error>');
             if (is_file($logFile)) {
-                $output->writeln('<fg=gray>Log: storage/logs/vite-dev.log</>');
+                $output->writeln('<fg=gray>Log: storage/logs/bun-assets.log</>');
             }
 
             return false;
@@ -107,20 +109,16 @@ SH;
         $this->pid = (int) $pidRaw;
         $this->owned = true;
 
-        if (!$this->waitUntilReady(25.0)) {
-            $output->writeln('<error>Vite se nespustil včas (port ' . self::PORT . ').</error>');
-            $output->writeln('<fg=gray>Log: storage/logs/vite-dev.log</>');
+        if (!$this->waitUntilReady(45.0)) {
+            $output->writeln('<error>Bun build watch nevytvořil public/build včas.</error>');
+            $output->writeln('<fg=gray>Log: storage/logs/bun-assets.log</>');
             $this->stop($output);
 
             return false;
         }
 
-        // Safety: PHP AssetManager needs public/hot (Vite plugin may race with buildStart).
-        $this->writeHotMarker();
-
         $output->writeln(sprintf(
-            '<info>Vite HMR</info> <fg=gray>·</> bun run dev na <info>:%d</info> (pid %d, log storage/logs/vite-dev.log)',
-            self::PORT,
+            '<info>Bun watch</info> <fg=gray>·</> bun run dev (pid %d, log storage/logs/bun-assets.log)',
             $this->pid
         ));
 
@@ -135,7 +133,7 @@ SH;
 
         $pid = $this->pid ?? $this->readPidFile();
         if ($pid !== null && $this->processAlive($pid)) {
-            $output->writeln(sprintf('<fg=gray>Zastavuji Vite (pid %d)…</>', $pid));
+            $output->writeln(sprintf('<fg=gray>Zastavuji Bun watch (pid %d)…</>', $pid));
             $this->killTree($pid);
         }
 
@@ -145,10 +143,21 @@ SH;
         $this->owned = false;
     }
 
-    /** Stop Vite started earlier via --hot -d (pid file). */
+    /** Stop watch started earlier via --hot -d (pid file). */
     public function stopFromPidFile(OutputInterface $output): void
     {
         $pid = $this->readPidFile();
+        if ($pid === null) {
+            // Legacy Vite-era pid file name.
+            $legacy = $this->basePath . '/storage/tmp/vite-dev.pid';
+            if (is_file($legacy)) {
+                $raw = trim((string) file_get_contents($legacy));
+                if ($raw !== '' && ctype_digit($raw)) {
+                    $pid = (int) $raw;
+                    @unlink($legacy);
+                }
+            }
+        }
         if ($pid === null) {
             return;
         }
@@ -171,34 +180,13 @@ SH;
             exec('pkill -KILL -P ' . $pid . ' 2>/dev/null');
             $this->signal($pid, 'KILL');
         }
-
-        if ($this->isListening(self::PORT)) {
-            $vitePids = [];
-            exec(
-                'pgrep -f ' . escapeshellarg($this->basePath . '/node_modules/.bin/vite') . ' 2>/dev/null',
-                $vitePids
-            );
-            foreach ($vitePids as $raw) {
-                if (ctype_digit(trim($raw))) {
-                    $this->signal((int) $raw, 'TERM');
-                }
-            }
-            usleep(200_000);
-            if ($this->isListening(self::PORT)) {
-                foreach ($vitePids as $raw) {
-                    if (ctype_digit(trim($raw))) {
-                        $this->signal((int) $raw, 'KILL');
-                    }
-                }
-            }
-        }
     }
 
     private function waitUntilReady(float $seconds): bool
     {
         $deadline = microtime(true) + $seconds;
         while (microtime(true) < $deadline) {
-            if ($this->isListening(self::PORT)) {
+            if ($this->manifestReady()) {
                 return true;
             }
             if ($this->pid !== null && !$this->processAlive($this->pid)) {
@@ -207,7 +195,29 @@ SH;
             usleep(150_000);
         }
 
-        return $this->isListening(self::PORT);
+        return $this->manifestReady();
+    }
+
+    private function watchAlreadyRunning(): bool
+    {
+        $pid = $this->readPidFile();
+
+        return $pid !== null && $this->processAlive($pid) && $this->manifestReady();
+    }
+
+    private function manifestReady(): bool
+    {
+        $candidates = [
+            $this->basePath . '/public/build/.vite/manifest.json',
+            $this->basePath . '/public/build/manifest.json',
+        ];
+        foreach ($candidates as $file) {
+            if (is_file($file) && filesize($file) > 2) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function bunAvailable(): bool
@@ -216,30 +226,6 @@ SH;
         exec('command -v bun >/dev/null 2>&1', $out, $code);
 
         return $code === 0;
-    }
-
-    private function isListening(int $port): bool
-    {
-        $errno = 0;
-        $errstr = '';
-        $connection = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.2);
-        if (is_resource($connection)) {
-            fclose($connection);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private function hotMarkerPresent(): bool
-    {
-        return is_file($this->basePath . '/public/hot');
-    }
-
-    private function writeHotMarker(): void
-    {
-        file_put_contents($this->basePath . '/public/hot', (string) self::PORT);
     }
 
     private function clearHotMarker(): void
@@ -252,7 +238,7 @@ SH;
 
     private function pidFile(): string
     {
-        return $this->basePath . '/storage/tmp/vite-dev.pid';
+        return $this->basePath . '/storage/tmp/bun-assets.pid';
     }
 
     private function readPidFile(): ?int

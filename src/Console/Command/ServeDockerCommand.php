@@ -27,7 +27,7 @@ final class ServeDockerCommand extends Command
         $this
             ->addOption('port', null, InputOption::VALUE_OPTIONAL, 'Host port pro HTTP (nginx :80)', '8080')
             ->addOption('https', null, InputOption::VALUE_NONE, 'Zapnout HTTPS na host portu 443 (self-signed cert)')
-            ->addOption('hot', null, InputOption::VALUE_NONE, 'Spustit Vite HMR (bun run dev na :5173, nginx → host)')
+            ->addOption('hot', null, InputOption::VALUE_NONE, 'Spustit Bun asset watch (bun run dev → public/build)')
             ->addOption('queue', null, InputOption::VALUE_NONE, 'Spustit i queue worker (profil queue)')
             ->addOption('build', null, InputOption::VALUE_NONE, 'Přestavět Docker image před startem')
             ->addOption('detach', 'd', InputOption::VALUE_NONE, 'Běžet na pozadí (docker compose up -d)')
@@ -174,7 +174,7 @@ final class ServeDockerCommand extends Command
                 $output->writeln('<comment>HTTPS self-signed — prohlížeč jednou varuje (pokračovat / výjimka).</comment>');
             }
             if ($hot) {
-                $output->writeln('<comment>Vite HMR: bun run dev na :5173 (nginx proxy /@vite).</comment>');
+                $output->writeln('<comment>Bun watch: bun run dev → public/build (refresh prohlížeče).</comment>');
             }
             $output->writeln('<comment>Queue worker běží automaticky (QUEUE_DRIVER=redis).</comment>');
             if ($withQueue) {
@@ -194,7 +194,7 @@ final class ServeDockerCommand extends Command
             try {
                 return $this->runCompose($output, $args, $https);
             } finally {
-                // Detach: Vite keeps running (pid file); raw/Ctrl+C: stop Vite.
+                // Detach: Bun watch keeps running (pid file); raw/Ctrl+C: stop watch.
                 if ($vite !== null && !$detach) {
                     $vite->stop($output);
                 }
@@ -255,7 +255,7 @@ final class ServeDockerCommand extends Command
             $suffix[] = 'HTTPS';
         }
         if ($hot) {
-            $suffix[] = 'HMR';
+            $suffix[] = 'watch';
         }
         $tag = $suffix !== [] ? ' <fg=cyan>(' . implode(' + ', $suffix) . ')</>' : '';
 
@@ -275,7 +275,7 @@ final class ServeDockerCommand extends Command
             }
         }
         if ($hot) {
-            $lines[] = '  vite    <info>bun run dev</info> <fg=gray>→ :5173 (nginx /@vite)</>';
+            $lines[] = '  assets  <info>bun run dev</info> <fg=gray>→ public/build (watch)</>';
         }
         $lines[] = '  <fg=gray>PostgreSQL + Redis + queue jsou součástí stacku.</>';
         if ($https) {
@@ -308,10 +308,10 @@ final class ServeDockerCommand extends Command
         return '<fg=gray>' . $text . '</>';
     }
 
-    /** Stop compose stack (+ Vite from --hot / -d). */
+    /** Stop compose stack (+ Bun watch from --hot / -d). */
     private function stopStack(OutputInterface $output, bool $https, bool $hot): int
     {
-        if ($hot || is_file($this->basePath . '/storage/tmp/vite-dev.pid')) {
+        if ($hot || is_file($this->basePath . '/storage/tmp/bun-assets.pid') || is_file($this->basePath . '/storage/tmp/vite-dev.pid')) {
             (new ViteHotProcess($this->basePath))->stopFromPidFile($output);
         }
         $useHttps = $https || is_file($this->basePath . '/docker-compose.https.yml');

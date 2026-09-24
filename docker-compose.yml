@@ -28,6 +28,7 @@ services:
     environment:
       APP_URL: ${APP_URL:-http://127.0.0.1:8080}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-*}
+      # FE2 / storefront CORS (optional). Admin assets are served from /build via Bun.
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://127.0.0.1:5173,http://localhost:5173}
       REDIS_HOST: redis
       REDIS_PORT: 6379
