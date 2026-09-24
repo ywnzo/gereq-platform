@@ -1,5 +1,13 @@
-# Disable CI pipelines for this repo until a real job is defined.
-# `when` must be under `rules:`, not directly under `workflow:`.
+# CI intentionally disabled. GitLab still requires ≥1 job definition
+# even when workflow never creates a pipeline — otherwise you get
+# "jobs config should contain at least one visible job" / yaml invalid.
 workflow:
+  rules:
+    - when: never
+
+noop:
+  stage: .pre
+  script:
+    - "true"
   rules:
     - when: never
