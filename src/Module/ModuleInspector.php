@@ -343,15 +343,19 @@ final class ModuleInspector
         ];
 
         $pending = array_values(array_filter($migrations, static fn (array $row): bool => !$row['ran']));
+        // After disable+purge, migrations are intentionally rolled back — info, not warn.
+        $migrationStatus = $pending === [] ? 'ok' : ($enabled ? 'warn' : 'info');
         $checks[] = [
             'id' => 'migrations',
             'label' => 'modules.health.migrations.label',
-            'status' => $pending === [] ? 'ok' : 'warn',
+            'status' => $migrationStatus,
             'detail' => $migrations === []
                 ? 'modules.health.migrations.none'
                 : ($pending === []
                     ? 'modules.health.migrations.ok'
-                    : 'modules.health.migrations.pending'),
+                    : ($enabled
+                        ? 'modules.health.migrations.pending'
+                        : 'modules.health.migrations.pending_disabled')),
             'detail_params' => [
                 '%count%' => $migrations === [] ? 0 : ($pending === [] ? count($migrations) : count($pending)),
             ],

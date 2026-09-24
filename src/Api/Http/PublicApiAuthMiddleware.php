@@ -11,7 +11,11 @@ use Gereq\Http\PublicCors;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/** Requires site public API key (Bearer grq_pub_* or X-Api-Key) on /api/public/*. */
+/**
+ * Auth for /api/public/*:
+ * - Bearer / X-Api-Key grq_pub_* (external clients), or
+ * - first-party browser (same-origin / allowlisted Origin) without a key — like baby-naty shop API.
+ */
 final class PublicApiAuthMiddleware implements MiddlewareInterface
 {
     public function __construct(private readonly PublicApiKey $publicKey)
@@ -42,7 +46,10 @@ final class PublicApiAuthMiddleware implements MiddlewareInterface
         }
 
         $provided = $this->publicKey->extractFromRequest($request);
-        if (!$this->publicKey->matches($provided)) {
+        $keyOk = $provided !== '' && $this->publicKey->matches($provided);
+        $firstParty = PublicCors::isFirstPartyRequest($request);
+
+        if (!$keyOk && !$firstParty) {
             return $this->cors(
                 $request,
                 ApiResponse::unauthorized('Missing or invalid public API key.'),
@@ -50,6 +57,7 @@ final class PublicApiAuthMiddleware implements MiddlewareInterface
         }
 
         $request->attributes->set('_api_public_key', true);
+        $request->attributes->set('_api_public_first_party', $firstParty && !$keyOk);
 
         return $next($request);
     }

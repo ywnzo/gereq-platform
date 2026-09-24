@@ -289,12 +289,30 @@ final class Validator
             if ($name === '') {
                 continue;
             }
-            $params = $paramString === '' ? [] : array_map('trim', explode(',', $paramString));
+            $params = $paramString === '' ? [] : $this->parseParams($name, $paramString);
             $names[] = $name;
             $rules[] = ['name' => $name, 'params' => $params];
         }
 
         return ['names' => $names, 'rules' => $rules];
+    }
+
+    /**
+     * Split rule parameters. For in/not_in, ";" separates list items so values may contain commas
+     * (e.g. in:index,follow;index,nofollow).
+     *
+     * @return list<string>
+     */
+    private function parseParams(string $ruleName, string $paramString): array
+    {
+        $delimiter = in_array($ruleName, ['in', 'not_in'], true) && str_contains($paramString, ';')
+            ? ';'
+            : ',';
+
+        return array_values(array_filter(
+            array_map('trim', explode($delimiter, $paramString)),
+            static fn (string $item): bool => $item !== '',
+        ));
     }
 
     /** @return list<string> */

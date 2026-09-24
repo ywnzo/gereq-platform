@@ -1,0 +1,152 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.gereq'|trans },
+        { label: 'nav.gereq.ticketing'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'gereq.ticketing.desk'|trans }}</h1>
+        <p class="muted">{{ 'gereq.ticketing.desk_hint'|trans }}</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.gereq.ticketing.sites') }}">{{ 'gereq.ticketing.sites'|trans }}</a>
+        <a class="btn btn--ghost" href="{{ url('admin.gereq.ticketing.extras') }}">{{ 'gereq.ticketing.extras'|trans }}</a>
+    </div>
+</header>
+
+<div class="gereq-desk"{% if pollUrl %} x-data="gereqDeskPoll({{ pollUrl|json_encode|raw }})" x-init="start()"{% endif %}>
+    <aside class="panel gereq-desk__list">
+        <header class="panel__head">
+            <div>
+                <h2>{{ 'gereq.ticketing.inbox'|trans }}</h2>
+            </div>
+        </header>
+        <div class="panel__body">
+            <form method="get" class="toolbar" style="margin-bottom:10px">
+                <select name="status" class="input" onchange="this.form.submit()">
+                    <option value="">{{ 'gereq.all_statuses'|trans }}</option>
+                    {% for s in statuses %}
+                        <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('gereq.status.' ~ s)|trans }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            {% if items is empty %}
+                <p class="muted">{{ 'gereq.empty'|trans }}</p>
+            {% else %}
+                <ul class="gereq-ticket-list">
+                    {% for item in items %}
+                        <li>
+                            <a
+                                class="gereq-ticket-list__item{{ active and active.id() == item.id() ? ' is-active' : '' }}"
+                                href="{{ url('admin.gereq.ticketing.desk') }}?ticket={{ item.id()|e('url') }}{% if status %}&status={{ status|e('url') }}{% endif %}"
+                            >
+                                <span class="gereq-ticket-list__title">
+                                    <span>{{ item.number() }}</span>
+                                    {% if item.isUnread() %}<span class="badge badge--warn">new</span>{% endif %}
+                                </span>
+                                <span class="gereq-ticket-list__meta">
+                                    {{ item.subject() ?: item.visitorEmail() ?: '—' }}
+                                    · {{ ('gereq.status.' ~ item.status())|trans }}
+                                </span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </aside>
+
+    <section class="panel gereq-desk__thread">
+        {% if active %}
+            <header class="panel__head panel__head--actions">
+                <div>
+                    <h2>{{ active.number() }}</h2>
+                    <p class="muted">
+                        {{ active.visitorName() ?: '—' }}
+                        {% if active.visitorEmail() %} · {{ active.visitorEmail() }}{% endif %}
+                    </p>
+                </div>
+                <form method="post" action="{{ url('admin.gereq.ticketing.status', {id: active.id()}) }}" class="panel__actions" style="display:flex;gap:8px;align-items:center">
+                    {{ csrf_field()|raw }}
+                    <select name="status" class="input">
+                        {% for s in statuses %}
+                            <option value="{{ s }}" {{ active.status() == s ? 'selected' : '' }}>{{ ('gereq.status.' ~ s)|trans }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn--ghost" type="submit">{{ 'gereq.ticketing.status_update'|trans }}</button>
+                </form>
+            </header>
+            <div class="panel__body">
+                <div class="gereq-messages" id="gereq-messages">
+                    {% for m in messages %}
+                        <div class="gereq-msg gereq-msg--{{ m.direction() }}">
+                            <div class="gereq-msg__meta">{{ ('gereq.direction.' ~ m.direction())|trans }} · {{ m.createdAt().format('d.m.Y H:i') }}</div>
+                            <div>{{ m.body() }}</div>
+                        </div>
+                    {% else %}
+                        <p class="muted">{{ 'gereq.ticketing.no_messages'|trans }}</p>
+                    {% endfor %}
+                </div>
+
+                <form method="post" action="{{ url('admin.gereq.ticketing.reply', {id: active.id()}) }}" class="form-grid">
+                    {{ csrf_field()|raw }}
+                    <label class="field" style="grid-column: 1 / -1">
+                        <span>{{ 'gereq.ticketing.reply'|trans }}</span>
+                        <textarea class="input" name="body" rows="3" required placeholder="{{ 'gereq.ticketing.reply_placeholder'|trans }}"></textarea>
+                    </label>
+                    <label class="field">
+                        <span>{{ 'gereq.ticketing.internal'|trans }}</span>
+                        <select class="input" name="internal">
+                            <option value="0">{{ 'common.no'|trans }}</option>
+                            <option value="1">{{ 'common.yes'|trans }}</option>
+                        </select>
+                    </label>
+                    <div class="form-actions">
+                        <button class="btn btn--primary" type="submit">{{ 'gereq.ticketing.send'|trans }}</button>
+                    </div>
+                </form>
+            </div>
+        {% else %}
+            <header class="panel__head"><h2>{{ 'gereq.ticketing.thread'|trans }}</h2></header>
+            <div class="panel__body">
+                <p class="muted">{{ 'gereq.ticketing.select'|trans }}</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+function gereqDeskPoll(url) {
+    return {
+        timer: null,
+        start() {
+            this.timer = setInterval(() => this.tick(), 4000);
+        },
+        async tick() {
+            try {
+                const r = await fetch(url, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!r.ok) return;
+                const j = await r.json();
+                const msgs = (j.data && j.data.messages) ? j.data.messages : [];
+                const box = document.getElementById('gereq-messages');
+                if (!box) return;
+                box.innerHTML = msgs.map((m) => {
+                    const dir = m.direction || 'visitor';
+                    const body = String(m.body || '').replace(/</g, '&lt;');
+                    return `<div class="gereq-msg gereq-msg--${dir}"><div class="gereq-msg__meta">${dir}</div><div>${body}</div></div>`;
+                }).join('');
+            } catch (e) {}
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -12,9 +12,15 @@ Packages (`config/module_groups.php`, surface `packages`) bundle modules into a 
 |---|---|---|
 | `ecs` — Car service | customers, fleet, carservice, media, documents, crm, calendar, idoklad | customers, fleet, carservice |
 | `ebs` — Bike service | customers, bikeservice, searchengines, media, documents, calendar | customers, bikeservice |
-| `realestates` — Real estate agency | currency, customers, media, cms, listings, crm, calendar, viewings, documents, reviews | currency, media, cms, listings |
+| `realestates` — Real estate agency | currency, customers, media, cms, listings, crm, calendar, viewings, documents, reviews, emailing, newsletter, engage, webplus | currency, media, cms, listings |
 
 Third-party adapters (payments, shipping, AI providers) live in `integrations/` and are grouped as plug-ins — see [Integrations](../integrations/index.md).
+
+## Platform / GEREQ
+
+| Module | Version | Requires | Purpose |
+|---|---|---|---|
+| [GEREQ](gereq.md) | 1.0.0 | — | Ticketing desk + Security form protection (developer-only) |
 
 ## Real estate
 
@@ -23,7 +29,7 @@ Third-party adapters (payments, shipping, AI providers) live in `integrations/` 
 | [Listings](listings.md) | 1.3.2 | currency | Property listings, brokers, inquiries, public catalog API |
 | [Viewings](viewings.md) | 1.1.2 | listings | Property viewing requests and scheduling |
 | [Portals](portals.md) | 1.4.0 | listings | Export of listings to real-estate portals |
-| [WebPlus](webplus.md) | 1.4.4 | — | SEO/OG/GEO meta, sitemap, health checks, Google Products feed |
+| [WebPlus](webplus.md) | 1.5.1 | — | SEO/OG/GEO meta, sitemap, health checks, Google Products feed |
 | [Cms](cms.md) | 1.10.0 | — | Page builder and content for small public sites |
 | [Reviews](reviews.md) | 1.5.0 | — | Reviews with moderation and replies |
 
@@ -80,6 +86,7 @@ Third-party adapters (payments, shipping, AI providers) live in `integrations/` 
 |---|---|---|---|
 | [Emailing](emailing.md) | 1.6.1 | — | SMTP/IMAP/POP3 mail client with local index and rules |
 | [Newsletter](newsletter.md) | 1.1.0 | — | Subscribers and campaigns |
+| [Engage](engage.md) | 1.0.0 | — | Marketing campaigns (?mkind=) and dynamic content spots (Marketing hub) |
 | [Notifications](notifications.md) | 1.1.0 | — | In-app inbox, preferences, delivery |
 | [Ai](ai.md) | 1.5.0 | — | AI agents, RAG knowledge base, multi-provider LLM routing |
 | [Translate](translate.md) | 2.1.0 | — | Microsoft Translator with database cache |

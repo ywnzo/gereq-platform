@@ -1,0 +1,79 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.engage'|trans, url: url('admin.engage.hub') },
+        { label: 'nav.engage.spots'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="engage-spots" data-actions-default="1">
+<header class="page-header">
+    <div>
+        <h1>{{ 'engage.spots.title'|trans }}</h1>
+        <p class="muted">{{ 'engage.spots.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        {% if user.can('engage.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.engage.spots.create') }}">{{ icon('plus') }} {{ 'engage.spots.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+{% include '@engage/partials/_hub_tabs.html.twig' with { active: 'spots' } %}
+
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'engage.spots.search'|trans }}">
+        <select name="source" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'engage.all_sources'|trans }}</option>
+            {% for s in sources %}
+                <option value="{{ s }}" {{ source == s ? 'selected' : '' }}>{{ ('engage.source.' ~ s)|trans }}</option>
+            {% endfor %}
+        </select>
+        <select name="active" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'common.all'|trans }}</option>
+            <option value="1" {{ active == '1' ? 'selected' : '' }}>{{ 'engage.active'|trans }}</option>
+            <option value="0" {{ active == '0' ? 'selected' : '' }}>{{ 'engage.inactive'|trans }}</option>
+        </select>
+    </form>
+</div>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+{% include 'ui/sort_th.html.twig' with { label: 'engage.field.title'|trans, column: 'title', query: { active: active, source: source } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'engage.field.placement_key'|trans, column: 'placementKey', query: { active: active, source: source } } %}
+<th>{{ 'engage.field.source'|trans }}</th>
+{% include 'ui/sort_th.html.twig' with { label: 'engage.field.sort_order'|trans, column: 'sortOrder', query: { active: active, source: source } } %}
+<th>{{ 'engage.field.active'|trans }}</th>
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td><a href="{{ url('admin.engage.spots.edit', {id: item.id()}) }}"><strong>{{ item.title() }}</strong></a></td>
+    <td><code>{{ item.placementKey() }}</code></td>
+    <td>{{ ('engage.source.' ~ item.source())|trans }}</td>
+    <td class="is-mute">{{ item.sortOrder() }}</td>
+    <td>{{ item.isActive() ? 'engage.active'|trans : 'engage.inactive'|trans }}</td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% include 'ui/row_action.html.twig' with { href: url('admin.engage.spots.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+            {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.engage.spots.destroy', {id: item.id()}), confirm: 'engage.confirm_delete_spot'|trans } %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr><td colspan="6"><div class="empty"><h2>{{ 'engage.spots.empty'|trans }}</h2></div></td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

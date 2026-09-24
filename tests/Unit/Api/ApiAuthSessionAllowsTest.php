@@ -19,7 +19,6 @@ final class ApiAuthSessionAllowsTest extends TestCase
 
         $middleware = (new ReflectionClass(ApiAuthMiddleware::class))->newInstanceWithoutConstructor();
         $method = new ReflectionMethod(ApiAuthMiddleware::class, 'sessionAllows');
-        $method->setAccessible(true);
 
         self::assertTrue($method->invoke($middleware, $user, ['crm.deals.read'], null));
         self::assertFalse($method->invoke($middleware, $user, ['crm.deals.write'], null));
@@ -32,7 +31,6 @@ final class ApiAuthSessionAllowsTest extends TestCase
 
         $middleware = (new ReflectionClass(ApiAuthMiddleware::class))->newInstanceWithoutConstructor();
         $method = new ReflectionMethod(ApiAuthMiddleware::class, 'sessionAllows');
-        $method->setAccessible(true);
 
         self::assertTrue($method->invoke($middleware, $user, ['crm.deals.write'], null));
         self::assertTrue($method->invoke($middleware, $user, ['crm.deals.read'], null));

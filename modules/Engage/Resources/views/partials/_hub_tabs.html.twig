@@ -1,0 +1,6 @@
+{% set active = active|default('hub') %}
+<nav class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'nav.engage'|trans }}">
+    <a class="design-tab{{ active == 'hub' ? ' is-active' : '' }}" role="tab" href="{{ url('admin.engage.hub') }}" aria-selected="{{ active == 'hub' ? 'true' : 'false' }}" style="text-decoration:none">{{ 'nav.engage.hub'|trans }}</a>
+    <a class="design-tab{{ active == 'campaigns' ? ' is-active' : '' }}" role="tab" href="{{ url('admin.engage.campaigns.index') }}" aria-selected="{{ active == 'campaigns' ? 'true' : 'false' }}" style="text-decoration:none">{{ 'nav.engage.campaigns'|trans }}</a>
+    <a class="design-tab{{ active == 'spots' ? ' is-active' : '' }}" role="tab" href="{{ url('admin.engage.spots.index') }}" aria-selected="{{ active == 'spots' ? 'true' : 'false' }}" style="text-decoration:none">{{ 'nav.engage.spots'|trans }}</a>
+</nav>

@@ -1,0 +1,145 @@
+/* GEREQ admin — desk + shared surfaces */
+.gereq-desk {
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    gap: 12px;
+    align-items: stretch;
+    min-height: min(70vh, 720px);
+    width: 100%;
+}
+
+.gereq-desk__list,
+.gereq-desk__thread {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.gereq-desk__list .panel__body,
+.gereq-desk__thread .panel__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.gereq-ticket-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gereq-ticket-list__item {
+    display: block;
+    padding: 10px 12px;
+    border: 1px solid var(--border, #d8dbe3);
+    border-radius: var(--radius, 10px);
+    background: var(--surface, #fff);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.gereq-ticket-list__item:hover {
+    border-color: color-mix(in srgb, var(--primary, #705492) 40%, var(--border, #ccc));
+    background: color-mix(in srgb, var(--primary, #705492) 6%, var(--surface, #fff));
+}
+
+.gereq-ticket-list__item.is-active {
+    border-color: color-mix(in srgb, var(--primary, #705492) 55%, var(--border, #ccc));
+    background: color-mix(in srgb, var(--primary, #705492) 12%, var(--surface, #fff));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary, #705492) 20%, transparent);
+}
+
+.gereq-ticket-list__title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.gereq-ticket-list__meta {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-muted, #64748b);
+}
+
+.gereq-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: min(48vh, 480px);
+    overflow: auto;
+    padding: 4px 2px 12px;
+}
+
+.gereq-msg {
+    max-width: min(85%, 520px);
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border, #d8dbe3);
+    background: var(--surface, #fff);
+}
+
+.gereq-msg--visitor {
+    align-self: flex-end;
+    background: color-mix(in srgb, var(--primary, #705492) 10%, var(--surface, #fff));
+}
+
+.gereq-msg--agent,
+.gereq-msg--system {
+    align-self: flex-start;
+}
+
+.gereq-msg--internal {
+    align-self: stretch;
+    max-width: none;
+    border-style: dashed;
+    opacity: 0.92;
+}
+
+.gereq-msg__meta {
+    font-size: 11px;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 4px;
+}
+
+.gereq-snippet {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border, #d8dbe3);
+    border-radius: var(--radius, 10px);
+    background: color-mix(in srgb, var(--surface-2, #f4f5f7) 92%, transparent);
+    overflow-x: auto;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.gereq-alert {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, #ca8a04 45%, var(--border, #ccc));
+    border-radius: var(--radius, 10px);
+    background: color-mix(in srgb, #ca8a04 12%, var(--surface, #fff));
+}
+
+.gereq-extras-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .gereq-desk {
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+}

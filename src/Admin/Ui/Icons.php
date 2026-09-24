@@ -105,6 +105,8 @@ final class Icons
             'layers' => 'layers',
             'rss' => 'rss_feed',
             'globe' => 'public',
+            'campaign' => 'campaign',
+            'megaphone' => 'campaign',
             'warehouse' => 'warehouse',
             'coins' => 'monetization_on',
             'image' => 'image',

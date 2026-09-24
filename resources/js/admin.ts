@@ -17,6 +17,7 @@ import '../../modules/Vitality/Resources/assets/css/admin.css';
 import '../../modules/WebPlus/Resources/assets/css/admin.css';
 import '../../modules/ESign/Resources/assets/css/admin.css';
 import '../../modules/Portals/Resources/assets/css/admin.css';
+import '../../modules/Gereq/Resources/assets/css/admin.css';
 
 type PaletteCommand = {
     id: string;

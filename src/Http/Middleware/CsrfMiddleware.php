@@ -27,6 +27,15 @@ final class CsrfMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        // GEREQ embed widgets (Ticketing / Security) — cross-origin JSON, no session CSRF.
+        $path = $request->getPathInfo();
+        if (
+            str_starts_with($path, '/tickets/api/')
+            || str_starts_with($path, '/security/api/')
+        ) {
+            return $next($request);
+        }
+
         $token = (string) (
             $request->request->get('_csrf')
             ?? $request->headers->get('X-CSRF-TOKEN')

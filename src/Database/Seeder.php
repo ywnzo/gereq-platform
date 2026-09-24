@@ -127,7 +127,8 @@ final class Seeder
         }
         if ($adminClient instanceof Role) {
             foreach ($all as $permission) {
-                if (!str_starts_with($permission->name(), 'modules.')) {
+                $name = $permission->name();
+                if (!str_starts_with($name, 'modules.') && !str_starts_with($name, 'gereq.')) {
                     $adminClient->givePermission($permission);
                 }
             }

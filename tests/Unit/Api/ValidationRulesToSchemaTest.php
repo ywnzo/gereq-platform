@@ -26,4 +26,16 @@ final class ValidationRulesToSchemaTest extends TestCase
         self::assertSame(['string', 'null'], $schema['properties']['amount']['type']);
         self::assertSame('boolean', $schema['properties']['active']['type']);
     }
+
+    public function testInRuleSupportsSemicolonSeparatedValuesWithCommas(): void
+    {
+        $schema = (new ValidationRulesToSchema())->convert([
+            'robots' => 'required|in:index,follow;index,nofollow;noindex,follow;noindex,nofollow',
+        ]);
+
+        self::assertSame(
+            ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow'],
+            $schema['properties']['robots']['enum'],
+        );
+    }
 }

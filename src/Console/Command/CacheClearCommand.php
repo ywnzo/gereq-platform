@@ -28,8 +28,9 @@ final class CacheClearCommand extends Command
         foreach (['data', 'twig', 'doctrine', 'rate'] as $subdir) {
             $path = $this->basePath . '/storage/cache/' . $subdir;
             if (!is_dir($path)) {
-                mkdir($path, 0775, true);
+                mkdir($path, 0777, true);
             }
+            @chmod($path, 0777);
         }
         $output->writeln('Cache vymazána (app + twig + doctrine + filesystem).');
 

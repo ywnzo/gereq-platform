@@ -1,0 +1,60 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.gereq'|trans, url: url('admin.gereq.security.index') },
+        { label: 'nav.gereq.security'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<div class="list-shell">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'gereq.security.title'|trans }}</h1>
+            <p class="muted">{{ 'gereq.security.subtitle'|trans }}</p>
+        </div>
+        <div class="actions">
+            <a class="btn btn--primary" href="{{ url('admin.gereq.security.create') }}">{{ icon('plus') }} {{ 'gereq.security.new'|trans }}</a>
+        </div>
+    </header>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'gereq.field.name'|trans }}</th>
+                    <th>{{ 'gereq.field.public_key'|trans }}</th>
+                    <th>{{ 'gereq.field.mode'|trans }}</th>
+                    <th>{{ 'gereq.field.active'|trans }}</th>
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>
+                            <div class="table__title">
+                                <a href="{{ url('admin.gereq.security.show', {id: item.id()}) }}">{{ item.name() }}</a>
+                            </div>
+                        </td>
+                        <td><code>{{ item.publicKey() }}</code></td>
+                        <td>{{ ('gereq.mode.' ~ item.protectionMode())|trans }}</td>
+                        <td>
+                            <span class="badge badge--{{ item.isActive() ? 'ok' : 'muted' }}">
+                                {{ item.isActive() ? 'common.yes'|trans : 'common.no'|trans }}
+                            </span>
+                        </td>
+                        <td>
+                            <a class="btn btn--ghost btn--sm" href="{{ url('admin.gereq.security.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="is-mute">{{ 'gereq.empty'|trans }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

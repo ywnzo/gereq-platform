@@ -172,6 +172,6 @@ Modules ship their own `Resources/assets/css/admin.css`, imported explicitly in 
 
 ## Vite
 
-`vite.config.ts`: plugins `tailwindcss()` and a custom `gereqDev()` that writes `public/hot` (dev-server port) so `Gereq\View\AssetManager` can switch to HMR, and triggers full reloads on Twig changes. Single entry `resources/js/admin.ts`; build output `public/build` with `manifest.json`. Commands: `bun run dev`, `bun run build` (see [installation](../getting-started/installation.md#frontend-build)). `vite_tags()` emits the `<script type="module">`/`<link>` tags with the CSP nonce.
+`vite.config.ts`: plugins `tailwindcss()` and a custom `gereqDev()` that writes `public/hot` (dev-server port) so `Gereq\View\AssetManager` can switch to HMR, and triggers full reloads on Twig changes. Entry: `resources/js/admin.ts`. Build output `public/build` with `manifest.json`. Commands: `bun run dev`, `bun run build` (see [installation](../getting-started/installation.md#frontend-build)). `vite_tags()` emits the `<script type="module">`/`<link>` tags with the CSP nonce.
 
 Related: [dashboard widgets](dashboard-widgets.md), [auth & permissions](auth-permissions.md#csrf), `docs/FORMS.md`.

@@ -1,0 +1,93 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.gereq'|trans, url: url('admin.gereq.security.index') },
+        { label: 'nav.gereq.security'|trans, url: url('admin.gereq.security.index') },
+        { label: site.name() },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ site.name() }}</h1>
+        <p class="muted"><code>{{ site.publicKey() }}</code></p>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.gereq.security.edit', {id: site.id()}) }}">{{ 'common.edit'|trans }}</a>
+        <form method="post" action="{{ url('admin.gereq.security.rotate', {id: site.id()}) }}" data-confirm="{{ 'gereq.security.rotate_confirm'|trans }}">
+            {{ csrf_field()|raw }}
+            <button class="btn" type="submit">{{ 'gereq.security.rotate'|trans }}</button>
+        </form>
+        <form method="post" action="{{ url('admin.gereq.security.test_keys', {id: site.id()}) }}">
+            {{ csrf_field()|raw }}
+            <button class="btn" type="submit">{{ 'gereq.security.issue_test'|trans }}</button>
+        </form>
+    </div>
+</header>
+
+{% if plainSecret %}
+    <div class="gereq-alert">
+        <strong>{{ 'gereq.security.secret_once'|trans }}</strong>
+        <div><code>{{ plainSecret }}</code></div>
+    </div>
+{% endif %}
+
+<div class="detail-stack">
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'gereq.security.embed'|trans }}</h2>
+            <p class="muted">{{ 'gereq.security.embed_hint'|trans }}</p>
+        </header>
+        <div class="panel__body">
+            <pre class="gereq-snippet">{{ embedSnippet }}</pre>
+        </div>
+    </section>
+
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'gereq.security.monitor_embed'|trans }}</h2>
+        </header>
+        <div class="panel__body">
+            <pre class="gereq-snippet">{{ monitorSnippet }}</pre>
+            {% if site.testPublicKey() %}
+                <p class="muted" style="margin-top:12px">
+                    {{ 'gereq.field.test_public_key'|trans }}: <code>{{ site.testPublicKey() }}</code>
+                </p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'gereq.security.events'|trans }}</h2>
+        </header>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'gereq.field.time'|trans }}</th>
+                        <th>{{ 'gereq.field.score'|trans }}</th>
+                        <th>{{ 'gereq.field.action'|trans }}</th>
+                        <th>{{ 'gereq.field.path'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in events %}
+                        <tr>
+                            <td>{{ e.occurredAt().format('d.m.Y H:i') }}</td>
+                            <td>{{ e.score() }}</td>
+                            <td><span class="badge">{{ e.action() }}</span></td>
+                            <td class="is-mute">{{ e.path() ?: '—' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="is-mute">{{ 'gereq.empty'|trans }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

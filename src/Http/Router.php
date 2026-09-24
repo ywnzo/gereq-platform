@@ -218,7 +218,7 @@ final class Router
             $collection->add($name, new SymfonyRoute(
                 $route->getPath(),
                 ['_controller' => $route->getHandler()],
-                [],
+                $route->getRequirements(),
                 [],
                 '',
                 [],

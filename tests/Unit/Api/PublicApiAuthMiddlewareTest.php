@@ -42,6 +42,7 @@ final class PublicApiAuthMiddlewareTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertTrue($request->attributes->get('_api_public_key'));
+        self::assertFalse($request->attributes->get('_api_public_first_party'));
     }
 
     public function testAcceptsXApiKeyHeader(): void
@@ -57,6 +58,78 @@ final class PublicApiAuthMiddlewareTest extends TestCase
         $response = $mw->process($request, static fn () => new Response('ok'));
 
         self::assertSame(200, $response->getStatusCode());
+    }
+
+    public function testAcceptsFirstPartySecFetchSiteWithoutKey(): void
+    {
+        $mw = new PublicApiAuthMiddleware(new PublicApiKey(new Repository([
+            'api' => ['public_key' => 'grq_pub_' . str_repeat('11', 24)],
+        ])));
+
+        $request = Request::create('/api/public/listings', 'GET');
+        $request->headers->set('Sec-Fetch-Site', 'same-origin');
+
+        $response = $mw->process($request, static fn () => new Response('ok'));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertTrue($request->attributes->get('_api_public_first_party'));
+    }
+
+    public function testAcceptsAllowlistedOriginWithoutKey(): void
+    {
+        $prev = getenv('FRONTEND_ORIGIN');
+        putenv('FRONTEND_ORIGIN=https://shop.example.test');
+        $_ENV['FRONTEND_ORIGIN'] = 'https://shop.example.test';
+
+        try {
+            $mw = new PublicApiAuthMiddleware(new PublicApiKey(new Repository([
+                'api' => ['public_key' => 'grq_pub_' . str_repeat('22', 24)],
+            ])));
+
+            $request = Request::create('/api/public/listings', 'GET');
+            $request->headers->set('Origin', 'https://shop.example.test');
+
+            $response = $mw->process($request, static fn () => new Response('ok'));
+
+            self::assertSame(200, $response->getStatusCode());
+        } finally {
+            if ($prev === false) {
+                putenv('FRONTEND_ORIGIN');
+                unset($_ENV['FRONTEND_ORIGIN']);
+            } else {
+                putenv('FRONTEND_ORIGIN=' . $prev);
+                $_ENV['FRONTEND_ORIGIN'] = $prev;
+            }
+        }
+    }
+
+    public function testAcceptsAllowlistedRefererWithoutKey(): void
+    {
+        $prev = getenv('FRONTEND_ORIGIN');
+        putenv('FRONTEND_ORIGIN=http://192.168.100.74:5174');
+        $_ENV['FRONTEND_ORIGIN'] = 'http://192.168.100.74:5174';
+
+        try {
+            $mw = new PublicApiAuthMiddleware(new PublicApiKey(new Repository([
+                'api' => ['public_key' => 'grq_pub_' . str_repeat('33', 24)],
+            ])));
+
+            $request = Request::create('/api/public/pages/home', 'GET');
+            $request->headers->set('Referer', 'http://192.168.100.74:5174/');
+
+            $response = $mw->process($request, static fn () => new Response('ok'));
+
+            self::assertSame(200, $response->getStatusCode());
+            self::assertTrue($request->attributes->get('_api_public_first_party'));
+        } finally {
+            if ($prev === false) {
+                putenv('FRONTEND_ORIGIN');
+                unset($_ENV['FRONTEND_ORIGIN']);
+            } else {
+                putenv('FRONTEND_ORIGIN=' . $prev);
+                $_ENV['FRONTEND_ORIGIN'] = $prev;
+            }
+        }
     }
 
     public function testSkipsOptions(): void

@@ -11,6 +11,18 @@ declare(strict_types=1);
  * - manifest `groups` in module.php are merged here
  */
 return [
+    'gereq' => [
+        'name' => 'GEREQ',
+        'label' => 'admin.modules.group.gereq',
+        'description' => 'admin.modules.group.gereq.desc',
+        'surface' => 'packages',
+        'order' => 5,
+        'modules' => [
+            'gereq',
+        ],
+        'required' => [],
+    ],
+
     'ecs' => [
         'name' => 'ECS',
         'label' => 'admin.modules.group.ecs',
@@ -70,6 +82,9 @@ return [
             'documents',
             'reviews',
             'emailing',
+            'newsletter',
+            'engage',
+            'webplus',
         ],
         'required' => [
             'currency',

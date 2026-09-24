@@ -7,7 +7,7 @@ Web+ is the SEO / GEO / Open Graph layer for headless GEREQ frontends. Editors m
 | Item | Value |
 | --- | --- |
 | Module id | `webplus` |
-| Version | 1.4.4 (`modules/WebPlus/module.php`, `WebPlusModule::version()`) |
+| Version | 1.5.1 (`modules/WebPlus/module.php`, `WebPlusModule::version()`) |
 | Directory | `modules/WebPlus/` |
 | Requires | `core ^1.0` |
 | Optional | `cms ^1.0`, `products ^1.0`, `listings ^1.0`, `media ^1.0` |
@@ -22,7 +22,7 @@ Manifest name `Web+`, icon `globe`.
 
 ## Domain model
 
-Single entity `modules/WebPlus/Domain/WebMeta.php` → table `webplus_metas`. Unique `uniq_webplus_metas_path (path)`, indexes `idx_webplus_metas_cms_page (cms_page_id)`, `idx_webplus_metas_active (is_active)`. `#[FormEntity('webplus.meta.save')]` / `#[FormGenerator(exclude: id, jsonLd, createdAt, updatedAt; cols: 1)]` — 25 `#[FormField]`s in groups `identity`, `seo`, `geo`, `og`, `twitter`, `sitemap`.
+Single entity `modules/WebPlus/Domain/WebMeta.php` → table `webplus_metas`. Unique `uniq_webplus_metas_path (path)`, indexes `idx_webplus_metas_cms_page (cms_page_id)`, `idx_webplus_metas_active (is_active)`. `#[FormEntity('webplus.meta.save')]` / `#[FormGenerator(exclude: id, jsonLd, createdAt, updatedAt; cols: 1)]` — 23 `#[FormField]`s in groups `identity`, `seo`, `geo`, `og`, `twitter`, `sitemap` (`og_image_url` / `twitter_image_url` edited via `media_box`, not FormField).
 
 | Group | Field | Column / type | Notes |
 | --- | --- | --- | --- |
@@ -88,11 +88,12 @@ Controllers in `modules/WebPlus/Http/`. Views in `Resources/views/` (`metas/inde
 
 ### Screens
 
-- **SEO meta editor** (`metas/index.html.twig`, `metas/form.html.twig`): list of all metas ordered by path with `?q=` search over `path`/`seoTitle`/`ogTitle` and a "coverage" column from `RouteMappingCatalog::cover()` (which route mapping a path belongs to). The form is generated from the entity groups (identity → SEO → GEO → OG → Twitter → sitemap) plus a raw JSON-LD textarea (`json_ld_json`, decoded on save) and a CMS page selector (`cmsPages()`, only when Cms is installed). Create accepts `?path=` / `?cms_page_id=` presets. Store/update enforce unique path, emit `webplus.meta.created|updated|deleted`, audit `webplus.meta.*`, flash `webplus.flash.meta_*`.
+- **SEO meta editor** (`metas/index.html.twig`, `metas/form.html.twig`): list of all metas ordered by path with `?q=` search over `path`/`seoTitle`/`ogTitle` and a "coverage" column from `RouteMappingCatalog::cover()` (which route mapping a path belongs to). The form is generated from the entity groups (identity → SEO → GEO → combined Sharing/OG+Twitter with live social preview → sitemap) plus a raw JSON-LD textarea (`json_ld_json`, decoded on save) and a CMS page selector (`cmsPages()`, only when Cms is installed). OG/Twitter images use `ui/media_box` (upload / media library / URL) instead of plain text. Create accepts `?path=` / `?cms_page_id=` presets. Store/update enforce unique path, emit `webplus.meta.created|updated|deleted`, audit `webplus.meta.*`, flash `webplus.flash.meta_*`.
+- **Social share preview**: Alpine `webplusOgPreview` (`Resources/assets/js/ogPreview.ts` + `partials/og_preview.html.twig`) shows Facebook / Messenger / X / LinkedIn card mocks and updates live from form fields; template paths get a sample-path input to interpolate `{slug}`-style tokens. Fallbacks: OG title ← SEO title ← site name; OG image ← site `default_og_image`.
 - **CMS link**: `for-page/{pageId}` redirects to the existing meta's edit form or to create with the page slug as preset path; Cms page show/edit views link to it (`modules/Cms/Resources/views/pages/{show,form}.html.twig`, label `webplus.cms.action`).
 - **Route mapping** (`metas/mapping.html.twig`): `RouteMappingCatalog::all()` lists the known route shapes — `home /`, `listings.index /nabidky`, `listings.detail` (template from `webplus.google_feed_listings_path`), `cms.page` (template from `webplus.cms_pages_path`), `cms.alias /{slug}`, `generic.xy /{page}/{x}`, `generic.xyz /{page}/{x}/{y}` — with live entity counts, override counts, example paths and supported tokens; filterable by hook `webplus.route_mappings`. "Ensure templates" creates missing seedable template metas; "Auto-map" (`UrlTemplateDiscoverer::discover()`, min 2 hits) clusters existing concrete paths into `{page}/{x}/{y}` templates and creates them (audit `webplus.mapping.auto`), and the page also previews `discoveredFromUrls()`.
 - **Health page** (`health/index.html.twig`): full `WebHealthChecker::run()` report — score 0–100, grade (`excellent ≥90`, `good ≥75`, `fair ≥50`, `poor ≥25`, else `critical`), grouped checks (`settings`, `seo`, `geo`, `og`, `discovery`, `frontend`) with status `pass|warn|fail`, weight, detail and fix recommendations.
-- **Settings** (`settings/edit.html.twig`): all keys below in sections site defaults / discovery (llms, robots) / Google feed, with available feed sources (`googleFeedSources()`) and a list of public endpoint URLs. Saving writes each key via `Settings::set()`, emits `webplus.settings.updated` (`keys`), audits `webplus.settings.updated`.
+- **Settings** (`settings/edit.html.twig`): all keys below in sections site defaults / discovery (llms, robots) / Google feed, with available feed sources (`googleFeedSources()`) and a list of public endpoint URLs. Site section includes `media_box` for `webplus.default_og_image` and the same live social preview as the meta form. Saving writes each key via `Settings::set()`, emits `webplus.settings.updated` (`keys`), audits `webplus.settings.updated`.
 - **Google feed preview** (`settings/google_feed.html.twig`): renders the generated XML inline (422 `webplus.error.google_feed_disabled` when disabled).
 
 ## Public / REST API

@@ -137,7 +137,7 @@ Detailed in [API](api.md#authentication); summary:
 | --- | --- | --- |
 | `Authorization: Bearer grq_live_…` / `grq_test_…` | `ApiAuthMiddleware` (alias `api`) | `ApiToken` → owning `User`; scopes enforced with `hasAnyScope()` |
 | admin session cookie | `ApiAuthMiddleware` | logged-in user; route scopes mapped to permissions (`sessionAllows()`: `x.read` → `x.view`/`x.manage`, `x.write` → `x.edit`/`x.create`/`x.manage`, also checked on the module prefix, e.g. `crm.deals.read` → `crm.view`) |
-| `Authorization: Bearer grq_pub_…` or `X-Api-Key` | `PublicApiAuthMiddleware` (auto for `/api/public/*`) | anonymous; single site key from `API_PUBLIC_KEY` |
+| `Authorization: Bearer grq_pub_…` / `X-Api-Key`, or first-party browser | `PublicApiAuthMiddleware` (auto for `/api/public/*`) | anonymous; site key from `API_PUBLIC_KEY`, or same-origin storefront without key |
 
 API tokens (`Gereq\Api\Auth\ApiTokenService`, entity `Gereq\Api\Entity\ApiToken`):
 

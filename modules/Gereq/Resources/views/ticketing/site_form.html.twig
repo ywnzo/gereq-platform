@@ -1,0 +1,86 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.gereq'|trans, url: url('admin.gereq.ticketing.desk') },
+        { label: 'gereq.ticketing.sites'|trans, url: url('admin.gereq.ticketing.sites') },
+        { label: pageTitle },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ pageTitle }}</h1>
+        <p class="muted">{{ 'gereq.ticketing.site_form_hint'|trans }}</p>
+    </div>
+</header>
+
+<form method="post" class="detail-stack" action="{{ site ? url('admin.gereq.ticketing.sites.update', {id: site.id()}) : url('admin.gereq.ticketing.sites.store') }}">
+    {{ csrf_field()|raw }}
+
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'gereq.section.site'|trans }}</h2>
+        </header>
+        <div class="form-grid">
+            <label class="field">
+                <span>{{ 'gereq.field.name'|trans }}</span>
+                <input class="input" name="name" required value="{{ site ? site.name() : '' }}">
+            </label>
+            <label class="field">
+                <span>{{ 'gereq.field.primary_color'|trans }}</span>
+                <input class="input" name="primary_color" value="{{ site ? site.primaryColor() : '#0A1F38' }}">
+            </label>
+            <label class="field" style="grid-column: 1 / -1">
+                <span>{{ 'gereq.field.allowed_origins'|trans }}</span>
+                <textarea class="input" name="allowed_origins" rows="3" placeholder="https://example.com">{{ site ? site.allowedOrigins()|join('\n') : '' }}</textarea>
+                <span class="field__hint">{{ 'gereq.field.allowed_origins.hint'|trans }}</span>
+            </label>
+            <label class="field" style="grid-column: 1 / -1">
+                <span>{{ 'gereq.field.welcome'|trans }}</span>
+                <textarea class="input" name="welcome_message" rows="2">{{ site ? site.welcomeMessage() : '' }}</textarea>
+            </label>
+            <label class="field" style="grid-column: 1 / -1">
+                <span>{{ 'gereq.field.offline'|trans }}</span>
+                <textarea class="input" name="offline_message" rows="2">{{ site ? site.offlineMessage() : '' }}</textarea>
+            </label>
+            <label class="field">
+                <span>{{ 'gereq.field.assignment'|trans }}</span>
+                <select class="input" name="assignment_strategy">
+                    {% for s in strategies %}
+                        <option value="{{ s }}" {{ site and site.assignmentStrategy() == s ? 'selected' : '' }}>{{ ('gereq.assignment.' ~ s)|trans }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="field">
+                <span>{{ 'gereq.field.agents_online'|trans }}</span>
+                <select class="input" name="agents_online">
+                    <option value="1" {{ (not site) or site.agentsOnline() ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                    <option value="0" {{ site and not site.agentsOnline() ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                </select>
+            </label>
+            <label class="field">
+                <span>{{ 'gereq.field.show_teaser'|trans }}</span>
+                <select class="input" name="show_teaser">
+                    <option value="0" {{ not site or not site.showTeaser() ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                    <option value="1" {{ site and site.showTeaser() ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                </select>
+            </label>
+            <label class="field">
+                <span>{{ 'gereq.field.active'|trans }}</span>
+                <select class="input" name="is_active">
+                    <option value="1" {{ (not site) or site.isActive() ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                    <option value="0" {{ site and not site.isActive() ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                </select>
+            </label>
+        </div>
+    </section>
+
+    <div class="form-actions">
+        <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ url('admin.gereq.ticketing.sites') }}">{{ 'common.cancel'|trans }}</a>
+    </div>
+</form>
+{% endblock %}

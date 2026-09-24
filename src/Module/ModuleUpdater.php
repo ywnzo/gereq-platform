@@ -34,6 +34,12 @@ final class ModuleUpdater
             return $this->updateAvailableCache[$id] = false;
         }
 
+        // Disabled modules keep migration files on disk after purge/rollback; those
+        // "pending" rows are expected and will run on enable — not an update.
+        if (!$this->modules->isEnabled($id)) {
+            return $this->updateAvailableCache[$id] = false;
+        }
+
         $row = $this->modules->installed($id);
         if ($row === null) {
             return $this->updateAvailableCache[$id] = false;

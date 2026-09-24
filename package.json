@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "demo:fe2-tour": "bun tools/record-fe2-tour.mjs"
+    "build": "vite build"
   },
   "dependencies": {
     "@alpinejs/csp": "^3.14.9",
@@ -32,7 +31,6 @@
     "@tailwindcss/vite": "^4.1.12",
     "@types/dompurify": "^3.2.0",
     "@types/marked": "^6.0.0",
-    "playwright": "^1.63.0",
     "tailwindcss": "^4.1.12",
     "terser": "^5.51.2",
     "typescript": "^5.9.2",

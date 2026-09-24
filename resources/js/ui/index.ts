@@ -50,6 +50,7 @@ import { registerPublishBadge } from './publishBadge';
 import { registerAiChat } from '../../../modules/Ai/Resources/assets/js/aiChat';
 import { registerAiFloat } from '../../../modules/Ai/Resources/assets/js/aiFloat';
 import { registerApiTester } from './apiTester';
+import { registerWebplusOgPreview } from '../../../modules/WebPlus/Resources/assets/js/ogPreview';
 
 export function registerUi(alpine: typeof Alpine): void {
     registerPageProgress();
@@ -106,4 +107,5 @@ export function registerUi(alpine: typeof Alpine): void {
     registerApiTester(alpine);
     registerAiChat(alpine);
     registerAiFloat(alpine);
+    registerWebplusOgPreview(alpine);
 }

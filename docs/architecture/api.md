@@ -7,7 +7,7 @@ GEREQ exposes two HTTP API surfaces: the **authenticated API** under `/api/v1` (
 | Family | Prefix | Auth | Middleware (from `Kernel::dispatch`) |
 | --- | --- | --- | --- |
 | authenticated | `/api/v1/<module>/…` (`config/api.php` → `prefix`) | Bearer `grq_live_*` / `grq_test_*` **or** admin session | `ApiRateLimitMiddleware`, `VitalityTimingMiddleware`, `CorrelationIdMiddleware`, route alias `api` → `ApiAuthMiddleware` |
-| public | `/api/public/…` | Bearer or `X-Api-Key: grq_pub_*` | `ApiRateLimitMiddleware`, `PublicApiAuthMiddleware` (auto-added by `PublicCors::isPublicApiPath()`), CORS via `PublicCors::apply()` in controllers |
+| public | `/api/public/…` | Bearer / `X-Api-Key: grq_pub_*` **or** first-party browser (`Sec-Fetch-Site` same-origin/same-site, or `Origin` / `Referer` in `FRONTEND_ORIGIN` / `APP_URL`) | `ApiRateLimitMiddleware`, `PublicApiAuthMiddleware` (auto-added by `PublicCors::isPublicApiPath()`), CORS via `PublicCors::apply()` in controllers |
 | meta | `/api/v1/health`, `/api/openapi.json` | none | `HealthController`, `OpenApiController` |
 
 CSRF is skipped for every `/api/*` path (`CsrfMiddleware`).
@@ -57,7 +57,7 @@ A logged-in admin can call `/api/v1` from the browser (the Developer → API tes
 
 ### Public key
 
-`PublicApiAuthMiddleware` (`src/Api/Http/PublicApiAuthMiddleware.php`) requires `API_PUBLIC_KEY` to be configured (`503` otherwise) and a matching `Authorization: Bearer grq_pub_…` or `X-Api-Key` header (`401` otherwise); it sets `_api_public_key = true`. `Gereq\Api\Auth\PublicApiKey::generate()` creates keys (`bin/install-demo` does this and writes it to `FE2/.env`). There is no per-user identity; endpoints must be safe for anonymous callers. `FRONTEND_ORIGIN` (comma-separated) restricts `Access-Control-Allow-Origin`; empty means `*`.
+`PublicApiAuthMiddleware` (`src/Api/Http/PublicApiAuthMiddleware.php`) requires `API_PUBLIC_KEY` to be configured (`503` otherwise). A request is accepted when either (1) `Authorization: Bearer grq_pub_…` / `X-Api-Key` matches, or (2) it is a **first-party** storefront call (`Sec-Fetch-Site: same-origin|same-site`, or `Origin` / `Referer` origin allowlisted via `FRONTEND_ORIGIN` / `APP_URL` / local Vite in debug) — so FE2 can call same-origin `/api/public/*` without putting the key in the browser bundle. Same-origin GETs often omit `Origin`; LAN IP hosts may also omit `Sec-Fetch-Site`, so `Referer` is checked as a fallback. Bare scripts without those signals still need the key (`401` otherwise). Sets `_api_public_key = true` (and `_api_public_first_party` when no key was used). There is no per-user identity; endpoints must be safe for anonymous callers. `FRONTEND_ORIGIN` also restricts `Access-Control-Allow-Origin`; empty means `*`. In Vite DEV the `/api` proxy can also attach `VITE_API_PUBLIC_KEY` server-side.
 
 ## Request conventions
 

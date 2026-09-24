@@ -23,6 +23,12 @@ abstract class TwigDashboardWidget implements DashboardWidget
         return $this->twig->render($this->template(), $this->data());
     }
 
+    /** @return array<string, mixed> */
+    public function payload(): array
+    {
+        return $this->data();
+    }
+
     public function type(): string
     {
         return self::TYPE_METRIC;

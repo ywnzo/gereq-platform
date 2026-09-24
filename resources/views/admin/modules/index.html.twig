@@ -229,7 +229,7 @@
                                 <td class="is-num is-mute">{{ counts.routes }}</td>
                                 <td class="is-num is-mute">
                                     {{ counts.migrations }}
-                                    {% if counts.migrations_pending %}
+                                    {% if row.enabled and counts.migrations_pending %}
                                         <div class="muted">{{ 'admin.modules.meta.pending'|trans({'%count%': counts.migrations_pending}) }}</div>
                                     {% endif %}
                                 </td>

@@ -123,27 +123,58 @@ final class AssetManager
         $nonceAttr = $nonce !== '' ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"' : '';
 
         if ($this->isHot()) {
-            // Blocking <link> prevents FOUC — CSS via JS modules alone paints unstyled HTML first.
-            $css = UrlPrefix::path('/resources/css/kernel.css');
             $client = UrlPrefix::path('/@vite/client');
             $src = UrlPrefix::path('/' . ltrim($entry, '/'));
+            $css = UrlPrefix::path('/resources/css/kernel.css');
+            $cssLink = "<link rel=\"stylesheet\" href=\"{$css}\">\n";
 
             return <<<HTML
-<link rel="stylesheet" href="{$css}">
-<script type="module"{$nonceAttr} src="{$client}"></script>
+{$cssLink}<script type="module"{$nonceAttr} src="{$client}"></script>
 <script type="module"{$nonceAttr} src="{$src}"></script>
 HTML;
         }
 
-        $cssEntry = str_ends_with($entry, '.ts')
-            ? 'resources/css/kernel.css'
-            : $entry;
-        $css = htmlspecialchars($this->url($cssEntry), ENT_QUOTES, 'UTF-8');
+        $tags = '';
+        $manifestCss = $this->manifestCss($entry);
+        foreach ($manifestCss as $href) {
+            $css = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
+            $tags .= "<link rel=\"stylesheet\" href=\"{$css}\">\n";
+        }
+        if ($tags === '') {
+            $cssEntry = str_ends_with($entry, '.ts')
+                ? 'resources/css/kernel.css'
+                : $entry;
+            $css = htmlspecialchars($this->url($cssEntry), ENT_QUOTES, 'UTF-8');
+            $tags .= "<link rel=\"stylesheet\" href=\"{$css}\">\n";
+        }
         $js = htmlspecialchars($this->url($entry), ENT_QUOTES, 'UTF-8');
 
-        return <<<HTML
-<link rel="stylesheet" href="{$css}">
-<script type="module"{$nonceAttr} src="{$js}"></script>
-HTML;
+        return $tags . "<script type=\"module\"{$nonceAttr} src=\"{$js}\"></script>";
+    }
+
+    /** @return list<string> */
+    private function manifestCss(string $entry): array
+    {
+        $candidates = [
+            $this->basePath . '/public/build/.vite/manifest.json',
+            $this->basePath . '/public/build/manifest.json',
+        ];
+        foreach ($candidates as $manifestFile) {
+            if (!is_file($manifestFile)) {
+                continue;
+            }
+            $manifest = json_decode((string) file_get_contents($manifestFile), true);
+            if (!is_array($manifest) || !isset($manifest[$entry]) || !is_array($manifest[$entry]['css'] ?? null)) {
+                continue;
+            }
+            $hrefs = [];
+            foreach ($manifest[$entry]['css'] as $file) {
+                $hrefs[] = UrlPrefix::path('/build/' . ltrim((string) $file, '/'));
+            }
+
+            return $hrefs;
+        }
+
+        return [];
     }
 }

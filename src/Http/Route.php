@@ -18,6 +18,9 @@ final class Route
     /** @var list<string> */
     private array $scopes = [];
 
+    /** @var array<string, string> */
+    private array $requirements = [];
+
     /**
      * @param list<string> $methods
      * @param array{0: class-string, 1: string}|class-string|callable $handler
@@ -69,6 +72,13 @@ final class Route
         return $this;
     }
 
+    public function where(string $param, string $regex): self
+    {
+        $this->requirements[$param] = $regex;
+
+        return $this;
+    }
+
     public function getName(): ?string
     {
         return $this->name;
@@ -110,6 +120,12 @@ final class Route
     public function getScopes(): array
     {
         return $this->scopes;
+    }
+
+    /** @return array<string, string> */
+    public function getRequirements(): array
+    {
+        return $this->requirements;
     }
 
     public function setPath(string $path): void

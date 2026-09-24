@@ -132,7 +132,9 @@ final class ValidationRulesToSchema
                 continue;
             }
             if (str_starts_with($part, 'in:')) {
-                $vals = array_values(array_filter(array_map('trim', explode(',', substr($part, 3)))));
+                $raw = substr($part, 3);
+                $delimiter = str_contains($raw, ';') ? ';' : ',';
+                $vals = array_values(array_filter(array_map('trim', explode($delimiter, $raw))));
                 if ($vals !== []) {
                     $schema['enum'] = $vals;
                 }
