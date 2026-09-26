@@ -101,7 +101,7 @@ Third-party adapters (payments, shipping, AI providers) live in `integrations/` 
 ## Conventions shared by all modules
 
 - **Manifest**: `module.php` (`id`, `name`, `version`, `requires`, `groups`, `permissions`, `capabilities`). `version` must equal `<Dir>Module::version()` and the git tag `vX.Y.Z`; any code or migration change requires a version bump (see `.cursor/rules/module-updates.mdc`).
-- **Layout**: `Domain/`, `Application/`, `Infrastructure/`, `Http/`, `Admin/`, `Database/Migrations/`, `Resources/{views,translations,assets}/`, `Tests/`.
+- **Layout**: `Domain/`, `Application/`, `Infrastructure/`, `Http/`, `Admin/`, `Database/Migrations/`, `Resources/{views,translations,assets}/`, `Testing/`.
 - **Permissions**: granular `<id>.view|create|edit|delete|manage`, registered in `register()`, synced on enable/update.
 - **Translations**: `Resources/translations/messages.{cs,en}.php`, key prefix `<id>.*`, navigation labels `nav.*`, dashboard widgets `<id>.widget.*`.
 - **Dashboard**: widgets in `Application/Widgets/` registered in `boot()` — see [Dashboard widgets](../architecture/dashboard-widgets.md).

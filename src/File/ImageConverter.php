@@ -55,39 +55,35 @@ final class ImageConverter
         $width = imagesx($image);
         $height = imagesy($image);
 
-        try {
-            if ($this->supportsAvif()) {
-                $encoded = $this->encodeAvif($image);
-                if ($encoded !== null) {
-                    return [
-                        'contents' => $encoded,
-                        'mime' => 'image/avif',
-                        'extension' => 'avif',
-                        'width' => $width,
-                        'height' => $height,
-                    ];
-                }
+        if ($this->supportsAvif()) {
+            $encoded = $this->encodeAvif($image);
+            if ($encoded !== null) {
+                return [
+                    'contents' => $encoded,
+                    'mime' => 'image/avif',
+                    'extension' => 'avif',
+                    'width' => $width,
+                    'height' => $height,
+                ];
+            }
+        }
+
+        if ($this->supportsWebp()) {
+            // Already WebP and AVIF unavailable — keep original.
+            if ($mime === 'image/webp') {
+                return null;
             }
 
-            if ($this->supportsWebp()) {
-                // Already WebP and AVIF unavailable — keep original.
-                if ($mime === 'image/webp') {
-                    return null;
-                }
-
-                $encoded = $this->encodeWebp($image);
-                if ($encoded !== null) {
-                    return [
-                        'contents' => $encoded,
-                        'mime' => 'image/webp',
-                        'extension' => 'webp',
-                        'width' => $width,
-                        'height' => $height,
-                    ];
-                }
+            $encoded = $this->encodeWebp($image);
+            if ($encoded !== null) {
+                return [
+                    'contents' => $encoded,
+                    'mime' => 'image/webp',
+                    'extension' => 'webp',
+                    'width' => $width,
+                    'height' => $height,
+                ];
             }
-        } finally {
-            imagedestroy($image);
         }
 
         return null;

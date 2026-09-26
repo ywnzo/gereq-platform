@@ -4,13 +4,14 @@
          bootstrap="tests/bootstrap.php"
          colors="true"
          cacheDirectory="storage/framework/phpunit">
+    <!-- Prefer php bin/gereq-test (composer test) for targeted runs. -->
     <testsuites>
         <testsuite name="Core">
             <directory>tests/Unit</directory>
             <exclude>tests/Unit/Modules</exclude>
         </testsuite>
         <testsuite name="Modules">
-            <directory>tests/Unit/Modules</directory>
+            <directory>tests/Unit/Modules/ModuleStructure</directory>
         </testsuite>
         <testsuite name="File">
             <directory>tests/File</directory>

@@ -203,7 +203,7 @@ modules/Customers/
     Admin/
     Database/Migrations/
     Resources/views/
-    Tests/
+    Testing/
     module.php
     CustomersModule.php
 ```
