@@ -20,11 +20,11 @@ stages:
   - analyse
 
 variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-  # Relative ../module-*.git URLs inherit CI_REPOSITORY_URL (reachable from the job).
-  # Absolute https://git.gereq.cz often fails here (Docker cannot hairpin :443).
-  GIT_SUBMODULE_FORCE_HTTPS: "true"
+  # Helper image has no ssh(1); clone submodules in the job after loading SSH_PRIVATE_KEY.
+  GIT_SUBMODULE_STRATEGY: none
   COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.composer-cache"
+  # Internal GitLab SSH host on the runner Docker network (clone_url uses http://gitlab/...).
+  CI_SSH_HOST: gitlab
 
 default:
   image: php:8.4-cli-bookworm
@@ -41,12 +41,40 @@ default:
 .composer_setup:
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq --no-install-recommends git unzip libzip-dev libsqlite3-dev $PHPIZE_DEPS
+    - apt-get install -y -qq --no-install-recommends git openssh-client unzip libzip-dev libsqlite3-dev $PHPIZE_DEPS
     - docker-php-ext-install -j$(nproc) zip pdo_sqlite
     - |
       if ! command -v composer >/dev/null 2>&1; then
         curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       fi
+    # SSH deploy key for private module submodules (see CI variable SSH_PRIVATE_KEY).
+    - |
+      set -e
+      if [ -z "${SSH_PRIVATE_KEY:-}" ]; then
+        echo "SSH_PRIVATE_KEY CI variable is required to clone module submodules over SSH." >&2
+        exit 1
+      fi
+      eval "$(ssh-agent -s)"
+      mkdir -p ~/.ssh
+      chmod 700 ~/.ssh
+      if [ -f "$SSH_PRIVATE_KEY" ]; then
+        chmod 400 "$SSH_PRIVATE_KEY"
+        ssh-add "$SSH_PRIVATE_KEY"
+      else
+        printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+      fi
+      {
+        echo "Host git.gereq.cz"
+        echo "  HostName ${CI_SSH_HOST}"
+        echo "  User git"
+        echo "  StrictHostKeyChecking accept-new"
+        echo "Host ${CI_SSH_HOST}"
+        echo "  StrictHostKeyChecking accept-new"
+      } > ~/.ssh/config
+      chmod 600 ~/.ssh/config
+      ssh-keyscan -H "${CI_SSH_HOST}" >> ~/.ssh/known_hosts 2>/dev/null || true
+      git submodule sync --recursive
+      git submodule update --init --recursive --depth 20
     # Unit tests are DB-free (sqlite :memory:); redis/gd not needed for these targets.
     - composer install --no-interaction --prefer-dist --no-progress --ignore-platform-req=ext-redis --ignore-platform-req=ext-gd
 
