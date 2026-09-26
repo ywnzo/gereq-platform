@@ -129,7 +129,7 @@ php -r 'exit(version_compare(PHP_VERSION, "8.4.0", ">=") ? 0 : 1);' \
   || { err "Potřebujete PHP 8.4+ (máte $(php -r 'echo PHP_VERSION;'))"; exit 1; }
 ok "PHP $(php -r 'echo PHP_VERSION;')"
 
-for ext in pdo_sqlite mbstring json gd; do
+for ext in pdo_sqlite mbstring json gd zip; do
   php -m | grep -qi "^${ext}$" || { err "Chybí PHP extension: $ext"; exit 1; }
 done
 ok "PHP extensions"

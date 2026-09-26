@@ -8,7 +8,7 @@ Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt b
 
 | Command | Purpose |
 | --- | --- |
-| `grq doctor` | Check php ≥ 8.4, composer, bun\|npm, docker, git |
+| `grq doctor` | Check php ≥ 8.4, required extensions (`gd`, `zip`, …), composer, bun\|npm, docker, git |
 | `grq env init [--docker]` | Write `.env` from `config/env.schema.toml` |
 | `grq env validate` | Validate `.env` |
 | `grq install` / `grq install demo` | Interactive clean install / SQLite demo |

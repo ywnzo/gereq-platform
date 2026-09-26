@@ -19,7 +19,7 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 
 ## Požadavky
 
-- PHP 8.4+
+- PHP 8.4+ (`gd`, `zip`, `json`, `mbstring`, `pdo`; volitelně `redis` — viz `./bin/grq doctor`)
 - Composer
 - Node.js 20+ (Vite / Tailwind)
 - SQLite (výchozí), nebo MariaDB 10.11+ / PostgreSQL

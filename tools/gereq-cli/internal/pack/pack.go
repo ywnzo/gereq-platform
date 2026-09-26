@@ -72,7 +72,7 @@ exit 1
 ================================
 
 Requirements:
-  - PHP 8.4+ (pdo_sqlite, mbstring, json, gd)
+  - PHP 8.4+ (pdo_sqlite, mbstring, json, gd, zip)
   - Composer
   - bun or npm
 

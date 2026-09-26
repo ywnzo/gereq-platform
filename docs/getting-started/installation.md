@@ -6,7 +6,7 @@ GEREQ is a PHP 8.4 platform with a Doctrine/Symfony-components core, Twig admin 
 
 | Requirement | Notes | Source |
 | --- | --- | --- |
-| PHP `^8.4` | extensions `gd`, `json`, `mbstring`, `pdo`, `redis` are declared in `composer.json` (`ext-redis` can be skipped for the SQLite demo, see below) | `composer.json` |
+| PHP `^8.4` | extensions `gd`, `zip`, `json`, `mbstring`, `pdo`, `redis` are declared in `composer.json` (`ext-redis` can be skipped for the SQLite demo, see below) | `composer.json` |
 | Composer | | `bin/grq install` checks for it |
 | Bun (preferred) or npm | frontend build (`vite build`, Tailwind 4). Workspace rule: always `bun run …` / `bun x …` | `package.json`, `.cursor/rules/tech-stack.mdc` |
 | Database | SQLite (default in `config/database.php`), MySQL/MariaDB or PostgreSQL 16 (Docker default) | `config/database.php`, `docker-compose.yml` |
@@ -14,6 +14,17 @@ GEREQ is a PHP 8.4 platform with a Doctrine/Symfony-components core, Twig admin 
 | Docker + `docker compose` | optional; used by `php gereq serve-docker` and the `Makefile` | `Makefile`, `src/Console/Command/ServeDockerCommand.php` |
 
 `bin/grq install` refuses to run on PHP < 8.4 and aborts when neither `bun` nor `npm` is present.
+
+### Host PHP extensions
+
+On a minimal PHP install, `composer install` fails when `ext-gd` or `ext-zip` is missing (`webklex/php-imap` needs zip; image conversion and QR codes need gd). Check with `./bin/grq doctor` or `php -m`.
+
+| OS | Install command |
+| --- | --- |
+| Fedora / RHEL | `sudo dnf install php-gd php-pecl-zip` |
+| Debian / Ubuntu | `sudo apt install php-gd php-zip` (add version suffix if needed, e.g. `php8.4-gd php8.4-zip`) |
+
+Docker and `make install` already ship both extensions in `docker/php/Dockerfile`.
 
 ## Clone
 
@@ -146,7 +157,7 @@ Entry point is `resources/js/admin.ts` (`vite.config.ts`). `Gereq\View\AssetMana
 | --- | --- |
 | `php gereq seed:demo` | `Gereq\Database\DemoSeeder` — demo user plus realistic click-through data on top of an existing install |
 | `php gereq migrate --seed` (without `--no-demo`) | full seed including demo business data (`Seeder::seed(true, true)`) |
-| `./bin/grq install demo [--serve] [--port=8080]` | non-interactive demo install: checks `pdo_sqlite mbstring json gd`, `composer install` (adds `--ignore-platform-req=ext-redis` when the extension is missing), writes a SQLite `.env` with `demo@gereq.cz` / `demo123`, generates `API_PUBLIC_KEY=grq_pub_*` and writes `FE2/.env` (`VITE_API_URL`, `VITE_API_PUBLIC_KEY`), builds assets and runs `php gereq migrate --fresh --seed` |
+| `./bin/grq install demo [--serve] [--port=8080]` | non-interactive demo install: `./bin/grq doctor` checks PHP extensions (`gd`, `zip`, …), `composer install` (adds `--ignore-platform-req=ext-redis` when the extension is missing), writes a SQLite `.env` with `demo@gereq.cz` / `demo123`, generates `API_PUBLIC_KEY=grq_pub_*` and writes `FE2/.env` (`VITE_API_URL`, `VITE_API_PUBLIC_KEY`), builds assets and runs `php gereq migrate --fresh --seed` |
 | `./INSTALACE.sh` | thin wrapper that `exec`s `bin/grq install demo "$@"` (shipped in the demo zip) |
 | `./bin/grq pack demo` | builds `dist/gereq-realestates-demo-<yyyymmdd>.zip` via `rsync` excluding `.git`, `vendor`, `node_modules`, `public/build`, `.env*`, SQLite DB and storage contents; adds `INSTALACE.sh` and `DEMO-README.txt` |
 | `php gereq portals:seed-demo` | Portals module: sample portals (Sreality/Idnes/Bezrealitky) linked to listings |

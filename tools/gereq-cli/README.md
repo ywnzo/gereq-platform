@@ -23,7 +23,7 @@ Sources: `tools/gereq-cli/` (Go, vendored). Optional AI via Cursor CLI `agent` o
 
 | Command | Purpose |
 | --- | --- |
-| `grq doctor` | php / composer / bun\|npm / docker / git |
+| `grq doctor` | php ≥ 8.4, required extensions (`gd`, `zip`, …), composer, bun\|npm, docker, git |
 | `grq env init [--docker] [--force] [--port N]` | Write `.env` from `config/env.schema.toml` |
 | `grq env validate` | Validate `.env` against schema |
 | `grq install` | Interactive clean-client install |
