@@ -21,7 +21,7 @@ parameters:
             identifier: nullCoalesce.offset
         -
             identifier: property.unusedType
-        # Idiomatic $this->assert* / markTestSkipped in PHPUnit tests.
+        # Idiomatic $this->assert* / markTestSkipped in PHPUnit test's
         -
             identifier: staticMethod.dynamicCall
             path: tests/*
