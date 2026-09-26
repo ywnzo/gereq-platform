@@ -21,23 +21,14 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  # Docker helper has no ssh(1); force HTTPS so CI_JOB_TOKEN can clone private modules.
+  # Relative ../module-*.git URLs inherit CI_REPOSITORY_URL (reachable from the job).
+  # Absolute https://git.gereq.cz often fails here (Docker cannot hairpin :443).
   GIT_SUBMODULE_FORCE_HTTPS: "true"
   COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.composer-cache"
 
 default:
   image: php:8.4-cli-bookworm
   interruptible: true
-  # Auth private HTTPS submodules before GitLab fetches them (SSH URLs if any remain).
-  # Hardcode git.gereq.cz: CI_SERVER_HOST may differ from .gitmodules host.
-  hooks:
-    pre_get_sources_script:
-      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@git.gereq.cz/".insteadOf "https://git.gereq.cz/"
-      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@git.gereq.cz/".insteadOf "git@git.gereq.cz:"
-      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@git.gereq.cz/".insteadOf "ssh://git@git.gereq.cz/"
-      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/".insteadOf "https://${CI_SERVER_HOST}/"
-      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/".insteadOf "git@${CI_SERVER_HOST}:"
-      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/".insteadOf "ssh://git@${CI_SERVER_HOST}/"
   cache:
     key:
       files:

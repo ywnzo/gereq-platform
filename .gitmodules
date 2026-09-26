@@ -1,138 +1,138 @@
 [submodule "modules/BikeService"]
 	path = modules/BikeService
-	url = https://git.gereq.cz/gereq/module-bikeservice.git
+	url = ../module-bikeservice.git
 [submodule "modules/Bundles"]
 	path = modules/Bundles
-	url = https://git.gereq.cz/gereq/module-bundles.git
+	url = ../module-bundles.git
 [submodule "modules/CarService"]
 	path = modules/CarService
-	url = https://git.gereq.cz/gereq/module-carservice.git
+	url = ../module-carservice.git
 [submodule "modules/Coupons"]
 	path = modules/Coupons
-	url = https://git.gereq.cz/gereq/module-coupons.git
+	url = ../module-coupons.git
 [submodule "modules/CRM"]
 	path = modules/CRM
-	url = https://git.gereq.cz/gereq/module-crm.git
+	url = ../module-crm.git
 [submodule "modules/Currency"]
 	path = modules/Currency
-	url = https://git.gereq.cz/gereq/module-currency.git
+	url = ../module-currency.git
 [submodule "modules/CustomerUploads"]
 	path = modules/CustomerUploads
-	url = https://git.gereq.cz/gereq/module-customer_uploads.git
+	url = ../module-customer_uploads.git
 [submodule "modules/Documents"]
 	path = modules/Documents
-	url = https://git.gereq.cz/gereq/module-documents.git
+	url = ../module-documents.git
 [submodule "modules/ESign"]
 	path = modules/ESign
-	url = https://git.gereq.cz/gereq/module-esign.git
+	url = ../module-esign.git
 [submodule "modules/Feeds"]
 	path = modules/Feeds
-	url = https://git.gereq.cz/gereq/module-feeds.git
+	url = ../module-feeds.git
 [submodule "modules/Fleet"]
 	path = modules/Fleet
-	url = https://git.gereq.cz/gereq/module-fleet.git
+	url = ../module-fleet.git
 [submodule "modules/iDoklad"]
 	path = modules/iDoklad
-	url = https://git.gereq.cz/gereq/module-idoklad.git
+	url = ../module-idoklad.git
 [submodule "modules/Loyalty"]
 	path = modules/Loyalty
-	url = https://git.gereq.cz/gereq/module-loyalty.git
+	url = ../module-loyalty.git
 [submodule "modules/Media"]
 	path = modules/Media
-	url = https://git.gereq.cz/gereq/module-media.git
+	url = ../module-media.git
 [submodule "modules/MoneyS3"]
 	path = modules/MoneyS3
-	url = https://git.gereq.cz/gereq/module-moneys3.git
+	url = ../module-moneys3.git
 [submodule "modules/Newsletter"]
 	path = modules/Newsletter
-	url = https://git.gereq.cz/gereq/module-newsletter.git
+	url = ../module-newsletter.git
 [submodule "modules/Orders"]
 	path = modules/Orders
-	url = https://git.gereq.cz/gereq/module-orders.git
+	url = ../module-orders.git
 [submodule "modules/PartsCatalog"]
 	path = modules/PartsCatalog
-	url = https://git.gereq.cz/gereq/module-partscatalog.git
+	url = ../module-partscatalog.git
 [submodule "modules/Portals"]
 	path = modules/Portals
-	url = https://git.gereq.cz/gereq/module-portals.git
+	url = ../module-portals.git
 [submodule "modules/ProductDiscounts"]
 	path = modules/ProductDiscounts
-	url = https://git.gereq.cz/gereq/module-product_discounts.git
+	url = ../module-product_discounts.git
 [submodule "modules/Products"]
 	path = modules/Products
-	url = https://git.gereq.cz/gereq/module-products.git
+	url = ../module-products.git
 [submodule "modules/Returns"]
 	path = modules/Returns
-	url = https://git.gereq.cz/gereq/module-returns.git
+	url = ../module-returns.git
 [submodule "modules/Reviews"]
 	path = modules/Reviews
-	url = https://git.gereq.cz/gereq/module-reviews.git
+	url = ../module-reviews.git
 [submodule "modules/SearchEngines"]
 	path = modules/SearchEngines
-	url = https://git.gereq.cz/gereq/module-searchengines.git
+	url = ../module-searchengines.git
 [submodule "modules/Shop"]
 	path = modules/Shop
-	url = https://git.gereq.cz/gereq/module-shop.git
+	url = ../module-shop.git
 [submodule "modules/Translate"]
 	path = modules/Translate
-	url = https://git.gereq.cz/gereq/module-translate.git
+	url = ../module-translate.git
 [submodule "modules/Viewings"]
 	path = modules/Viewings
-	url = https://git.gereq.cz/gereq/module-viewings.git
+	url = ../module-viewings.git
 [submodule "modules/Vitality"]
 	path = modules/Vitality
-	url = https://git.gereq.cz/gereq/module-vitality.git
+	url = ../module-vitality.git
 [submodule "modules/Warehouse"]
 	path = modules/Warehouse
-	url = https://git.gereq.cz/gereq/module-warehouse.git
+	url = ../module-warehouse.git
 [submodule "modules/Webhooks"]
 	path = modules/Webhooks
-	url = https://git.gereq.cz/gereq/module-webhooks.git
+	url = ../module-webhooks.git
 [submodule "modules/Ai"]
 	path = modules/Ai
-	url = https://git.gereq.cz/gereq/module-ai.git
+	url = ../module-ai.git
 [submodule "modules/Calendar"]
 	path = modules/Calendar
-	url = https://git.gereq.cz/gereq/module-calendar.git
+	url = ../module-calendar.git
 [submodule "modules/Cms"]
 	path = modules/Cms
-	url = https://git.gereq.cz/gereq/module-cms.git
+	url = ../module-cms.git
 [submodule "modules/Customers"]
 	path = modules/Customers
-	url = https://git.gereq.cz/gereq/module-customers.git
+	url = ../module-customers.git
 [submodule "modules/Emailing"]
 	path = modules/Emailing
-	url = https://git.gereq.cz/gereq/module-emailing.git
+	url = ../module-emailing.git
 [submodule "modules/Listings"]
 	path = modules/Listings
-	url = https://git.gereq.cz/gereq/module-listings.git
+	url = ../module-listings.git
 [submodule "modules/Notifications"]
 	path = modules/Notifications
-	url = https://git.gereq.cz/gereq/module-notifications.git
+	url = ../module-notifications.git
 [submodule "modules/Payments"]
 	path = modules/Payments
-	url = https://git.gereq.cz/gereq/module-payments.git
+	url = ../module-payments.git
 [submodule "modules/Projects"]
 	path = modules/Projects
-	url = https://git.gereq.cz/gereq/module-projects.git
+	url = ../module-projects.git
 [submodule "modules/WebPlus"]
 	path = modules/WebPlus
-	url = https://git.gereq.cz/gereq/module-webplus.git
+	url = ../module-webplus.git
 [submodule "modules/Engage"]
 	path = modules/Engage
-	url = https://git.gereq.cz/gereq/module-engage.git
+	url = ../module-engage.git
 [submodule "modules/Gereq"]
 	path = modules/Gereq
-	url = https://git.gereq.cz/gereq/module-gereq.git
+	url = ../module-gereq.git
 [submodule "modules/Forum"]
 	path = modules/Forum
-	url = https://git.gereq.cz/gereq/module-forum.git
+	url = ../module-forum.git
 [submodule "modules/Achievements"]
 	path = modules/Achievements
-	url = https://git.gereq.cz/gereq/module-achievements.git
+	url = ../module-achievements.git
 [submodule "modules/Community"]
 	path = modules/Community
-	url = https://git.gereq.cz/gereq/module-community.git
+	url = ../module-community.git
 [submodule "modules/Messenger"]
 	path = modules/Messenger
-	url = https://git.gereq.cz/gereq/module-messenger.git
+	url = ../module-messenger.git
