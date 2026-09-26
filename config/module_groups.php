@@ -93,6 +93,28 @@ return [
             'listings',
         ],
     ],
+    'forum' => [
+        'name' => 'Forum',
+        'label' => 'admin.modules.group.forum',
+        'description' => 'admin.modules.group.forum.desc',
+        'surface' => 'packages',
+        'order' => 25,
+        'modules' => [
+            'customers',
+            'forum',
+            'community',
+            'achievements',
+            'messenger',
+            'media',
+            'notifications',
+            'newsletter',
+            'calendar',
+        ],
+        'required' => [
+            'customers',
+            'forum',
+        ],
+    ],
 
     // ——— Plug-ins (third parties) ———
     'plugin.payments' => [

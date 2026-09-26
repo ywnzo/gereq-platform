@@ -124,3 +124,15 @@
 [submodule "modules/Gereq"]
 	path = modules/Gereq
 	url = git@git.gereq.cz:gereq/module-gereq.git
+[submodule "modules/Forum"]
+	path = modules/Forum
+	url = git@git.gereq.cz:gereq/module-forum.git
+[submodule "modules/Achievements"]
+	path = modules/Achievements
+	url = git@git.gereq.cz:gereq/module-achievements.git
+[submodule "modules/Community"]
+	path = modules/Community
+	url = git@git.gereq.cz:gereq/module-community.git
+[submodule "modules/Messenger"]
+	path = modules/Messenger
+	url = git@git.gereq.cz:gereq/module-messenger.git

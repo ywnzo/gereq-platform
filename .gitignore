@@ -29,7 +29,6 @@
 .phpunit.result.cache
 /var/
 frontend/
-FE2/
 /.env.new
 /.env.tmpkey
 /README-*.md
@@ -37,3 +36,7 @@ FE2/
 /tools/gereq-modules/gereq-modules
 .idea/
 .idea/
+# Forum storefront
+/storefront/node_modules/
+/storefront/dist/
+/storefront/.env

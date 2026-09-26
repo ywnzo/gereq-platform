@@ -1,6 +1,6 @@
 # Web+ (`webplus`)
 
-Web+ is the SEO / GEO / Open Graph layer for headless GEREQ frontends. Editors maintain `WebMeta` records — either for a concrete path (`/o-nas`) or a path template (`/nabidky/{slug}`) — holding SEO, geo, AI-summary, JSON-LD, OG, Twitter and sitemap fields. A resolver merges the stored record, site-wide defaults from settings and live data from [Listings](listings.md) and [Cms](cms.md) pages into a "meta package" that the public API serves as JSON or ready-made `<head>` HTML. The module also publishes `sitemap.xml`, `robots.txt`, `llms.txt` and a Google Merchant products RSS feed ([Products](products.md) + listings), runs a weighted health score shown in the admin topbar, dashboard and a dedicated health page, and ships a Vite plugin (`FE2/vite-plugin-webplus.ts`) that injects the resolved tags into the SPA's `index.html`.
+Web+ is the SEO / GEO / Open Graph layer for headless GEREQ frontends. Editors maintain `WebMeta` records — either for a concrete path (`/o-nas`) or a path template (`/nabidky/{slug}`) — holding SEO, geo, AI-summary, JSON-LD, OG, Twitter and sitemap fields. A resolver merges the stored record, site-wide defaults from settings and live data from [Listings](listings.md) and [Cms](cms.md) pages into a "meta package" that the public API serves as JSON or ready-made `<head>` HTML. The module also publishes `sitemap.xml`, `robots.txt`, `llms.txt` and a Google Merchant products RSS feed ([Products](products.md) + listings), runs a weighted health score shown in the admin topbar, dashboard and a dedicated health page, and ships a Vite plugin (`storefront/vite-plugin-webplus.ts`) that injects the resolved tags into the SPA's `index.html`.
 
 ## At a glance
 
@@ -193,7 +193,7 @@ See `../architecture/dashboard-widgets.md`.
 | `Application\GoogleFeed\BuiltInGoogleFeedCollectors` / `GoogleFeedContext` | Sources `products` (Products + `ProductPrice` by currency) and `listings`; enabled-source filter, per-source URL templates, limit, media absolutising. |
 | `Application\Drivers\GoogleProductsFeedDriver` | Renders RSS 2.0 with `g:` namespace: `g:id, g:title, g:description, g:link, g:image_link, g:condition, g:availability, g:price, g:brand` (+ `g:gtin`, `g:mpn`). |
 
-Frontend integration (`../frontend/public-frontends.md`): `FE2/vite-plugin-webplus.ts` (`webplusMetaPlugin`, registered in `FE2/vite.config.ts`) hooks `transformIndexHtml` — for non-asset paths it fetches `${VITE_API_PROXY_TARGET|VITE_API_URL}/api/public/webplus/meta?path=…` (Bearer `VITE_API_PUBLIC_KEY` when set) and injects the rendered head tags into `index.html` at dev/preview time; `FE2/src/lib/webplus.ts` (`applyWebPlus`, `useWebPlus`) applies packages client-side.
+Frontend integration (`../frontend/public-frontends.md`): `storefront/vite-plugin-webplus.ts` (`webplusMetaPlugin`, registered in `storefront/vite.config.ts`) hooks `transformIndexHtml` — for non-asset paths it fetches `${VITE_API_PROXY_TARGET|VITE_API_URL}/api/public/webplus/meta?path=…` (Bearer `VITE_API_PUBLIC_KEY` when set) and injects the rendered head tags into `index.html` at dev/preview time; `storefront/src/lib/webplus.ts` (`applyWebPlus`, `useWebPlus`) applies packages client-side.
 
 Other integrations: Cms views link to the meta editor; Cms page JSON is enriched via `cms.serialize_page`.
 

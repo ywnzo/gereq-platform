@@ -1,6 +1,6 @@
 # Reviews (`reviews`)
 
-The Reviews module stores customer reviews and ratings (1–5 stars) for products, and — using the reserved subject id `site` — site-wide testimonials for agencies (the RealEstates FE2 home page consumes them). Reviews arrive from the admin (manually entered references), from the authenticated REST API (storefront or importers of Google/Facebook reviews) and are moderated by staff (`pending → approved / rejected`). Approved reviews are published through a CORS-enabled public endpoint. The module ships settings for Google Places / Facebook review sources, merchant replies and a default locale.
+The Reviews module stores customer reviews and ratings (1–5 stars) for products, and — using the reserved subject id `site` — site-wide testimonials for agencies (the RealEstates storefront home page consumes them). Reviews arrive from the admin (manually entered references), from the authenticated REST API (storefront or importers of Google/Facebook reviews) and are moderated by staff (`pending → approved / rejected`). Approved reviews are published through a CORS-enabled public endpoint. The module ships settings for Google Places / Facebook review sources, merchant replies and a default locale.
 
 ## At a glance
 
@@ -138,7 +138,7 @@ Controller `modules/Reviews/Http/Public/PublicReviewsController.php`, CORS via `
 
 Public serializer (`ReviewsProvider::serializePublic()`): `id`, `product_id`, `author_name`, `rating`, `title`, `body`, `source`, `external_url`, `locale`, `created_at` (no email, customer id or status).
 
-Consumed by `FE2/src/lib/api.ts` (`/api/public/reviews`) for the home page testimonials; see `../frontend/public-frontends.md`.
+Consumed by `storefront/src/lib/api.ts` (`/api/public/reviews`) for the home page testimonials; see `../frontend/public-frontends.md`.
 
 ## Events, hooks & webhooks
 
@@ -177,7 +177,7 @@ All in `modules/Reviews/Application/Widgets/`, registered in `boot()`; see `../a
 | Class | Responsibility |
 | --- | --- |
 | `Modules\Reviews\Application\ReviewsProvider` | Capability `reviews`. `forProduct(productId, onlyApproved = true, limit = 50)`, `approved(?productId, limit = 24, ?locale)` (clamped 1–100), `averageRating(?productId)` (rounded to 2 decimals, `null` when none), `find(id)`, `serializePublic()`. Intended entry point for [Products](products.md) / CMS / storefront integrations. |
-| `Modules\Reviews\Http\Public\PublicReviewsController` | Public JSON with CORS for FE2. |
+| `Modules\Reviews\Http\Public\PublicReviewsController` | Public JSON with CORS for storefront. |
 
 No `class_exists` guards or cross-module calls exist; the optional `products` / `customers` dependencies are only referenced by id columns.
 

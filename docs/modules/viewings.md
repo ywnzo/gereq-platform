@@ -133,7 +133,7 @@ Controller `modules/Viewings/Http/Public/PublicViewingsController.php`, CORS `PO
 | OPTIONS | `/api/public/viewings` | `api.public.viewings.options` | preflight |
 | POST | `/api/public/viewings` | `api.public.viewings.store` | Body (JSON or form) validated by `viewings.public_request`: `listing_id` (required), `contact_name` (required), `contact_email`, `contact_phone`, `scheduled_at` (preferred time; invalid values ignored), `note`. Listing must exist and have `status = published`, otherwise 404. Rate limit: 5 requests per 600 s per client IP (`Gereq\Security\RateLimiter`, key `viewing:request:<ip>`, 429 `rate_limited`). Creates a `requested` viewing, copies the listing's `brokerId`, emits `viewing.requested` + `viewing.created`. Response 201 `{id, number, status}`. |
 
-The current FE2 code base does not call this endpoint (no reference in `FE2/src`); it is intended for public listing detail pages (see `../frontend/public-frontends.md`).
+The current storefront code base does not call this endpoint (no reference in `storefront/src`); it is intended for public listing detail pages (see `../frontend/public-frontends.md`).
 
 ## Events, hooks & webhooks
 

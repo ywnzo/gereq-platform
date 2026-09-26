@@ -619,14 +619,22 @@ CNF;
             $output->writeln('<info>Vygenerován API_PUBLIC_KEY (grq_pub_*) do .env</info>');
         }
 
-        $feEnv = new EnvFile($this->basePath . '/FE2/.env');
+        $storefrontEnvPath = $this->basePath . '/storefront/.env';
+        if (!is_dir($this->basePath . '/storefront')) {
+            return $key;
+        }
+
+        $feEnv = new EnvFile($storefrontEnvPath);
         $feKey = trim((string) ($feEnv->get('VITE_API_PUBLIC_KEY') ?? ''));
         if ($feKey !== $key) {
             $feEnv->set('VITE_API_PUBLIC_KEY', $key);
             if ($feEnv->get('VITE_API_URL') === null) {
-                $feEnv->set('VITE_API_URL', 'http://127.0.0.1:8083');
+                $feEnv->set('VITE_API_URL', 'http://127.0.0.1:8080');
             }
-            $output->writeln('<comment>FE2/.env: VITE_API_PUBLIC_KEY synchronizován (restart Vite / bun run dev).</comment>');
+            if ($feEnv->get('VITE_API_PROXY_TARGET') === null) {
+                $feEnv->set('VITE_API_PROXY_TARGET', 'http://127.0.0.1:8080');
+            }
+            $output->writeln('<comment>storefront/.env: VITE_API_PUBLIC_KEY synchronizován (restart Vite / bun run dev).</comment>');
         }
 
         return $key;

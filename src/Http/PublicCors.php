@@ -67,10 +67,28 @@ final class PublicCors
         }
 
         $origin = trim((string) $request->headers->get('Origin', ''));
-        if ($origin === '') {
-            return false;
+        if ($origin !== '' && self::originAllowed($origin)) {
+            return true;
         }
 
+        // Some proxies drop Origin; Referer still identifies the browser storefront.
+        $referer = trim((string) $request->headers->get('Referer', ''));
+        if ($referer !== '') {
+            $parts = parse_url($referer);
+            if (is_array($parts) && isset($parts['scheme'], $parts['host'])) {
+                $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+                $refOrigin = strtolower((string) $parts['scheme']) . '://' . strtolower((string) $parts['host']) . $port;
+                if (self::originAllowed($refOrigin)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static function originAllowed(string $origin): bool
+    {
         foreach (self::allowedOrigins() as $allowed) {
             if (strcasecmp($origin, $allowed) === 0) {
                 return true;

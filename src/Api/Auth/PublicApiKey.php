@@ -48,12 +48,22 @@ final class PublicApiKey
 
     public function extractFromRequest(Request $request): string
     {
-        $header = (string) $request->headers->get('Authorization', '');
-        if (preg_match('/^Bearer\s+(\S+)/i', $header, $m)) {
-            return trim($m[1]);
+        // Prefer dedicated header so storefront can send store JWT in Authorization.
+        $headerKey = trim((string) $request->headers->get('X-Api-Key', ''));
+        if ($headerKey !== '') {
+            return $headerKey;
         }
 
-        return trim((string) $request->headers->get('X-Api-Key', ''));
+        $header = (string) $request->headers->get('Authorization', '');
+        if (preg_match('/^Bearer\s+(\S+)/i', $header, $m)) {
+            $token = trim($m[1]);
+            // Ignore customer/admin bearer tokens — only grq_pub_* is the site key.
+            if (str_starts_with($token, self::PREFIX)) {
+                return $token;
+            }
+        }
+
+        return '';
     }
 
     public function masked(): string

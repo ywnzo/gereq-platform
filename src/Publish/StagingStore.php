@@ -178,20 +178,18 @@ final class StagingStore
             return null;
         }
 
-        try {
-            /** @var ContentStagingEntry|null $row */
-            $row = $this->em->getRepository(ContentStagingEntry::class)->findOneBy([
-                'category' => $category,
-                'resourceKey' => $resourceKey,
-            ]);
-            $this->findCache[$cacheKey] = $row ?? false;
+        // First miss: load the whole staging table once (avoids per-key and
+        // multi-category preload fingerprint N+1).
+        $this->preloadAll();
+        if (array_key_exists($cacheKey, $this->findCache)) {
+            $hit = $this->findCache[$cacheKey];
 
-            return $row;
-        } catch (\Throwable) {
-            $this->findCache[$cacheKey] = false;
-
-            return null;
+            return $hit instanceof ContentStagingEntry ? $hit : null;
         }
+
+        $this->findCache[$cacheKey] = false;
+
+        return null;
     }
 
     public function findSettingsOverlay(string $key): ?array

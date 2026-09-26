@@ -25,6 +25,15 @@ final class Validator
     {
         /** @var array<string, mixed> $data */
         $data = $request->request->all();
+        $raw = trim((string) $request->getContent());
+        if ($raw !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                /** @var array<string, mixed> $data */
+                $data = array_merge($data, $decoded);
+            }
+        }
+
         $form = is_string($rules)
             ? $rules
             : (string) ($context['form'] ?? $request->attributes->get('_route', ''));

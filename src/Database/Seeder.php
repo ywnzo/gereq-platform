@@ -41,20 +41,43 @@ final class Seeder
         if (class_exists(\Modules\Media\Application\MediaImporter::class)) {
             $this->mediaImporter = \Modules\Media\Application\MediaImporter::fromBasePath($this->em, base_path());
         }
-        $brokers = $this->seedBrokers();
-        $samples = array_merge($this->coreListingSamples(), $this->moravianSilesianListingSamples());
-        $this->seedCities($samples);
-        $nearPlaces = $this->seedNearLocationsForSamples($samples);
-        $this->seedListings($samples, $nearPlaces, $brokers);
-        $this->em->flush();
-        $this->seedViewings();
-        $this->em->flush();
-        $this->seedPortalsDemo();
-        if ($withDemo) {
+
+        $forumProfile = strtolower((string) env_value('DEMO_PROFILE', '')) === 'forum';
+        if (!$forumProfile) {
+            $brokers = $this->seedBrokers();
+            $samples = array_merge($this->coreListingSamples(), $this->moravianSilesianListingSamples());
+            $this->seedCities($samples);
+            $nearPlaces = $this->seedNearLocationsForSamples($samples);
+            $this->seedListings($samples, $nearPlaces, $brokers);
+            $this->em->flush();
+            $this->seedViewings();
+            $this->em->flush();
+            $this->seedPortalsDemo();
+        }
+
+        if ($withDemo && !$forumProfile) {
             $this->demoSeeder->seed();
         }
         if (RealityV3Seeder::isActive()) {
             $this->realityV3Seeder->seed();
+        }
+        $this->seedForumDemo();
+    }
+
+    private function seedForumDemo(): void
+    {
+        if (!class_exists(\Modules\Forum\Application\ForumDemoSeeder::class)) {
+            return;
+        }
+        if (!\Modules\Forum\Application\ForumDemoSeeder::isActive()) {
+            return;
+        }
+        try {
+            /** @var \Modules\Forum\Application\ForumDemoSeeder $seeder */
+            $seeder = gereq()->make(\Modules\Forum\Application\ForumDemoSeeder::class);
+            $seeder->seed();
+        } catch (\Throwable) {
+            // Forum module may not be enabled / DI not ready yet.
         }
     }
 
@@ -231,13 +254,24 @@ final class Seeder
 
     private function seedModules(): void
     {
-        // RealEstates package (see config/module_groups.php → realestates).
+        // Default package when DEMO_PROFILE is unset: RealEstates.
         $defaultEnabled = [
             'currency', 'customers', 'media', 'cms', 'listings',
             'crm', 'calendar', 'viewings', 'documents', 'notifications',
             'reviews', 'newsletter', 'portals', 'translate', 'webhooks',
             'emailing',
         ];
+        $profile = strtolower((string) env_value('DEMO_PROFILE', ''));
+        if ($profile === 'forum') {
+            // config/module_groups.php → forum
+            $defaultEnabled = [
+                'customers',
+                'forum',
+                'media',
+                'notifications',
+                'newsletter',
+            ];
+        }
         if (RealityV3Seeder::isActive()) {
             $defaultEnabled = array_values(array_unique(array_merge($defaultEnabled, RealityV3Seeder::MODULES)));
             $defaultEnabled = array_values(array_diff($defaultEnabled, RealityV3Seeder::MODULES_OFF));
