@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -14,6 +15,12 @@ type Options struct {
 	CommitAll    bool
 	InstallHooks bool
 }
+
+// conventionalSubject matches GitLab pre-receive Conventional Commits subjects,
+// e.g. "feat: …", "fix(shop): …", "chore: …".
+var conventionalSubject = regexp.MustCompile(
+	`^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9/_-]+\))?(!)?: .+`,
+)
 
 func Run(root string, opt Options) error {
 	hooksDir := filepath.Join(root, ".githooks")
@@ -27,6 +34,9 @@ func Run(root string, opt Options) error {
 	msg := stripCoAuthors(opt.Message)
 	if strings.TrimSpace(msg) == "" {
 		return fmt.Errorf("empty commit message (after stripping Co-authored-by)")
+	}
+	if err := validateConventional(msg); err != nil {
+		return err
 	}
 	if opt.StageAll {
 		if err := runGit(root, "add", "-A"); err != nil {
@@ -54,6 +64,23 @@ func Run(root string, opt Options) error {
 	}
 	out, _ := exec.Command("git", "-C", root, "log", "-1", "--oneline").Output()
 	fmt.Printf("Commit: %s\n", strings.TrimSpace(string(out)))
+	return nil
+}
+
+func validateConventional(msg string) error {
+	subject := strings.TrimSpace(strings.SplitN(msg, "\n", 2)[0])
+	if subject == "" {
+		return fmt.Errorf("empty commit subject")
+	}
+	if strings.HasPrefix(subject, "Merge ") || strings.HasPrefix(subject, "fixup! ") {
+		return nil
+	}
+	if !conventionalSubject.MatchString(subject) {
+		return fmt.Errorf(
+			"commit message must follow Conventional Commits, e.g. 'feat: …' / 'fix(shop): …' / 'chore: …'. Got: %s",
+			subject,
+		)
+	}
 	return nil
 }
 

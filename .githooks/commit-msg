@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Odstraní všechny Co-authored-by trailery z commit message.
+# Strip Co-authored-by trailers and enforce Conventional Commits on the subject line.
 set -euo pipefail
 
 MSG_FILE="${1:-}"
@@ -19,3 +19,16 @@ awk '
 
 mv "$tmp" "$MSG_FILE"
 trap - EXIT
+
+subject="$(head -n1 "$MSG_FILE" | tr -d '\r')"
+# Allow empty (amend/editor abort paths) and merge/fixup subjects.
+if [[ -z "$subject" || "$subject" =~ ^(Merge|fixup!)([[:space:]]|$) ]]; then
+  exit 0
+fi
+
+# Same shape as GitLab pre-receive: feat: … / fix(shop): … / chore: …
+if [[ ! "$subject" =~ ^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9/_-]+\))?(!)?:\ .+ ]]; then
+  echo "commit-msg: subject must follow Conventional Commits, e.g. 'feat: …' / 'fix(shop): …' / 'chore: …'." >&2
+  echo "commit-msg: got: ${subject}" >&2
+  exit 1
+fi
