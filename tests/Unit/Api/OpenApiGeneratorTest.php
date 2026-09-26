@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Api;
+namespace Gereq\Tests\Unit\Api;
 
 use Gereq\Api\ApiRegistry;
 use Gereq\Api\OpenApi\OpenApiGenerator;

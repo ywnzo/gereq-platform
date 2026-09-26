@@ -9,10 +9,6 @@ return [
     'env' => env_value('APP_ENV', 'production'),
     'debug' => (bool) env_value('APP_DEBUG', false),
     'url' => rtrim((string) env_value('APP_URL', 'http://localhost:8080'), '/'),
-    /**
-     * Public URL path prefix for subdirectory deploy (auto from APP_URL path).
-     * Example: APP_URL=https://host/realityV3/admin → /realityV3
-     */
     'url_prefix' => (static function (): string {
         $explicit = trim((string) env_value('APP_URL_PREFIX', ''));
         if ($explicit !== '') {

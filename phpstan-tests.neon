@@ -1,0 +1,33 @@
+includes:
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: 6
+    paths:
+        - src/Testing
+        - tests
+    tmpDir: .phpstan-tmp
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Idiomatic PHPUnit $this->assert* / stub DTOs used only via reflection/forms.
+        -
+            identifier: staticMethod.dynamicCall
+            path: tests/*
+        -
+            identifier: staticMethod.alreadyNarrowedType
+            path: tests/*
+        -
+            identifier: staticMethod.impossibleType
+            path: tests/*
+        -
+            identifier: property.onlyWritten
+            path: tests/*
+        -
+            identifier: property.unusedType
+            path: tests/*
+        # TranslatorInterface::trans() is untyped array; narrowing breaks LSP.
+        -
+            identifier: missingType.iterableValue
+            path: tests/Support/PassthroughTranslator.php

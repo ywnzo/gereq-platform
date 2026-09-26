@@ -45,7 +45,7 @@ final class MakeModuleCommand extends Command
             'Admin',
             'Database/Migrations',
             'Resources/views',
-            'Testing',
+            'Tests',
         ];
 
         foreach ($dirs as $dir) {
@@ -108,17 +108,17 @@ final class {$name}Module implements ModuleInterface
 }
 PHP);
 
-        file_put_contents($root . '/Testing/' . $name . 'DomainTest.php', <<<PHP
+        file_put_contents($root . '/Tests/' . $name . 'DomainTest.php', <<<PHP
 <?php
 
 declare(strict_types=1);
 
-namespace Modules\\\\{$name}\\\\Testing;
+namespace Modules\\\\{$name}\\\\Tests;
 
-use PHPUnit\\\\Framework\\\\TestCase;
+use Gereq\\\\Testing\\\\TestCase;
 
 /**
- * Module tests live in modules/{$name}/Testing/.
+ * Module tests live in modules/{$name}/Tests/.
  * Run: php bin/gereq-test module:{$id}
  *   or: composer test -- module:{$id}
  */

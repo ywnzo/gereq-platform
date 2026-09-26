@@ -41,10 +41,10 @@ Code lives in `src/Testing/`:
 | `all` (default) | everything the engine knows | core + file + modules + integrations |
 | `core` | platform unit tests | `tests/Unit/*` except `Modules/` |
 | `file` | GD / ImageConverter | `tests/File/` |
-| `modules` | every module | every `modules/*/Testing/` + ModuleStructure |
-| `module:<id>` or bare id (`shop`, `Shop`) | one module | `modules/<Dir>/Testing/` only |
-| `integrations` | every integration | `integrations/*/Testing/` |
-| `integration:<id>` | one integration | `integrations/<Dir>/Testing/` |
+| `modules` | every module | every `modules/*/Tests/` + ModuleStructure |
+| `module:<id>` or bare id (`shop`, `Shop`) | one module | `modules/<Dir>/Tests/` only |
+| `integrations` | every integration | `integrations/*/Tests/` |
+| `integration:<id>` | one integration | `integrations/<Dir>/Tests/` |
 
 Options: `--list` / `-l`, `--all-packages` (list empty packages too), `--filter=…` / `-f`, `--stop-on-failure`, `--testdox`.
 
@@ -69,7 +69,7 @@ composer test -- file --testdox
 </phpunit>
 ```
 
-The engine passes **explicit paths** to PHPUnit for `modules/*/Testing`. Raw `vendor/bin/phpunit --testsuite Modules` only runs ModuleStructure checks — prefer the engine.
+The engine passes **explicit paths** to PHPUnit for `modules/*/Tests`. Raw `vendor/bin/phpunit --testsuite Modules` only runs ModuleStructure checks — prefer the engine.
 
 `tests/bootstrap.php` loads the Composer autoloader and sets `APP_ENV=testing`, `APP_DEBUG=true`, `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:` in `$_ENV`.
 
@@ -83,10 +83,10 @@ The engine passes **explicit paths** to PHPUnit for `modules/*/Testing`. Raw `ve
 | `tests/File/` | `ImageConverterTest` (skips when GD/WebP/AVIF missing) |
 | `tests/Integration/` | reserved for future HTTP/DB integration tests |
 | `tests/Support/` | helpers, e.g. `PassthroughTranslator` |
-| `modules/<Dir>/Testing/` | **canonical** module tests (every module has this directory) |
-| `integrations/<Dir>/Testing/` | integration-plugin tests |
+| `modules/<Dir>/Tests/` | **canonical** module tests (every module has this directory) |
+| `integrations/<Dir>/Tests/` | integration-plugin tests |
 
-Namespaces: platform/core tests use PSR-4 `Gereq\Tests\` → `tests/`. Module tests use `Modules\<Name>\Testing\` (autoload `Modules\` → `modules/`).
+Namespaces: platform/core tests use PSR-4 `Gereq\Tests\` → `tests/`. Module tests use `Modules\<Name>\Tests\` (autoload `Modules\` → `modules/`).
 
 ## Writing tests
 
@@ -94,7 +94,7 @@ Namespaces: platform/core tests use PSR-4 `Gereq\Tests\` → `tests/`. Module te
 - Use PHPUnit attributes (`#[DataProvider]`) — PHPUnit 11, no docblock annotations.
 - When a service needs a translator, inject `Gereq\Tests\Support\PassthroughTranslator`.
 - Tests are `final class … extends TestCase` with `declare(strict_types=1);` and must pass `phpcs`.
-- **Module tests:** always in `modules/<Name>/Testing/` (scaffolded by `make:module`), namespace `Modules\<Name>\Testing`.
+- **Module tests:** always in `modules/<Name>/Tests/` (scaffolded by `make:module`), namespace `Modules\<Name>\Tests`.
 - Prefer `Gereq\Testing\TestCase` or `PHPUnit\Framework\TestCase`.
 
 ## Running inside Docker

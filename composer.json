@@ -40,6 +40,8 @@
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
         "phpunit/phpunit": "^11.5",
         "squizlabs/php_codesniffer": "^3.11"
     },
@@ -64,9 +66,16 @@
         "test:core": "php bin/gereq-test core",
         "test:modules": "php bin/gereq-test modules",
         "test:file": "php bin/gereq-test file",
+        "test:query-hygiene": "php bin/gereq-test core --filter='NPlusOne|QueryCollector|QueryHygiene' && php bin/gereq-test modules --filter='QueryHygiene|NPlusOne'",
         "phpstan": "phpstan analyse --memory-limit=1G",
+        "phpstan:tests": "phpstan analyse -c phpstan-tests.neon --memory-limit=1G",
         "cs": "phpcs",
-        "cs-fix": "phpcbf"
+        "cs-fix": "phpcbf",
+        "analyse": [
+            "@phpstan",
+            "@phpstan:tests",
+            "@cs"
+        ]
     },
     "config": {
         "sort-packages": true,

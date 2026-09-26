@@ -13,6 +13,7 @@ final class PassthroughTranslator implements TranslatorInterface
     {
         $out = $id;
         foreach ($parameters as $key => $value) {
+            $key = (string) $key;
             $out = str_replace('%' . $key . '%', (string) $value, $out);
             $out = str_replace('{' . $key . '}', (string) $value, $out);
         }

@@ -38,7 +38,7 @@ final class TestCatalogTest extends TestCase
         self::assertSame(TestTargetKind::Modules, $modules->kind);
         self::assertTrue($modules->hasTests());
         self::assertContains(
-            dirname(__DIR__, 3) . '/modules/Shop/Testing',
+            dirname(__DIR__, 3) . '/modules/Shop/Tests',
             $modules->paths,
         );
         self::assertContains(
@@ -54,7 +54,7 @@ final class TestCatalogTest extends TestCase
         self::assertSame('shop', $byId->packageId);
         self::assertTrue($byId->hasTests());
         self::assertSame(
-            [dirname(__DIR__, 3) . '/modules/Shop/Testing'],
+            [dirname(__DIR__, 3) . '/modules/Shop/Tests'],
             $byId->paths,
         );
 
@@ -66,7 +66,7 @@ final class TestCatalogTest extends TestCase
     public function testResolveModuleIncludesShippedTestsWhenPresent(): void
     {
         $gereq = $this->catalog->resolve('gereq');
-        $shipped = dirname(__DIR__, 3) . '/modules/Gereq/Testing';
+        $shipped = dirname(__DIR__, 3) . '/modules/Gereq/Tests';
         self::assertContains($shipped, $gereq->paths);
         self::assertTrue($gereq->hasTests());
     }

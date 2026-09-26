@@ -1,0 +1,3805 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Strict comparison using \!\=\= between non\-falsy\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/Achievements/Http/Admin/AchievementsAdminController.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiAgent and Modules\\Ai\\Domain\\AiAgent will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/AiModule.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiMessage and Modules\\Ai\\Domain\\AiMessage will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Ai/Application/AiOrchestrator.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between Modules\\Ai\\Application\\Dto\\ChatResponse and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/AiOrchestrator.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiModel and Modules\\Ai\\Domain\\AiModel will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/AiProviderAccess.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiModel and Modules\\Ai\\Domain\\AiModel will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Ai/Application/Catalog/DefaultModelCatalog.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiSource and Modules\\Ai\\Domain\\AiSource will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/Catalog/DemoAgentSeeder.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiCustomTool and Modules\\Ai\\Domain\\AiCustomTool will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/CustomToolCatalog.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiSource and Modules\\Ai\\Domain\\AiSource will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/Jobs/ReembedKnowledgeBaseJob.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiModel and Modules\\Ai\\Domain\\AiModel will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/ModelRouter.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Providers/OpenAiCompatLlmProvider.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\AgentsAskTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/AgentsAskTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\AgentsListTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/AgentsListTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CmsCreatePageTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CmsCreatePageTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CmsGetPageTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CmsGetPageTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CmsSearchPagesTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CmsSearchPagesTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CmsUpdatePageTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CmsUpdatePageTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmCreateActivityTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmCreateActivityTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmCreateDealTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmCreateDealTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmCreateWorkflowTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmCreateWorkflowTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmGetDealTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmGetDealTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmGetWorkflowTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmGetWorkflowTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmListActivitiesTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmListActivitiesTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmListWorkflowsTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmListWorkflowsTool.php
+
+		-
+			message: '#^Instantiated class Modules\\CRM\\Application\\Jobs\\RunWorkflowJob not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Ai/Application/Tools/CrmRunWorkflowTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmRunWorkflowTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmRunWorkflowTool.php
+
+		-
+			message: '#^Parameter \#1 \$job of method Gereq\\Queue\\Queue\:\:dispatch\(\) expects Gereq\\Queue\\Job, Modules\\CRM\\Application\\Jobs\\RunWorkflowJob given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Ai/Application/Tools/CrmRunWorkflowTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmSearchDealsTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmSearchDealsTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmSetWorkflowActiveTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmSetWorkflowActiveTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CrmUpdateDealTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CrmUpdateDealTool.php
+
+		-
+			message: '#^Access to undefined constant Modules\\Customers\\Domain\\Customer\:\:STATUSES\.$#'
+			identifier: classConstant.notFound
+			count: 2
+			path: modules/Ai/Application/Tools/CustomersCreateTool.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:setDic\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersCreateTool.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:setIco\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersCreateTool.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:setIsCompany\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersCreateTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CustomersCreateTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersCreateTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''company'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersGetTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''email'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersGetTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''name'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersGetTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''note'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersGetTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''phone'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersGetTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''status'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersGetTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CustomersGetTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersGetTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''email'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersSearchTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''name'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersSearchTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''phone'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersSearchTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CustomersSearchTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersSearchTool.php
+
+		-
+			message: '#^Access to undefined constant Modules\\Customers\\Domain\\Customer\:\:STATUSES\.$#'
+			identifier: classConstant.notFound
+			count: 2
+			path: modules/Ai/Application/Tools/CustomersUpdateTool.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:setDic\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersUpdateTool.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:setIco\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersUpdateTool.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:setIsCompany\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersUpdateTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\CustomersUpdateTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/CustomersUpdateTool.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiChunk and Modules\\Ai\\Domain\\AiChunk will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/Tools/DocumentsReadTextTool.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiSource and Modules\\Ai\\Domain\\AiSource will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/Tools/DocumentsReadTextTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\DocumentsReadTextTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/DocumentsReadTextTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\DocumentsSearchTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/DocumentsSearchTool.php
+
+		-
+			message: '#^Instanceof between Modules\\Emailing\\Domain\\MailAccount and Modules\\Emailing\\Domain\\MailAccount will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Application/Tools/EmailingListAccountsTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\EmailingListAccountsTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/EmailingListAccountsTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\EmailingSearchMessagesTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/EmailingSearchMessagesTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\EmailingSendTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/EmailingSendTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Listings\\Domain\\Listing and ''price'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/ListingsGetTool.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Listings\\Domain\\Listing and ''status'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Ai/Application/Tools/ListingsGetTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\ListingsGetTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/ListingsGetTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\ListingsSearchTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/ListingsSearchTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\MediaGetTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/MediaGetTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\MediaImportUrlTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/MediaImportUrlTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\MediaSearchTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/MediaSearchTool.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Tools\\MediaUpdateTool\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Tools/MediaUpdateTool.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Ai/Application/Vector/PgVectorStore.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Widgets\\AiShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Widgets/AiShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Widgets\\AiUsageChartWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Widgets/AiUsageChartWidget.php
+
+		-
+			message: '#^Method Modules\\Ai\\Application\\Widgets\\AiUsageStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Ai/Application/Widgets/AiUsageStatsWidget.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Ai/Domain/AiAgent.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiFeedback and Modules\\Ai\\Domain\\AiFeedback will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Http/AiChatController.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiMessage and Modules\\Ai\\Domain\\AiMessage will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Ai/Http/AiChatController.php
+
+		-
+			message: '#^Instanceof between Modules\\Ai\\Domain\\AiToolInvocation and Modules\\Ai\\Domain\\AiToolInvocation will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Ai/Http/AiChatController.php
+
+		-
+			message: '#^Call to an undefined method Modules\\BikeService\\Domain\\BikeJob\:\:durationSeconds\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: modules/BikeService/Application/BikeServiceProvider.php
+
+		-
+			message: '#^Call to function is_array\(\) with non\-empty\-list\<string\|null\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/BikeService/Application/Catalog/BikeDataCatalogClient.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: modules/BikeService/Application/Catalog/BikeDataCatalogClient.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/BikeService/Application/Catalog/CatalogCacheStore.php
+
+		-
+			message: '#^Instanceof between Modules\\BikeService\\Domain\\CatalogCache and Modules\\BikeService\\Domain\\CatalogCache will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/BikeService/Application/Catalog/CatalogCacheStore.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/BikeService/Application/Catalog/ComponentTranslations.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments ''brakes''\|''drivetrain''\|''frame_fork''\|''wheels'', array\{''drivetrain'', ''brakes'', ''wheels'', ''frame_fork''\} and true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/BikeService/Application/Catalog/PartsSearchService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/BikeService/Application/Catalog/PartsSearchService.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductPrice and Modules\\Products\\Domain\\ProductPrice will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/BikeService/Application/Catalog/PartsSearchService.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: modules/BikeService/Application/Catalog/PartsSearchService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: modules/BikeService/Application/Catalog/PartsSearchService.php
+
+		-
+			message: '#^Method Modules\\BikeService\\Application\\Widgets\\BikeServiceShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/BikeService/Application/Widgets/BikeServiceShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\BikeService\\Application\\Widgets\\BikeServiceOpenOrdersWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/BikeService/BikeServiceModule.php
+
+		-
+			message: '#^Class Modules\\BikeService\\Application\\Widgets\\BikeServiceStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/BikeService/BikeServiceModule.php
+
+		-
+			message: '#^Class Modules\\BikeService\\Application\\Widgets\\BikeServiceTrendChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/BikeService/BikeServiceModule.php
+
+		-
+			message: '#^Instantiated class Modules\\BikeService\\Application\\Widgets\\BikeServiceOpenOrdersWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/BikeService/BikeServiceModule.php
+
+		-
+			message: '#^Instantiated class Modules\\BikeService\\Application\\Widgets\\BikeServiceStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/BikeService/BikeServiceModule.php
+
+		-
+			message: '#^Instantiated class Modules\\BikeService\\Application\\Widgets\\BikeServiceTrendChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/BikeService/BikeServiceModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\BikeService\\Application\\Widgets\\BikeServiceOpenOrdersWidget\|Modules\\BikeService\\Application\\Widgets\\BikeServiceStatsWidget\|Modules\\BikeService\\Application\\Widgets\\BikeServiceTrendChartWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/BikeService/BikeServiceModule.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/BikeService/Http/BikeOrderController.php
+
+		-
+			message: '#^Instanceof between Gereq\\User\\Entity\\User and Gereq\\User\\Entity\\User will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/BikeService/Http/BikeOrderController.php
+
+		-
+			message: '#^Instanceof between Modules\\BikeService\\Domain\\BikeJob and Modules\\BikeService\\Domain\\BikeJob will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/BikeService/Http/BikeOrderController.php
+
+		-
+			message: '#^Offset ''query'' on array\{types\: list\<array\{name_en\: string, name_cs\: string, alias\: string\|null, group_en\: string, group_cs\: string\}\>, products\: list\<array\{id\: string, sku\: string, name\: string, price\: float\|null, currency\: string, url\: string\}\>, market\: list\<array\{id\: int\|string, name\: string, url\: string, min_price\: float\|null, max_price\: float\|null, currency\: string, shop\: string\|null, source\: string, \.\.\.\}\>, market_ok\: bool, market_error\: string\|null, market_sources\: list\<string\>, market_pending_sources\: list\<string\>, market_async\: bool, \.\.\.\} in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: modules/BikeService/Http/CatalogController.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 3
+			path: modules/BikeService/Http/CatalogController.php
+
+		-
+			message: '#^Method Modules\\Bundles\\Application\\Widgets\\BundlesShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Bundles/Application/Widgets/BundlesShortcutWidget.php
+
+		-
+			message: '#^Instantiated class Modules\\Bundles\\Application\\Widgets\\BundleStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Bundles/BundlesModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Bundles\\Application\\Widgets\\BundleStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Bundles/BundlesModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Bundles/Http/Api/BundleApiController.php
+
+		-
+			message: '#^Method Modules\\CRM\\Application\\Widgets\\CrmPipelineChartWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CRM/Application/Widgets/CrmPipelineChartWidget.php
+
+		-
+			message: '#^Method Modules\\CRM\\Application\\Widgets\\CrmShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CRM/Application/Widgets/CrmShortcutWidget.php
+
+		-
+			message: '#^Call to method onPlatformEvent\(\) on an unknown class Modules\\CRM\\Application\\AutomationEngine\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Class Modules\\CRM\\Application\\AutomationEngine not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Class Modules\\CRM\\Application\\Widgets\\CrmActivitiesDueWidget not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Class Modules\\CRM\\Application\\Widgets\\CrmStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Class Modules\\CRM\\Http\\WorkflowController not found\.$#'
+			identifier: class.notFound
+			count: 8
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Instantiated class Modules\\CRM\\Application\\Widgets\\CrmActivitiesDueWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Instantiated class Modules\\CRM\\Application\\Widgets\\CrmStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^PHPDoc tag @var for variable \$engine contains unknown class Modules\\CRM\\Application\\AutomationEngine\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\CRM\\Application\\Widgets\\CrmActivitiesDueWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/CRM/CrmModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/CRM/Http/Api/ActivityApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/CRM/Http/Api/DealApiController.php
+
+		-
+			message: '#^Instanceof between Modules\\Calendar\\Domain\\CalendarEvent and Modules\\Calendar\\Domain\\CalendarEvent will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Calendar/Application/IcsExporter.php
+
+		-
+			message: '#^Method Modules\\Calendar\\Application\\Widgets\\CalendarShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Calendar/Application/Widgets/CalendarShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\Calendar\\Application\\Widgets\\CalendarStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Calendar/CalendarModule.php
+
+		-
+			message: '#^Class Modules\\Calendar\\Application\\Widgets\\UpcomingEventsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Calendar/CalendarModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Calendar/Http/Api/CalendarApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Calendar/Http/CalendarController.php
+
+		-
+			message: '#^Instanceof between Modules\\CarService\\Domain\\ServiceBranch and Modules\\CarService\\Domain\\ServiceBranch will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/CarService/Application/BranchContext.php
+
+		-
+			message: '#^Instanceof between DateTimeImmutable and DateTimeImmutable will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/CarService/Application/CarServiceProvider.php
+
+		-
+			message: '#^Instanceof between Modules\\CarService\\Domain\\ServiceJob and Modules\\CarService\\Domain\\ServiceJob will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 3
+			path: modules/CarService/Application/CarServiceProvider.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{ok\: bool, message\: string, idoklad_id\?\: string\|null\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/CarService/Application/FinishWizardService.php
+
+		-
+			message: '#^Instanceof between Modules\\Documents\\Domain\\Document and Modules\\Documents\\Domain\\Document will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/CarService/Application/IdokladFinishHandler.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<array\<string, mixed\>\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/CarService/Application/IdokladFinishHandler.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: modules/CarService/Application/OrderEsignService.php
+
+		-
+			message: '#^Comparison operation "\>\=" between int\<2, max\> and 2 is always true\.$#'
+			identifier: greaterOrEqual.alwaysTrue
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Instanceof between Modules\\Documents\\Domain\\Document and Modules\\Documents\\Domain\\Document will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:externalCost\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:finishedAt\(\) never returns DateTimeImmutable so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:handoverAt\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:intakeAt\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:intakeFuelLevel\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:intakeMileage\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:internalCost\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:note\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:paymentType\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:315\:\:serviceInfo\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:387\:\:company\(\) never returns string so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:387\:\:phone\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:409\:\:brand\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:409\:\:fuel\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:409\:\:vin\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:436\:\:durationSeconds\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:436\:\:endedAt\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method class@anonymous/modules/CarService/Application/ServiceDocumentService\.php\:436\:\:note\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-falsy\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: modules/CarService/Application/ServiceDocumentService.php
+
+		-
+			message: '#^Method Modules\\CarService\\Application\\Widgets\\CarServiceShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CarService/Application/Widgets/CarServiceShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\CarService\\Application\\Widgets\\CarServiceOpenOrdersWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CarService/CarServiceModule.php
+
+		-
+			message: '#^Class Modules\\CarService\\Application\\Widgets\\CarServiceStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CarService/CarServiceModule.php
+
+		-
+			message: '#^Class Modules\\CarService\\Application\\Widgets\\CarServiceStatusChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CarService/CarServiceModule.php
+
+		-
+			message: '#^Instantiated class Modules\\CarService\\Application\\Widgets\\CarServiceOpenOrdersWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CarService/CarServiceModule.php
+
+		-
+			message: '#^Instantiated class Modules\\CarService\\Application\\Widgets\\CarServiceStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CarService/CarServiceModule.php
+
+		-
+			message: '#^Instantiated class Modules\\CarService\\Application\\Widgets\\CarServiceStatusChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/CarService/CarServiceModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\CarService\\Application\\Widgets\\CarServiceOpenOrdersWidget\|Modules\\CarService\\Application\\Widgets\\CarServiceStatsWidget\|Modules\\CarService\\Application\\Widgets\\CarServiceStatusChartWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/CarService/CarServiceModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/CarService/Http/Api/ServiceOrderApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/CarService/Http/Api/TrackerApiController.php
+
+		-
+			message: '#^Instanceof between Modules\\CarService\\Domain\\ServiceCost and Modules\\CarService\\Domain\\ServiceCost will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/CarService/Http/CostController.php
+
+		-
+			message: '#^Instanceof between Modules\\CarService\\Domain\\ServiceBranch and Modules\\CarService\\Domain\\ServiceBranch will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/CarService/Http/ServiceOrderController.php
+
+		-
+			message: '#^Offset ''error'' does not exist on array\{order\: Modules\\CarService\\Domain\\ServiceOrder, step\: string, next\: string\|null, done\: bool, document\: Modules\\Documents\\Domain\\Document\|null, idoklad\: array\{ok\: bool, message\: string, idoklad_id\?\: string\|null\}\|null, esign\: array\{ok\: bool, message\: string\|null, signing_url\?\: string\|null, esign_id\?\: string\|null\}\|null\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: modules/CarService/Http/ServiceOrderController.php
+
+		-
+			message: '#^Offset ''error'' on array\{order\: Modules\\CarService\\Domain\\ServiceOrder, step\: string, next\: string\|null, done\: bool, document\: Modules\\Documents\\Domain\\Document\|null, idoklad\: array\{ok\: bool, message\: string, idoklad_id\?\: string\|null\}\|null, esign\: array\{ok\: bool, message\: string\|null, signing_url\?\: string\|null, esign_id\?\: string\|null\}\|null\} in empty\(\) does not exist\.$#'
+			identifier: empty.offset
+			count: 1
+			path: modules/CarService/Http/ServiceOrderController.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''carservice\.finish\.signature_service\.hint'' \(''carservice\.finish\.signature_service\.hint'', ''carservice\.finish\.signature_service\.hint''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: modules/CarService/Resources/translations/messages.cs.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''carservice\.flash\.document_failed'' \(''carservice\.flash\.document_failed'', ''carservice\.flash\.document_failed''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: modules/CarService/Resources/translations/messages.cs.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''carservice\.flash\.document_failed'' \(''carservice\.flash\.document_failed'', ''carservice\.flash\.document_failed''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: modules/CarService/Resources/translations/messages.en.php
+
+		-
+			message: '#^Method Modules\\Cms\\Application\\Widgets\\CmsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Cms/Application/Widgets/CmsShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\Cms\\Http\\PartialController not found\.$#'
+			identifier: class.notFound
+			count: 3
+			path: modules/Cms/CmsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Cms\\Application\\Widgets\\CmsStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Cms/CmsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Cms\\Application\\Widgets\\RecentPagesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Cms/CmsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Cms\\Application\\Widgets\\CmsStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Cms/CmsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Cms\\Application\\Widgets\\RecentPagesWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Cms/CmsModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Cms/Http/Api/BlockApiController.php
+
+		-
+			message: '#^Parameter \#1 \$data of static method Gereq\\Api\\ApiResponse\:\:data\(\) expects array\<string, mixed\>, list\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Cms/Http/Api/BlockApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Cms/Http/Api/PageApiController.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''name'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Community/Application/CommunityProvider.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Community/Application/CommunityService.php
+
+		-
+			message: '#^Match arm comparison between \*NEVER\* and ''DELETE'' is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: modules/Community/CommunityModule.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 3
+			path: modules/Community/Http/Public/PublicCommunityController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Community/Http/Public/PublicCommunityController.php
+
+		-
+			message: '#^Method Modules\\Coupons\\Application\\Widgets\\CouponsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Coupons/Application/Widgets/CouponsShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\Coupons\\Application\\Widgets\\CouponStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Coupons/CouponsModule.php
+
+		-
+			message: '#^Class Modules\\Coupons\\Application\\Widgets\\ExpiringCouponsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Coupons/CouponsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Coupons\\Application\\Widgets\\CouponStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Coupons/CouponsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Coupons\\Application\\Widgets\\ExpiringCouponsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Coupons/CouponsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Coupons\\Application\\Widgets\\CouponStatsWidget\|Modules\\Coupons\\Application\\Widgets\\ExpiringCouponsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Coupons/CouponsModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Coupons/Http/Api/CouponApiController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Currency/Application/CurrencyBuilder.php
+
+		-
+			message: '#^Instanceof between Modules\\Currency\\Domain\\Currency and Modules\\Currency\\Domain\\Currency will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Currency/Application/CurrencyBuilder.php
+
+		-
+			message: '#^Method Modules\\Currency\\Application\\Widgets\\CurrencyShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Currency/Application/Widgets/CurrencyShortcutWidget.php
+
+		-
+			message: '#^Instantiated class Modules\\Currency\\Application\\Widgets\\CurrencyStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Currency/CurrencyModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Currency\\Application\\Widgets\\ExchangeRatesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Currency/CurrencyModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Currency\\Application\\Widgets\\CurrencyStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Currency/CurrencyModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Currency\\Application\\Widgets\\ExchangeRatesWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Currency/CurrencyModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Currency/Http/ConvertApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Currency/Http/CurrencyApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Currency/Http/ExchangeRateApiController.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: modules/Currency/Infrastructure/CnbRateProvider.php
+
+		-
+			message: '#^Method Modules\\CustomerUploads\\Application\\Widgets\\CustomerUploadsStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/CustomerUploads/Application/Widgets/CustomerUploadsStatsWidget.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/CustomerUploads/Http/Api/UploadApiController.php
+
+		-
+			message: '#^Method Modules\\CustomerUploads\\Http\\Public\\PublicStoreUploadController\:\:session\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 2
+			path: modules/CustomerUploads/Http/Public/PublicStoreUploadController.php
+
+		-
+			message: '#^Method Modules\\CustomerUploads\\Http\\Public\\PublicStoreUploadController\:\:store\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 4
+			path: modules/CustomerUploads/Http/Public/PublicStoreUploadController.php
+
+		-
+			message: '#^Method Modules\\Customers\\Application\\Widgets\\CustomerCreateHeroWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Customers/Application/Widgets/CustomerCreateHeroWidget.php
+
+		-
+			message: '#^Method Modules\\Customers\\Application\\Widgets\\CustomerGrowthChartWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Customers/Application/Widgets/CustomerGrowthChartWidget.php
+
+		-
+			message: '#^Method Modules\\Customers\\Application\\Widgets\\CustomerStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Customers/Application/Widgets/CustomerStatsWidget.php
+
+		-
+			message: '#^Method Modules\\Customers\\Application\\Widgets\\CustomersShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Customers/Application/Widgets/CustomersShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Customers/Http/Api/AbstractCustomerApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Customers/Http/Api/StoreAuthApiController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Customers/Http/CustomerController.php
+
+		-
+			message: '#^Method Modules\\Documents\\Application\\Widgets\\DocumentsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Documents/Application/Widgets/DocumentsShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\Documents\\Application\\Widgets\\DocumentStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Documents/DocumentsModule.php
+
+		-
+			message: '#^Class Modules\\Documents\\Application\\Widgets\\RecentDocumentsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Documents/DocumentsModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Documents/Http/Api/DocumentApiController.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: modules/ESign/Application/DocumentSigningService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: modules/ESign/Application/TokenCipher.php
+
+		-
+			message: '#^Method Modules\\ESign\\Application\\Widgets\\ESignShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/ESign/Application/Widgets/ESignShortcutWidget.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$consents$#'
+			identifier: parameter.notFound
+			count: 1
+			path: modules/ESign/Domain/Signature.php
+
+		-
+			message: '#^Class Modules\\ESign\\Application\\Widgets\\ESignStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/ESign/ESignModule.php
+
+		-
+			message: '#^Class Modules\\ESign\\Application\\Widgets\\PendingSignaturesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/ESign/ESignModule.php
+
+		-
+			message: '#^Instantiated class Modules\\ESign\\Application\\Widgets\\ESignStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/ESign/ESignModule.php
+
+		-
+			message: '#^Instantiated class Modules\\ESign\\Application\\Widgets\\PendingSignaturesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/ESign/ESignModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\ESign\\Application\\Widgets\\ESignStatsWidget\|Modules\\ESign\\Application\\Widgets\\PendingSignaturesWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/ESign/ESignModule.php
+
+		-
+			message: '#^Method Gereq\\Event\\EventBus\:\:emit\(\) invoked with 2 parameters, 3\-5 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: modules/ESign/Http/DocumentController.php
+
+		-
+			message: '#^Method Gereq\\Event\\EventBus\:\:emit\(\) invoked with 2 parameters, 3\-5 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: modules/ESign/Http/PublicSignController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Emailing/Application/BimiLogoResolver.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Emailing/Application/BimiLogoResolver.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: modules/Emailing/Application/CredentialVault.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/Emailing/Application/MailRuleEngine.php
+
+		-
+			message: '#^Call to method id\(\) on an unknown class Modules\\CRM\\Domain\\WorkflowRun\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Emailing/Application/MailRuleEngine.php
+
+		-
+			message: '#^Instantiated class Modules\\CRM\\Application\\Jobs\\RunWorkflowJob not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Emailing/Application/MailRuleEngine.php
+
+		-
+			message: '#^Instantiated class Modules\\CRM\\Domain\\WorkflowRun not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Emailing/Application/MailRuleEngine.php
+
+		-
+			message: '#^Parameter \#1 \$job of method Gereq\\Queue\\Queue\:\:dispatch\(\) expects Gereq\\Queue\\Job, Modules\\CRM\\Application\\Jobs\\RunWorkflowJob given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Emailing/Application/MailRuleEngine.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$references$#'
+			identifier: parameter.notFound
+			count: 1
+			path: modules/Emailing/Application/MailThreadResolver.php
+
+		-
+			message: '#^Instanceof between Webklex\\PHPIMAP\\Message and Webklex\\PHPIMAP\\Message will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Emailing/Application/MailboxActionService.php
+
+		-
+			message: '#^Method Webklex\\PHPIMAP\\Connection\\Protocols\\ProtocolInterface\:\:expunge\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: modules/Emailing/Application/MailboxActionService.php
+
+		-
+			message: '#^Argument of an invalid type Webklex\\PHPIMAP\\Attribute supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: modules/Emailing/Application/MailboxSyncService.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Webklex\\PHPIMAP\\Support\\FlagCollection and ''all'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Emailing/Application/MailboxSyncService.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 3
+			path: modules/Emailing/Application/MailboxSyncService.php
+
+		-
+			message: '#^Instanceof between Webklex\\PHPIMAP\\Message and Webklex\\PHPIMAP\\Message will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Emailing/Application/MailboxSyncService.php
+
+		-
+			message: '#^Left side of && is always true\.$#'
+			identifier: booleanAnd.leftAlwaysTrue
+			count: 5
+			path: modules/Emailing/Application/MailboxSyncService.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: modules/Emailing/Application/MailboxSyncService.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Emailing/Application/MimeHeaderDecoder.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: modules/Emailing/Application/SmtpSender.php
+
+		-
+			message: '#^Method Modules\\Emailing\\Application\\Widgets\\EmailingShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Emailing/Application/Widgets/EmailingShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\Emailing\\Application\\Widgets\\EmailingUnreadMessagesWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Emailing/Application/Widgets/EmailingUnreadMessagesWidget.php
+
+		-
+			message: '#^Method Modules\\Emailing\\Application\\Widgets\\EmailingUnreadStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Emailing/Application/Widgets/EmailingUnreadStatsWidget.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\<string, mixed\>\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 2
+			path: modules/Emailing/Domain/MailRule.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Emailing/Http/MailboxController.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Cms\\Domain\\Page and ''metaDescription'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Engage/Application/EngageProvider.php
+
+		-
+			message: '#^Method Modules\\Engage\\Application\\Widgets\\EngageShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Engage/Application/Widgets/EngageShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\Engage\\Application\\Widgets\\EngageShortcutWidget constructor invoked with 4 parameters, 3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: modules/Engage/EngageModule.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Engage/Http/CampaignController.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Engage/Http/SpotController.php
+
+		-
+			message: '#^Method Modules\\Feeds\\Application\\Widgets\\FeedsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Feeds/Application/Widgets/FeedsShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\Feeds\\Application\\Widgets\\FeedStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Feeds/FeedsModule.php
+
+		-
+			message: '#^Class Modules\\Feeds\\Application\\Widgets\\FeedsListWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Feeds/FeedsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Feeds\\Application\\Widgets\\FeedStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Feeds/FeedsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Feeds\\Application\\Widgets\\FeedsListWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Feeds/FeedsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Feeds\\Application\\Widgets\\FeedsListWidget\|Modules\\Feeds\\Application\\Widgets\\FeedStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Feeds/FeedsModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Feeds/Http/Api/FeedApiController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\{\} and array\{\} will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: modules/Fleet/Application/OrvClient.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: modules/Fleet/Application/OrvClient.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Fleet/Application/VehicleMediaService.php
+
+		-
+			message: '#^Instanceof between Modules\\Media\\Domain\\MediaAsset and Modules\\Media\\Domain\\MediaAsset will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Fleet/Application/VehicleMediaService.php
+
+		-
+			message: '#^Instanceof between Modules\\Media\\Domain\\MediaLink and Modules\\Media\\Domain\\MediaLink will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Fleet/Application/VehicleMediaService.php
+
+		-
+			message: '#^Instanceof between Symfony\\Component\\HttpFoundation\\File\\UploadedFile and Symfony\\Component\\HttpFoundation\\File\\UploadedFile will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Fleet/Application/VehicleMediaService.php
+
+		-
+			message: '#^Method Modules\\Fleet\\Application\\Widgets\\FleetShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Fleet/Application/Widgets/FleetShortcutWidget.php
+
+		-
+			message: '#^Class Modules\\Fleet\\Application\\Widgets\\FleetDeadlinesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Fleet/FleetModule.php
+
+		-
+			message: '#^Class Modules\\Fleet\\Application\\Widgets\\FleetStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Fleet/FleetModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Fleet\\Application\\Widgets\\FleetDeadlinesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Fleet/FleetModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Fleet\\Application\\Widgets\\FleetStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Fleet/FleetModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Fleet\\Application\\Widgets\\FleetDeadlinesWidget\|Modules\\Fleet\\Application\\Widgets\\FleetStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Fleet/FleetModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Fleet/Http/Api/VehicleApiController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: modules/Fleet/Http/Api/VehicleApiController.php
+
+		-
+			message: '#^Instanceof between Modules\\Fleet\\Domain\\VehicleModel and Modules\\Fleet\\Domain\\VehicleModel will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Fleet/Http/BrandController.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/Fleet/Http/VehicleController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/Fleet/Http/VehicleController.php
+
+		-
+			message: '#^Comparison operation "\>" between 5\|7\|9\|11\|14\|18\|24\|31 and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: modules/Forum/Application/ForumDemoSeeder.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: modules/Forum/Application/ForumDemoSeeder.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/Forum/Application/ForumProvider.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Forum/Application/ForumService.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Forum/Http/Public/PublicForumAcceptController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Forum/Http/Public/PublicForumFlagsController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Forum/Http/Public/PublicForumUserController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Gereq/Domain/SecuritySite.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Gereq/Domain/Ticket.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Gereq/Domain/TicketSite.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: modules/Gereq/Http/Admin/SecuritySiteController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Gereq/Http/Public/SecurityApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Gereq/Http/Public/TicketApiController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between float and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 3
+			path: modules/Listings/Application/ListingsProvider.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/Listings/Application/ListingsProvider.php
+
+		-
+			message: '#^Method Modules\\Listings\\Application\\Widgets\\ListingStatusChartWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Listings/Application/Widgets/ListingStatusChartWidget.php
+
+		-
+			message: '#^Method Modules\\Listings\\Application\\Widgets\\ListingsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Listings/Application/Widgets/ListingsShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/Listings/Domain/Listing.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Listings/Http/CityController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Listings/Http/ListingController.php
+
+		-
+			message: '#^Method Modules\\Listings\\Http\\Public\\PublicListingsController\:\:index\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 1
+			path: modules/Listings/Http/Public/PublicListingsController.php
+
+		-
+			message: '#^Method Modules\\Listings\\Http\\Public\\PublicListingsController\:\:inquire\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 4
+			path: modules/Listings/Http/Public/PublicListingsController.php
+
+		-
+			message: '#^Method Modules\\Listings\\Http\\Public\\PublicListingsController\:\:show\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 2
+			path: modules/Listings/Http/Public/PublicListingsController.php
+
+		-
+			message: '#^Class Modules\\Listings\\Application\\Widgets\\ListingInquiriesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Listings/ListingsModule.php
+
+		-
+			message: '#^Class Modules\\Listings\\Application\\Widgets\\ListingStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Listings/ListingsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Listings\\Application\\Widgets\\ListingCreateHeroWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Listings/ListingsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Listings\\Application\\Widgets\\ListingCreateHeroWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Listings/ListingsModule.php
+
+		-
+			message: '#^Method Modules\\Loyalty\\Application\\Widgets\\LoyaltyShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Loyalty/Application/Widgets/LoyaltyShortcutWidget.php
+
+		-
+			message: '#^Instanceof between Modules\\Loyalty\\Domain\\LoyaltyTier and Modules\\Loyalty\\Domain\\LoyaltyTier will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Loyalty/Http/AccountController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Loyalty/Http/Api/LoyaltyApiController.php
+
+		-
+			message: '#^Class Modules\\Loyalty\\Application\\Widgets\\LoyaltyStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Loyalty/LoyaltyModule.php
+
+		-
+			message: '#^Class Modules\\Loyalty\\Application\\Widgets\\LoyaltyTopMembersWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Loyalty/LoyaltyModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Loyalty\\Application\\Widgets\\LoyaltyStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Loyalty/LoyaltyModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Loyalty\\Application\\Widgets\\LoyaltyTopMembersWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Loyalty/LoyaltyModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Loyalty\\Application\\Widgets\\LoyaltyStatsWidget\|Modules\\Loyalty\\Application\\Widgets\\LoyaltyTopMembersWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Loyalty/LoyaltyModule.php
+
+		-
+			message: '#^Call to function is_array\(\) with list\<string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Media/Application/MediaImporter.php
+
+		-
+			message: '#^Variable \$http_response_header in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: modules/Media/Application/MediaImporter.php
+
+		-
+			message: '#^Method Modules\\Media\\Application\\Widgets\\MediaShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Media/Application/Widgets/MediaShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Media/Http/Api/MediaApiController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<array\{label\: string, url\?\: string\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Media/Http/MediaController.php
+
+		-
+			message: '#^Class Modules\\Media\\Application\\Widgets\\MediaStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Media/MediaModule.php
+
+		-
+			message: '#^Class Modules\\Media\\Application\\Widgets\\MediaUploadsChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Media/MediaModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Media\\Application\\Widgets\\MediaStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Media/MediaModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Media\\Application\\Widgets\\MediaUploadsChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Media/MediaModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Media\\Application\\Widgets\\MediaStatsWidget\|Modules\\Media\\Application\\Widgets\\MediaUploadsChartWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Media/MediaModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Messenger/Application/MessengerProvider.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: modules/Messenger/Application/MessengerProvider.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Messenger/Application/MessengerService.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Messenger/Http/Public/PublicMessengerController.php
+
+		-
+			message: '#^Call to function is_int\(\) with string will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: modules/MoneyS3/Application/MoneyS3Client.php
+
+		-
+			message: '#^Method Modules\\MoneyS3\\Application\\Widgets\\MoneyS3CacheStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/MoneyS3/Application/Widgets/MoneyS3CacheStatsWidget.php
+
+		-
+			message: '#^Method Modules\\MoneyS3\\Application\\Widgets\\MoneyS3ShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/MoneyS3/Application/Widgets/MoneyS3ShortcutWidget.php
+
+		-
+			message: '#^Parameter \#2 \$fields of static method Modules\\MoneyS3\\Application\\MoneyS3Client\:\:buildQuery\(\) expects array\<string, mixed\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: modules/MoneyS3/Tests/MoneyS3ClientQueryBuilderTest.php
+
+		-
+			message: '#^Method Modules\\Newsletter\\Application\\Widgets\\NewsletterShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Newsletter/Application/Widgets/NewsletterShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Newsletter/Http/Api/NewsletterApiController.php
+
+		-
+			message: '#^Class Modules\\Newsletter\\Application\\Widgets\\SubscriberGrowthChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Newsletter/NewsletterModule.php
+
+		-
+			message: '#^Class Modules\\Newsletter\\Application\\Widgets\\SubscriberStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Newsletter/NewsletterModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Newsletter\\Application\\Widgets\\SubscriberGrowthChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Newsletter/NewsletterModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Newsletter\\Application\\Widgets\\SubscriberStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Newsletter/NewsletterModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Newsletter\\Application\\Widgets\\SubscriberGrowthChartWidget\|Modules\\Newsletter\\Application\\Widgets\\SubscriberStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Newsletter/NewsletterModule.php
+
+		-
+			message: '#^Instanceof between Gereq\\Notification\\DatabaseNotification and Gereq\\Notification\\DatabaseNotification will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Notifications/Application/MemberNotifier.php
+
+		-
+			message: '#^Instanceof between Gereq\\User\\Entity\\User and Gereq\\User\\Entity\\User will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Notifications/Application/NotifierBridge.php
+
+		-
+			message: '#^Method Modules\\Notifications\\Application\\Widgets\\NotificationsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Notifications/Application/Widgets/NotificationsShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\Notifications\\Application\\Widgets\\RecentNotificationsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Notifications/Application/Widgets/RecentNotificationsWidget.php
+
+		-
+			message: '#^Method Modules\\Notifications\\Application\\Widgets\\UnreadNotificationsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Notifications/Application/Widgets/UnreadNotificationsWidget.php
+
+		-
+			message: '#^Call to an undefined static method Gereq\\Api\\ApiResponse\:\:item\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: modules/Notifications/Http/Api/NotificationApiController.php
+
+		-
+			message: '#^Instanceof between Modules\\Orders\\Domain\\OrderLine and Modules\\Orders\\Domain\\OrderLine will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Orders/Application/InvoiceIssuingService.php
+
+		-
+			message: '#^Method Modules\\Orders\\Application\\Widgets\\InvoicesShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Orders/Application/Widgets/InvoicesShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\Orders\\Application\\Widgets\\OrderCreateHeroWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Orders/Application/Widgets/OrderCreateHeroWidget.php
+
+		-
+			message: '#^Method Modules\\Orders\\Application\\Widgets\\OrderRevenueChartWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Orders/Application/Widgets/OrderRevenueChartWidget.php
+
+		-
+			message: '#^Method Modules\\Orders\\Application\\Widgets\\OrderRevenueWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Orders/Application/Widgets/OrderRevenueWidget.php
+
+		-
+			message: '#^Method Modules\\Orders\\Application\\Widgets\\OrderStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Orders/Application/Widgets/OrderStatsWidget.php
+
+		-
+			message: '#^Method Modules\\Orders\\Application\\Widgets\\OrderStatusChartWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Orders/Application/Widgets/OrderStatusChartWidget.php
+
+		-
+			message: '#^Method Modules\\Orders\\Application\\Widgets\\OrdersShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Orders/Application/Widgets/OrdersShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Orders/Http/Api/InvoiceApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Orders/Http/Api/OrderApiController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Orders/Http/OrderController.php
+
+		-
+			message: '#^Instanceof between Modules\\PartsCatalog\\Domain\\CatalogApiCache and Modules\\PartsCatalog\\Domain\\CatalogApiCache will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/PartsCatalog/Application/CatalogApiCacheStore.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/PartsCatalog/Application/CatalogApiCacheStore.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between mixed and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: modules/PartsCatalog/Application/CatalogApiCacheStore.php
+
+		-
+			message: '#^Instanceof between Modules\\PartsCatalog\\Application\\Dto\\CatalogNode and Modules\\PartsCatalog\\Application\\Dto\\CatalogNode will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/PartsCatalog/Application/CategoryTreeStore.php
+
+		-
+			message: '#^Instanceof between Modules\\PartsCatalog\\Domain\\CatalogCategory and Modules\\PartsCatalog\\Domain\\CatalogCategory will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/PartsCatalog/Application/CategoryTreeStore.php
+
+		-
+			message: '#^Offset ''attrs'' on array\{id\: string, name\: string, name_original\: string\|null, oem\: string\|null, brand\: string\|null, image_url\: string\|null, attrs\: array\<string, mixed\>\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: modules/PartsCatalog/Application/JamaCatalogSync.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/PartsCatalog/Application/Provider/JamaCatalogProvider.php
+
+		-
+			message: '#^Method Modules\\PartsCatalog\\Application\\Provider\\JamaCatalogProvider\:\:discoverVehicles\(\) should return list\<array\{id\: string, label\: string, hint\: string\}\> but returns list\<array\{id\: non\-falsy\-string, label\: non\-falsy\-string, hint\: null\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: modules/PartsCatalog/Application/Provider/JamaCatalogProvider.php
+
+		-
+			message: '#^Method Modules\\PartsCatalog\\Application\\Provider\\JamaCatalogProvider\:\:discoverVehicles\(\) should return list\<array\{id\: string, label\: string, hint\: string\}\> but returns non\-empty\-list\<array\{id\: non\-falsy\-string, label\: non\-falsy\-string, hint\: null\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: modules/PartsCatalog/Application/Provider/JamaCatalogProvider.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<array\{brand\: string, number\: string\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/PartsCatalog/Application/Provider/JamaCatalogProvider.php
+
+		-
+			message: '#^Parameter \#3 \$headers of method Modules\\PartsCatalog\\Application\\HttpJsonClient\:\:request\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: modules/PartsCatalog/Application/Provider/JamaCatalogProvider.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 5
+			path: modules/PartsCatalog/Application/Provider/JamaCatalogProvider.php
+
+		-
+			message: '#^Instanceof between Modules\\Media\\Domain\\MediaAsset and Modules\\Media\\Domain\\MediaAsset will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<array\{label\: string, url\?\: string\|null\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between bool\|float\|int\|string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between lowercase\-string&non\-empty\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>label" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: modules/PartsCatalog/Http/CatalogController.php
+
+		-
+			message: '#^Instanceof between Modules\\PartsCatalog\\Domain\\OrderPart and Modules\\PartsCatalog\\Domain\\OrderPart will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/PartsCatalog/PartsCatalogModule.php
+
+		-
+			message: '#^Instantiated class Modules\\PartsCatalog\\Application\\Widgets\\PartsCatalogRecentPartsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/PartsCatalog/PartsCatalogModule.php
+
+		-
+			message: '#^Instantiated class Modules\\PartsCatalog\\Application\\Widgets\\PartsCatalogStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/PartsCatalog/PartsCatalogModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\PartsCatalog\\Application\\Widgets\\PartsCatalogRecentPartsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/PartsCatalog/PartsCatalogModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\PartsCatalog\\Application\\Widgets\\PartsCatalogStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/PartsCatalog/PartsCatalogModule.php
+
+		-
+			message: '#^Parameter \#2 \$resource of method Gereq\\Event\\EventBus\:\:emit\(\) expects array\{type\: string, id\: string\}, array\{type\: ''system'', id\: null\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Payments/Application/ImapBankMatcher.php
+
+		-
+			message: '#^Method Modules\\Payments\\Application\\Widgets\\PaymentsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Payments/Application/Widgets/PaymentsShortcutWidget.php
+
+		-
+			message: '#^Parameter \#1 \$data of static method Gereq\\Api\\ApiResponse\:\:data\(\) expects array\<string, mixed\>, list\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Payments/Http/Api/PaymentIntentApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Payments/Http/Api/PaymentMethodApiController.php
+
+		-
+			message: '#^Class Modules\\Payments\\Application\\Widgets\\PaymentStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Payments/PaymentsModule.php
+
+		-
+			message: '#^Class Modules\\Payments\\Application\\Widgets\\RecentPaymentsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Payments/PaymentsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Payments\\Application\\Widgets\\PaymentStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Payments/PaymentsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Payments\\Application\\Widgets\\RecentPaymentsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Payments/PaymentsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Payments\\Application\\Widgets\\PaymentStatsWidget\|Modules\\Payments\\Application\\Widgets\\RecentPaymentsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Payments/PaymentsModule.php
+
+		-
+			message: '#^Instanceof between Modules\\Portals\\Domain\\PortalProvider and Modules\\Portals\\Domain\\PortalProvider will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Portals/Application/PortalDemoSeeder.php
+
+		-
+			message: '#^Comparison operation "\>\=" between int\<5, max\> and 5 is always true\.$#'
+			identifier: greaterOrEqual.alwaysTrue
+			count: 1
+			path: modules/Portals/Application/Sreality/SrealityAdvertMapper.php
+
+		-
+			message: '#^Method Modules\\Portals\\Application\\Sreality\\SrealityAdvertMapper\:\:mapSubtype\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Portals/Application/Sreality/SrealityAdvertMapper.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: modules/Portals/Application/Sreality/SrealityAdvertMapper.php
+
+		-
+			message: '#^Method Modules\\Portals\\Application\\Widgets\\PortalsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Portals/Application/Widgets/PortalsShortcutWidget.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Portals/Domain/PortalProvider.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{key\: string, label\: string, type\: string, required\?\: bool, hint\?\: string, placeholder\?\: string\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Portals/Domain/PortalProvider.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/Portals/Http/PortalController.php
+
+		-
+			message: '#^Instanceof between Modules\\Listings\\Domain\\Listing and Modules\\Listings\\Domain\\Listing will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Portals/Http/PortalController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Portals/Http/ProviderController.php
+
+		-
+			message: '#^Class Modules\\Portals\\Application\\Widgets\\PortalAccountsStatusWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Portals/PortalsModule.php
+
+		-
+			message: '#^Class Modules\\Portals\\Application\\Widgets\\PortalStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Portals/PortalsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Portals\\Application\\Widgets\\PortalAccountsStatusWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Portals/PortalsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Portals\\Application\\Widgets\\PortalStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Portals/PortalsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Portals\\Application\\Widgets\\PortalAccountsStatusWidget\|Modules\\Portals\\Application\\Widgets\\PortalStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Portals/PortalsModule.php
+
+		-
+			message: '#^Instanceof between Modules\\ProductDiscounts\\Domain\\ProductDiscount and Modules\\ProductDiscounts\\Domain\\ProductDiscount will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/ProductDiscounts/Application/ProductDiscountsProvider.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/ProductDiscounts/Application/ProductDiscountsProvider.php
+
+		-
+			message: '#^Method Modules\\ProductDiscounts\\Application\\Widgets\\ProductDiscountsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/ProductDiscounts/Application/Widgets/ProductDiscountsShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/ProductDiscounts/Http/Api/ProductDiscountApiController.php
+
+		-
+			message: '#^Instanceof between Modules\\ProductDiscounts\\Domain\\ProductDiscount and Modules\\ProductDiscounts\\Domain\\ProductDiscount will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/ProductDiscounts/Http/Api/ProductDiscountApiController.php
+
+		-
+			message: '#^Instantiated class Modules\\ProductDiscounts\\Application\\Widgets\\ProductDiscountStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/ProductDiscounts/ProductDiscountsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\ProductDiscounts\\Application\\Widgets\\ProductDiscountStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/ProductDiscounts/ProductDiscountsModule.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductUserImageRule and Modules\\Products\\Domain\\ProductUserImageRule will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Products/Application/ProductPersonalizationService.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: modules/Products/Application/ProductPersonalizationService.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductCategory and Modules\\Products\\Domain\\ProductCategory will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Products/Application/ProductVariantOptionsService.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductOptionGroup and Modules\\Products\\Domain\\ProductOptionGroup will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Products/Application/ProductVariantOptionsService.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductOptionValue and Modules\\Products\\Domain\\ProductOptionValue will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 2
+			path: modules/Products/Application/ProductVariantOptionsService.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductVariant and Modules\\Products\\Domain\\ProductVariant will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Products/Application/ProductVariantOptionsService.php
+
+		-
+			message: '#^Method Modules\\Products\\Application\\Widgets\\ProductCreateHeroWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Products/Application/Widgets/ProductCreateHeroWidget.php
+
+		-
+			message: '#^Method Modules\\Products\\Application\\Widgets\\ProductStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Products/Application/Widgets/ProductStatsWidget.php
+
+		-
+			message: '#^Method Modules\\Products\\Application\\Widgets\\ProductsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Products/Application/Widgets/ProductsShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Products/Http/Api/ProductApiController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/Products/Http/Api/ProductApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Products/Http/Api/VariantApiController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Products/Http/CategoryController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Products/Http/ProductController.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductImage and Modules\\Products\\Domain\\ProductImage will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Products/Http/ProductController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/Products/Http/ProductController.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductCategory and Modules\\Products\\Domain\\ProductCategory will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 5
+			path: modules/Products/Http/Public/PublicStoreCatalogController.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductImage and Modules\\Products\\Domain\\ProductImage will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Products/Http/Public/PublicStoreCatalogController.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductPrice and Modules\\Products\\Domain\\ProductPrice will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Products/Http/Public/PublicStoreCatalogController.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductVariant and Modules\\Products\\Domain\\ProductVariant will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Products/Http/Public/PublicStoreCatalogController.php
+
+		-
+			message: '#^Method Modules\\Products\\Http\\Public\\PublicStoreCatalogController\:\:categories\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 1
+			path: modules/Products/Http/Public/PublicStoreCatalogController.php
+
+		-
+			message: '#^Method Modules\\Products\\Http\\Public\\PublicStoreCatalogController\:\:index\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 1
+			path: modules/Products/Http/Public/PublicStoreCatalogController.php
+
+		-
+			message: '#^Method Modules\\Products\\Http\\Public\\PublicStoreCatalogController\:\:show\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 2
+			path: modules/Products/Http/Public/PublicStoreCatalogController.php
+
+		-
+			message: '#^Method Modules\\Projects\\Application\\Widgets\\ProjectsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Projects/Application/Widgets/ProjectsShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Projects/Http/Api/ProjectApiController.php
+
+		-
+			message: '#^Class Modules\\Projects\\Application\\Widgets\\ProjectTasksDueWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Projects/ProjectsModule.php
+
+		-
+			message: '#^Class Modules\\Projects\\Application\\Widgets\\ProjectTasksStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Projects/ProjectsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Projects\\Application\\Widgets\\ProjectTasksDueWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Projects/ProjectsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Projects\\Application\\Widgets\\ProjectTasksStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Projects/ProjectsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Projects\\Application\\Widgets\\ProjectTasksDueWidget\|Modules\\Projects\\Application\\Widgets\\ProjectTasksStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Projects/ProjectsModule.php
+
+		-
+			message: '#^Method Modules\\Returns\\Application\\Widgets\\ReturnsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Returns/Application/Widgets/ReturnsShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Returns/Http/Api/ReturnApiController.php
+
+		-
+			message: '#^Class Modules\\Returns\\Application\\Widgets\\OpenReturnsWidget not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/Returns/ReturnsModule.php
+
+		-
+			message: '#^Class Modules\\Returns\\Application\\Widgets\\ReturnStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Returns/ReturnsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Returns\\Application\\Widgets\\OpenReturnsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Returns/ReturnsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Returns\\Application\\Widgets\\ReturnStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Returns/ReturnsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Returns\\Application\\Widgets\\OpenReturnsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Returns/ReturnsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Returns\\Application\\Widgets\\ReturnStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Returns/ReturnsModule.php
+
+		-
+			message: '#^Method Modules\\Reviews\\Application\\Widgets\\ReviewsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Reviews/Application/Widgets/ReviewsShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Reviews/Http/Api/ReviewApiController.php
+
+		-
+			message: '#^Class Modules\\Reviews\\Application\\Widgets\\PendingReviewsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Class Modules\\Reviews\\Application\\Widgets\\ReviewRatingChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Class Modules\\Reviews\\Application\\Widgets\\ReviewStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Class Modules\\Reviews\\Http\\Public\\PublicReviewsController not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Reviews\\Application\\Widgets\\PendingReviewsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Reviews\\Application\\Widgets\\ReviewRatingChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Reviews\\Application\\Widgets\\ReviewStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Reviews\\Application\\Widgets\\PendingReviewsWidget\|Modules\\Reviews\\Application\\Widgets\\ReviewRatingChartWidget\|Modules\\Reviews\\Application\\Widgets\\ReviewStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Reviews/ReviewsModule.php
+
+		-
+			message: '#^Parameter \#2 \$headers of static method Modules\\SearchEngines\\Application\\HttpFetch\:\:get\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: modules/SearchEngines/Application/Drivers/AutoKellyClient.php
+
+		-
+			message: '#^Parameter \#3 \$headers of static method Modules\\SearchEngines\\Application\\HttpFetch\:\:postJson\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: modules/SearchEngines/Application/Drivers/AutoKellyClient.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: modules/SearchEngines/Http/SearchController.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductPrice and Modules\\Products\\Domain\\ProductPrice will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Shop/Application/CartService.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductVariant and Modules\\Products\\Domain\\ProductVariant will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Shop/Application/CartService.php
+
+		-
+			message: '#^Method Modules\\Shop\\Application\\CartService\:\:resolvePrice\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: modules/Shop/Application/CartService.php
+
+		-
+			message: '#^Method Modules\\Shop\\Application\\Widgets\\ShopShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Shop/Application/Widgets/ShopShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Shop/Http/Api/CartApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Shop/Http/Api/CheckoutApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Shop/Http/Api/ShippingMethodApiController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Shop/Http/CartController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Shop/Http/Public/PublicStoreCartController.php
+
+		-
+			message: '#^Method Modules\\Shop\\Http\\Public\\PublicStoreCartController\:\:addItem\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 3
+			path: modules/Shop/Http/Public/PublicStoreCartController.php
+
+		-
+			message: '#^Method Modules\\Shop\\Http\\Public\\PublicStoreCartController\:\:checkout\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 6
+			path: modules/Shop/Http/Public/PublicStoreCartController.php
+
+		-
+			message: '#^Method Modules\\Shop\\Http\\Public\\PublicStoreCartController\:\:removeItem\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 2
+			path: modules/Shop/Http/Public/PublicStoreCartController.php
+
+		-
+			message: '#^Method Modules\\Shop\\Http\\Public\\PublicStoreCartController\:\:show\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 2
+			path: modules/Shop/Http/Public/PublicStoreCartController.php
+
+		-
+			message: '#^Method Modules\\Shop\\Http\\Public\\PublicStoreCartController\:\:store\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 2
+			path: modules/Shop/Http/Public/PublicStoreCartController.php
+
+		-
+			message: '#^Method Modules\\Shop\\Http\\Public\\PublicStoreCartController\:\:updateItem\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 2
+			path: modules/Shop/Http/Public/PublicStoreCartController.php
+
+		-
+			message: '#^Method Modules\\Shop\\Http\\Public\\PublicStoreShippingController\:\:index\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 1
+			path: modules/Shop/Http/Public/PublicStoreShippingController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Shop/Http/ShippingMethodController.php
+
+		-
+			message: '#^Class Modules\\Shop\\Application\\Widgets\\RecentCartsWidget not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: modules/Shop/ShopModule.php
+
+		-
+			message: '#^Class Modules\\Shop\\Application\\Widgets\\ShopCartStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Shop/ShopModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Shop\\Application\\Widgets\\RecentCartsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Shop/ShopModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Shop\\Application\\Widgets\\ShopCartStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Shop/ShopModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Shop\\Application\\Widgets\\RecentCartsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Shop/ShopModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Shop\\Application\\Widgets\\ShopCartStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Shop/ShopModule.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Translate/Application/MicrosoftTranslateProvider.php
+
+		-
+			message: '#^Parameter \#3 \$headers of method Modules\\Translate\\Application\\HttpJsonClient\:\:request\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Translate/Application/MicrosoftTranslateProvider.php
+
+		-
+			message: '#^Parameter \#4 \$body of method Modules\\Translate\\Application\\HttpJsonClient\:\:request\(\) expects array\<string, mixed\>\|string\|null, list\<array\<string, string\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Translate/Application/MicrosoftTranslateProvider.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Translate/Application/TranslateDebug.php
+
+		-
+			message: '#^Instanceof between Modules\\Translate\\Domain\\TranslationCache and Modules\\Translate\\Domain\\TranslationCache will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Translate/Application/TranslateService.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: modules/Translate/Application/TranslateService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between 0\|false and 1 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: modules/Translate/Application/TranslateService.php
+
+		-
+			message: '#^Method Modules\\Translate\\Application\\Widgets\\TranslateCacheStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Translate/Application/Widgets/TranslateCacheStatsWidget.php
+
+		-
+			message: '#^Method Modules\\Translate\\Application\\Widgets\\TranslateShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Translate/Application/Widgets/TranslateShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\Viewings\\Application\\Widgets\\ViewingsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Viewings/Application/Widgets/ViewingsShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\Viewings\\Http\\Public\\PublicViewingsController\:\:store\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 3
+			path: modules/Viewings/Http/Public/PublicViewingsController.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''company'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Viewings/Http/ViewingController.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Customers\\Domain\\Customer and ''email'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Viewings/Http/ViewingController.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: modules/Viewings/Http/ViewingController.php
+
+		-
+			message: '#^Class Modules\\Viewings\\Application\\Widgets\\UpcomingViewingsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Viewings/ViewingsModule.php
+
+		-
+			message: '#^Class Modules\\Viewings\\Application\\Widgets\\ViewingStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Viewings/ViewingsModule.php
+
+		-
+			message: '#^Class Modules\\Viewings\\Application\\Widgets\\ViewingsTrendChartWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Viewings/ViewingsModule.php
+
+		-
+			message: '#^Method Modules\\Vitality\\Application\\Widgets\\VitalityLatencyStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Vitality/Application/Widgets/VitalityLatencyStatsWidget.php
+
+		-
+			message: '#^Method Modules\\Vitality\\Application\\Widgets\\VitalityShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Vitality/Application/Widgets/VitalityShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\Vitality\\Application\\Widgets\\VitalitySlowEndpointsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Vitality/Application/Widgets/VitalitySlowEndpointsWidget.php
+
+		-
+			message: '#^Method Modules\\Warehouse\\Application\\Widgets\\WarehouseShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Warehouse/Application/Widgets/WarehouseShortcutWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Warehouse/Http/Api/StockApiController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/Warehouse/Http/Api/WarehouseApiController.php
+
+		-
+			message: '#^Instanceof between Modules\\Warehouse\\Domain\\Warehouse and Modules\\Warehouse\\Domain\\Warehouse will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/Warehouse/Http/StockController.php
+
+		-
+			message: '#^Class Modules\\Warehouse\\Application\\Widgets\\LowStockItemsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Warehouse/WarehouseModule.php
+
+		-
+			message: '#^Class Modules\\Warehouse\\Application\\Widgets\\LowStockStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Warehouse/WarehouseModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Warehouse\\Application\\Widgets\\LowStockItemsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Warehouse/WarehouseModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Warehouse\\Application\\Widgets\\LowStockStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Warehouse/WarehouseModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Warehouse\\Application\\Widgets\\LowStockItemsWidget\|Modules\\Warehouse\\Application\\Widgets\\LowStockStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Warehouse/WarehouseModule.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 3
+			path: modules/WebPlus/Application/DynamicMeta/DynamicMetaResolver.php
+
+		-
+			message: '#^Method Modules\\WebPlus\\Application\\DynamicMeta\\DynamicMetaResolver\:\:absolutePath\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/WebPlus/Application/DynamicMeta/DynamicMetaResolver.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between array\{''@type''\: ''PostalAddress'', streetAddress\?\: non\-empty\-string, addressLocality\?\: non\-empty\-string, addressRegion\?\: non\-empty\-string, postalCode\?\: non\-empty\-string, addressCountry\: ''CZ''\} and array\{\} will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/WebPlus/Application/DynamicMeta/DynamicMetaResolver.php
+
+		-
+			message: '#^Instanceof between Modules\\Products\\Domain\\ProductPrice and Modules\\Products\\Domain\\ProductPrice will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/WebPlus/Application/GoogleFeed/BuiltInGoogleFeedCollectors.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/WebPlus/Application/Health/WebHealthChecker.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/WebPlus/Application/UrlTemplateDiscoverer.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 4
+			path: modules/WebPlus/Application/WebPlusProvider.php
+
+		-
+			message: '#^Instanceof between Modules\\WebPlus\\Domain\\WebMeta and Modules\\WebPlus\\Domain\\WebMeta will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 4
+			path: modules/WebPlus/Application/WebPlusProvider.php
+
+		-
+			message: '#^Method Modules\\WebPlus\\Application\\WebPlusProvider\:\:resolveForCmsPage\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/WebPlus/Application/WebPlusProvider.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>description" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: modules/WebPlus/Application/WebPlusProvider.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: modules/WebPlus/Application/WebPlusProvider.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>vars" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: modules/WebPlus/Application/WebPlusProvider.php
+
+		-
+			message: '#^Method Modules\\WebPlus\\Application\\Widgets\\WebPlusHealthWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/WebPlus/Application/Widgets/WebPlusHealthWidget.php
+
+		-
+			message: '#^Method Modules\\WebPlus\\Application\\Widgets\\WebPlusShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/WebPlus/Application/Widgets/WebPlusShortcutWidget.php
+
+		-
+			message: '#^Method Modules\\WebPlus\\Application\\Widgets\\WebPlusStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/WebPlus/Application/Widgets/WebPlusStatsWidget.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/WebPlus/Http/Api/WebPlusApiController.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/WebPlus/Http/MetaController.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/WebPlus/Http/SettingsController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/WebPlus/WebPlusModule.php
+
+		-
+			message: '#^Variable \$http_response_header on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: modules/Webhooks/Application/DeliverWebhookJob.php
+
+		-
+			message: '#^Method Modules\\Webhooks\\Application\\Widgets\\WebhooksShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/Webhooks/Application/Widgets/WebhooksShortcutWidget.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 2
+			path: modules/Webhooks/Domain/Webhook.php
+
+		-
+			message: '#^Class Modules\\Webhooks\\Application\\Widgets\\FailedDeliveriesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Webhooks/WebhooksModule.php
+
+		-
+			message: '#^Class Modules\\Webhooks\\Application\\Widgets\\WebhookStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Webhooks/WebhooksModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Webhooks\\Application\\Widgets\\FailedDeliveriesWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Webhooks/WebhooksModule.php
+
+		-
+			message: '#^Instantiated class Modules\\Webhooks\\Application\\Widgets\\WebhookStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/Webhooks/WebhooksModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\Webhooks\\Application\\Widgets\\FailedDeliveriesWidget\|Modules\\Webhooks\\Application\\Widgets\\WebhookStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/Webhooks/WebhooksModule.php
+
+		-
+			message: '#^Method Modules\\iDoklad\\Application\\Widgets\\iDokladShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: modules/iDoklad/Application/Widgets/iDokladShortcutWidget.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/iDoklad/Application/iDokladApiClient.php
+
+		-
+			message: '#^Parameter \#3 \$headers of method Modules\\iDoklad\\Application\\HttpJsonClient\:\:request\(\) expects array\<string, string\>, array\<int, string\> given\.$#'
+			identifier: argument.type
+			count: 3
+			path: modules/iDoklad/Application/iDokladApiClient.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/iDoklad/Application/iDokladService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/iDoklad/Application/iDokladService.php
+
+		-
+			message: '#^Instanceof between Modules\\Customers\\Domain\\CustomerAddress and Modules\\Customers\\Domain\\CustomerAddress will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: modules/iDoklad/Http/iDokladCustomerController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: modules/iDoklad/Http/iDokladDocumentController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int\|non\-empty\-string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: modules/iDoklad/Http/iDokladDocumentController.php
+
+		-
+			message: '#^Instantiated class Modules\\iDoklad\\Application\\Widgets\\iDokladLinksStatsWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/iDoklad/iDokladModule.php
+
+		-
+			message: '#^Instantiated class Modules\\iDoklad\\Application\\Widgets\\iDokladRecentLinksWidget not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: modules/iDoklad/iDokladModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\iDoklad\\Application\\Widgets\\iDokladLinksStatsWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/iDoklad/iDokladModule.php
+
+		-
+			message: '#^Parameter \#1 \$widget of method Gereq\\Admin\\Dashboard\\Dashboard\:\:addWidget\(\) expects Gereq\\Admin\\Dashboard\\DashboardWidget, Modules\\iDoklad\\Application\\Widgets\\iDokladRecentLinksWidget given\.$#'
+			identifier: argument.type
+			count: 1
+			path: modules/iDoklad/iDokladModule.php
+
+		-
+			message: '#^Method Gereq\\Admin\\Dashboard\\Widgets\\ActivityChartWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Admin/Dashboard/Widgets/ActivityChartWidget.php
+
+		-
+			message: '#^Method Gereq\\Admin\\Dashboard\\Widgets\\ActivityWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Admin/Dashboard/Widgets/ActivityWidget.php
+
+		-
+			message: '#^Method Gereq\\Admin\\Dashboard\\Widgets\\ModulesStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Admin/Dashboard/Widgets/ModulesStatsWidget.php
+
+		-
+			message: '#^Method Gereq\\Admin\\Dashboard\\Widgets\\SettingsShortcutWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Admin/Dashboard/Widgets/SettingsShortcutWidget.php
+
+		-
+			message: '#^Method Gereq\\Admin\\Dashboard\\Widgets\\UsersStatsWidget\:\:permission\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Admin/Dashboard/Widgets/UsersStatsWidget.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{value\?\: string, label\?\: string\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>attrs" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>cols" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>exclude" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>extra" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>group" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>options" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>order" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>required" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>type" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: src/Admin/Form/Forms.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Admin/Http/AuthController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Admin/Http/Developer/ApiTokenController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Admin/Http/ModuleController.php
+
+		-
+			message: '#^Offset ''is_downgrade'' on array\{version\: string, tag\: string, committed_at\: string\|null, cached\: bool, active\: bool\} in empty\(\) does not exist\.$#'
+			identifier: empty.offset
+			count: 1
+			path: src/Admin/Http/ModuleController.php
+
+		-
+			message: '#^Offset ''is_upgrade'' on array\{version\: string, tag\: string, committed_at\: string\|null, cached\: bool, active\: bool\} in empty\(\) does not exist\.$#'
+			identifier: empty.offset
+			count: 1
+			path: src/Admin/Http/ModuleController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Admin/Http/RoleController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Admin/Http/SecurityController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<array\{label\: string, url\?\: string\|null\}\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Admin/Menu/Menu.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Admin/Menu/Menu.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>hidden" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: src/Admin/Menu/Menu.php
+
+		-
+			message: '#^Instanceof between Gereq\\Admin\\Search\\AdminSearchHit and Gereq\\Admin\\Search\\AdminSearchHit will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Admin/Search/AdminSearchSource.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Api/ApiQuery.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$filterable$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Api/ApiQuery.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$searchable$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Api/ApiQuery.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Api/ApiRegistry.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 2
+			path: src/Api/Entity/ApiToken.php
+
+		-
+			message: '#^Ternary operator condition is always true\.$#'
+			identifier: ternary.alwaysTrue
+			count: 1
+			path: src/Api/OpenApi/OpenApiGenerator.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Api/OpenApi/ValidationRulesToSchema.php
+
+		-
+			message: '#^Method Gereq\\Api\\PublicAresController\:\:addresses\(\) should return Symfony\\Component\\HttpFoundation\\JsonResponse but returns Symfony\\Component\\HttpFoundation\\Response\.$#'
+			identifier: return.type
+			count: 3
+			path: src/Api/PublicAresController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<non\-empty\-string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Auth/TotpService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between numeric\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/Console/Docker/AccessLogParser.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: src/Console/Docker/ServeLogTui.php
+
+		-
+			message: '#^Method Gereq\\Database\\DemoSeeder\:\:seedHomeBlocks\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: src/Database/DemoSeeder.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between Modules\\Customers\\Domain\\CustomerTag and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Database/DemoSeeder.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: src/Database/Migrator.php
+
+		-
+			message: '#^Type Doctrine\\DBAL\\Connection in generic type Doctrine\\DBAL\\Schema\\AbstractSchemaManager\<Doctrine\\DBAL\\Connection\> in PHPDoc tag @param for parameter \$schemaManager is not subtype of template type T of Doctrine\\DBAL\\Platforms\\AbstractPlatform of class Doctrine\\DBAL\\Schema\\AbstractSchemaManager\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: src/Database/Migrator.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<Modules\\Customers\\Domain\\Customer\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: src/Database/RealEstateAutomationDemoSeeder.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<Modules\\Listings\\Domain\\Listing\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: src/Database/RealEstateAutomationDemoSeeder.php
+
+		-
+			message: '#^Call to an undefined method Modules\\CRM\\Domain\\Deal\:\:brokerId\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Database/RealityV3Seeder.php
+
+		-
+			message: '#^Call to an undefined method Modules\\CRM\\Domain\\Deal\:\:setBrokerId\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Database/RealityV3Seeder.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Broker\:\:setUserId\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Database/RealityV3Seeder.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Listings\\Domain\\Listing and ''setBrokerName'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Database/RealityV3Seeder.php
+
+		-
+			message: '#^Instanceof between Modules\\Cms\\Domain\\Page and Modules\\Cms\\Domain\\Page will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Database/RealityV3Seeder.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Database/Seeder.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between Gereq\\Module\\InstalledModule and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Database/Seeder.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-list\<string\> and array\{\} will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Database/Seeder.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Debug/NPlusOneLog.php
+
+		-
+			message: '#^Method Gereq\\Env\\EnvSchema\:\:parseDefault\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: src/Env/EnvSchema.php
+
+		-
+			message: '#^Instanceof between Gereq\\Module\\InstalledModule and Gereq\\Module\\InstalledModule will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Module/ModuleManager.php
+
+		-
+			message: '#^Instanceof between Gereq\\User\\Entity\\Permission and Gereq\\User\\Entity\\Permission will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Module/ModuleManager.php
+
+		-
+			message: '#^Instanceof between Modules\\Media\\Domain\\MediaLink and Modules\\Media\\Domain\\MediaLink will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Module/ModuleUninstaller.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:avatarFileId\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/CustomerPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:companyAddress\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/CustomerPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:dic\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/CustomerPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:ico\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/CustomerPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Customers\\Domain\\Customer\:\:isCompany\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/CustomerPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Listing\:\:buildingCondition\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Listing\:\:buildingType\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Listing\:\:disposition\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Listing\:\:furnished\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Listing\:\:ownership\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Listing\:\:priceUnit\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Call to an undefined method Modules\\Listings\\Domain\\Listing\:\:servicesPrice\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Call to function method_exists\(\) with Modules\\Listings\\Domain\\Listing and ''description'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Publish/Adapter/ListingPublishAdapter.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: src/Publish/ContentVersion.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Publish/StagingStore.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<non\-empty\-string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/Search/TextNormalizer.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/Setting/Settings.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\{\} and array\{\} will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 2
+			path: src/Support/SimpleMarkdown.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: src/Support/SimpleMarkdown.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/User/Entity/User.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: src/User/Entity/User.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string&uppercase\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/User/Entity/User.php
+
+		-
+			message: '#^Method Gereq\\View\\TwigRuntime\:\:errors\(\) should return array\<string, list\<string\>\> but returns array\<string, string\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/View/TwigRuntime.php

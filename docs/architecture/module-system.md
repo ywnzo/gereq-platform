@@ -68,7 +68,7 @@ modules/<Name>/
   Database/Migrations/    YYYY_MM_DD_NNNNNN_name.php
   Resources/views/        Twig, namespace @<name>
   Resources/translations/ messages.cs.php, messages.en.php (created by hand)
-  Testing/
+  Tests/
 ```
 
 Existing modules also use `Console/` (commands registered manually in `ConsoleKernel`), `Resources/assets/js|css` (imported from `resources/js/admin.ts`) and a `README.md`.

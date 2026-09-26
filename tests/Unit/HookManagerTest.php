@@ -43,6 +43,6 @@ final class HookManagerTest extends TestCase
         $hooks->remove($id);
         $hooks->doAction('demo');
 
-        self::assertTrue($hooks->remove('missing') === false || true);
+        self::assertFalse($hooks->remove('missing'));
     }
 }

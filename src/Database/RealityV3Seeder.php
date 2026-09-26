@@ -255,7 +255,11 @@ final class RealityV3Seeder
             bool $sitemapInclude,
             string $prio,
             ?string $cmsPageId = null,
-        ) use ($repo, $ogImage, $fe): void {
+        ) use (
+            $repo,
+            $ogImage,
+            $fe
+): void {
             $meta = $repo->findOneBy(['path' => $path]);
             if (!$meta instanceof \Modules\WebPlus\Domain\WebMeta) {
                 $meta = new \Modules\WebPlus\Domain\WebMeta($path);

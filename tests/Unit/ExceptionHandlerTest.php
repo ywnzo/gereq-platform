@@ -34,9 +34,10 @@ final class ExceptionHandlerTest extends TestCase
         );
 
         self::assertSame(404, $response->getStatusCode());
-        self::assertStringContainsString('Zákazník neexistuje.', $response->getContent() ?: '');
-        self::assertStringContainsString('404', $response->getContent() ?: '');
-        self::assertStringContainsString('GEREQ', $response->getContent() ?: '');
+        $html = (string) $response->getContent();
+        self::assertStringContainsString('Zákazník neexistuje.', $html);
+        self::assertStringContainsString('404', $html);
+        self::assertStringContainsString('GEREQ', $html);
     }
 
     public function testRendersJsonForApiRequests(): void
@@ -82,8 +83,9 @@ final class ExceptionHandlerTest extends TestCase
         );
 
         self::assertSame(500, $response->getStatusCode());
-        self::assertStringNotContainsString('tajný detail databáze', $response->getContent() ?: '');
-        self::assertStringContainsString('Něco se pokazilo', $response->getContent() ?: '');
+        $html = (string) $response->getContent();
+        self::assertStringNotContainsString('tajný detail databáze', $html);
+        self::assertStringContainsString('Něco se pokazilo', $html);
     }
 
     public function testShowsInternalDetailsWhenDebugIsOn(): void
@@ -94,8 +96,9 @@ final class ExceptionHandlerTest extends TestCase
         );
 
         self::assertSame(500, $response->getStatusCode());
-        self::assertStringContainsString('tajný detail databáze', $response->getContent() ?: '');
-        self::assertStringContainsString('error-trace', $response->getContent() ?: '');
+        $html = (string) $response->getContent();
+        self::assertStringContainsString('tajný detail databáze', $html);
+        self::assertStringContainsString('error-trace', $html);
     }
 
     public function testFilterCanReplaceResponse(): void

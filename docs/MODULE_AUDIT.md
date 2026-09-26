@@ -17,7 +17,7 @@ Rozsah: 37 modulů v `modules/` + pokrytí unit testy v `tests/Unit/Modules/`.
 3. **State machines** — Orders, ESign, Returns, Viewings (enforce přechody).
 4. **CarService ↔ BikeService** — extrahovat sdílený Workshop kernel (jobs, finish, docs).
 5. **Integrační mappery** — iDoklad, MoneyS3, Portals, Feeds: pure mapování + HTTP mocky.
-6. **Prázdné `modules/*/Testing/`** — buď naplnit, nebo zrušit (false signal).
+6. **Prázdné `modules/*/Tests/`** — buď naplnit, nebo zrušit (false signal).
 
 ---
 

@@ -1,13 +1,103 @@
-# CI intentionally disabled. GitLab still requires ≥1 job definition
-# even when workflow never creates a pipeline — otherwise you get
-# "jobs config should contain at least one visible job" / yaml invalid.
+# GEREQ Platform — testing engine (php bin/gereq-test)
+#
+# Jobs:
+#   test:modules         — every modules/*/Tests (+ ModuleStructure)
+#   test:core            — platform unit tests (tests/Unit except Modules/)
+#   test:core-modules    — core then modules in one job
+#   test:query-hygiene   — N+1 / query-budget assertions (core + modules)
+#   analyse:phpstan        — PHPStan level 5 (src + modules + tests, baseline)
+#   analyse:phpstan-tests  — PHPStan level 6 + strict-rules (src/Testing + tests)
+#   analyse:cs             — PSR-12 + strict_types (src + modules + tests)
+
 workflow:
   rules:
-    - when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
 
-noop:
-  stage: .pre
+stages:
+  - test
+  - analyse
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.composer-cache"
+
+default:
+  image: php:8.4-cli-bookworm
+  interruptible: true
+  # Rewrite SSH submodule URLs before GitLab fetches them (private modules).
+  hooks:
+    pre_get_sources_script:
+      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/".insteadOf "git@${CI_SERVER_HOST}:"
+      - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/".insteadOf "ssh://git@${CI_SERVER_HOST}/"
+  cache:
+    key:
+      files:
+        - composer.lock
+    paths:
+      - .composer-cache/
+      - vendor/
+    policy: pull-push
+
+.composer_setup:
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends git unzip libzip-dev libsqlite3-dev $PHPIZE_DEPS
+    - docker-php-ext-install -j$(nproc) zip pdo_sqlite
+    - |
+      if ! command -v composer >/dev/null 2>&1; then
+        curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      fi
+    # Unit tests are DB-free (sqlite :memory:); redis/gd not needed for these targets.
+    - composer install --no-interaction --prefer-dist --no-progress --ignore-platform-req=ext-redis --ignore-platform-req=ext-gd
+
+.test_job:
+  extends: .composer_setup
+  stage: test
   script:
-    - "true"
-  rules:
-    - when: never
+    - php bin/gereq-test "$TEST_TARGET"
+
+test:modules:
+  extends: .test_job
+  variables:
+    TEST_TARGET: modules
+
+test:core:
+  extends: .test_job
+  variables:
+    TEST_TARGET: core
+
+# Combined gate: core + all modules (two engine invocations, one CI job).
+test:core-modules:
+  extends: .composer_setup
+  stage: test
+  script:
+    - php bin/gereq-test core
+    - php bin/gereq-test modules
+
+# N+1 detector + QueryAssertions (core Debug tests + ModuleStructure QueryHygiene).
+test:query-hygiene:
+  extends: .composer_setup
+  stage: test
+  script:
+    - php bin/gereq-test core --filter='NPlusOne|QueryCollector|QueryHygiene'
+    - php bin/gereq-test modules --filter='QueryHygiene|NPlusOne'
+
+analyse:phpstan:
+  extends: .composer_setup
+  stage: analyse
+  script:
+    - composer phpstan
+
+analyse:phpstan-tests:
+  extends: .composer_setup
+  stage: analyse
+  script:
+    - composer phpstan:tests
+
+analyse:cs:
+  extends: .composer_setup
+  stage: analyse
+  script:
+    - composer cs

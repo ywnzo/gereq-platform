@@ -1,0 +1,34 @@
+---
+description: PHP testing type-safety and coding conventions (PHPStan, PHPCS, test layout)
+alwaysApply: true
+---
+
+# PHP testing & coding conventions
+
+## Type-safe analysis
+
+- Platform + modules + tests: `composer phpstan` (`phpstan.neon`, level 5, `phpstan/phpstan-phpunit`, baseline in `phpstan-baseline.neon`).
+- Testing engine + platform tests (stricter): `composer phpstan:tests` (`phpstan-tests.neon`, level 6 + `phpstan-strict-rules`).
+- Do **not** grow the baseline casually — fix new errors; regenerate baseline only when intentionally accepting legacy debt.
+
+## Code style
+
+- Every PHP file: `declare(strict_types=1);` (enforced by `phpcs` `Generic.PHP.RequireStrictTypes`).
+- PSR-12 via `composer cs` / `composer cs-fix`.
+- Parameter, return, and property types everywhere; array shapes in PHPDoc (`list<>`, `array<string, mixed>`).
+- Prefer `final` classes; comments/docblocks in **English** only.
+
+## Tests
+
+- Entry points: `php bin/gereq-test` / `composer test` (targets: `all`, `core`, `modules`, `module:<id>`, …).
+- Platform tests: `tests/**`, namespace `Gereq\Tests\…`, `final class …Test`.
+- Module tests: `modules/<Name>/Tests/`, namespace `Modules\<Name>\Tests`, `final class …Test`.
+- Prefer `Gereq\Testing\TestCase` (includes `QueryAssertions` for N+1 / query budgets).
+- Use typed PHPUnit assertions (`self::assertSame`, …); avoid untyped `mixed` fixtures when a shape is known.
+- Guardrail: `CodingConventionsTest` (ModuleStructure) fails on missing `strict_types`, non-final tests, or wrong namespaces.
+
+## Before commit
+
+```bash
+composer test && composer phpstan && composer phpstan:tests && composer cs
+```

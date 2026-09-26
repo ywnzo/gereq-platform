@@ -17,7 +17,11 @@ final class ModuleManifestConsistencyTest extends TestCase
     {
         $root = dirname(__DIR__, 4) . '/modules';
         $out = [];
-        foreach (scandir($root) ?: [] as $name) {
+        $entries = scandir($root);
+        if ($entries === false) {
+            return [];
+        }
+        foreach ($entries as $name) {
             if ($name === '.' || $name === '..') {
                 continue;
             }

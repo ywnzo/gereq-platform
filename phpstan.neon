@@ -1,9 +1,17 @@
+includes:
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
+    - phpstan-baseline.neon
+
 parameters:
     level: 5
     paths:
         - src
         - modules
+        - tests
+        - bin/gereq-test
     tmpDir: .phpstan-tmp
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         -
             identifier: property.onlyWritten
@@ -13,4 +21,22 @@ parameters:
             identifier: nullCoalesce.offset
         -
             identifier: property.unusedType
-
+        # Idiomatic $this->assert* / markTestSkipped in PHPUnit tests.
+        -
+            identifier: staticMethod.dynamicCall
+            path: tests/*
+        -
+            identifier: staticMethod.dynamicCall
+            path: modules/*/Tests/*
+        -
+            identifier: staticMethod.alreadyNarrowedType
+            path: tests/*
+        -
+            identifier: staticMethod.alreadyNarrowedType
+            path: modules/*/Tests/*
+        -
+            identifier: staticMethod.impossibleType
+            path: tests/*
+        -
+            identifier: staticMethod.impossibleType
+            path: modules/*/Tests/*

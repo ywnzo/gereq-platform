@@ -6,9 +6,11 @@ This page lists the conventions enforced (by tooling or by rule files) in the GE
 
 | Rule | Enforced by |
 | --- | --- |
-| `declare(strict_types=1);` at the top of every file | convention — every file under `src/` and `modules/` has it (0 exceptions at time of writing) |
-| PSR-12 formatting | `phpcs.xml` (ruleset PSR12, paths `src`, `modules`, `tests`; extension `php`) — `composer cs`, autofix `composer cs-fix` (phpcbf) |
-| PHPStan level 5 on `src` + `modules` | `phpstan.neon` (tmpDir `.phpstan-tmp`; ignored identifiers `property.onlyWritten`, `while.alwaysTrue`, `nullCoalesce.offset`, `property.unusedType`) — `composer phpstan` (`phpstan analyse --memory-limit=1G`) |
+| `declare(strict_types=1);` at the top of every file | `phpcs.xml` → `Generic.PHP.RequireStrictTypes` (+ convention for non-scanned paths) |
+| PSR-12 formatting | `phpcs.xml` (ruleset PSR12, paths `src`, `modules`, `tests`, `bin/gereq-test`) — `composer cs`, autofix `composer cs-fix` (phpcbf) |
+| PHPStan level 5 on `src` + `modules` + `tests` | `phpstan.neon` + `phpstan-baseline.neon` + `phpstan/phpstan-phpunit` — `composer phpstan` |
+| PHPStan level 6 + strict-rules on testing surface | `phpstan-tests.neon` (`src/Testing`, `tests`) — `composer phpstan:tests` |
+| Test namespaces / `final` test classes / strict_types | `CodingConventionsTest` under ModuleStructure; Cursor rule `.cursor/rules/php-testing-conventions.mdc` |
 | Classes are `final` unless designed for extension | convention — ~218 of the core classes are `final`; the only `abstract` base classes are `Gereq\Http\Controller` and `Gereq\Admin\Dashboard\TwigDashboardWidget`. Doctrine entities are non-final (proxies) |
 | Constructor promotion + `readonly` for dependencies; one class per file; PSR-4 (`Gereq\` → `src/`, `Modules\` → `modules/`, `Integrations\` → `integrations/`, `Gereq\Tests\` → `tests/`) | `composer.json` autoload |
 | Return types and parameter types everywhere; array shapes via PHPDoc (`@return list<...>`, `array<string, mixed>`) so PHPStan can check them | PHPStan |
@@ -26,7 +28,7 @@ Translation catalogs, UI copy and seed content stay in the product language (Cze
 Run everything before committing:
 
 ```bash
-composer test && composer phpstan && composer cs
+composer test && composer analyse
 ```
 
 ## TypeScript / frontend

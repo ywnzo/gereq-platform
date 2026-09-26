@@ -8,8 +8,8 @@ namespace Gereq\Testing;
  * Discovers core, per-module and per-integration test locations on disk.
  *
  * Module / integration tests live only inside the package:
- *   modules/<Dir>/Testing/
- *   integrations/<Dir>/Testing/
+ *   modules/<Dir>/Tests/
+ *   integrations/<Dir>/Tests/
  *
  * Cross-module manifest checks stay under tests/Unit/Modules/ModuleStructure.
  */
@@ -132,9 +132,9 @@ final class TestCatalog
     {
         $paths = [];
         foreach ($this->packageDirs('modules') as $dir) {
-            $testing = $dir . '/Testing';
-            if (is_dir($testing)) {
-                $paths[] = $testing;
+            $tests = $dir . '/Tests';
+            if (is_dir($tests)) {
+                $paths[] = $tests;
             }
         }
         $structure = $this->basePath . '/tests/Unit/Modules/ModuleStructure';
@@ -159,9 +159,9 @@ final class TestCatalog
 
         [$id, $dirName, $path] = $pkg;
         $paths = [];
-        $testing = $path . '/Testing';
-        if (is_dir($testing)) {
-            $paths[] = $testing;
+        $tests = $path . '/Tests';
+        if (is_dir($tests)) {
+            $paths[] = $tests;
         }
 
         return new TestTarget(
@@ -177,9 +177,9 @@ final class TestCatalog
     {
         $paths = [];
         foreach ($this->packageDirs('integrations') as $dir) {
-            $testing = $dir . '/Testing';
-            if (is_dir($testing)) {
-                $paths[] = $testing;
+            $tests = $dir . '/Tests';
+            if (is_dir($tests)) {
+                $paths[] = $tests;
             }
         }
 
@@ -203,9 +203,9 @@ final class TestCatalog
 
         [$id, $dirName, $path] = $pkg;
         $paths = [];
-        $testing = $path . '/Testing';
-        if (is_dir($testing)) {
-            $paths[] = $testing;
+        $tests = $path . '/Tests';
+        if (is_dir($tests)) {
+            $paths[] = $tests;
         }
 
         return new TestTarget(
@@ -273,7 +273,11 @@ final class TestCatalog
         }
 
         $paths = [];
-        foreach (scandir($unit) ?: [] as $entry) {
+        $entries = scandir($unit);
+        if ($entries === false) {
+            return [];
+        }
+        foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..' || $entry === 'Modules') {
                 continue;
             }
@@ -306,7 +310,11 @@ final class TestCatalog
         }
 
         $dirs = [];
-        foreach (scandir($root) ?: [] as $entry) {
+        $entries = scandir($root);
+        if ($entries === false) {
+            return [];
+        }
+        foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') {
                 continue;
             }
