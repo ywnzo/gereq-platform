@@ -1,14 +1,31 @@
 {
-  "name": "work-monitor",
+  "name": "gereq-work-monitor",
   "displayName": "GEREQ Pulse",
-  "description": "GEREQ Pulse — Toggl-style time tracking z Cursoru (Timer / Day / Week). UI :8772",
+  "description": "Toggl-style work tracking from Cursor/VS Code — Timer, Day and Week views on a local dashboard (:8772).",
   "version": "0.3.2",
   "publisher": "gereq",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git@git.gereq.cz:gereq/tool-pulse.git"
+  },
+  "homepage": "https://git.gereq.cz/gereq/tool-pulse",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#201828",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.88.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "gereq",
+    "pulse",
+    "time-tracking",
+    "toggl"
   ],
   "activationEvents": [
     "onStartupFinished"

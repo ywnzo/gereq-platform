@@ -1,14 +1,31 @@
 {
-  "name": "i18n",
+  "name": "gereq-i18n",
   "displayName": "GEREQ i18n",
-  "description": "Hover, autocomplete a Go to Definition pro překladové klíče (|trans / ->trans / label: / FormField)",
+  "description": "Hover, autocomplete and Go to Definition for GEREQ translation keys in Twig (|trans) and PHP (trans / label / FormField).",
   "version": "0.2.2",
   "publisher": "gereq",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git@git.gereq.cz:gereq/tool-i18n.git"
+  },
+  "homepage": "https://git.gereq.cz/gereq/tool-i18n",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1c2830",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.88.0"
   },
   "categories": [
     "Programming Languages"
+  ],
+  "keywords": [
+    "gereq",
+    "i18n",
+    "translations",
+    "twig"
   ],
   "activationEvents": [
     "onStartupFinished",

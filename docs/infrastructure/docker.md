@@ -34,7 +34,7 @@ Compose project name is `gereq`, so containers are named `gereq-nginx-1`, `gereq
 Notes derived from the compose file:
 
 - `DB_PASSWORD` uses `${DB_PASSWORD:?…}` — compose refuses to start without it in `.env`.
-- The `php` and `queue` services force `pgsql` + Redis regardless of what `.env` says; the SQLite default from `.env.example` is never used inside Docker.
+- The `php` and `queue` services force `pgsql` + Redis regardless of what `.env` says; the SQLite default from `config/env.schema.toml` is never used inside Docker.
 - PHP-FPM pool size is tunable via `PHP_FPM_MAX_CHILDREN` (32), `PHP_FPM_START_SERVERS` (8), `PHP_FPM_MIN_SPARE_SERVERS` (4), `PHP_FPM_MAX_SPARE_SERVERS` (16), `PHP_FPM_MAX_REQUESTS` (500).
 - The queue worker is **always** part of the stack (no profile). The `--queue` flag of `serve-docker` is reported by the command itself as legacy.
 
@@ -144,7 +144,7 @@ The `Makefile` needs only Docker on the host; PHP, Composer and Bun run in conta
 | Target | What it does |
 | --- | --- |
 | `help` (default) | prints the cheat-sheet |
-| `env` | copies `.env.example` → `.env` if missing; generates `APP_KEY` (openssl hex 32) and `DB_PASSWORD`; sets `APP_URL`, `APP_DEBUG=true`, `DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `REDIS_HOST=redis`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `CACHE_DRIVER=redis`; creates `storage/*` dirs |
+| `env` | runs `bin/grq env init --docker` if `.env` is missing; generates `APP_KEY` and `DB_PASSWORD` from `config/env.schema.toml`; sets `APP_URL`, `APP_DEBUG=true`, `DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `REDIS_HOST=redis`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `CACHE_DRIVER=redis`; creates `storage/*` dirs |
 | `certs` | self-signed `dev.crt`/`dev.key` in `docker/nginx/certs/` (openssl on host or `alpine/openssl` container) |
 | `build` | `docker compose build` |
 | `up` | (`certs` if `HTTPS=1`) then `docker compose up -d` (`--build` when `BUILD=1`), prints URLs |
@@ -179,4 +179,4 @@ make down
 - Database drivers and migrations inside the stack: [database.md](database.md)
 - Redis-backed session/queue/cache in Docker: [cache-queue-session-files.md](cache-queue-session-files.md)
 - Production considerations: [deployment.md](deployment.md)
-- Host-side install scripts (`bin/install`, `bin/install-demo`): [tooling.md](tooling.md)
+- Host-side install scripts (`bin/grq install`, `bin/grq install demo`): [tooling.md](tooling.md)

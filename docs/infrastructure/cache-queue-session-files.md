@@ -65,7 +65,7 @@ In Docker the worker is the `queue` service (container `gereq-queue-1`, command 
 | `files` | – | `storage/sessions` |
 | `redis.*` | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | prefix `gereq:session:` |
 
-Handlers: `NativeFileSessionHandler(storage/sessions)` or Symfony `RedisSessionHandler`. `docker-compose.yml` hard-codes `SESSION_DRIVER=redis` for the `php` service, so the value in `.env` is irrelevant inside Docker (the README's "Docker forces redis" refers to this). `bin/install` also switches `SESSION_DRIVER` to `redis` whenever the Redis queue or Docker runtime is chosen.
+Handlers: `NativeFileSessionHandler(storage/sessions)` or Symfony `RedisSessionHandler`. `docker-compose.yml` hard-codes `SESSION_DRIVER=redis` for the `php` service, so the value in `.env` is irrelevant inside Docker (the README's "Docker forces redis" refers to this). `bin/grq install` also switches `SESSION_DRIVER` to `redis` whenever the Redis queue or Docker runtime is chosen.
 
 ## Files (`config/files.php` → `src/File/`)
 
@@ -118,7 +118,7 @@ Transport: `Symfony\Component\Mailer\Mailer` built with `Transport::fromDsn(conf
 | `storage/database.sqlite` | SQLite database (default `DB_DATABASE`) | `EntityManagerFactory` |
 | `storage/framework/phpunit` | PHPUnit cache (`phpunit.xml` `cacheDirectory`) | tests |
 
-Directory bootstrap happens in `bin/install`, `bin/install-demo`, `make env` (`storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}`) and in the container entrypoint `docker/php/entrypoint.sh` (`chmod -R a+rwX storage`). `.gitignore`/`.dockerignore` exclude `storage/logs/*`, `storage/cache/*`, `storage/sessions/*`, `storage/tmp/*`, `storage/uploads/*`.
+Directory bootstrap happens in `bin/grq install`, `bin/grq install demo`, `make env` (`storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}`) and in the container entrypoint `docker/php/entrypoint.sh` (`chmod -R a+rwX storage`). `.gitignore`/`.dockerignore` exclude `storage/logs/*`, `storage/cache/*`, `storage/sessions/*`, `storage/tmp/*`, `storage/uploads/*`.
 
 ## Related
 

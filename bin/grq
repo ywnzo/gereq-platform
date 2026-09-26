@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# grq launcher — picks the prebuilt binary for this OS/arch (no download).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+DIST="$ROOT/dist"
+
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+arch="$(uname -m)"
+case "$arch" in
+  x86_64|amd64) arch=amd64 ;;
+  aarch64|arm64) arch=arm64 ;;
+  *)
+    echo "grq: unsupported arch: $arch" >&2
+    exit 1
+    ;;
+esac
+case "$os" in
+  linux) bin="grq-linux-${arch}" ;;
+  darwin) bin="grq-darwin-${arch}" ;;
+  msys*|cygwin*|mingw*) bin="grq-windows-${arch}.exe" ;;
+  *)
+    echo "grq: unsupported OS: $os" >&2
+    exit 1
+    ;;
+esac
+
+target="$DIST/$bin"
+if [[ ! -x "$target" ]]; then
+  echo "grq: missing $target — run: make grq-release" >&2
+  exit 1
+fi
+exec "$target" "$@"

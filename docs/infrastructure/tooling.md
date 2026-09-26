@@ -1,33 +1,46 @@
 # Developer tooling
 
-Besides the `php gereq` console, the repository carries three groups of developer tooling: editor extensions and CLIs in `tools/` (translation/permission/Twig indexers for Cursor, a Go TUI that compares modules against GitLab, a work monitor, and PDF deck generators), shell scripts in `bin/` (interactive installer, demo installer/packager, commit helper, Twiggy bootstrap), and Cursor guidance in `.cursor/` (rules and skills). Static analysis and tests are configured in `phpstan.neon`, `phpcs.xml` and `phpunit.xml`. Everything JS-related is run with **Bun** (`.cursor/rules/tech-stack.mdc`).
+Besides the `php gereq` console, the repository carries developer tooling: the **`grq`** single binary (`bin/grq` → `bin/dist/…`) for env/install/pack/commit/pr/modules, editor extensions under `tools/gereq-*`, PDF deck generators, and Cursor guidance in `.cursor/`. Static analysis and tests are configured in `phpstan.neon`, `phpcs.xml` and `phpunit.xml`. Everything JS-related is run with **Bun** (`.cursor/rules/tech-stack.mdc`).
+
+## `bin/grq`
+
+Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt binary from `bin/dist/` (no download). Rebuild: `make grq` / `make grq-release`. Sources: [`tools/gereq-cli/`](../../tools/gereq-cli/).
+
+| Command | Purpose |
+| --- | --- |
+| `grq doctor` | Check php ≥ 8.4, composer, bun\|npm, docker, git |
+| `grq env init [--docker]` | Write `.env` from `config/env.schema.toml` |
+| `grq env validate` | Validate `.env` |
+| `grq install` / `grq install demo` | Interactive clean install / SQLite demo |
+| `grq pack demo` | Demo zip into `dist/` |
+| `grq commit …` | Git commit stripping `Co-authored-by` |
+| `grq pr [--base] [--draft] [--dry-run] [--push] [--fast] [--no-agent]` | Draft MR via Cursor CLI `agent` (guidelines: Summary + Test plan), create on GitLab |
+| `grq modules` | TUI comparing modules vs GitLab (replaces `gereq-modules`) |
+| `grq modules create Name [--kind …]` | Scaffold + logo + badges; optional Cursor CLI polish when `agent` is on PATH |
+
+RealityV3 product scripts live under `scripts/realityv3/` (not in `bin/`). `bin/twiggy-env.php` remains for the Twiggy language server.
 
 ## `tools/`
 
 | Directory / file | What it is | How to run |
 | --- | --- | --- |
-| `tools/gereq-i18n/` | Cursor/VS Code extension `gereq.i18n` (v0.2.2): hover, autocomplete and Go to Definition for translation keys in Twig (`'key'\|trans`), PHP (`->trans('key')`, `label:`/`hint:`/`title:`… named args, `'label' => '…'`). Reads a catalog generated from `resources/translations` + `modules/*/Resources/translations` + `integrations/*/Resources/translations`. | `php tools/gereq-i18n/index-translations.php` → `.cache/i18n/catalog.json`; `bash tools/gereq-i18n/install.sh` installs into `~/.cursor-server/extensions/` (then *Developer: Reload Window*). Command palette: *GEREQ i18n: Reindex translations*. |
-| `tools/gereq-permissions/` | Extension `gereq.permissions` (v0.1.2): hover/autocomplete/F12 for permission keys (`user.can('…')` in Twig, `->can()`, `->permission()`, `permission:` in PHP). | `php tools/gereq-permissions/index-permissions.php` → `.cache/permissions/catalog.json`; `bash tools/gereq-permissions/install.sh`. Command: *GEREQ Permissions: Reindex*. |
-| `tools/gereq-twig-goto/` | Extension `gereq.twig-goto` (v0.3.6, "GEREQ Twig IDE"): hover, `.`-completion and Go to Definition for variables in `.twig` files, based on types exported from controllers. Types are stored outside templates. | `php gereq twig:types` (`src/Console/Command/TwigTypesCommand.php`) → `.cache/twig/types.json` + `.cache/twig/vars/**/*.types.twig`; `bash tools/gereq-twig-goto/install.sh`. Command: *GEREQ Twig: Reindex types*. Also includes `index-templates.php`. |
-| `tools/gereq-monitor/` | Extension `gereq.work-monitor` (v0.3.2, "GEREQ Pulse"): Toggl-style work tracking from the editor (open/close/save/edit/focus/git events, AI-edit heuristic), dashboard on `http://127.0.0.1:8772`, data in `.cache/worklog/events.jsonl`. `lib/` holds the server/store/auth, `ui/` a Vite UI (`bun run dev` on :8773 proxied to :8772). `standalone.js` runs the server without the editor. README documents a temporary hard-coded login. | `bash tools/gereq-monitor/install.sh`; `node tools/gereq-monitor/standalone.js`; UI dev: `cd tools/gereq-monitor/ui && bun install && bun run dev`. |
-| `tools/gereq-modules/` | Go program (Bubble Tea TUI) comparing `modules/*/module.php` versions with tags in GitLab (`GITLAB_URL` default `https://git.gereq.cz`, `GITLAB_TOKEN` required, `GITLAB_GROUP` default `gereq`, `MODULE_REPO_PREFIX` default `module-`, all read from `.env`; optional `GEREQ_ROOT`). Rows are `ok / DIFF / NO_TAGS / MISSING`. | `tools/gereq-modules/gereq-modules.sh` (builds with `go build` when `main.go` is newer than the binary, then execs it); `--plain` for text output, `-h` for help. TUI keys: `1–5`/`←→` tabs, `r` refresh, `q` quit. |
-| `tools/generate_gereq_platform_deck.py`, `tools/generate_gereq_platform_deck_editorial.py` | ReportLab scripts producing the sales deck PDF `output/pdf/GEREQ_Platform_prezentace_a_cenik_2026.pdf` (960×540). They reference brand assets and fonts via hard-coded Windows paths (`V:\home\dev\projects\GEREQ.cz\.brand`, `C:\Windows\Fonts`), so they only run on that workstation. The editorial variant additionally uses Pillow and fontTools to instantiate variable fonts. | `python tools/generate_gereq_platform_deck.py` (needs `reportlab`; editorial also `Pillow`, `fonttools`). |
+| `tools/gereq-cli/` | Source of `grq` (see above). Calls Cursor CLI `agent` when present. | `make grq` |
+| `tools/gereq-env/` | Cursor/VS Code extension `gereq.gereq-env` (v0.1.0, "GEREQ Env Schema"): autocomplete, hover and diagnostics for `.env` + `env_value()` from `config/env.schema.toml`. GitLab: [`gereq/tool-env`](https://git.gereq.cz/gereq/tool-env). | `bash tools/gereq-env/install.sh`; generate `.env`: `bin/grq env init` / `php gereq env:init`. |
+| `tools/gereq-i18n/` | Cursor/VS Code extension `gereq.i18n` (v0.2.2): hover, autocomplete and Go to Definition for translation keys in Twig (`'key'\|trans`), PHP (`->trans('key')`, `label:`/`hint:`/`title:`… named args, `'label' => '…'`). Reads a catalog generated from `resources/translations` + `modules/*/Resources/translations` + `integrations/*/Resources/translations`. GitLab: [`gereq/tool-i18n`](https://git.gereq.cz/gereq/tool-i18n). | `php tools/gereq-i18n/index-translations.php` → `.cache/i18n/catalog.json`; `bash tools/gereq-i18n/install.sh` installs into `~/.cursor-server/extensions/` (then *Developer: Reload Window*). Command palette: *GEREQ i18n: Reindex translations*. |
+| `tools/gereq-permissions/` | Extension `gereq.permissions` (v0.1.2): hover/autocomplete/F12 for permission keys (`user.can('…')` in Twig, `->can()`, `->permission()`, `permission:` in PHP). GitLab: [`gereq/tool-permissions`](https://git.gereq.cz/gereq/tool-permissions). | `php tools/gereq-permissions/index-permissions.php` → `.cache/permissions/catalog.json`; `bash tools/gereq-permissions/install.sh`. Command: *GEREQ Permissions: Reindex*. |
+| `tools/gereq-twig-goto/` | Extension `gereq.twig-goto` (v0.3.6, "GEREQ Twig IDE"): hover, `.`-completion and Go to Definition for variables in `.twig` files, based on types exported from controllers. Types are stored outside templates. GitLab: [`gereq/tool-twig-goto`](https://git.gereq.cz/gereq/tool-twig-goto). | `php gereq twig:types` (`src/Console/Command/TwigTypesCommand.php`) → `.cache/twig/types.json` + `.cache/twig/vars/**/*.types.twig`; `bash tools/gereq-twig-goto/install.sh`. Command: *GEREQ Twig: Reindex types*. Also includes `index-templates.php`. |
+| `tools/gereq-monitor/` | Extension `gereq.work-monitor` (v0.3.2, "GEREQ Pulse"): Toggl-style work tracking from the editor. GitLab: [`gereq/tool-pulse`](https://git.gereq.cz/gereq/tool-pulse). | `bash tools/gereq-monitor/install.sh` |
+| `tools/gereq-modules/` | Deprecated wrapper → `bin/grq modules`. GitLab: [`gereq/tool-modules`](https://git.gereq.cz/gereq/tool-modules). | `./tools/gereq-modules/gereq-modules.sh` → `grq modules` |
+| `tools/generate_tool_logos.py` | Generates `logo.svg` / `logo.png` / `icon.png` for each IDE tool. | `python3 tools/generate_tool_logos.py` |
+| `tools/publish-tools-to-gitlab.sh` | Push-to-create / update standalone GitLab projects under `gereq/tool-*`. | `bash tools/publish-tools-to-gitlab.sh` |
+| `tools/gitlab-set-tool-meta.sh` | Sets GitLab project description + avatar (`logo.png`) via API (`GITLAB_TOKEN`). | `bash tools/gitlab-set-tool-meta.sh` |
+| `tools/generate_gereq_platform_deck.py`, `tools/generate_gereq_platform_deck_editorial.py` | ReportLab sales deck PDFs (Windows brand paths). | `python tools/generate_gereq_platform_deck.py` |
 
-Generated indexes live in `.cache/` (ignored by git; excluded from demo packages by `bin/pack-demo`).
+Generated indexes live in `.cache/` (ignored by git; excluded from demo packages by `grq pack demo`).
 
-## `bin/`
+## `bin/` (legacy note)
 
-| Script | Purpose | Usage |
-| --- | --- | --- |
-| `bin/install` | Interactive TUI installer for a **new client with a clean DB**. Checks PHP ≥ 8.4, Composer, bun or npm, Docker (optional); asks app name, `APP_URL`, admin account, env (`local`/`production`), DB type (`sqlite`/`mysql`/`pgsql`), runtime (Docker → `QUEUE_DRIVER=redis`, `SESSION_DRIVER=redis`, `REDIS_HOST=redis`, `WEBHOOKS_ALLOW_PRIVATE_URLS=true`; otherwise queue driver choice), demo/sample data; generates `APP_KEY`; runs `composer install`, writes `.env` (backing up an existing one), creates `storage/*`, `bun install && bun run build`, `php gereq migrate --fresh --seed [--no-demo] [--no-sample]`, and either `docker compose up -d --build` or offers `php gereq serve`. | `./bin/install` |
-| `bin/install-demo` | Non-interactive **demo** install used by the packaged zip: SQLite, `APP_DEBUG=true`, `TRUSTED_PROXIES=*`, `QUEUE_DRIVER=sync`, `SESSION_DRIVER=file`, `MAIL_DSN=null://null`, `SEARCH_DRIVER=self_repair`, `FRONTEND_ORIGIN` for :5173, generated `API_PUBLIC_KEY` (also written to `FE2/.env` as `VITE_API_PUBLIC_KEY`), admin `demo@gereq.cz` / `demo123`; ignores `ext-redis` platform requirement if missing; `migrate --fresh --seed` with demo data. | `./bin/install-demo [--serve] [--port=8080]` (also via `./INSTALACE.sh`) |
-| `bin/pack-demo` | Builds `dist/gereq-realestates-demo-YYYYMMDD.zip` with `rsync` excluding `.git`, `vendor`, `node_modules`, `public/build`, `.env*`, SQLite DB, `storage/{logs,cache,sessions,tmp}/*`, `docs/proposals/`; adds `INSTALACE.sh` and `DEMO-README.txt`. | `./bin/pack-demo` |
-| `bin/install-realityV3` | Interactive **realityV3** install for Docker servers: asks Admin/FE/hub URLs (path prefixes supported, e.g. `client.gereq.cz/realityV3/admin`), SMTP+IMAP for emailing, writes `DEMO_PROFILE=realityV3`, builds admin + FE2 (`VITE_BASE`), seeds `admin-client` + broker accounts, generates `docker/nginx/realityV3.conf` and starts compose. | `./bin/install-realityV3 [--non-interactive] [--skip-docker]` |
-| `bin/pack-realityV3` | Builds `dist/realityV3-YYYYMMDD.zip` (admin + FE2 sources, Docker, hub); `INSTALACE.sh` → `install-realityV3`. | `./bin/pack-realityV3` |
-| `bin/commit` | `git commit` wrapper that strips `Co-authored-by:` trailers and enables the repo hook (`git config core.hooksPath .githooks`; `.githooks/commit-msg` does the same stripping for plain `git commit`). | `bin/commit "feat: …"`, `bin/commit -a -m "…"`, `bin/commit --all -m "…"`, `bin/commit --install-hooks` |
-| `bin/twiggy-env.php` | Bootstraps the application (`Gereq\Foundation\Application::create`) and returns the Twig `Environment` for the Twiggy Twig language server, so it sees the same functions/filters as the app (`asset`, `vite_tags`, `csp_nonce`, `icon`, …). | referenced from Twiggy configuration; not run directly |
-
-`INSTALACE.sh` in the project root is the copy generated by `bin/pack-demo` (delegates to `bin/install-demo`).
+`INSTALACE.sh` delegates to `bin/grq install demo`. RealityV3: `scripts/realityv3/install` and `scripts/realityv3/pack`.
 
 ## `.cursor/` rules and skills
 

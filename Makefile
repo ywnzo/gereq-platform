@@ -41,7 +41,7 @@ BUN_RUN := docker run --rm -u "$$(id -u):$$(id -g)" -v "$(ROOT):/app" -w /app $(
 
 .PHONY: help check-docker env certs build up down restart logs ps shell bash \
 	composer assets migrate migrate-fresh seed install demo gereq \
-	adminer adminer-down hot status urls
+	adminer adminer-down hot status urls grq grq-release
 
 help: ## Show help
 	@printf '\n\033[1mGEREQ — Docker only\033[0m (bez PHP na hostiteli)\n\n'
@@ -65,30 +65,30 @@ check-docker:
 	@command -v docker >/dev/null 2>&1 || { echo 'Chybí docker.'; exit 1; }
 	@docker compose version >/dev/null 2>&1 || { echo 'Chybí docker compose.'; exit 1; }
 
-env: check-docker ## Create .env from .env.example (if missing)
+env: check-docker ## Create .env from config/env.schema.toml (if missing)
 	@if [ -f "$(ROOT)/.env" ]; then \
 		echo '✓ .env už existuje'; \
 	else \
-		test -f "$(ROOT)/.env.example" || { echo 'Chybí .env.example'; exit 1; }; \
-		cp "$(ROOT)/.env.example" "$(ROOT)/.env"; \
-		APP_KEY=$$(openssl rand -hex 32); \
-		DB_PASS=$$(openssl rand -base64 24 | tr -d '/+=' | head -c 32); \
-		sed -i \
-			-e "s|^APP_KEY=.*|APP_KEY=$$APP_KEY|" \
-			-e "s|^DB_PASSWORD=.*|DB_PASSWORD=$$DB_PASS|" \
-			-e "s|^APP_URL=.*|APP_URL=http://127.0.0.1:$(PORT)|" \
-			-e "s|^APP_DEBUG=.*|APP_DEBUG=true|" \
-			-e "s|^DB_CONNECTION=.*|DB_CONNECTION=pgsql|" \
-			-e "s|^DB_HOST=.*|DB_HOST=postgres|" \
-			-e "s|^REDIS_HOST=.*|REDIS_HOST=redis|" \
-			-e "s|^SESSION_DRIVER=.*|SESSION_DRIVER=redis|" \
-			-e "s|^QUEUE_DRIVER=.*|QUEUE_DRIVER=redis|" \
-			-e "s|^CACHE_DRIVER=.*|CACHE_DRIVER=redis|" \
-			"$(ROOT)/.env"; \
-		mkdir -p "$(ROOT)/storage/"{cache,logs,sessions,tmp/queue,uploads,invoices,database}; \
-		chmod -R a+rwX "$(ROOT)/storage" 2>/dev/null || true; \
-		echo '✓ .env vytvořen (APP_KEY + DB_PASSWORD vygenerovány, Docker Postgres/Redis)'; \
+		test -f "$(ROOT)/config/env.schema.toml" || { echo 'Chybí config/env.schema.toml'; exit 1; }; \
+		"$(ROOT)/bin/grq" env init --docker --port "$(PORT)"; \
 	fi
+
+grq: ## Build grq for current OS/arch into bin/dist/
+	@cd "$(ROOT)/tools/gereq-cli" && CGO_ENABLED=0 go build -o "$(ROOT)/bin/dist/grq-$$(go env GOOS)-$$(go env GOARCH)$$( [ "$$(go env GOOS)" = windows ] && echo .exe || true )" .
+	@chmod +x "$(ROOT)/bin/grq" 2>/dev/null || true
+	@echo '✓ bin/dist/grq-'$$(go env GOOS)-$$(go env GOARCH)
+
+grq-release: ## Cross-compile grq for linux/darwin/windows amd64+arm64
+	@cd "$(ROOT)/tools/gereq-cli" && \
+	for pair in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do \
+	  os=$${pair%/*}; arch=$${pair#*/}; \
+	  out="$(ROOT)/bin/dist/grq-$${os}-$${arch}"; \
+	  [ "$$os" = windows ] && out="$${out}.exe"; \
+	  echo "→ $$out"; \
+	  CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build -o "$$out" .; \
+	done
+	@chmod +x "$(ROOT)/bin/grq" 2>/dev/null || true
+	@echo '✓ bin/dist ready'
 
 certs: check-docker ## Self-signed HTTPS certs (for HTTPS=1)
 	@mkdir -p "$(ROOT)/docker/nginx/certs"

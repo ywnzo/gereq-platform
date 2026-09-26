@@ -85,13 +85,13 @@ Key points from `src/Database/Migrator.php`:
 | `php gereq db:import-sqlite [path] [--migrate] [--dry-run]` | `ImportSqliteCommand.php` | Copy data from an SQLite file (default `storage/database.sqlite`) into the current DB, typically PostgreSQL. |
 | `php gereq module:enable <id>` | `ModuleEnableCommand.php` | Enable a module and run `migrateModule(id)`. |
 
-Clean client install (as used by `bin/install` and `make migrate-fresh`):
+Clean client install (as used by `bin/grq install` and `make migrate-fresh`):
 
 ```bash
 php gereq migrate --fresh --seed --no-demo --no-sample
 ```
 
-Demo install (`bin/install-demo`, `make demo`):
+Demo install (`bin/grq install demo`, `make demo`):
 
 ```bash
 php gereq migrate --fresh --seed
@@ -127,7 +127,7 @@ The `.cursor/rules/module-updates.mdc` rule requires every module change to bump
 The codebase contains no built-in backup command. Options that exist:
 
 - **PostgreSQL in Docker** — the data lives in the named volume `gereq-postgres`; the port is not published. Use `docker compose exec postgres pg_dump -U <DB_USERNAME> <DB_DATABASE_NAME> > dump.sql` (recommendation; not scripted in the repo).
-- **SQLite** — the database is the single file `storage/database.sqlite`; `bin/pack-demo` explicitly excludes it from demo packages.
+- **SQLite** — the database is the single file `storage/database.sqlite`; `bin/grq pack demo` explicitly excludes it from demo packages.
 - **Migration from SQLite to PostgreSQL** — `php gereq db:import-sqlite storage/database.sqlite --migrate`.
 - **Adminer** — opt-in `tools` profile (`docker compose --profile tools up -d adminer` or `make adminer`), default `http://127.0.0.1:8086`, auto-login via `docker/adminer/autologin.php` using `DB_USERNAME` / `DB_PASSWORD` / `DB_DATABASE_NAME`.
 

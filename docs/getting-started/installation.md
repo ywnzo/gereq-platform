@@ -1,19 +1,19 @@
 # Installation
 
-GEREQ is a PHP 8.4 platform with a Doctrine/Symfony-components core, Twig admin UI and a Vite/Bun frontend build. This page covers the three supported ways to get a running instance: the interactive host installer (`./bin/install`), the manual command sequence, and the Docker-only `Makefile` flow. It also describes how to load the RealEstates demo dataset. Everything below is derived from `README.md`, `bin/*`, `Makefile`, `INSTALACE.sh` and `src/Console/Command/*`.
+GEREQ is a PHP 8.4 platform with a Doctrine/Symfony-components core, Twig admin UI and a Vite/Bun frontend build. This page covers the three supported ways to get a running instance: the interactive host installer (`./bin/grq install`), the manual command sequence, and the Docker-only `Makefile` flow. It also describes how to load the RealEstates demo dataset. Everything below is derived from `README.md`, `bin/*`, `Makefile`, `INSTALACE.sh` and `src/Console/Command/*`.
 
 ## Requirements
 
 | Requirement | Notes | Source |
 | --- | --- | --- |
 | PHP `^8.4` | extensions `gd`, `json`, `mbstring`, `pdo`, `redis` are declared in `composer.json` (`ext-redis` can be skipped for the SQLite demo, see below) | `composer.json` |
-| Composer | | `bin/install` checks for it |
+| Composer | | `bin/grq install` checks for it |
 | Bun (preferred) or npm | frontend build (`vite build`, Tailwind 4). Workspace rule: always `bun run …` / `bun x …` | `package.json`, `.cursor/rules/tech-stack.mdc` |
 | Database | SQLite (default in `config/database.php`), MySQL/MariaDB or PostgreSQL 16 (Docker default) | `config/database.php`, `docker-compose.yml` |
 | Redis | optional; required for `CACHE_DRIVER=redis`, `QUEUE_DRIVER=redis`, `SESSION_DRIVER=redis` (Docker stack forces the last two) | `docker-compose.yml` |
 | Docker + `docker compose` | optional; used by `php gereq serve-docker` and the `Makefile` | `Makefile`, `src/Console/Command/ServeDockerCommand.php` |
 
-`bin/install` refuses to run on PHP < 8.4 and aborts when neither `bun` nor `npm` is present.
+`bin/grq install` refuses to run on PHP < 8.4 and aborts when neither `bun` nor `npm` is present.
 
 ## Clone
 
@@ -27,9 +27,9 @@ git submodule update --init --recursive
 
 Without the submodules `ModuleManager::discover()` (`src/Module/ModuleManager.php`) finds no `module.php` manifests and the admin has no modules to enable.
 
-## Option A — interactive installer (`./bin/install`)
+## Option A — interactive installer (`./bin/grq install`)
 
-`bin/install` is a Bash TUI for a **clean client** installation. It:
+`bin/grq install` is the interactive **clean client** installer (Go CLI). It:
 
 1. Checks `php` (>= 8.4), `composer`, `bun`/`npm`, and optionally Docker.
 2. Asks for app name, `APP_URL`, admin name/e-mail/password, environment (`local` / `production`), database type (SQLite / MySQL / PostgreSQL) and connection details, runtime (Docker stack or host), queue driver, whether webhooks may target private URLs, and whether to load demo/sample data.
@@ -48,7 +48,8 @@ After it finishes: admin at `<APP_URL>/admin`, first-run wizard at `<APP_URL>/ad
 
 ```bash
 composer install
-cp .env.example .env            # fill APP_KEY (64 hex chars), DB_*, ADMIN_*
+php gereq env:init              # from config/env.schema.toml (or: bin/grq env init)
+# adjust ADMIN_*, DB_* as needed
 php gereq migrate --fresh --seed --no-demo --no-sample
 bun install && bun run build
 php gereq serve                 # http://127.0.0.1:8080/admin
@@ -56,7 +57,7 @@ php gereq serve                 # http://127.0.0.1:8080/admin
 
 Notes:
 
-- `.env.example` defaults to `DB_CONNECTION=pgsql` (the Docker stack's database). For a host-only SQLite setup change it to `sqlite` and keep `DB_DATABASE=storage/database.sqlite`.
+- Schema defaults use `DB_CONNECTION=sqlite`. For Docker use `php gereq env:init --docker` / `bin/grq env init --docker` (pgsql + redis hosts).
 - `php gereq install` (`src/Console/Command/InstallCommand.php`) is the interactive equivalent of `migrate --fresh --seed` once `vendor/` and `.env` already exist. Options: `--fresh`, `--no-demo`, `--no-sample`, `--yes|-y` (skip prompts, for CI).
 - The admin account comes from `ADMIN_NAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`src/Database/Seeder.php::seedAdmin`). Change the password after first login.
 
@@ -94,7 +95,7 @@ make hot                # Vite HMR on :5173 via Docker bun
 make urls
 ```
 
-`make env` (run implicitly by most targets) copies `.env.example` to `.env`, generates `APP_KEY` and `DB_PASSWORD`, and switches drivers to the Docker services (`DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `REDIS_HOST=redis`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `CACHE_DRIVER=redis`). `HTTPS=1` adds `docker-compose.https.yml` and generates a self-signed certificate into `docker/nginx/certs/` (`make certs`).
+`make env` (run implicitly by most targets) runs `bin/grq env init --docker`, which writes `.env` from `config/env.schema.toml`, generates `APP_KEY` and `DB_PASSWORD`, and switches drivers to the Docker services (`DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `REDIS_HOST=redis`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `CACHE_DRIVER=redis`). `HTTPS=1` adds `docker-compose.https.yml` and generates a self-signed certificate into `docker/nginx/certs/` (`make certs`).
 
 The compose stack (`docker-compose.yml`, project name `gereq`) contains: `nginx` (port `${GEREQ_PORT:-8080}`), `php` (PHP-FPM, image from `docker/php/Dockerfile`), `postgres` (16, not published to the host), `redis`, `queue` (`php gereq queue:work`, always started) and the opt-in `adminer` (profile `tools`). `DB_PASSWORD` must be set in `.env` or compose fails with `Set a strong DB_PASSWORD in .env`.
 
@@ -145,9 +146,9 @@ Entry point is `resources/js/admin.ts` (`vite.config.ts`). `Gereq\View\AssetMana
 | --- | --- |
 | `php gereq seed:demo` | `Gereq\Database\DemoSeeder` — demo user plus realistic click-through data on top of an existing install |
 | `php gereq migrate --seed` (without `--no-demo`) | full seed including demo business data (`Seeder::seed(true, true)`) |
-| `./bin/install-demo [--serve] [--port=8080]` | non-interactive demo install: checks `pdo_sqlite mbstring json gd`, `composer install` (adds `--ignore-platform-req=ext-redis` when the extension is missing), writes a SQLite `.env` with `demo@gereq.cz` / `demo123`, generates `API_PUBLIC_KEY=grq_pub_*` and writes `FE2/.env` (`VITE_API_URL`, `VITE_API_PUBLIC_KEY`), builds assets and runs `php gereq migrate --fresh --seed` |
-| `./INSTALACE.sh` | thin wrapper that `exec`s `bin/install-demo "$@"` (shipped in the demo zip) |
-| `./bin/pack-demo` | builds `dist/gereq-realestates-demo-<yyyymmdd>.zip` via `rsync` excluding `.git`, `vendor`, `node_modules`, `public/build`, `.env*`, SQLite DB and storage contents; adds `INSTALACE.sh` and `DEMO-README.txt` |
+| `./bin/grq install demo [--serve] [--port=8080]` | non-interactive demo install: checks `pdo_sqlite mbstring json gd`, `composer install` (adds `--ignore-platform-req=ext-redis` when the extension is missing), writes a SQLite `.env` with `demo@gereq.cz` / `demo123`, generates `API_PUBLIC_KEY=grq_pub_*` and writes `FE2/.env` (`VITE_API_URL`, `VITE_API_PUBLIC_KEY`), builds assets and runs `php gereq migrate --fresh --seed` |
+| `./INSTALACE.sh` | thin wrapper that `exec`s `bin/grq install demo "$@"` (shipped in the demo zip) |
+| `./bin/grq pack demo` | builds `dist/gereq-realestates-demo-<yyyymmdd>.zip` via `rsync` excluding `.git`, `vendor`, `node_modules`, `public/build`, `.env*`, SQLite DB and storage contents; adds `INSTALACE.sh` and `DEMO-README.txt` |
 | `php gereq portals:seed-demo` | Portals module: sample portals (Sreality/Idnes/Bezrealitky) linked to listings |
 
 ## After installation
@@ -155,6 +156,6 @@ Entry point is `resources/js/admin.ts` (`vite.config.ts`). `Gereq\View\AssetMana
 - Log in at `/admin`, complete `/admin/setup`.
 - Enable the modules you need: `php gereq module:enable <id>` or Admin → Modules (package groups such as `realestates` can be enabled in one click; see [module system](../architecture/module-system.md)).
 - Set `GITLAB_TOKEN` in `.env` if you want to install module versions from GitLab through the admin.
-- Commit with `bin/commit "..."` — it installs `.githooks/commit-msg`, which strips `Co-authored-by` trailers.
+- Commit with `bin/grq commit "..."` — it installs `.githooks/commit-msg`, which strips `Co-authored-by` trailers.
 
 Next: [Configuration](configuration.md), [CLI reference](cli.md).

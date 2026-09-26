@@ -42,7 +42,7 @@ Notes derived from the code:
 
 ## Settings and env keys
 
-All credentials are **settings**, not `.env` variables — there are no `AI_*`/`OPENAI_*` keys in `.env.example` or `config/`. They are defined in `AiModule::defineSettings()` (module id `ai`) and edited at **Admin → AI → Settings** (`/admin/ai/settings`, permission `ai.manage`, `modules/Ai/Http/SettingsController.php`).
+All credentials are **settings**, not `.env` variables — there are no `AI_*`/`OPENAI_*` keys in `config/env.schema.toml` or `config/`. They are defined in `AiModule::defineSettings()` (module id `ai`) and edited at **Admin → AI → Settings** (`/admin/ai/settings`, permission `ai.manage`, `modules/Ai/Http/SettingsController.php`).
 
 | Setting | Type | Default |
 | --- | --- | --- |

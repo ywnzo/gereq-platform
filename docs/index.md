@@ -8,7 +8,7 @@ This documentation is generated from the code base and organised by concern. Whe
 
 | Page | Contents |
 |---|---|
-| [Installation](getting-started/installation.md) | Requirements, cloning with submodules, `bin/install`, migrations, asset build, dev servers, Docker-only `Makefile` flow |
+| [Installation](getting-started/installation.md) | Requirements, cloning with submodules, `bin/grq install`, migrations, asset build, dev servers, Docker-only `Makefile` flow |
 | [Configuration](getting-started/configuration.md) | `config/*.php` files and every `.env` variable |
 | [CLI reference](getting-started/cli.md) | All `php gereq` commands |
 

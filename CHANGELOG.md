@@ -14,7 +14,7 @@ Při releasu: bump `VERSION` (+ `composer.json` / `package.json`), zápis do té
 
 ### Added
 
-- realityV3 installer/packager (`bin/install-realityV3`, `bin/pack-realityV3`) a seed profile
+- realityV3 installer/packager (`scripts/realityv3/install`, `scripts/realityv3/pack`) a seed profile
 - URL path prefix support (`UrlPrefix`) for admin/FE behind reverse-proxy paths
 - Broker scoping across CRM / Listings / Documents / Calendar / Viewings / Customers
 

@@ -1,27 +1,27 @@
 # GEREQ Twig IDE
 
-Hover, autocomplete (po `.`) a F12 pro objekty v `.twig` — typy jsou **mimo šablony**.
+<p align="center">
+  <img src="logo.png" alt="GEREQ Twig IDE" width="128" height="128" />
+</p>
 
-## Generování
+**Cursor / VS Code extension** — hover, `.` autocomplete and Go to Definition for objects in `.twig` templates. Types are exported from controllers and stored **outside** templates.
+
+| | |
+| --- | --- |
+| **GitLab** | https://git.gereq.cz/gereq/tool-twig-goto |
+| **Install** | `php gereq twig:types` → `bash install.sh` → *Developer: Reload Window* |
+
+## Generate types (platform)
 
 ```bash
 php gereq twig:types
 ```
 
-Výstup:
+Output:
 
 ```
 .cache/twig/types.json
-.cache/twig/vars/modules/Currency/Resources/views/index.html.twig.types.twig
+.cache/twig/vars/…
 ```
 
-Šablony zůstanou čisté (staré `BEGIN-GEREQ-TWIG-TYPES` bloky se při běhu smažou).
-
-## Instalace
-
-```bash
-php gereq twig:types
-bash tools/gereq-twig-goto/install.sh
-```
-
-**Developer: Reload Window**. Příkaz: **GEREQ Twig: Reindex types (.cache/twig)**.
+Command palette: **GEREQ Twig: Reindex types (.cache/twig)**.

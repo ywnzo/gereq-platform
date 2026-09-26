@@ -1,55 +1,38 @@
 # GEREQ Pulse
 
-Monitorování práce ve workspace — soubory, řádky, diff, AI heuristika. Dashboard na **:8772**.
+<p align="center">
+  <img src="logo.png" alt="GEREQ Pulse" width="128" height="128" />
+</p>
 
-## Instalace
+**Cursor / VS Code extension** — Toggl-style work tracking from the editor (files, diffs, focus, AI-edit heuristic). Local dashboard on **:8772**.
 
-```bash
-bash tools/gereq-monitor/install.sh
-```
+| | |
+| --- | --- |
+| **GitLab** | https://git.gereq.cz/gereq/tool-pulse |
+| **Install** | `bash install.sh` → *Developer: Reload Window* |
 
-**Developer: Reload Window** → status bar **Pulse** nebo http://127.0.0.1:8772
+## What it collects
 
-## Co sbírá
-
-| event | popis |
-|-------|--------|
-| `open` / `close` / `save` | dokumenty |
-| `edit` | +/− řádky, `source: user\|ai` |
-| `focus` | čas na souboru |
-| `create` / `delete` / `rename` | FS |
-| `git` | shortstat každých 60s |
-
-AI = heuristika (velký jednorázový chunk / Cursor apply), ne 100% přesný telemetrie agentů.
+| Event | Meaning |
+| --- | --- |
+| `open` / `close` / `save` | documents |
+| `edit` | +/- lines, `source: user\|ai` |
+| `focus` | time on file |
+| `create` / `delete` / `rename` | filesystem |
+| `git` | shortstat every 60s |
 
 Data: `.cache/worklog/events.jsonl`
 
-## Login (dočasné)
+## Views
 
-Po otevření `:8772` je přihlášení:
-
-- e-mail: `test@gereq.cz`
-- heslo: `heslo`
-
-Později napojíme na GEREQ API (`lib/auth.js` → `tryLogin`).
-
-UI používá brand z `GEREQ.cz/.brand` (Ink / Cream / Signal Lime, Space Grotesk + DM Sans).
-
-Pohledy jako Toggl Track:
-- **Timer** — time entries + projekty + 15min activity timeline
-- **Den** — vertikální kalendář 0–24 h s bloky
-- **Týden** — 7 sloupců s entries
-- **Insights** — heatmapa, jazyky, grafy
-
-## Příkazy
-
-- **GEREQ Pulse: Open dashboard (:8772)**
-- **GEREQ Pulse: Reset today's session log**
+- **Timer** — entries + projects + 15min activity
+- **Day** — vertical 0–24h calendar
+- **Week** — 7 columns
+- **Insights** — heatmap, languages, charts
 
 ## Dev UI
 
 ```bash
-cd tools/gereq-monitor/ui
-bun install && bun run dev   # :8773, proxy → :8772
+cd ui && bun install && bun run dev   # :8773 → proxy :8772
 bun run build
 ```

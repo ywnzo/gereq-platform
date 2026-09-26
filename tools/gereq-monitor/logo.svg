@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="GEREQ Pulse logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#201828"/>
+      <stop offset="100%" stop-color="#e080b0" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="168" fill="#e080b0" opacity="0.16"/>
+  <g fill="#fff" stroke="none">
+            <path d="M120 256h70l28-90 48 180 36-120 24 60h66" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="256" cy="256" r="150" fill="none" stroke="#fff" stroke-width="18" opacity=".35"/>
+        </g>
+</svg>

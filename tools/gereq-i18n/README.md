@@ -1,38 +1,35 @@
 # GEREQ i18n
 
-Hover, autocomplete a F12 pro překladové klíče v Twig a PHP.
+<p align="center">
+  <img src="logo.png" alt="GEREQ i18n" width="128" height="128" />
+</p>
 
-## Generování
+**Cursor / VS Code extension** — hover, autocomplete and Go to Definition for GEREQ translation keys in Twig and PHP.
+
+| | |
+| --- | --- |
+| **GitLab** | https://git.gereq.cz/gereq/tool-i18n |
+| **Install** | index → `bash install.sh` → *Developer: Reload Window* |
+
+## Index
 
 ```bash
-php tools/gereq-i18n/index-translations.php
+php index-translations.php
+# → .cache/i18n/catalog.json  (run from GEREQ Platform root)
 ```
 
-Výstup: `.cache/i18n/catalog.json`
+## Features
 
-## Instalace
+- Hover — cs / en (and other locales) side by side
+- Autocomplete while typing keys
+- Go to Definition → line in `messages.<locale>.php`
+- Output channel **GEREQ i18n**
 
-```bash
-php tools/gereq-i18n/index-translations.php
-bash tools/gereq-i18n/install.sh
-```
+### Detected contexts
 
-**Developer: Reload Window**. Příkaz: **GEREQ i18n: Reindex translations (.cache/i18n)**.
-
-## Co umí
-
-- **Hover** — cs / en (a další locale) vedle sebe
-- **Autocomplete** — návrhy klíčů při psaní
-- **Go to Definition** — skok na řádek v `messages.<locale>.php`
-- Output kanál **GEREQ i18n** — LSP-like log (`didOpen`, `hover`, `completion`, …)
-
-### Detekované kontexty
-
-| Kontext | Příklad |
+| Context | Example |
 | --- | --- |
 | Twig filter | `'customers.field.name'\|trans` |
 | PHP translator | `$this->translator->trans('nav.customers')` |
-| Named arg (FormField, MenuItem, …) | `label: 'customers.field.name'` |
-| Named arg | `singular:`, `hint:`, `title:`, `message:`, `placeholder:` |
-| Array value | `'label' => 'nav.customers'`, `'placeholder' => '…'` |
-| Katalog (fallback) | `'customers.status.active'` v match/return, pokud klíč existuje |
+| Named args | `label:`, `hint:`, `title:`, `message:`, `placeholder:` |
+| Array values | `'label' => 'nav.customers'` |

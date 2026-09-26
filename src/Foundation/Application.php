@@ -226,6 +226,8 @@ final class Application
             \Gereq\Console\Command\NnCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ImportSqliteCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\TwigTypesCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\EnvInitCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\EnvValidateCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Modules\Fleet\Application\VehicleCatalogClient::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
             \Modules\Orders\Application\InvoiceIssuingService::class => \DI\autowire()

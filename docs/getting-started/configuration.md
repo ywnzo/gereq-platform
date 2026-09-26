@@ -1,6 +1,6 @@
 # Configuration
 
-Configuration lives in plain PHP arrays under `config/*.php`; each file becomes a top-level key in `Gereq\Config\Repository` (`config('cache.driver')`, `$config->get('app.url')`). Environment-specific values are read from `.env` through the `env_value()` helper. This page lists every config file with its keys, and every `.env` variable read by `config/` or `src/` with its default and meaning.
+Configuration lives in plain PHP arrays under `config/*.php`; each file becomes a top-level key in `Gereq\Config\Repository` (`config('cache.driver')`, `$config->get('app.url')`). Environment-specific values are read from `.env` through the `env_value()` helper. The catalogue of every env key (type, default, secret, description) is `config/env.schema.toml` — generate `.env` with `php gereq env:init` / `bin/grq env init`, validate with `php gereq env:validate`. This page lists every config file with its keys, and every `.env` variable read by `config/` or `src/` with its default and meaning.
 
 ## How values are loaded
 
@@ -184,7 +184,7 @@ Declares **packages** (`surface: packages`) and **plugin groups** (`surface: plu
 | `GEREQ_PORT` | `8080` | `docker-compose.yml` | nginx host port (set by `serve-docker --port`) |
 | `DB_PASSWORD` | — | `docker-compose.yml` | required (`?Set a strong DB_PASSWORD in .env`) |
 
-`.env.example` documents the commonly changed subset (it omits `API_*`, `CACHE_PREFIX`, `CACHE_DB_TABLE`, `FILE_*_QUALITY`, `S3_*`, `MAIL_FROM_*`, `GITLAB_TOKEN`, `MODULE_TAGS_CACHE_TTL`, `WEBAUTHN_*`, `APP_DEBUG_EDITOR_ROOT`). `bin/install-demo` additionally writes `FE2/.env` (`VITE_API_URL`, `VITE_API_PUBLIC_KEY`) for the React demo frontend; those are not read by PHP.
+`config/env.schema.toml` is the full catalogue. `bin/grq install demo` additionally writes `FE2/.env` (`VITE_API_URL`, `VITE_API_PUBLIC_KEY`) for the React demo frontend; those are not read by PHP.
 
 ## Complete `.env` variable index
 
@@ -248,4 +248,4 @@ Declares **packages** (`surface: packages`) and **plugin groups** (`surface: plu
 | `SESSION_LIFETIME` | `120` | `session.lifetime` |
 | `SESSION_SAME_SITE` | `lax` | `session.samesite` |
 
-`.env.example` is the annotated template; `tests/bootstrap.php` overrides `APP_ENV=testing`, `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:` for PHPUnit.
+`config/env.schema.toml` is the annotated catalogue; `tests/bootstrap.php` overrides `APP_ENV=testing`, `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:` for PHPUnit.

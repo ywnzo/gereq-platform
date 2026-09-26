@@ -6,6 +6,8 @@ namespace Gereq\Console;
 
 use Gereq\Console\Command\AboutCommand;
 use Gereq\Console\Command\CacheClearCommand;
+use Gereq\Console\Command\EnvInitCommand;
+use Gereq\Console\Command\EnvValidateCommand;
 use Gereq\Console\Command\ImportLaravelCommand;
 use Gereq\Console\Command\ImportSqliteCommand;
 use Gereq\Console\Command\InstallCommand;
@@ -79,6 +81,8 @@ final class ConsoleKernel
             ServeDockerCommand::class,
             NnCommand::class,
             TwigTypesCommand::class,
+            EnvInitCommand::class,
+            EnvValidateCommand::class,
             SyncRatesCommand::class,
             SyncJamaCatalogCommand::class,
             ImportLaravelCommand::class,

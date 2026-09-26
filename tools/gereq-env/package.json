@@ -1,0 +1,62 @@
+{
+  "name": "gereq-env",
+  "displayName": "GEREQ Env Schema",
+  "description": "Autocomplete, hover and diagnostics for GEREQ .env keys from config/env.schema.toml — plus env_value() completion in PHP.",
+  "version": "0.1.0",
+  "publisher": "gereq",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git@git.gereq.cz:gereq/tool-env.git"
+  },
+  "homepage": "https://git.gereq.cz/gereq/tool-env",
+  "bugs": {
+    "url": "https://git.gereq.cz/gereq/tool-env/-/issues"
+  },
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#18241c",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.88.0"
+  },
+  "categories": [
+    "Other",
+    "Linters"
+  ],
+  "keywords": [
+    "gereq",
+    "dotenv",
+    "env",
+    "schema",
+    "toml"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:config/env.schema.toml"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gereq.env.reload",
+        "title": "GEREQ Env: Reload schema"
+      },
+      {
+        "command": "gereq.env.validate",
+        "title": "GEREQ Env: Validate .env"
+      }
+    ],
+    "configuration": {
+      "title": "GEREQ Env",
+      "properties": {
+        "gereqEnv.schemaPath": {
+          "type": "string",
+          "default": "config/env.schema.toml",
+          "description": "Path to env.schema.toml relative to workspace root"
+        }
+      }
+    }
+  }
+}

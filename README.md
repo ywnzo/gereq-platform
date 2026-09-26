@@ -41,14 +41,15 @@ git submodule update --init --recursive
 Interaktivní TUI — Composer, `.env`, assets, **čistá DB**, admin účet:
 
 ```bash
-./bin/install
+./bin/grq install
 ```
 
-Nebo non-interactive po ručním `.env`:
+Nebo non-interactive po vygenerovaném `.env`:
 
 ```bash
 composer install
-cp .env.example .env   # doplňte APP_KEY, ADMIN_*
+./bin/grq env init          # nebo: php gereq env:init
+# doplňte ADMIN_* podle potřeby
 php gereq migrate --fresh --seed --no-demo --no-sample
 bun install && bun run build
 ```
@@ -59,10 +60,10 @@ bun install && bun run build
 
 ```bash
 composer install
-cp .env.example .env
+./bin/grq env init   # katalog klíčů: config/env.schema.toml
 ```
 
-Do `.env` doplňte `APP_KEY` (náhodný 64znakový hex) a přístupové údaje.
+Do `.env` doplňte přístupové údaje (klíče `APP_KEY` / `DB_PASSWORD` se vygenerují).
 
 ```bash
 php gereq migrate --fresh --seed --no-demo --no-sample
@@ -84,6 +85,12 @@ Migrace:
 | `php gereq seed:demo` | dodatečně demo data |
 
 ## Environment
+
+Katalog klíčů: `config/env.schema.toml`. Generování: `./bin/grq env init` / `php gereq env:init` (Docker: `--docker`). Validace: `./bin/grq env validate` / `php gereq env:validate`.
+
+IDE (Cursor/VS Code): `bash tools/gereq-env/install.sh` → autocomplete / hover / diagnostika v `.env` a `env_value('…')`.
+
+CLI: `./bin/grq` — doctor, install, pack, commit, pr, modules (viz `tools/gereq-cli/README.md`).
 
 | Proměnná | Význam |
 | --- | --- |
@@ -160,7 +167,7 @@ php gereq migrate --fresh --seed --no-demo --no-sample
 php gereq module:list
 php gereq module:enable customers
 php gereq module:disable customers
-php gereq make:module Warehouse
+php gereq make:module Warehouse   # or: ./bin/grq modules create Warehouse
 php gereq make:resource Product --module=Warehouse
 php gereq migrate
 php gereq migrate:status
@@ -171,7 +178,7 @@ php gereq serve-docker
 php gereq user:create
 ```
 
-Shell instalátor: `./bin/install`
+Shell instalátor: `./bin/grq install`
 
 ## Moduly
 
@@ -230,8 +237,8 @@ git commit -m "chore: pin Customers to v1.6.4"
 git push
 
 # srovnání lokálních verzí vs GitLab tagy (TUI)
-./tools/gereq-modules/gereq-modules.sh
-./tools/gereq-modules/gereq-modules.sh --plain
+./bin/grq modules
+./bin/grq modules status --plain
 ```
 
 Commit kódu modulu patří do **module repo** (`module-customers`). Commit v `GEREQ_PLATFORM` jen posouvá pin submodule (SHA/tag).
@@ -289,7 +296,8 @@ $events->dispatch(new CustomerCreated($customer->id()));
 ### 1. Kostra v platformě
 
 ```bash
-php gereq make:module Warehouse
+./bin/grq modules create Warehouse --kind warehouse
+# or: php gereq make:module Warehouse
 ```
 
 Doplňte `register()` (služby, routes, permissions, **API**, **events**, případně **publishables**) a `boot()` (menu, hooky, widgety).
@@ -360,7 +368,7 @@ Každý modul má být plnohodnotná platform capability, ne jen admin CRUD:
 - [x] Migrace jen přes Database/Migrations/
 - [x] Tests (unit / feature dle rozsahu)
 - [x] i18n cs + en
-- [x] Kontrola: ./tools/gereq-modules/gereq-modules.sh — modul OK na GitLabu
+- [x] Kontrola: `./bin/grq modules status --plain` — modul OK na GitLabu
 
 
 ## API, Events, Webhooks
