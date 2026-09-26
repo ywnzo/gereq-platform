@@ -83,7 +83,7 @@ class Role
     /** Full-access roles (bypass permission checks). */
     public function isPrivileged(): bool
     {
-        return in_array($this->name, ['superadmin', 'administrator'], true);
+        return in_array($this->name, ['superadmin', 'administrator', 'admin'], true);
     }
 
     /** @return Collection<int, Permission> */

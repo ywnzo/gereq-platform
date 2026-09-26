@@ -7,6 +7,10 @@ namespace Gereq\Tests\Unit;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Gereq\Config\Repository;
+use Gereq\Publish\ContentReadContext;
+use Gereq\Publish\PublishableRegistry;
+use Gereq\Publish\StagingStore;
+use Gereq\Publish\StagingWriter;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 use Gereq\Setup\SetupState;
@@ -28,7 +32,7 @@ final class SettingsCacheTest extends TestCase
         $em = $this->createMock(EntityManagerInterface::class);
         $em->method('getRepository')->with(SettingRecord::class)->willReturn($repo);
 
-        $settings = new Settings($em, new Repository([]));
+        $settings = $this->settings($em);
 
         self::assertSame('GEREQ', $settings->get('brand.name'));
         self::assertSame('cs', $settings->get('app.locale'));
@@ -51,7 +55,7 @@ final class SettingsCacheTest extends TestCase
         $em->method('getRepository')->with(SettingRecord::class)->willReturn($repo);
         $em->expects(self::never())->method('find');
 
-        $settings = new Settings($em, new Repository([]));
+        $settings = $this->settings($em);
         $state = new SetupState($settings);
 
         self::assertTrue($state->isComplete());
@@ -66,8 +70,21 @@ final class SettingsCacheTest extends TestCase
         $em = $this->createMock(EntityManagerInterface::class);
         $em->method('getRepository')->willReturn($repo);
 
-        $state = new SetupState(new Settings($em, new Repository([])));
+        $state = new SetupState($this->settings($em));
 
         self::assertTrue($state->isComplete());
+    }
+
+    private function settings(EntityManagerInterface $em): Settings
+    {
+        $publishables = new PublishableRegistry();
+
+        return new Settings(
+            $em,
+            new Repository([]),
+            new ContentReadContext(),
+            $publishables,
+            new StagingWriter(new StagingStore($em), $publishables),
+        );
     }
 }

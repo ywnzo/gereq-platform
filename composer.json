@@ -59,7 +59,11 @@
         }
     },
     "scripts": {
-        "test": "phpunit",
+        "test": "php bin/gereq-test",
+        "test:phpunit": "phpunit",
+        "test:core": "php bin/gereq-test core",
+        "test:modules": "php bin/gereq-test modules",
+        "test:file": "php bin/gereq-test file",
         "phpstan": "phpstan analyse --memory-limit=1G",
         "cs": "phpcs",
         "cs-fix": "phpcbf"

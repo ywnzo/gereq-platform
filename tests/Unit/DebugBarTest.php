@@ -163,9 +163,9 @@ final class DebugBarTest extends TestCase
         $bar = $this->bar();
         $profile = new \Twig\Profiler\Profile('main', \Twig\Profiler\Profile::ROOT);
         $tpl = new \Twig\Profiler\Profile(
-            '@crm/workflows/index.html.twig',
+            '@crm/deals/index.html.twig',
             \Twig\Profiler\Profile::TEMPLATE,
-            '@crm/workflows/index.html.twig',
+            '@crm/deals/index.html.twig',
         );
         $profile->addProfile($tpl);
         $bar->setTwigProfile($profile);
@@ -175,9 +175,9 @@ final class DebugBarTest extends TestCase
         self::assertSame(dirname(__DIR__, 2), $payload['projectRoot']);
         self::assertSame(dirname(__DIR__, 2), $payload['serverRoot']);
         self::assertNotEmpty($payload['views']);
-        self::assertSame('@crm/workflows/index.html.twig', $payload['views'][0]['name']);
+        self::assertSame('@crm/deals/index.html.twig', $payload['views'][0]['name']);
         self::assertSame(
-            'modules/CRM/Resources/views/workflows/index.html.twig',
+            'modules/CRM/Resources/views/deals/index.html.twig',
             $payload['views'][0]['file'],
         );
     }
@@ -197,7 +197,6 @@ final class DebugBarTest extends TestCase
     {
         $bar = $this->bar();
         $method = new \ReflectionMethod(DebugBar::class, 'resolveTwigRelativePath');
-        $method->setAccessible(true);
 
         self::assertSame(
             'resources/views/admin/layout.html.twig',

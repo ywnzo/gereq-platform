@@ -1,0 +1,29 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Thin entry for the testing engine — does not boot Application / DB.
+ *
+ * Usage:
+ *   php bin/gereq-test [target] [--list] [--filter=…] [--stop-on-failure] [--testdox]
+ *   composer test
+ *   composer test -- core
+ *   composer test -- module:shop
+ */
+
+use Gereq\Console\Command\TestCommand;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\ArgvInput;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$basePath = dirname(__DIR__);
+$app = new Application('GEREQ Testing Engine', '1.0');
+$app->setAutoExit(true);
+$command = new TestCommand($basePath);
+$app->add($command);
+$app->setDefaultCommand($command->getName(), true);
+
+exit($app->run(new ArgvInput($_SERVER['argv'] ?? [])));

@@ -224,6 +224,7 @@ final class Application
             \Gereq\Console\Command\ServeCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ServeDockerCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\NnCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\TestCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\ImportSqliteCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\TwigTypesCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Gereq\Console\Command\EnvInitCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),

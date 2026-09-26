@@ -45,7 +45,7 @@ final class MakeModuleCommand extends Command
             'Admin',
             'Database/Migrations',
             'Resources/views',
-            'Tests',
+            'Testing',
         ];
 
         foreach ($dirs as $dir) {
@@ -104,6 +104,29 @@ final class {$name}Module implements ModuleInterface
     public function boot(ModuleContext \$context): void
     {
         // Dashboard: \$context->dashboard()->addWidget(new \Modules\\\\{$name}\\\\Application\\\\Widgets\\\\ExampleWidget(...));
+    }
+}
+PHP);
+
+        file_put_contents($root . '/Testing/' . $name . 'DomainTest.php', <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\\\\{$name}\\\\Testing;
+
+use PHPUnit\\\\Framework\\\\TestCase;
+
+/**
+ * Module tests live in modules/{$name}/Testing/.
+ * Run: php bin/gereq-test module:{$id}
+ *   or: composer test -- module:{$id}
+ */
+final class {$name}DomainTest extends TestCase
+{
+    public function testModuleSkeletonPlaceholder(): void
+    {
+        self::assertTrue(true);
     }
 }
 PHP);

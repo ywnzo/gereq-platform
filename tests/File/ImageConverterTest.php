@@ -26,7 +26,6 @@ final class ImageConverterTest extends TestCase
         ob_start();
         imagejpeg($image, null, 90);
         $jpeg = (string) ob_get_clean();
-        imagedestroy($image);
 
         $result = $converter->convert($jpeg, 'image/jpeg');
         $this->assertNotNull($result);
@@ -54,7 +53,6 @@ final class ImageConverterTest extends TestCase
         ob_start();
         imagegif($image);
         $gif = (string) ob_get_clean();
-        imagedestroy($image);
 
         $this->assertNull((new ImageConverter())->convert($gif, 'image/gif'));
     }

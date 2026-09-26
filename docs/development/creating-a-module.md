@@ -18,7 +18,7 @@ modules/Warehouse/
   Domain/  Infrastructure/  Http/  Admin/
   Database/Migrations/
   Resources/views/
-  Tests/
+  Testing/
 ```
 
 Conventions that are not created for you but are discovered automatically when present:
@@ -166,7 +166,7 @@ Files in `Database/Migrations/` named `YYYY_MM_DD_NNNNNN_name.php` returning an 
 
 ## 13. Tests
 
-Platform-level unit tests live in `tests/Unit/Modules/<Module>/` (namespace `Gereq\Tests\Unit\Modules\<Module>`, PHPUnit suite `Modules`); the generated `Tests/` directory inside the module is for tests shipped with the module repo. Prefer pure unit tests of domain/application logic (no DB). `tests/Unit/Modules/ModuleStructure/ModuleManifestConsistencyTest.php` already asserts that every `module.php` version equals `Module::version()`. See [Testing](testing.md).
+Module unit tests live in `modules/<Module>/Testing/` (namespace `Modules\<Module>\Testing`). The testing engine discovers them: `composer test -- module:<id>` or `php bin/gereq-test <id>`. Prefer pure unit tests of domain/application logic (no DB). `tests/Unit/Modules/ModuleStructure/ModuleManifestConsistencyTest.php` asserts that every `module.php` version equals `Module::version()`. See [Testing](testing.md).
 
 ## 14. Enable locally
 

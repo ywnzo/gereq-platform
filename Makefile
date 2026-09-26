@@ -40,7 +40,7 @@ BUN_IMG := oven/bun:1.2
 BUN_RUN := docker run --rm -u "$$(id -u):$$(id -g)" -v "$(ROOT):/app" -w /app $(BUN_IMG)
 
 .PHONY: help check-docker env certs build up down restart logs ps shell bash \
-	composer assets migrate migrate-fresh seed install demo gereq \
+	composer assets migrate migrate-fresh seed install demo gereq test \
 	adminer adminer-down hot status urls grq grq-release
 
 help: ## Show help
@@ -52,6 +52,7 @@ help: ## Show help
 	@printf '  make logs             sledovat logy\n'
 	@printf '  make shell            bash v PHP kontejneru\n'
 	@printf '  make gereq ARGS="…"   php gereq … uvnitř kontejneru\n'
+	@printf '  make test ARGS="…"    testing engine (default: all); např. ARGS="core" / "shop"\n'
 	@printf '  make migrate          migrace (bez fresh)\n'
 	@printf '  make assets           bun install + build (Docker image)\n'
 	@printf '  make composer         composer install (Docker)\n'
@@ -192,6 +193,9 @@ demo: check-docker env ## Setup with demo data
 gereq: check-docker ## Run php gereq ARGS="…"
 	@test -n "$(ARGS)" || { echo 'Použití: make gereq ARGS="migrate --seed"'; exit 1; }
 	@$(COMPOSE) run --rm php php gereq $(ARGS)
+
+test: check-docker ## Run testing engine; ARGS defaults to all (e.g. ARGS="core", ARGS="shop --list")
+	@$(COMPOSE) run --rm --no-deps php php bin/gereq-test $(ARGS)
 
 adminer: check-docker env ## Start Adminer (tools profile) on :8086
 	@$(COMPOSE) --profile tools up -d adminer
