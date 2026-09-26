@@ -31,7 +31,7 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 Clone (moduly jsou **git submodules** → `gereq/module-<id>`):
 
 ```bash
-git clone --recurse-submodules git@gitlab.com:gereq/GEREQ_PLATFORM.git
+git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
 # nebo po klasickém clone:
 git submodule update --init --recursive
 ```
@@ -95,7 +95,7 @@ Migrace:
 | `QUEUE_DRIVER` | `sync`, `redis`, `file` |
 | `SESSION_DRIVER` | `file`, `redis` (Docker `serve-docker` vynutí `redis`) |
 | `FILE_DRIVER` | `local` (S3 driver lze doplnit) |
-| `GITLAB_URL` | GitLab instance (default `https://gitlab.com`) |
+| `GITLAB_URL` | GitLab instance (default `https://git.gereq.cz`) |
 | `GITLAB_TOKEN` | token s `read_api` / `read_repository` (+ `api` pro zakládání modulů) |
 | `GITLAB_GROUP` | skupina projektů (default `gereq`) |
 | `MODULE_REPO_PREFIX` | prefix repa (`module-` → `gereq/module-listings`) |
@@ -175,10 +175,10 @@ Shell instalátor: `./bin/install`
 
 ## Moduly
 
-Každý modul je **vlastní GitLab projekt** `gitlab.com/gereq/module-<id>` a v platformě (`GEREQ_PLATFORM`) je napojený jako **git submodule** pod `modules/<Dir>`, pinovaný na semver tag `vX.Y.Z`.
+Každý modul je **vlastní GitLab projekt** `git.gereq.cz/gereq/module-<id>` a v platformě (`GEREQ_PLATFORM`) je napojený jako **git submodule** pod `modules/<Dir>`, pinovaný na semver tag `vX.Y.Z`.
 
 ```text
-GEREQ_PLATFORM                    → gitlab.com/gereq/GEREQ_PLATFORM
+GEREQ_PLATFORM                    → git.gereq.cz/gereq/GEREQ_PLATFORM
 └── modules/
     ├── Customers/                → submodule gereq/module-customers @ v1.6.3
     ├── Listings/                 → submodule gereq/module-listings @ …
@@ -305,13 +305,13 @@ git init -b main
 git add -A
 git commit -m "chore: initial Warehouse v0.1.0"
 git tag -a v0.1.0 -m "Release v0.1.0"
-git remote add origin git@gitlab.com:gereq/module-warehouse.git
+git remote add origin git@git.gereq.cz:gereq/module-warehouse.git
 git push -u origin main --tags
 cd ../..
 
 # z platformy: nahradit běžnou složku submodulem (pokud ještě není)
-git submodule add git@gitlab.com:gereq/module-warehouse.git modules/Warehouse
-# URL v .gitmodules sjednoť na https://gitlab.com/gereq/module-warehouse.git
+git submodule add git@git.gereq.cz:gereq/module-warehouse.git modules/Warehouse
+# URL v .gitmodules sjednoť na https://git.gereq.cz/gereq/module-warehouse.git
 git add .gitmodules modules/Warehouse
 git commit -m "chore: add Warehouse submodule @ v0.1.0"
 git push
@@ -334,7 +334,7 @@ Každý modul má být plnohodnotná platform capability, ne jen admin CRUD:
 - [x] GitLab projekt gereq/module-<id> (private)
 - [x] Napojený jako submodule v GEREQ_PLATFORM (modules/<Dir>)
 - [x] version v module.php == Module::version() == git tag vX.Y.Z
-- [x] .gitmodules URL bez tokenu (https://gitlab.com/gereq/…)
+- [x] .gitmodules URL bez tokenu (https://git.gereq.cz/gereq/…)
 
 ### Produkt
 - [x] Domain + Admin UI
@@ -394,7 +394,7 @@ vendor/bin/phpcs
 ## Architektura
 
 ```text
-GEREQ_PLATFORM (gitlab.com/gereq/GEREQ_PLATFORM)
+GEREQ_PLATFORM (git.gereq.cz/gereq/GEREQ_PLATFORM)
 ├── Core
 │   ├── Auth, Users, Roles, Permissions
 │   ├── Modules, Events, Hooks, Publish

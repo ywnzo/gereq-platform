@@ -17,10 +17,10 @@ GEREQ is a PHP 8.4 platform with a Doctrine/Symfony-components core, Twig admin 
 
 ## Clone
 
-Modules under `modules/` are git submodules pointing at `gitlab.com/gereq/module-<id>` (see `.gitmodules`). Clone recursively or initialise them afterwards:
+Modules under `modules/` are git submodules pointing at `git.gereq.cz/gereq/module-<id>` (see `.gitmodules`). Clone recursively or initialise them afterwards:
 
 ```bash
-git clone --recurse-submodules git@gitlab.com:gereq/GEREQ_PLATFORM.git
+git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
 # or, after a plain clone:
 git submodule update --init --recursive
 ```

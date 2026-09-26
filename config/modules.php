@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'gitlab' => [
-        'url' => rtrim((string) env_value('GITLAB_URL', 'https://gitlab.com'), '/'),
+        'url' => rtrim((string) env_value('GITLAB_URL', 'https://git.gereq.cz'), '/'),
         'token' => (string) env_value('GITLAB_TOKEN', ''),
         'group' => (string) env_value('GITLAB_GROUP', 'gereq'),
         'repo_prefix' => (string) env_value('MODULE_REPO_PREFIX', 'module-'),

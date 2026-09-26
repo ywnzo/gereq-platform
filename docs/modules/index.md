@@ -1,6 +1,6 @@
 # Modules
 
-GEREQ ships business functionality as self-contained modules under `modules/<Dir>/`. Each module is its own git repository (`gitlab.com/gereq/module-<id>`) pinned as a submodule, carries a `module.php` manifest, a `<Dir>Module.php` class with `register()`/`boot()`, and owns its Doctrine entities, admin UI, API, events, dashboard widgets and migrations. Modules never touch another module's tables; they integrate through capabilities, providers and guarded `class_exists()` lookups. See [Module system](../architecture/module-system.md) for the lifecycle and [Creating a module](../development/creating-a-module.md) for the workflow.
+GEREQ ships business functionality as self-contained modules under `modules/<Dir>/`. Each module is its own git repository (`git.gereq.cz/gereq/module-<id>`) pinned as a submodule, carries a `module.php` manifest, a `<Dir>Module.php` class with `register()`/`boot()`, and owns its Doctrine entities, admin UI, API, events, dashboard widgets and migrations. Modules never touch another module's tables; they integrate through capabilities, providers and guarded `class_exists()` lookups. See [Module system](../architecture/module-system.md) for the lifecycle and [Creating a module](../development/creating-a-module.md) for the workflow.
 
 Versions below are read from `module.php` at the time of writing; the authoritative value is always the manifest.
 

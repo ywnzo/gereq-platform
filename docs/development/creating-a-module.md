@@ -179,7 +179,7 @@ Enabling checks `requires`, runs pending migrations and syncs permissions (`Modu
 
 ## 15. GitLab repository and submodule
 
-Each module is its own private GitLab project `gitlab.com/gereq/module-<id>`, pinned in the platform repo as a submodule (`README.md` "Nový modul", step 2):
+Each module is its own private GitLab project `git.gereq.cz/gereq/module-<id>`, pinned in the platform repo as a submodule (`README.md` "Nový modul", step 2):
 
 ```bash
 cd modules/Warehouse
@@ -187,11 +187,11 @@ git init -b main
 git add -A
 git commit -m "chore: initial Warehouse v0.1.0"
 git tag -a v0.1.0 -m "Release v0.1.0"
-git remote add origin git@gitlab.com:gereq/module-warehouse.git
+git remote add origin git@git.gereq.cz:gereq/module-warehouse.git
 git push -u origin main --tags
 cd ../..
-git submodule add git@gitlab.com:gereq/module-warehouse.git modules/Warehouse
-# normalise the URL in .gitmodules to https://gitlab.com/gereq/module-warehouse.git (no token)
+git submodule add git@git.gereq.cz:gereq/module-warehouse.git modules/Warehouse
+# normalise the URL in .gitmodules to https://git.gereq.cz/gereq/module-warehouse.git (no token)
 git add .gitmodules modules/Warehouse
 git commit -m "chore: add Warehouse submodule @ v0.1.0"
 ```

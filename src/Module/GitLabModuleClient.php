@@ -208,7 +208,7 @@ final class GitLabModuleClient
 
     private function baseUrl(): string
     {
-        return rtrim((string) $this->config->get('modules.gitlab.url', 'https://gitlab.com'), '/');
+        return rtrim((string) $this->config->get('modules.gitlab.url', 'https://git.gereq.cz'), '/');
     }
 
     private function token(): string

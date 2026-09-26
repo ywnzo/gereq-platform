@@ -62,7 +62,7 @@ func loadConfig() (config, error) {
 
 	cfg := config{
 		Root:   root,
-		URL:    strings.TrimRight(envOr("GITLAB_URL", "https://gitlab.com"), "/"),
+		URL:    strings.TrimRight(envOr("GITLAB_URL", "https://git.gereq.cz"), "/"),
 		Token:  strings.TrimSpace(os.Getenv("GITLAB_TOKEN")),
 		Group:  envOr("GITLAB_GROUP", "gereq"),
 		Prefix: envOr("MODULE_REPO_PREFIX", "module-"),

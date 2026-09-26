@@ -111,7 +111,7 @@ Consumed by `Gereq\I18n\LocaleCatalog`.
 
 | Key | Default | Notes |
 | --- | --- | --- |
-| `gitlab.url` | `GITLAB_URL` → `https://gitlab.com` | |
+| `gitlab.url` | `GITLAB_URL` → `https://git.gereq.cz` | |
 | `gitlab.token` | `GITLAB_TOKEN` → `''` | PAT with `read_api`; required for remote install/upgrade |
 | `gitlab.group` | `GITLAB_GROUP` → `gereq` | |
 | `gitlab.repo_prefix` | `MODULE_REPO_PREFIX` → `module-` | repo = `<group>/<prefix><module id>` unless manifest `repository` overrides |
@@ -232,7 +232,7 @@ Declares **packages** (`surface: packages`) and **plugin groups** (`surface: plu
 | `MAIL_DSN` | `null://null` | `mail.dsn` |
 | `MAIL_FROM_ADDRESS` | `noreply@gereq.cz` | `mail.from.address` |
 | `MAIL_FROM_NAME` | `GEREQ Platform` | `mail.from.name` |
-| `GITLAB_URL` | `https://gitlab.com` | `modules.gitlab.url` |
+| `GITLAB_URL` | `https://git.gereq.cz` | `modules.gitlab.url` |
 | `GITLAB_TOKEN` | `''` | `modules.gitlab.token` |
 | `GITLAB_GROUP` | `gereq` | `modules.gitlab.group` |
 | `MODULE_REPO_PREFIX` | `module-` | `modules.gitlab.repo_prefix` |

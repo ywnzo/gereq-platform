@@ -1,126 +1,126 @@
 [submodule "modules/BikeService"]
 	path = modules/BikeService
-	url = git@gitlab.com:gereq/module-bikeservice.git
+	url = git@git.gereq.cz:gereq/module-bikeservice.git
 [submodule "modules/Bundles"]
 	path = modules/Bundles
-	url = git@gitlab.com:gereq/module-bundles.git
+	url = git@git.gereq.cz:gereq/module-bundles.git
 [submodule "modules/CarService"]
 	path = modules/CarService
-	url = git@gitlab.com:gereq/module-carservice.git
+	url = git@git.gereq.cz:gereq/module-carservice.git
 [submodule "modules/Coupons"]
 	path = modules/Coupons
-	url = git@gitlab.com:gereq/module-coupons.git
+	url = git@git.gereq.cz:gereq/module-coupons.git
 [submodule "modules/CRM"]
 	path = modules/CRM
-	url = git@gitlab.com:gereq/module-crm.git
+	url = git@git.gereq.cz:gereq/module-crm.git
 [submodule "modules/Currency"]
 	path = modules/Currency
-	url = git@gitlab.com:gereq/module-currency.git
+	url = git@git.gereq.cz:gereq/module-currency.git
 [submodule "modules/CustomerUploads"]
 	path = modules/CustomerUploads
-	url = git@gitlab.com:gereq/module-customer_uploads.git
+	url = git@git.gereq.cz:gereq/module-customer_uploads.git
 [submodule "modules/Documents"]
 	path = modules/Documents
-	url = git@gitlab.com:gereq/module-documents.git
+	url = git@git.gereq.cz:gereq/module-documents.git
 [submodule "modules/ESign"]
 	path = modules/ESign
-	url = git@gitlab.com:gereq/module-esign.git
+	url = git@git.gereq.cz:gereq/module-esign.git
 [submodule "modules/Feeds"]
 	path = modules/Feeds
-	url = git@gitlab.com:gereq/module-feeds.git
+	url = git@git.gereq.cz:gereq/module-feeds.git
 [submodule "modules/Fleet"]
 	path = modules/Fleet
-	url = git@gitlab.com:gereq/module-fleet.git
+	url = git@git.gereq.cz:gereq/module-fleet.git
 [submodule "modules/iDoklad"]
 	path = modules/iDoklad
-	url = git@gitlab.com:gereq/module-idoklad.git
+	url = git@git.gereq.cz:gereq/module-idoklad.git
 [submodule "modules/Loyalty"]
 	path = modules/Loyalty
-	url = git@gitlab.com:gereq/module-loyalty.git
+	url = git@git.gereq.cz:gereq/module-loyalty.git
 [submodule "modules/Media"]
 	path = modules/Media
-	url = git@gitlab.com:gereq/module-media.git
+	url = git@git.gereq.cz:gereq/module-media.git
 [submodule "modules/MoneyS3"]
 	path = modules/MoneyS3
-	url = git@gitlab.com:gereq/module-moneys3.git
+	url = git@git.gereq.cz:gereq/module-moneys3.git
 [submodule "modules/Newsletter"]
 	path = modules/Newsletter
-	url = git@gitlab.com:gereq/module-newsletter.git
+	url = git@git.gereq.cz:gereq/module-newsletter.git
 [submodule "modules/Orders"]
 	path = modules/Orders
-	url = git@gitlab.com:gereq/module-orders.git
+	url = git@git.gereq.cz:gereq/module-orders.git
 [submodule "modules/PartsCatalog"]
 	path = modules/PartsCatalog
-	url = git@gitlab.com:gereq/module-partscatalog.git
+	url = git@git.gereq.cz:gereq/module-partscatalog.git
 [submodule "modules/Portals"]
 	path = modules/Portals
-	url = git@gitlab.com:gereq/module-portals.git
+	url = git@git.gereq.cz:gereq/module-portals.git
 [submodule "modules/ProductDiscounts"]
 	path = modules/ProductDiscounts
-	url = git@gitlab.com:gereq/module-product_discounts.git
+	url = git@git.gereq.cz:gereq/module-product_discounts.git
 [submodule "modules/Products"]
 	path = modules/Products
-	url = git@gitlab.com:gereq/module-products.git
+	url = git@git.gereq.cz:gereq/module-products.git
 [submodule "modules/Returns"]
 	path = modules/Returns
-	url = git@gitlab.com:gereq/module-returns.git
+	url = git@git.gereq.cz:gereq/module-returns.git
 [submodule "modules/Reviews"]
 	path = modules/Reviews
-	url = git@gitlab.com:gereq/module-reviews.git
+	url = git@git.gereq.cz:gereq/module-reviews.git
 [submodule "modules/SearchEngines"]
 	path = modules/SearchEngines
-	url = git@gitlab.com:gereq/module-searchengines.git
+	url = git@git.gereq.cz:gereq/module-searchengines.git
 [submodule "modules/Shop"]
 	path = modules/Shop
-	url = git@gitlab.com:gereq/module-shop.git
+	url = git@git.gereq.cz:gereq/module-shop.git
 [submodule "modules/Translate"]
 	path = modules/Translate
-	url = git@gitlab.com:gereq/module-translate.git
+	url = git@git.gereq.cz:gereq/module-translate.git
 [submodule "modules/Viewings"]
 	path = modules/Viewings
-	url = git@gitlab.com:gereq/module-viewings.git
+	url = git@git.gereq.cz:gereq/module-viewings.git
 [submodule "modules/Vitality"]
 	path = modules/Vitality
-	url = git@gitlab.com:gereq/module-vitality.git
+	url = git@git.gereq.cz:gereq/module-vitality.git
 [submodule "modules/Warehouse"]
 	path = modules/Warehouse
-	url = git@gitlab.com:gereq/module-warehouse.git
+	url = git@git.gereq.cz:gereq/module-warehouse.git
 [submodule "modules/Webhooks"]
 	path = modules/Webhooks
-	url = git@gitlab.com:gereq/module-webhooks.git
+	url = git@git.gereq.cz:gereq/module-webhooks.git
 [submodule "modules/Ai"]
 	path = modules/Ai
-	url = git@gitlab.com:gereq/module-ai.git
+	url = git@git.gereq.cz:gereq/module-ai.git
 [submodule "modules/Calendar"]
 	path = modules/Calendar
-	url = git@gitlab.com:gereq/module-calendar.git
+	url = git@git.gereq.cz:gereq/module-calendar.git
 [submodule "modules/Cms"]
 	path = modules/Cms
-	url = git@gitlab.com:gereq/module-cms.git
+	url = git@git.gereq.cz:gereq/module-cms.git
 [submodule "modules/Customers"]
 	path = modules/Customers
-	url = git@gitlab.com:gereq/module-customers.git
+	url = git@git.gereq.cz:gereq/module-customers.git
 [submodule "modules/Emailing"]
 	path = modules/Emailing
-	url = git@gitlab.com:gereq/module-emailing.git
+	url = git@git.gereq.cz:gereq/module-emailing.git
 [submodule "modules/Listings"]
 	path = modules/Listings
-	url = git@gitlab.com:gereq/module-listings.git
+	url = git@git.gereq.cz:gereq/module-listings.git
 [submodule "modules/Notifications"]
 	path = modules/Notifications
-	url = git@gitlab.com:gereq/module-notifications.git
+	url = git@git.gereq.cz:gereq/module-notifications.git
 [submodule "modules/Payments"]
 	path = modules/Payments
-	url = git@gitlab.com:gereq/module-payments.git
+	url = git@git.gereq.cz:gereq/module-payments.git
 [submodule "modules/Projects"]
 	path = modules/Projects
-	url = git@gitlab.com:gereq/module-projects.git
+	url = git@git.gereq.cz:gereq/module-projects.git
 [submodule "modules/WebPlus"]
 	path = modules/WebPlus
-	url = git@gitlab.com:gereq/module-webplus.git
+	url = git@git.gereq.cz:gereq/module-webplus.git
 [submodule "modules/Engage"]
 	path = modules/Engage
-	url = git@gitlab.com:gereq/module-engage.git
+	url = git@git.gereq.cz:gereq/module-engage.git
 [submodule "modules/Gereq"]
 	path = modules/Gereq
-	url = git@gitlab.com:gereq/module-gereq.git
+	url = git@git.gereq.cz:gereq/module-gereq.git
