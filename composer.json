@@ -10,7 +10,6 @@
         "ext-json": "*",
         "ext-mbstring": "*",
         "ext-pdo": "*",
-        "ext-redis": "*",
         "ext-zip": "*",
         "bacon/bacon-qr-code": "^3.1",
         "doctrine/dbal": "^4.2",
@@ -76,6 +75,9 @@
             "@phpstan:tests",
             "@cs"
         ]
+    },
+    "suggest": {
+        "ext-redis": "Required only when CACHE_DRIVER, SESSION_DRIVER, or QUEUE_DRIVER is redis (not needed for file/sync)."
     },
     "config": {
         "sort-packages": true,

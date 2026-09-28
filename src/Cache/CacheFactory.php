@@ -35,6 +35,13 @@ final class CacheFactory
 
     private function redis(string $namespace): CacheItemPoolInterface
     {
+        if (!class_exists(\Redis::class)) {
+            throw new \RuntimeException(
+                'CACHE_DRIVER=redis requires the PHP redis extension (ext-redis). '
+                . 'Use CACHE_DRIVER=file when Redis is not available.'
+            );
+        }
+
         $host = (string) $this->config->get('cache.redis.host', '127.0.0.1');
         $port = (int) $this->config->get('cache.redis.port', 6379);
         $password = $this->config->get('cache.redis.password');

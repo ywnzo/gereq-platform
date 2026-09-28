@@ -6,7 +6,7 @@ GEREQ is a PHP 8.4 platform with a Doctrine/Symfony-components core, Twig admin 
 
 | Requirement | Notes | Source |
 | --- | --- | --- |
-| PHP `^8.4` | extensions `gd`, `zip`, `json`, `mbstring`, `pdo`, `redis` are declared in `composer.json` (`ext-redis` can be skipped for the SQLite demo, see below) | `composer.json` |
+| PHP `^8.4` | extensions `gd`, `zip`, `json`, `mbstring`, `pdo` in `composer.json`; `ext-redis` is optional (`suggest`) and only needed when `CACHE_DRIVER` / `SESSION_DRIVER` / `QUEUE_DRIVER` is `redis` | `composer.json` |
 | Composer | | `bin/grq install` checks for it |
 | Bun (preferred) or npm | frontend build (`vite build`, Tailwind 4). Workspace rule: always `bun run …` / `bun x …` | `package.json`, `.cursor/rules/tech-stack.mdc` |
 | Database | SQLite (default in `config/database.php`), MySQL/MariaDB or PostgreSQL 16 (Docker default) | `config/database.php`, `docker-compose.yml` |
