@@ -43,24 +43,40 @@
                 </form>
             {% endif %}
             {% if enabled %}
-                <button type="button" class="btn btn--success" disabled title="{{ 'admin.modules.running'|trans }}">
-                    {{ icon('play') }} {{ 'admin.modules.running'|trans }}
-                </button>
-                <form method="post" action="{{ url('admin.modules.pause', {id: manifest.id}) }}">
+                <form
+                    method="post"
+                    action="{{ url('admin.modules.pause', {id: manifest.id}) }}"
+                    data-confirm="{{ 'admin.modules.confirm.pause'|trans|e('html_attr') }}"
+                    data-confirm-title="{{ 'admin.modules.confirm.pause_title'|trans|e('html_attr') }}"
+                    data-confirm-label="{{ 'common.pause'|trans|e('html_attr') }}"
+                    data-confirm-danger="0"
+                >
                     {{ csrf_field()|raw }}
                     <button class="btn btn--warn" type="submit" title="{{ 'admin.modules.pause_hint'|trans }}">
                         {{ icon('pause') }} {{ 'common.pause'|trans }}
                     </button>
                 </form>
-                <form method="post" action="{{ url('admin.modules.disable', {id: manifest.id}) }}">
+                <form
+                    method="post"
+                    action="{{ url('admin.modules.disable', {id: manifest.id}) }}"
+                    data-confirm="{{ 'admin.modules.confirm.disable'|trans|e('html_attr') }}"
+                    data-confirm-title="{{ 'admin.modules.confirm.disable_title'|trans|e('html_attr') }}"
+                    data-confirm-label="{{ 'common.stop'|trans|e('html_attr') }}"
+                    data-confirm-danger="1"
+                    data-confirm-followup="{{ 'admin.modules.confirm.disable_media'|trans|e('html_attr') }}"
+                    data-confirm-followup-title="{{ 'admin.modules.confirm.disable_media_title'|trans|e('html_attr') }}"
+                    data-confirm-followup-label="{{ 'admin.modules.confirm.disable_media_yes'|trans|e('html_attr') }}"
+                    data-confirm-followup-cancel="{{ 'admin.modules.confirm.disable_media_no'|trans|e('html_attr') }}"
+                    data-confirm-followup-input="purge_media"
+                >
                     {{ csrf_field()|raw }}
                     <input type="hidden" name="purge_media" value="0">
                     <button
                         class="btn btn--danger"
                         type="submit"
-                        onclick="return window.gereqConfirmModuleDisable(this.form, {{ 'admin.modules.confirm.disable'|trans|json_encode|raw }}, {{ 'admin.modules.confirm.disable_media'|trans|json_encode|raw }})"
+                        title="{{ 'admin.modules.uninstall_hint'|trans }}"
                     >
-                        {{ icon('trash') }} {{ 'common.deactivate'|trans }}
+                        {{ icon('stop') }} {{ 'common.stop'|trans }}
                     </button>
                 </form>
             {% else %}

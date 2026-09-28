@@ -149,6 +149,11 @@ export function registerImageViewer(alpine: typeof Alpine): void {
                 .join(' ');
         },
 
+        get imgClass(): string {
+            const angle = ((this.rotation % 360) + 360) % 360;
+            return angle === 90 || angle === 270 ? 'is-sideways' : '';
+        },
+
         get imgStyle(): string {
             return `transform: translate(${this.tx}px, ${this.ty}px) scale(${this.scale}) rotate(${this.rotation}deg)`;
         },

@@ -193,6 +193,7 @@ form > .table,
 .table__action-btns > form > button .g-icon {
     font-size: 1.15rem;
     line-height: 1;
+    color: inherit;
 }
 .table__action-btn__label {
     position: absolute;
@@ -222,30 +223,37 @@ form > .table,
     overflow: visible;
     clip: auto;
 }
-.table__action-btn--primary {
-    color: color-mix(in srgb, var(--primary) 20%, var(--text));
+.table__action-btn--primary,
+.table__action-btns > form > button.table__action-btn--primary,
+.table__action-btns > a.table__action-btn--primary {
+    color: color-mix(in srgb, var(--primary) 35%, var(--text));
     border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
-    background: color-mix(in srgb, var(--primary) 22%, var(--surface));
+    background: color-mix(in srgb, var(--primary) 18%, var(--surface));
 }
-.table__action-btn--success {
+.table__action-btn--success,
+.table__action-btns > form > button.table__action-btn--success,
+.table__action-btns > a.table__action-btn--success {
     color: var(--success);
     border-color: color-mix(in srgb, var(--success) 45%, var(--border));
-    background: color-mix(in srgb, var(--success) 14%, var(--surface));
+    background: color-mix(in srgb, var(--success) 12%, var(--surface));
 }
 .table__action-btn--warn,
-.table__action-btns > form > button.table__action-btn--warn {
+.table__action-btns > form > button.table__action-btn--warn,
+.table__action-btns > a.table__action-btn--warn {
     color: var(--warning);
     border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
-    background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+    background: color-mix(in srgb, var(--warning) 12%, var(--surface));
 }
 .table__action-btn--danger,
 .table__action-btns > form > button.table__action-btn--danger,
+.table__action-btns > a.table__action-btn--danger,
 .table__action-btns > .table__action-form > button {
     color: var(--danger);
     border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
     background: var(--danger-bg);
 }
 .table__action-btn--success:disabled,
+.table__action-btns > form > button.table__action-btn--success:disabled,
 .table__action-btns > button.table__action-btn--success:disabled {
     opacity: 1;
     cursor: default;

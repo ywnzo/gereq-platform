@@ -100,6 +100,7 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('asset', [$runtime, 'asset']));
         $twig->addFunction(new TwigFunction('vite_hot', [$runtime, 'viteHot']));
         $twig->addFunction(new TwigFunction('vite_tags', [$runtime, 'viteTags'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('vite_dev_reload', [$runtime, 'viteDevReload'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('icon', [$runtime, 'icon'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('current_user', [$runtime, 'currentUser']));
         $twig->addFunction(new TwigFunction('route_is', [$runtime, 'routeIs']));

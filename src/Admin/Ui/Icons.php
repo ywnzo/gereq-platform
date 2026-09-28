@@ -43,6 +43,7 @@ final class Icons
             'eye' => 'visibility',
             'play' => 'play_arrow',
             'pause' => 'pause',
+            'stop' => 'stop',
             'edit' => 'edit',
             'pencil' => 'edit',
             'download' => 'download',

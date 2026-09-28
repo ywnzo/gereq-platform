@@ -2,6 +2,8 @@
 
 This page lists what the GEREQ codebase actually requires or supports when running in production: environment variables read by `config/*.php`, build steps (`composer`, `bun run build`), migrations, the queue worker, logging, health endpoint, the Vitality latency monitor and the security headers emitted by `src/Http/Middleware/SecurityHeadersMiddleware.php`. Items the code does not implement (scheduler, backups, log rotation) are marked as **recommendation**. The repository contains no production Dockerfile or CI pipeline; the Docker stack in `docker-compose.yml` is a dev/staging topology (see [docker.md](docker.md)).
 
+When updating an existing install from a **platform ZIP**, also follow [UPDATE-GUIDELINES.md](../UPDATE-GUIDELINES.md).
+
 ## 1. Environment (`.env`)
 
 | Variable | Production value | Why (source) |

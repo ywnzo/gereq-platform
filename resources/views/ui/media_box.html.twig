@@ -1,6 +1,8 @@
 {#
-  Single-image media box: preview + upload + library pick + optional URL.
+  Single-image media picker: compact trigger + large compose-style dialog
+  with search / filters for the media library.
   Params: name, file_name, library_name, clear_name, label, hint, form, value, optional, has_media, library
+  library items: { value, label, thumb?, mime?, ext?, width?, height?, created?, folder_id?, folder? }
 #}
 {% set name = name|default('image_url') %}
 {% set file_name = file_name|default('file') %}
@@ -14,59 +16,291 @@
 {% set has_media = has_media|default(false) %}
 {% set library = library|default([]) %}
 {% set id = id|default('f-' ~ name) %}
+{% set err = error(name, form) %}
+{% set dialog_title_id = id ~ '-dialog-title' %}
+{% set has_library = has_media and library is not empty %}
 
-<div class="media-box field--full" data-field="{{ name }}">
+<div
+    class="media-box field--full{% if err %} is-invalid{% endif %}"
+    data-field="{{ name }}"
+    x-data="gereqMediaBox"
+    data-preview="{{ value|e('html_attr') }}"
+    data-selected=""
+    data-show-url="0"
+    data-library-total="{{ library|length }}"
+    data-library="{{ library|json_encode|e('html_attr') }}"
+    data-label-clear="{{ 'ui.media_box.clear'|trans|e('html_attr') }}"
+    data-label-undo="{{ 'ui.media_box.undo_clear'|trans|e('html_attr') }}"
+    data-label-results="{{ 'ui.media_box.results'|trans|e('html_attr') }}"
+    data-label-folder-root="{{ 'ui.media_box.filter_folder_root'|trans|e('html_attr') }}"
+>
     {% if label %}
-        <div class="g-label" style="margin-bottom:8px">
+        <div class="g-label media-box__label">
             <span>{{ label }}{% if optional %} <span class="g-optional">({{ 'common.optional'|trans }})</span>{% endif %}</span>
         </div>
     {% endif %}
 
-    {% if value %}
-        <div class="media-box__preview" style="margin-bottom:12px">
-            <img src="{{ value }}" alt="" style="max-width:min(320px,100%);max-height:180px;object-fit:cover;border-radius:var(--radius);display:block;border:1px solid var(--gereq-line, #e5e7eb)">
+    <div class="media-box__card">
+        <button
+            type="button"
+            class="media-box__trigger"
+            @click="open()"
+            :aria-expanded="dialogOpen ? 'true' : 'false'"
+            aria-haspopup="dialog"
+            data-label-choose="{{ 'ui.media_box.choose'|trans|e('html_attr') }}"
+            data-label-change="{{ 'ui.media_box.change'|trans|e('html_attr') }}"
+        >
+            <span class="media-box__thumb-wrap" x-show="hasPreview" x-cloak>
+                <img :src="preview" alt="" class="media-box__thumb-img">
+            </span>
+            <span class="media-box__thumb-wrap media-box__thumb-wrap--empty" x-show="!hasPreview" x-cloak>
+                <span class="media-box__empty-icon" aria-hidden="true">{{ icon('image') }}</span>
+            </span>
+            <span class="media-box__trigger-copy">
+                <span class="media-box__trigger-title" x-text="triggerLabel">
+                    {{ value ? 'ui.media_box.change'|trans : 'ui.media_box.choose'|trans }}
+                </span>
+                <span class="media-box__trigger-hint muted">{{ 'ui.media_box.trigger_hint'|trans }}</span>
+            </span>
+            <span class="media-box__trigger-chevron" aria-hidden="true">{{ icon('chevron-right') }}</span>
+        </button>
+        <button
+            type="button"
+            class="media-box__card-clear"
+            x-show="hasPreview || (clearing && initialPreview)"
+            x-cloak
+            @click="onCardClear()"
+            :title="hasPreview ? clearLabel : undoLabel"
+            :aria-label="hasPreview ? clearLabel : undoLabel"
+        >{{ icon('close') }}</button>
+    </div>
+
+    <input type="hidden" name="{{ library_name }}" value="" x-ref="asset">
+    <input type="checkbox" class="media-box__clear-flag" name="{{ clear_name }}" value="1" x-model="clearing" tabindex="-1" aria-hidden="true">
+    <input
+        type="hidden"
+        name="{{ name }}"
+        id="{{ id }}"
+        value="{{ value }}"
+        x-ref="url"
+    >
+
+    <div
+        class="media-box-layer"
+        x-show="dialogOpen"
+        x-cloak
+        @keydown.escape.window="onEscape()"
+    >
+        <div class="media-box-backdrop" @click="close()" aria-hidden="true"></div>
+        <div
+            class="media-box-dock{% if has_library %} media-box-dock--wide{% endif %}"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="{{ dialog_title_id }}"
+            @click.stop
+            x-ref="dialog"
+        >
+            <header class="media-box-dock__bar">
+                <strong id="{{ dialog_title_id }}" class="media-box-dock__title">
+                    {{ icon('image') }}
+                    <span>{{ 'ui.media_box.dialog_title'|trans }}</span>
+                </strong>
+                <div class="media-box-dock__actions">
+                    <button
+                        type="button"
+                        class="btn btn--ghost btn-sm media-box-dock__iconbtn"
+                        @click="close()"
+                        title="{{ 'ui.media_box.close'|trans }}"
+                        aria-label="{{ 'ui.media_box.close'|trans }}"
+                    >{{ icon('close') }}</button>
+                </div>
+            </header>
+
+            <div class="media-box-dock__body{% if has_library %} media-box-dock__body--split{% endif %}">
+                <aside class="media-box-dock__side">
+                    <div class="media-box-dock__preview">
+                        <div class="media-box-dock__preview-stage" x-show="hasPreview" x-cloak>
+                            <img :src="preview" alt="" class="media-box-dock__preview-img">
+                        </div>
+                        <div class="media-box-dock__preview-empty" x-show="!hasPreview" x-cloak>
+                            <span class="media-box__empty-icon media-box__empty-icon--lg" aria-hidden="true">{{ icon('image') }}</span>
+                            <span class="muted">{{ 'ui.media_box.empty'|trans }}</span>
+                        </div>
+                    </div>
+
+                    {% if has_media %}
+                        <section class="media-box-dock__section">
+                            <h3 class="media-box-dock__section-title">{{ 'ui.media_box.upload'|trans }}</h3>
+                            {% include 'ui/file.html.twig' with {
+                                name: file_name,
+                                id: id ~ '-file',
+                                label: '',
+                                title: 'ui.media_box.upload'|trans,
+                                hint: 'ui.media_box.upload_hint'|trans,
+                                accept: 'image/*',
+                                compact: true,
+                                extra: 'media-box__upload'
+                            } %}
+                        </section>
+                    {% endif %}
+
+                    <section class="media-box-dock__section">
+                        <button
+                            type="button"
+                            class="media-box__link-toggle"
+                            @click="toggleUrl"
+                            :aria-expanded="showUrl ? 'true' : 'false'"
+                        >
+                            <span x-text="showUrl ? '▾' : '▸'" aria-hidden="true"></span>
+                            {{ 'ui.media_box.url'|trans }}
+                        </button>
+                        <div class="media-box__url" x-show="showUrl" x-cloak>
+                            <input
+                                class="g-control"
+                                type="text"
+                                value="{{ value }}"
+                                placeholder="/media/…/file nebo https://…"
+                                x-ref="urlVisible"
+                                @input="onUrlVisibleInput"
+                                {% if hint %}aria-describedby="{{ id }}-hint"{% endif %}
+                            >
+                            {% if hint %}
+                                <p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>
+                            {% endif %}
+                        </div>
+                    </section>
+                </aside>
+
+                {% if has_library %}
+                    <section class="media-box-dock__library">
+                        <div class="media-box-dock__toolbar">
+                            <label class="media-box-dock__search">
+                                <span class="sr-only">{{ 'ui.media_box.search'|trans }}</span>
+                                <span class="media-box-dock__search-ico" aria-hidden="true">{{ icon('search') }}</span>
+                                <input
+                                    type="search"
+                                    class="g-control media-box-dock__search-input"
+                                    placeholder="{{ 'ui.media_box.search'|trans|e('html_attr') }}"
+                                    x-model="query"
+                                    @input="applyFilters()"
+                                    x-ref="search"
+                                    autocomplete="off"
+                                >
+                            </label>
+                            <div class="media-box-dock__filters">
+                                <label class="media-box-dock__filter">
+                                    <span class="sr-only">{{ 'ui.media_box.filter_type'|trans }}</span>
+                                    <select class="g-control" x-model="typeFilter" @change="applyFilters()">
+                                        <option value="">{{ 'ui.media_box.filter_type_all'|trans }}</option>
+                                        <option value="jpg">JPEG</option>
+                                        <option value="png">PNG</option>
+                                        <option value="webp">WebP</option>
+                                        <option value="gif">GIF</option>
+                                        <option value="avif">AVIF</option>
+                                        <option value="svg">SVG</option>
+                                    </select>
+                                </label>
+                                <label class="media-box-dock__filter">
+                                    <span class="sr-only">{{ 'ui.media_box.filter_orient'|trans }}</span>
+                                    <select class="g-control" x-model="orientFilter" @change="applyFilters()">
+                                        <option value="">{{ 'ui.media_box.filter_orient_all'|trans }}</option>
+                                        <option value="landscape">{{ 'ui.media_box.filter_orient_landscape'|trans }}</option>
+                                        <option value="portrait">{{ 'ui.media_box.filter_orient_portrait'|trans }}</option>
+                                        <option value="square">{{ 'ui.media_box.filter_orient_square'|trans }}</option>
+                                    </select>
+                                </label>
+                                <label class="media-box-dock__filter" x-show="folderOptions.length" x-cloak>
+                                    <span class="sr-only">{{ 'ui.media_box.filter_folder'|trans }}</span>
+                                    <select class="g-control" x-model="folderFilter" @change="applyFilters()">
+                                        <option value="">{{ 'ui.media_box.filter_folder_all'|trans }}</option>
+                                        <template x-for="folder in folderOptions" :key="folder.id">
+                                            <option :value="folder.id" x-text="folder.label"></option>
+                                        </template>
+                                    </select>
+                                </label>
+                                <label class="media-box-dock__filter">
+                                    <span class="sr-only">{{ 'ui.media_box.sort'|trans }}</span>
+                                    <select class="g-control" x-model="sortBy" @change="applyFilters()">
+                                        <option value="newest">{{ 'ui.media_box.sort_newest'|trans }}</option>
+                                        <option value="oldest">{{ 'ui.media_box.sort_oldest'|trans }}</option>
+                                        <option value="name">{{ 'ui.media_box.sort_name'|trans }}</option>
+                                    </select>
+                                </label>
+                                <button
+                                    type="button"
+                                    class="btn btn--ghost btn-sm"
+                                    x-show="hasActiveFilters"
+                                    x-cloak
+                                    @click="resetFilters()"
+                                >{{ 'ui.media_box.reset_filters'|trans }}</button>
+                            </div>
+                        </div>
+
+                        <div class="media-box-dock__meta">
+                            <span class="muted" x-text="resultsText"></span>
+                        </div>
+
+                        <div class="media-box__grid" x-ref="grid">
+                            {% for item in library %}
+                                {% set thumb = item.thumb|default('/media/' ~ item.value ~ '/file') %}
+                                {% set ext = item.ext|default('') %}
+                                {% set mime = item.mime|default('') %}
+                                {% set w = item.width|default('') %}
+                                {% set h = item.height|default('') %}
+                                {% set created = item.created|default(0) %}
+                                {% set folder_id = item.folder_id|default('') %}
+                                {% set folder = item.folder|default('') %}
+                                <button
+                                    type="button"
+                                    class="media-box__thumb"
+                                    data-media-item="1"
+                                    data-id="{{ item.value|e('html_attr') }}"
+                                    data-label="{{ item.label|e('html_attr') }}"
+                                    data-thumb="{{ thumb|e('html_attr') }}"
+                                    data-ext="{{ ext|e('html_attr') }}"
+                                    data-mime="{{ mime|e('html_attr') }}"
+                                    data-width="{{ w|e('html_attr') }}"
+                                    data-height="{{ h|e('html_attr') }}"
+                                    data-created="{{ created|e('html_attr') }}"
+                                    data-folder-id="{{ folder_id|e('html_attr') }}"
+                                    data-folder="{{ folder|e('html_attr') }}"
+                                    :class="isSelected('{{ item.value|e('js') }}') ? 'is-selected' : ''"
+                                    title="{{ item.label|e('html_attr') }}"
+                                    @click="pick('{{ item.value|e('js') }}', '{{ thumb|e('js') }}')"
+                                >
+                                    <span class="media-box__thumb-media">
+                                        <img src="{{ thumb }}" alt="" loading="lazy" decoding="async">
+                                    </span>
+                                    <span class="media-box__thumb-label">{{ item.label }}</span>
+                                    {% if ext %}
+                                        <span class="media-box__thumb-badge">{{ ext|upper }}</span>
+                                    {% endif %}
+                                </button>
+                            {% endfor %}
+                        </div>
+                        <p class="media-box-dock__empty muted" x-show="libraryEmpty" x-cloak>
+                            {{ 'ui.media_box.no_results'|trans }}
+                        </p>
+                    </section>
+                {% endif %}
+            </div>
+
+            <footer class="media-box-dock__foot">
+                <button
+                    type="button"
+                    class="btn btn--ghost"
+                    x-show="hasPreview"
+                    x-cloak
+                    @click="clearPhoto"
+                >{{ 'ui.media_box.clear'|trans }}</button>
+                <button type="button" class="btn btn--primary" @click="close()">
+                    {{ 'ui.media_box.done'|trans }}
+                </button>
+            </footer>
         </div>
-    {% endif %}
+    </div>
 
-    {% if has_media %}
-        {% include 'ui/file.html.twig' with {
-            name: file_name,
-            id: id ~ '-file',
-            label: '',
-            title: 'ui.media_box.upload'|trans,
-            hint: 'ui.media_box.upload_hint'|trans,
-            accept: 'image/*',
-            extra: 'field--full'
-        } %}
-
-        {% if library is not empty %}
-            {% include 'ui/select.html.twig' with {
-                name: library_name,
-                label: 'ui.media_box.library'|trans,
-                optional: true,
-                form: form,
-                value: '',
-                options: [{ value: '', label: 'ui.media_box.library_none'|trans }]|merge(library),
-                extra: 'field--full'
-            } %}
-        {% endif %}
-    {% endif %}
-
-    {% include 'ui/input.html.twig' with {
-        name: name,
-        id: id,
-        label: 'ui.media_box.url'|trans,
-        optional: true,
-        form: form,
-        value: value,
-        hint: hint,
-        extra: 'field--full'
-    } %}
-
-    {% if value %}
-        <label class="field" style="flex-direction:row;align-items:center;gap:8px">
-            <input type="checkbox" name="{{ clear_name }}" value="1">
-            <span>{{ 'ui.media_box.clear'|trans }}</span>
-        </label>
+    {% if err %}
+        <p class="g-error">{{ err }}</p>
     {% endif %}
 </div>

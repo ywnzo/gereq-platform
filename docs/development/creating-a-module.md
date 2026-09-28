@@ -191,10 +191,16 @@ git remote add origin git@git.gereq.cz:gereq/module-warehouse.git
 git push -u origin main --tags
 cd ../..
 git submodule add git@git.gereq.cz:gereq/module-warehouse.git modules/Warehouse
-# normalise the URL in .gitmodules to https://git.gereq.cz/gereq/module-warehouse.git (no token)
+# normalise .gitmodules to a relative URL (CI inherits CI_REPOSITORY_URL / job token):
+#   url = ../module-warehouse.git
 git add .gitmodules modules/Warehouse
 git commit -m "chore: add Warehouse submodule @ v0.1.0"
 ```
+
+Allow platform CI to clone the new private module (once per module project):
+
+- UI: module project → **Settings → CI/CD → Job token permissions** → authorize `gereq/GEREQ_PLATFORM`, or
+- API: `GITLAB_TOKEN=… bash tools/gitlab-allow-platform-job-token.sh` (re-runs over all `module-*`, skips already allowed).
 
 Code changes are committed in the module repo; the platform repo only moves the submodule pin. `./tools/gereq-modules/gereq-modules.sh` (TUI, `--plain` for text) compares local versions with GitLab tags. With `GITLAB_TOKEN` set, Admin → Modules → Versions can download and activate tags (`storage/modules/{id}/{version}`, see [Module system](../architecture/module-system.md#install-and-upgrade-from-gitlab)).
 
@@ -205,7 +211,8 @@ From `.cursor/rules/module-updates.mdc` and `README.md` "Checklist nového modul
 Repo / version
 
 - [ ] Bump `version` in `module.php`; same value in `<Id>Module::version()`; git tag `vX.Y.Z` (semver: patch = fix, minor = feature/migration, major = breaking).
-- [ ] Private GitLab project `gereq/module-<id>`, wired as submodule under `modules/<Dir>`, `.gitmodules` URL without token.
+- [ ] Private GitLab project `gereq/module-<id>`, wired as submodule under `modules/<Dir>`, `.gitmodules` URL relative (`../module-<id>.git`).
+- [ ] Module project allows inbound CI job tokens from `gereq/GEREQ_PLATFORM` (Job token permissions / `tools/gitlab-allow-platform-job-token.sh`).
 
 Product
 

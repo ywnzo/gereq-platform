@@ -147,19 +147,57 @@ export function registerModuleTable(alpine: typeof Alpine): void {
             if (this.bulkAction !== 'disable') {
                 return;
             }
+
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) {
+                return;
+            }
+            if (form.dataset.confirmAccepted === '1') {
+                delete form.dataset.confirmAccepted;
+                return;
+            }
+
+            event.preventDefault();
+
             const root = this.$el as HTMLElement;
             const tpl = root.dataset.confirmDisable || '';
             const mediaTpl = root.dataset.confirmDisableMedia || '';
             const msg = tpl.replace('%count%', String(this.selected.length));
-            if (!window.confirm(msg)) {
-                event.preventDefault();
-                return;
-            }
-            const purge = window.confirm(mediaTpl);
-            const input = this.$refs.purgeMedia as HTMLInputElement | undefined;
-            if (input) {
-                input.value = purge ? '1' : '0';
-            }
+
+            void (async () => {
+                const ask =
+                    window.gereq?.confirm ??
+                    ((opts: { body?: string; title?: string }) =>
+                        Promise.resolve(window.confirm(opts.body || opts.title || '')));
+
+                const ok = await ask({
+                    title: root.dataset.confirmDisableTitle || undefined,
+                    body: msg,
+                    danger: true,
+                    confirmLabel: root.dataset.confirmDisableLabel || undefined,
+                });
+                if (!ok) {
+                    return;
+                }
+
+                const purge = await ask({
+                    title: root.dataset.confirmDisableMediaTitle || undefined,
+                    body: mediaTpl,
+                    danger: true,
+                    confirmLabel: root.dataset.confirmDisableMediaLabel || undefined,
+                });
+                const input = this.$refs.purgeMedia as HTMLInputElement | undefined;
+                if (input) {
+                    input.value = purge ? '1' : '0';
+                }
+
+                form.dataset.confirmAccepted = '1';
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            })();
         },
 
         apply() {

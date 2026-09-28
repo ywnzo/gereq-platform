@@ -41,7 +41,7 @@
         </div>
     </div>
     <div class="actions">
-        <button class="btn btn--primary" type="submit" form="user-form">{{ 'common.save'|trans }}</button>
+        <button class="btn btn--primary" type="submit" form="user-form">{{ icon('check') }} {{ 'common.save'|trans }}</button>
         <a class="btn btn--ghost" href="{{ url('admin.users.index') }}">{{ 'common.cancel'|trans }}</a>
         {% if item and user.can('users.delete') %}
             <button class="btn btn--danger" type="submit" form="delete-user">{{ 'common.delete'|trans }}</button>
@@ -49,24 +49,30 @@
     </div>
 </header>
 
-<form
-    method="post"
-    id="user-form"
+<div
     class="detail-hub user-edit"
-    enctype="multipart/form-data"
-    action="{{ item ? url('admin.users.update', {id: item.id()}) : url('admin.users.store') }}"
     x-data="gereqTabs"
     data-initial="{{ activeTab|default('profile') }}"
 >
-    {{ csrf_field()|raw }}
-    <input type="hidden" name="settings_tab" value="{{ activeTab|default('profile') }}">
-
     <div class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.users.title'|trans }}">
         <button type="button" class="design-tab" role="tab" data-tab="profile">{{ 'admin.users.tab.profile'|trans }}</button>
         <button type="button" class="design-tab" role="tab" data-tab="addresses">{{ 'admin.users.tab.addresses'|trans }}</button>
         <button type="button" class="design-tab" role="tab" data-tab="roles">{{ 'admin.users.tab.roles'|trans }}</button>
         <button type="button" class="design-tab" role="tab" data-tab="security">{{ 'admin.users.tab.security'|trans }}</button>
     </div>
+
+    <form
+        method="post"
+        id="user-form"
+        class="user-edit__form"
+        enctype="multipart/form-data"
+        action="{{ item ? url('admin.users.update', {id: item.id()}) : url('admin.users.store') }}"
+        data-form="admin.users.save"
+        x-data="gereqForm"
+        {% if form_errors('admin.users.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+        <input type="hidden" name="settings_tab" value="{{ activeTab|default('profile') }}">
 
     <section class="design-panel" data-panel="profile" role="tabpanel">
         <section class="panel">
@@ -293,10 +299,18 @@
                 </div>
             </header>
             <div class="form-grid">
-                <label class="field field--full">
-                    <span>{{ item ? 'admin.users.password_new'|trans : 'common.password'|trans }}</span>
-                    <input class="input" type="password" name="password" {{ item ? '' : 'required minlength="10"' }} autocomplete="new-password">
-                </label>
+                {% include 'ui/input.html.twig' with {
+                    name: 'password',
+                    type: 'password',
+                    label: item ? 'admin.users.password_new'|trans : 'common.password'|trans,
+                    required: item ? false : true,
+                    optional: item ? true : false,
+                    form: 'admin.users.save',
+                    value: '',
+                    autocomplete: 'new-password',
+                    extra: 'field--full',
+                    attrs: item ? '' : 'minlength="10"'
+                } %}
             </div>
         </section>
 
@@ -334,23 +348,34 @@
                         </ul>
                     {% endif %}
                     {% if user.can('users.edit') and (item.totpEnabled() or item.passkeyEnabled() or (passkeys|default([])|length) > 0) %}
-                        <form
-                            method="post"
-                            action="{{ url('admin.users.mfa.reset', {id: item.id()}) }}"
-                            class="form-actions"
-                            data-confirm="{{ 'admin.users.mfa.reset_confirm'|trans }}"
-                            data-confirm-title="{{ 'admin.users.mfa.title'|trans }}"
-                            data-confirm-danger="1"
-                        >
-                            {{ csrf_field()|raw }}
-                            <button type="submit" class="btn btn--danger">{{ 'admin.users.mfa.reset'|trans }}</button>
-                        </form>
+                        <div class="form-actions">
+                            <button
+                                type="submit"
+                                form="reset-mfa-{{ item.id() }}"
+                                class="btn btn--danger"
+                            >{{ 'admin.users.mfa.reset'|trans }}</button>
+                        </div>
                     {% endif %}
                 </div>
             </section>
         {% endif %}
     </section>
-</form>
+    </form>
+</div>
+
+{% if item and user.can('users.edit') and (item.totpEnabled() or item.passkeyEnabled() or (passkeys|default([])|length) > 0) %}
+    <form
+        id="reset-mfa-{{ item.id() }}"
+        method="post"
+        action="{{ url('admin.users.mfa.reset', {id: item.id()}) }}"
+        hidden
+        data-confirm="{{ 'admin.users.mfa.reset_confirm'|trans }}"
+        data-confirm-title="{{ 'admin.users.mfa.title'|trans }}"
+        data-confirm-danger="1"
+    >
+        {{ csrf_field()|raw }}
+    </form>
+{% endif %}
 
 {% if item and user.can('users.delete') %}
     <form

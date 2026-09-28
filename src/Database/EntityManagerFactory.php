@@ -28,12 +28,13 @@ final class EntityManagerFactory
         $paths = [$this->basePath . '/src'];
         $modulesDir = $this->basePath . '/modules';
 
+        // Only Domain/ — avoids loading modules/*/Tests (PHPUnit) under --no-dev.
         if (is_dir($modulesDir)) {
             foreach (scandir($modulesDir) ?: [] as $entry) {
                 if ($entry === '.' || $entry === '..') {
                     continue;
                 }
-                $path = $modulesDir . '/' . $entry;
+                $path = $modulesDir . '/' . $entry . '/Domain';
                 if (is_dir($path)) {
                     $paths[] = $path;
                 }

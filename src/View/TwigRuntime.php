@@ -95,6 +95,12 @@ final class TwigRuntime
         return $this->assets->tags($entry, $this->cspNonce());
     }
 
+    /** Auto-reload snippet while `bun run dev` is writing public/build/.dev (Docker volume). */
+    public function viteDevReload(): string
+    {
+        return $this->assets->devReloadTags($this->cspNonce());
+    }
+
     public function icon(string $name, string $class = ''): string
     {
         return $this->icons->svg($name, $class);
@@ -161,7 +167,7 @@ final class TwigRuntime
         return $this->formState->error($key, $form);
     }
 
-    /** @return array<string, list<string>> */
+    /** @return array<string, string> */
     public function errors(?string $form = null): array
     {
         return $this->formState->errors($form);

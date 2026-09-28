@@ -82,9 +82,8 @@ return [
             'documents',
             'reviews',
             'emailing',
-            'newsletter',
-            'engage',
             'webplus',
+            'webplus_ai',
         ],
         'required' => [
             'currency',

@@ -44,7 +44,8 @@
         >
         <div class="g-file__shell" :class="boxClass" :title="shellTitle">
             <label class="g-file__box" for="{{ id }}">
-                <span class="g-file__icon" aria-hidden="true">{{ icon(compact ? 'upload' : 'cloud-upload') }}</span>
+                <span class="g-file__icon" aria-hidden="true" x-show="!hasFile">{{ icon(compact ? 'upload' : 'cloud-upload') }}</span>
+                <span class="g-file__icon g-file__icon--done" aria-hidden="true" x-show="hasFile" x-cloak>{{ icon('check') }}</span>
                 <span class="g-file__copy">
                     <span class="g-file__title" x-text="titleText">{{ title }}</span>
                     {% if not compact %}

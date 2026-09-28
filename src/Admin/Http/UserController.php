@@ -64,13 +64,13 @@ final class UserController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return $this->page('admin/users/form.html.twig', [
             'pageTitle' => $this->translator->trans('admin.users.new'),
             'item' => null,
             'roles' => $this->em->getRepository(Role::class)->findBy([], ['label' => 'ASC']),
-            'activeTab' => 'profile',
+            'activeTab' => (string) $request->query->get('tab', 'profile'),
         ]);
     }
 
@@ -82,10 +82,16 @@ final class UserController extends Controller
         $lastName = trim((string) $request->request->get('last_name'));
         $displayName = trim($firstName . ' ' . $lastName);
 
-        if ($displayName === '' || $email === '' || strlen($password) < 10) {
+        if ($displayName === '' || $email === '') {
             $this->flash('error', $this->translator->trans('admin.users.validation'));
 
             return $this->redirect('admin.users.create');
+        }
+
+        if (strlen($password) < 10) {
+            $this->flash('error', $this->translator->trans('admin.users.password_min'));
+
+            return $this->redirect('admin.users.create', ['tab' => 'security']);
         }
 
         if ($this->em->getRepository(User::class)->findOneBy(['email' => $email])) {

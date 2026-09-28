@@ -2,7 +2,7 @@
     "name": "gereq/platform",
     "description": "GEREQ Platform — modularní interní backendová platforma",
     "type": "project",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "license": "proprietary",
     "require": {
         "php": "^8.4",

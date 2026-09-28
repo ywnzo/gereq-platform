@@ -48,6 +48,7 @@ Quick links for the RealEstates package: [Listings](modules/listings.md) · [Vie
 | [Database](infrastructure/database.md) | Drivers, Doctrine mapping, migrations, seeders, demo data |
 | [Cache, queue, session & files](infrastructure/cache-queue-session-files.md) | Drivers and `storage/` layout |
 | [Deployment](infrastructure/deployment.md) | Production checklist, logging, monitoring, security headers |
+| [ZIP update guidelines](UPDATE-GUIDELINES.md) | Safe rsync from platform ZIP, excludes, post-update steps |
 | [Tooling](infrastructure/tooling.md) | `tools/*`, `bin/*`, Cursor rules & skills, static analysis configs |
 
 ## Frontend

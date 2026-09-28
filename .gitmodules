@@ -136,3 +136,6 @@
 [submodule "modules/Messenger"]
 	path = modules/Messenger
 	url = ../module-messenger.git
+[submodule "modules/WebPlusAi"]
+	path = modules/WebPlusAi
+	url = ../module-webplus-ai.git

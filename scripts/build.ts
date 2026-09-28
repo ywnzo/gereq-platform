@@ -1,8 +1,12 @@
 /**
  * Production (and watch) frontend build via Bun's native bundler.
  * Emits Vite-compatible public/build/.vite/manifest.json for AssetManager.
+ *
+ * `bun run build`  → hashed files (immutable cache)
+ * `bun run dev`    → stable assets/admin.js|css + public/build/.dev marker
+ *                  → writes into the host tree mounted by Docker (:/var/www/html)
  */
-import { rm, mkdir, writeFile } from 'node:fs/promises';
+import { rm, mkdir, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import tailwind from 'bun-plugin-tailwind';
 
@@ -12,6 +16,7 @@ const assetsDir = path.join(outdir, 'assets');
 const entry = path.join(root, 'resources/js/admin.ts');
 const entryKey = 'resources/js/admin.ts';
 const watch = process.argv.includes('--watch');
+const devMarker = path.join(outdir, '.dev');
 
 async function clearHotMarker(): Promise<void> {
   try {
@@ -47,10 +52,13 @@ async function writeManifest(outputs: Bun.BuildArtifact[]): Promise<void> {
     throw new Error('Bun build produced no JS entry artifact');
   }
 
+  // Prefer a single CSS next to the entry (drop duplicate hashed leftovers in watch).
+  const cssUnique = [...new Set(cssFiles)];
+
   const manifest = {
     [entryKey]: {
       file: jsFile,
-      css: cssFiles,
+      css: cssUnique,
       isEntry: true,
       src: entryKey,
     },
@@ -58,28 +66,77 @@ async function writeManifest(outputs: Bun.BuildArtifact[]): Promise<void> {
 
   const viteDir = path.join(outdir, '.vite');
   await mkdir(viteDir, { recursive: true });
-  await writeFile(path.join(viteDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-  await writeFile(path.join(outdir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+  const body = JSON.stringify(manifest, null, 2) + '\n';
+  await writeFile(path.join(viteDir, 'manifest.json'), body);
+  await writeFile(path.join(outdir, 'manifest.json'), body);
+}
+
+async function writeDevMarker(): Promise<void> {
+  await writeFile(
+    devMarker,
+    JSON.stringify({ at: Date.now(), mode: 'watch' }, null, 2) + '\n',
+  );
+}
+
+async function clearDevMarker(): Promise<void> {
+  try {
+    await rm(devMarker, { force: true });
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Remove previous watch/prod artefacts without deleting outdir (avoids brief 404s). */
+async function cleanAssetsDir(): Promise<void> {
+  await mkdir(assetsDir, { recursive: true });
+  let names: string[] = [];
+  try {
+    names = await readdir(assetsDir);
+  } catch {
+    return;
+  }
+  await Promise.all(
+    names.map(async (name) => {
+      try {
+        await rm(path.join(assetsDir, name), { force: true, recursive: true });
+      } catch {
+        /* ignore */
+      }
+    }),
+  );
 }
 
 async function runBuild(): Promise<void> {
   await clearHotMarker();
-  await rm(outdir, { recursive: true, force: true });
-  await mkdir(assetsDir, { recursive: true });
+
+  if (watch) {
+    await mkdir(outdir, { recursive: true });
+    await cleanAssetsDir();
+  } else {
+    await rm(outdir, { recursive: true, force: true });
+    await mkdir(assetsDir, { recursive: true });
+    await clearDevMarker();
+  }
 
   const result = await Bun.build({
     entrypoints: [entry],
     outdir: assetsDir,
     target: 'browser',
     format: 'esm',
-    splitting: true,
+    splitting: false,
     minify: !watch,
     sourcemap: watch ? 'linked' : 'none',
-    naming: {
-      entry: '[name]-[hash].[ext]',
-      chunk: '[name]-[hash].[ext]',
-      asset: '[name]-[hash].[ext]',
-    },
+    naming: watch
+      ? {
+          entry: '[name].[ext]',
+          chunk: '[name].[ext]',
+          asset: '[name].[ext]',
+        }
+      : {
+          entry: '[name]-[hash].[ext]',
+          chunk: '[name]-[hash].[ext]',
+          asset: '[name]-[hash].[ext]',
+        },
     plugins: [tailwind],
     define: {
       'process.env.NODE_ENV': JSON.stringify(watch ? 'development' : 'production'),
@@ -88,14 +145,21 @@ async function runBuild(): Promise<void> {
   });
 
   await writeManifest(result.outputs);
+  if (watch) {
+    await writeDevMarker();
+  }
 
   const sizes = result.outputs.map((o) => {
     const rel = path.relative(outdir, o.path);
     return `  ${rel}  ${(o.size / 1024).toFixed(1)} kB`;
   });
-  console.log(`✓ bun build → public/build (${result.outputs.length} files)`);
+  const mode = watch ? 'watch' : 'prod';
+  console.log(`✓ bun build [${mode}] → public/build (${result.outputs.length} files)`);
   for (const line of sizes) {
     console.log(line);
+  }
+  if (watch) {
+    console.log('  (Docker: volume mount picks this up; refresh or auto-reload)');
   }
 }
 
@@ -103,37 +167,29 @@ await runBuild();
 
 if (watch) {
   console.log('Watching resources/ + modules/*/Resources/assets …');
-  const watcher = (async () => {
-    // Prefer Bun.watch when available; fall back to rebuild on argv-only.
-    const { watch: fsWatch } = await import('node:fs');
-    const dirs = [
-      path.join(root, 'resources'),
-      path.join(root, 'modules'),
-    ];
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const schedule = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(async () => {
-        try {
-          await runBuild();
-        } catch (err) {
-          console.error('Rebuild failed:', err);
-        }
-      }, 120);
-    };
-    for (const dir of dirs) {
+  const { watch: fsWatch } = await import('node:fs');
+  const dirs = [path.join(root, 'resources'), path.join(root, 'modules')];
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(async () => {
       try {
-        fsWatch(dir, { recursive: true }, (_event, filename) => {
-          if (!filename) return;
-          if (!/\.(ts|js|css|tsx|jsx)$/i.test(String(filename))) return;
-          schedule();
-        });
+        await runBuild();
       } catch (err) {
-        console.warn(`Cannot watch ${dir}:`, err);
+        console.error('Rebuild failed:', err);
       }
+    }, 120);
+  };
+  for (const dir of dirs) {
+    try {
+      fsWatch(dir, { recursive: true }, (_event, filename) => {
+        if (!filename) return;
+        if (!/\.(ts|js|css|tsx|jsx)$/i.test(String(filename))) return;
+        schedule();
+      });
+    } catch (err) {
+      console.warn(`Cannot watch ${dir}:`, err);
     }
-  })();
-  await watcher;
-  // Keep process alive
+  }
   await new Promise(() => {});
 }

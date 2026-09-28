@@ -53,6 +53,8 @@ export function registerFile(alpine: typeof Alpine): void {
                 return;
             }
 
+            this.applyFiles(input.files);
+
             input.addEventListener('change', () => {
                 this.applyFiles(input.files);
             });

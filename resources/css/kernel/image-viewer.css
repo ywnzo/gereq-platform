@@ -99,16 +99,22 @@
     z-index: 1;
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
     display: grid;
     place-items: center;
     overflow: hidden;
+    padding: 0.85rem;
+    box-sizing: border-box;
     cursor: zoom-in;
     touch-action: none;
     user-select: none;
 }
 .g-image-viewer__img {
+    /* Use definite viewport limits — percentage max-height inside a
+       place-items:center grid item is indefinite, so portrait photos
+       used to render at intrinsic size and blow past the stage. */
     max-width: min(96vw, 100%);
-    max-height: min(calc(100dvh - 3.5rem), 100%);
+    max-height: calc(100dvh - 5.25rem);
     width: auto;
     height: auto;
     object-fit: contain;
@@ -116,6 +122,11 @@
     transition: transform 0.08s ease-out;
     pointer-events: none;
     box-shadow: 0 18px 60px rgb(0 0 0 / 0.45);
+}
+/* After ±90° the visual axes swap — keep the photo inside the stage. */
+.g-image-viewer__img.is-sideways {
+    max-width: calc(100dvh - 5.25rem);
+    max-height: min(96vw, 100%);
 }
 .g-image-viewer__stage.is-zoomed {
     cursor: grab;

@@ -37,7 +37,6 @@ declare global {
         __GEREQ_CSRF__: string;
         __GEREQ_SEARCH_URL__?: string;
         Alpine: typeof Alpine;
-        gereqConfirmModuleDisable?: (form: HTMLFormElement, disableMsg: string, mediaMsg: string) => boolean;
         gereqConfirmModuleVersion?: (
             form: HTMLFormElement,
             isDowngrade: boolean,
@@ -47,18 +46,7 @@ declare global {
     }
 }
 
-window.gereqConfirmModuleDisable = (form, disableMsg, mediaMsg) => {
-    if (!window.confirm(disableMsg)) {
-        return false;
-    }
-    const purge = window.confirm(mediaMsg);
-    const input = form.querySelector<HTMLInputElement>('input[name="purge_media"]');
-    if (input) {
-        input.value = purge ? '1' : '0';
-    }
-    return true;
-};
-
+/** Sync fallback for version activate/downgrade forms that still use onclick. */
 window.gereqConfirmModuleVersion = (form, isDowngrade, activateMsg, downgradeMsg) => {
     if (!window.confirm(isDowngrade ? downgradeMsg : activateMsg)) {
         return false;

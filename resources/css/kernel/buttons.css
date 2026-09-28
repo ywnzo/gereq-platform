@@ -78,6 +78,11 @@
     color: #fff;
     border-color: transparent;
 }
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+    border-color: transparent;
+}
 .btn-warning {
     background: var(--warning);
     color: var(--primary-fg);

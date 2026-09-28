@@ -12,12 +12,24 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
-* Auth for /api/public/*:
-* - Bearer / X-Api-Key grq_pub_* (external clients), or
-* - first-party browser (same-origin / allowlisted Origin) without a key — like baby-naty shop API.
-*/
+ * Auth for /api/public/*:
+ * - Bearer / X-Api-Key grq_pub_* (external clients), or
+ * - first-party browser (same-origin / allowlisted Origin) without a key — like baby-naty shop API.
+ *
+ * Discovery files (robots / sitemap / llms / Web+AI catalog) stay open — crawlers have no API key.
+ */
 final class PublicApiAuthMiddleware implements MiddlewareInterface
 {
+    /** @var list<string> */
+    private const OPEN_DISCOVERY_PATHS = [
+        '/api/public/webplus/robots.txt',
+        '/api/public/webplus/sitemap.xml',
+        '/api/public/webplus/llms.txt',
+        '/api/public/webplus-ai/tools.json',
+        '/api/public/webplus-ai/ai.txt',
+        '/api/public/webplus-ai/llms-full.txt',
+    ];
+
     public function __construct(private readonly PublicApiKey $publicKey)
     {
     }
@@ -30,6 +42,10 @@ final class PublicApiAuthMiddleware implements MiddlewareInterface
         }
 
         if (strtoupper($request->getMethod()) === 'OPTIONS') {
+            return $next($request);
+        }
+
+        if (in_array($path, self::OPEN_DISCOVERY_PATHS, true)) {
             return $next($request);
         }
 

@@ -13,6 +13,11 @@ final class PublicCors
     /** Common Vite / FE ports in local development. */
     private const DEV_PORTS = [5173, 5174, 5175, 4173, 3000];
 
+    /**
+     * @template T of Response
+     * @param T $response
+     * @return T
+     */
     public static function apply(Response $response, ?Request $request, string $methods = 'GET, OPTIONS'): Response
     {
         $allowedRaw = trim((string) env_value('FRONTEND_ORIGIN', ''));

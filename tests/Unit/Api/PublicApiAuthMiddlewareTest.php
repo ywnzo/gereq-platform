@@ -160,4 +160,27 @@ final class PublicApiAuthMiddlewareTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('private', $response->getContent());
     }
+
+    public function testOpenDiscoveryPathsSkipApiKey(): void
+    {
+        $mw = new PublicApiAuthMiddleware(new PublicApiKey(new Repository([
+            'api' => ['public_key' => ''],
+        ])));
+
+        foreach ([
+            '/api/public/webplus/robots.txt',
+            '/api/public/webplus/sitemap.xml',
+            '/api/public/webplus/llms.txt',
+            '/api/public/webplus-ai/tools.json',
+            '/api/public/webplus-ai/ai.txt',
+            '/api/public/webplus-ai/llms-full.txt',
+        ] as $path) {
+            $response = $mw->process(
+                Request::create($path, 'GET'),
+                static fn () => new Response('discovery'),
+            );
+            self::assertSame(200, $response->getStatusCode(), $path);
+            self::assertSame('discovery', $response->getContent(), $path);
+        }
+    }
 }

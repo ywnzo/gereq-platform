@@ -58,6 +58,11 @@ final class PublicAresController extends Controller
         }
     }
 
+    /**
+     * @template T of Response
+     * @param T $response
+     * @return T
+     */
     private function cors(Response $response): Response
     {
         return PublicCors::apply($response, $this->request(), 'GET, OPTIONS');

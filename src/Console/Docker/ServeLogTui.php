@@ -41,6 +41,10 @@ final class ServeLogTui
     /** @var resource|null */
     private $viteLogHandle = null;
     private int $viteLogPos = 0;
+    /** @var resource|null */
+    private $exceptionLogHandle = null;
+    private int $exceptionLogPos = 0;
+    private bool $exceptionLogEverOpened = false;
 
     public function __construct(
         private readonly string $basePath,
@@ -97,6 +101,7 @@ final class ServeLogTui
         $bufOut = '';
         $bufErr = '';
         $this->openViteLog(seekEnd: true);
+        $this->openExceptionLog(seekEnd: true);
 
         try {
             while ($this->running) {
@@ -127,6 +132,7 @@ final class ServeLogTui
                 }
 
                 $this->pollViteLog(stream: true);
+                $this->pollExceptionLog(stream: true);
                 if ($interactive) {
                     $this->flushPendingKeySeq(stream: true);
                 }
@@ -138,6 +144,7 @@ final class ServeLogTui
             }
         } finally {
             $this->closeViteLog();
+            $this->closeExceptionLog();
             foreach ([1, 2] as $i) {
                 if (isset($pipes[$i]) && is_resource($pipes[$i])) {
                     fclose($pipes[$i]);
@@ -192,6 +199,7 @@ final class ServeLogTui
         $bufOut = '';
         $bufErr = '';
         $this->openViteLog(seekEnd: true);
+        $this->openExceptionLog(seekEnd: true);
         $this->render(force: true);
 
         try {
@@ -220,6 +228,7 @@ final class ServeLogTui
                 }
 
                 $this->pollViteLog(stream: false);
+                $this->pollExceptionLog(stream: false);
                 $this->flushPendingKeySeq(stream: false);
 
                 $status = proc_get_status($proc);
@@ -231,6 +240,7 @@ final class ServeLogTui
             }
         } finally {
             $this->closeViteLog();
+            $this->closeExceptionLog();
             foreach ([1, 2] as $i) {
                 if (isset($pipes[$i]) && is_resource($pipes[$i])) {
                     fclose($pipes[$i]);
@@ -485,7 +495,7 @@ final class ServeLogTui
                 if ($trim === '') {
                     continue;
                 }
-                echo $this->c('dim', '  ' . $this->truncate($trim, 100)) . "\n";
+                echo $this->c('dim', '  ' . $trim) . "\n";
             }
             echo $code === 0
                 ? $this->c('ok', '  · rebuild ok') . "\n"
@@ -557,22 +567,29 @@ final class ServeLogTui
         if ($this->hot) {
             $filtr .= '+hot-proxy';
         }
-        echo $this->c('dim', 'filtr: ' . $filtr . ' skryté · ' . $keys) . "\n\n";
+        echo $this->c('dim', 'filtr: ' . $filtr . ' skryté · exceptions z gereq.log · ' . $keys) . "\n\n";
     }
 
     private function formatStreamLine(AccessLogEntry $entry): string
     {
         if (!$entry->access) {
-            $level = str_contains(strtolower($entry->path), 'warn') || str_contains(strtolower($entry->path), 'error')
-                ? 'warn'
-                : ($entry->service === 'hot' || $entry->service === 'build' ? 'lime' : 'dim');
+            $pathLower = strtolower($entry->path);
+            $level = match (true) {
+                $entry->service === 'exc' => 'err',
+                str_contains($pathLower, 'error')
+                    || str_contains($pathLower, 'exception')
+                    || str_contains($pathLower, 'fatal')
+                    || str_contains($pathLower, 'warn') => 'warn',
+                $entry->service === 'hot' || $entry->service === 'build' => 'lime',
+                default => 'dim',
+            };
             $time = $entry->time ?? '        ';
 
             return sprintf(
                 '%s  %s  %s',
                 $this->c('dim', str_pad($time, 8)),
                 $this->c('svc', str_pad($entry->service, 5)),
-                $this->c($level, $this->truncate($entry->path, 90))
+                $this->c($level, $entry->path)
             );
         }
 
@@ -921,6 +938,119 @@ final class ServeLogTui
 
         return new AccessLogEntry(
             service: 'hot',
+            method: '',
+            path: $message,
+            status: 0,
+            bytes: null,
+            time: $time,
+            raw: $line,
+            access: false,
+        );
+    }
+
+    private function exceptionLogPath(): string
+    {
+        return $this->basePath . '/storage/logs/gereq.log';
+    }
+
+    private function openExceptionLog(bool $seekEnd): void
+    {
+        $path = $this->exceptionLogPath();
+        if (!is_file($path)) {
+            return;
+        }
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            return;
+        }
+        $this->exceptionLogHandle = $handle;
+        $this->exceptionLogEverOpened = true;
+        if ($seekEnd) {
+            fseek($handle, 0, SEEK_END);
+            $this->exceptionLogPos = (int) ftell($handle);
+        } else {
+            $this->exceptionLogPos = 0;
+        }
+    }
+
+    private function closeExceptionLog(): void
+    {
+        if (is_resource($this->exceptionLogHandle)) {
+            fclose($this->exceptionLogHandle);
+        }
+        $this->exceptionLogHandle = null;
+        $this->exceptionLogPos = 0;
+    }
+
+    private function pollExceptionLog(bool $stream): void
+    {
+        if ($this->paused) {
+            return;
+        }
+
+        $path = $this->exceptionLogPath();
+        if (!is_file($path)) {
+            return;
+        }
+
+        if (!is_resource($this->exceptionLogHandle)) {
+            // Missing at start → file just appeared: read from beginning. Otherwise resume at EOF.
+            $this->openExceptionLog(seekEnd: $this->exceptionLogEverOpened);
+
+            return;
+        }
+
+        clearstatcache(true, $path);
+        $size = (int) filesize($path);
+        if ($size < $this->exceptionLogPos) {
+            // log rotated / truncated
+            fseek($this->exceptionLogHandle, 0, SEEK_SET);
+            $this->exceptionLogPos = 0;
+        }
+        if ($size === $this->exceptionLogPos) {
+            return;
+        }
+
+        fseek($this->exceptionLogHandle, $this->exceptionLogPos, SEEK_SET);
+        $chunk = stream_get_contents($this->exceptionLogHandle);
+        if ($chunk === false || $chunk === '') {
+            return;
+        }
+        $this->exceptionLogPos = (int) ftell($this->exceptionLogHandle);
+
+        foreach (preg_split("/\r\n|\n|\r/", $chunk) ?: [] as $line) {
+            if ($line === '') {
+                continue;
+            }
+            $entry = $this->parseExceptionLogLine($line);
+            if ($stream) {
+                echo $this->formatStreamLine($entry) . "\n";
+            } else {
+                $this->lines[] = $entry;
+                if (count($this->lines) > self::MAX_LINES) {
+                    $this->lines = array_slice($this->lines, -self::MAX_LINES);
+                }
+            }
+        }
+    }
+
+    private function parseExceptionLogLine(string $line): AccessLogEntry
+    {
+        $time = null;
+        $message = $line;
+
+        // `[2026-09-28 13:56:21] Class: message in /path:line`
+        if (preg_match(
+            '/^\[(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<time>\d{2}:\d{2}:\d{2})\]\s*(?P<msg>.+)$/',
+            $line,
+            $m
+        ) === 1) {
+            $time = (string) $m['time'];
+            $message = trim((string) $m['msg']);
+        }
+
+        return new AccessLogEntry(
+            service: 'exc',
             method: '',
             path: $message,
             status: 0,

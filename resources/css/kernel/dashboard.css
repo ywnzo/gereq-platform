@@ -424,9 +424,9 @@ a.dash-list__row:hover {
 
 .user-edit-header {
     position: relative;
-    overflow: hidden;
 }
 .user-edit-header--banner {
+    overflow: hidden;
     padding-top: 1.25rem;
     border-radius: var(--radius);
 }

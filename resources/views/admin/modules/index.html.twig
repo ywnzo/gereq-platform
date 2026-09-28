@@ -64,7 +64,11 @@
             data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
             data-update-ids="{{ updateIds|json_encode|e('html_attr') }}"
             data-confirm-disable="{{ 'admin.modules.bulk.confirm_disable'|trans|e('html_attr') }}"
+            data-confirm-disable-title="{{ 'admin.modules.bulk.action.disable'|trans|e('html_attr') }}"
+            data-confirm-disable-label="{{ 'admin.modules.uninstall'|trans|e('html_attr') }}"
             data-confirm-disable-media="{{ 'admin.modules.bulk.confirm_disable_media'|trans|e('html_attr') }}"
+            data-confirm-disable-media-title="{{ 'admin.modules.confirm.disable_media_title'|trans|e('html_attr') }}"
+            data-confirm-disable-media-label="{{ 'admin.modules.confirm.disable_media_yes'|trans|e('html_attr') }}"
         >
             <div class="toolbar--table">
                 <div class="toolbar">
@@ -88,6 +92,10 @@
                             method="post"
                             action="{{ url('admin.modules.bulk') }}"
                             title="{{ 'admin.modules.update_all'|trans }}"
+                            data-confirm="{{ 'admin.modules.bulk.confirm_update_all'|trans({'%count%': stats.updates})|e('html_attr') }}"
+                            data-confirm-title="{{ 'admin.modules.update_all'|trans|e('html_attr') }}"
+                            data-confirm-label="{{ 'admin.modules.bulk.action.update'|trans|e('html_attr') }}"
+                            data-confirm-danger="0"
                         >
                             {{ csrf_field()|raw }}
                             <input type="hidden" name="action" value="update_outdated">
@@ -98,7 +106,6 @@
                                 :aria-busy="busyAttr"
                                 :disabled="busy"
                                 aria-label="{{ 'admin.modules.update_all'|trans }}"
-                                onclick="return confirm('{{ 'admin.modules.bulk.confirm_update_all'|trans({'%count%': stats.updates})|e('js') }}')"
                             >{{ icon('refresh') }}</button>
                         </form>
                     {% else %}
@@ -244,6 +251,65 @@
                                 </td>
                                 {% embed 'ui/row_actions.html.twig' %}
                                     {% block items %}
+                                        {# Single Start/Pause toggle: play when off, pause when on. #}
+                                        {% if row.enabled %}
+                                            <form
+                                                method="post"
+                                                action="{{ url('admin.modules.pause', {id: manifest.id}) }}"
+                                                data-confirm="{{ 'admin.modules.confirm.pause'|trans|e('html_attr') }}"
+                                                data-confirm-title="{{ 'admin.modules.confirm.pause_title'|trans|e('html_attr') }}"
+                                                data-confirm-label="{{ 'common.pause'|trans|e('html_attr') }}"
+                                                data-confirm-danger="0"
+                                            >
+                                                {{ csrf_field()|raw }}
+                                                <input type="hidden" name="return" value="index">
+                                                <button
+                                                    type="submit"
+                                                    class="table__action-btn table__action-btn--warn"
+                                                    title="{{ 'admin.modules.pause_hint'|trans }}"
+                                                    aria-label="{{ 'common.pause'|trans }}"
+                                                >{{ icon('pause') }}</button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
+                                                {{ csrf_field()|raw }}
+                                                <input type="hidden" name="return" value="index">
+                                                <button
+                                                    type="submit"
+                                                    class="table__action-btn table__action-btn--success"
+                                                    title="{{ 'common.activate'|trans }}"
+                                                    aria-label="{{ 'common.activate'|trans }}"
+                                                >{{ icon('play') }}</button>
+                                            </form>
+                                        {% endif %}
+                                        {# Stop only while running (keeps column aligned when off). #}
+                                        {% if row.enabled %}
+                                            <form
+                                                method="post"
+                                                action="{{ url('admin.modules.disable', {id: manifest.id}) }}"
+                                                data-confirm="{{ 'admin.modules.confirm.disable'|trans|e('html_attr') }}"
+                                                data-confirm-title="{{ 'admin.modules.confirm.disable_title'|trans|e('html_attr') }}"
+                                                data-confirm-label="{{ 'common.stop'|trans|e('html_attr') }}"
+                                                data-confirm-danger="1"
+                                                data-confirm-followup="{{ 'admin.modules.confirm.disable_media'|trans|e('html_attr') }}"
+                                                data-confirm-followup-title="{{ 'admin.modules.confirm.disable_media_title'|trans|e('html_attr') }}"
+                                                data-confirm-followup-label="{{ 'admin.modules.confirm.disable_media_yes'|trans|e('html_attr') }}"
+                                                data-confirm-followup-cancel="{{ 'admin.modules.confirm.disable_media_no'|trans|e('html_attr') }}"
+                                                data-confirm-followup-input="purge_media"
+                                            >
+                                                {{ csrf_field()|raw }}
+                                                <input type="hidden" name="return" value="index">
+                                                <input type="hidden" name="purge_media" value="0">
+                                                <button
+                                                    type="submit"
+                                                    class="table__action-btn table__action-btn--danger"
+                                                    title="{{ 'admin.modules.uninstall_hint'|trans }}"
+                                                    aria-label="{{ 'common.stop'|trans }}"
+                                                >{{ icon('stop') }}</button>
+                                            </form>
+                                        {% else %}
+                                            {% include 'ui/row_action.html.twig' with { placeholder: true } %}
+                                        {% endif %}
                                         {% if row.settings_route %}
                                             {% include 'ui/row_action.html.twig' with { href: url(row.settings_route), label: 'common.settings'|trans, icon: 'settings' } %}
                                         {% else %}
@@ -261,50 +327,6 @@
                                                 >{{ icon('refresh') }}</button>
                                             </form>
                                         {% else %}
-                                            {% include 'ui/row_action.html.twig' with { placeholder: true } %}
-                                        {% endif %}
-                                        {% if row.enabled %}
-                                            <button
-                                                type="button"
-                                                class="table__action-btn table__action-btn--success"
-                                                disabled
-                                                title="{{ 'admin.modules.running'|trans }}"
-                                                aria-label="{{ 'admin.modules.running'|trans }}"
-                                            >{{ icon('play') }}</button>
-                                            <form method="post" action="{{ url('admin.modules.pause', {id: manifest.id}) }}">
-                                                {{ csrf_field()|raw }}
-                                                <input type="hidden" name="return" value="index">
-                                                <button
-                                                    type="submit"
-                                                    class="table__action-btn table__action-btn--warn"
-                                                    title="{{ 'admin.modules.pause_hint'|trans }}"
-                                                    aria-label="{{ 'common.pause'|trans }}"
-                                                >{{ icon('pause') }}</button>
-                                            </form>
-                                            <form method="post" action="{{ url('admin.modules.disable', {id: manifest.id}) }}">
-                                                {{ csrf_field()|raw }}
-                                                <input type="hidden" name="return" value="index">
-                                                <input type="hidden" name="purge_media" value="0">
-                                                <button
-                                                    type="submit"
-                                                    class="table__action-btn table__action-btn--danger"
-                                                    title="{{ 'common.deactivate'|trans }}"
-                                                    aria-label="{{ 'common.deactivate'|trans }}"
-                                                    onclick="return window.gereqConfirmModuleDisable(this.form, {{ 'admin.modules.confirm.disable'|trans|json_encode|raw }}, {{ 'admin.modules.confirm.disable_media'|trans|json_encode|raw }})"
-                                                >{{ icon('trash') }}</button>
-                                            </form>
-                                        {% else %}
-                                            <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
-                                                {{ csrf_field()|raw }}
-                                                <input type="hidden" name="return" value="index">
-                                                <button
-                                                    type="submit"
-                                                    class="table__action-btn table__action-btn--success"
-                                                    title="{{ 'common.activate'|trans }}"
-                                                    aria-label="{{ 'common.activate'|trans }}"
-                                                >{{ icon('play') }}</button>
-                                            </form>
-                                            {% include 'ui/row_action.html.twig' with { placeholder: true } %}
                                             {% include 'ui/row_action.html.twig' with { placeholder: true } %}
                                         {% endif %}
                                     {% endblock %}

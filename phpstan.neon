@@ -11,7 +11,8 @@ parameters:
         - tests
         - bin/gereq-test
     tmpDir: .phpstan-tmp
-    reportUnmatchedIgnoredErrors: false
+    # Fail when baseline entries no longer match — keeps phpstan-baseline.neon small.
+    reportUnmatchedIgnoredErrors: true
     ignoreErrors:
         -
             identifier: property.onlyWritten
@@ -21,13 +22,24 @@ parameters:
             identifier: nullCoalesce.offset
         -
             identifier: property.unusedType
-        # Idiomatic $this->assert* / markTestSkipped in PHPUnit test's
+        # Return type includes null/union arm that the body never produces (same idea as property.unusedType).
         -
-            identifier: staticMethod.dynamicCall
-            path: tests/*
+            identifier: return.unusedType
+        # Redundant is_* / instanceof after the type is already narrowed (Doctrine find + guards, etc.).
         -
-            identifier: staticMethod.dynamicCall
-            path: modules/*/Tests/*
+            identifier: function.alreadyNarrowedType
+        -
+            identifier: instanceof.alwaysTrue
+        -
+            identifier: notIdentical.alwaysTrue
+        -
+            identifier: identical.alwaysFalse
+        -
+            identifier: nullsafe.neverNull
+        # array_values() on a list<> is a no-op for the type system but kept for runtime shape.
+        -
+            identifier: arrayValues.list
+        # Idiomatic $this->assert* / markTestSkipped in PHPUnit tests
         -
             identifier: staticMethod.alreadyNarrowedType
             path: tests/*
@@ -37,6 +49,3 @@ parameters:
         -
             identifier: staticMethod.impossibleType
             path: tests/*
-        -
-            identifier: staticMethod.impossibleType
-            path: modules/*/Tests/*

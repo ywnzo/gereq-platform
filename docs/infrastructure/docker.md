@@ -125,7 +125,7 @@ When not using `-d`/`--raw`, `ServeLogTui` tails compose logs in a compact HTTP-
 | `h` | toggle Vite/hot log (only with `--hot`) |
 | `space` | pause |
 
-The TUI also wires the N+1 query log to `storage/logs/nplusone.log` and reads the Vite log from `storage/logs/vite-dev.log`.
+The TUI also wires the N+1 query log to `storage/logs/nplusone.log`, tails exceptions from `storage/logs/gereq.log`, and (with `--hot`) reads the Bun asset watch log from `storage/logs/bun-assets.log`.
 
 ### Typical invocations
 

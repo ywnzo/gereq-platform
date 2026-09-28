@@ -146,16 +146,15 @@ php gereq serve-docker --down           # zastavit stack (+ Bun watch z --hot -d
 
 S `--https` nginx poslouchá na host portu **443** (self-signed cert v `docker/nginx/certs/`). Prohlížeč jednou varuje — přidejte výjimku. HTTP zůstává na `--port`.
 
-S `--hot` se na hostu spustí `bun run dev` (Bun bundler watch → `public/build`). Nginx servíruje `/build/` přímo; po změně assets stačí refresh v prohlížeči. Ukončení TUI / `--down` watch vypne (u `-d` zůstane do `--down`).
+S `--hot` se na hostu spustí `bun run dev` (Bun watch → stabilní `public/build/assets/admin.js|css` + marker `.dev`). Stejný strom je namountovaný do Dockeru, takže změny jdou rovnou do nginx. V adminu běží auto-reload (poll `manifest.json`); ruční refresh není potřeba. Ukončení TUI / `--down` watch vypne (u `-d` zůstane do `--down`).
 
-Ve výchozím režimu běží compact log stream (HTTP řádky, filtry assetů/php/nginx šumu). Klávesy: `q` `a` `p` `n` `space`.
-
-Pro Redis frontu v aplikaci nastavte v `.env` `QUEUE_DRIVER=redis` (v Dockeru je `REDIS_HOST=redis`). Session v Dockeru běží přes Redis (`SESSION_DRIVER=redis`).
+Stejný efekt má i ruční `bun run dev` vedle běžícího `serve-docker` (volume mount).
 
 Frontend build do `public/build`:
 
 ```bash
-bun run build
+bun run build   # produkční hashe
+bun run dev     # watch → Docker volume + auto-reload v adminu
 ```
 
 ## CLI
@@ -319,9 +318,13 @@ cd ../..
 
 # z platformy: nahradit běžnou složku submodulem (pokud ještě není)
 git submodule add git@git.gereq.cz:gereq/module-warehouse.git modules/Warehouse
-# URL v .gitmodules sjednoť na https://git.gereq.cz/gereq/module-warehouse.git
+# URL v .gitmodules sjednoť na relativní: ../module-warehouse.git
 git add .gitmodules modules/Warehouse
 git commit -m "chore: add Warehouse submodule @ v0.1.0"
+# CI: povolit job token z GEREQ_PLATFORM (jednou na nový module projekt)
+#   GITLAB_TOKEN=… bash tools/gitlab-allow-platform-job-token.sh
+#   nebo UI: module → Settings → CI/CD → Job token permissions → gereq/GEREQ_PLATFORM
+
 git push
 ```
 
@@ -342,7 +345,8 @@ Každý modul má být plnohodnotná platform capability, ne jen admin CRUD:
 - [x] GitLab projekt gereq/module-<id> (private)
 - [x] Napojený jako submodule v GEREQ_PLATFORM (modules/<Dir>)
 - [x] version v module.php == Module::version() == git tag vX.Y.Z
-- [x] .gitmodules URL bez tokenu (https://git.gereq.cz/gereq/…)
+- [x] .gitmodules URL relativní (`../module-<id>.git`), bez tokenu
+- [x] Job token: modul povoluje inbound z `gereq/GEREQ_PLATFORM`
 
 ### Produkt
 - [x] Domain + Admin UI

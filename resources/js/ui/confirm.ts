@@ -187,25 +187,45 @@ export function registerConfirm(alpine: typeof Alpine): void {
             event.preventDefault();
             event.stopPropagation();
 
-            void api
-                .confirm({
+            void (async () => {
+                const ok = await api.confirm({
                     title: form.dataset.confirmTitle || defaults.title,
                     body,
                     confirmLabel: form.dataset.confirmLabel || undefined,
                     cancelLabel: form.dataset.confirmCancel || undefined,
                     danger: form.dataset.confirmDanger !== '0',
-                })
-                .then((ok) => {
-                    if (!ok) {
-                        return;
-                    }
-                    form.dataset.confirmAccepted = '1';
-                    if (typeof form.requestSubmit === 'function') {
-                        form.requestSubmit();
-                    } else {
-                        form.submit();
-                    }
                 });
+                if (!ok) {
+                    return;
+                }
+
+                // Optional second question (e.g. module uninstall → also purge media?).
+                // Cancel here does not abort the submit — it only sets the follow-up field to 0.
+                const followup = form.dataset.confirmFollowup?.trim() || '';
+                if (followup !== '') {
+                    const followOk = await api.confirm({
+                        title: form.dataset.confirmFollowupTitle || defaults.title,
+                        body: followup,
+                        confirmLabel: form.dataset.confirmFollowupLabel || undefined,
+                        cancelLabel: form.dataset.confirmFollowupCancel || undefined,
+                        danger: form.dataset.confirmFollowupDanger !== '0',
+                    });
+                    const field = form.dataset.confirmFollowupInput?.trim() || '';
+                    if (field !== '') {
+                        const input = form.querySelector(`input[name="${CSS.escape(field)}"]`);
+                        if (input instanceof HTMLInputElement) {
+                            input.value = followOk ? '1' : '0';
+                        }
+                    }
+                }
+
+                form.dataset.confirmAccepted = '1';
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.submit();
+                }
+            })();
         },
         true,
     );

@@ -23,6 +23,12 @@ final class AssetManager
         return is_file($this->basePath . '/public/hot');
     }
 
+    /** True while `bun run dev` / serve-docker --hot is writing stable assets into public/build. */
+    public function isDevBuild(): bool
+    {
+        return is_file($this->basePath . '/public/build/.dev');
+    }
+
     public function hotPort(): int
     {
         $hotFile = $this->basePath . '/public/hot';
@@ -100,19 +106,19 @@ final class AssetManager
 
             if (isset($manifest[$key])) {
                 if (str_ends_with($entry, '.css') && isset($manifest[$key]['css'][0])) {
-                    return UrlPrefix::path('/build/' . ltrim((string) $manifest[$key]['css'][0], '/'));
+                    return $this->buildUrl((string) $manifest[$key]['css'][0], $manifestFile);
                 }
                 if (isset($manifest[$key]['file'])) {
-                    return UrlPrefix::path('/build/' . ltrim((string) $manifest[$key]['file'], '/'));
+                    return $this->buildUrl((string) $manifest[$key]['file'], $manifestFile);
                 }
             }
         }
 
         if (str_ends_with($entry, '.css')) {
-            return UrlPrefix::path('/build/kernel.css');
+            return $this->buildUrl('kernel.css', null);
         }
 
-        return UrlPrefix::path('/build/admin.js');
+        return $this->buildUrl('admin.js', null);
     }
 
     /**
@@ -148,8 +154,13 @@ HTML;
             $tags .= "<link rel=\"stylesheet\" href=\"{$css}\">\n";
         }
         $js = htmlspecialchars($this->url($entry), ENT_QUOTES, 'UTF-8');
+        $tags .= "<script type=\"module\"{$nonceAttr} src=\"{$js}\"></script>";
 
-        return $tags . "<script type=\"module\"{$nonceAttr} src=\"{$js}\"></script>";
+        if ($this->isDevBuild()) {
+            $tags .= $this->devReloadScript($nonceAttr);
+        }
+
+        return $tags;
     }
 
     /** @return list<string> */
@@ -169,12 +180,69 @@ HTML;
             }
             $hrefs = [];
             foreach ($manifest[$entry]['css'] as $file) {
-                $hrefs[] = UrlPrefix::path('/build/' . ltrim((string) $file, '/'));
+                $hrefs[] = $this->buildUrl((string) $file, $manifestFile);
             }
 
             return $hrefs;
         }
 
         return [];
+    }
+
+    private function buildUrl(string $relative, ?string $manifestFile): string
+    {
+        $path = UrlPrefix::path('/build/' . ltrim($relative, '/'));
+        if (!$this->isDevBuild()) {
+            return $path;
+        }
+
+        $mtime = 0;
+        if ($manifestFile !== null && is_file($manifestFile)) {
+            $mtime = (int) filemtime($manifestFile);
+        }
+        $dev = $this->basePath . '/public/build/.dev';
+        if (is_file($dev)) {
+            $mtime = max($mtime, (int) filemtime($dev));
+        }
+
+        return $path . '?v=' . max(1, $mtime);
+    }
+
+    private function devReloadScript(string $nonceAttr): string
+    {
+        // Polls manifest; when bun watch rewrites it, reload so Docker-served HTML picks new ?v=.
+        $script = <<<'JS'
+(function () {
+  var last = null;
+  function tick() {
+    fetch('/build/manifest.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        if (last !== null && t !== last) {
+          location.reload();
+          return;
+        }
+        last = t;
+      })
+      .catch(function () {});
+  }
+  setInterval(tick, 1200);
+  tick();
+})();
+JS;
+
+        return "<script{$nonceAttr}>{$script}</script>";
+    }
+
+    /** Inline auto-reload for `bun run dev` (empty string when not in watch mode). */
+    public function devReloadTags(string $nonce = ''): string
+    {
+        if (!$this->isDevBuild()) {
+            return '';
+        }
+
+        $nonceAttr = $nonce !== '' ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"' : '';
+
+        return $this->devReloadScript($nonceAttr);
     }
 }

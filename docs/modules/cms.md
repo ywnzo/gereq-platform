@@ -99,8 +99,8 @@ Command palette: `cms.pages` (`palette.cms.pages`, keywords `cms, stránky, page
 | GET | `` | `admin.cms.menus.index` | `index` | `cms.view` |
 | GET | `/create` | `admin.cms.menus.create` | `create` | `cms.manage` |
 | POST | `` | `admin.cms.menus.store` | `store` (staged create) | `cms.manage` |
-| GET | `/{id}` | `admin.cms.menus.show` | `show` (items editor) | `cms.view` |
-| GET | `/{id}/edit` | `admin.cms.menus.edit` | `edit` | `cms.manage` |
+| GET | `/{id}` | `admin.cms.menus.show` | `show` → redirects to `edit` | `cms.view` |
+| GET | `/{id}/edit` | `admin.cms.menus.edit` | `edit` (settings + items on one page) | `cms.view` |
 | POST | `/{id}` | `admin.cms.menus.update` | `update` | `cms.manage` |
 | POST | `/{id}/delete` | `admin.cms.menus.destroy` | `destroy` (staged delete) | `cms.manage` |
 | POST | `/{id}/items` | `admin.cms.menus.items.store` | `storeItem` | `cms.manage` |
@@ -114,7 +114,7 @@ Command palette: `cms.pages` (`palette.cms.pages`, keywords `cms, stránky, page
 - **Builder** (`pages/builder.html.twig`, `assets/js/cmsBuilder.ts`, ~2k lines): visual block editor with flow/free positioning (`positioning`, `pos_x/pos_y`, `box_w`, `z_index`), design tokens (`bg_color`, `text_color`, borders, shadow, radius, padding, fonts — normalised by `BlockDesignNormalizer` to tokens `paper/surface/ink/brand/...` or hex), image options (`img_w/h/fit/shape/shadow`), partials library, `{{ variable }}` placeholders (`page.title`, `page.slug`, `page.url`, `site.title`, `brand.name`, `brand.logo`, `brand.*` colours, `layout.gap`), sandbox mode.
 - **Block edit** (`blocks/edit.html.twig`, `cmsBlockForm.ts`): per-type form validated by ruleset `cms.block.save`.
 - **Preview** (`pages/preview.html.twig`) and `preview.json`.
-- **Menus** (`menus/index|form|show.html.twig`): menu CRUD, nested items linking to pages or URLs.
+- **Menus** (`menus/index|form.html.twig`): create saves metadata then opens the unified editor (settings + items, reorder ↑↓, URL or CMS page link). Index links straight to edit.
 - Validation rulesets: `cms.page.save` (custom rule `cms_slug_available`), `cms.block.save`, `cms.menu.save`, `cms.menu_item.save`.
 - Settings (defined here, edited in core settings UI): `cms.site_title`, `cms.home_page_id`, `cms.custom_css_public`. `CmsProvider::variableMap()` also reads `brand.name`, `brand.logo_url`, `brand.color_signal`, `brand.color_ink`, `brand.color_cream`, `brand.site_primary`.
 

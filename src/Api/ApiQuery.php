@@ -8,9 +8,6 @@ use Symfony\Component\HttpFoundation\Request;
 
 final class ApiQuery
 {
-    /** @param list<string> $searchable */
-    /** @param list<string> $sortable */
-    /** @param list<string> $filterable */
     public function __construct(
         public readonly int $page,
         public readonly int $perPage,
@@ -27,7 +24,6 @@ final class ApiQuery
     }
 
     /**
-     * @param list<string> $searchable
      * @param list<string> $sortable
      * @param list<string> $filterable
      * @param list<string> $allowedIncludes

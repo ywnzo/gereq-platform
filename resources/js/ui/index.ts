@@ -35,6 +35,7 @@ import { registerFleetBrandCatalog } from '../../../modules/Fleet/Resources/asse
 import { registerChart } from './chart';
 import { registerPageProgress } from './pageProgress';
 import { registerFile } from './file';
+import { registerMediaBox } from './mediaBox';
 import { registerToolbarAutosubmit } from './toolbarAutosubmit';
 import { registerCustomerEdit } from '../../../modules/Customers/Resources/assets/js/customerEdit';
 import { registerCustomerNotes } from '../../../modules/Customers/Resources/assets/js/customerNotes';
@@ -82,6 +83,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerCarserviceFinishWizard(alpine);
     registerEsignSignaturePad(alpine);
     registerFile(alpine);
+    registerMediaBox(alpine);
     registerCssEditor(alpine);
     registerDashboardSettings(alpine);
     registerCalendarBoard(alpine);

@@ -115,11 +115,18 @@ final class Queue
             throw new \RuntimeException('PHP rozšíření redis není nainstalované.');
         }
 
+        $host = (string) $this->config->get('cache.redis.host', '127.0.0.1');
+        $port = (int) $this->config->get('cache.redis.port', 6379);
+        $password = $this->config->get('cache.redis.password');
+
         $redis = new \Redis();
-        $redis->connect(
-            (string) $this->config->get('cache.redis.host', '127.0.0.1'),
-            (int) $this->config->get('cache.redis.port', 6379),
-        );
+        if (!$redis->connect($host, $port, 2.0)) {
+            throw new \RuntimeException(sprintf('Nelze se připojit k Redis pro frontu (%s:%d).', $host, $port));
+        }
+
+        if (is_string($password) && $password !== '') {
+            $redis->auth($password);
+        }
 
         return $redis;
     }
