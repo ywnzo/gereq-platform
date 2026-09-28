@@ -1,6 +1,6 @@
 # GEREQ / RealEstates — Documentation
 
-GEREQ is a modular backend platform for internal systems (admin, CRM, ERP, portals) built on PHP 8.4, Doctrine ORM, Symfony components, Twig and Alpine.js, with Vite/Bun for assets. The core (`src/`) provides authentication, permissions, the module system, hooks and events, publishing, API, audit, settings, files, queue and the admin shell; business logic lives in modules (`modules/`) and third-party adapters in `integrations/`. **RealEstates** is the package of this deployment (listings, viewings, portals, CRM, CMS, SEO), but the platform also ships car-service, bike-service and e-commerce modules.
+GEREQ is a modular backend platform for internal systems (admin, CRM, ERP, portals) built on PHP 8.4, Doctrine ORM, Symfony components, Twig and Alpine.js, with Vite/Bun for assets. The core (`src/`) provides authentication, permissions, the module system, hooks and events, publishing, API, audit, settings, files, queue and the admin shell; business logic lives in modules (`modules/`) and third-party adapters in `integrations/`. Product packages (`config/module_groups.php`) include **RealEstates** (listings, viewings, portals, CRM, CMS, Web+/Web+AI), **ECS** / **EBS** (car / bike workshop), **Forum** (Q&A, community, achievements, messenger) and **GEREQ** (ticketing desk), plus commerce modules.
 
 This documentation is generated from the code base and organised by concern. When code and docs disagree, the code wins — every page cites the source files it was derived from.
 
@@ -27,9 +27,11 @@ This documentation is generated from the code base and organised by concern. Whe
 
 ## Modules
 
-[Module index](modules/index.md) — all 40 modules grouped by domain with versions, dependencies and purpose. Each module has its own page (`modules/<id>.md`) covering domain model, admin UI, API, events, widgets, services, settings and migrations.
+[Module index](modules/index.md) — all **47** modules grouped by domain with versions, dependencies and purpose. Each module has its own page (`modules/<id>.md`) covering domain model, admin UI, API, events, widgets, services, settings and migrations.
 
-Quick links for the RealEstates package: [Listings](modules/listings.md) · [Viewings](modules/viewings.md) · [Portals](modules/portals.md) · [WebPlus](modules/webplus.md) · [Cms](modules/cms.md) · [CRM](modules/crm.md) · [Customers](modules/customers.md) · [Calendar](modules/calendar.md) · [Documents](modules/documents.md) · [Media](modules/media.md) · [Reviews](modules/reviews.md) · [Currency](modules/currency.md)
+Quick links for the RealEstates package: [Listings](modules/listings.md) · [Viewings](modules/viewings.md) · [Portals](modules/portals.md) · [WebPlus](modules/webplus.md) · [WebPlusAi](modules/webplus_ai.md) · [Cms](modules/cms.md) · [CRM](modules/crm.md) · [Customers](modules/customers.md) · [Calendar](modules/calendar.md) · [Documents](modules/documents.md) · [Media](modules/media.md) · [Reviews](modules/reviews.md) · [Emailing](modules/emailing.md) · [Currency](modules/currency.md)
+
+Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) · [Achievements](modules/achievements.md) · [Messenger](modules/messenger.md)
 
 ## Integrations (plug-ins)
 

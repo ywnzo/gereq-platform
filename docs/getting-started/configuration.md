@@ -126,9 +126,11 @@ Declares **packages** (`surface: packages`) and **plugin groups** (`surface: plu
 
 | Group | Surface | Modules | Required |
 | --- | --- | --- | --- |
+| `gereq` | packages | gereq | — |
 | `ecs` | packages | customers, fleet, carservice, media, documents, crm, calendar, idoklad | customers, fleet, carservice |
 | `ebs` | packages | customers, bikeservice, searchengines, media, documents, calendar | customers, bikeservice |
-| `realestates` | packages | currency, customers, media, cms, listings, crm, calendar, viewings, documents, reviews | currency, media, cms, listings |
+| `realestates` | packages | currency, customers, media, cms, listings, crm, calendar, viewings, documents, reviews, emailing, webplus, webplus_ai | currency, media, cms, listings |
+| `forum` | packages | customers, forum, community, achievements, messenger, media, notifications, newsletter, calendar | customers, forum |
 | `plugin.payments` | plugins | comgate, stripe, gopay | — |
 | `plugin.shipping` | plugins | packeta | — |
 | `plugin.ai` | plugins | ollama, openai_compat, zai, deepseek, gemini, anthropic, openai | — |

@@ -7,7 +7,7 @@ Simple project and task tracking attached to customers. A **project** belongs to
 | | |
 |---|---|
 | Module id | `projects` |
-| Version | `1.1.0` (`modules/Projects/module.php`, `ProjectsModule::version()`) |
+| Version | `1.99.0` (`modules/Projects/module.php`, `ProjectsModule::version()`) |
 | Directory | `modules/Projects/` |
 | Requires | `core ^1.0`, `customers ^1.0`; optional: `crm ^1.0`, `notifications ^1.0` |
 | Capabilities | provides `projects` (payload: `Application/ProjectsProvider`); consumes `notifications` (duck-typed); [Calendar](calendar.md) lists `projects` as optional |

@@ -7,7 +7,7 @@ The SearchEngines module gives admin users a live price-comparison search across
 | Item | Value |
 | --- | --- |
 | Module id | `searchengines` |
-| Version | `1.3.6` (`modules/SearchEngines/module.php`, `SearchEnginesModule::version()`) |
+| Version | `1.99.0` (`modules/SearchEngines/module.php`, `SearchEnginesModule::version()`) |
 | Directory | `modules/SearchEngines/` |
 | Requires | `core ^1.0`, `currency ^1.3` |
 | Optional | none |

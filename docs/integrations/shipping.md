@@ -18,7 +18,7 @@
 
 | File | Role |
 | --- | --- |
-| `integrations/Packeta/module.php` | id `packeta`, `kind: integration`, requires `shop`, group `plugin.shipping` |
+| `integrations/Packeta/module.php` | id `packeta`, `kind: integration`, requires `shop ^1.4`, group `plugin.shipping` |
 | `integrations/Packeta/PacketaModule.php` | `register()`: registers `PacketaCarrier` + alias `zasilkovna`, capability `shipping.carrier.packeta`, four settings, widget route |
 | `integrations/Packeta/Application/PacketaCarrier.php` | the driver (XML API client, label download, tracking, widget config) |
 | `integrations/Packeta/Http/PacketaApiController.php` | `widget(Request)` → `ApiResponse::data($carrier->widgetConfig($country))` |

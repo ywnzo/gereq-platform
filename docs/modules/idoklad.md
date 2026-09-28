@@ -7,7 +7,7 @@ iDoklad integrates GEREQ with the Czech online accounting service **iDoklad** (a
 | Item | Value |
 | --- | --- |
 | Module id | `idoklad` |
-| Version | `1.3.0` (`modules/iDoklad/module.php`, `iDokladModule::version()`; `README.md` says v1.2.0) |
+| Version | `1.99.0` (`modules/iDoklad/module.php`, `iDokladModule::version()`; `README.md` says v1.2.0) |
 | Directory | `modules/iDoklad/` |
 | Class | `Modules\iDoklad\iDokladModule` |
 | Requires | `core ^1.0` |

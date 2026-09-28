@@ -7,7 +7,7 @@ eSign implements simple electronic signatures (eIDAS "SES") for HTML documents: 
 | Item | Value |
 | --- | --- |
 | Module id | `esign` |
-| Version | 1.2.1 (`modules/ESign/module.php`, `ESignModule::version()`; `README.md` says v1.1.5) |
+| Version | `1.99.0` (`modules/ESign/module.php`, `ESignModule::version()`; `README.md` says v1.1.5) |
 | Directory | `modules/ESign/` |
 | Class | `Modules\ESign\ESignModule` |
 | Requires | `core ^1.0` |

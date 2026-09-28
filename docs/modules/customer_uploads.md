@@ -7,7 +7,7 @@ Customer Uploads lets anonymous storefront visitors (the Vue/React shop frontend
 | Item | Value |
 | --- | --- |
 | Module id | `customer_uploads` |
-| Version | `1.1.1` (`modules/CustomerUploads/module.php`, `CustomerUploadsModule::version()`) |
+| Version | `1.99.0` (`modules/CustomerUploads/module.php`, `CustomerUploadsModule::version()`) |
 | Directory | `modules/CustomerUploads/` |
 | Class | `Modules\CustomerUploads\CustomerUploadsModule` |
 | Requires | `core ^1.0` |

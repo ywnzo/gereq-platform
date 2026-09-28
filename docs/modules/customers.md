@@ -9,7 +9,7 @@ See also: [CRM](crm.md), [Calendar](calendar.md), [CarService](carservice.md), [
 | Item | Value |
 | --- | --- |
 | Module id | `customers` |
-| Version | 1.6.4 (`modules/Customers/module.php`, `CustomersModule::version()`) |
+| Version | `1.99.0` (`modules/Customers/module.php`, `CustomersModule::version()`) |
 | Directory | `modules/Customers/` |
 | Class | `Modules\Customers\CustomersModule` |
 | Requires | `core ^1.0`; optional `notifications ^1.0` |

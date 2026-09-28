@@ -7,7 +7,7 @@ Listings is the core real‑estate module of the RealEstates package: it manages
 | Item | Value |
 | --- | --- |
 | Module id | `listings` |
-| Version | `1.3.2` (`modules/Listings/module.php`, `ListingsModule::version()`; `README.md` says v1.2.9) |
+| Version | `1.99.0` (`modules/Listings/module.php`, `ListingsModule::version()`; `README.md` says v1.2.9) |
 | Directory | `modules/Listings/` |
 | Class | `Modules\Listings\ListingsModule` |
 | Requires | `core ^1.0`, `currency ^1.1` |

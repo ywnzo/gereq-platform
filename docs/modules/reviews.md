@@ -7,7 +7,7 @@ The Reviews module stores customer reviews and ratings (1–5 stars) for product
 | Item | Value |
 | --- | --- |
 | Module id | `reviews` |
-| Version | `1.6.0` (`modules/Reviews/module.php`, `ReviewsModule::version()`) |
+| Version | `1.99.0` (`modules/Reviews/module.php`, `ReviewsModule::version()`) |
 | Directory | `modules/Reviews/` |
 | Requires | `core ^1.0` |
 | Optional | `products ^1.0`, `customers ^1.0` (declared only; no code references to those modules) |

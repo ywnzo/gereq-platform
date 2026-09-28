@@ -7,7 +7,7 @@ Vitality is an API latency monitor. A kernel middleware times every `/api/*` req
 | Item | Value |
 | --- | --- |
 | Module id | `vitality` |
-| Version | `1.1.0` (`modules/Vitality/module.php`, `VitalityModule::version()`) |
+| Version | `1.99.0` (`modules/Vitality/module.php`, `VitalityModule::version()`) |
 | Directory | `modules/Vitality/` |
 | Requires | `core ^1.0` |
 | Optional | none |

@@ -7,7 +7,7 @@ Payment infrastructure for the commerce stack: **payment methods** (bank transfe
 | | |
 |---|---|
 | Module id | `payments` |
-| Version | `1.4.0` (`modules/Payments/module.php`, `PaymentsModule::version()`) |
+| Version | `1.99.0` (`modules/Payments/module.php`, `PaymentsModule::version()`) |
 | Directory | `modules/Payments/` |
 | Requires | `core ^1.0`, `currency ^1.1`; optional: `comgate ^1.0`, `stripe ^1.0`, `gopay ^1.0`, `webhooks ^1.0` |
 | Capabilities | provides `payments` (payload `Application/PaymentsProvider`) and `payment_gateways` (payload `Application/PaymentGatewayRegistry`); consumed by `modules/Shop/Application/CheckoutService.php` (`PaymentService`, `PaymentsProvider`), `modules/Orders/Application/InvoiceIssuingService.php` (`SpaydBuilder`), `integrations/Comgate|Stripe|GoPay` (registry) |

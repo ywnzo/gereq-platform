@@ -7,7 +7,7 @@ Fleet is the vehicle register of the ECS (car‑service) package: it stores vehi
 | Item | Value |
 | --- | --- |
 | Module id | `fleet` |
-| Version | `1.8.0` (`modules/Fleet/module.php`, `FleetModule::version()`; `README.md` says v1.7.7) |
+| Version | `1.99.0` (`modules/Fleet/module.php`, `FleetModule::version()`; `README.md` says v1.7.7) |
 | Directory | `modules/Fleet/` |
 | Class | `Modules\Fleet\FleetModule` |
 | Requires | `core ^1.0` |

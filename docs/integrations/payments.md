@@ -71,7 +71,7 @@ Route: `GET|POST /api/v1/payments/notify/comgate` (`api.payments.notify.comgate`
 
 | File | Role |
 | --- | --- |
-| `module.php` | id `stripe`, requires `payments`, group `plugin.payments`, capability `payment.gateway.stripe` |
+| `module.php` | id `stripe`, version `1.0.1`, requires `payments ^1.1`, optional `webhooks ^1.0`, group `plugin.payments`, capability `payment.gateway.stripe` |
 | `StripeModule.php` | registers `StripeGateway`, settings, `POST /api/v1/payments/notify/stripe` (`api.payments.notify.stripe`), `StripeInboundProvider` |
 | `Application/StripeGateway.php` | Stripe REST (`https://api.stripe.com/v1`), Checkout Sessions; `parseWebhook(payload, signatureHeader)` verifies `Stripe-Signature` with the webhook secret |
 | `Application/StripeInboundProvider.php` | `name() = 'stripe'`; `verify()` accepts requests without `Stripe-Signature` (browser return, no status change) and validates signed ones via `parseWebhook`; `handle()` maps the event and updates the intent (unknown intent → `{ok: true, ignored: true}`) |

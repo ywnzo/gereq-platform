@@ -7,7 +7,7 @@ Engage is the marketing layer for tracked campaigns and dynamic content spots. I
 | Item | Value |
 | --- | --- |
 | Module id | `engage` |
-| Version | 1.0.0 |
+| Version | `1.99.0` |
 | Directory | `modules/Engage/` |
 | Requires | `core ^1.0` |
 | Optional | `cms`, `webplus`, `newsletter`, `emailing`, `listings`, `products`, `customers`, `media` |

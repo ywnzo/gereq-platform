@@ -7,7 +7,7 @@ Lightweight e-mail marketing bookkeeping: a **subscriber list** (subscribe / uns
 | | |
 |---|---|
 | Module id | `newsletter` |
-| Version | `1.1.0` (`modules/Newsletter/module.php`, `NewsletterModule::version()`) |
+| Version | `1.99.0` (`modules/Newsletter/module.php`, `NewsletterModule::version()`) |
 | Directory | `modules/Newsletter/` |
 | Requires | `core ^1.0`; optional: none |
 | Capabilities | provides `newsletter` (payload: `Application/NewsletterProvider`); no module in `modules/` consumes it at present |

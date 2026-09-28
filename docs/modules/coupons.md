@@ -9,7 +9,7 @@ See also: [Bundles](bundles.md), [Shop](shop.md), [Orders](orders.md), [module s
 | Item | Value |
 | --- | --- |
 | Module id | `coupons` |
-| Version | `1.1.0` (`modules/Coupons/module.php`, `CouponsModule::version()`) |
+| Version | `1.99.0` (`modules/Coupons/module.php`, `CouponsModule::version()`) |
 | Directory | `modules/Coupons/` |
 | Class | `Modules\Coupons\CouponsModule` |
 | Requires | `core ^1.0` (no optional deps) |

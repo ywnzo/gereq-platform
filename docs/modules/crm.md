@@ -9,7 +9,7 @@ See also: [Customers](customers.md), [Calendar](calendar.md), [Emailing](emailin
 | Item | Value |
 | --- | --- |
 | Module id | `crm` |
-| Version | 1.5.1 (`modules/CRM/module.php`, `CrmModule::version()`) |
+| Version | `1.99.0` (`modules/CRM/module.php`, `CrmModule::version()`) |
 | Directory | `modules/CRM/` (note the upper-case directory, namespace `Modules\CRM`) |
 | Class | `Modules\CRM\CrmModule` |
 | Requires | `core ^1.0`, `customers ^1.0`, `currency ^1.1`; optional `emailing ^1.0` |

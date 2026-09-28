@@ -9,7 +9,7 @@ Related: [Media](media.md) (images in blocks), [Products](products.md) (`product
 | Item | Value |
 | --- | --- |
 | Module id | `cms` |
-| Version | `1.10.0` (`modules/Cms/module.php`, `CmsModule::version()`) |
+| Version | `1.99.0` (`modules/Cms/module.php`, `CmsModule::version()`) |
 | Directory | `modules/Cms/` |
 | Class | `Modules\Cms\CmsModule` |
 | Requires | `core ^1.0`; optional `documents`, `media`, `products` (`^1.0`) |

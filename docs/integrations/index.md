@@ -48,7 +48,7 @@ return [
 | `plugin.shipping` | Doprava | `plugins` | 20 | `packeta` |
 | `plugin.ai` | AI | `plugins` | 30 | `ollama`, `openai_compat`, `zai`, `deepseek`, `gemini`, `anthropic`, `openai` |
 
-Labels/descriptions are translation keys (`admin.plugins.group.<x>`, `admin.plugins.group.<x>.desc`). The `ecs`, `ebs` and `realestates` groups in the same file are package groups for regular modules (`surface: packages`). Admin → Modules offers "enable group" (`POST /admin/modules/groups/{group}/enable`, `ModuleController::enableGroup`).
+Labels/descriptions are translation keys (`admin.plugins.group.<x>`, `admin.plugins.group.<x>.desc`). The `gereq`, `ecs`, `ebs`, `realestates` and `forum` groups in the same file are package groups for regular modules (`surface: packages`). Admin → Modules offers "enable group" (`POST /admin/modules/groups/{group}/enable`, `ModuleController::enableGroup`).
 
 ## Lifecycle
 

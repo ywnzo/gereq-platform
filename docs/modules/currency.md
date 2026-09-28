@@ -9,7 +9,7 @@ See also: [iDoklad](idoklad.md) (currency id mapping), [Shop](shop.md) (`shop.de
 | Item | Value |
 | --- | --- |
 | Module id | `currency` |
-| Version | `1.4.2` (`modules/Currency/module.php`, `CurrencyModule::version()`) |
+| Version | `1.99.0` (`modules/Currency/module.php`, `CurrencyModule::version()`) |
 | Directory | `modules/Currency/` |
 | Class | `Modules\Currency\CurrencyModule` |
 | Requires | `core ^1.0`; optional `idoklad ^1.0` |

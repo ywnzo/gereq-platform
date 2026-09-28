@@ -7,7 +7,7 @@ Warehouse manages physical stock: a list of warehouses, per-warehouse stock leve
 | Item | Value |
 | --- | --- |
 | Module id | `warehouse` |
-| Version | `1.1.0` (`modules/Warehouse/module.php`, `WarehouseModule::version()`) |
+| Version | `1.99.0` (`modules/Warehouse/module.php`, `WarehouseModule::version()`) |
 | Directory | `modules/Warehouse/` |
 | Requires | `core ^1.0`, `products ^1.0` |
 | Optional | none |

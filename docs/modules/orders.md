@@ -7,7 +7,7 @@ Order and invoice management for the commerce stack. An **order** belongs to a [
 | | |
 |---|---|
 | Module id | `orders` |
-| Version | `1.2.4` (`modules/Orders/module.php`, `OrdersModule::version()`) |
+| Version | `1.99.0` (`modules/Orders/module.php`, `OrdersModule::version()`) |
 | Directory | `modules/Orders/` |
 | Requires | `core ^1.0`, `customers ^1.0`, `products ^1.0`, `currency ^1.1`; optional: `documents ^1.0`, `notifications ^1.0` |
 | Capabilities | provides `orders` (payload `Application/OrdersProvider`); consumed by [Shop](shop.md) (`CheckoutService`, requires `orders ^1.0`) and [Payments](payments.md) (`PaymentService`, `ImapBankMatcher` import `Order`) |

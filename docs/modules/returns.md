@@ -7,7 +7,7 @@ The Returns module handles RMA / return requests (Czech: *reklamace*) raised aga
 | Item | Value |
 | --- | --- |
 | Module id | `returns` |
-| Version | 1.1.1 (`modules/Returns/module.php`, `ReturnsModule::version()`) |
+| Version | `1.99.0` (`modules/Returns/module.php`, `ReturnsModule::version()`) |
 | Directory | `modules/Returns/` |
 | Requires | `core ^1.0`, `currency ^1.1` |
 | Optional | `orders ^1.0`, `shop ^1.0`, `warehouse ^1.0` (declared in manifest; no hard code dependency on them) |

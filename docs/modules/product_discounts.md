@@ -7,7 +7,7 @@ Catalog-level sales for the [Products](products.md) module: a discount is either
 | | |
 |---|---|
 | Module id | `product_discounts` |
-| Version | `1.2.0` (`modules/ProductDiscounts/module.php`, `ProductDiscountsModule::version()`) |
+| Version | `1.99.0` (`modules/ProductDiscounts/module.php`, `ProductDiscountsModule::version()`) |
 | Directory | `modules/ProductDiscounts/` |
 | Requires | `core ^1.0`, `products ^1.0`, `currency ^1.1`; optional: none |
 | Capabilities | provides `product_discounts` (payload: `ProductDiscountsProvider`); consumed by `Products` (`ProductController`, `CategoryController`, `PublicStoreCatalogController`) and `Shop` (`CartService`) via `class_exists` guards |

@@ -7,7 +7,7 @@ Documents is the platform's generic file/attachment store for the admin: users u
 | Item | Value |
 | --- | --- |
 | Module id | `documents` |
-| Version | `1.4.0` (`modules/Documents/module.php`, `DocumentsModule::version()`; `README.md` still says v1.3.4) |
+| Version | `1.99.0` (`modules/Documents/module.php`, `DocumentsModule::version()`; `README.md` still says v1.3.4) |
 | Directory | `modules/Documents/` |
 | Class | `Modules\Documents\DocumentsModule` |
 | Requires | `core ^1.0` |

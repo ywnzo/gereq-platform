@@ -7,7 +7,7 @@ The Shop module is the storefront transaction layer of GEREQ: persistent shoppin
 | Item | Value |
 | --- | --- |
 | Module id | `shop` |
-| Version | 1.6.1 (`modules/Shop/module.php`, `ShopModule::version()`) |
+| Version | `1.99.0` (`modules/Shop/module.php`, `ShopModule::version()`) |
 | Directory | `modules/Shop/` |
 | Requires | `core ^1.0`, `products ^1.2`, `currency ^1.1` |
 | Optional | `orders ^1.0`, `customers ^1.0`, `warehouse ^1.0`, `customer_uploads ^1.0`, `packeta ^1.0` |

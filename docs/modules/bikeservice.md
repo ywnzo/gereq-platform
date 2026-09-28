@@ -9,7 +9,7 @@ Related: [Customers](customers.md), [Currency](currency.md), [SearchEngines](sea
 | Item | Value |
 | --- | --- |
 | Module id | `bikeservice` |
-| Version | `1.12.0` (`modules/BikeService/module.php`, `BikeServiceModule::version()`) |
+| Version | `1.99.0` (`modules/BikeService/module.php`, `BikeServiceModule::version()`) |
 | Directory | `modules/BikeService/` |
 | Class | `Modules\BikeService\BikeServiceModule` |
 | Requires | `core ^1.0`, `customers ^1.0`, `searchengines ^1.0`, `currency ^1.3`; optional `media`, `documents`, `calendar`, `esign` (`^1.0`) |

@@ -9,7 +9,7 @@ Related: [Fleet](fleet.md), [Customers](customers.md), [Currency](currency.md), 
 | Item | Value |
 | --- | --- |
 | Module id | `carservice` |
-| Version | `1.14.0` (`modules/CarService/module.php`, `CarServiceModule::version()`) |
+| Version | `1.99.0` (`modules/CarService/module.php`, `CarServiceModule::version()`) |
 | Directory | `modules/CarService/` |
 | Class | `Modules\CarService\CarServiceModule` |
 | Requires | `core ^1.0`, `fleet ^1.0`, `customers ^1.0`, `currency ^1.1`; optional `media`, `documents`, `calendar`, `idoklad`, `moneys3`, `partscatalog`, `esign` (`^1.0`) |

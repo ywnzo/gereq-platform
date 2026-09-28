@@ -7,7 +7,7 @@ Product catalogue for the commerce stack: products with SKU/unit/status, many-to
 | | |
 |---|---|
 | Module id | `products` |
-| Version | `1.8.4` (`modules/Products/module.php`, `ProductsModule::version()`) |
+| Version | `1.99.0` (`modules/Products/module.php`, `ProductsModule::version()`) |
 | Directory | `modules/Products/` |
 | Requires | `core ^1.0`, `currency ^1.1`; optional `media ^1.0` |
 | Capabilities | provides `products` (payload `Application/ProductsProvider`); consumes `media` and `product_discounts` when present (guarded via `CapabilityRegistry::has()` + `class_exists`) |

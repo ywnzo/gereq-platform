@@ -7,7 +7,7 @@ Integration module for the **Money S3** accounting system (Seyfor). It wraps the
 | | |
 |---|---|
 | Module id | `moneys3` |
-| Version | `1.1.0` (`modules/MoneyS3/module.php`, `MoneyS3Module::version()`) |
+| Version | `1.99.0` (`modules/MoneyS3/module.php`, `MoneyS3Module::version()`) |
 | Directory | `modules/MoneyS3/` |
 | Requires | `core ^1.0`; optional: `orders ^1.0` |
 | Capabilities | provides `moneys3` (registered with `MoneyS3Service` instance as the capability payload); consumes none |

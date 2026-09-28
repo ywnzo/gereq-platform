@@ -9,7 +9,7 @@ Provider protocols, model catalog and platform design are documented in [`docs/A
 | Item | Value |
 | --- | --- |
 | Module id | `ai` |
-| Version | `1.5.0` (`modules/Ai/module.php`, `AiModule::version()`) |
+| Version | `1.99.0` (`modules/Ai/module.php`, `AiModule::version()`) |
 | Directory | `modules/Ai/` |
 | Class | `Modules\Ai\AiModule` |
 | Requires | `core ^1.0`; optional `documents`, `customers`, `crm`, `listings`, `emailing`, `media`, `cms` (all `^1.0`) |

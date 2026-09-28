@@ -7,7 +7,7 @@ The Viewings module (RealEstates package) manages property viewing appointments 
 | Item | Value |
 | --- | --- |
 | Module id | `viewings` |
-| Version | `1.1.2` (`modules/Viewings/module.php`, `ViewingsModule::version()`) |
+| Version | `1.99.0` (`modules/Viewings/module.php`, `ViewingsModule::version()`) |
 | Directory | `modules/Viewings/` |
 | Requires | `core ^1.0`, `listings ^1.0` |
 | Optional | `customers ^1.0`, `crm ^1.0`, `calendar ^1.0`, `notifications ^1.0` |

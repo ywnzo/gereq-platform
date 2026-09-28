@@ -7,7 +7,7 @@ Loyalty implements a simple customer loyalty program: administrators define **ti
 | Item | Value |
 | --- | --- |
 | Module id | `loyalty` |
-| Version | `1.1.0` (`modules/Loyalty/module.php`, `LoyaltyModule::version()`; `README.md` still says v1.0.3) |
+| Version | `1.99.0` (`modules/Loyalty/module.php`, `LoyaltyModule::version()`; `README.md` still says v1.0.3) |
 | Directory | `modules/Loyalty/` |
 | Class | `Modules\Loyalty\LoyaltyModule` |
 | Requires | `core ^1.0` |

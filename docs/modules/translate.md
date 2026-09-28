@@ -7,7 +7,7 @@ The Translate module is a small machine-translation facade backed by Microsoft (
 | Item | Value |
 | --- | --- |
 | Module id | `translate` |
-| Version | `2.1.0` (`modules/Translate/module.php`, `TranslateModule::version()`) |
+| Version | `1.99.0` (`modules/Translate/module.php`, `TranslateModule::version()`) |
 | Directory | `modules/Translate/` |
 | Requires | `core ^1.0` |
 | Optional | none |

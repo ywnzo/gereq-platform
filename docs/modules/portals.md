@@ -7,7 +7,7 @@ Real-estate portal export for [Listings](listings.md). The module keeps a **prov
 | | |
 |---|---|
 | Module id | `portals` |
-| Version | `1.4.0` (`modules/Portals/module.php`, `PortalsModule::version()`) |
+| Version | `1.99.0` (`modules/Portals/module.php`, `PortalsModule::version()`) |
 | Directory | `modules/Portals/` |
 | Requires | `core ^1.0`, `listings ^1.0`; optional `media ^1.0`, `webhooks ^1.0` |
 | Capabilities | provides `portals` (payload `Application/PortalsProvider`); no capability consumption (Listings used via hard import + `class_exists` guards) |

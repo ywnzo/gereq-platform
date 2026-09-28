@@ -7,7 +7,7 @@ Spare-parts catalogue browser for the automotive service vertical. Mechanics pic
 | | |
 |---|---|
 | Module id | `partscatalog` |
-| Version | `1.14.0` (`modules/PartsCatalog/module.php`, `PartsCatalogModule::version()`; `README.md` still says v1.13.11) |
+| Version | `1.99.0` (`modules/PartsCatalog/module.php`, `PartsCatalogModule::version()`; `README.md` still says v1.13.11) |
 | Directory | `modules/PartsCatalog/` |
 | Requires | `core ^1.0`, `currency ^1.1`; optional `carservice ^1.0`, `fleet ^1.0`, `media ^1.0`, `searchengines ^1.0` |
 | Capabilities | provides `partscatalog` (payload `Application/PartsCatalogFacade`); consumes `media`, `searchengines` (guarded) |

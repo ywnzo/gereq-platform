@@ -7,7 +7,7 @@ Webhooks turns platform events emitted by any GEREQ module into signed HTTP POST
 | Item | Value |
 | --- | --- |
 | Module id | `webhooks` |
-| Version | `1.1.1` (`modules/Webhooks/module.php`, `WebhooksModule::version()`) |
+| Version | `1.99.0` (`modules/Webhooks/module.php`, `WebhooksModule::version()`) |
 | Directory | `modules/Webhooks/` |
 | Requires | `core ^1.0` |
 | Optional | none |

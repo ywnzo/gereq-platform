@@ -7,7 +7,7 @@ Media is the shared asset library of the platform: images, PDFs and videos uploa
 | Item | Value |
 | --- | --- |
 | Module id | `media` |
-| Version | `1.3.0` (`modules/Media/module.php`, `MediaModule::version()`; `README.md` says v1.2.5) |
+| Version | `1.99.0` (`modules/Media/module.php`, `MediaModule::version()`; `README.md` says v1.2.5) |
 | Directory | `modules/Media/` |
 | Class | `Modules\Media\MediaModule` |
 | Requires | `core ^1.0` |

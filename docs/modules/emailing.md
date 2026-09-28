@@ -7,7 +7,7 @@ Emailing is a self‑hosted webmail client inside the GEREQ admin: it stores IMA
 | Item | Value |
 | --- | --- |
 | Module id | `emailing` |
-| Version | `1.6.1` (`modules/Emailing/module.php`, `EmailingModule::version()`; `README.md` says v1.5.3) |
+| Version | `1.99.0` (`modules/Emailing/module.php`, `EmailingModule::version()`; `README.md` says v1.5.3) |
 | Directory | `modules/Emailing/` |
 | Class | `Modules\Emailing\EmailingModule` |
 | Requires | `core ^1.0` |

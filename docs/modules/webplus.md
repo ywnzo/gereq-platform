@@ -7,13 +7,13 @@ Web+ is the SEO / GEO / Open Graph layer for headless GEREQ frontends. Editors m
 | Item | Value |
 | --- | --- |
 | Module id | `webplus` |
-| Version | 1.5.1 (`modules/WebPlus/module.php`, `WebPlusModule::version()`) |
+| Version | `1.99.0` (`modules/WebPlus/module.php`, `WebPlusModule::version()`) |
 | Directory | `modules/WebPlus/` |
 | Requires | `core ^1.0` |
 | Optional | `cms ^1.0`, `products ^1.0`, `listings ^1.0`, `media ^1.0` |
 | Capabilities provided | `webplus` → `Application\WebPlusProvider` (`provides: ['webplus']`) |
 | Capabilities consumed | `products`, `listings` (checked via `CapabilityRegistry::has()` in `BuiltInGoogleFeedCollectors`); Cms/Listings/Products entities used behind `class_exists()` |
-| Groups / packages | none in `module.php`; not listed in `config/module_groups.php` |
+| Groups / packages | none in `module.php`; listed in `config/module_groups.php` package **RealEstates** (not required) |
 | Permissions | `webplus.view` (`perm.webplus.view`), `webplus.manage` (`perm.webplus.manage`) — group `perm.group.webplus` |
 | API scopes | `webplus.read`, `webplus.write` |
 | Author | GEREQ |

@@ -7,7 +7,7 @@ In-app inbox and per-user notification preferences on top of the core `Gereq\Not
 | | |
 |---|---|
 | Module id | `notifications` |
-| Version | `1.1.0` (`modules/Notifications/module.php`, `NotificationsModule::version()`) |
+| Version | `1.99.0` (`modules/Notifications/module.php`, `NotificationsModule::version()`) |
 | Directory | `modules/Notifications/` |
 | Requires | `core ^1.0`; optional: none |
 | Capabilities | provides `notifications` (payload: `Application/NotificationsProvider`, exposing `bridge(): NotifierBridge`); consumed by `modules/Projects/Http/TaskController::notify()` (duck-typed `method_exists` guards) |

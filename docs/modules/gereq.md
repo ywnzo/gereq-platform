@@ -1,6 +1,17 @@
-# GEREQ (Ticketing + Security)
+# GEREQ (`gereq`)
 
-Platform module porting GEREQ.cz **Ticketing** and **Security** products into the RealEstates admin.
+Platform module porting GEREQ.cz **Ticketing** and **Security** products into the admin. Part of the `gereq` package group.
+
+## At a glance
+
+| Item | Value |
+| --- | --- |
+| Module id | `gereq` |
+| Version | `1.99.0` (`modules/Gereq/module.php`) |
+| Directory | `modules/Gereq/` |
+| Requires | `core ^1.0` |
+| Groups / packages | `gereq` |
+| Permissions | `gereq.manage` (and related ticketing/security perms) |
 
 ## Access
 

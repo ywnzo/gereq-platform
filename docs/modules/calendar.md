@@ -9,7 +9,7 @@ See also: [CRM](crm.md) (activities → events), [CarService](carservice.md) / [
 | Item | Value |
 | --- | --- |
 | Module id | `calendar` |
-| Version | `1.3.1` (`modules/Calendar/module.php`, `CalendarModule::version()`) |
+| Version | `1.99.0` (`modules/Calendar/module.php`, `CalendarModule::version()`) |
 | Directory | `modules/Calendar/` |
 | Class | `Modules\Calendar\CalendarModule` |
 | Requires | `core ^1.0`, `crm ^1.0`; optional `projects ^1.0`, `notifications ^1.0` |
