@@ -1,0 +1,26 @@
+; GEREQ dockerless FPM pool — runs as the installing user (no root).
+[gereq]
+; user/group are ignored when FPM is not root; omit to avoid NOTICE spam.
+listen = @GEREQ_HOME@/run/php-fpm.sock
+listen.owner = @USER@
+listen.group = @USER@
+listen.mode = 0600
+
+pm = dynamic
+pm.max_children = 8
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3
+pm.max_requests = 500
+
+chdir = @ROOT@
+catch_workers_output = yes
+decorate_workers_output = no
+
+php_admin_value[error_log] = @GEREQ_HOME@/logs/php-error.log
+php_admin_flag[log_errors] = on
+php_admin_value[memory_limit] = 256M
+php_admin_value[upload_max_filesize] = 64M
+php_admin_value[post_max_size] = 64M
+php_admin_value[max_execution_time] = 120
+; Keep system php.ini / php.d (readable); only override runtime limits above.

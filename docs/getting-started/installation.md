@@ -110,6 +110,18 @@ make urls
 
 The compose stack (`docker-compose.yml`, project name `gereq`) contains: `nginx` (port `${GEREQ_PORT:-8080}`), `php` (PHP-FPM, image from `docker/php/Dockerfile`), `postgres` (16, not published to the host), `redis`, `queue` (`php gereq queue:work`, always started) and the opt-in `adminer` (profile `tools`). `DB_PASSWORD` must be set in `.env` or compose fails with `Set a strong DB_PASSWORD in .env`.
 
+## Option D — Dockerless / immutable host (`dev/dockerless`)
+
+For machines that cannot write outside `/home` (no Docker, no root package installs), use the home-only toolchain:
+
+```bash
+./dev/dockerless/install.sh --fresh
+./dev/dockerless/serve.sh                 # php -S on :8080
+./dev/dockerless/serve.sh --mode=nginx    # optional user-space nginx + php-fpm
+```
+
+Uses SQLite + file/sync drivers; runtime files go to `~/.local/share/gereq-dockerless`. Full detail: [Dockerless local runtime](../development/dockerless.md).
+
 ## Dev servers
 
 ### Built-in PHP server

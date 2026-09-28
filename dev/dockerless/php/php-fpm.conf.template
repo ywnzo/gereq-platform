@@ -1,0 +1,6 @@
+; GEREQ dockerless PHP-FPM (all paths under @GEREQ_HOME@)
+[global]
+pid = @GEREQ_HOME@/run/php-fpm.pid
+error_log = @GEREQ_HOME@/logs/php-fpm.log
+daemonize = yes
+include = @GEREQ_HOME@/conf/php-fpm.d/*.conf

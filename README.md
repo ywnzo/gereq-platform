@@ -71,6 +71,16 @@ bun install && bun run build
 php gereq serve
 ```
 
+### Bez Dockeru (immutable OS / jen `/home`)
+
+```bash
+./dev/dockerless/install.sh --fresh
+./dev/dockerless/serve.sh
+# volitelně nginx+php-fpm v $HOME:  ./dev/dockerless/serve.sh --mode=nginx
+```
+
+Detail: [`docs/development/dockerless.md`](docs/development/dockerless.md).
+
 Administrace: [http://127.0.0.1:8080/admin](http://127.0.0.1:8080/admin)
 
 Účet z `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). Heslo ihned změňte.

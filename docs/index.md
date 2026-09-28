@@ -8,7 +8,7 @@ This documentation is generated from the code base and organised by concern. Whe
 
 | Page | Contents |
 |---|---|
-| [Installation](getting-started/installation.md) | Requirements, cloning with submodules, `bin/grq install`, migrations, asset build, dev servers, Docker-only `Makefile` flow |
+| [Installation](getting-started/installation.md) | Requirements, cloning with submodules, `bin/grq install`, migrations, asset build, dev servers, Docker-only `Makefile` flow, dockerless link |
 | [Configuration](getting-started/configuration.md) | `config/*.php` files and every `.env` variable |
 | [CLI reference](getting-started/cli.md) | All `php gereq` commands |
 
@@ -67,6 +67,7 @@ Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) ·
 | [Creating a module](development/creating-a-module.md) | Scaffolding, register/boot, routes, API, events, widgets, migrations, GitLab submodule, release checklist |
 | [Coding standards](development/coding-standards.md) | PHP/TS/Twig conventions, PHPStan, phpcs, comments, Bun-only, no native dialogs |
 | [Testing](development/testing.md) | PHPUnit layout, static analysis, running inside Docker |
+| [Dockerless (home-only)](development/dockerless.md) | No Docker: SQLite + `php -S` or user-space nginx/php-fpm under `$HOME` for immutable hosts |
 
 ## Reference documents
 
