@@ -16,6 +16,7 @@ Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt b
 | `grq commit …` | Git commit stripping `Co-authored-by` |
 | `grq pr [--base] [--draft] [--dry-run] [--push] [--fast] [--no-agent]` | Draft MR via Cursor CLI `agent` (guidelines: Summary + Test plan), create on GitLab |
 | `grq modules` | TUI comparing modules vs GitLab (replaces `gereq-modules`) |
+| `grq modules update [id…] [--yes\|--push\|--patch]` | Pull GitLab tag (`--yes`), publish local tag (`--push --yes`), or bump patch + push (`--patch --yes`) |
 | `grq modules create Name [--kind …]` | Scaffold + logo + badges; optional Cursor CLI polish when `agent` is on PATH |
 
 RealityV3 product scripts live under `scripts/realityv3/` (not in `bin/`). `bin/twiggy-env.php` remains for the Twiggy language server.

@@ -245,56 +245,6 @@ func PrintPlain(root string, res ScanResult) {
 	}
 }
 
-func Update(root string, ids []string, yes bool) error {
-	res := RunScan(root)
-	if res.Err != nil {
-		return res.Err
-	}
-	cfg := gitlab.LoadConfig(root)
-	want := map[string]bool{}
-	for _, id := range ids {
-		want[strings.ToLower(id)] = true
-	}
-	reported := 0
-	for _, row := range res.Compare {
-		if len(want) > 0 &&
-			!want[strings.ToLower(row.ID)] &&
-			!want[strings.ToLower(row.Repo)] &&
-			!want[strings.ToLower(strings.TrimPrefix(row.Repo, cfg.Prefix))] &&
-			!want[strings.ToLower(row.Dir)] {
-			continue
-		}
-		if row.Status == "ok" {
-			continue
-		}
-		reported++
-		fmt.Printf("%s  local=%s  gitlab=%s  [%s]\n", row.Repo, row.Local, row.GitLab, row.Status)
-		if row.Status == "DIFF" && yes {
-			tag := row.GitLab
-			modDir := row.Dir
-			if modDir == "" {
-				continue
-			}
-			sub := filepath.Join(root, "modules", modDir)
-			fmt.Printf("→ fetching %s @ %s\n", modDir, tag)
-			_ = exec.Command("git", "-C", sub, "fetch", "--tags", "origin").Run()
-			if err := exec.Command("git", "-C", sub, "checkout", tag).Run(); err != nil {
-				fmt.Fprintf(os.Stderr, "  checkout failed: %v\n", err)
-				continue
-			}
-			_ = exec.Command("git", "-C", root, "add", filepath.Join("modules", modDir)).Run()
-			fmt.Printf("  ✓ submodule pin updated (commit platform to keep)\n")
-			fmt.Printf("  → then: php gereq module:enable %s  (or Admin → Modules → Update)\n", row.ID)
-		}
-	}
-	if reported == 0 {
-		fmt.Println("✓ all selected modules ok (or nothing to report)")
-	} else if !yes {
-		fmt.Println("\nRe-run with --yes to checkout matching GitLab tags into submodule dirs.")
-	}
-	return nil
-}
-
 type CreateOptions struct {
 	Name     string
 	Kind     string
