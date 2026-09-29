@@ -252,18 +252,16 @@ final class RealEstateAutomationDemoSeeder
             }
         }
 
-        // One lost deal for the win-back scenario
-        if (isset($customers[0], $listings[0])) {
-            $lostTitle = 'Poptávka (neúspěšná): ' . $listings[0]->title();
-            if ($dealRepo->findOneBy(['title' => $lostTitle]) === null) {
-                $lost = new \Modules\CRM\Domain\Deal($customers[0]->id(), $lostTitle);
-                $lost->setAmount($listings[0]->price());
-                $lost->setCurrency($listings[0]->currency());
-                $lost->setStage('lost');
-                $lost->setNote('Klient zvolil jinou nemovitost — kandidát na win-back.');
-                $this->em->persist($lost);
-                ++$createdDeals;
-            }
+        // One lost deal for the win-back scenario (callers already require non-empty lists).
+        $lostTitle = 'Poptávka (neúspěšná): ' . $listings[0]->title();
+        if ($dealRepo->findOneBy(['title' => $lostTitle]) === null) {
+            $lost = new \Modules\CRM\Domain\Deal($customers[0]->id(), $lostTitle);
+            $lost->setAmount($listings[0]->price());
+            $lost->setCurrency($listings[0]->currency());
+            $lost->setStage('lost');
+            $lost->setNote('Klient zvolil jinou nemovitost — kandidát na win-back.');
+            $this->em->persist($lost);
+            ++$createdDeals;
         }
 
         $this->em->flush();

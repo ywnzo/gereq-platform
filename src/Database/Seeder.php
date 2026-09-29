@@ -44,11 +44,11 @@ final class Seeder
     }
 
     /**
-     * @param array{name: string, email: string, password: string, role?: string} $admin
+     * @param array{name: string, email: string, password: string, role?: string}|null $admin
      */
-    public function seed(bool $withDemo = true, bool $withSampleCustomers = true, array $admin = []): void
+    public function seed(bool $withDemo = true, bool $withSampleCustomers = true, ?array $admin = null): void
     {
-        if ($admin === [] || trim((string) ($admin['email'] ?? '')) === '' || (string) ($admin['password'] ?? '') === '') {
+        if ($admin === null || trim($admin['email']) === '' || $admin['password'] === '') {
             throw new \InvalidArgumentException('seed() requires admin name/email/password (not from .env).');
         }
         $this->seedPermissions();

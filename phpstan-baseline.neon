@@ -157,18 +157,6 @@ parameters:
 			path: src/Webhooks/Application/DeliverWebhookJob.php
 
 		-
-			message: '#^Offset ''is_downgrade'' on array\{version\: string, tag\: string, committed_at\: string\|null, cached\: bool, active\: bool\} in empty\(\) does not exist\.$#'
-			identifier: empty.offset
-			count: 1
-			path: src/Admin/Http/ModuleController.php
-
-		-
-			message: '#^Offset ''is_upgrade'' on array\{version\: string, tag\: string, committed_at\: string\|null, cached\: bool, active\: bool\} in empty\(\) does not exist\.$#'
-			identifier: empty.offset
-			count: 1
-			path: src/Admin/Http/ModuleController.php
-
-		-
 			message: '#^Ternary operator condition is always true\.$#'
 			identifier: ternary.alwaysTrue
 			count: 1
@@ -191,15 +179,3 @@ parameters:
 			identifier: generics.notSubtype
 			count: 1
 			path: src/Database/Migrator.php
-
-		-
-			message: '#^Offset 0 on non\-empty\-list\<Modules\\Customers\\Domain\\Customer\> in isset\(\) always exists and is not nullable\.$#'
-			identifier: isset.offset
-			count: 1
-			path: src/Database/RealEstateAutomationDemoSeeder.php
-
-		-
-			message: '#^Offset 0 on non\-empty\-list\<Modules\\Listings\\Domain\\Listing\> in isset\(\) always exists and is not nullable\.$#'
-			identifier: isset.offset
-			count: 1
-			path: src/Database/RealEstateAutomationDemoSeeder.php
