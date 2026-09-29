@@ -11,7 +11,7 @@
 <body class="auth-body">
     <main class="auth-shell">
         <section class="auth-panel">
-            {% include 'partials/brand-lockup.html.twig' with { href: homeUrl|default(admin_path()), modifier: 'brand--auth' } %}
+            {% include 'partials/brand-lockup.html.twig' with { href: homeUrl|default('/admin'), modifier: 'brand--auth' } %}
             {% block content %}{% endblock %}
         </section>
         <p class="auth-footnote">{{ 'brand.footnote_short'|trans }}</p>

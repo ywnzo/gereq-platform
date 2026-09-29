@@ -37,13 +37,13 @@ final class DatabaseCreator
 
     private function ensurePostgres(): bool
     {
-        if (!extension_loaded('pdo_pgsql')) {
-            return false;
-        }
-
         $name = trim((string) $this->config->get('database.name', 'gereq'));
         if ($name === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
             throw new \InvalidArgumentException('Invalid DB_DATABASE_NAME for auto-create.');
+        }
+
+        if (!extension_loaded('pdo_pgsql')) {
+            return false;
         }
 
         $params = [
@@ -80,13 +80,13 @@ final class DatabaseCreator
 
     private function ensureMysql(): bool
     {
-        if (!extension_loaded('pdo_mysql')) {
-            return false;
-        }
-
         $name = trim((string) $this->config->get('database.name', 'gereq'));
         if ($name === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $name)) {
             throw new \InvalidArgumentException('Invalid DB_DATABASE_NAME for auto-create.');
+        }
+
+        if (!extension_loaded('pdo_mysql')) {
+            return false;
         }
 
         $params = [
