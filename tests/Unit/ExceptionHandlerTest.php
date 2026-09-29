@@ -12,7 +12,7 @@ use Gereq\Http\ExceptionHandler;
 use Gereq\Http\Router;
 use Gereq\Security\ContentSecurityPolicy;
 use Gereq\Validation\ValidationException;
-use Gereq\View\AssetManager;
+use Gereq\View\RenderEngine;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -150,8 +150,8 @@ final class ExceptionHandlerTest extends TestCase
         $twig->addFilter(new TwigFilter('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
         $twig->addFunction(new TwigFunction('trans', static fn (string $id, array $parameters = []): string => $translator->trans($id, $parameters)));
         $twig->addFunction(new TwigFunction('asset', static fn (): string => '/build/kernel.css'));
-        $twig->addFunction(new TwigFunction('vite_hot', static fn (): bool => false));
-        $twig->addFunction(new TwigFunction('vite_tags', static fn (): string => ''));
+        $twig->addFunction(new TwigFunction('render_css', static fn (): string => ''));
+        $twig->addFunction(new TwigFunction('render_js', static fn (): string => ''));
         $twig->addFunction(new TwigFunction('csp_nonce', static fn (): string => 'test'));
         $twig->addFunction(new TwigFunction('url', static fn (): string => '/admin'));
         $twig->addFunction(new TwigFunction('app_locale', static fn (): string => 'cs'));
@@ -168,7 +168,7 @@ final class ExceptionHandlerTest extends TestCase
         return new ExceptionHandler(
             $twig,
             $hooks ?? new HookManager(),
-            new ContentSecurityPolicy(new AssetManager($base)),
+            new ContentSecurityPolicy(new RenderEngine($base, new Repository([]))),
             new Repository(['app' => ['debug' => $debug]]),
             $router,
             $translator,

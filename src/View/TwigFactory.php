@@ -34,7 +34,7 @@ final class TwigFactory
         private readonly Router $router,
         private readonly Csrf $csrf,
         private readonly Authenticator $auth,
-        private readonly AssetManager $assets,
+        private readonly RenderEngine $render,
         private readonly RequestStack $requestStack,
         private readonly Icons $icons,
         private readonly FormState $formState,
@@ -83,7 +83,7 @@ final class TwigFactory
             $this->router,
             $this->csrf,
             $this->auth,
-            $this->assets,
+            $this->render,
             $this->requestStack,
             $this->icons,
             $this->formState,
@@ -98,9 +98,10 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('csrf_field', [$runtime, 'csrfField'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('csrf_token', [$runtime, 'csrfToken']));
         $twig->addFunction(new TwigFunction('asset', [$runtime, 'asset']));
-        $twig->addFunction(new TwigFunction('vite_hot', [$runtime, 'viteHot']));
-        $twig->addFunction(new TwigFunction('vite_tags', [$runtime, 'viteTags'], ['is_safe' => ['html']]));
-        $twig->addFunction(new TwigFunction('vite_dev_reload', [$runtime, 'viteDevReload'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('render_css', [$runtime, 'renderCss'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('render_js', [$runtime, 'renderJs'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('render_tags', [$runtime, 'renderTags'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('render_reload', [$runtime, 'renderReload'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('icon', [$runtime, 'icon'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('current_user', [$runtime, 'currentUser']));
         $twig->addFunction(new TwigFunction('route_is', [$runtime, 'routeIs']));

@@ -9,23 +9,7 @@ server {
     charset utf-8;
     client_max_body_size 64M;
 
-    # Vite HMR (bun run dev on :5173) — same-origin proxy for dockerless.
-    location ~ ^/(@vite|@fs|@id|node_modules|resources|modules)/ {
-        proxy_pass http://127.0.0.1:5173;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host localhost;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 86400s;
-    }
-
     location = /build/manifest.json {
-        add_header Cache-Control "no-store";
-        try_files $uri =404;
-        access_log off;
-    }
-    location = /build/.vite/manifest.json {
         add_header Cache-Control "no-store";
         try_files $uri =404;
         access_log off;

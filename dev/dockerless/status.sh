@@ -36,6 +36,7 @@ show() {
 show nginx "${GEREQ_HOME}/run/nginx.pid"
 show php-fpm "${GEREQ_HOME}/run/php-fpm.pid"
 show php-server "$(pid_file php-server)"
+show bun-watch "$(pid_file bun-watch)"
 show vite "$(pid_file vite)"
 show queue "$(pid_file queue)"
 

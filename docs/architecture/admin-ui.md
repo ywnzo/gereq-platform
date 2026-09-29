@@ -10,7 +10,7 @@ The admin is server-rendered Twig inside one shell (`resources/views/admin/layou
 - renders the sidebar from `admin/partials/sidebar.html.twig` + `sidebar_nav_node.html.twig` using `Menu::tree()`;
 - exposes three topbar extension points via hooks: `apply_filters('admin.topbar.center', '')`, `admin.topbar.context`, `admin.topbar.actions` — modules append HTML with `$context->hooks()->addFilter(...)`;
 - mounts the command palette (Alpine data from `window.__GEREQ_COMMANDS__`), the global drawer (`ui/drawer.html.twig`), the confirm dialog (`ui/confirm_dialog.html.twig`) and the image viewer (`ui/image_viewer.html.twig`);
-- loads `vite_tags('resources/js/admin.ts')`.
+- loads CSS/JS through `render_css()` / `render_js()` (`Gereq\View\RenderEngine`, `config/render.php`).
 
 Controllers typically call `$this->render('admin/users/index.html.twig', [...])` or the module's namespaced template `@viewings/index.html.twig` (`Gereq\Http\Controller::render()`).
 
@@ -72,7 +72,7 @@ Registered in `Gereq\View\TwigFactory::create()` (`src/View/TwigFactory.php`), i
 | Function | Purpose |
 | --- | --- |
 | `url(name, params)`, `route_exists(name)`, `route_is(name)` | router helpers |
-| `asset(entry)`, `vite_tags(entry = 'resources/js/admin.ts')`, `vite_hot()` | Vite manifest / HMR (`AssetManager`) |
+| `asset(entry)`, `render_css()`, `render_js()`, `render_tags()`, `render_reload()` | Bun manifest URLs (`RenderEngine`, `config/render.php`) |
 | `csrf_field()`, `csrf_token()`, `csp_nonce()` | security |
 | `icon(name, class)` | inline SVG |
 | `current_user()` | `User` or null |
@@ -170,8 +170,8 @@ Unknown names fall back to the `circle` glyph — check `Icons.php` before inven
 
 Modules ship their own `Resources/assets/css/admin.css`, imported explicitly in `resources/js/admin.ts`.
 
-## Vite
+## Frontend assets (Bun)
 
-`vite.config.ts`: plugins `tailwindcss()` and a custom `gereqDev()` that writes `public/hot` (dev-server port) so `Gereq\View\AssetManager` can switch to HMR, and triggers full reloads on Twig changes. Entry: `resources/js/admin.ts`. Build output `public/build` with `manifest.json`. Commands: `bun run dev`, `bun run build` (see [installation](../getting-started/installation.md#frontend-build)). `vite_tags()` emits the `<script type="module">`/`<link>` tags with the CSP nonce.
+`scripts/build.ts` bundles `resources/js/admin.ts` (Tailwind via `bun-plugin-tailwind`) into `public/build` and writes `manifest.json`. Origins and prefixes live in `config/render.php` (`RENDER_ASSET_ORIGIN`, `RENDER_URL_PREFIX`). Commands: `bun run dev` (watch + `.dev` marker + `render_reload()`), `bun run build` (hashed files). Twig: `render_css()` / `render_js()` / `render_reload()`.
 
 Related: [dashboard widgets](dashboard-widgets.md), [auth & permissions](auth-permissions.md#csrf), `docs/FORMS.md`.

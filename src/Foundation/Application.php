@@ -27,12 +27,11 @@ use Gereq\Module\ModuleManager;
 use Gereq\Queue\Queue;
 use Gereq\Security\RateLimiter;
 use Gereq\User\PermissionRegistry;
-use Gereq\View\AssetManager;
+use Gereq\View\RenderEngine;
 use Gereq\View\TwigFactory;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Transport;
@@ -159,8 +158,8 @@ final class Application
             \Modules\Translate\Application\TranslateProviderInterface::class => \DI\get(\Modules\Translate\Application\MicrosoftTranslateProvider::class),
 
             // Scalars / config-driven construction
-            AssetManager::class => \DI\factory(static function (RequestStack $requestStack) use ($basePath): AssetManager {
-                return new AssetManager($basePath, $requestStack);
+            RenderEngine::class => \DI\factory(static function (Repository $config) use ($basePath): RenderEngine {
+                return new RenderEngine($basePath, $config);
             }),
             QueryCollector::class => \DI\factory(static function (Repository $config): QueryCollector {
                 return new QueryCollector((int) $config->get('app.n_plus_one_threshold', 2));

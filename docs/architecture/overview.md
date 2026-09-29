@@ -72,7 +72,7 @@ flowchart TD
 | `Support` | helpers (`gereq()`, `config()`, `__()`, …), `Str`, `Json`, `AppVersion`, `EnvFile`, `SimpleMarkdown` | `Support\helpers.php` |
 | `User` | users, roles, permissions, permission registry | `User\Entity\User`, `User\Entity\Role`, `User\PermissionRegistry` |
 | `Validation` | rule-based validator + named rulesets | `Validation\Validator`, `Validation\ValidationRegistry` |
-| `View` | Twig factory/runtime extensions, Vite asset manager | `View\TwigFactory`, `View\TwigRuntime`, `View\AssetManager` |
+| `View` | Twig factory/runtime, Bun render engine | `View\TwigFactory`, `View\TwigRuntime`, `View\RenderEngine` |
 
 Doctrine entity paths are `src/` plus every directory under `modules/` (`EntityManagerFactory::create()`); `integrations/` is **not** scanned for entities, which is consistent with the rule that integrations must not own domain tables (`integrations/README.md`).
 
@@ -140,6 +140,6 @@ Explicit bindings in `Application::definitions()` are limited to factories that 
 | `storage/modules/{id}/{version}` | downloaded module versions |
 | `storage/logs/nplusone.log` | N+1 detector log |
 | `storage/framework/phpunit` | PHPUnit cache |
-| `public/build`, `public/hot` | Vite manifest / HMR marker |
+| `public/build` | Bun asset build (`manifest.json`, hashed files, `.dev` in watch) |
 
 Related: [module system](module-system.md), [auth & permissions](auth-permissions.md), [API](api.md), [admin UI](admin-ui.md).

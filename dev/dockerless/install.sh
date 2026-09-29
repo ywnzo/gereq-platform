@@ -284,7 +284,7 @@ cat <<EOF
 
 Next:
   ./dev/dockerless/serve.sh              # start (php -S or nginx+fpm)
-  ./dev/dockerless/serve.sh --hot        # + bun run dev (Vite HMR)
+  ./dev/dockerless/serve.sh --hot        # + bun run dev (watch public/build)
   ./dev/dockerless/down.sh               # stop background processes
   ./dev/dockerless/status.sh             # show pids / ports
 
