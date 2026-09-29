@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace Gereq\View;
 
 use Gereq\Config\Repository;
+use Gereq\Module\EnabledModulesProvider;
 
 /**
  * Resolves hashed / watch frontend assets from public/build/manifest.json.
  * Origins and URL prefixes come from config/render.php — never from Vite markers.
+ *
+ * Kernel CSS comes from the admin entry; module CSS (`module:{id}`) is linked
+ * only for modules currently enabled via EnabledModulesProvider.
  */
 final class RenderEngine
 {
     public function __construct(
         private readonly string $basePath,
         private readonly Repository $config,
+        private readonly ?EnabledModulesProvider $modules = null,
     ) {
     }
 
@@ -129,20 +134,56 @@ final class RenderEngine
     private function cssHrefs(string $entry): array
     {
         $key = $this->resolveEntry($entry);
+        $hrefs = [];
+
         $record = $this->manifestRecord($key);
-        if ($record !== null && $record['css'] !== []) {
-            $hrefs = [];
+        if ($record !== null) {
             foreach ($record['css'] as $file) {
                 if ($file !== '') {
                     $hrefs[] = $this->buildUrl($file);
                 }
             }
-            if ($hrefs !== []) {
-                return $hrefs;
+        }
+
+        if ($entry === 'admin' || $key === $this->resolveEntry('admin')) {
+            foreach ($this->enabledModuleCssHrefs() as $href) {
+                if (!in_array($href, $hrefs, true)) {
+                    $hrefs[] = $href;
+                }
             }
         }
 
+        if ($hrefs !== []) {
+            return $hrefs;
+        }
+
         return [$this->buildUrl('assets/kernel.css')];
+    }
+
+    /** @return list<string> */
+    private function enabledModuleCssHrefs(): array
+    {
+        if ($this->modules === null) {
+            return [];
+        }
+
+        $hrefs = [];
+        foreach ($this->modules->enabledIds() as $id) {
+            $record = $this->manifestRecord('module:' . $id);
+            if ($record === null) {
+                continue;
+            }
+            foreach ($record['css'] as $file) {
+                if ($file !== '') {
+                    $hrefs[] = $this->buildUrl($file);
+                }
+            }
+            if ($record['css'] === [] && $record['file'] !== '' && str_ends_with($record['file'], '.css')) {
+                $hrefs[] = $this->buildUrl($record['file']);
+            }
+        }
+
+        return $hrefs;
     }
 
     /**

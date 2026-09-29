@@ -16,15 +16,15 @@ form > .table,
     padding: 0.65rem 0.85rem;
     border-bottom: 1px solid var(--border-soft);
     white-space: nowrap;
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
     vertical-align: middle;
 }
 .table th {
-    font-family: var(--gereq-font-sans);
-    font-size: 0.6875rem;
-    color: var(--text-muted);
-    font-weight: 650;
-    letter-spacing: 0.06em;
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-xs);
+    color: var(--grq-fg-muted);
+    font-weight: var(--grq-weight-bold);
+    letter-spacing: var(--grq-tracking-label);
     text-transform: uppercase;
     background: var(--surface);
     position: sticky;
@@ -43,7 +43,7 @@ form > .table,
 }
 .table-sort:hover { color: var(--text); }
 .table-sort__icon {
-    font-size: 10px;
+    font-size: var(--grq-text-xxs);
     opacity: 0.35;
     line-height: 1;
 }
@@ -117,7 +117,7 @@ form > .table,
 .table__title .muted,
 .table__title .table__meta {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     font-weight: 450;
 }
 .table__chips {
@@ -168,7 +168,7 @@ form > .table,
     border-radius: var(--radius);
     background: var(--surface);
     color: var(--text);
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     font-weight: 500;
     line-height: 1;
     text-decoration: none;
@@ -212,7 +212,7 @@ form > .table,
     width: auto;
     min-width: 0;
     padding: 0 0.65rem;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 .table__action-btns > a:not(:has(.g-icon)) .table__action-btn__label,
 .table__action-btns > form > button:not(:has(.g-icon)) .table__action-btn__label {
@@ -226,31 +226,60 @@ form > .table,
 .table__action-btn--primary,
 .table__action-btns > form > button.table__action-btn--primary,
 .table__action-btns > a.table__action-btn--primary {
-    color: color-mix(in srgb, var(--primary) 35%, var(--text));
-    border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
-    background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+    color: var(--primary);
+    border-color: var(--border);
+    background: var(--surface);
+}
+.table__action-btn--primary:hover,
+.table__action-btns > form > button.table__action-btn--primary:hover,
+.table__action-btns > a.table__action-btn--primary:hover {
+    border-color: var(--primary);
+    background: var(--hover, var(--surface-2, var(--surface)));
+    filter: none;
 }
 .table__action-btn--success,
 .table__action-btns > form > button.table__action-btn--success,
 .table__action-btns > a.table__action-btn--success {
     color: var(--success);
-    border-color: color-mix(in srgb, var(--success) 45%, var(--border));
-    background: color-mix(in srgb, var(--success) 12%, var(--surface));
+    border-color: var(--border);
+    background: var(--surface);
+}
+.table__action-btn--success:hover,
+.table__action-btns > form > button.table__action-btn--success:hover,
+.table__action-btns > a.table__action-btn--success:hover {
+    border-color: var(--success);
+    background: var(--hover, var(--surface-2, var(--surface)));
+    filter: none;
 }
 .table__action-btn--warn,
 .table__action-btns > form > button.table__action-btn--warn,
 .table__action-btns > a.table__action-btn--warn {
     color: var(--warning);
-    border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
-    background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+    border-color: var(--border);
+    background: var(--surface);
+}
+.table__action-btn--warn:hover,
+.table__action-btns > form > button.table__action-btn--warn:hover,
+.table__action-btns > a.table__action-btn--warn:hover {
+    border-color: var(--warning);
+    background: var(--hover, var(--surface-2, var(--surface)));
+    filter: none;
 }
 .table__action-btn--danger,
 .table__action-btns > form > button.table__action-btn--danger,
 .table__action-btns > a.table__action-btn--danger,
 .table__action-btns > .table__action-form > button {
     color: var(--danger);
-    border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
-    background: var(--danger-bg);
+    border-color: var(--border);
+    background: var(--surface);
+}
+.table__action-btn--danger:hover,
+.table__action-btns > form > button.table__action-btn--danger:hover,
+.table__action-btns > a.table__action-btn--danger:hover,
+.table__action-btns > .table__action-form > button:hover {
+    border-color: var(--danger);
+    background: var(--hover, var(--surface-2, var(--surface)));
+    filter: none;
 }
 .table__action-btn--success:disabled,
 .table__action-btns > form > button.table__action-btn--success:disabled,
@@ -292,7 +321,7 @@ form > .table,
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: var(--grq-text-md);
 }
 .bulk-bar__meta strong {
     display: inline-flex;
@@ -304,7 +333,7 @@ form > .table,
     border-radius: var(--radius);
     background: var(--primary);
     color: var(--primary-fg, #111);
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 .bulk-bar__actions {
     display: inline-flex;
@@ -460,7 +489,7 @@ form > .table,
     border-radius: var(--radius);
     background: var(--surface);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     font-weight: 600;
     cursor: pointer;
 }
@@ -487,7 +516,7 @@ form > .table,
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
 }
 .pagination__btn {
@@ -499,7 +528,10 @@ form > .table,
     border-radius: var(--radius);
     background: var(--surface);
     color: var(--text);
+    font: inherit;
+    font-size: var(--grq-text-sm);
     text-decoration: none;
+    cursor: pointer;
 }
 .pagination__btn:hover { background: var(--hover); }
 .pagination__btn.is-disabled {

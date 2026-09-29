@@ -39,7 +39,7 @@ composer test && composer analyse
 | `tsconfig.json` has `"strict": true`; TS sources live in `resources/js/**` and `modules/*/Resources/assets/js/**` | `tsconfig.json` |
 | Alpine components are registered through `register*` functions exported from `resources/js/ui/*.ts` and wired in `resources/js/ui/index.ts` (CSP build of Alpine — no inline JS expressions) | `resources/js/ui/index.ts`, `package.json` (`@alpinejs/csp`) |
 | **No native dialogs**: never `window.alert` / `window.confirm` / `window.prompt`; use `window.gereq.confirm(...)`, `window.gereq.prompt(...)` (`resources/js/ui/confirm.ts`) or `data-confirm` on forms | `.cursor/skills/no-native-dialogs/SKILL.md` |
-| Single Bun entry `resources/js/admin.ts`; module assets are `import`ed from `admin.ts`; tags via `render_css()` / `render_js()` | `scripts/build.ts`, `config/render.php`, `src/View/RenderEngine.php` |
+| Bun entry `resources/js/admin.ts` (kernel); module CSS built as `module:{id}` and linked only when enabled; tags via `render_css()` / `render_js()` | `scripts/build.ts`, `config/render.php`, `src/View/RenderEngine.php` |
 | Scripts: `bun run dev` (watch → `public/build` + `.dev`), `bun run build` (hashed production assets) | `package.json` |
 
 There is no ESLint/Prettier configuration in the repository; rely on `tsc` strictness and the Bun build.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Http;
 
+use Gereq\Support\AdminPath;
 use Gereq\Support\UrlPrefix;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
@@ -244,6 +245,6 @@ final class Router
     {
         $path = '/' . trim($prefix . '/' . ltrim($path, '/'), '/');
 
-        return $path;
+        return AdminPath::rewrite($path);
     }
 }

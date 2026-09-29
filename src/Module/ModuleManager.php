@@ -11,7 +11,7 @@ use Gereq\User\Entity\Permission;
 use Gereq\User\PermissionRegistry;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class ModuleManager
+final class ModuleManager implements EnabledModulesProvider
 {
     /** @var array<string, ModuleManifest>|null */
     private ?array $discovered = null;
@@ -163,6 +163,8 @@ final class ModuleManager
             $row->setVersion($manifest->version);
             $row->enable();
         }
+        $footprint = ModuleFootprint::ofDirectory($manifest->path);
+        $row->setFootprint($footprint !== '' ? $footprint : null);
 
         $this->syncPermissions($manifest);
         $this->em->flush();

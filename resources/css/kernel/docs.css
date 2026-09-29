@@ -37,7 +37,7 @@
 }
 .developer-card__head h2 {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: var(--grq-text-control);
     font-weight: 650;
     letter-spacing: 0;
     text-transform: none;
@@ -69,7 +69,7 @@
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     line-height: 1.4;
 }
 .table--developer .table__wrap-cell {
@@ -266,9 +266,9 @@ html[data-theme="gereq-dark"] .api-tester-backdrop {
     align-content: start;
 }
 .api-tester__method { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700; }
-.api-tester__path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.875rem; }
+.api-tester__path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--grq-text-base); }
 .api-tester__hint,
-.api-tester__scopes { margin: 0; font-size: 0.8125rem; }
+.api-tester__scopes { margin: 0; font-size: var(--grq-text-md); }
 .api-tester__block {
     display: grid;
     gap: 0.55rem;
@@ -298,14 +298,14 @@ html[data-theme="gereq-dark"] .api-tester-backdrop {
 .api-tester__field {
     display: grid;
     gap: 0.25rem;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
 }
 .api-tester__auth-hint { margin: 0; font-size: 0.78rem; }
 .api-tester__body {
     width: 100%;
     min-height: 10rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     line-height: 1.45;
     resize: vertical;
 }
@@ -334,7 +334,7 @@ html[data-theme="gereq-dark"] .api-tester-backdrop {
     text-transform: uppercase;
     color: var(--text-muted);
 }
-.api-tester__meta { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8125rem; flex-wrap: wrap; }
+.api-tester__meta { display: inline-flex; align-items: center; gap: 0.45rem; font-size: var(--grq-text-md); flex-wrap: wrap; }
 .api-tester__chip {
     display: inline-flex;
     align-items: center;
@@ -342,7 +342,7 @@ html[data-theme="gereq-dark"] .api-tester-backdrop {
     padding: 0 0.5rem;
     border-radius: var(--radius, 4px);
     font-family: var(--gereq-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     font-weight: 600;
     background: color-mix(in oklab, var(--hover) 80%, transparent);
     color: var(--text);
@@ -363,7 +363,7 @@ html.dark .api-tester__chip.is-err,
     min-height: 0;
     flex: 1;
     font-family: var(--gereq-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-    font-size: 12.5px;
+    font-size: var(--grq-text-md);
     line-height: 1.45;
     color: var(--text);
 }
@@ -464,7 +464,7 @@ html.dark .api-tester__dump .gdb-dump--bool,
     color: var(--text);
     box-shadow: 0 10px 30px color-mix(in oklab, #000 18%, transparent);
     cursor: pointer;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     font-weight: 600;
 }
 .api-tester-pill span {

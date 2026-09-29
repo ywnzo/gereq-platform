@@ -542,17 +542,18 @@ final class ServeLogTui
     private function printStreamHeader(): void
     {
         $w = 72;
+        $admin = \Gereq\Support\AdminPath::base();
         echo $this->c('lime', 'GEREQ') . $this->c('dim', ' · Docker logs') . "\n";
         if ($this->https) {
-            echo $this->c('dim', 'https  ') . "https://127.0.0.1/admin\n";
+            echo $this->c('dim', 'https  ') . 'https://127.0.0.1' . $admin . "\n";
             if ($this->lanIp !== null) {
-                echo $this->c('dim', 'lan    ') . sprintf("https://%s/admin\n", $this->lanIp);
+                echo $this->c('dim', 'lan    ') . sprintf("https://%s%s\n", $this->lanIp, $admin);
             }
-            echo $this->c('dim', 'http   ') . sprintf("http://127.0.0.1:%d/admin\n", $this->port);
+            echo $this->c('dim', 'http   ') . sprintf("http://127.0.0.1:%d%s\n", $this->port, $admin);
         } else {
-            echo $this->c('dim', 'local  ') . sprintf("http://127.0.0.1:%d/admin\n", $this->port);
+            echo $this->c('dim', 'local  ') . sprintf("http://127.0.0.1:%d%s\n", $this->port, $admin);
             if ($this->lanIp !== null) {
-                echo $this->c('dim', 'lan    ') . sprintf("http://%s:%d/admin\n", $this->lanIp, $this->port);
+                echo $this->c('dim', 'lan    ') . sprintf("http://%s:%d%s\n", $this->lanIp, $this->port, $admin);
             }
         }
         echo $this->c('dim', str_repeat('─', $w)) . "\n";

@@ -66,7 +66,7 @@ html[data-theme="gereq-dark"] .sidebar {
     background: color-mix(in srgb, var(--surface-2) 55%, transparent);
     color: var(--sidebar-muted);
     cursor: pointer;
-    font-size: 12.5px;
+    font-size: var(--grq-text-md);
     transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
 .sidebar__search-btn:hover {
@@ -81,8 +81,8 @@ html[data-theme="gereq-dark"] .sidebar {
 }
 .sidebar__search-btn kbd {
     margin-left: auto;
-    font-size: 10px;
-    font-family: var(--gereq-font-sans);
+    font-size: var(--grq-text-xxs);
+    font-family: var(--grq-font-sans);
     opacity: 0.7;
     border: 1px solid var(--border-soft);
     border-radius: var(--radius);
@@ -299,7 +299,7 @@ html[data-theme="gereq-dark"] .sidebar {
     min-height: 36px;
     padding: 7px 10px;
     border-radius: var(--radius);
-    font-size: 13px;
+    font-size: var(--grq-text-md);
     font-weight: 500;
     transition: background 0.12s ease, color 0.12s ease;
 }
@@ -359,7 +359,7 @@ html[data-theme="gereq-dark"] .sidebar {
     border-radius: var(--radius);
     background: color-mix(in srgb, var(--primary) 20%, var(--hover-strong));
     color: var(--sidebar-active);
-    font-size: 10px;
+    font-size: var(--grq-text-xxs);
     font-weight: 700;
     display: inline-grid;
     place-items: center;
@@ -425,7 +425,7 @@ html[data-theme="gereq-dark"] .sidebar {
     gap: 8px;
     min-height: 30px;
     padding: 5px 8px;
-    font-size: 12.5px;
+    font-size: var(--grq-text-md);
     font-weight: 450;
     color: var(--sidebar-muted);
 }
@@ -530,7 +530,7 @@ html[data-theme="gereq-dark"] .sidebar {
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     color: var(--sidebar-muted);
 }
 .sidebar__chip {
@@ -550,7 +550,7 @@ html[data-theme="gereq-dark"] .sidebar {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 700;
-    font-size: 10px;
+    font-size: var(--grq-text-xxs);
     color: var(--sidebar-muted);
     overflow: hidden;
     text-overflow: ellipsis;

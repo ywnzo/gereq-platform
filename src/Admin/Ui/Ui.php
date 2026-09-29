@@ -4,25 +4,22 @@ declare(strict_types=1);
 
 namespace Gereq\Admin\Ui;
 
+use Gereq\Admin\Ui\Table\DataTableRenderer;
+use Gereq\Admin\Ui\Table\TableColumn;
 use Twig\Environment;
 
 /**
  * Kernel UI renderer — Athena Panel-style helpers for admin HTML fragments.
  *
- * Athena mapping:
- *   $render->contentDiv(true, id, class)  →  ui()->container(cols|class, $body)
- *   $render->contentRow(..., fieldHtml)   →  ui()->cell($html, span)
- *   rowBox two/three/four                 →  form-grid / form-grid--cols-3|4
- *
- * Use from PHP: ui()->grid(3, $html), ui()->container(3, $html)
- * Use from Twig: {{ ui().grid(3, body) }} or {% embed 'ui/components/grid.html.twig' with { cols: 3 } %}
- * Or macros: {% import 'ui/macros.html.twig' as ui %}
+ * Use from PHP: ui()->table($columns, $rows, $opts), ui()->input([...])
+ * Use from Twig: {{ ui().badge('TOP', 'signal') }} / {{ ui_render('data_table', …) }}
  */
 final class Ui
 {
     public function __construct(
         private readonly Environment $twig,
         private readonly Icons $icons,
+        private readonly DataTableRenderer $tables,
     ) {
     }
 
@@ -42,11 +39,24 @@ final class Ui
     }
 
     /**
-     * Layout container (Athena `contentDiv`).
+     * Render any Twig view under resources/views (e.g. ui/input.html.twig).
      *
-     * - int 1–4 → form grid columns (`ui()->grid`)
-     * - string   → plain `<div class="…">` wrapper
-     *
+     * @param array<string, mixed> $data
+     */
+    public function partial(string $template, array $data = []): string
+    {
+        $template = trim($template);
+        if ($template === '' || str_contains($template, '..')) {
+            throw new \InvalidArgumentException('Invalid UI partial name.');
+        }
+        if (!str_ends_with($template, '.html.twig')) {
+            $template .= '.html.twig';
+        }
+
+        return $this->twig->render($template, $data);
+    }
+
+    /**
      * @param array{id?: string|null, class?: string|null, compact?: bool} $options
      */
     public function container(int|string $colsOrClass, string $body = '', array $options = []): string
@@ -65,8 +75,6 @@ final class Ui
     }
 
     /**
-     * Form field grid with 1–4 columns.
-     *
      * @param array{id?: string|null, class?: string|null, compact?: bool} $options
      */
     public function grid(int $cols, string $body = '', array $options = []): string
@@ -82,11 +90,7 @@ final class Ui
         ]);
     }
 
-    /**
-     * Span wrapper inside a grid (Athena `rowBox` width helpers).
-     *
-     * @param int|string $span 1, 2, 3, or 'full'
-     */
+    /** @param int|string $span 1, 2, 3, or 'full' */
     public function cell(string $body, int|string $span = 1, ?string $class = null): string
     {
         return $this->component('cell', [
@@ -97,8 +101,6 @@ final class Ui
     }
 
     /**
-     * Side drawer panel (Athena `drawerPanel`).
-     *
      * @param array{
      *     footer?: string|null,
      *     wide?: bool,
@@ -125,7 +127,6 @@ final class Ui
         ]);
     }
 
-    /** Button / link that opens a named drawer. */
     public function drawerTrigger(
         string $drawerId,
         string $label,
@@ -175,5 +176,99 @@ final class Ui
     public function icon(string $name, string $class = ''): string
     {
         return $this->icons->svg($name, $class);
+    }
+
+    /* —— Form controls (wrap existing ui/*.html.twig partials) —— */
+
+    /** @param array<string, mixed> $data */
+    public function input(array $data): string
+    {
+        return $this->partial('ui/input', $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function select(array $data): string
+    {
+        return $this->partial('ui/select', $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function textarea(array $data): string
+    {
+        return $this->partial('ui/textarea', $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function checkbox(array $data): string
+    {
+        return $this->partial('ui/checkbox', $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function radio(array $data): string
+    {
+        return $this->partial('ui/radio', $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function switch(array $data): string
+    {
+        return $this->partial('ui/switch', $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function file(array $data): string
+    {
+        return $this->partial('ui/file', $data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public function editor(array $data): string
+    {
+        return $this->partial('ui/editor', $data);
+    }
+
+    /* —— Tables —— */
+
+    /**
+     * @param array{
+     *     sortable?: bool,
+     *     cell?: 'text'|'badge'|'html'|'user'|'mute'|'num',
+     *     class?: string|null,
+     *     numeric?: bool,
+     *     render?: callable(mixed): string,
+     *     tone?: callable(mixed): string,
+     *     meta?: array<string, mixed>
+     * } $options
+     */
+    public function column(string $key, string $label, array $options = []): TableColumn
+    {
+        return TableColumn::make($key, $label, $options);
+    }
+
+    /**
+     * @param list<TableColumn> $columns
+     * @param iterable<mixed> $rows
+     * @param array<string, mixed> $options
+     */
+    public function table(array $columns, iterable $rows, array $options = []): string
+    {
+        return $this->tables->render($columns, $rows, $options);
+    }
+
+    /**
+     * @param array<string, mixed> $data label, column, sort, dir, query?, search?, class?
+     */
+    public function sortTh(array $data): string
+    {
+        return $this->partial('ui/sort_th', $data);
+    }
+
+    /**
+     * @param array<string, mixed> $data total, page, pages, perPage, search?, sort?, dir?, list_query?
+     */
+    public function tableFooter(array $data): string
+    {
+        return $this->partial('ui/table_footer', $data);
     }
 }

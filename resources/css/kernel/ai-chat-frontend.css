@@ -43,7 +43,7 @@
 .ai-chat--frontend .ai-chat__meta {
   margin: 0.2rem 0 0;
   color: var(--muted, var(--gereq-muted, #6b7067));
-  font-size: 0.875rem;
+  font-size: var(--grq-text-base);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -240,7 +240,7 @@
 }
 
 .ai-chat--frontend .ai-chat__md code {
-  font-family: var(--gereq-font-mono, ui-monospace, monospace);
+  font-family: var(--grq-font-mono);
   font-size: 0.86em;
   padding: 0.1em 0.35em;
   border-radius: 0.3em;
@@ -440,7 +440,7 @@
   border-radius: 0.5rem;
   background: var(--gereq-white, #fff);
   border: 1px solid var(--border, var(--gereq-border, #daddd4));
-  font-family: var(--gereq-font-mono, ui-monospace, monospace);
+  font-family: var(--grq-font-mono);
   font-size: 0.72rem;
   line-height: 1.4;
   overflow-x: auto;
@@ -521,7 +521,7 @@
 
 .ai-chat--frontend .ai-chat__hint {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: var(--grq-text-sm);
   color: var(--muted, var(--gereq-muted, #6b7067));
 }
 

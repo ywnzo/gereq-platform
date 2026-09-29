@@ -1,5 +1,7 @@
 /** WebAuthn helpers + Alpine components for MFA / passkeys (CSP-safe). */
 
+import { adminPath } from './adminPath';
+
 function b64urlToBuffer(value: string): ArrayBuffer {
     const pad = '='.repeat((4 - (value.length % 4)) % 4);
     const base64 = (value + pad).replace(/-/g, '+').replace(/_/g, '/');
@@ -271,7 +273,7 @@ export function registerWebauthn(alpine: typeof import('@alpinejs/csp').default)
                     credential: credentialToJson(cred),
                     remember: Boolean(rememberInput?.checked),
                 });
-                window.location.href = String(verified.redirect || '/admin');
+                window.location.href = String(verified.redirect || adminPath());
             } catch (err) {
                 const msg = formatWebAuthnError(err);
                 if (msg) {
@@ -319,7 +321,7 @@ export function registerWebauthn(alpine: typeof import('@alpinejs/csp').default)
                     throw new Error('cancelled');
                 }
                 const verified = await postJson(this.verifyUrl, credentialToJson(cred));
-                window.location.href = String(verified.redirect || '/admin');
+                window.location.href = String(verified.redirect || adminPath());
             } catch (err) {
                 const msg = formatWebAuthnError(err);
                 if (msg) {

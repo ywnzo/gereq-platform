@@ -30,7 +30,7 @@ Nothing is written to `/usr` or `/etc`.
 ./dev/dockerless/down.sh
 ```
 
-Admin: `http://127.0.0.1:8080/admin` (use `127.0.0.1`, not `localhost`). Credentials from `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+Admin: `http://127.0.0.1:8080/admin` (use `127.0.0.1`, not `localhost`). Credentials from install output (`migrate --bare` / `install`), not from `.env`.
 
 ### Installer flags
 

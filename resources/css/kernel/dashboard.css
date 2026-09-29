@@ -103,7 +103,7 @@
 }
 .metric-card__label,
 .metrics > div > span:first-child {
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -166,7 +166,7 @@
 }
 .panel__sub {
     margin: 4px 0 0;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 .dash-chart {
     position: relative;
@@ -187,7 +187,7 @@
 }
 .dash-chart__stats span {
     display: block;
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
@@ -224,8 +224,8 @@
     background: var(--surface-2);
     color: var(--text);
 }
-.dash-shortcut strong { display: block; font-size: 13px; }
-.dash-shortcut span { color: var(--text-muted); font-size: 12px; }
+.dash-shortcut strong { display: block; font-size: var(--grq-text-md); }
+.dash-shortcut span { color: var(--text-muted); font-size: var(--grq-text-sm); }
 
 /* ——— List panel ——— */
 .dash-list {
@@ -275,13 +275,13 @@ a.dash-list__row:hover {
 }
 .dash-list__title {
     font-weight: 500;
-    font-size: 13px;
+    font-size: var(--grq-text-md);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .dash-list__meta {
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -295,12 +295,12 @@ a.dash-list__row:hover {
     text-align: right;
 }
 .dash-list__aside-value {
-    font-size: 13px;
+    font-size: var(--grq-text-md);
     font-weight: 600;
     white-space: nowrap;
 }
 .dash-list__aside-hint {
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     white-space: nowrap;
 }
 
@@ -368,7 +368,7 @@ a.dash-list__row:hover {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 .dash-score__checks strong { margin-left: auto; }
 .dash-score__dot {
@@ -388,7 +388,7 @@ a.dash-list__row:hover {
 }
 .dash-recos__label {
     display: block;
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-bottom: 6px;
@@ -396,7 +396,7 @@ a.dash-list__row:hover {
 .dash-recos ul {
     margin: 0;
     padding: 0 0 0 1.1em;
-    font-size: 12.5px;
+    font-size: var(--grq-text-md);
     line-height: 1.45;
     display: flex;
     flex-direction: column;
@@ -404,7 +404,7 @@ a.dash-list__row:hover {
 }
 .dash-recos__ok {
     margin: 14px 0 0;
-    font-size: 12.5px;
+    font-size: var(--grq-text-md);
 }
 
 .activity li {
@@ -539,7 +539,7 @@ a.dash-list__row:hover {
     min-width: 0;
 }
 .audit-resource code {
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
     word-break: break-all;
 }
@@ -556,7 +556,7 @@ a.dash-list__row:hover {
     flex-direction: column;
     gap: 2px;
     margin-top: 6px;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 .audit-diff__row {
     display: flex;

@@ -108,6 +108,11 @@ function self_repair_search(\Doctrine\ORM\QueryBuilder $qb, string $alias, array
     (new \Gereq\Search\SelfRepairSearch())->apply($qb, $alias, $fields, $query);
 }
 
+function admin_path(string $suffix = ''): string
+{
+    return \Gereq\Support\UrlPrefix::path(\Gereq\Support\AdminPath::path($suffix));
+}
+
 function dump(mixed ...$values): mixed
 {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0] ?? [];

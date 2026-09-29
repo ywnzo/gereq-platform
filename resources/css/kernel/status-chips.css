@@ -1,0 +1,45 @@
+/* Kernel status-chip tones only. Domain aliases (bs-*, cs-*, fleet) live in module CSS. */
+
+.status-chip--tone-info .status-chip__dot {
+    background: var(--info, #3b82f6);
+}
+.status-chip--tone-warn .status-chip__dot {
+    background: var(--warning, #f59e0b);
+}
+.status-chip--tone-orange .status-chip__dot {
+    background: #f97316;
+}
+.status-chip--tone-success .status-chip__dot {
+    background: var(--success);
+}
+.status-chip--tone-success-muted .status-chip__dot {
+    background: color-mix(in srgb, var(--success) 55%, var(--text-muted));
+}
+.status-chip--tone-danger .status-chip__dot {
+    background: var(--danger, #ef4444);
+}
+.status-chip--tone-indigo .status-chip__dot {
+    background: #6366f1;
+}
+
+.status-chip--tone-info {
+    border-color: color-mix(in srgb, var(--info, #3b82f6) 35%, var(--border));
+}
+.status-chip--tone-warn,
+.status-chip--tone-orange {
+    border-color: color-mix(in srgb, var(--warning, #f59e0b) 40%, var(--border));
+}
+.status-chip--tone-success {
+    border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+    background: color-mix(in srgb, var(--success) 8%, var(--surface));
+}
+.status-chip--tone-success-muted {
+    opacity: 0.85;
+}
+.status-chip--tone-danger {
+    border-color: color-mix(in srgb, var(--danger, #ef4444) 35%, var(--border));
+    color: color-mix(in srgb, var(--danger, #ef4444) 70%, var(--text));
+}
+.status-chip--tone-indigo {
+    border-color: color-mix(in srgb, #6366f1 40%, var(--border));
+}

@@ -49,7 +49,7 @@ Nebo non-interactive po vygenerovaném `.env`:
 ```bash
 composer install
 ./bin/grq env init          # nebo: php gereq env:init
-# doplňte ADMIN_* podle potřeby
+# doplňte DB_* podle potřeby (admin účet se zadává při migrate/install, ne do .env)
 php gereq migrate --fresh --seed --no-demo --no-sample
 bun install && bun run build
 ```
@@ -83,7 +83,7 @@ Detail: [`docs/development/dockerless.md`](docs/development/dockerless.md).
 
 Administrace: [http://127.0.0.1:8080/admin](http://127.0.0.1:8080/admin)
 
-Účet z `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). Heslo ihned změňte.
+Účet z instalace (`migrate --bare` / `install` — e-mail a heslo z konzole, ne z `.env`). Heslo ihned změňte.
 
 Migrace:
 

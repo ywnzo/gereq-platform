@@ -23,7 +23,7 @@
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  font-size: 14px;
+  font-size: var(--grq-text-base);
 }
 
 .ai-chat__title {
@@ -33,7 +33,7 @@
 .ai-chat__meta {
   margin: 4px 0 0;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--grq-text-sm);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -101,7 +101,7 @@
 
 .ai-chat__empty p {
   margin: 0 0 12px;
-  font-size: 13px;
+  font-size: var(--grq-text-md);
 }
 
 .ai-chat__suggestions {
@@ -118,7 +118,7 @@
   border-radius: var(--radius);
   padding: 0.35rem 0.65rem;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--grq-text-sm);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease;
@@ -164,14 +164,14 @@
 }
 
 .ai-chat__turn-role {
-  font-size: 11px;
+  font-size: var(--grq-text-xs);
   font-weight: 650;
   letter-spacing: 0.01em;
   color: var(--text);
 }
 
 .ai-chat__turn-time {
-  font-size: 11px;
+  font-size: var(--grq-text-xs);
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -184,7 +184,7 @@
 .ai-chat__bubble-text {
   word-break: break-word;
   line-height: 1.5;
-  font-size: 13px;
+  font-size: var(--grq-text-md);
   color: var(--text);
 }
 
@@ -251,7 +251,7 @@
 }
 
 .ai-chat__md code {
-  font-family: var(--gereq-font-mono, ui-monospace, monospace);
+  font-family: var(--grq-font-mono);
   font-size: 0.86em;
   padding: 0.1em 0.3em;
   border-radius: var(--radius-sm, 2px);
@@ -314,7 +314,7 @@
   gap: 0.5rem;
   align-items: center;
   margin-top: 8px;
-  font-size: 11px;
+  font-size: var(--grq-text-xs);
   color: var(--text-muted);
 }
 
@@ -373,7 +373,7 @@
   align-items: center;
   gap: 0.45rem;
   padding: 8px 0;
-  font-size: 12px;
+  font-size: var(--grq-text-sm);
   font-weight: 600;
   user-select: none;
 }
@@ -403,7 +403,7 @@
 
 .ai-chat__reason-count {
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--grq-text-xs);
   font-weight: 600;
   padding: 1px 6px;
   border-radius: var(--radius);
@@ -428,7 +428,7 @@
   align-items: center;
   gap: 0.45rem;
   padding: 8px 0;
-  font-size: 12px;
+  font-size: var(--grq-text-sm);
   font-weight: 600;
   user-select: none;
 }
@@ -459,7 +459,7 @@
 }
 
 .ai-chat__wire-line {
-  font-size: 11px;
+  font-size: var(--grq-text-xs);
   font-weight: 500;
   color: var(--text-muted);
   overflow: hidden;
@@ -503,7 +503,7 @@
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: var(--grq-text-sm);
 }
 
 .ai-chat__code {
@@ -512,8 +512,8 @@
   border-radius: var(--radius);
   background: var(--surface-2, var(--hover-strong));
   border: 1px solid var(--border);
-  font-family: var(--gereq-font-mono, ui-monospace, monospace);
-  font-size: 11px;
+  font-family: var(--grq-font-mono);
+  font-size: var(--grq-text-xs);
   line-height: 1.4;
   overflow-x: auto;
   white-space: pre-wrap;
@@ -527,7 +527,7 @@
   gap: 0.4rem;
   padding: 10px 16px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--grq-text-sm);
   font-style: normal;
   border-top: 1px solid var(--border-soft, var(--border));
 }
@@ -567,7 +567,7 @@
   border-radius: var(--radius-field, var(--radius));
   padding: 8px 10px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--grq-text-md);
   line-height: 1.4;
   background: var(--surface);
   color: var(--text);
@@ -594,7 +594,7 @@
 
 .ai-chat__hint {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--grq-text-xs);
   color: var(--text-muted);
 }
 
@@ -774,7 +774,7 @@
   min-height: calc(var(--control-h, 2.25rem) - 2px) !important;
   max-height: none;
   padding: 6px 10px !important;
-  font-size: 13px;
+  font-size: var(--grq-text-md);
   line-height: 1.45;
 }
 
@@ -847,7 +847,7 @@
 }
 
 .ai-chat__upload-status {
-  font-size: 11px;
+  font-size: var(--grq-text-xs);
   margin-left: 4px;
 }
 
@@ -882,7 +882,7 @@
   border-radius: var(--radius);
   background: var(--surface-2, var(--hover-strong));
   text-decoration: none;
-  font-size: 12px;
+  font-size: var(--grq-text-sm);
 }
 
 .g-field.field--mt {

@@ -1,0 +1,107 @@
+/**
+ * GEREQ admin foundation tokens (grq-*).
+ * Dense UI SoT for admin + modules. Brand marketing scale stays in resources/brand/font.css.
+ */
+
+:root {
+    /* —— Type (dense admin) —— */
+    --grq-font-sans: var(--gereq-font-sans, "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif);
+    --grq-font-mono: var(--gereq-font-mono, "JetBrains Mono", ui-monospace, monospace);
+
+    --grq-text-xxs: 0.625rem;   /* 10px — sort icons, micro */
+    --grq-text-xs: 0.6875rem;   /* 11px — table headers, captions */
+    --grq-text-sm: 0.75rem;     /* 12px — meta, hints, badges */
+    --grq-text-md: 0.8125rem;   /* 13px — secondary body */
+    --grq-text-base: 0.875rem;  /* 14px — default UI / table cells */
+    --grq-text-control: 0.9375rem; /* 15px — inputs / selects */
+    --grq-text-lg: 1rem;        /* 16px */
+    --grq-text-xl: 1.125rem;    /* 18px */
+    --grq-text-2xl: 1.45rem;    /* page titles */
+    --grq-text-3xl: clamp(1.35rem, 2vw, 1.75rem); /* heroes / greetings */
+
+    --grq-leading-none: 1;
+    --grq-leading-tight: 1.15;
+    --grq-leading-snug: 1.25;
+    --grq-leading-normal: 1.35;
+    --grq-leading-relaxed: 1.45;
+
+    --grq-tracking-tight: -0.02em;
+    --grq-tracking-label: 0.06em;
+    --grq-tracking-wide: 0.08em;
+
+    --grq-weight-normal: 400;
+    --grq-weight-medium: 550;
+    --grq-weight-semibold: 600;
+    --grq-weight-bold: 650;
+    --grq-weight-extrabold: 700;
+
+    /* —— Space —— */
+    --grq-space-0: 0;
+    --grq-space-1: 0.25rem;  /* 4 */
+    --grq-space-2: 0.5rem;   /* 8 */
+    --grq-space-3: 0.75rem;  /* 12 */
+    --grq-space-4: 1rem;     /* 16 */
+    --grq-space-5: 1.25rem;  /* 20 */
+    --grq-space-6: 1.5rem;   /* 24 */
+    --grq-space-8: 2rem;     /* 32 */
+    --grq-space-10: 2.5rem;  /* 40 */
+
+    /* —— Radius / border —— */
+    --grq-radius-sm: 2px;
+    --grq-radius: var(--radius, 4px);
+    --grq-radius-lg: var(--radius-lg, 6px);
+    --grq-border: var(--border);
+    --grq-border-soft: var(--border-soft, var(--border));
+
+    /* —— Surfaces —— */
+    --grq-bg: var(--background);
+    --grq-surface: var(--surface);
+    --grq-surface-2: var(--surface-2);
+    --grq-fg: var(--text);
+    --grq-fg-muted: var(--text-muted);
+    --grq-fg-soft: var(--text-soft);
+
+    /* —— Control bridge (forms consume these) —— */
+    --control-h: 2.625rem;
+    --control-px: 0.875rem;
+    --control-py: 0;
+    --control-border: 1px;
+    --control-font: var(--grq-text-control);
+    --control-line: var(--grq-leading-normal);
+    --control-radius: var(--radius-field, var(--grq-radius));
+}
+
+html.dark,
+html[data-theme="gereq-dark"] {
+    --grq-bg: var(--background);
+    --grq-surface: var(--surface);
+    --grq-surface-2: var(--surface-2);
+    --grq-fg: var(--text);
+    --grq-fg-muted: var(--text-muted);
+    --grq-fg-soft: var(--text-soft);
+    --grq-border: var(--border);
+    --grq-border-soft: var(--border-soft, var(--border));
+    --control-font: var(--grq-text-control);
+    --control-line: var(--grq-leading-normal);
+}
+
+/* Expose to Tailwind utilities where useful */
+@theme {
+    --font-grq: var(--grq-font-sans);
+    --font-grq-mono: var(--grq-font-mono);
+    --text-grq-xxs: var(--grq-text-xxs);
+    --text-grq-xs: var(--grq-text-xs);
+    --text-grq-sm: var(--grq-text-sm);
+    --text-grq-md: var(--grq-text-md);
+    --text-grq-base: var(--grq-text-base);
+    --text-grq-control: var(--grq-text-control);
+    --text-grq-lg: var(--grq-text-lg);
+    --text-grq-xl: var(--grq-text-xl);
+    --text-grq-2xl: var(--grq-text-2xl);
+    --spacing-grq-1: var(--grq-space-1);
+    --spacing-grq-2: var(--grq-space-2);
+    --spacing-grq-3: var(--grq-space-3);
+    --spacing-grq-4: var(--grq-space-4);
+    --spacing-grq-5: var(--grq-space-5);
+    --spacing-grq-6: var(--grq-space-6);
+}

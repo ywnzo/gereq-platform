@@ -214,13 +214,14 @@ export function registerSelect(alpine: typeof Alpine): void {
 
         applyOption(option: HTMLElement) {
             const root = this.$el as HTMLElement;
-            const input = root.querySelector<HTMLInputElement>('input[type="hidden"]');
+            const input = root.querySelector<HTMLInputElement>('input.g-select__native, input[type="hidden"]');
             if (!input) {
                 return;
             }
             const next = option.dataset.value || '';
             const changed = input.value !== next;
             input.value = next;
+            input.setCustomValidity('');
             this.label = option.dataset.label || '';
             this.tone = option.dataset.tone || '';
             syncSelectIcon(root, option);

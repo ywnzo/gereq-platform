@@ -12,6 +12,7 @@
     <header class="design-bar">
         {% include 'partials/brand-lockup.html.twig' with { href: '/design.html', modifier: 'brand--bar', subtitle: 'design.subtitle'|trans } %}
         <nav class="design-bar__links" aria-label="{{ 'design.nav.system'|trans }}">
+            <a href="{{ url('design.ui') }}">{{ 'design.ui.nav_ui'|trans }}</a>
             <a href="/ok.html">{{ 'design.nav.server_status'|trans }}</a>
             <a href="{{ url('admin.login') }}">{{ 'design.nav.admin'|trans }}</a>
         </nav>
@@ -33,10 +34,14 @@
 
         <div class="design-tabs" role="tablist" aria-label="{{ 'design.tabs.aria'|trans }}">
             <button type="button" class="design-tab" role="tab" data-tab="znacka">{{ 'design.tabs.brand'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="zaklad">{{ 'design.tabs.foundation'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="tlacitka">{{ 'design.tabs.buttons'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="pole">{{ 'design.tabs.fields'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="vybery">{{ 'design.tabs.selects'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="editor">{{ 'design.tabs.editor'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="tabulky">{{ 'design.tabs.tables'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="feedback">{{ 'design.tabs.feedback'|trans }}</button>
+            <button type="button" class="design-tab" role="tab" data-tab="layout">{{ 'design.tabs.layout'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="overlay">{{ 'design.tabs.overlay'|trans }}</button>
             <button type="button" class="design-tab" role="tab" data-tab="formular">{{ 'design.tabs.validation'|trans }}</button>
         </div>
@@ -60,6 +65,62 @@
             </div>
         </section>
 
+        <section class="design-panel" data-panel="zaklad" role="tabpanel">
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.foundation.title'|trans }}</h2>
+                    <p>{{ 'design.foundation.lead'|trans }}</p>
+                </div>
+                <div class="design-box__body grq-stack grq-stack--lg">
+                    <div class="grq-stack grq-stack--sm">
+                        <p class="grq-text-label">{{ 'design.foundation.type'|trans }}</p>
+                        <p class="grq-text-display">Display · grq-text-display</p>
+                        <p class="grq-text-title">Title · grq-text-title</p>
+                        <p class="grq-text-body">Body · grq-text-body</p>
+                        <p class="grq-text-ui">UI · grq-text-ui</p>
+                        <p class="grq-text-meta">Meta · grq-text-meta</p>
+                        <p class="grq-text-caption">Caption · grq-text-caption</p>
+                        <p class="grq-text-label">Label · grq-text-label</p>
+                    </div>
+                    <div class="grq-stack grq-stack--sm">
+                        <p class="grq-text-label">{{ 'design.foundation.layout'|trans }}</p>
+                        <div class="grq-grid grq-grid--2">
+                            <div class="grq-box">
+                                <p class="grq-text-ui">grq-box</p>
+                                <p class="grq-text-meta">Surface container</p>
+                            </div>
+                            <div class="grq-box grq-box--soft">
+                                <p class="grq-text-ui">grq-box--soft</p>
+                                <p class="grq-text-meta">Soft surface</p>
+                            </div>
+                        </div>
+                        <div class="grq-cluster">
+                            <span class="badge">cluster</span>
+                            <button type="button" class="btn btn-sm">Action</button>
+                            <span class="grq-text-meta muted">grq-cluster</span>
+                        </div>
+                        <div class="grq-stack grq-stack--xs grq-box grq-box--sm">
+                            <span class="grq-text-ui">grq-stack</span>
+                            <span class="grq-text-meta">Vertical rhythm</span>
+                        </div>
+                    </div>
+                    <div class="grq-stack grq-stack--sm">
+                        <p class="grq-text-label">{{ 'design.foundation.controls'|trans }}</p>
+                        <div class="grq-grid grq-grid--2">
+                            <label class="g-field">
+                                <span class="g-label">g-control</span>
+                                <input class="g-control" type="text" value="Shared input" readonly>
+                            </label>
+                            <label class="g-field">
+                                <span class="g-label">.input (legacy)</span>
+                                <input class="input" type="text" value="Same tokens" readonly>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="design-panel" data-panel="tlacitka" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
@@ -68,68 +129,62 @@
                 </div>
                 <div class="design-box__body">
                     <div class="design-cluster">
-                        <p class="design-cluster__label">{{ 'design.actions.base'|trans }}</p>
+                        <p class="design-cluster__label">{{ 'design.actions.types'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn-primary" type="button">{{ 'common.save'|trans }}</button>
-                            <button class="btn btn-secondary" type="button">Signal</button>
-                            <button class="btn btn-accent" type="button">Accent</button>
-                            <button class="btn btn-neutral" type="button">Neutral</button>
-                            <button class="btn btn-ghost" type="button">Ghost</button>
-                            <button class="btn btn-link" type="button">{{ 'design.btn.link'|trans }}</button>
+                            <button class="btn btn--primary" type="button">{{ 'design.btn.primary'|trans }}</button>
+                            <button class="btn" type="button">{{ 'design.btn.default'|trans }}</button>
+                            <button class="btn btn--dashed" type="button">{{ 'design.btn.dashed'|trans }}</button>
+                            <button class="btn btn--text" type="button">{{ 'design.btn.text'|trans }}</button>
+                            <button class="btn btn--link" type="button">{{ 'design.btn.link'|trans }}</button>
                         </div>
                     </div>
                     <div class="design-cluster">
-                        <p class="design-cluster__label">{{ 'design.actions.states'|trans }}</p>
+                        <p class="design-cluster__label">{{ 'design.actions.danger'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn-info" type="button">Info</button>
-                            <button class="btn btn-success" type="button">{{ 'design.btn.done'|trans }}</button>
-                            <button class="btn btn-warning" type="button">{{ 'design.btn.warning'|trans }}</button>
-                            <button class="btn btn-error" type="button">{{ 'design.btn.error'|trans }}</button>
                             <button class="btn btn--danger" type="button">{{ 'design.btn.trash'|trans }}</button>
-                            <button class="btn btn-primary" type="button" disabled>Disabled</button>
+                            <button class="btn btn--danger-outline" type="button">{{ 'design.btn.danger_outline'|trans }}</button>
+                            <button class="btn btn--primary" type="button" disabled>{{ 'design.btn.disabled'|trans }}</button>
+                            <button class="btn btn--primary is-busy" type="button" aria-busy="true">{{ 'design.btn.loading'|trans }}</button>
                         </div>
                     </div>
                     <div class="design-cluster">
-                        <p class="design-cluster__label">{{ 'design.actions.outline_soft_dash'|trans }}</p>
+                        <p class="design-cluster__label">{{ 'design.actions.semantic'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn-outline btn-primary" type="button">Outline</button>
-                            <button class="btn btn-outline btn-error" type="button">Outline error</button>
-                            <button class="btn btn-soft btn-primary" type="button">Soft</button>
-                            <button class="btn btn-soft btn-secondary" type="button">Soft signal</button>
-                            <button class="btn btn-dash btn-primary" type="button">Dash</button>
-                        </div>
-                    </div>
-                    <div class="design-cluster">
-                        <p class="design-cluster__label">{{ 'design.actions.gereq_colors'|trans }}</p>
-                        <div class="design-row">
-                            <button class="btn btn--primary" type="button">Ink</button>
-                            <button class="btn btn--signal" type="button">Signal</button>
-                            <button class="btn btn--sky" type="button">Sky</button>
-                            <button class="btn btn--violet" type="button">Violet</button>
-                            <button class="btn btn--outline" type="button">{{ 'design.btn.outline_ink'|trans }}</button>
-                            <button class="btn btn--soft" type="button">Soft signal</button>
-                        </div>
-                    </div>
-                    <div class="design-cluster">
-                        <p class="design-cluster__label">{{ 'design.actions.tailwind_custom'|trans }}</p>
-                        <div class="design-row">
-                            <button class="btn bg-ink text-paper hover:bg-ink/90" type="button">bg-ink</button>
-                            <button class="btn bg-signal text-ink hover:brightness-95" type="button">bg-signal</button>
-                            <button class="btn bg-coral text-paper hover:bg-coral/90" type="button">bg-coral</button>
-                            <button class="btn bg-sky text-ink hover:bg-sky/90" type="button">bg-sky</button>
-                            <button class="btn bg-violet text-paper hover:bg-violet/90 rounded-lg" type="button">bg-violet</button>
-                            <button class="btn border border-ink bg-transparent text-ink hover:bg-ink hover:text-paper rounded-lg" type="button">border-ink</button>
-                            <button class="btn bg-signal/25 text-ink hover:bg-signal/45 rounded-lg" type="button">bg-signal/25</button>
+                            <button class="btn btn--soft" type="button">{{ 'design.btn.soft'|trans }}</button>
+                            <button class="btn btn--success" type="button">{{ 'design.btn.done'|trans }}</button>
+                            <button class="btn btn--warn" type="button">{{ 'design.btn.warning'|trans }}</button>
+                            <button class="btn btn--ink" type="button">{{ 'design.btn.ink'|trans }}</button>
+                            <button class="btn btn--outline" type="button">{{ 'design.btn.outline'|trans }}</button>
                         </div>
                     </div>
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.sizes'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn-xs btn-primary" type="button">XS</button>
-                            <button class="btn btn-sm btn-primary" type="button">{{ 'design.btn.small'|trans }}</button>
-                            <button class="btn btn-primary" type="button">{{ 'design.btn.default'|trans }}</button>
-                            <button class="btn btn-lg btn-primary" type="button">{{ 'design.btn.large'|trans }}</button>
-                            <button class="btn btn-primary g-tip" type="button" data-tip="{{ 'design.btn.tip_save_draft'|trans }}">{{ 'design.btn.with_tip'|trans }}</button>
+                            <button class="btn btn--xs btn--primary" type="button">XS</button>
+                            <button class="btn btn--sm btn--primary" type="button">{{ 'design.btn.small'|trans }}</button>
+                            <button class="btn btn--primary" type="button">{{ 'design.btn.middle'|trans }}</button>
+                            <button class="btn btn--lg btn--primary" type="button">{{ 'design.btn.large'|trans }}</button>
+                            <button class="btn btn--primary g-tip" type="button" data-tip="{{ 'design.btn.tip_save_draft'|trans }}">{{ 'design.btn.with_tip'|trans }}</button>
+                        </div>
+                    </div>
+                    <div class="design-cluster">
+                        <p class="design-cluster__label">{{ 'design.actions.icons'|trans }}</p>
+                        <div class="design-row">
+                            <button class="btn btn--primary" type="button"><span class="g-icon" aria-hidden="true">add</span> {{ 'common.create'|trans }}</button>
+                            <button class="btn" type="button"><span class="g-icon" aria-hidden="true">search</span> {{ 'common.search'|trans }}</button>
+                            <button class="btn btn--text" type="button"><span class="g-icon" aria-hidden="true">more_horiz</span></button>
+                            <button class="icon-btn" type="button" aria-label="{{ 'common.edit'|trans }}"><span class="g-icon" aria-hidden="true">edit</span></button>
+                            <button class="icon-btn" type="button" aria-label="{{ 'common.delete'|trans }}"><span class="g-icon" aria-hidden="true">delete</span></button>
+                        </div>
+                    </div>
+                    <div class="design-cluster">
+                        <p class="design-cluster__label">{{ 'design.actions.legacy'|trans }}</p>
+                        <div class="design-row">
+                            <button class="btn btn-primary" type="button">btn-primary</button>
+                            <button class="btn btn-ghost" type="button">btn-ghost</button>
+                            <button class="btn btn-error" type="button">btn-error</button>
+                            <button class="btn btn-success" type="button">btn-success</button>
+                            <button class="btn btn-sm btn-primary" type="button">btn-sm</button>
                         </div>
                     </div>
                 </div>
@@ -255,6 +310,690 @@
             </div>
         </section>
 
+        <section class="design-panel" data-panel="tabulky" role="tabpanel">
+            {% set design_products = [
+                { sku: 'GRQ-1001', name: 'Signal Hoodie', meta: 'Merch · Soft shell', price: '1 290 Kč', stock: 42, status: 'ok', tone: 'success' },
+                { sku: 'GRQ-1002', name: 'Ink Cap', meta: 'Merch · One size', price: '490 Kč', stock: 8, status: 'warn', tone: 'warn' },
+                { sku: 'GRQ-2040', name: 'Crew Socks 3-pack', meta: 'Merch · Unisex', price: '320 Kč', stock: 0, status: 'danger', tone: 'danger' },
+                { sku: 'GRQ-3100', name: 'Desk Mat XL', meta: 'Office · 90×40', price: '890 Kč', stock: 15, status: 'ok', tone: 'success' },
+                { sku: 'GRQ-4002', name: 'Sticker Pack', meta: 'Merch · 12 pcs', price: '120 Kč', stock: 200, status: 'ok', tone: 'success' },
+            ] %}
+            {% set design_orders = [
+                { id: 'ORD-24091', customer: 'Auto Servis Brno', total: '24 580 Kč', items: 6, date: '28. 9. 2026', status: 'paid', tone: 'success' },
+                { id: 'ORD-24088', customer: 'Bike Lab Praha', total: '8 120 Kč', items: 2, date: '27. 9. 2026', status: 'open', tone: 'info' },
+                { id: 'ORD-24071', customer: 'Fleet Carrier s.r.o.', total: '112 000 Kč', items: 14, date: '22. 9. 2026', status: 'shipped', tone: 'indigo' },
+                { id: 'ORD-24055', customer: 'Anna Králová', total: '1 490 Kč', items: 1, date: '18. 9. 2026', status: 'canceled', tone: 'danger' },
+            ] %}
+
+            {# —— 1. ui()->table() demo: sortable columns + bulk —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.tables.title'|trans }}</h2>
+                    <p>{{ 'design.tables.api_lead'|trans|raw }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div
+                        class="list-shell list-shell--fit"
+                        x-data="dataTable"
+                        data-table-id="design-users"
+                        data-page-ids='{{ design_users|map(u => u.id)|json_encode|e('html_attr') }}'
+                        data-actions-default="1"
+                    >
+                        <header class="page-header">
+                            <div>
+                                <h1>{{ 'design.tables.demo_title'|trans }}</h1>
+                                <p class="muted">{{ 'design.tables.demo_hint'|trans }}</p>
+                            </div>
+                            <div class="actions">
+                                <button class="btn btn--primary" type="button">{{ icon('plus') }} {{ 'design.tables.new'|trans }}</button>
+                            </div>
+                        </header>
+
+                        <div class="toolbar--table">
+                            <div class="toolbar">
+                                <input
+                                    class="input"
+                                    type="search"
+                                    x-model="query"
+                                    placeholder="{{ 'design.tables.search'|trans }}"
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+
+                        <div
+                            class="bulk-bar"
+                            x-show="selectedCount > 0"
+                            x-cloak
+                        >
+                            <div class="bulk-bar__meta">
+                                <strong x-text="selectedCount"></strong>
+                                <span>{{ 'design.tables.bulk_selected'|trans }}</span>
+                                <button type="button" class="btn btn--link btn--sm" @click="clearSelection">{{ 'design.tables.bulk_clear'|trans }}</button>
+                            </div>
+                            <div class="bulk-bar__actions">
+                                <button type="button" class="btn btn--soft" @click="clearSelection">{{ 'design.tables.bulk_export'|trans }}</button>
+                                <button type="button" class="btn btn--danger" @click="clearSelection">{{ 'design.tables.bulk_disable'|trans }}</button>
+                            </div>
+                        </div>
+
+                        {{ design_users_table|raw }}
+                    </div>
+                </div>
+            </div>
+
+            {# —— 2. Catalog / products with thumbs + numeric cols —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.tables.catalog_title'|trans }}</h2>
+                    <p>{{ 'design.tables.catalog_lead'|trans }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="list-shell list-shell--fit">
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ 'design.tables.col_product'|trans }}</th>
+                                        <th>{{ 'design.tables.col_sku'|trans }}</th>
+                                        <th class="is-num">{{ 'design.tables.col_price'|trans }}</th>
+                                        <th class="is-num">{{ 'design.tables.col_stock'|trans }}</th>
+                                        <th>{{ 'common.status'|trans }}</th>
+                                        <th class="table__actions-head"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in design_products %}
+                                        <tr>
+                                            <td>
+                                                <div class="table__title table__title--with-icon">
+                                                    {% include 'ui/table_thumb.html.twig' with { src: null, placeholder: true, width: 40, height: 40 } %}
+                                                    <div class="table__title-text">
+                                                        <a href="#">{{ p.name }}</a>
+                                                        <span class="table__meta">{{ p.meta }}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="is-mute"><code>{{ p.sku }}</code></td>
+                                            <td class="is-num">{{ p.price }}</td>
+                                            <td class="is-num">{{ p.stock }}</td>
+                                            <td>
+                                                <span class="status-chip status-chip--tone-{{ p.tone }}">
+                                                    <span class="status-chip__dot"></span>
+                                                    {% if p.status == 'ok' %}{{ 'design.tables.stock_ok'|trans }}
+                                                    {% elseif p.status == 'warn' %}{{ 'design.tables.stock_low'|trans }}
+                                                    {% else %}{{ 'design.tables.stock_out'|trans }}{% endif %}
+                                                </span>
+                                            </td>
+                                            {% embed 'ui/row_actions.html.twig' %}
+                                                {% block items %}
+                                                    {% include 'ui/row_action.html.twig' with { href: '#', label: 'common.edit'|trans, icon: 'edit' } %}
+                                                    {% include 'ui/row_action.html.twig' with { href: '#', label: 'common.view'|trans, icon: 'eye' } %}
+                                                {% endblock %}
+                                            {% endembed %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# —— 3. Orders with status chips —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.tables.orders_title'|trans }}</h2>
+                    <p>{{ 'design.tables.orders_lead'|trans }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'design.tables.col_order'|trans }}</th>
+                                    <th>{{ 'design.tables.col_customer'|trans }}</th>
+                                    <th class="is-num">{{ 'design.tables.col_items'|trans }}</th>
+                                    <th class="is-num">{{ 'design.tables.col_total'|trans }}</th>
+                                    <th>{{ 'design.tables.col_date'|trans }}</th>
+                                    <th>{{ 'common.status'|trans }}</th>
+                                    <th class="table__actions-head"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for o in design_orders %}
+                                    <tr>
+                                        <td>
+                                            <div class="table__title">
+                                                <a href="#">{{ o.id }}</a>
+                                            </div>
+                                        </td>
+                                        <td>{{ o.customer }}</td>
+                                        <td class="is-num">{{ o.items }}</td>
+                                        <td class="is-num"><strong>{{ o.total }}</strong></td>
+                                        <td class="is-mute">{{ o.date }}</td>
+                                        <td>
+                                            <span class="status-chip status-chip--tone-{{ o.tone }}">
+                                                <span class="status-chip__dot"></span>
+                                                {{ ('design.tables.order_' ~ o.status)|trans }}
+                                            </span>
+                                        </td>
+                                        {% embed 'ui/row_actions.html.twig' %}
+                                            {% block items %}
+                                                {% include 'ui/row_action.html.twig' with { href: '#', label: 'common.view'|trans, icon: 'eye' } %}
+                                                {% include 'ui/row_action.html.twig' with { href: '#', label: 'common.edit'|trans, icon: 'edit' } %}
+                                            {% endblock %}
+                                        {% endembed %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {# —— 4. Compact / dense key-value style —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.tables.compact_title'|trans }}</h2>
+                    <p>{{ 'design.tables.compact_lead'|trans }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'design.tables.col_key'|trans }}</th>
+                                    <th>{{ 'design.tables.col_value'|trans }}</th>
+                                    <th class="is-mute">{{ 'design.tables.col_note'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>APP_ENV</code></td>
+                                    <td><span class="badge badge--ok">local</span></td>
+                                    <td class="is-mute">{{ 'design.tables.note_env'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>ADMIN_PATH</code></td>
+                                    <td><code>{{ admin_path() }}</code></td>
+                                    <td class="is-mute">{{ 'design.tables.note_path'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>APP_LOCALE</code></td>
+                                    <td>{{ app_locale() }}</td>
+                                    <td class="is-mute">{{ 'design.tables.note_locale'|trans }}</td>
+                                </tr>
+                                <tr>
+                                    <td><code>APP_VERSION</code></td>
+                                    <td>{{ app_version() }}</td>
+                                    <td class="is-mute">—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {# —— 5. Empty state —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.tables.empty_title'|trans }}</h2>
+                    <p>{{ 'design.tables.empty_lead'|trans }}</p>
+                </div>
+                <div class="design-box__body">
+                    {{ ui_render('empty', {
+                        title: 'design.tables.empty_heading'|trans,
+                        hint: 'design.tables.empty_hint'|trans,
+                        action: '<button type="button" class="btn btn--sm btn--primary">' ~ ('design.tables.new'|trans) ~ '</button>'
+                    }) }}
+                </div>
+            </div>
+        </section>
+
+        <section class="design-panel" data-panel="feedback" role="tabpanel">
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.feedback.alerts_title'|trans }}</h2>
+                    <p>{{ 'design.feedback.alerts_lead'|trans }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="alert alert--success" role="status">{{ 'design.feedback.alert_ok'|trans }}</div>
+                    <div class="alert alert--warn" role="status">{{ 'design.feedback.alert_warn'|trans }}</div>
+                    <div class="alert alert--danger" role="alert">{{ 'design.feedback.alert_danger'|trans }}</div>
+                </div>
+            </div>
+
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.feedback.badges_title'|trans }}</h2>
+                    <p>{{ 'design.feedback.badges_lead'|trans|raw }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="design-row">
+                        <span class="badge badge--ok">ok</span>
+                        <span class="badge badge--warn">warn</span>
+                        <span class="badge badge--danger">danger</span>
+                        <span class="badge badge--muted">muted</span>
+                        <span class="badge badge--info">info</span>
+                        <span class="badge badge--signal">signal</span>
+                        {{ ui_render('badge', { label: 'ui_render', tone: 'info' }) }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.feedback.chips_title'|trans }}</h2>
+                    <p>{{ 'design.feedback.chips_lead'|trans }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="design-row">
+                        <span class="status-chip status-chip--tone-success"><span class="status-chip__dot"></span>{{ 'common.enabled'|trans }}</span>
+                        <span class="status-chip status-chip--muted"><span class="status-chip__dot"></span>{{ 'common.disabled'|trans }}</span>
+                        <span class="status-chip status-chip--tone-info"><span class="status-chip__dot"></span>info</span>
+                        <span class="status-chip status-chip--tone-warn"><span class="status-chip__dot"></span>warn</span>
+                        <span class="status-chip status-chip--tone-orange"><span class="status-chip__dot"></span>orange</span>
+                        <span class="status-chip status-chip--tone-danger"><span class="status-chip__dot"></span>danger</span>
+                        <span class="status-chip status-chip--tone-indigo"><span class="status-chip__dot"></span>indigo</span>
+                        <span class="status-chip status-chip--tone-success-muted"><span class="status-chip__dot"></span>success-muted</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.feedback.confirm_title'|trans }}</h2>
+                    <p>{{ 'design.feedback.confirm_lead'|trans|raw }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="design-row">
+                        <button class="btn btn--ghost" type="button" data-design-confirm>{{ 'design.feedback.confirm_btn'|trans }}</button>
+                        <button class="btn btn--danger" type="button" data-design-confirm-danger>{{ 'design.feedback.confirm_danger_btn'|trans }}</button>
+                        <button class="btn btn--ghost" type="button" data-design-prompt>{{ 'design.feedback.prompt_btn'|trans }}</button>
+                        <button class="btn btn--ghost" type="button" data-design-toast>{{ 'design.feedback.toast_btn'|trans }}</button>
+                    </div>
+                    <script nonce="{{ csp_nonce() }}">
+                        document.querySelector('[data-design-confirm]')?.addEventListener('click', async () => {
+                            await window.gereq?.confirm?.({
+                                title: {{ 'design.feedback.confirm_title'|trans|json_encode|raw }},
+                                body: {{ 'design.feedback.confirm_body'|trans|json_encode|raw }},
+                                confirmLabel: {{ 'common.continue'|trans|json_encode|raw }}
+                            });
+                        });
+                        document.querySelector('[data-design-confirm-danger]')?.addEventListener('click', async () => {
+                            await window.gereq?.confirm?.({
+                                title: {{ 'design.feedback.confirm_danger_title'|trans|json_encode|raw }},
+                                body: {{ 'design.feedback.confirm_danger_body'|trans|json_encode|raw }},
+                                confirmLabel: {{ 'common.delete'|trans|json_encode|raw }},
+                                danger: true
+                            });
+                        });
+                        document.querySelector('[data-design-prompt]')?.addEventListener('click', async () => {
+                            await window.gereq?.prompt?.({
+                                title: {{ 'design.feedback.prompt_title'|trans|json_encode|raw }},
+                                body: {{ 'design.feedback.prompt_body'|trans|json_encode|raw }},
+                                inputLabel: {{ 'common.name'|trans|json_encode|raw }},
+                                inputValue: 'Demo'
+                            });
+                        });
+                        document.querySelector('[data-design-toast]')?.addEventListener('click', () => {
+                            window.gereq?.toast?.({{ 'design.feedback.toast_msg'|trans|json_encode|raw }}, 'success');
+                        });
+                    </script>
+                </div>
+            </div>
+        </section>
+
+        <section class="design-panel" data-panel="layout" role="tabpanel">
+            {# —— List page header —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.layout.list_title'|trans }}</h2>
+                    <p>{{ 'design.layout.list_lead'|trans|raw }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="list-shell list-shell--fit">
+                        <header class="page-header">
+                            <div>
+                                <h1>{{ 'design.layout.list_h1'|trans }}</h1>
+                                <p class="muted">{{ 'design.layout.list_hint'|trans }}</p>
+                            </div>
+                            <div class="actions">
+                                <button class="btn btn--ghost" type="button">{{ icon('download') }} {{ 'design.layout.export'|trans }}</button>
+                                <button class="btn btn--primary" type="button">{{ icon('plus') }} {{ 'design.tables.new'|trans }}</button>
+                            </div>
+                        </header>
+                        <div class="toolbar--table">
+                            <div class="toolbar">
+                                <input class="input" type="search" placeholder="{{ 'design.tables.search'|trans }}" value="">
+                                <select class="input">
+                                    <option>{{ 'common.all_statuses'|trans }}</option>
+                                    <option>{{ 'common.active'|trans }}</option>
+                                    <option>{{ 'common.inactive'|trans }}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# —— Detail profile header —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.layout.detail_title'|trans }}</h2>
+                    <p>{{ 'design.layout.detail_lead'|trans|raw }}</p>
+                </div>
+                <div class="design-box__body">
+                    <nav class="breadcrumbs" aria-label="{{ 'ui.breadcrumbs'|trans }}" style="margin-bottom: 1rem">
+                        {% include 'ui/breadcrumbs.html.twig' with { items: [
+                            { label: 'nav.overview'|trans, url: '#' },
+                            { label: 'design.layout.list_h1'|trans, url: '#' },
+                            { label: 'Jiří Novák' }
+                        ] } %}
+                    </nav>
+                    <div class="customer-profile">
+                        <div class="customer-profile__chrome">
+                            <header class="customer-profile__header">
+                                <div class="customer-profile__identity">
+                                    <div class="cell-user cell-user--lg">
+                                        <span class="avatar avatar--xl">JN</span>
+                                        <div>
+                                            <h1>Jiří Novák</h1>
+                                            <p class="customer-profile__sub">
+                                                <strong>Gereq s.r.o.</strong> ·
+                                                <a href="#">jiri.novak@gereq.cz</a> ·
+                                                <a href="#">+420 777 111 222</a>
+                                            </p>
+                                            <div class="customer-profile__chips">
+                                                <span class="badge badge--ok">{{ 'common.active'|trans }}</span>
+                                                <span class="badge">{{ 'design.layout.chip_company'|trans }}</span>
+                                                <span class="muted">{{ 'design.layout.meta_created'|trans }} 12. 3. 2025</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="actions">
+                                    <button class="btn btn--ghost" type="button">{{ icon('mail') }} E-mail</button>
+                                    <button class="btn btn--ghost" type="button">{{ icon('phone') }} {{ 'design.layout.call'|trans }}</button>
+                                    <button class="btn btn--primary" type="button">{{ 'common.edit'|trans }}</button>
+                                    <button class="btn btn--danger" type="button">{{ 'common.delete'|trans }}</button>
+                                </div>
+                            </header>
+                            <div class="design-tabs detail-tabs" role="tablist">
+                                <button type="button" class="design-tab is-active" role="tab">{{ 'common.overview'|trans }}</button>
+                                <button type="button" class="design-tab" role="tab">{{ 'design.layout.tab_contacts'|trans }} <span class="module-tab-count">3</span></button>
+                                <button type="button" class="design-tab" role="tab">{{ 'design.layout.tab_addresses'|trans }} <span class="module-tab-count">2</span></button>
+                            </div>
+                        </div>
+
+                        <div class="customer-sections">
+                            <div class="customer-sections__main">
+                                <section class="customer-section">
+                                    <header class="customer-section__head">
+                                        <div>
+                                            <h2>{{ 'design.layout.section_profile'|trans }}</h2>
+                                            <p class="muted customer-edit__section-hint">{{ 'design.layout.section_profile_hint'|trans }}</p>
+                                        </div>
+                                        <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
+                                    </header>
+                                    <dl class="customer-section__facts">
+                                        <div>
+                                            <dt>{{ 'common.name'|trans }}</dt>
+                                            <dd>Jiří Novák</dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ 'common.email'|trans }}</dt>
+                                            <dd><a href="#">jiri.novak@gereq.cz</a></dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ 'design.layout.field_phone'|trans }}</dt>
+                                            <dd>+420 777 111 222</dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ 'design.layout.field_company'|trans }}</dt>
+                                            <dd>Gereq s.r.o.</dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ 'common.status'|trans }}</dt>
+                                            <dd>{{ 'common.active'|trans }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ 'design.layout.meta_updated'|trans }}</dt>
+                                            <dd>28. 9. 2026 14:20</dd>
+                                        </div>
+                                    </dl>
+                                </section>
+                                <section class="customer-section">
+                                    <header class="customer-section__head">
+                                        <h2>{{ 'design.layout.tab_addresses'|trans }}</h2>
+                                        <button type="button" class="btn btn--ghost btn--sm">{{ 'design.layout.manage'|trans }}</button>
+                                    </header>
+                                    <ul class="customer-list">
+                                        <li class="customer-list__item">
+                                            <div>
+                                                <strong>{{ 'design.layout.addr_billing'|trans }}</strong>
+                                                <span class="badge badge--ok">{{ 'design.layout.primary'|trans }}</span>
+                                                <p class="muted" style="margin:.35rem 0 0">Národní 12, 110 00 Praha 1</p>
+                                            </div>
+                                            <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
+                                        </li>
+                                        <li class="customer-list__item">
+                                            <div>
+                                                <strong>{{ 'design.layout.addr_shipping'|trans }}</strong>
+                                                <p class="muted" style="margin:.35rem 0 0">Průmyslová 8, 602 00 Brno</p>
+                                            </div>
+                                            <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
+                                        </li>
+                                    </ul>
+                                </section>
+                            </div>
+                            <aside>
+                                <section class="customer-section">
+                                    <header class="customer-section__head">
+                                        <h2>{{ 'design.layout.aside_activity'|trans }}</h2>
+                                    </header>
+                                    <ul class="customer-list">
+                                        <li class="customer-list__item">
+                                            <div>
+                                                <strong>{{ 'design.layout.activity_note'|trans }}</strong>
+                                                <p class="muted" style="margin:.25rem 0 0">{{ 'design.layout.activity_note_body'|trans }}</p>
+                                            </div>
+                                            <span class="muted" style="white-space:nowrap">28. 9.</span>
+                                        </li>
+                                        <li class="customer-list__item">
+                                            <div>
+                                                <strong>{{ 'design.layout.activity_call'|trans }}</strong>
+                                                <p class="muted" style="margin:.25rem 0 0">{{ 'design.layout.activity_call_body'|trans }}</p>
+                                            </div>
+                                            <span class="muted" style="white-space:nowrap">22. 9.</span>
+                                        </li>
+                                    </ul>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# —— Edit form (Customers SoT) —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.layout.edit_title'|trans }}</h2>
+                    <p>{{ 'design.layout.edit_lead'|trans|raw }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="customer-edit">
+                        <header class="customer-edit__header">
+                            <div class="customer-edit__identity">
+                                <a class="text-link customer-profile__back" href="#">← Jiří Novák</a>
+                                <div class="cell-user cell-user--lg">
+                                    <span class="avatar avatar--xl">JN</span>
+                                    <div>
+                                        <p class="customer-edit__eyebrow">{{ 'design.layout.edit_eyebrow'|trans }}</p>
+                                        <h1>Jiří Novák</h1>
+                                        <p class="customer-profile__sub">{{ 'design.layout.edit_sub'|trans }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="customer-edit__header-actions">
+                                <button class="btn btn--ghost" type="button">{{ 'common.detail'|trans }}</button>
+                                <button class="btn btn--primary" type="button">{{ 'common.save'|trans }}</button>
+                            </div>
+                        </header>
+
+                        <div class="customer-edit__layout">
+                            <div class="customer-edit__main">
+                                <section class="customer-section">
+                                    <header class="customer-section__head">
+                                        <div>
+                                            <h2>{{ 'design.layout.section_profile'|trans }}</h2>
+                                            <p class="muted customer-edit__section-hint">{{ 'design.layout.form_profile_hint'|trans }}</p>
+                                        </div>
+                                    </header>
+                                    <div class="customer-edit__grid">
+                                        {% include 'ui/input.html.twig' with {
+                                            name: 'demo_name',
+                                            label: 'common.name'|trans,
+                                            value: 'Jiří Novák',
+                                            form: 'design.static'
+                                        } %}
+                                        {% include 'ui/input.html.twig' with {
+                                            name: 'demo_email',
+                                            label: 'common.email'|trans,
+                                            type: 'email',
+                                            value: 'jiri.novak@gereq.cz',
+                                            form: 'design.static'
+                                        } %}
+                                        {% include 'ui/input.html.twig' with {
+                                            name: 'demo_phone',
+                                            label: 'design.layout.field_phone'|trans,
+                                            value: '+420 777 111 222',
+                                            optional: true,
+                                            form: 'design.static'
+                                        } %}
+                                        {% include 'ui/input.html.twig' with {
+                                            name: 'demo_company',
+                                            label: 'design.layout.field_company'|trans,
+                                            value: 'Gereq s.r.o.',
+                                            optional: true,
+                                            form: 'design.static'
+                                        } %}
+                                    </div>
+                                </section>
+                                <section class="customer-section">
+                                    <header class="customer-section__head">
+                                        <div>
+                                            <h2>{{ 'design.layout.section_note'|trans }}</h2>
+                                            <p class="muted customer-edit__section-hint">{{ 'design.layout.form_note_hint'|trans }}</p>
+                                        </div>
+                                    </header>
+                                    {% include 'ui/textarea.html.twig' with {
+                                        name: 'demo_note',
+                                        label: 'design.layout.section_note'|trans,
+                                        value: 'design.layout.form_note_sample'|trans,
+                                        optional: true,
+                                        form: 'design.static'
+                                    } %}
+                                </section>
+                            </div>
+                            <aside class="customer-edit__aside">
+                                <section class="customer-section customer-edit__status-card">
+                                    <header class="customer-section__head">
+                                        <div>
+                                            <h2>{{ 'common.status'|trans }}</h2>
+                                            <p class="muted customer-edit__section-hint">{{ 'design.layout.status_hint'|trans }}</p>
+                                        </div>
+                                    </header>
+                                    <div class="customer-status-picks" role="radiogroup">
+                                        <label class="customer-status-pick customer-status-pick--ok">
+                                            <input type="radio" name="design_status" value="active" checked>
+                                            <span class="customer-status-pick__dot" aria-hidden="true"></span>
+                                            <span class="customer-status-pick__body">
+                                                <strong>{{ 'common.active'|trans }}</strong>
+                                                <small>{{ 'design.layout.status_active_hint'|trans }}</small>
+                                            </span>
+                                        </label>
+                                        <label class="customer-status-pick customer-status-pick--warn">
+                                            <input type="radio" name="design_status" value="lead">
+                                            <span class="customer-status-pick__dot" aria-hidden="true"></span>
+                                            <span class="customer-status-pick__body">
+                                                <strong>{{ 'design.layout.status_lead'|trans }}</strong>
+                                                <small>{{ 'design.layout.status_lead_hint'|trans }}</small>
+                                            </span>
+                                        </label>
+                                        <label class="customer-status-pick customer-status-pick--muted">
+                                            <input type="radio" name="design_status" value="inactive">
+                                            <span class="customer-status-pick__dot" aria-hidden="true"></span>
+                                            <span class="customer-status-pick__body">
+                                                <strong>{{ 'common.inactive'|trans }}</strong>
+                                                <small>{{ 'design.layout.status_inactive_hint'|trans }}</small>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </section>
+                                <section class="customer-section customer-edit__meta">
+                                    <header class="customer-section__head">
+                                        <h2>{{ 'design.layout.meta_title'|trans }}</h2>
+                                    </header>
+                                    <dl class="customer-edit__meta-list">
+                                        <div>
+                                            <dt>{{ 'design.layout.meta_created'|trans }}</dt>
+                                            <dd>12. 3. 2025 09:14</dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ 'design.layout.meta_updated'|trans }}</dt>
+                                            <dd>28. 9. 2026 14:20</dd>
+                                        </div>
+                                    </dl>
+                                </section>
+                                <div class="customer-edit__aside-actions">
+                                    <button class="btn btn--primary" type="button">{{ 'common.save'|trans }}</button>
+                                    <button class="btn btn--ghost" type="button">{{ 'common.cancel'|trans }}</button>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# —— Classic panel chrome —— #}
+            <div class="design-box">
+                <div class="design-box__head">
+                    <h2>{{ 'design.layout.panels_title'|trans }}</h2>
+                    <p>{{ 'design.layout.panels_lead'|trans }}</p>
+                </div>
+                <div class="design-box__body">
+                    <div class="grq-stack grq-stack--md">
+                        {{ ui_render('page_header', {
+                            title: 'design.layout.page_title'|trans,
+                            meta: 'design.layout.page_meta'|trans,
+                            actions: '<button type="button" class="btn btn--primary">' ~ ('common.save'|trans) ~ '</button>'
+                        }) }}
+                        <section class="panel">
+                            <header class="panel__head panel__head--actions">
+                                <div>
+                                    <h2>{{ 'design.layout.panel_actions'|trans }}</h2>
+                                    <p class="muted">{{ 'design.layout.panel_basic_hint'|trans }}</p>
+                                </div>
+                                <div class="panel__actions">
+                                    <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
+                                    <button type="button" class="btn btn--primary btn--sm">{{ 'common.save'|trans }}</button>
+                                </div>
+                            </header>
+                            <div class="panel__body" style="padding: 14px">
+                                <div class="meta-grid">
+                                    <div class="meta-tile"><span>{{ 'common.status'|trans }}</span><strong>{{ 'common.active'|trans }}</strong></div>
+                                    <div class="meta-tile"><span>{{ 'common.email'|trans }}</span><strong>demo@gereq.cz</strong></div>
+                                    <div class="meta-tile"><span>{{ 'design.layout.meta_updated'|trans }}</span><strong>29. 9. 2026</strong></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="design-panel" data-panel="overlay" role="tabpanel">
             <div class="design-box">
                 <div class="design-box__head">
@@ -333,7 +1072,14 @@
                     <h2>{{ 'design.errors.title'|trans }}</h2>
                     <p>{{ 'design.errors.lead'|trans }}</p>
                 </div>
-                <div class="design-box__body design-settings">
+                <div class="design-box__body design-settings" x-data="{
+                    clear(event) {
+                        const field = event.target.closest('.is-invalid');
+                        if (!field) return;
+                        field.classList.remove('is-invalid');
+                        field.querySelectorAll('[aria-invalid]').forEach((node) => node.removeAttribute('aria-invalid'));
+                    }
+                }" @input="clear" @change="clear">
                     <div class="g-field">
                         <label class="g-label" for="state-ok">{{ 'design.errors.ok'|trans }}</label>
                         <input class="g-control" id="state-ok" value="jiri.novak@gereq.cz">
@@ -348,7 +1094,7 @@
                     <div class="g-check is-invalid">
                         <label class="g-check__row" for="state-check">
                             <span class="g-check__box">
-                                <input id="state-check" type="checkbox" aria-invalid="true">
+                                <input id="state-check" class="g-check__input" type="checkbox" aria-invalid="true">
                                 <span class="g-check__mark" aria-hidden="true"></span>
                             </span>
                             <span class="g-check__copy">
@@ -412,6 +1158,7 @@
         </section>
     </div>
 
+    {% include 'ui/confirm_dialog.html.twig' %}
     <script nonce="{{ csp_nonce() }}">
         window.__GEREQ_COMMANDS__ = [];
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};

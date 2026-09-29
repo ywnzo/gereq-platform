@@ -10,8 +10,8 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
-    font-family: var(--gereq-font-sans);
-    font-size: 0.875rem;
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-base);
     font-weight: 600;
     color: var(--gereq-fg);
 }
@@ -19,13 +19,13 @@
 .g-check.is-invalid .g-check__label { color: var(--gereq-coral); }
 .g-req { color: var(--gereq-coral); font-weight: 700; }
 .g-optional { color: var(--gereq-muted); font-weight: 400; }
-.g-hint { margin: 0; font-size: 0.8125rem; color: var(--gereq-muted); }
+.g-hint { margin: 0; font-size: var(--grq-text-md); color: var(--gereq-muted); }
 .g-error {
     margin: 0;
     display: flex;
     align-items: flex-start;
     gap: 0.4rem;
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
     font-weight: 600;
     color: var(--gereq-coral);
 }
@@ -65,8 +65,8 @@
     padding: 0 0.85rem;
     background: var(--gereq-wash);
     color: var(--gereq-muted);
-    font-family: var(--gereq-font-mono);
-    font-size: 0.75rem;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-sm);
     letter-spacing: 0.04em;
     white-space: nowrap;
 }
@@ -82,11 +82,13 @@
     background-image: none;
     border: var(--control-border) solid var(--border);
     border-radius: var(--control-radius);
-    padding: var(--control-py) var(--control-px);
+    /* Longhands — adjacent var() minify without a space and can concatenate (0 + .875rem → 0.875rem). */
+    padding-block: var(--control-py);
+    padding-inline: var(--control-px);
     min-height: var(--control-h);
     height: var(--control-h);
     color: var(--text);
-    font-family: var(--gereq-font-sans);
+    font-family: var(--grq-font-sans);
     font-size: var(--control-font);
     line-height: var(--control-line);
     transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
@@ -151,16 +153,33 @@ html[data-theme="gereq-dark"] select.input.g-control {
 .g-field.is-invalid .textarea,
 .g-field.is-invalid .textarea-mini,
 .g-field.is-invalid .textarea-shell,
+.g-field.is-invalid .g-addon,
+.g-field.is-invalid .g-editor,
 .g-control[aria-invalid="true"],
 .textarea[aria-invalid="true"],
 .textarea-mini[aria-invalid="true"] {
-    border-color: var(--gereq-coral);
+    border-color: var(--gereq-coral) !important;
+    background-color: color-mix(in srgb, var(--gereq-coral) 9%, var(--surface-2, var(--gereq-paper)));
+    box-shadow: inset 3px 0 0 var(--gereq-coral);
+}
+.g-field.is-invalid .g-addon .g-control {
+    border: 0 !important;
+    box-shadow: none;
+    background: transparent;
 }
 .g-field.is-invalid .g-control:focus,
 .g-field.is-invalid .g-select__trigger:focus,
 .g-field.is-invalid .textarea:focus,
-.g-field.is-invalid .textarea-mini:focus {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gereq-coral) 28%, transparent);
+.g-field.is-invalid .textarea-mini:focus,
+.g-field.is-invalid .g-addon:focus-within,
+.g-field.is-invalid .g-editor:focus-within {
+    box-shadow: inset 3px 0 0 var(--gereq-coral), 0 0 0 3px color-mix(in srgb, var(--gereq-coral) 28%, transparent);
+}
+.g-check.is-invalid .g-check__input,
+.g-check.is-invalid input {
+    border-color: var(--gereq-coral) !important;
+    background-color: color-mix(in srgb, var(--gereq-coral) 10%, var(--surface-2, var(--gereq-paper)));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gereq-coral) 22%, transparent);
 }
 .g-control--color {
     width: 3.25rem;
@@ -168,14 +187,35 @@ html[data-theme="gereq-dark"] select.input.g-control {
     padding: 0.25rem;
     cursor: pointer;
 }
-.g-control--icon { padding-left: 2.6rem; }
-.g-control--actions { padding-right: 2.75rem; }
+/* Higher specificity so padding-inline from .g-control cannot win. */
+.g-control.g-control--icon {
+    padding-inline-start: 2.6rem;
+}
+.g-control.g-control--actions {
+    padding-inline-end: 2.75rem;
+}
+/* Native WebKit search chrome overlaps our custom icon + placeholder. */
+input.g-control[type="search"] {
+    -webkit-appearance: none;
+    appearance: textfield;
+}
+input.g-control[type="search"]::-webkit-search-decoration,
+input.g-control[type="search"]::-webkit-search-cancel-button,
+input.g-control[type="search"]::-webkit-search-results-button,
+input.g-control[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
 .g-control__icon {
     position: absolute;
     left: 0.85rem;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--gereq-muted);
+    z-index: 1;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--text-soft, var(--gereq-muted, #71717a));
     pointer-events: none;
     display: grid;
     place-items: center;
@@ -260,9 +300,9 @@ html[data-theme="gereq-dark"] select.input.g-control {
     justify-content: space-between;
     gap: 12px;
     padding: 0.55rem 0.9rem;
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     color: var(--gereq-muted);
-    font-family: var(--gereq-font-mono);
+    font-family: var(--grq-font-mono);
     letter-spacing: 0.02em;
 }
 .textarea-shell__bar {
@@ -277,8 +317,8 @@ html[data-theme="gereq-dark"] select.input.g-control {
     border-radius: var(--radius-field, 0);
     background: var(--surface);
     color: var(--text);
-    font-family: var(--gereq-font-sans);
-    font-size: 0.75rem;
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-sm);
     font-weight: 600;
     cursor: pointer;
 }
@@ -405,7 +445,20 @@ html[data-theme="gereq-dark"] select.input.g-control {
 .g-select__option--empty { cursor: default; }
 .g-select__option--empty:hover { background: transparent; }
 .g-select__option-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.g-select__option-desc { font-size: 0.75rem; color: var(--gereq-muted); }
+.g-select__option-desc { font-size: var(--grq-text-sm); color: var(--gereq-muted); }
+/* Participates in HTML5 constraint validation (type=hidden is barred). */
+.g-select__native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
 
 .g-check, .g-radio, .g-switch { display: block; }
 .g-check__row, .g-radio, .g-switch {
@@ -450,7 +503,7 @@ html[data-theme="gereq-dark"] select.input.g-control {
 }
 .g-check.is-invalid .g-check__input,
 .g-check.is-invalid input,
-.g-field.is-invalid .g-radio input { border-color: var(--gereq-coral); }
+.g-field.is-invalid .g-radio input { border-color: var(--gereq-coral) !important; }
 .g-radio input { border-radius: 50%; }
 .g-check__input:checked,
 .g-check input:checked {
@@ -488,7 +541,7 @@ html[data-theme="gereq-dark"] select.input.g-control {
 .g-check__label, .g-radio__label, .g-switch__label {
     display: block;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
     color: var(--text);
     cursor: pointer;
 }
@@ -496,7 +549,7 @@ html[data-theme="gereq-dark"] select.input.g-control {
     display: block;
     margin: 2px 0 0;
     color: var(--text-muted, var(--gereq-muted));
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     font-weight: 400;
 }
 .g-radios__list { display: flex; flex-direction: column; gap: 10px; }
@@ -523,7 +576,7 @@ html[data-theme="gereq-dark"] select.input.g-control {
 .g-switch__desc {
     margin: 0;
     color: var(--text-muted, var(--gereq-muted));
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     font-weight: 400;
 }
 .g-switch__copy { min-width: 0; }
@@ -531,7 +584,7 @@ html[data-theme="gereq-dark"] select.input.g-control {
 .g-switch > .g-switch__label,
 label.g-switch > span {
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
     color: var(--text);
 }
 
@@ -634,9 +687,9 @@ label.g-switch > span {
     flex: 1;
 }
 .g-file__title {
-    font-family: var(--gereq-font-sans);
+    font-family: var(--grq-font-sans);
     font-weight: 600;
-    font-size: 0.9375rem;
+    font-size: var(--grq-text-control);
     font-variant-ligatures: none;
     color: var(--text);
     overflow: hidden;
@@ -646,8 +699,8 @@ label.g-switch > span {
     min-width: 0;
 }
 .g-file__meta {
-    font-family: var(--gereq-font-sans);
-    font-size: 0.8125rem;
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-md);
     font-variant-ligatures: none;
     color: var(--text-muted);
     overflow: hidden;
@@ -663,8 +716,8 @@ label.g-switch > span {
     border: 1px solid var(--border);
     border-radius: var(--radius-field);
     background: var(--surface);
-    font-family: var(--gereq-font-sans);
-    font-size: 0.8125rem;
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-md);
     font-weight: 600;
     color: var(--text);
     flex-shrink: 0;
@@ -776,7 +829,7 @@ label.g-switch > span {
     margin: 0;
     height: 1.55rem;
     padding: 0 0.55rem;
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     align-self: center;
 }
 .g-file--compact .g-file__clear {
@@ -806,7 +859,6 @@ label.g-switch > span {
     background: var(--surface);
     overflow: hidden;
 }
-.g-field.is-invalid .g-editor { border-color: var(--gereq-coral); }
 .g-editor:focus-within {
     border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
@@ -871,7 +923,7 @@ label.g-switch > span {
     background: var(--surface);
     color: var(--text);
     font: inherit;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2371717a' d='M1.4.6 6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -920,7 +972,7 @@ label.g-switch > span {
     resize: none;
     background: var(--surface);
     color: var(--text);
-    font-family: var(--gereq-font-mono, ui-monospace, monospace);
+    font-family: var(--grq-font-mono);
     font-size: 0.82rem;
     line-height: 1.5;
     outline: none;
@@ -1026,8 +1078,8 @@ label.g-switch > span {
 }
 .g-summary__kicker {
     margin: 0 0 0.2rem;
-    font-family: var(--gereq-font-mono);
-    font-size: 0.6875rem;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--gereq-coral);
@@ -1069,11 +1121,11 @@ label.g-switch > span {
     max-height: min(92vh, 56rem);
     overflow: auto;
 }
-.g-modal__title { margin: 0 0 0.4rem; font-family: var(--gereq-font-display); font-size: 1.25rem; color: var(--text); }
+.g-modal__title { margin: 0 0 0.4rem; font-family: var(--grq-font-sans); font-size: 1.25rem; color: var(--text); }
 .g-modal__body { color: var(--text-muted); margin: 0 0 1.1rem; }
 .g-confirm__field { margin: 0 0 1.1rem; }
 .g-confirm__field .field { margin: 0; }
-.g-confirm__field .field > span { display: block; margin-bottom: 0.35rem; font-size: 0.8125rem; color: var(--text-muted); }
+.g-confirm__field .field > span { display: block; margin-bottom: 0.35rem; font-size: var(--grq-text-md); color: var(--text-muted); }
 .g-modal__actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* ——— Media box: compact trigger + compose-style dialog ——— */
@@ -1151,12 +1203,12 @@ label.g-switch > span {
     gap: 0.15rem;
 }
 .media-box__trigger-title {
-    font-size: 0.9375rem;
+    font-size: var(--grq-text-control);
     font-weight: 650;
     line-height: 1.25;
 }
 .media-box__trigger-hint {
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     line-height: 1.3;
 }
 .media-box__trigger-chevron {
@@ -1210,7 +1262,7 @@ label.g-switch > span {
     border: 0;
     background: transparent;
     color: var(--text-muted);
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     font-weight: 600;
     cursor: pointer;
     text-align: left;
@@ -1285,7 +1337,7 @@ label.g-switch > span {
     overflow: hidden;
     flex: 0 0 auto;
     padding: 0.45rem 0.55rem 0.55rem;
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     line-height: 1.3;
     color: var(--text-muted);
 }
@@ -1299,7 +1351,7 @@ label.g-switch > span {
     background: color-mix(in srgb, var(--surface) 88%, transparent);
     border: 1px solid var(--border);
     color: var(--text-muted);
-    font-size: 0.625rem;
+    font-size: var(--grq-text-xxs);
     font-weight: 700;
     letter-spacing: 0.02em;
     backdrop-filter: blur(4px);
@@ -1453,7 +1505,7 @@ html[data-theme="gereq-dark"] .media-box-backdrop {
 }
 .media-box-dock__meta {
     flex: 0 0 auto;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
 }
 .media-box-dock__empty {
     margin: 0;
@@ -1500,7 +1552,7 @@ html[data-theme="gereq-dark"] .media-box-backdrop {
 }
 .media-box-dock__section-title {
     margin: 0;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     font-weight: 650;
     color: var(--text);
 }

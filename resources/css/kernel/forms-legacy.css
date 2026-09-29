@@ -10,14 +10,23 @@ select.input {
     background-image: none;
     border: var(--control-border) solid var(--border);
     border-radius: var(--control-radius);
-    padding: var(--control-py) var(--control-px);
+    /* Longhands — minifiers drop the space between adjacent var() and can concatenate 0+.875rem. */
+    padding-block: var(--control-py);
+    padding-inline: var(--control-px);
     min-height: var(--control-h);
     height: var(--control-h);
-    font-family: var(--gereq-font-sans);
+    font-family: var(--grq-font-sans);
     font-size: var(--control-font);
     line-height: var(--control-line);
     color: var(--text, inherit);
     transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+/* Legacy input:not(…) beats .g-control--icon on specificity — keep icon/actions gutters. */
+input.g-control.g-control--icon {
+    padding-inline-start: 2.6rem !important;
+}
+input.g-control.g-control--actions {
+    padding-inline-end: 2.75rem !important;
 }
 textarea {
     height: auto;
@@ -66,7 +75,7 @@ textarea:focus {
 textarea { resize: vertical; }
 
 .field { display: flex; flex-direction: column; gap: 4px; }
-.field span, .field legend { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.field span, .field legend { font-size: var(--grq-text-sm); color: var(--text-muted); font-weight: 500; }
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -134,6 +143,7 @@ textarea { resize: vertical; }
 .ares-field__row { display: flex; gap: 8px; align-items: stretch; }
 .ares-field__row .input,
 .ares-field__row .g-control { flex: 1; min-width: 0; }
+.ares-field__row .btn { flex: 0 0 auto; }
 .ares-field__control .g-control { width: 100%; }
 .ares-suggest {
     display: none;
@@ -152,7 +162,7 @@ textarea { resize: vertical; }
 .ares-suggest.is-open { display: block; }
 .ares-suggest__status {
     padding: 10px 12px;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
 }
 .ares-suggest__status.is-error { color: var(--danger, #b42318); }
@@ -175,16 +185,16 @@ textarea { resize: vertical; }
     background: color-mix(in srgb, var(--primary) 10%, var(--surface));
 }
 .ares-suggest__item strong {
-    font-size: 13px;
+    font-size: var(--grq-text-md);
     font-weight: 600;
 }
 .ares-suggest__meta {
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
 }
 .ares-hint {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
 }
 

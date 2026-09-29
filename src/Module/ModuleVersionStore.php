@@ -39,6 +39,34 @@ final class ModuleVersionStore
     }
 
     /**
+     * Read stored footprint for a cached version (empty when missing / legacy cache).
+     */
+    public function footprint(string $moduleId, string $version): string
+    {
+        $meta = $this->readMeta($this->pathFor($moduleId, $version));
+
+        return is_string($meta['footprint'] ?? null) ? (string) $meta['footprint'] : '';
+    }
+
+    /**
+     * Write / refresh `.gereq-version.json` for an already-cached tree.
+     * Does not recompute when an existing footprint is present (immutable).
+     */
+    public function ensureMeta(string $moduleId, string $version, string $treePath): string
+    {
+        $version = GitLabModuleClient::normalizeVersion($version);
+        $existing = $this->readMeta($treePath);
+        $footprint = is_string($existing['footprint'] ?? null) ? (string) $existing['footprint'] : '';
+        if ($footprint === '') {
+            $footprint = ModuleFootprint::ofDirectory($treePath);
+        }
+
+        $this->writeMeta($treePath, $moduleId, $version, $footprint, $existing);
+
+        return $footprint;
+    }
+
+    /**
      * @return list<string> semver versions present in cache (desc)
      */
     public function cachedVersions(string $moduleId): array
@@ -138,19 +166,34 @@ final class ModuleVersionStore
             }
             $this->deleteTree($extractRoot);
 
+            $incomingFootprint = ModuleFootprint::ofDirectory($staging);
+
             if (is_dir($target)) {
-                $this->deleteTree($target);
+                $existingFootprint = $this->footprint($moduleId, $version);
+                if ($existingFootprint === '') {
+                    $existingFootprint = ModuleFootprint::ofDirectory($target);
+                }
+                if ($existingFootprint !== '' && $incomingFootprint !== $existingFootprint) {
+                    throw new \RuntimeException($this->translator->trans('admin.modules.versions.error.immutable', [
+                        '%version%' => $version,
+                        '%existing%' => ModuleFootprint::short($existingFootprint),
+                        '%incoming%' => ModuleFootprint::short($incomingFootprint),
+                    ]));
+                }
+                // Identical content — keep the immutable cache entry.
+                $this->deleteTree($staging);
+                $staging = '';
+                $this->ensureMeta($moduleId, $version, $target);
+
+                return $target;
             }
+
             if (!rename($staging, $target)) {
                 throw new \RuntimeException($this->translator->trans('admin.modules.versions.error.write'));
             }
             $staging = '';
 
-            file_put_contents($target . '/.gereq-version.json', json_encode([
-                'id' => $moduleId,
-                'version' => $version,
-                'installed_at' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            $this->writeMeta($target, $moduleId, $version, $incomingFootprint);
 
             return $target;
         } finally {
@@ -160,7 +203,7 @@ final class ModuleVersionStore
         }
     }
 
-    /** Copy live module tree into cache (backup before swap). */
+    /** Copy live module tree into cache (backup before swap). Never overwrites an existing version. */
     public function snapshotLive(ModuleManifest $manifest): string
     {
         $version = GitLabModuleClient::normalizeVersion($manifest->version);
@@ -169,20 +212,59 @@ final class ModuleVersionStore
         }
         $target = $this->pathFor($manifest->id, $version);
         if ($this->has($manifest->id, $version)) {
+            // Cached version is immutable — keep it even if the live tree drifted.
+            $this->ensureMeta($manifest->id, $version, $target);
+
             return $target;
         }
 
         $staging = $target . '.__staging_' . bin2hex(random_bytes(4));
         $this->copyTree($manifest->path, $staging);
-        if (is_dir($target)) {
-            $this->deleteTree($target);
-        }
         if (!rename($staging, $target)) {
             $this->deleteTree($staging);
             throw new \RuntimeException($this->translator->trans('admin.modules.versions.error.write'));
         }
 
+        $this->ensureMeta($manifest->id, $version, $target);
+
         return $target;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function readMeta(string $treePath): array
+    {
+        $file = $treePath . '/' . ModuleFootprint::META_FILE;
+        if (!is_file($file)) {
+            return [];
+        }
+        $raw = file_get_contents($file);
+        if (!is_string($raw) || $raw === '') {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * @param array<string, mixed> $existing
+     */
+    private function writeMeta(string $treePath, string $moduleId, string $version, string $footprint, array $existing = []): void
+    {
+        $payload = [
+            'id' => $moduleId,
+            'version' => $version,
+            'footprint' => $footprint,
+            'installed_at' => is_string($existing['installed_at'] ?? null)
+                ? (string) $existing['installed_at']
+                : (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+        ];
+        file_put_contents(
+            $treePath . '/' . ModuleFootprint::META_FILE,
+            json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n",
+        );
     }
 
     private function findPackageRoot(string $extractRoot): string

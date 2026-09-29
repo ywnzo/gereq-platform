@@ -83,6 +83,7 @@ final class SettingsController extends Controller
             'activeTab' => $tab,
             'cssVariables' => $this->branding->documentedVariables(),
             'dashboardCatalog' => $this->dashboard->catalog(null),
+            'adminPath' => \Gereq\Support\AdminPath::base(),
         ]);
     }
 

@@ -1,0 +1,31 @@
+---
+description: Admin CSS SoT — grq-* foundation in kernel; modules only domain styles
+globs: resources/css/**/*.css,modules/**/Resources/assets/css/**/*.css,resources/views/**/*.twig,modules/**/Resources/views/**/*.twig
+alwaysApply: false
+---
+
+# Admin UI styles (grq foundation)
+
+## Source of truth
+
+- Shared admin UI lives in `resources/css/kernel/` (imported via `resources/css/kernel.css`).
+- Dense foundation: `resources/css/kernel/grq/` — tokens (`--grq-*`), type (`.grq-text-*`), layout (`.grq-stack`, `.grq-cluster`, `.grq-box`, `.grq-grid`).
+- Forms / tables / buttons / panels / overlays stay in kernel; do not copy them into modules.
+- Module CSS (`modules/*/Resources/assets/css/admin.css`) is built separately and linked only when the module is enabled (`RenderEngine` + `ModuleManager::enabledIds()`). Never hardcode module CSS imports in `resources/js/admin.ts`.
+- Never put module-specific selectors (`bs-*`, `cs-*`, `ol-*`, …) into kernel CSS files.
+
+## Modules
+
+- `modules/*/Resources/assets/css/admin.css` may contain **only** namespaced, domain-specific rules (`cms-*`, `ol-*`, `cal-*`, `fleet-*`, `cs-tracker*`, …).
+- Prefer `var(--grq-text-sm)` / `.grq-text-meta` / `.grq-stack` over ad-hoc `font-size: 12px` or one-off flex wrappers.
+- Do not restyle global `.btn`, `.input`, `.g-control`, `.panel`, `.table` — scope overrides under a module root if needed.
+
+## Naming
+
+- New shared primitives: `grq-*` prefix.
+- Existing chrome (`.panel`, `.g-field`, `.btn`, `.customer-edit__*`) remains; new layouts should prefer `grq-*` where it fits.
+- Marketing site type scale (`.type-*` in `resources/brand/font.css`) is separate from dense admin `grq-*`.
+
+## Comments
+
+- CSS comments in English only.

@@ -1,0 +1,77 @@
+/**
+ * Dense admin type roles — prefer these over ad-hoc font-size in modules.
+ *
+ *   .grq-text-caption   — mono / micro meta
+ *   .grq-text-label     — uppercase field/table labels
+ *   .grq-text-meta      — secondary meta lines
+ *   .grq-text-ui        — default dense UI copy
+ *   .grq-text-body      — readable paragraph
+ *   .grq-text-title     — page / panel titles
+ *   .grq-text-display   — hero / greeting
+ */
+
+.grq-text-caption {
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
+    font-weight: var(--grq-weight-normal);
+    line-height: var(--grq-leading-normal);
+    letter-spacing: 0.04em;
+    color: var(--grq-fg-muted);
+}
+
+.grq-text-label {
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-xs);
+    font-weight: var(--grq-weight-bold);
+    line-height: var(--grq-leading-normal);
+    letter-spacing: var(--grq-tracking-label);
+    text-transform: uppercase;
+    color: var(--grq-fg-muted);
+}
+
+.grq-text-meta {
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-sm);
+    font-weight: var(--grq-weight-normal);
+    line-height: var(--grq-leading-normal);
+    color: var(--grq-fg-muted);
+}
+
+.grq-text-ui {
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-base);
+    font-weight: var(--grq-weight-normal);
+    line-height: var(--grq-leading-normal);
+    color: var(--grq-fg);
+}
+
+.grq-text-body {
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-lg);
+    font-weight: var(--grq-weight-normal);
+    line-height: var(--grq-leading-relaxed);
+    color: var(--grq-fg);
+}
+
+.grq-text-title {
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-2xl);
+    font-weight: var(--grq-weight-semibold);
+    line-height: var(--grq-leading-snug);
+    letter-spacing: var(--grq-tracking-tight);
+    color: var(--grq-fg);
+}
+
+.grq-text-display {
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-3xl);
+    font-weight: var(--grq-weight-semibold);
+    line-height: var(--grq-leading-tight);
+    letter-spacing: var(--grq-tracking-tight);
+    color: var(--grq-fg);
+}
+
+.grq-text-muted { color: var(--grq-fg-muted); }
+.grq-text-soft { color: var(--grq-fg-soft); }
+.grq-tabular { font-variant-numeric: tabular-nums; }
+.grq-mono { font-family: var(--grq-font-mono); }

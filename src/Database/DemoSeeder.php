@@ -212,9 +212,7 @@ final class DemoSeeder
             $out[$key] = $user;
         }
 
-        $admin = $this->em->getRepository(User::class)->findOneBy([
-            'email' => strtolower((string) env_value('ADMIN_EMAIL', 'jiri.novak@gereq.cz')),
-        ]);
+        $admin = $this->em->getRepository(User::class)->findOneBy([], ['id' => 'ASC']);
         $out['admin'] = $admin instanceof User ? $admin : null;
 
         $this->em->flush();

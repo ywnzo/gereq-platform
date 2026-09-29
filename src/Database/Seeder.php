@@ -7,6 +7,7 @@ namespace Gereq\Database;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Auth\PasswordHasher;
 use Gereq\Module\InstalledModule;
+use Gereq\Module\ModuleFootprint;
 use Gereq\Module\ModuleManager;
 use Gereq\User\Entity\Permission;
 use Gereq\User\Entity\Role;
@@ -22,18 +23,42 @@ final class Seeder
         private readonly PasswordHasher $hasher,
         private readonly PermissionRegistry $permissions,
         private readonly ModuleManager $modules,
+        private readonly Migrator $migrator,
         private readonly DemoSeeder $demoSeeder,
         private readonly RealityV3Seeder $realityV3Seeder,
     ) {
     }
 
-    public function seed(bool $withDemo = true, bool $withSampleCustomers = true): void
+    /**
+     * Core bootstrap only: permissions, roles, and the given admin user.
+     * No modules enabled, no demo / sample business data.
+     *
+     * @param array{name: string, email: string, password: string, role?: string} $admin
+     */
+    public function seedBare(array $admin): void
     {
         $this->seedPermissions();
         $this->seedRoles();
-        $this->seedAdmin();
+        $this->seedAdmin($admin);
+        $this->em->flush();
+    }
+
+    /**
+     * @param array{name: string, email: string, password: string, role?: string} $admin
+     */
+    public function seed(bool $withDemo = true, bool $withSampleCustomers = true, array $admin = []): void
+    {
+        if ($admin === [] || trim((string) ($admin['email'] ?? '')) === '' || (string) ($admin['password'] ?? '') === '') {
+            throw new \InvalidArgumentException('seed() requires admin name/email/password (not from .env).');
+        }
+        $this->seedPermissions();
+        $this->seedRoles();
+        $this->seedAdmin($admin);
         $this->seedModules();
         $this->em->flush();
+        // seedModules writes enabled flags; invalidate caches then migrate only those.
+        $this->modules->rediscover();
+        $this->migrator->migrate();
         if ($withSampleCustomers) {
             $this->seedCustomers();
             $this->em->flush();
@@ -225,21 +250,32 @@ final class Seeder
         $this->em->persist(new Role($name, $label, $description));
     }
 
-    private function seedAdmin(): void
+    /**
+     * @param array{name: string, email: string, password: string, role?: string} $admin
+     */
+    private function seedAdmin(array $admin): void
     {
-        $email = strtolower((string) env_value('ADMIN_EMAIL', 'jiri.novak@gereq.cz'));
+        $email = strtolower(trim((string) ($admin['email'] ?? '')));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException('Admin e-mail is required to bootstrap the first user.');
+        }
         $existing = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
         if ($existing !== null) {
             return;
         }
 
+        $password = (string) ($admin['password'] ?? '');
+        if ($password === '') {
+            throw new \InvalidArgumentException('Admin password is required to bootstrap the first user.');
+        }
+
         $user = new User(
-            (string) env_value('ADMIN_NAME', 'Jiří Novák'),
+            trim((string) ($admin['name'] ?? '')) !== '' ? trim((string) $admin['name']) : 'Superadmin',
             $email,
-            $this->hasher->hash((string) env_value('ADMIN_PASSWORD', 'change-me')),
+            $this->hasher->hash($password),
         );
 
-        $roleName = strtolower(trim((string) env_value('ADMIN_ROLE', 'superadmin'))) ?: 'superadmin';
+        $roleName = strtolower(trim((string) ($admin['role'] ?? 'superadmin'))) ?: 'superadmin';
         if (RealityV3Seeder::isActive()) {
             $roleName = 'admin-client';
         }
@@ -280,13 +316,25 @@ final class Seeder
         foreach ($this->modules->discover() as $manifest) {
             $row = $this->em->find(InstalledModule::class, $manifest->id);
             $shouldEnable = in_array($manifest->id, $defaultEnabled, true);
+            $needsFootprint = $row === null
+                || $row->footprint() === null
+                || $row->version() !== $manifest->version;
+
             if ($row === null) {
-                $this->em->persist(new InstalledModule($manifest->id, $manifest->version, $shouldEnable));
+                $row = new InstalledModule($manifest->id, $manifest->version, $shouldEnable);
+                $this->em->persist($row);
             } elseif ($shouldEnable && !$row->enabled()) {
                 $row->enable();
                 $row->setVersion($manifest->version);
-            } elseif (!$shouldEnable && $row !== null && $row->enabled()) {
+            } elseif (!$shouldEnable && $row->enabled()) {
                 $row->disable();
+            } else {
+                $row->setVersion($manifest->version);
+            }
+
+            if ($needsFootprint) {
+                $fp = ModuleFootprint::ofDirectory($manifest->path);
+                $row->setFootprint($fp !== '' ? $fp : null);
             }
 
             foreach ($manifest->permissions as $item) {

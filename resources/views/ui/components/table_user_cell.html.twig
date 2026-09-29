@@ -1,0 +1,25 @@
+{#
+  Compact user cell (avatar + name + meta).
+  Used by ui()->table() column cell=user.
+#}
+{% set name = name|default('—') %}
+{% set meta = meta|default('') %}
+{% set initials = initials|default('?') %}
+{% set href = href|default(null) %}
+{% if href %}
+    <a class="cell-user cell-user--stack" href="{{ href }}">
+        <span class="avatar avatar--sm">{{ initials }}</span>
+        <span class="cell-user__text">
+            <strong>{{ name }}</strong>
+            {% if meta %}<small class="muted">{{ meta }}</small>{% endif %}
+        </span>
+    </a>
+{% else %}
+    <div class="cell-user">
+        <span class="avatar avatar--sm">{{ initials }}</span>
+        <span class="cell-user__text">
+            <strong>{{ name }}</strong>
+            {% if meta %}<small class="muted">{{ meta }}</small>{% endif %}
+        </span>
+    </div>
+{% endif %}

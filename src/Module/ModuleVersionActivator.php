@@ -92,6 +92,8 @@ final class ModuleVersionActivator
             $messages = array_merge($messages, $this->updater->update($moduleId));
         } else {
             $row->setVersion($fresh->version);
+            $fp = ModuleFootprint::ofDirectory($fresh->path);
+            $row->setFootprint($fp !== '' ? $fp : null);
             $row->setSource('gitlab');
             $this->em->flush();
         }
@@ -101,13 +103,19 @@ final class ModuleVersionActivator
         if ($row !== null) {
             $row->setSource('gitlab');
             $row->setVersion($fresh->version);
+            if ($row->footprint() === null || $row->footprint() === '') {
+                $fp = ModuleFootprint::ofDirectory($fresh->path);
+                $row->setFootprint($fp !== '' ? $fp : null);
+            }
             $this->em->flush();
         }
 
+        $cachedFp = $this->store->footprint($moduleId, $version);
         $this->auditor->log('module.version_activated', 'module', $moduleId, [
             'version' => $fromVersion,
         ], [
             'version' => $version,
+            'footprint' => $cachedFp !== '' ? $cachedFp : $row?->footprint(),
             'messages' => count($messages),
         ]);
 

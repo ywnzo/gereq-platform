@@ -51,14 +51,15 @@ final class ServeCommand extends Command
         $router = $public . '/router.php';
         $lanIp = $this->lanIp();
         $output->writeln(sprintf('GEREQ Platform poslouchá na 0.0.0.0:%d', $port));
-        $output->writeln(sprintf('V Cursoru / na VM:     <info>http://127.0.0.1:%d/admin</info>', $port));
+        $admin = \Gereq\Support\AdminPath::base();
+        $output->writeln(sprintf('V Cursoru / na VM:     <info>http://127.0.0.1:%d%s</info>', $port, $admin));
         if ($lanIp !== null) {
-            $output->writeln(sprintf('Z Windows přes IP VM: <info>http://%s:%d/admin</info>', $lanIp, $port));
+            $output->writeln(sprintf('Z Windows přes IP VM: <info>http://%s:%d%s</info>', $lanIp, $port, $admin));
         }
         $output->writeln('Použijte 127.0.0.1, ne localhost.');
         $output->writeln('Když IP VM z Windows nefunguje, otevřete firewall:');
         $output->writeln(sprintf('  sudo firewall-cmd --add-port=%d/tcp --permanent && sudo firewall-cmd --reload', $port));
-        $output->writeln('Přihlášení: ADMIN_EMAIL / ADMIN_PASSWORD z .env');
+        $output->writeln('Přihlášení: účet vytvořený při install / migrate --bare (ne z .env)');
         $output->writeln('Ukončení: Ctrl+C');
 
         $bind = $host . ':' . $port;

@@ -1,211 +1,392 @@
-.btn--primary,
-.btn-primary {
-    background-color: var(--primary) !important;
-    color: var(--primary-fg) !important;
-    border-color: var(--primary) !important;
-}
-.btn--primary:hover,
-.btn-primary:hover {
-    filter: brightness(1.05);
-    background-color: var(--primary) !important;
-}
-.btn--ghost,
-.btn-ghost {
-    background: transparent;
-    border-color: transparent;
-}
-.btn--danger,
-.btn--error,
-.btn-error {
-    color: var(--danger);
-    background: var(--danger-bg);
-    border-color: transparent;
-}
-.btn--danger:hover,
-.btn--error:hover,
-.btn-error:hover {
-    filter: brightness(1.05);
-}
-.btn--success {
-    color: color-mix(in srgb, var(--success) 85%, var(--text));
-    background: color-mix(in srgb, var(--success) 16%, var(--surface));
-    border-color: color-mix(in srgb, var(--success) 40%, var(--border));
-}
-.btn--success:hover {
-    filter: brightness(1.05);
-}
-.btn--success:disabled {
-    opacity: 1;
-    cursor: default;
-    filter: none;
-}
-.btn--warn {
-    color: color-mix(in srgb, var(--warning) 85%, var(--text));
-    background: color-mix(in srgb, var(--warning) 16%, var(--surface));
-    border-color: color-mix(in srgb, var(--warning) 42%, var(--border));
-}
-.btn--warn:hover {
-    filter: brightness(1.05);
-}
-.btn--signal,
-.btn-secondary,
-.btn-accent {
-    background: var(--primary);
-    color: var(--primary-fg);
-    border-color: transparent;
-}
-.btn--signal:hover,
-.btn-secondary:hover,
-.btn-accent:hover { filter: brightness(1.05); }
-.btn-neutral {
-    background: var(--color-neutral);
-    color: var(--color-neutral-content);
-    border-color: transparent;
-}
-.btn--sky,
-.btn-info {
-    background: #38bdf8;
-    color: #0c4a6e;
-    border-color: transparent;
-}
-.btn--violet {
-    background: #625bff;
-    color: #fff;
-    border-color: transparent;
-}
-.btn-success {
-    background: var(--success);
-    color: #fff;
-    border-color: transparent;
-}
-.btn-danger {
-    background: var(--danger);
-    color: #fff;
-    border-color: transparent;
-}
-.btn-warning {
-    background: var(--warning);
-    color: var(--primary-fg);
-    border-color: transparent;
-}
-.btn--outline,
-.btn-outline {
-    background: transparent;
-    color: var(--text);
-    border-color: var(--border);
-}
-.btn--outline:hover,
-.btn-outline:hover {
-    background: var(--hover-strong);
-}
-.btn-outline.btn-primary {
-    background: transparent !important;
-    color: var(--text) !important;
-    border-color: var(--border) !important;
-}
-.btn-outline.btn-error {
-    background: transparent;
-    color: var(--danger);
-    border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
-}
-.btn--soft,
-.btn-soft {
-    background: color-mix(in srgb, var(--primary) 28%, var(--surface));
-    color: var(--primary-fg);
-    border-color: transparent;
-}
-.btn-soft.btn-secondary,
-.btn-soft.btn-accent,
-.btn-soft.btn-warning {
-    color: var(--primary-fg);
-}
-.btn-dash {
-    background: transparent;
-    border-style: dashed;
-    border-color: var(--border);
-    color: var(--text);
-}
-.btn--link,
-.btn-link {
-    background: transparent;
-    border-color: transparent;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    height: auto;
-    min-height: 0;
-    padding-inline: 0.25rem;
-}
-.btn--block { width: 100%; justify-content: center; }
-.btn:disabled,
-.btn[disabled] {
-    opacity: 0.45;
-    cursor: not-allowed;
-    filter: none;
+/**
+ * GEREQ buttons — Ant Design–inspired API, GEREQ tokens.
+ *
+ * SoT classes (prefer these):
+ *   .btn                    default (bordered)
+ *   .btn--primary           filled signal
+ *   .btn--dashed            dashed border
+ *   .btn--text / .btn--ghost  text button
+ *   .btn--link              link
+ *   .btn--danger            danger filled
+ *   .btn--danger-outline    danger bordered
+ *   .btn--soft              soft primary tint
+ *   .btn--success / .btn--warn  semantic soft fills
+ *   .btn--ink               filled ink (inverse)
+ *   .btn--xs|sm|lg|block
+ *
+ * Legacy Daisy-style aliases (btn-primary, btn-secondary, …) stay mapped.
+ */
+@layer components {
+    .btn {
+        --btn-bg: var(--surface);
+        --btn-fg: var(--text);
+        --btn-border: var(--border);
+        --btn-hover-bg: var(--hover-strong);
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: color-mix(in srgb, var(--text) 28%, var(--border));
+        --btn-active-bg: color-mix(in srgb, var(--text) 8%, var(--surface));
+        --btn-shadow: none;
+        --btn-size: var(--grq-text-base); /* 14px — Ant middle */
+        --btn-weight: var(--grq-weight-medium);
+        --btn-tracking: -0.011em;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4em;
+        height: var(--control-h);
+        min-height: var(--control-h);
+        padding-inline: 1.05em;
+        box-sizing: border-box;
+        border: 1px solid var(--btn-border);
+        border-radius: var(--control-radius, 6px);
+        background: var(--btn-bg);
+        color: var(--btn-fg);
+        box-shadow: var(--btn-shadow);
+        font-family: var(--grq-font-sans);
+        font-size: var(--btn-size);
+        font-weight: var(--btn-weight);
+        font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+        letter-spacing: var(--btn-tracking);
+        line-height: var(--grq-leading-none);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        white-space: nowrap;
+        text-decoration: none;
+        cursor: pointer;
+        user-select: none;
+        transition:
+            color 0.12s ease,
+            background-color 0.12s ease,
+            border-color 0.12s ease,
+            box-shadow 0.12s ease;
+    }
+
+    .btn:hover {
+        background: var(--btn-hover-bg);
+        color: var(--btn-hover-fg);
+        border-color: var(--btn-hover-border);
+    }
+
+    .btn:active {
+        background: var(--btn-active-bg, var(--btn-hover-bg));
+    }
+
+    .btn:focus-visible {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+
+    .btn:disabled,
+    .btn[disabled],
+    .btn.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
+        pointer-events: none;
+    }
+
+    /* —— Types (Ant: primary / default / dashed / text / link) —— */
+
+    .btn--primary,
+    .btn-primary,
+    .btn--signal,
+    .btn-secondary,
+    .btn-accent {
+        --btn-bg: var(--primary);
+        --btn-fg: var(--primary-fg);
+        --btn-border: var(--primary);
+        --btn-hover-bg: color-mix(in srgb, var(--primary) 88%, #fff);
+        --btn-hover-fg: var(--primary-fg);
+        --btn-hover-border: color-mix(in srgb, var(--primary) 88%, #fff);
+        --btn-active-bg: color-mix(in srgb, var(--primary) 82%, var(--text));
+        --btn-shadow: 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+        --btn-weight: var(--grq-weight-semibold);
+        --btn-tracking: -0.014em;
+    }
+
+    .btn--ink,
+    .btn-neutral {
+        --btn-bg: var(--gereq-ink, var(--text));
+        --btn-fg: var(--gereq-paper, #fff);
+        --btn-border: var(--gereq-ink, var(--text));
+        --btn-hover-bg: color-mix(in srgb, var(--gereq-ink, var(--text)) 88%, #fff);
+        --btn-hover-fg: var(--gereq-paper, #fff);
+        --btn-hover-border: color-mix(in srgb, var(--gereq-ink, var(--text)) 88%, #fff);
+        --btn-active-bg: color-mix(in srgb, var(--gereq-ink, var(--text)) 78%, #fff);
+        --btn-weight: var(--grq-weight-semibold);
+        --btn-tracking: -0.014em;
+    }
+
+    .btn--dashed,
+    .btn-dash {
+        --btn-bg: var(--surface);
+        --btn-fg: var(--text);
+        --btn-border: var(--border);
+        --btn-hover-bg: var(--surface);
+        --btn-hover-fg: var(--primary-fg, var(--text));
+        --btn-hover-border: var(--primary);
+        border-style: dashed;
+    }
+
+    .btn--text,
+    .btn--ghost,
+    .btn-ghost {
+        --btn-bg: transparent;
+        --btn-fg: var(--text);
+        --btn-border: transparent;
+        --btn-hover-bg: var(--hover-strong);
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: transparent;
+        --btn-active-bg: color-mix(in srgb, var(--text) 10%, transparent);
+        box-shadow: none;
+    }
+
+    .btn--link,
+    .btn-link {
+        --btn-bg: transparent;
+        --btn-fg: color-mix(in srgb, var(--text) 88%, var(--primary));
+        --btn-border: transparent;
+        --btn-hover-bg: transparent;
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: transparent;
+        --btn-active-bg: transparent;
+        --btn-weight: var(--grq-weight-medium);
+        --btn-tracking: 0;
+        height: auto;
+        min-height: 0;
+        padding-inline: 0.2em;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.18em;
+        box-shadow: none;
+    }
+    .btn--link:hover,
+    .btn-link:hover {
+        text-decoration-thickness: 1.5px;
+    }
+
+    .btn--outline,
+    .btn-outline {
+        --btn-bg: transparent;
+        --btn-fg: var(--text);
+        --btn-border: var(--border);
+        --btn-hover-bg: var(--hover-strong);
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: color-mix(in srgb, var(--text) 28%, var(--border));
+    }
+
+    .btn--soft,
+    .btn-soft {
+        --btn-bg: color-mix(in srgb, var(--primary) 28%, var(--surface));
+        --btn-fg: var(--primary-fg, var(--text));
+        --btn-border: transparent;
+        --btn-hover-bg: color-mix(in srgb, var(--primary) 40%, var(--surface));
+        --btn-hover-fg: var(--primary-fg, var(--text));
+        --btn-hover-border: transparent;
+        --btn-active-bg: color-mix(in srgb, var(--primary) 48%, var(--surface));
+    }
+
+    /* —— Danger (Ant danger + danger outline) —— */
+
+    .btn--danger,
+    .btn-danger {
+        --btn-bg: var(--danger);
+        --btn-fg: #fff;
+        --btn-border: var(--danger);
+        --btn-hover-bg: color-mix(in srgb, var(--danger) 88%, #fff);
+        --btn-hover-fg: #fff;
+        --btn-hover-border: color-mix(in srgb, var(--danger) 88%, #fff);
+        --btn-active-bg: color-mix(in srgb, var(--danger) 82%, #000);
+        --btn-shadow: 0 1px 0 color-mix(in srgb, var(--danger) 25%, transparent);
+        --btn-weight: var(--grq-weight-semibold);
+        --btn-tracking: -0.014em;
+    }
+
+    .btn--danger-outline,
+    .btn--error,
+    .btn-error,
+    .btn-outline.btn-error,
+    .btn-outline.btn--danger {
+        --btn-bg: transparent;
+        --btn-fg: var(--danger);
+        --btn-border: color-mix(in srgb, var(--danger) 45%, var(--border));
+        --btn-hover-bg: var(--danger-bg, color-mix(in srgb, var(--danger) 10%, var(--surface)));
+        --btn-hover-fg: var(--danger);
+        --btn-hover-border: var(--danger);
+        --btn-active-bg: color-mix(in srgb, var(--danger) 16%, var(--surface));
+        --btn-shadow: none;
+    }
+
+    /* Soft semantic (admin tables / status actions) */
+    .btn--success,
+    .btn-success {
+        --btn-bg: color-mix(in srgb, var(--success) 16%, var(--surface));
+        --btn-fg: color-mix(in srgb, var(--success) 85%, var(--text));
+        --btn-border: color-mix(in srgb, var(--success) 40%, var(--border));
+        --btn-hover-bg: color-mix(in srgb, var(--success) 24%, var(--surface));
+        --btn-hover-fg: color-mix(in srgb, var(--success) 85%, var(--text));
+        --btn-hover-border: color-mix(in srgb, var(--success) 50%, var(--border));
+    }
+
+    .btn--warn,
+    .btn-warning {
+        --btn-bg: color-mix(in srgb, var(--warning) 16%, var(--surface));
+        --btn-fg: color-mix(in srgb, var(--warning) 85%, var(--text));
+        --btn-border: color-mix(in srgb, var(--warning) 42%, var(--border));
+        --btn-hover-bg: color-mix(in srgb, var(--warning) 24%, var(--surface));
+        --btn-hover-fg: color-mix(in srgb, var(--warning) 85%, var(--text));
+        --btn-hover-border: color-mix(in srgb, var(--warning) 52%, var(--border));
+    }
+
+    /* Legacy color demos → soft brand aliases (no rainbow solid fills) */
+    .btn--sky,
+    .btn-info {
+        --btn-bg: color-mix(in srgb, var(--gereq-sky, #72d6ff) 22%, var(--surface));
+        --btn-fg: var(--text);
+        --btn-border: color-mix(in srgb, var(--gereq-sky, #72d6ff) 45%, var(--border));
+        --btn-hover-bg: color-mix(in srgb, var(--gereq-sky, #72d6ff) 32%, var(--surface));
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: color-mix(in srgb, var(--gereq-sky, #72d6ff) 55%, var(--border));
+    }
+
+    .btn--violet {
+        --btn-bg: color-mix(in srgb, var(--gereq-violet, #625bff) 18%, var(--surface));
+        --btn-fg: color-mix(in srgb, var(--gereq-violet, #625bff) 75%, var(--text));
+        --btn-border: color-mix(in srgb, var(--gereq-violet, #625bff) 40%, var(--border));
+        --btn-hover-bg: color-mix(in srgb, var(--gereq-violet, #625bff) 28%, var(--surface));
+        --btn-hover-fg: color-mix(in srgb, var(--gereq-violet, #625bff) 75%, var(--text));
+        --btn-hover-border: color-mix(in srgb, var(--gereq-violet, #625bff) 50%, var(--border));
+    }
+
+    /* Outline + primary combo (legacy) → default outline */
+    .btn-outline.btn-primary,
+    .btn-outline.btn--primary {
+        --btn-bg: transparent;
+        --btn-fg: var(--text);
+        --btn-border: var(--border);
+        --btn-hover-bg: var(--hover-strong);
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: color-mix(in srgb, var(--text) 28%, var(--border));
+    }
+
+    /* —— Sizes (type scale + optical tracking) —— */
+
+    .btn--block { width: 100%; justify-content: center; }
+
+    .btn--xs,
+    .btn-xs {
+        --btn-size: var(--grq-text-xs); /* 11px */
+        --btn-tracking: 0.02em;
+        height: 1.75rem;
+        min-height: 1.75rem;
+        padding-inline: 0.65em;
+        gap: 0.3em;
+    }
+
+    .btn--sm,
+    .btn-sm {
+        --btn-size: var(--grq-text-sm); /* 12px */
+        --btn-tracking: 0;
+        height: 2rem;
+        min-height: 2rem;
+        padding-inline: 0.85em;
+        gap: 0.35em;
+    }
+
+    .btn--lg,
+    .btn-lg {
+        --btn-size: var(--grq-text-lg); /* 16px */
+        --btn-tracking: -0.018em;
+        height: 2.75rem;
+        min-height: 2.75rem;
+        padding-inline: 1.15em;
+        gap: 0.45em;
+    }
+
+    .btn .g-icon {
+        font-size: 1.15em;
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1;
+        translate: 0 0.02em;
+    }
+    .btn--xs .g-icon,
+    .btn-xs .g-icon { font-size: 1.2em; }
+    .btn--sm .g-icon,
+    .btn-sm .g-icon { font-size: 1.18em; }
+    .btn--lg .g-icon,
+    .btn-lg .g-icon { font-size: 1.12em; }
+
+    /* Loading (Ant-style spinner via aria-busy) */
+    .btn.is-busy,
+    .btn[aria-busy="true"] {
+        position: relative;
+        color: transparent !important;
+        pointer-events: none;
+        cursor: wait;
+    }
+    .btn.is-busy::after,
+    .btn[aria-busy="true"]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid color-mix(in srgb, var(--btn-fg) 35%, transparent);
+        border-top-color: var(--btn-fg);
+        border-radius: 50%;
+        animation: btn-spin 0.65s linear infinite;
+    }
+
+    /* —— Icon button (square) —— */
+
+    .icon-btn {
+        width: var(--control-h);
+        height: var(--control-h);
+        min-height: var(--control-h);
+        display: grid;
+        place-items: center;
+        border: 0;
+        background: transparent;
+        border-radius: var(--control-radius, 6px);
+        cursor: pointer;
+        color: var(--text-muted);
+        opacity: 1;
+        flex-shrink: 0;
+        transition: background-color 0.12s ease, color 0.12s ease;
+    }
+    .icon-btn:hover { background: var(--hover-strong); color: var(--text); }
+    .icon-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+    .icon-btn:disabled,
+    .icon-btn[aria-disabled="true"] {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+    .icon-btn:disabled:hover,
+    .icon-btn[aria-disabled="true"]:hover {
+        background: transparent;
+        color: var(--text-muted);
+    }
+    .icon-btn.is-busy,
+    .icon-btn[aria-busy="true"] {
+        pointer-events: none;
+        cursor: wait;
+    }
+    .icon-btn.is-busy .g-icon,
+    .icon-btn[aria-busy="true"] .g-icon {
+        animation: btn-spin 0.75s linear infinite;
+    }
 }
 
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: var(--control-h);
-    min-height: var(--control-h);
-    padding-inline: 14px;
-    font-family: var(--gereq-font-sans);
-    font-size: var(--control-font);
-    font-weight: 550;
-    gap: 6px;
-    border-radius: var(--control-radius);
-    border: var(--control-border) solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    cursor: pointer;
-    text-decoration: none;
-    white-space: nowrap;
-    box-sizing: border-box;
-    line-height: 1;
-}
-.btn-xs,
-.btn--xs { height: 1.75rem; min-height: 1.75rem; padding-inline: 6px; font-size: 11px; }
-.btn-sm,
-.btn--sm { height: 2rem; min-height: 2rem; padding-inline: 8px; font-size: 12px; }
-.btn-lg,
-.btn--lg { height: 2.875rem; min-height: 2.875rem; padding-inline: 16px; font-size: 15px; }
-
-.icon-btn {
-    width: var(--control-h);
-    height: var(--control-h);
-    min-height: var(--control-h);
-    display: grid;
-    place-items: center;
-    border: 0;
-    background: transparent;
-    border-radius: var(--control-radius);
-    cursor: pointer;
-    color: var(--text-muted);
-    opacity: 1;
-    flex-shrink: 0;
-}
-.icon-btn:hover { background: var(--hover-strong); color: var(--text); opacity: 1; }
-.icon-btn:disabled,
-.icon-btn[aria-disabled="true"] {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-.icon-btn:disabled:hover,
-.icon-btn[aria-disabled="true"]:hover {
-    background: transparent;
-    color: var(--text-muted);
-}
-.icon-btn.is-busy,
-.icon-btn[aria-busy="true"] {
-    pointer-events: none;
-    cursor: wait;
-}
-.icon-btn.is-busy .g-icon,
-.icon-btn[aria-busy="true"] .g-icon {
-    animation: icon-spin 0.75s linear infinite;
-}
-@keyframes icon-spin {
+@keyframes btn-spin {
     to { transform: rotate(360deg); }
 }
+
 .sidebar .icon-btn:hover { background: var(--hover-strong); }

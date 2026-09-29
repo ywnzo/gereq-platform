@@ -237,6 +237,7 @@ final class CoreRegistrar
         $this->router->get('/', [DashboardController::class, 'home'])->name('home');
         $this->router->get('/design.html', [DesignController::class, 'show'])->name('design');
         $this->router->post('/design.html', [DesignController::class, 'submit'])->name('design.submit');
+        $this->router->get('/design/ui.html', [DesignController::class, 'uiKit'])->name('design.ui');
 
         $this->router->group('/admin', function (Router $router): void {
             $router->get('/login', [AuthController::class, 'show'])->name('admin.login')->middleware('guest');

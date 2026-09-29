@@ -45,8 +45,10 @@ final class UrlPrefix
         }
 
         // /realityV3/admin → /realityV3 ; /realityV3 → /realityV3
-        if (str_ends_with($path, '/admin')) {
-            $path = substr($path, 0, -strlen('/admin'));
+        // (admin segment follows ADMIN_PATH / AdminPath)
+        $adminBase = AdminPath::base();
+        if (str_ends_with($path, $adminBase)) {
+            $path = substr($path, 0, -strlen($adminBase));
         }
 
         self::$prefix = $path === '' || $path === '/' ? '' : $path;
@@ -60,6 +62,9 @@ final class UrlPrefix
         if ($path === '' || !str_starts_with($path, '/')) {
             return $path;
         }
+
+        $path = AdminPath::rewrite($path);
+
         // Already prefixed or external-ish
         $prefix = self::get();
         if ($prefix === '' || str_starts_with($path, $prefix . '/') || $path === $prefix) {

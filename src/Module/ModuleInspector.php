@@ -58,7 +58,17 @@ final class ModuleInspector
         $files = $this->fileTree($manifest);
         $installed = $this->modules->installed($manifest->id);
         $updateAvailable = $this->updater->isUpdateAvailable($manifest->id);
-        $health = $this->health($manifest, $enabled, $missing, $migrations, $installed?->version(), $updateAvailable);
+        $liveFootprint = ModuleFootprint::ofDirectory($manifest->path);
+        $health = $this->health(
+            $manifest,
+            $enabled,
+            $missing,
+            $migrations,
+            $installed?->version(),
+            $updateAvailable,
+            $liveFootprint,
+            $installed?->footprint(),
+        );
 
         $pendingMigrations = count(array_filter($migrations, static fn (array $row): bool => !$row['ran']));
 
@@ -68,6 +78,9 @@ final class ModuleInspector
                 'missing' => $missing,
                 'installed_version' => $installed?->version(),
                 'enabled_at' => $installed?->enabledAt()?->format('c'),
+                'footprint' => $liveFootprint !== '' ? $liveFootprint : null,
+                'installed_footprint' => $installed?->footprint(),
+                'footprint_short' => ModuleFootprint::short($liveFootprint),
                 'class_exists' => class_exists($manifest->moduleClass),
                 'capability_providers' => $this->capabilityMap($manifest),
                 'update_available' => $updateAvailable,
@@ -293,6 +306,8 @@ final class ModuleInspector
         array $migrations,
         ?string $installedVersion,
         bool $updateAvailable,
+        string $liveFootprint,
+        ?string $installedFootprint,
     ): array {
         $checks = [];
 
@@ -339,6 +354,31 @@ final class ModuleInspector
             'detail_params' => [
                 '%installed%' => $installedVersion ?? '—',
                 '%current%' => $manifest->version,
+            ],
+        ];
+
+        $fpStatus = 'info';
+        $fpDetail = 'modules.health.footprint.none';
+        if ($liveFootprint !== '') {
+            if ($installedFootprint === null || $installedFootprint === '') {
+                $fpStatus = $enabled ? 'warn' : 'info';
+                $fpDetail = 'modules.health.footprint.unrecorded';
+            } elseif ($installedFootprint === $liveFootprint) {
+                $fpStatus = 'ok';
+                $fpDetail = 'modules.health.footprint.ok';
+            } else {
+                $fpStatus = $enabled ? 'warn' : 'info';
+                $fpDetail = 'modules.health.footprint.drift';
+            }
+        }
+        $checks[] = [
+            'id' => 'footprint',
+            'label' => 'modules.health.footprint.label',
+            'status' => $fpStatus,
+            'detail' => $fpDetail,
+            'detail_params' => [
+                '%live%' => ModuleFootprint::short($liveFootprint),
+                '%installed%' => ModuleFootprint::short($installedFootprint ?? ''),
             ],
         ];
 

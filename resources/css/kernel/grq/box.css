@@ -1,0 +1,119 @@
+/**
+ * Layout primitives for admin + modules.
+ * Prefer these over one-off flex/grid wrappers when the pattern is shared.
+ */
+
+/* Vertical stack */
+.grq-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--grq-space-3);
+    min-width: 0;
+}
+.grq-stack--xs { gap: var(--grq-space-1); }
+.grq-stack--sm { gap: var(--grq-space-2); }
+.grq-stack--md { gap: var(--grq-space-3); }
+.grq-stack--lg { gap: var(--grq-space-4); }
+.grq-stack--xl { gap: var(--grq-space-6); }
+
+/* Horizontal cluster (wrap) */
+.grq-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--grq-space-2);
+    min-width: 0;
+}
+.grq-cluster--sm { gap: var(--grq-space-1); }
+.grq-cluster--lg { gap: var(--grq-space-3); }
+.grq-cluster--between {
+    justify-content: space-between;
+    width: 100%;
+}
+.grq-cluster--end { justify-content: flex-end; }
+
+/* Single row (no wrap) */
+.grq-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--grq-space-2);
+    min-width: 0;
+}
+.grq-row > .grq-grow { flex: 1 1 auto; min-width: 0; }
+
+/* Surface box */
+.grq-box {
+    box-sizing: border-box;
+    padding: var(--grq-space-4);
+    border: 1px solid var(--grq-border);
+    border-radius: var(--grq-radius);
+    background: var(--grq-surface);
+    min-width: 0;
+}
+.grq-box--soft {
+    border-color: var(--grq-border-soft);
+    background: var(--grq-surface-2);
+}
+.grq-box--flush { padding: 0; }
+.grq-box--sm { padding: var(--grq-space-3); }
+.grq-box--lg { padding: var(--grq-space-5); }
+
+/* Responsive grids */
+.grq-grid {
+    display: grid;
+    gap: var(--grq-space-4);
+    min-width: 0;
+}
+.grq-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grq-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grq-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grq-grid--auto {
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+}
+.grq-grid--split {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+    align-items: start;
+}
+
+@media (max-width: 980px) {
+    .grq-grid--2,
+    .grq-grid--3,
+    .grq-grid--4,
+    .grq-grid--split {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sticky aside (edit layouts) */
+.grq-aside {
+    position: sticky;
+    top: var(--grq-space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--grq-space-4);
+    min-width: 0;
+}
+@media (max-width: 980px) {
+    .grq-aside { position: static; }
+}
+
+/* Divider */
+.grq-divider {
+    margin: 0;
+    border: 0;
+    border-top: 1px solid var(--grq-border-soft);
+}
+
+/* Prose block inside admin panels */
+.grq-prose {
+    font-family: var(--grq-font-sans);
+    font-size: var(--grq-text-base);
+    line-height: var(--grq-leading-relaxed);
+    color: var(--grq-fg);
+}
+.grq-prose > :first-child { margin-top: 0; }
+.grq-prose > :last-child { margin-bottom: 0; }
+.grq-prose p { margin: 0 0 var(--grq-space-3); }
+.grq-prose .muted,
+.grq-prose .grq-text-muted { color: var(--grq-fg-muted); }

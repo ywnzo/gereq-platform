@@ -31,6 +31,46 @@ final class RenderEngineTest extends TestCase
         self::assertSame([], $engine->cspOrigins());
     }
 
+    public function testCssTagsIncludeOnlyEnabledModuleStyles(): void
+    {
+        $dir = $this->scratch();
+        $this->writeManifest($dir, [
+            'resources/js/admin.ts' => [
+                'file' => 'assets/admin.js',
+                'css' => ['assets/admin.css'],
+            ],
+            'module:bikeservice' => [
+                'file' => 'assets/module-bikeservice.css',
+                'css' => ['assets/module-bikeservice.css'],
+                'moduleId' => 'bikeservice',
+            ],
+            'module:fleet' => [
+                'file' => 'assets/module-fleet.css',
+                'css' => ['assets/module-fleet.css'],
+                'moduleId' => 'fleet',
+            ],
+        ]);
+
+        $modules = new class (['bikeservice']) implements \Gereq\Module\EnabledModulesProvider {
+            /** @param list<string> $ids */
+            public function __construct(private readonly array $ids)
+            {
+            }
+
+            public function enabledIds(): array
+            {
+                return $this->ids;
+            }
+        };
+
+        $engine = new RenderEngine($dir, $this->config(), $modules);
+        $tags = $engine->cssTags();
+
+        self::assertStringContainsString('href="/build/assets/admin.css"', $tags);
+        self::assertStringContainsString('href="/build/assets/module-bikeservice.css"', $tags);
+        self::assertStringNotContainsString('module-fleet.css', $tags);
+    }
+
     public function testAssetOriginAndPrefixAndCsp(): void
     {
         $dir = $this->scratch();

@@ -30,7 +30,7 @@
         {% if searchable %}data-searchable="1"{% endif %}
         {% if autosubmit %}data-autosubmit="1"{% endif %}
     >
-        <input type="hidden" name="{{ name }}" id="{{ id }}" value="{{ value }}" {% if required %}required{% endif %} x-ref="value">
+        <input type="text" class="g-select__native" name="{{ name }}" id="{{ id }}" value="{{ value }}" {% if required %}required{% endif %} x-ref="value" tabindex="-1" aria-hidden="true" autocomplete="off">
         <button
             type="button"
             class="g-control g-select__trigger"

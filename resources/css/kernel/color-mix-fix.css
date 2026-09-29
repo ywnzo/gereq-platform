@@ -1,0 +1,180 @@
+/**
+ * Soft semantic fills — appended AFTER Tailwind/LightningCSS minify.
+ *
+ * LightningCSS breaks `color-mix(..., var(--x) N%, var(--y))` into solid
+ * `var(--x)` fallbacks inside incomplete `@supports` blocks. This file is
+ * concatenated raw onto the built CSS so soft tints stay soft.
+ */
+
+.badge--ok {
+    background: color-mix(in srgb, var(--success, #4ade80) 16%, var(--surface));
+    border-color: color-mix(in srgb, var(--success, #4ade80) 36%, var(--border));
+    color: color-mix(in srgb, var(--success, #4ade80) 72%, var(--text));
+}
+.badge--warn {
+    background: color-mix(in srgb, var(--warning, #fbbf24) 16%, var(--surface));
+    border-color: color-mix(in srgb, var(--warning, #fbbf24) 36%, var(--border));
+    color: color-mix(in srgb, var(--warning, #fbbf24) 72%, var(--text));
+}
+.badge--danger {
+    background: color-mix(in srgb, var(--danger, #f87171) 14%, var(--surface));
+    border-color: color-mix(in srgb, var(--danger, #f87171) 34%, var(--border));
+    color: color-mix(in srgb, var(--danger, #f87171) 78%, var(--text));
+}
+.badge--muted {
+    background: color-mix(in srgb, var(--text-muted) 10%, var(--surface));
+}
+.badge--info {
+    background: color-mix(in srgb, #38bdf8 16%, var(--surface));
+    border-color: color-mix(in srgb, #38bdf8 34%, var(--border));
+    color: color-mix(in srgb, #38bdf8 68%, var(--text));
+}
+.badge--signal {
+    background: color-mix(in srgb, var(--primary) 78%, var(--surface));
+}
+
+.status-chip--tone-success {
+    border-color: color-mix(in srgb, var(--success) 36%, var(--border));
+    background: color-mix(in srgb, var(--success) 10%, var(--surface));
+}
+.status-chip--tone-warn,
+.status-chip--tone-warning {
+    border-color: color-mix(in srgb, var(--warning, #f59e0b) 38%, var(--border));
+    background: color-mix(in srgb, var(--warning, #f59e0b) 10%, var(--surface));
+}
+.status-chip--tone-danger {
+    border-color: color-mix(in srgb, var(--danger, #ef4444) 34%, var(--border));
+    background: color-mix(in srgb, var(--danger, #ef4444) 10%, var(--surface));
+    color: color-mix(in srgb, var(--danger, #ef4444) 72%, var(--text));
+}
+.status-chip--tone-info {
+    border-color: color-mix(in srgb, var(--info, #3b82f6) 34%, var(--border));
+    background: color-mix(in srgb, var(--info, #3b82f6) 10%, var(--surface));
+}
+.status-chip--tone-indigo {
+    border-color: color-mix(in srgb, #6366f1 36%, var(--border));
+    background: color-mix(in srgb, #6366f1 10%, var(--surface));
+}
+
+.table .badge--ok,
+.table .badge--warn,
+.table .badge--danger,
+.table .badge--info,
+.table .badge--muted {
+    color: color-mix(in srgb, var(--primary) 40%, var(--text));
+    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+    background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+}
+
+.table .badge--ok {
+    border-color: color-mix(in srgb, var(--success) 42%, var(--border));
+    background: color-mix(in srgb, var(--success) 12%, var(--surface));
+}
+.table .badge--warn {
+    border-color: color-mix(in srgb, var(--warning) 42%, var(--border));
+    background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+}
+.table .badge--danger {
+    border-color: color-mix(in srgb, var(--danger) 38%, var(--border));
+    background: var(--danger-bg, color-mix(in srgb, var(--danger) 10%, var(--surface)));
+}
+
+.bulk-bar {
+    border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border));
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+
+/* Row actions: surface + tinted icon (no color-mix fills — LightningCSS solidifies them) */
+.table__action-btn--primary,
+.table__action-btns > form > button.table__action-btn--primary,
+.table__action-btns > a.table__action-btn--primary,
+.table__action-btn--success,
+.table__action-btns > form > button.table__action-btn--success,
+.table__action-btns > a.table__action-btn--success,
+.table__action-btn--warn,
+.table__action-btns > form > button.table__action-btn--warn,
+.table__action-btns > a.table__action-btn--warn,
+.table__action-btn--danger,
+.table__action-btns > form > button.table__action-btn--danger,
+.table__action-btns > a.table__action-btn--danger,
+.table__action-btns > .table__action-form > button {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+.table__action-btn--primary,
+.table__action-btns > form > button.table__action-btn--primary,
+.table__action-btns > a.table__action-btn--primary {
+    color: var(--primary) !important;
+}
+.table__action-btn--success,
+.table__action-btns > form > button.table__action-btn--success,
+.table__action-btns > a.table__action-btn--success {
+    color: var(--success) !important;
+}
+.table__action-btn--warn,
+.table__action-btns > form > button.table__action-btn--warn,
+.table__action-btns > a.table__action-btn--warn {
+    color: var(--warning) !important;
+}
+.table__action-btn--danger,
+.table__action-btns > form > button.table__action-btn--danger,
+.table__action-btns > a.table__action-btn--danger,
+.table__action-btns > .table__action-form > button {
+    color: var(--danger) !important;
+}
+
+.btn--soft {
+    --btn-bg: color-mix(in srgb, var(--primary) 28%, var(--surface));
+    --btn-hover-bg: color-mix(in srgb, var(--primary) 40%, var(--surface));
+    --btn-active-bg: color-mix(in srgb, var(--primary) 48%, var(--surface));
+}
+.btn--success {
+    --btn-bg: color-mix(in srgb, var(--success) 16%, var(--surface));
+    --btn-fg: color-mix(in srgb, var(--success) 82%, var(--text));
+    --btn-border: color-mix(in srgb, var(--success) 38%, var(--border));
+    --btn-hover-bg: color-mix(in srgb, var(--success) 24%, var(--surface));
+    --btn-hover-fg: color-mix(in srgb, var(--success) 82%, var(--text));
+    --btn-hover-border: color-mix(in srgb, var(--success) 48%, var(--border));
+}
+.btn--warning {
+    --btn-bg: color-mix(in srgb, var(--warning) 16%, var(--surface));
+    --btn-fg: color-mix(in srgb, var(--warning) 82%, var(--text));
+    --btn-border: color-mix(in srgb, var(--warning) 40%, var(--border));
+    --btn-hover-bg: color-mix(in srgb, var(--warning) 24%, var(--surface));
+    --btn-hover-fg: color-mix(in srgb, var(--warning) 82%, var(--text));
+    --btn-hover-border: color-mix(in srgb, var(--warning) 50%, var(--border));
+}
+.btn--primary:hover {
+    --btn-hover-bg: color-mix(in srgb, var(--primary) 88%, #fff);
+    --btn-hover-border: color-mix(in srgb, var(--primary) 88%, #fff);
+    --btn-active-bg: color-mix(in srgb, var(--primary) 82%, var(--text));
+    --btn-shadow: 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+}
+.btn--danger:hover {
+    --btn-hover-bg: color-mix(in srgb, var(--danger) 88%, #fff);
+    --btn-hover-border: color-mix(in srgb, var(--danger) 88%, #fff);
+    --btn-active-bg: color-mix(in srgb, var(--danger) 82%, #000);
+}
+.btn--danger-outline {
+    --btn-border: color-mix(in srgb, var(--danger) 45%, var(--border));
+    --btn-hover-bg: var(--danger-bg, color-mix(in srgb, var(--danger) 10%, var(--surface)));
+}
+
+.customer-edit__tab.is-active,
+.design-tabs [aria-selected="true"] {
+    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+.customer-edit__tab--ok.is-active {
+    border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+    background: color-mix(in srgb, var(--success) 10%, var(--surface));
+}
+.customer-edit__tab--warn.is-active {
+    border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+    background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+}
+.customer-edit__hero {
+    background:
+        radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--accent, var(--primary)) 10%, transparent), transparent 55%),
+        var(--surface);
+}

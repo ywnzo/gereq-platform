@@ -60,7 +60,9 @@ After it finishes: admin at `<APP_URL>/admin`, first-run wizard at `<APP_URL>/ad
 ```bash
 composer install
 php gereq env:init              # from config/env.schema.toml (or: bin/grq env init)
-# adjust ADMIN_*, DB_* as needed
+# adjust DB_* as needed
+# Admin účet se nezapisuje do .env — zadejte při migrate/install (--admin-email / --admin-password)
+# nebo nechte vygenerovat (vypíše se jednou do konzole).
 php gereq migrate --fresh --seed --no-demo --no-sample
 bun install && bun run build
 php gereq serve                 # http://127.0.0.1:8080/admin
@@ -70,7 +72,7 @@ Notes:
 
 - Schema defaults use `DB_CONNECTION=sqlite`. For Docker use `php gereq env:init --docker` / `bin/grq env init --docker` (pgsql + redis hosts).
 - `php gereq install` (`src/Console/Command/InstallCommand.php`) is the interactive equivalent of `migrate --fresh --seed` once `vendor/` and `.env` already exist. Options: `--fresh`, `--no-demo`, `--no-sample`, `--yes|-y` (skip prompts, for CI).
-- The admin account comes from `ADMIN_NAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`src/Database/Seeder.php::seedAdmin`). Change the password after first login.
+- The admin account is created by `migrate --bare` / `migrate --seed` / `install` via CLI flags or interactive prompt (`src/Console/AdminBootstrap.php`). Credentials are **not** stored in `.env`. Change the password after first login (setup wizard).
 
 ### `migrate` options
 

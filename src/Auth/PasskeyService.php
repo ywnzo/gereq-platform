@@ -307,7 +307,7 @@ final class PasskeyService
         $portPart = ($port !== null && $port > 0 && !in_array($port, [80, 443], true))
             ? ':' . $port
             : '';
-        $url = $scheme . '://' . $localName . $portPart . '/admin';
+        $url = $scheme . '://' . $localName . $portPart . \Gereq\Support\AdminPath::base();
 
         throw new \InvalidArgumentException(
             'Passkeys nefungují na IP (' . $host . '). Prohlížeč vyžaduje hostname.'

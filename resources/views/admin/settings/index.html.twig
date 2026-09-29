@@ -67,6 +67,13 @@
                                 </div>
                             </header>
                             <div class="form-grid">
+                                {% if groupId == 'core' %}
+                                    <label class="field">
+                                        <span>{{ 'settings.admin.path'|trans }}</span>
+                                        <input class="input" type="text" value="{{ adminPath }}" readonly disabled>
+                                        <small class="field__hint">{{ 'settings.admin.path.help'|trans }}</small>
+                                    </label>
+                                {% endif %}
                                 {% for item in group.items %}
                                     {% set key = item.key %}
                                     {% set definition = item.definition %}

@@ -15,6 +15,8 @@ Při jakékoli změně kódu/migrací/UI v `modules/*` **vždy** zvyš verzi a n
 3. Schema/data změny jen přes `Database/Migrations/` (ne „potichu“ přes běžný request)
 4. Semver: patch = fix, minor = nová funkce/migrace, major = breaking
 
+Každá verze má **immutable footprint** (SHA-256 stromu). Cache `storage/modules/{id}/{version}` nejde přepsat jiným obsahem pod stejným číslem verze — změna = nový semver. Live drift bez bumpu se projeví jako dostupná aktualizace (footprint v DB ≠ soubory).
+
 Platforma po bumpu **zablokuje admin UI modulu**, dokud admin neklikne Aktualizovat (`ModuleCurrentMiddleware`). Nový Twig se tak neukáže na starém schématu.
 
 ## Proč

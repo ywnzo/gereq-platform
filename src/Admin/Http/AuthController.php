@@ -362,7 +362,13 @@ final class AuthController extends Controller
             if ($prefix !== '' && (str_starts_with($internal, $prefix . '/') || $internal === $prefix)) {
                 $internal = substr($internal, strlen($prefix)) ?: '/';
             }
-            if (str_starts_with($internal, '/admin') && !str_starts_with($internal, '/admin/setup')) {
+            $adminBase = \Gereq\Support\AdminPath::base();
+            $setupBase = $adminBase . '/setup';
+            if (
+                \Gereq\Support\AdminPath::matches($internal)
+                && $internal !== $setupBase
+                && !str_starts_with($internal, $setupBase . '/')
+            ) {
                 $query = parse_url($intended, PHP_URL_QUERY);
                 $target = \Gereq\Support\UrlPrefix::path($internal);
 

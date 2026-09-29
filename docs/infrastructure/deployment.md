@@ -24,7 +24,7 @@ When updating an existing install from a **platform ZIP**, also follow [UPDATE-G
 | `FILE_DRIVER` | `local` | only implemented driver (`src/File/FileManager.php`). |
 | `WEBHOOKS_ALLOW_PRIVATE_URLS` | `false` | written by `bin/grq install`; allows outbound webhooks to private IPs when `true`. |
 | `WEBAUTHN_RP_ID`, `WEBAUTHN_RP_NAME` | public hostname (no port) | `config/security.php` — passkeys need a stable RP ID; must not be an IP. |
-| `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | initial admin | consumed by the seeder on first `migrate --seed`; change the password after login. |
+| `ADMIN_*` | — | **Removed.** Initial admin is created via `migrate --bare|--seed` / `install` CLI options (`--admin-email`, `--admin-password`, …) or an interactive prompt; a generated password is printed once and never stored in `.env`. |
 
 `config/env.schema.toml` is the reference catalogue; `bin/grq install` / `php gereq env:init` write a complete `.env`.
 

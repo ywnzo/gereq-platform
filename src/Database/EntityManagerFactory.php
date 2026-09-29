@@ -25,6 +25,8 @@ final class EntityManagerFactory
 
     public function create(?CacheItemPoolInterface $appCache = null): EntityManagerInterface
     {
+        (new DatabaseCreator($this->config))->ensureExists();
+
         $paths = [$this->basePath . '/src'];
         $modulesDir = $this->basePath . '/modules';
 

@@ -259,19 +259,20 @@ final class ServeDockerCommand extends Command
         }
         $tag = $suffix !== [] ? ' <fg=cyan>(' . implode(' + ', $suffix) . ')</>' : '';
 
+        $admin = \Gereq\Support\AdminPath::base();
         $lines = [
             '<fg=green;options=bold>GEREQ</> <fg=gray>·</> Docker stack' . $tag,
         ];
         if ($https) {
-            $lines[] = '  https   <info>https://127.0.0.1/admin</info>';
+            $lines[] = '  https   <info>https://127.0.0.1' . $admin . '</info>';
             if ($lanIp !== null) {
-                $lines[] = sprintf('  lan     <info>https://%s/admin</info>', $lanIp);
+                $lines[] = sprintf('  lan     <info>https://%s%s</info>', $lanIp, $admin);
             }
-            $lines[] = sprintf('  http    <fg=gray>http://127.0.0.1:%d/admin</> (stále mapováno)', $port);
+            $lines[] = sprintf('  http    <fg=gray>http://127.0.0.1:%d%s</> (stále mapováno)', $port, $admin);
         } else {
-            $lines[] = sprintf('  local   <info>http://127.0.0.1:%d/admin</info>', $port);
+            $lines[] = sprintf('  local   <info>http://127.0.0.1:%d%s</info>', $port, $admin);
             if ($lanIp !== null) {
-                $lines[] = sprintf('  lan     <info>http://%s:%d/admin</info>', $lanIp, $port);
+                $lines[] = sprintf('  lan     <info>http://%s:%d%s</info>', $lanIp, $port, $admin);
             }
         }
         if ($hot) {
@@ -287,19 +288,20 @@ final class ServeDockerCommand extends Command
 
     private function writeUrls(OutputInterface $output, int $port, ?string $lanIp, bool $https): void
     {
+        $admin = \Gereq\Support\AdminPath::base();
         if ($https) {
-            $output->writeln('V Cursoru / na VM:     <info>https://127.0.0.1/admin</info>');
+            $output->writeln('V Cursoru / na VM:     <info>https://127.0.0.1' . $admin . '</info>');
             if ($lanIp !== null) {
-                $output->writeln(sprintf('Z Windows přes IP VM: <info>https://%s/admin</info>', $lanIp));
+                $output->writeln(sprintf('Z Windows přes IP VM: <info>https://%s%s</info>', $lanIp, $admin));
             }
-            $output->writeln(sprintf('HTTP (volitelně):      <fg=gray>http://127.0.0.1:%d/admin</>', $port));
+            $output->writeln(sprintf('HTTP (volitelně):      <fg=gray>http://127.0.0.1:%d%s</>', $port, $admin));
 
             return;
         }
 
-        $output->writeln(sprintf('V Cursoru / na VM:     <info>http://127.0.0.1:%d/admin</info>', $port));
+        $output->writeln(sprintf('V Cursoru / na VM:     <info>http://127.0.0.1:%d%s</info>', $port, $admin));
         if ($lanIp !== null) {
-            $output->writeln(sprintf('Z Windows přes IP VM: <info>http://%s:%d/admin</info>', $lanIp, $port));
+            $output->writeln(sprintf('Z Windows přes IP VM: <info>http://%s:%d%s</info>', $lanIp, $port, $admin));
         }
     }
 
@@ -395,7 +397,7 @@ final class ServeDockerCommand extends Command
             $this->exportMkcertRootCa($rootCa);
             $output->writeln('<info>Vygenerován mkcert certifikát (důvěryhodný po instalaci rootCA).</info>');
             $output->writeln('<comment>Windows (prohlížeč): naimportujte docker/nginx/certs/rootCA.pem → Local Computer → Trusted Root Certification Authorities.</comment>');
-            $output->writeln('<comment>Pak restart prohlížeče a otevřete https://realestates.dev/admin (nebo https://realestates.local/admin)</comment>');
+            $output->writeln('<comment>Pak restart prohlížeče a otevřete https://realestates.dev' . \Gereq\Support\AdminPath::base() . ' (nebo https://realestates.local' . \Gereq\Support\AdminPath::base() . ')</comment>');
 
             return true;
         }

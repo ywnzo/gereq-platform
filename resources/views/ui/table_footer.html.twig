@@ -8,13 +8,13 @@
         <nav class="pagination" aria-label="{{ 'common.pagination'|trans }}">
             {% set base = list_query is defined ? list_query.params() : { q: search|default(''), sort: sort|default(''), dir: dir|default(''), page: page } %}
             {% if page > 1 %}
-                <a class="pagination__btn" href="?{{ base|merge({ page: page - 1 })|url_encode }}">{{ 'common.previous'|trans }}</a>
+                <a class="pagination__btn" href="?{{ base|merge({ page: page - 1 })|url_encode }}{% if hash|default('') %}#{{ hash }}{% endif %}">{{ 'common.previous'|trans }}</a>
             {% else %}
                 <span class="pagination__btn is-disabled">{{ 'common.previous'|trans }}</span>
             {% endif %}
             <span class="pagination__status">{{ page }} / {{ pages }}</span>
             {% if page < pages %}
-                <a class="pagination__btn" href="?{{ base|merge({ page: page + 1 })|url_encode }}">{{ 'common.next'|trans }}</a>
+                <a class="pagination__btn" href="?{{ base|merge({ page: page + 1 })|url_encode }}{% if hash|default('') %}#{{ hash }}{% endif %}">{{ 'common.next'|trans }}</a>
             {% else %}
                 <span class="pagination__btn is-disabled">{{ 'common.next'|trans }}</span>
             {% endif %}

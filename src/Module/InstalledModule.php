@@ -17,6 +17,10 @@ class InstalledModule
     #[ORM\Column(length: 32)]
     private string $version;
 
+    /** SHA-256 content footprint of the installed module tree (immutable per version). */
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $footprint = null;
+
     #[ORM\Column]
     private bool $enabled = false;
 
@@ -43,6 +47,16 @@ class InstalledModule
     public function version(): string
     {
         return $this->version;
+    }
+
+    public function footprint(): ?string
+    {
+        return $this->footprint;
+    }
+
+    public function setFootprint(?string $footprint): void
+    {
+        $this->footprint = $footprint !== null && $footprint !== '' ? $footprint : null;
     }
 
     public function enabled(): bool

@@ -47,12 +47,22 @@ final class Migrator
             $messages[] = 'Tabulka schema_migrations vyčištěna.';
         } catch (\Throwable) {
             // Table does not exist — migrate() will create it.
+            $this->ranCache = [];
+            $this->migrationsTableReady = false;
         }
+
+        // Application boot may have cached enabled modules from the pre-drop DB.
+        $this->modules->rediscover();
+        $this->em->clear();
 
         return array_merge($messages, $this->migrate());
     }
 
     /**
+     * Run pending file migrations for enabled modules, then sync Doctrine schema
+     * for core + enabled modules. Disabled modules are never migrated here —
+     * their migrations run on enable ({@see migrateModule()}).
+     *
      * @return list<string>
      */
     public function migrate(): array
@@ -60,12 +70,9 @@ final class Migrator
         $messages = [];
         $this->ensureMigrationsTable();
 
-        $installed = $this->modules->installedById();
-        $filterEnabled = $installed !== [];
-
         // File migrations first (they have DEFAULT / backfill), then SchemaTool.
         foreach ($this->modules->discover() as $manifest) {
-            if ($filterEnabled && !$this->modules->isEnabled($manifest->id)) {
+            if (!$this->modules->isEnabled($manifest->id)) {
                 continue;
             }
             $messages = array_merge($messages, $this->migrateModule($manifest->id, syncSchema: false));
@@ -315,19 +322,15 @@ final class Migrator
     }
 
     /**
-     * Metadata managed by SchemaTool: core (`src/`) + enabled modules.
-     * When no modules are installed yet (fresh migrate before seed), include all modules.
+     * Metadata managed by SchemaTool: core (`src/`) + enabled modules only.
+     * Disabled / not-yet-enabled module entities stay out of syncSchema so a
+     * fresh migrate does not create tables for packages the client never turns on.
      *
      * @return list<\Doctrine\ORM\Mapping\ClassMetadata<object>>
      */
     private function schemaMetadata(): array
     {
         $all = $this->em->getMetadataFactory()->getAllMetadata();
-        $installed = $this->modules->installedById();
-        if ($installed === []) {
-            return $all;
-        }
-
         $enabled = array_fill_keys($this->modules->enabledIds(), true);
         $allowedRoots = [];
         foreach ($this->modules->discover() as $manifest) {

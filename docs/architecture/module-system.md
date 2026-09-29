@@ -143,7 +143,7 @@ A compact real example is `modules/Viewings/ViewingsModule.php`: `register()` ad
 
 ## Enabling, pausing, disabling
 
-State lives in the `installed_modules` table (`Gereq\Module\InstalledModule`: `id`, `version`, `enabled`, `enabled_at`, `source` = `local` | `gitlab`).
+State lives in the `modules` table (`Gereq\Module\InstalledModule`: `id`, `version`, `footprint`, `enabled`, `enabled_at`, `source` = `local` | `gitlab`).
 
 | Operation | Entry points | What happens |
 | --- | --- | --- |
@@ -181,8 +181,9 @@ From `.cursor/rules/module-updates.mdc` and the code:
 2. Semver: patch = fix, minor = new feature or migration, major = breaking.
 3. Schema/data changes only via `Database/Migrations/`, never ad hoc at request time.
 4. Tag the module repo with the same version (`v1.1.2` or `1.1.2`; `GitLabModuleClient::normalizeVersion()` strips the `v`).
+5. **Immutable footprints**: each module version has a SHA-256 content fingerprint (`Gereq\Module\ModuleFootprint`) of its tree (excluding `.gereq-version.json` and VCS dirs). Cached versions under `storage/modules/{id}/{version}/` refuse overwrite when the incoming tree fingerprint differs (`admin.modules.versions.error.immutable`). The live footprint is stored on `modules.footprint` on enable/update/activate; drift vs live files surfaces as an update + health warn.
 
-`ModuleUpdater::isUpdateAvailable()` returns true when `installed_modules.version !== module.php version` **or** any migration file has not run. `ModuleCurrentMiddleware` (`src/Http/Middleware/ModuleCurrentMiddleware.php`) is appended by `Kernel` to every route with `->module()` or a route name matching `admin.<id>.…`; when an update is pending it renders `admin/modules/update_required.html.twig` inside the normal admin shell (menu and palette still work) or returns `503 {"error":"module_update_required","update_url":…}` for JSON requests, instead of the module's UI, until the admin clicks **Update** on the module page.
+`ModuleUpdater::isUpdateAvailable()` returns true when `installed_modules.version !== module.php version`, any migration file has not run, **or** the live footprint differs from the recorded one. `ModuleCurrentMiddleware` (`src/Http/Middleware/ModuleCurrentMiddleware.php`) is appended by `Kernel` to every route with `->module()` or a route name matching `admin.<id>.…`; when an update is pending it renders `admin/modules/update_required.html.twig` inside the normal admin shell (menu and palette still work) or returns `503 {"error":"module_update_required","update_url":…}` for JSON requests, instead of the module's UI, until the admin clicks **Update** on the module page.
 
 ## Install and upgrade from GitLab
 
@@ -191,7 +192,7 @@ Configuration: `config/modules.php` (`GITLAB_URL`, `GITLAB_TOKEN`, `GITLAB_GROUP
 | Class | Role |
 | --- | --- |
 | `GitLabModuleClient` (`src/Module/GitLabModuleClient.php`) | `configured()`, `projectPathFor(manifest)` (`gereq/module-<id>` or manifest `repository`), `listTags()` (semver tags, cached `tags_cache_ttl`), `downloadArchive(tag, zip)` |
-| `ModuleVersionStore` (`src/Module/ModuleVersionStore.php`) | on-disk cache `storage/modules/{id}/{version}/`; `installFromZip()` (strips the archive's top folder), `snapshotLive()` (copies the current tree before a swap), `cachedVersions()`, `deleteTree()` |
+| `ModuleVersionStore` (`src/Module/ModuleVersionStore.php`) | on-disk cache `storage/modules/{id}/{version}/` with immutable `.gereq-version.json` footprint; `installFromZip()` refuses a different tree under the same version; `snapshotLive()` never overwrites an existing cache entry |
 | `ModuleVersionInstaller` (`src/Module/ModuleVersionInstaller.php`) | `listVersions(id)` merges remote tags and cached dirs with `is_upgrade` / `is_downgrade` flags; `fetch(id, version)`; `latestRemoteVersion()` |
 | `ModuleVersionActivator` (`src/Module/ModuleVersionActivator.php`) | `activate(id, version)`: fetch if not cached → snapshot live tree → on downgrade `Migrator::rollbackMigrationsMissingFrom()` → swap `modules/<Dir>` with the cached tree → `ModuleManager::rediscover()` → `ModuleUpdater::update()` (upgrade) → mark `source = gitlab`; audit `module.version_activated` |
 | `ModuleInspector` (`src/Module/ModuleInspector.php`) | data for the module detail page (versions, migrations, dependencies) |
@@ -215,7 +216,7 @@ The live tree under `modules/` is replaced on activation; a checked-out git subm
 
 - Files: `modules/<Id>/Database/Migrations/<YYYY_MM_DD_NNNNNN>_<name>.php`, each returning an anonymous object with `up(Schema $schema)`, `down(Schema $schema)` and optionally `afterUp(Connection $conn)` for data backfills.
 - Runner: `Gereq\Database\Migrator::migrateModule()` (`src/Database/Migrator.php`) — sorts files, skips those in `schema_migrations` (version key `<id>:<basename>`), applies `up()` to a DBAL `Schema` copy, computes the diff with the comparator and executes it, then `afterUp()`, then records the row. Migrations are thus **declarative** on top of introspected schema rather than raw SQL.
-- `Migrator::migrate()` runs `migrateModule()` for every enabled module (all discovered modules when `installed_modules` is empty, i.e. fresh install), then `syncSchema()` — Doctrine `SchemaTool::getUpdateSchemaSQL()` restricted to entity tables of core + enabled modules (so it never drops `schema_migrations` or foreign tables).
+- `Migrator::migrate()` runs `migrateModule()` for every **enabled** module only (never disabled packages, including on a fresh empty DB), then `syncSchema()` — Doctrine `SchemaTool::getUpdateSchemaSQL()` restricted to entity tables of core + enabled modules (so it never drops `schema_migrations` or foreign tables). After `Seeder::seedModules()` the seeder calls `migrate()` again so the default enabled set gets its schema before demo data.
 - Core has no migration files; core tables come purely from `syncSchema()`.
 - Because entities are synced automatically, many module migrations are empty placeholders (e.g. `modules/Viewings/Database/Migrations/2026_09_06_000001_viewings.php`); they still matter as version markers for `isUpdateAvailable()`.
 - Rollbacks: `rollbackModule()` (disable) and `rollbackMigrationsMissingFrom(id, currentDir, targetDir)` (downgrade — runs `down()` for files present in the current tree but absent from the target).

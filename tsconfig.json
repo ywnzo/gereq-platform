@@ -6,7 +6,8 @@
     "strict": true,
     "noEmit": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["bun"]
+    "types": ["bun"],
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["resources/js/**/*.ts", "scripts/**/*.ts"]
+  "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "scripts/**/*.ts"]
 }

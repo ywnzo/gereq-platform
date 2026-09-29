@@ -1,0 +1,121 @@
+{#
+  Declarative admin data table (ui()->table / ui_render('data_table')).
+  Expects pre-rendered cell HTML in `cells` [rowIndex][columnKey].
+#}
+{% set checkable = checkable|default(false) %}
+{% set has_actions = has_actions|default(false) %}
+{% set table_class = table_class|default('') %}
+{% set wrap_class = wrap_class|default('') %}
+{% set col_count = columns|length + (checkable ? 1 : 0) + (has_actions ? 1 : 0) %}
+
+<div class="table-wrap{{ wrap_class ? ' ' ~ wrap_class : '' }}" data-table>
+    <table class="table{{ table_class ? ' ' ~ table_class : '' }}">
+        <thead>
+            <tr>
+                {% if checkable %}
+                    <th class="table__check">
+                        <label class="table-check">
+                            <input type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected">
+                            <span class="sr-only">{{ 'ui.table.select_all'|trans }}</span>
+                        </label>
+                    </th>
+                {% endif %}
+                {% for column in columns %}
+                    {% set th_class = column.thClasses()|join(' ') %}
+                    {% if column.sortable %}
+                        {% include 'ui/sort_th.html.twig' with {
+                            label: column.label,
+                            column: column.key,
+                            sort: sort,
+                            dir: dir,
+                            search: search,
+                            query: query,
+                            class: th_class,
+                            hash: hash|default('')
+                        } %}
+                    {% else %}
+                        <th class="{{ th_class }}" scope="col">{{ column.label }}</th>
+                    {% endif %}
+                {% endfor %}
+                {% if has_actions %}
+                    <th class="table__actions-head"></th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if rows is empty %}
+                <tr>
+                    <td colspan="{{ col_count }}">
+                        <div class="empty">
+                            <h2>{{ empty_title|default('empty.generic'|trans) }}</h2>
+                            {% if empty_hint %}<p>{{ empty_hint }}</p>{% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                {% for row in rows %}
+                    {% set idx = loop.index0 %}
+                    {% set rid = row_ids[idx]|default('') %}
+                    {% set search_blob = row_search[idx]|default('') %}
+                    <tr
+                        {% if rid %}data-id="{{ rid|e('html_attr') }}"{% endif %}
+                        {% if search_blob != '' %}
+                            data-search="{{ search_blob|e('html_attr') }}"
+                            x-show="matchText($el.dataset.search || '')"
+                        {% endif %}
+                        {% if checkable and rid %}
+                            :class="isSelected('{{ rid|e('html_attr') }}') ? 'is-selected' : ''"
+                        {% endif %}
+                    >
+                        {% if checkable %}
+                            <td class="table__check">
+                                <label class="table-check">
+                                    <input
+                                        type="checkbox"
+                                        value="{{ rid }}"
+                                        @change="toggleId('{{ rid|e('html_attr') }}')"
+                                        :checked="isSelected('{{ rid|e('html_attr') }}')"
+                                    >
+                                    <span class="sr-only">{{ rid }}</span>
+                                </label>
+                            </td>
+                        {% endif %}
+                        {% for column in columns %}
+                            <td class="{{ column.numeric ? 'is-num' : '' }}{{ column.class ? ' ' ~ column.class : '' }}">
+                                {{ cells[idx][column.key]|raw }}
+                            </td>
+                        {% endfor %}
+                        {% if has_actions %}
+                            {% embed 'ui/row_actions.html.twig' %}
+                                {% block items %}
+                                    {% for action in action_cells[idx]|default([]) %}
+                                        {% include 'ui/row_action.html.twig' with {
+                                            href: action.href|default('#'),
+                                            label: action.label|default(''),
+                                            icon: action.icon|default('dot'),
+                                            variant: action.variant|default('')
+                                        } %}
+                                    {% endfor %}
+                                {% endblock %}
+                            {% endembed %}
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if show_footer|default(false) and total|default(0) > 0 %}
+    {% include 'ui/table_footer.html.twig' with {
+        total: total,
+        page: page,
+        pages: pages,
+        perPage: per_page,
+        search: search,
+        sort: sort,
+        dir: dir,
+        list_query: list_query|default(null),
+        hash: hash|default('')
+    } %}
+{% endif %}

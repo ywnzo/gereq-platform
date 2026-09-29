@@ -3,6 +3,9 @@
 @import "tailwindcss";
 
 @import "./kernel/base.css";
+@import "./kernel/grq/tokens.css";
+@import "./kernel/grq/type.css";
+@import "./kernel/grq/box.css";
 @import "./kernel/buttons.css";
 @import "./kernel/feedback.css";
 @import "./kernel/layout.css";
@@ -13,12 +16,13 @@
 @import "./kernel/palette.css";
 @import "./kernel/auth.css";
 @import "./kernel/forms.css";
-@import "./kernel/finish.css";
 @import "./kernel/overlays.css";
 @import "./kernel/image-viewer.css";
 @import "./kernel/sidebar.css";
 @import "./kernel/dashboard.css";
 @import "./kernel/detail.css";
+@import "./kernel/status-chips.css";
+@import "./kernel/edit-layout.css";
 @import "./kernel/settings.css";
 @import "./kernel/docs.css";
 @import "./kernel/ai-chat.css";

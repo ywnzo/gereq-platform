@@ -288,5 +288,5 @@ Next:
   ./dev/dockerless/down.sh               # stop background processes
   ./dev/dockerless/status.sh             # show pids / ports
 
-Login: ADMIN_EMAIL / ADMIN_PASSWORD from .env
+Login: credentials printed by migrate/install (not stored in .env)
 EOF

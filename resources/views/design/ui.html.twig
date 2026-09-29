@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="{{ app_locale() }}" data-theme="gereq" style="{{ brand_html_style() }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'design.ui.title'|trans }}</title>
+    {% include 'partials/brand-head.html.twig' %}
+    {{ render_css() }}
+    {% include 'partials/brand-overrides.html.twig' %}
+</head>
+<body class="design-body">
+    <header class="design-bar">
+        {% include 'partials/brand-lockup.html.twig' with { href: url('design.ui'), modifier: 'brand--bar', subtitle: 'design.ui.subtitle'|trans } %}
+        <nav class="design-bar__links" aria-label="{{ 'design.nav.system'|trans }}">
+            <a href="{{ url('design') }}">{{ 'design.ui.nav_design'|trans }}</a>
+            <a href="{{ url('admin.login') }}">{{ 'design.nav.admin'|trans }}</a>
+        </nav>
+    </header>
+
+    <div class="design-wrap ui-kit">
+        <header class="design-head">
+            <p class="design-head__kicker">{{ 'design.ui.kicker'|trans }}</p>
+            <h1>{{ 'design.ui.head_title'|trans }}</h1>
+            <p class="design-head__lead">{{ 'design.ui.head_lead'|trans|raw }}</p>
+        </header>
+
+        <nav class="ui-kit__toc" aria-label="{{ 'design.ui.toc'|trans }}">
+            {% for group in ui_groups %}
+                <a href="#{{ group.id }}">{{ group.title }}</a>
+            {% endfor %}
+        </nav>
+
+        {% for group in ui_groups %}
+            <section class="ui-kit__group" id="{{ group.id }}">
+                <header class="ui-kit__group-head">
+                    <h2>{{ group.title }}</h2>
+                    <p>{{ group.lead }}</p>
+                </header>
+
+                {% for demo in group.demos %}
+                    <article class="design-box ui-kit__demo" id="{{ demo.id }}">
+                        <div class="design-box__head">
+                            <h2><code class="design-code">{{ demo.title }}</code></h2>
+                            <p><code class="ui-kit__sig">{{ demo.signature }}</code></p>
+                        </div>
+                        <div class="design-box__body ui-kit__body">
+                            <div class="ui-kit__preview">
+                                <p class="ui-kit__label">{{ 'design.ui.preview'|trans }}</p>
+                                {{ demo.html|raw }}
+                            </div>
+                            <div class="ui-kit__code">
+                                <p class="ui-kit__label">{{ 'design.ui.code'|trans }}</p>
+                                <pre><code>{{ demo.code }}</code></pre>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        {% endfor %}
+
+        <footer class="ui-kit__foot muted">
+            <p>{{ 'design.ui.foot'|trans|raw }}</p>
+        </footer>
+    </div>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    {{ render_js() }}
+    <script>
+        document.querySelectorAll('[data-ui-toast]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const tone = btn.getAttribute('data-ui-toast') || 'success';
+                window.gereq?.toast?.(btn.textContent.trim(), tone);
+            });
+        });
+    </script>
+    {{ render_reload() }}
+</body>
+</html>

@@ -51,11 +51,11 @@
 .brand--auth .brand__sub {
     letter-spacing: 0;
     text-transform: none;
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
 }
 .auth-panel h1 {
-    font-family: var(--gereq-font-display);
+    font-family: var(--grq-font-sans);
     font-weight: 650;
     font-size: 1.55rem;
     letter-spacing: -0.03em;
@@ -65,7 +65,7 @@
 }
 .auth-panel > .muted {
     margin: 0 0 1.2rem;
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
     line-height: 1.45;
 }
 .auth-panel .alert {
@@ -77,16 +77,13 @@
 }
 .auth-panel .btn--block {
     margin-top: 0.25rem;
-    min-height: 2.6rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
 }
 .auth-panel .text-link {
     display: block;
     width: 100%;
     margin-top: 0.1rem;
     text-align: center;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     color: var(--text-muted);
 }
 .auth-panel .text-link:hover {
@@ -98,7 +95,7 @@
 }
 .auth-mfa__hint {
     margin: -0.35rem 0 0;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
 }
 .auth-mfa__divider {
     display: grid;
@@ -106,7 +103,7 @@
     align-items: center;
     gap: 0.75rem;
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -150,8 +147,8 @@
     padding: 0.65rem 0.75rem;
     border-radius: 8px;
     background: var(--surface-2);
-    font-family: var(--gereq-font-mono);
-    font-size: 0.8125rem;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-md);
     word-break: break-all;
 }
 .security-recovery {
@@ -165,8 +162,8 @@
     padding: 0;
     display: grid;
     gap: 0.35rem;
-    font-family: var(--gereq-font-mono);
-    font-size: 0.875rem;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-base);
 }
 .security-passkeys {
     list-style: none;
@@ -207,13 +204,13 @@
 .auth-footnote {
     text-align: center;
     color: var(--text-muted);
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     margin-top: 1.15rem;
-    font-family: var(--gereq-font-mono);
+    font-family: var(--grq-font-mono);
 }
 
 .error-code {
-    font-family: var(--gereq-font-mono);
+    font-family: var(--grq-font-mono);
     font-size: 52px;
     font-weight: 500;
     letter-spacing: -0.04em;
@@ -227,8 +224,8 @@ html.dark .error-code { color: var(--gereq-signal); }
     margin-top: 28px;
     padding-top: 20px;
     border-top: 1px solid var(--gereq-border);
-    font-family: var(--gereq-font-mono);
-    font-size: 11px;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
     line-height: 1.45;
     color: var(--gereq-muted);
     overflow: auto;
@@ -255,7 +252,7 @@ html.dark .error-code { color: var(--gereq-signal); }
     align-items: center;
     gap: 8px;
     color: var(--gereq-muted);
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 .setup-steps__item.is-done { color: var(--gereq-ink); }
 .setup-steps__item.is-current {
@@ -269,8 +266,8 @@ html.dark .error-code { color: var(--gereq-signal); }
     height: 22px;
     border-radius: 999px;
     border: 1px solid var(--gereq-line);
-    font-family: var(--gereq-font-mono);
-    font-size: 11px;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
 }
 .setup-steps__item.is-current .setup-steps__n,
 .setup-steps__item.is-done .setup-steps__n {
@@ -310,7 +307,7 @@ html.dark .error-code { color: var(--gereq-signal); }
 }
 
 .sidebar-backdrop { display: none; }
-code { font-size: 12px; color: var(--gereq-muted); font-family: var(--gereq-font-mono); }
+code { font-size: var(--grq-text-sm); color: var(--gereq-muted); font-family: var(--grq-font-mono); }
 
 @media (max-width: 860px) {
     .sidebar {

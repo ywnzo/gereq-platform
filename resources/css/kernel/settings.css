@@ -13,16 +13,8 @@
     border-radius: var(--radius);
     background: var(--surface);
 }
-.btn--lg {
-    height: 36px;
-    min-height: 36px;
-    padding-inline: 16px;
-    font-size: 14px;
-    font-weight: 600;
-}
-
 .field__hint {
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     line-height: 1.4;
     color: var(--text-soft);
 }
@@ -34,7 +26,7 @@
     min-width: 0;
 }
 .settings-row__label {
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
     font-weight: 500;
 }
@@ -68,7 +60,7 @@
 .dash-settings__toolbar .muted {
     margin: 0;
     max-width: 52ch;
-    font-size: 13px;
+    font-size: var(--grq-text-md);
 }
 .dash-settings__actions {
     display: flex;
@@ -77,7 +69,7 @@
 }
 .dash-settings__section-title {
     margin: 0 0 8px;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -105,7 +97,7 @@
 .dash-settings__width {
     min-width: 7rem;
     padding: 6px 8px;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 .dash-settings__row:first-child {
     border-top: 0;
@@ -122,10 +114,10 @@
 }
 .dash-settings__title {
     font-weight: 600;
-    font-size: 14px;
+    font-size: var(--grq-text-base);
 }
 .dash-settings__id {
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     color: var(--text-muted);
     background: var(--surface-2);
     padding: 2px 6px;
@@ -177,11 +169,11 @@
 }
 .css-editor__vars-head .muted {
     margin: 0.2rem 0 0.55rem;
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
 }
 .css-editor__filter {
     height: 2rem;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
 }
 .css-editor__list {
     list-style: none;
@@ -235,7 +227,7 @@
     text-overflow: ellipsis;
 }
 .css-editor__var-value {
-    font-family: var(--gereq-font-mono, ui-monospace, monospace);
+    font-family: var(--grq-font-mono);
     font-size: 0.65rem;
     color: var(--text-muted);
     max-width: 5.5rem;
@@ -304,7 +296,7 @@
     gap: 0.15rem;
 }
 .color-picker__hash {
-    font-family: var(--gereq-font-mono, ui-monospace, monospace);
+    font-family: var(--grq-font-mono);
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--text-soft);
@@ -321,7 +313,7 @@
     background: transparent;
     box-shadow: none;
     color: var(--text);
-    font-family: var(--gereq-font-mono, ui-monospace, monospace);
+    font-family: var(--grq-font-mono);
     font-size: 0.95rem;
     font-weight: 650;
     letter-spacing: 0.06em;
@@ -527,7 +519,7 @@
     padding: 0 14px;
     border: 0;
     border-radius: var(--radius);
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
     font-weight: 650;
     cursor: default;
 }
@@ -553,7 +545,7 @@
     font-weight: 800;
 }
 .settings-preview__site-name {
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
     font-weight: 700;
 }
 .settings-preview__tagline {
@@ -576,7 +568,7 @@
 
 .settings-footer__hint {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
 }
 
 @media (max-width: 720px) {

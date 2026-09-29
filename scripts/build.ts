@@ -2,11 +2,13 @@
  * Production (and watch) frontend build via Bun's native bundler.
  * Writes public/build/manifest.json for Gereq\View\RenderEngine.
  *
+ * - resources/js/admin.ts → kernel JS + kernel CSS
+ * - modules/<Name>/Resources/assets/css/admin.css → per-module CSS (only when enabled)
+ *
  * `bun run build`  → hashed files (immutable cache)
- * `bun run dev`    → stable assets/admin.js|css + public/build/.dev marker
- *                  → writes into the host tree mounted by Docker (:/var/www/html)
+ * `bun run dev`    → stable names + public/build/.dev marker
  */
-import { rm, mkdir, writeFile, readdir } from 'node:fs/promises';
+import { rm, mkdir, writeFile, readdir, readFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import tailwind from 'bun-plugin-tailwind';
 
@@ -17,6 +19,56 @@ const entry = path.join(root, 'resources/js/admin.ts');
 const entryKey = 'resources/js/admin.ts';
 const watch = process.argv.includes('--watch');
 const devMarker = path.join(outdir, '.dev');
+
+type ManifestRecord = {
+  file: string;
+  css: string[];
+  isEntry?: boolean;
+  src?: string;
+  moduleId?: string;
+};
+
+type ModuleStyle = {
+  id: string;
+  cssPath: string;
+};
+
+async function exists(p: string): Promise<boolean> {
+  try {
+    await access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function discoverModuleStyles(): Promise<ModuleStyle[]> {
+  const modulesDir = path.join(root, 'modules');
+  let names: string[] = [];
+  try {
+    names = await readdir(modulesDir);
+  } catch {
+    return [];
+  }
+
+  const out: ModuleStyle[] = [];
+  for (const name of names.sort()) {
+    const dir = path.join(modulesDir, name);
+    const cssPath = path.join(dir, 'Resources/assets/css/admin.css');
+    const modulePhp = path.join(dir, 'module.php');
+    if (!(await exists(cssPath)) || !(await exists(modulePhp))) {
+      continue;
+    }
+    const php = await readFile(modulePhp, 'utf8');
+    const match = php.match(/['"]id['"]\s*=>\s*['"]([^'"]+)['"]/);
+    if (!match) {
+      console.warn(`Skip module CSS (no id in module.php): ${name}`);
+      continue;
+    }
+    out.push({ id: match[1], cssPath });
+  }
+  return out;
+}
 
 async function clearLegacyViteMarkers(): Promise<void> {
   try {
@@ -31,44 +83,83 @@ async function clearLegacyViteMarkers(): Promise<void> {
   }
 }
 
-async function writeManifest(outputs: Bun.BuildArtifact[]): Promise<void> {
-  let jsFile: string | null = null;
-  const cssFiles: string[] = [];
+function relOut(filePath: string): string {
+  return path.relative(outdir, filePath).split(path.sep).join('/');
+}
 
-  for (const output of outputs) {
-    const rel = path.relative(outdir, output.path).split(path.sep).join('/');
-    if (output.kind === 'entry-point' && rel.endsWith('.js')) {
-      jsFile = rel;
+/**
+ * LightningCSS (via Tailwind optimize) breaks `color-mix(..., var(--x) N%, var(--y))`:
+ * it emits a solid `var(--x)` fallback and only restores some properties inside
+ * `@supports (color: color-mix(in lab, red, red))`. Result: badges / action
+ * buttons / bulk-bar look fully solid-colored.
+ *
+ * Unwrap the incomplete @supports blocks, then append a raw soft-tint patch
+ * that never goes through LightningCSS again.
+ */
+async function repairColorMixCss(cssRelPaths: string[]): Promise<void> {
+  const patchPath = path.join(root, 'resources/css/kernel/color-mix-fix.css');
+  const patch = await readFile(patchPath, 'utf8');
+  const supportsRe =
+    /@supports\s*\(\s*color:\s*color-mix\(\s*in\s+lab\s*,\s*red\s*,\s*red\s*\)\s*\)\s*\{/g;
+
+  for (const rel of cssRelPaths) {
+    const abs = path.join(outdir, rel);
+    let css = await readFile(abs, 'utf8');
+    css = unwrapAtSupportsBlocks(css, supportsRe);
+    if (!css.includes('/* color-mix-fix */')) {
+      css += `\n/* color-mix-fix */\n${patch}\n`;
     }
-    if (rel.endsWith('.css')) {
-      cssFiles.push(rel);
+    await writeFile(abs, css);
+  }
+}
+
+/** Expand `@supports (…){ … }` matched by `startRe` — keep inner rules, drop the wrapper. */
+function unwrapAtSupportsBlocks(css: string, startRe: RegExp): string {
+  let out = '';
+  let last = 0;
+  startRe.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = startRe.exec(css)) !== null) {
+    out += css.slice(last, match.index);
+    const bodyStart = match.index + match[0].length;
+    let depth = 1;
+    let i = bodyStart;
+    for (; i < css.length; i++) {
+      const ch = css[i];
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) break;
+      }
     }
+    out += css.slice(bodyStart, i);
+    last = i + 1;
+    startRe.lastIndex = last;
   }
+  out += css.slice(last);
+  return out;
+}
 
-  // Bun may attach CSS as a sibling of the JS entry (kind asset/chunk).
-  if (jsFile === null) {
-    const js = outputs.find((o) => o.path.endsWith('.js'));
-    if (js) {
-      jsFile = path.relative(outdir, js.path).split(path.sep).join('/');
-    }
+function pickCss(outputs: Bun.BuildArtifact[]): string | null {
+  const css = outputs.filter((o) => o.path.endsWith('.css') && !o.path.endsWith('.css.map'));
+  if (css.length === 0) {
+    return null;
   }
+  // Prefer entry-point CSS when present.
+  const entryCss = css.find((o) => o.kind === 'entry-point');
+  return relOut((entryCss ?? css[0]).path);
+}
 
-  if (jsFile === null) {
-    throw new Error('Bun build produced no JS entry artifact');
+function pickJs(outputs: Bun.BuildArtifact[]): string | null {
+  const js = outputs.filter((o) => o.path.endsWith('.js') && !o.path.endsWith('.js.map'));
+  if (js.length === 0) {
+    return null;
   }
+  const entryJs = js.find((o) => o.kind === 'entry-point');
+  return relOut((entryJs ?? js[0]).path);
+}
 
-  // Prefer a single CSS next to the entry (drop duplicate hashed leftovers in watch).
-  const cssUnique = [...new Set(cssFiles)];
-
-  const manifest = {
-    [entryKey]: {
-      file: jsFile,
-      css: cssUnique,
-      isEntry: true,
-      src: entryKey,
-    },
-  };
-
+async function writeManifestFile(manifest: Record<string, ManifestRecord>): Promise<void> {
   const body = JSON.stringify(manifest, null, 2) + '\n';
   await writeFile(path.join(outdir, 'manifest.json'), body);
 }
@@ -108,6 +199,37 @@ async function cleanAssetsDir(): Promise<void> {
   );
 }
 
+function buildOptions(extraNaming?: Record<string, string>): Parameters<typeof Bun.build>[0] {
+  const naming = watch
+    ? {
+        entry: '[name].[ext]',
+        chunk: '[name].[ext]',
+        asset: '[name].[ext]',
+        ...extraNaming,
+      }
+    : {
+        entry: '[name]-[hash].[ext]',
+        chunk: '[name]-[hash].[ext]',
+        asset: '[name]-[hash].[ext]',
+        ...extraNaming,
+      };
+
+  return {
+    outdir: assetsDir,
+    target: 'browser',
+    format: 'esm',
+    splitting: false,
+    minify: !watch,
+    sourcemap: watch ? 'linked' : 'none',
+    naming,
+    plugins: [tailwind],
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(watch ? 'development' : 'production'),
+    },
+    throw: true,
+  };
+}
+
 async function runBuild(): Promise<void> {
   await clearLegacyViteMarkers();
 
@@ -120,44 +242,69 @@ async function runBuild(): Promise<void> {
     await clearDevMarker();
   }
 
-  const result = await Bun.build({
+  const moduleStyles = await discoverModuleStyles();
+  const manifest: Record<string, ManifestRecord> = {};
+  const sizeLines: string[] = [];
+
+  const adminResult = await Bun.build({
+    ...buildOptions(),
     entrypoints: [entry],
-    outdir: assetsDir,
-    target: 'browser',
-    format: 'esm',
-    splitting: false,
-    minify: !watch,
-    sourcemap: watch ? 'linked' : 'none',
-    naming: watch
-      ? {
-          entry: '[name].[ext]',
-          chunk: '[name].[ext]',
-          asset: '[name].[ext]',
-        }
-      : {
-          entry: '[name]-[hash].[ext]',
-          chunk: '[name]-[hash].[ext]',
-          asset: '[name]-[hash].[ext]',
-        },
-    plugins: [tailwind],
-    define: {
-      'process.env.NODE_ENV': JSON.stringify(watch ? 'development' : 'production'),
-    },
-    throw: true,
   });
 
-  await writeManifest(result.outputs);
+  const adminJs = pickJs(adminResult.outputs);
+  const adminCss = pickCss(adminResult.outputs);
+  if (adminJs === null) {
+    throw new Error('Bun build produced no admin JS entry');
+  }
+  manifest[entryKey] = {
+    file: adminJs,
+    css: adminCss ? [adminCss] : [],
+    isEntry: true,
+    src: entryKey,
+  };
+  for (const o of adminResult.outputs) {
+    sizeLines.push(`  ${relOut(o.path)}  ${(o.size / 1024).toFixed(1)} kB`);
+  }
+
+  for (const mod of moduleStyles) {
+    const result = await Bun.build({
+      ...buildOptions({
+        entry: watch ? `module-${mod.id}.[ext]` : `module-${mod.id}-[hash].[ext]`,
+        asset: watch ? `module-${mod.id}.[ext]` : `module-${mod.id}-[hash].[ext]`,
+      }),
+      entrypoints: [mod.cssPath],
+    });
+    const css = pickCss(result.outputs);
+    if (css === null) {
+      throw new Error(`Module CSS build produced no CSS for ${mod.id}`);
+    }
+    manifest[`module:${mod.id}`] = {
+      file: css,
+      css: [css],
+      moduleId: mod.id,
+      src: path.relative(root, mod.cssPath).split(path.sep).join('/'),
+    };
+    for (const o of result.outputs) {
+      sizeLines.push(`  ${relOut(o.path)}  ${(o.size / 1024).toFixed(1)} kB`);
+    }
+  }
+
+  await writeManifestFile(manifest);
+
+  const cssToRepair = new Set<string>();
+  for (const rec of Object.values(manifest)) {
+    for (const c of rec.css) cssToRepair.add(c);
+    if (rec.file.endsWith('.css')) cssToRepair.add(rec.file);
+  }
+  await repairColorMixCss([...cssToRepair]);
+
   if (watch) {
     await writeDevMarker();
   }
 
-  const sizes = result.outputs.map((o) => {
-    const rel = path.relative(outdir, o.path);
-    return `  ${rel}  ${(o.size / 1024).toFixed(1)} kB`;
-  });
   const mode = watch ? 'watch' : 'prod';
-  console.log(`✓ bun build [${mode}] → public/build (${result.outputs.length} files)`);
-  for (const line of sizes) {
+  console.log(`✓ bun build [${mode}] → public/build (${sizeLines.length} files, ${moduleStyles.length} module CSS)`);
+  for (const line of sizeLines) {
     console.log(line);
   }
   if (watch) {

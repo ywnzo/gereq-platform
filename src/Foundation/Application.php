@@ -12,6 +12,7 @@ use Gereq\Audit\Auditor;
 use Gereq\Cache\CacheFactory;
 use Gereq\Config\Repository;
 use Gereq\Database\EntityManagerFactory;
+use Gereq\Database\DatabaseBootstrap;
 use Gereq\Debug\DebugBar;
 use Gereq\Debug\QueryCollector;
 use Gereq\Debug\Renderer;
@@ -60,6 +61,9 @@ final class Application
 
         $container = $builder->build();
         $app = new self($basePath, $container);
+
+        // Create missing server DB (if needed) + bare schema/admin before module boot.
+        $container->get(DatabaseBootstrap::class)->ensureBareInstallIfEmpty();
 
         $container->get(CoreRegistrar::class)->register();
         if ((bool) $config->get('app.debug', false)) {
@@ -158,8 +162,8 @@ final class Application
             \Modules\Translate\Application\TranslateProviderInterface::class => \DI\get(\Modules\Translate\Application\MicrosoftTranslateProvider::class),
 
             // Scalars / config-driven construction
-            RenderEngine::class => \DI\factory(static function (Repository $config) use ($basePath): RenderEngine {
-                return new RenderEngine($basePath, $config);
+            RenderEngine::class => \DI\factory(static function (Repository $config, ModuleManager $modules) use ($basePath): RenderEngine {
+                return new RenderEngine($basePath, $config, $modules);
             }),
             QueryCollector::class => \DI\factory(static function (Repository $config): QueryCollector {
                 return new QueryCollector((int) $config->get('app.n_plus_one_threshold', 2));
@@ -195,6 +199,8 @@ final class Application
             \Gereq\Module\ModuleVersionStore::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Module\ModuleVersionActivator::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
+            DatabaseBootstrap::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
 
             // Autowire with scalar constructor params

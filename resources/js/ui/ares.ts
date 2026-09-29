@@ -1,4 +1,5 @@
 import type Alpine from '@alpinejs/csp';
+import { adminPath } from './adminPath';
 
 type AresSubject = {
     ico: string;
@@ -126,7 +127,7 @@ export function registerAres(alpine: typeof Alpine): void {
             this.error = '';
             this.open = true;
             try {
-                const res = await fetch(`/admin/ares/subjects?q=${encodeURIComponent(q)}&limit=8`, {
+                const res = await fetch(`${adminPath('/ares/subjects')}?q=${encodeURIComponent(q)}&limit=8`, {
                     headers: { Accept: 'application/json' },
                     signal: this.abort.signal,
                     credentials: 'same-origin',
@@ -348,7 +349,7 @@ export function registerAres(alpine: typeof Alpine): void {
             this.error = '';
             this.open = true;
             try {
-                const res = await fetch(`/admin/ares/addresses?q=${encodeURIComponent(q)}&limit=8`, {
+                const res = await fetch(`${adminPath('/ares/addresses')}?q=${encodeURIComponent(q)}&limit=8`, {
                     headers: { Accept: 'application/json' },
                     signal: this.abort.signal,
                     credentials: 'same-origin',

@@ -52,7 +52,7 @@
 }
 .g-drawer__title {
     margin: 0;
-    font-family: var(--gereq-font-display);
+    font-family: var(--grq-font-sans);
     font-size: 1.15rem;
     font-weight: 650;
     line-height: 1.25;
@@ -85,7 +85,7 @@
     gap: 0.35rem;
 }
 .g-drawer__label {
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     font-weight: 650;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -122,7 +122,7 @@ body.has-drawer { overflow: hidden; }
     padding: 0.35rem 0.55rem;
     background: var(--gereq-ink);
     color: var(--gereq-paper);
-    font-size: 0.75rem;
+    font-size: var(--grq-text-sm);
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
@@ -246,7 +246,7 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
 .design-bar__links a {
     padding: 0.4rem 0.7rem;
     color: #c5c9bd;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
 }
 .design-bar__links a:hover { color: var(--brand-cream, #f5f5ef); }
 
@@ -258,7 +258,7 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
 .design-head { margin-bottom: 1rem; }
 .design-head__kicker {
     margin: 0 0 0.35rem;
-    font-family: var(--gereq-font-mono);
+    font-family: var(--grq-font-mono);
     font-size: 0.7rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -266,7 +266,7 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
 }
 .design-head h1 {
     margin: 0;
-    font-family: var(--gereq-font-display);
+    font-family: var(--grq-font-sans);
     font-size: 1.65rem;
     letter-spacing: -0.03em;
     font-weight: 650;
@@ -307,7 +307,7 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
     background: transparent;
     color: var(--gereq-muted);
     font: inherit;
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
     font-weight: 600;
     cursor: pointer;
 }
@@ -322,6 +322,23 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
 
 .design-panel { display: none; padding-top: 0; }
 .design-panel.is-active { display: block; }
+
+/* Nested list demos must hug content — viewport list-shell flex collapses here */
+.design-box .list-shell {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: auto;
+}
+.design-box .list-shell > .table-wrap {
+    flex: 0 0 auto;
+    max-height: min(70dvh, 36rem);
+}
+.design-box .list-shell > .page-header {
+    margin-bottom: 0.75rem;
+}
+.design-box .list-shell > .page-header h1 {
+    font-size: var(--grq-text-xl);
+}
 
 .design-box {
     background: var(--gereq-paper);
@@ -338,14 +355,14 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
 }
 .design-box__head h2 {
     margin: 0;
-    font-family: var(--gereq-font-display);
+    font-family: var(--grq-font-sans);
     font-size: 1.05rem;
     font-weight: 650;
 }
 .design-box__head p {
     margin: 0.3rem 0 0;
     color: var(--gereq-muted);
-    font-size: 0.875rem;
+    font-size: var(--grq-text-base);
 }
 .design-box__body { padding: 0.15rem 1.15rem 1rem; }
 
@@ -359,23 +376,128 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
 }
 .design-cluster__label {
     margin: 0;
-    font-family: var(--gereq-font-mono);
-    font-size: 0.6875rem;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--gereq-muted);
 }
 .design-code {
-    font-family: var(--gereq-font-mono);
-    font-size: 0.6875rem;
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
     color: var(--gereq-muted);
 }
+
+/* —— ui() catalogue (/design/ui.html) —— */
+.ui-kit__toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.85rem;
+    margin: 0 0 1.5rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--gereq-border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: color-mix(in srgb, var(--gereq-wash) 92%, transparent);
+    backdrop-filter: blur(6px);
+}
+.ui-kit__toc a {
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-sm);
+    color: var(--gereq-ink);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+.ui-kit__toc a:hover {
+    border-bottom-color: var(--gereq-ink);
+}
+.ui-kit__group {
+    margin-bottom: 2rem;
+}
+.ui-kit__group-head {
+    margin: 0 0 0.85rem;
+}
+.ui-kit__group-head h2 {
+    margin: 0 0 0.25rem;
+    font-size: var(--grq-text-xl);
+}
+.ui-kit__group-head p {
+    margin: 0;
+    color: var(--gereq-muted);
+    max-width: 42rem;
+}
+.ui-kit__demo + .ui-kit__demo {
+    margin-top: 1rem;
+}
+.ui-kit__body {
+    display: grid;
+    gap: 1rem;
+}
+@media (min-width: 960px) {
+    .ui-kit__body {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        align-items: start;
+    }
+}
+.ui-kit__label {
+    margin: 0 0 0.45rem;
+    font-size: var(--grq-text-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gereq-muted);
+}
+.ui-kit__sig {
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
+    color: var(--gereq-muted);
+    word-break: break-word;
+}
+.ui-kit__preview {
+    padding: 0.85rem 0 0.35rem;
+}
+.ui-kit__code pre {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--gereq-border);
+    border-radius: var(--radius);
+    background: var(--gereq-paper);
+    overflow: auto;
+    max-height: 22rem;
+}
+.ui-kit__code code {
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
+    line-height: 1.55;
+    color: var(--gereq-ink);
+    white-space: pre;
+}
+.ui-kit__inline-pre {
+    margin: 0;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--gereq-border);
+    border-radius: var(--radius);
+    background: var(--gereq-paper);
+    overflow: auto;
+}
+.ui-kit__inline-pre code {
+    font-family: var(--grq-font-mono);
+    font-size: var(--grq-text-xs);
+    line-height: 1.5;
+    white-space: pre;
+}
+
+.ui-kit__foot {
+    margin: 2rem 0 3rem;
+    font-size: var(--grq-text-sm);
+}
+
 .design-swatches {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
     gap: 0.85rem 1rem;
     padding-top: 1rem;
-    font-size: 0.8125rem;
+    font-size: var(--grq-text-md);
 }
 .design-swatches > div { display: flex; align-items: center; gap: 0.6rem; }
 .design-swatch { display: block; width: 2.1rem; height: 2.1rem; border: 1px solid var(--gereq-border); }
@@ -449,11 +571,15 @@ html[data-theme="gereq-dark"] .g-editor__content > pre::before {
     grid-column: 2;
     grid-row: 2;
 }
-/* Controls that span both columns push their hint underneath instead. */
+/* Wide controls put the hint under the control — keep the error below the hint. */
 .design-settings > .g-field:has(> .g-editor, > .g-file, > .textarea-shell, > .textarea, > .textarea-mini) > .g-hint {
     grid-column: 2 / -1;
     grid-row: 2;
     padding-top: 0;
+}
+.design-settings > .g-field:has(> .g-editor, > .g-file, > .textarea-shell, > .textarea, > .textarea-mini):has(> .g-hint) > .g-error {
+    grid-column: 2 / -1;
+    grid-row: 3;
 }
 .design-settings > .g-check,
 .design-settings > .g-switch,

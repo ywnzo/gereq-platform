@@ -47,23 +47,148 @@ Controllers typically call `$this->render('admin/users/index.html.twig', [...])`
 
 ## UI component system
 
-`Gereq\Admin\Ui\Ui` (`src/Admin/Ui/Ui.php`), reachable as `ui()` in PHP and Twig:
+`Gereq\Admin\Ui\Ui` (`src/Admin/Ui/Ui.php`), reachable as `ui()` in PHP and Twig.
+
+### Living catalogues
+
+| URL | Route | Purpose |
+| --- | --- | --- |
+| `/design/ui.html` | `design.ui` | **API catalogue** — every standardized `ui()` helper with live preview + PHP sample |
+| `/design.html` | `design` | Visual styleguide (brand, type, buttons, fields, tables chrome, …) |
+
+Prefer `/design/ui.html` when looking up how to call a helper; use `/design.html` for look-and-feel.
+
+### Methods
 
 | Method | Renders |
 | --- | --- |
 | `component(name, data)` | `resources/views/ui/components/<name>.html.twig` (name is sanitised) |
-| `container(colsOrClass, body, options)` | int 1–4 → form grid; string → plain wrapper div |
+| `partial(template, data)` | any Twig under `resources/views` (e.g. `ui/input`, `ui/breadcrumbs`) |
+| `container(colsOrClass, body, options)` | int 1–4 → form grid; string → wrapper `class` |
 | `grid(cols, body, options)` | `components/grid.html.twig` |
-| `cell(body, span, class)` | `components/cell.html.twig` |
-| `drawer(...)`, `drawerTrigger(...)` | side drawer + its opener |
+| `cell(body, span, class)` | `components/cell.html.twig` — `span` is `1`–`3` or `'full'` |
+| `drawer(...)`, `drawerTrigger(...)` | side drawer + opener |
 | `badge(label, tone = 'muted', class)` | `components/badge.html.twig` |
 | `emptyState(title, hint, actionHtml)` | `components/empty.html.twig` |
-| `pageHeader(title, options)` | `components/page_header.html.twig` |
-| `icon(name, class)` | delegates to `Icons::svg()` |
+| `pageHeader(title, options)` | `components/page_header.html.twig` (`meta`, `actions`) |
+| `icon(name, class)` | `Icons::svg()` |
+| `input` / `select` / `textarea` / `checkbox` / `radio` / `switch` / `file` / `editor` | wrappers over `resources/views/ui/*.html.twig` |
+| `column(key, label, options)` | declarative `TableColumn` |
+| `table(columns, rows, options)` | `components/data_table.html.twig` |
+| `sortTh(...)`, `tableFooter(...)` | shared sortable header / pagination footer |
 
-Twig entry points: `ui()` (the service), `ui_render('grid', {...})` (renders a component, marked HTML-safe), and the macros in `resources/views/ui/macros.html.twig` (`badge`, `drawer_trigger`, `empty`, `grid`, `cell`) which wrap `ui_render`.
+### Forms (`ui()->input`, …)
 
-Other shared partials in `resources/views/ui/`: form controls (`input`, `select`, `textarea`, `checkbox`, `radio`, `switch`, `file`, `editor`, `field`, `form_panel`, `form_generator`, `error-summary`), table helpers (`sort_th`, `table_footer`, `table_toggle`, `table_actions_toggle`, `table_thumb`, `row_action`, `row_actions`, `row_action_destroy`), `breadcrumbs`, `media_box`, `image_viewer`, `confirm_dialog`, `drawer`, ARES suggest widgets. `resources/views/design/index.html.twig` (`/design`, route `design`) is a living style guide of these components.
+Pass a data array. Common keys:
+
+| Key | Role |
+| --- | --- |
+| `name` | HTML `name` (also drives `old()` / validation errors) |
+| `id` | optional; default `f-{name}` |
+| `label`, `hint`, `value`, `placeholder` | field chrome |
+| `type` | for `input`: `text`, `email`, `search`, `password`, `number`, `color`, … |
+| `form` | form id string for `FormState`, or `null` when unbound |
+| `required`, `optional`, `disabled`, `readonly` | flags |
+| `prefix` / `suffix` | addon affixes on `input` |
+| `clearable` | clear button on `input` |
+| `options` | for `select` / `radio`: `[['value' => …, 'label' => …], …]` |
+| `searchable` | `select` only |
+| `size` | `textarea`: `'mini'` = plain textarea; default = rich `editor` |
+| `compact` | `file` only |
+
+Example:
+
+```php
+echo ui()->input([
+    'name' => 'email',
+    'id' => 'customer-email', // optional
+    'type' => 'email',
+    'label' => __('common.email'),
+    'value' => $user->email,
+    'form' => 'customers.save',
+]);
+```
+
+### Tables (`ui()->column` + `ui()->table`)
+
+Column options:
+
+| Option | Meaning |
+| --- | --- |
+| `sortable` | render `sort_th` header |
+| `cell` | `text` (default) \| `badge` \| `html` \| `user` \| `mute` \| `num` |
+| `render` | `callable(mixed $row): string` — full cell HTML |
+| `tone` | `callable(mixed $row): string` — badge tone |
+| `meta` | e.g. user cell: `meta_key`, `initials_key`, `href_key` |
+| `class`, `numeric` | `<th>` / `<td>` classes |
+
+Table options (selection):
+
+| Option | Meaning |
+| --- | --- |
+| `list_query` | `ListQuery` — sort, search, pagination params |
+| `sort` / `dir` / `search` / `query` | when not using `ListQuery` |
+| `checkable` + `row_id` | Alpine `dataTable` checkboxes |
+| `row_search` | client-side filter blob per row |
+| `actions` | `callable($row): list of {href, label, icon, variant?}` |
+| `footer`, `total`, `page`, `pages`, `per_page` | footer / pager |
+| `empty_title`, `empty_hint` | empty body |
+| `hash` | append `#…` on sort/pager links (keep tab) |
+
+Example:
+
+```php
+echo ui()->table([
+    ui()->column('name', __('common.name'), [
+        'sortable' => true,
+        'cell' => 'user',
+        'meta' => ['meta_key' => 'phone', 'initials_key' => 'initials'],
+    ]),
+    ui()->column('status', __('common.status'), [
+        'cell' => 'badge',
+        'tone' => fn (array $row): string => $row['tone'],
+    ]),
+], $rows, [
+    'list_query' => $list,
+    'checkable' => true,
+    'row_id' => fn (array $row): string => (string) $row['id'],
+    'actions' => fn (): array => [
+        ['href' => '#', 'label' => __('common.edit'), 'icon' => 'edit'],
+    ],
+    'footer' => true,
+]);
+```
+
+Row action icons map to variants in `ui/row_action.html.twig` (`eye` → primary soft, `edit` → success, `trash` → danger). Prefer surface + coloured icon styles (no solid `color-mix` fills — see build color-mix repair).
+
+### Partials via `ui()->partial`
+
+Anything under `resources/views` without a dedicated method, e.g.:
+
+- `ui/breadcrumbs`, `ui/media_box`, `ui/table_thumb`, `ui/table_toggle`
+- `ui/row_action`, `ui/error-summary`, `ui/form_panel` (often `{% embed %}` for blocks)
+- ARES: `ui/ares_subject_suggest`, `ui/ares_address_suggest`
+- Hosts: `ui/confirm_dialog`, `ui/image_viewer`
+
+### Twig
+
+- `ui()` — the service (`{{ ui().badge('OK', 'ok') }}`)
+- `ui_render('badge', {label: 'OK', tone: 'ok'})` — component only, HTML-safe
+- Macros in `resources/views/ui/macros.html.twig`: `badge`, `drawer_trigger`, `empty`, `grid`, `cell`
+
+### Related JS / CSS patterns (not `ui()` methods)
+
+Documented live on `/design/ui.html` under *Chrome* / *Feedback*:
+
+- Buttons: `.btn`, `.btn--primary|soft|danger|…`, sizes `.btn--xs|sm|lg`
+- Alerts: `.alert`, `.alert--success|warn|danger`
+- Toasts: `window.gereq.toast(message, 'success'|'error'|'info')` (+ `#toasts` host)
+- Confirms: `window.gereq.confirm({…})` / `data-confirm` — **never** native `alert`/`confirm`/`prompt`
+- Status chips: `.status-chip.status-chip--tone-*`
+- Bulk bar: `.bulk-bar` inside `list-shell` + Alpine `dataTable`
+- Entity forms: `forms()->render($entity)` (`Gereq\Admin\Form\Forms`)
+
+Other shared files stay under `resources/views/ui/` as listed above.
 
 ## Twig extensions
 

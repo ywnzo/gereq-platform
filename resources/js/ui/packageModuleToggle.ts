@@ -1,3 +1,5 @@
+import { adminPath } from './adminPath';
+
 /**
  * Ctrl/Cmd+click on package module chips toggles enable ↔ pause.
  */
@@ -61,7 +63,7 @@ async function handleClick(event: MouseEvent): Promise<void> {
 
     link.dataset.busy = '1';
     link.classList.add('is-busy');
-    submitToggle(actionUrl, link.dataset.returnUrl || '/admin/modules#packages');
+    submitToggle(actionUrl, link.dataset.returnUrl || adminPath('/modules') + '#packages');
 }
 
 function submitToggle(actionUrl: string, returnUrl: string): void {

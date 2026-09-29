@@ -124,7 +124,7 @@ Twig is created by `View\TwigFactory` (`src/View/TwigFactory.php`): loader path 
 | `gereq()->make(Service::class)` / `gereq()->container()` | helpers and Twig runtime; `gereq()` returns `Gereq::app()` (`src/Foundation/Gereq.php`) |
 | `config('key.path', $default)` | static config; runtime-editable values go through `Settings::get()` |
 | `__()` / `trans()` | translator |
-| `ui()`, `forms()`, `cache()`, `self_repair_search()` | shortcuts to `Admin\Ui\Ui`, `Admin\Form\Forms`, `Cache\AppCache`, `Search\SelfRepairSearch` |
+| `ui()`, `forms()`, `cache()`, `self_repair_search()` | shortcuts to `Admin\Ui\Ui`, `Admin\Form\Forms`, `Cache\AppCache`, `Search\SelfRepairSearch`; living catalogue `/design/ui.html` — see `docs/architecture/admin-ui.md` |
 | `dump()`, `bdump()` | debug-bar dumps (only useful with `APP_DEBUG=true`) |
 
 Explicit bindings in `Application::definitions()` are limited to factories that need config or `basePath` and to interface → implementation aliases (`RateProviderInterface`, `TranslateProviderInterface`). Modules do **not** register their own container definitions; they rely on autowiring and, when necessary, on `Application::definitions()` (a few module classes with `basePath` parameters are bound there — see `src/Foundation/Application.php` lines ~229-235).

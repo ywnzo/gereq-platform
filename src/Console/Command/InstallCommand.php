@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Console\AdminBootstrap;
 use Gereq\Database\Migrator;
 use Gereq\Database\Seeder;
 use Gereq\Setup\SetupState;
@@ -35,7 +36,12 @@ final class InstallCommand extends Command
             ->addOption('fresh', null, InputOption::VALUE_NONE, 'Vynutit smazání schématu')
             ->addOption('no-demo', null, InputOption::VALUE_NONE, 'Bez demo dat')
             ->addOption('no-sample', null, InputOption::VALUE_NONE, 'Bez ukázkových zákazníků')
+            ->addOption('bare', null, InputOption::VALUE_NONE, 'Jen core + admin (bez modulů / demo)')
             ->addOption('yes', 'y', InputOption::VALUE_NONE, 'Bez potvrzení (CI)');
+
+        foreach (AdminBootstrap::inputOptions() as [$name, $desc]) {
+            $this->addOption($name, null, InputOption::VALUE_REQUIRED, $desc, '');
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -46,12 +52,15 @@ final class InstallCommand extends Command
         $fresh = (bool) $input->getOption('fresh');
         $noDemo = (bool) $input->getOption('no-demo');
         $noSample = (bool) $input->getOption('no-sample');
+        $bare = (bool) $input->getOption('bare');
         $yes = (bool) $input->getOption('yes');
 
         if (!$yes && $input->isInteractive()) {
             $fresh = $io->confirm('Čistá databáze (smazat schéma a vytvořit znovu)?', true);
-            $noDemo = !$io->confirm('Načíst demo obchodní data (objednávky, produkty…)?', false);
-            $noSample = !$io->confirm('Vytvořit ukázkové zákazníky?', false);
+            if (!$bare) {
+                $noDemo = !$io->confirm('Načíst demo obchodní data (objednávky, produkty…)?', false);
+                $noSample = !$io->confirm('Vytvořit ukázkové zákazníky?', false);
+            }
         }
 
         if ($fresh && !$yes && $input->isInteractive()) {
@@ -74,22 +83,38 @@ final class InstallCommand extends Command
             }
         }
 
-        $io->section('Seed');
-        $this->seeder->seed(!$noDemo, !$noSample);
-        if ($fresh || ($noDemo && $noSample)) {
+        $admin = AdminBootstrap::resolve($input, $io);
+        $io->section('Bootstrap');
+        if ($bare) {
+            $this->seeder->seedBare($admin);
+        } else {
+            $this->seeder->seed(!$noDemo, !$noSample, $admin);
+        }
+        if ($fresh || $bare || ($noDemo && $noSample)) {
             $this->setup->markIncomplete();
         }
-        $io->success($noDemo && $noSample
-            ? 'Čistý klient připraven (admin z .env + role + moduly).'
-            : 'Instalace dokončena.');
+
+        $io->section('Počáteční admin (neukládá se do .env)');
+        $io->listing([
+            'E-mail: ' . $admin['email'],
+            'Jméno: ' . $admin['name'],
+            'Role: ' . $admin['role'],
+            $admin['generated']
+                ? 'Heslo (vygenerováno — uložte si ho): ' . $admin['password']
+                : 'Heslo: (zadané při instalaci)',
+        ]);
+
+        $io->success($bare
+            ? 'Čistý bare klient (core + admin).'
+            : ($noDemo && $noSample
+                ? 'Čistý klient připraven (admin + role + moduly).'
+                : 'Instalace dokončena.'));
 
         $url = rtrim((string) env_value('APP_URL', 'http://127.0.0.1:8080'), '/');
-        $email = (string) env_value('ADMIN_EMAIL', '');
+        $admin = \Gereq\Support\AdminPath::base();
         $io->listing([
-            'Admin: ' . $url . '/admin',
-            'Po přihlášení: průvodce nastavení ' . $url . '/admin/setup',
-            'Účet: ' . ($email !== '' ? $email : '(ADMIN_EMAIL v .env)'),
-            'Heslo: z .env ADMIN_PASSWORD',
+            'Admin: ' . $url . $admin,
+            'Po přihlášení: průvodce nastavení ' . $url . $admin . '/setup',
             'Kořen: ' . $this->basePath,
         ]);
 

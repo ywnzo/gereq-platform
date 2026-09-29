@@ -21,7 +21,7 @@
     border-bottom: 1px solid var(--border);
     border-radius: 0;
     padding: 12px 14px;
-    font-size: 13px;
+    font-size: var(--grq-text-md);
     outline: none;
     box-shadow: none;
     height: auto;
@@ -35,7 +35,7 @@
     gap: 12px;
     padding: 8px 10px;
     border-radius: var(--radius);
-    font-size: 13px;
+    font-size: var(--grq-text-md);
     text-decoration: none;
     color: inherit;
 }
@@ -51,22 +51,22 @@
 }
 .palette__label { font-weight: 550; }
 .palette__sub {
-    font-size: 11px;
+    font-size: var(--grq-text-xs);
     color: var(--text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.palette__group { color: var(--text-muted); font-size: 11px; font-family: var(--gereq-font-mono); flex-shrink: 0; }
+.palette__group { color: var(--text-muted); font-size: var(--grq-text-xs); font-family: var(--grq-font-mono); flex-shrink: 0; }
 .palette__hint,
 .palette__empty {
     margin: 0;
     padding: 10px 12px;
-    font-size: 12px;
+    font-size: var(--grq-text-sm);
     color: var(--text-muted);
 }
 
-.text-link { color: var(--text-muted); font-size: 12px; }
+.text-link { color: var(--text-muted); font-size: var(--grq-text-sm); }
 .text-link:hover { color: var(--text); }
 .actions { display: flex; gap: 8px; }
 
@@ -87,9 +87,9 @@
     border-radius: var(--radius);
     padding: 12px 14px;
 }
-.stat-card__label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.stat-card__label { font-size: var(--grq-text-xs); color: var(--text-muted); font-weight: 500; }
 .stat-card__value { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin-top: 4px; }
-.stat-card__hint { font-size: 11px; color: var(--text-soft); margin-top: 4px; }
+.stat-card__hint { font-size: var(--grq-text-xs); color: var(--text-soft); margin-top: 4px; }
 
 .system-strip {
     display: grid;
@@ -106,5 +106,5 @@
     flex-direction: column;
     gap: 4px;
 }
-.system-strip .muted { font-size: 11px; }
-.system-strip strong { font-size: 15px; font-weight: 600; }
+.system-strip .muted { font-size: var(--grq-text-xs); }
+.system-strip strong { font-size: var(--grq-text-control); font-weight: 600; }

@@ -7,7 +7,7 @@ All console commands run through `php gereq <command>` (entry script `gereq` →
 | Command | Arguments / options | What it does | Source |
 | --- | --- | --- | --- |
 | `about` | — | prints platform name, version (`AppVersion::current()`), PHP version, environment | `src/Console/Command/AboutCommand.php` |
-| `install` | `--fresh`, `--no-demo`, `--no-sample`, `-y/--yes` | interactive clean install: confirms schema drop, runs `Migrator::fresh()` + `migrate()` + `Seeder::seed()`, prints the admin login from `ADMIN_EMAIL` | `src/Console/Command/InstallCommand.php` |
+| `install` | `--fresh`, `--bare`, `--no-demo`, `--no-sample`, `-y/--yes`, `--admin-email`, `--admin-password`, … | interactive clean install; admin credentials via CLI/prompt (never `.env`) | `src/Console/Command/InstallCommand.php` |
 | `serve` | `--host=0.0.0.0`, `--port=8080` | built-in PHP server (`php -S … -t public public/router.php`), probes the next 20 ports if busy | `src/Console/Command/ServeCommand.php` |
 | `serve-docker` | `--port=8080`, `--https`, `--hot`, `--build`, `-d/--detach`, `--down`, `--reuse`, `--raw`, `--dashboard`, `--keep`, `--queue` (legacy no-op) | manage the Docker compose stack, optional Vite HMR process and a formatted log TUI | `src/Console/Command/ServeDockerCommand.php`, `src/Console/Docker/*` |
 

@@ -55,11 +55,11 @@ Each file returns an anonymous object with `up(Schema $schema)` and `down(Schema
 ```mermaid
 flowchart TD
     A["php gereq migrate"] --> B["ensureMigrationsTable() → schema_migrations(version, ran_at)"]
-    B --> C{"for each discovered module<br/>(enabled only, once modules table has rows)"}
+    B --> C{"for each discovered module<br/>(enabled only)"}
     C --> D["migrateModule(id, syncSchema:false)"]
     D --> E["for each *.php not in schema_migrations:<br/>introspect schema → up($toSchema) → compareSchemas → alterSchema → afterUp()"]
     E --> F["INSERT schema_migrations (module:basename, ran_at)"]
-    C --> G["syncSchema(): SchemaTool::getUpdateSchemaSQL for all entity metadata<br/>(filtered to entity tables; DROP only for managed / __temp__ tables)"]
+    C --> G["syncSchema(): SchemaTool for core + enabled module entities<br/>(filtered to entity tables; DROP only for managed / __temp__ tables)"]
 ```
 
 Key points from `src/Database/Migrator.php`:
@@ -67,6 +67,7 @@ Key points from `src/Database/Migrator.php`:
 - Version key is `<module-id>:<file basename>`.
 - File migrations run **before** `SchemaTool` so `DEFAULT`/backfill logic in migrations wins over generated DDL.
 - `syncSchema()` restricts the comparison to tables owned by entity metadata so that non-entity tables (`schema_migrations`) are never dropped.
+- Disabled modules are **never** migrated by `migrate()` / `syncSchema()` — including on a fresh empty DB. Their migrations run on enable (`migrateModule()`), or right after `Seeder::seedModules()` marks the default set enabled.
 - `fresh()` drops the schema for all metadata, clears `schema_migrations`, then runs `migrate()`.
 - `rollbackModule(id)` runs `down()` for the module's files and drops its entity tables; `rollbackMigrationsMissingFrom()` is used by module version switching (`src/Module/ModuleUpdater.php`, `ModuleVersionStore`).
 - `status()` / `statusForModule()` back the `migrate:status` command.
@@ -101,8 +102,8 @@ php gereq migrate --fresh --seed
 
 `src/Database/Seeder::seed(bool $withDemo = true, bool $withSampleCustomers = true)` always runs, in order:
 
-1. `seedPermissions()`, `seedRoles()`, `seedAdmin()` — admin user from `ADMIN_NAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`.
-2. `seedModules()` — creates rows in the `modules` table for every discovered manifest and enables the RealEstates default set: `currency`, `customers`, `media`, `cms`, `listings`, `crm`, `calendar`, `viewings`, `documents`, `notifications`, `reviews`, `newsletter`, `portals`, `translate`, `webhooks`, `emailing`.
+1. `seedPermissions()`, `seedRoles()`, `seedAdmin($admin)` — admin credentials come from CLI (`--admin-email` / `--admin-password` / interactive prompt / one-time generated password). **Never** from `.env`.
+2. `seedModules()` — creates rows in the `modules` table for every discovered manifest and enables the RealEstates default set: `currency`, `customers`, `media`, `cms`, `listings`, `crm`, `calendar`, `viewings`, `documents`, `notifications`, `reviews`, `newsletter`, `portals`, `translate`, `webhooks`, `emailing`. Then `ModuleManager::rediscover()` + `Migrator::migrate()` so only those enabled packages get file migrations / schema sync before demo data.
 3. `seedCustomers()` — **sample customers**, only when `--no-sample` is not given.
 4. Brokers, cities, near locations and sample listings (`coreListingSamples()`, `moravianSilesianListingSamples()`), viewings, portal demo (`seedPortalsDemo()` via `Modules\Portals\Application\PortalDemoSeeder` when present). These run regardless of the flags.
 5. `DemoSeeder::seed()` — **demo data**, only when `--no-demo` is not given. Creates the demo user `demo@gereq.cz` / `demo123` (`DemoSeeder::DEMO_EMAIL`, `DEMO_PASSWORD`) and click-through business data.
@@ -118,7 +119,7 @@ Note: because sample listings/cities/viewings are seeded unconditionally, `--no-
 | Admin → Modules → enable | `src/Admin/Http/ModuleController.php` calls `Migrator::migrateModule($id)` after enabling. |
 | Admin → Modules → update / switch version | `src/Module/ModuleUpdater.php` reads `statusForModule()` and runs `migrateModule($id)`; `ModuleController` also runs `migrateModule` after version activation. |
 | CLI | `php gereq module:enable <id>` (see above). |
-| Full run | `php gereq migrate` iterates all **enabled** modules (when the `modules` table already has rows; on a fresh DB all discovered modules are processed). |
+| Full run | `php gereq migrate` iterates **enabled** modules only (never disabled / not-yet-enabled packages). |
 
 The `.cursor/rules/module-updates.mdc` rule requires every module change to bump `module.php` version + `Module::version()` so that the admin "Update" path triggers migrations.
 

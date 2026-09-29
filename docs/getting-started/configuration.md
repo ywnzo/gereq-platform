@@ -33,6 +33,7 @@ Runtime settings stored in the database (`Gereq\Setting\Settings`) sit **on top*
 
 | Key | Default | Notes |
 | --- | --- | --- |
+| `path` | `ADMIN_PATH` → `admin` | Admin UI URL segment (no slashes). `admin` → `/admin/…`; e.g. `panel` → `/panel/…`. Modules may keep writing `/admin/…`; the router and `UrlPrefix` rewrite at runtime. Restart required after change. Shown read-only in Admin → Settings. |
 | `brand` | `GEREQ` | admin brand name (overridable via `brand.*` settings, `src/Brand/Branding.php`) |
 | `brand_sub` | `Platform` | |
 | `theme` | `system` | |
@@ -193,9 +194,7 @@ Consumed by `Gereq\View\RenderEngine`.
 
 | Variable | Default | Read by | Meaning |
 | --- | --- | --- | --- |
-| `ADMIN_NAME` | `Jiří Novák` | `src/Database/Seeder.php` | seeded admin account |
-| `ADMIN_EMAIL` | `jiri.novak@gereq.cz` | `Seeder`, `DemoSeeder`, `InstallCommand` | |
-| `ADMIN_PASSWORD` | `change-me` | `Seeder` | |
+| — | — | Initial admin is **not** an env var. Use `php gereq migrate --bare --admin-email=… --admin-password=…` (or interactive / one-time generated password). |
 | `TRUSTED_PROXIES` | `''` | `src/Http/TrustedProxies.php` | comma-separated CIDRs/IPs for `Request::setTrustedProxies` |
 | `FRONTEND_ORIGIN` | `''` | `src/Http/PublicCors.php` | comma-separated allowed origins for `/api/public/*` CORS |
 | `MONEYS3_APP_ID`, `MONEYS3_CLIENT_ID`, `MONEYS3_CLIENT_SECRET`, `MONEYS3_CLIENT_USERNAME`, `MONEYS3_CLIENT_PASSWORD`, `MONEYS3_API_URL` | `''` | `modules/MoneyS3/Application/MoneyS3Client.php` | Money S3 accounting integration fallbacks |
@@ -213,6 +212,7 @@ Consumed by `Gereq\View\RenderEngine`.
 | `APP_DEBUG` | `false` | `app.debug` |
 | `APP_URL` | `http://localhost:8080` | `app.url` |
 | `APP_URL_PREFIX` | `''` | `app.url_prefix` |
+| `ADMIN_PATH` | `admin` | `admin.path` — admin UI URL segment (`/admin`, `/panel`, …) |
 | `RENDER_ASSET_ORIGIN` | `''` | `render.asset_origin` |
 | `RENDER_URL_PREFIX` | `''` | `render.url_prefix` |
 | `RENDER_CSP_ORIGINS` | `''` | `render.csp_origins` |

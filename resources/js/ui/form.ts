@@ -336,7 +336,10 @@ function markNativeInvalid(control: ValidityTarget) {
 function focusableControl(control: ValidityTarget): HTMLElement {
     const field = control.closest<HTMLElement>('.g-field, .g-check, .g-field--switch');
     const trigger = field?.querySelector<HTMLElement>('.g-select__trigger');
-    if (control instanceof HTMLInputElement && control.type === 'hidden' && trigger) {
+    const isSelectNative =
+        control instanceof HTMLInputElement &&
+        (control.type === 'hidden' || control.classList.contains('g-select__native'));
+    if (isSelectNative && trigger) {
         return trigger;
     }
     return control;

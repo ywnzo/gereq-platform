@@ -1,14 +1,14 @@
 {#
   Sortable table header cell.
   Required: label, column, sort, dir
-  Optional: query (array of extra query params), class
+  Optional: query (array of extra query params), class, search, hash
 #}
 {% set active = sort == column %}
 {% set nextDir = active and dir == 'asc' ? 'desc' : 'asc' %}
 {% set qs = { sort: column, dir: nextDir, page: 1 }|merge(query|default({})) %}
 {% if search is defined and qs.q is not defined %}{% set qs = qs|merge({ q: search }) %}{% endif %}
 <th class="{{ class|default('') }}{{ active ? ' is-sorted is-sorted--' ~ dir : '' }}" scope="col" aria-sort="{{ active ? (dir == 'asc' ? 'ascending' : 'descending') : 'none' }}">
-    <a class="table-sort" href="?{{ qs|url_encode }}">
+    <a class="table-sort" href="?{{ qs|url_encode }}{% if hash|default('') %}#{{ hash }}{% endif %}">
         <span>{{ label }}</span>
         <span class="table-sort__icon" aria-hidden="true">
             {% if active and dir == 'asc' %}↑{% elseif active and dir == 'desc' %}↓{% else %}↕{% endif %}

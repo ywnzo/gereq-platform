@@ -20,8 +20,11 @@ return [
         if ($path === '' || $path === '/') {
             return '';
         }
-        if (str_ends_with($path, '/admin')) {
-            $path = substr($path, 0, -strlen('/admin'));
+        $adminBase = '/' . \Gereq\Support\AdminPath::sanitize(
+            trim((string) env_value('ADMIN_PATH', \Gereq\Support\AdminPath::CANONICAL), '/')
+        );
+        if (str_ends_with($path, $adminBase)) {
+            $path = substr($path, 0, -strlen($adminBase));
         }
 
         return ($path === '' || $path === '/') ? '' : $path;

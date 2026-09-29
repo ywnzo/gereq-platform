@@ -21,7 +21,7 @@ final class ModuleVersionInstaller
     }
 
     /**
-     * @return list<array{version: string, tag: string, committed_at: ?string, cached: bool, active: bool}>
+     * @return list<array{version: string, tag: string, committed_at: ?string, cached: bool, active: bool, footprint: string, is_downgrade: bool, is_upgrade: bool}>
      */
     public function listVersions(string $moduleId, bool $refresh = false): array
     {
@@ -43,6 +43,7 @@ final class ModuleVersionInstaller
                 'committed_at' => $row['committed_at'],
                 'cached' => isset($cached[$v]),
                 'active' => $v === $active,
+                'footprint' => isset($cached[$v]) ? $this->store->footprint($moduleId, $v) : '',
                 'is_downgrade' => version_compare($v, $active) < 0,
                 'is_upgrade' => version_compare($v, $active) > 0,
             ];
@@ -55,9 +56,12 @@ final class ModuleVersionInstaller
                     'committed_at' => null,
                     'cached' => true,
                     'active' => $v === $active,
+                    'footprint' => $this->store->footprint($moduleId, $v),
                     'is_downgrade' => version_compare($v, $active) < 0,
                     'is_upgrade' => version_compare($v, $active) > 0,
                 ];
+            } else {
+                $byVersion[$v]['footprint'] = $this->store->footprint($moduleId, $v);
             }
         }
 
@@ -79,6 +83,8 @@ final class ModuleVersionInstaller
 
         $version = GitLabModuleClient::normalizeVersion($version);
         if ($this->store->has($moduleId, $version)) {
+            $this->store->ensureMeta($moduleId, $version, $this->store->pathFor($moduleId, $version));
+
             return $this->store->pathFor($moduleId, $version);
         }
 

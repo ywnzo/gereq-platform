@@ -55,11 +55,18 @@ final class ModuleUpdater
             }
         }
 
+        $liveFootprint = ModuleFootprint::ofDirectory($manifest->path);
+        $installedFootprint = $row->footprint();
+        if ($liveFootprint !== '' && $installedFootprint !== null && $installedFootprint !== $liveFootprint) {
+            return $this->updateAvailableCache[$id] = true;
+        }
+
         return $this->updateAvailableCache[$id] = false;
     }
 
     /**
      * Apply pending migrations for the module and sync DB version to the file manifest.
+     * Disabled modules only bump the stored version — schema is applied on enable.
      *
      * @return list<string>
      */
@@ -75,21 +82,31 @@ final class ModuleUpdater
             throw new \RuntimeException($this->translator->trans('modules.error.not_installed', ['%id%' => $id]));
         }
 
-        $messages = $this->migrator->migrateModule($id, syncSchema: $syncSchema);
+        $messages = [];
+        if ($this->modules->isEnabled($id)) {
+            $messages = $this->migrator->migrateModule($id, syncSchema: $syncSchema);
+        }
 
         $from = $row->version();
+        $fromFootprint = $row->footprint();
+        $liveFootprint = ModuleFootprint::ofDirectory($manifest->path);
         $row->setVersion($manifest->version);
-        $this->modules->syncPermissions($manifest);
+        $row->setFootprint($liveFootprint !== '' ? $liveFootprint : null);
+        if ($this->modules->isEnabled($id)) {
+            $this->modules->syncPermissions($manifest);
+        }
         $this->em->flush();
 
-        if ($id === 'listings') {
+        if ($id === 'listings' && $this->modules->isEnabled($id)) {
             $this->ensureBrokerRole();
         }
 
         $this->auditor->log('module.updated', 'module', $id, [
             'version' => $from,
+            'footprint' => $fromFootprint,
         ], [
             'version' => $manifest->version,
+            'footprint' => $row->footprint(),
             'migrations' => count($messages),
         ]);
 
