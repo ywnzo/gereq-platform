@@ -28,6 +28,8 @@ final class Icons
             'manage_accounts' => 'manage_accounts',
             'user' => 'person',
             'modules' => 'grid_view',
+            'list' => 'view_list',
+            'grid' => 'grid_view',
             'settings' => 'settings',
             'shield' => 'shield',
             'activity' => 'monitoring',

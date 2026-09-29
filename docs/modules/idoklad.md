@@ -78,7 +78,7 @@ None. The module does not register `/api/v1` routes; access to iDoklad data is a
 ## Events, hooks & webhooks
 
 - Platform events: none registered.
-- Hooks **added**: filter `customers.show.sections` (section `idoklad.partner`, order 90, requires `idoklad.view`; fetches remote contact when enabled) and action `customers.deleting` (`HookPriority::EARLY`, removes all `iDokladLink` rows with `entity_type = customer`). Both only when `Modules\Customers\Domain\Customer` exists.
+- Hooks **added**: filter `customers.show.sections` (section `idoklad.partner`, order 90, requires `idoklad.view`; fetches remote contact when enabled) and action `customers.deleting` (`HookPriority::EARLY`, removes all `iDokladLink` rows with `entity_type = customer`). Both only when `Gereq\Customers\Domain\Customer` exists.
 - Queue jobs, scheduled tasks, publishables, webhooks: none. All API calls are synchronous from requests.
 - Diagnostics: every API call is logged through `Gereq\Debug\FullServiceLogger` (`idoklad.api.request`, `idoklad.api.token_failed`, `idoklad.api.pdf.request`, …).
 

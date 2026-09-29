@@ -152,7 +152,7 @@ Serializers — deal: `id`, `customer_id`, `title`, `amount`, `currency`, `stage
 - Filter `customers.show.sections(array $sections, Customer)` — adds sections `crm.deals` (order 20) and `crm.activities` (order 30) with the last 10 records each.
 - Action `customers.deleting(Customer)` at `HookPriority::EARLY` — removes the customer's deals, their activities and the customer's activities.
 - Action `platform.event.dispatched(EventEnvelope)` at `HookPriority::NORMAL` → `AutomationEngine::onPlatformEvent()` (creates `WorkflowRun`s for every active workflow whose `trigger.event` node matches the event type and conditions, then dispatches `RunWorkflowJob`).
-- Domain event listener: `Modules\Customers\Domain\CustomerCreated` → creates a completed `note` activity "Zákazník vytvořen".
+- Domain event listener: `Gereq\Customers\Domain\CustomerCreated` → creates a completed `note` activity "Zákazník vytvořen".
 
 ### Workflow variables (`$context->workflowVariables()->registerMany(...)`)
 

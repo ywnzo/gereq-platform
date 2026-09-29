@@ -61,6 +61,7 @@ final class ContentSecurityPolicy
             "style-src-attr 'unsafe-inline'",
             "font-src 'self' https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https:",
+            "media-src 'self' blob:",
             'connect-src ' . implode(' ', array_unique([...$connectSrc, 'https://cdn.jsdelivr.net'])),
             $allowSameOriginFrame ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
             "base-uri 'self'",

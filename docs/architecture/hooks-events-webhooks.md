@@ -44,7 +44,7 @@ Well-known core hooks: `module.enabled` (`ModuleManager::enable()`), `platform.e
 | `emit(type, resource, data, version = '1', actor = null): EventEnvelope` | build an envelope without an event class and fire `platform.event.dispatched` directly |
 | `remove(id)`, `setTracer(callable)` | |
 
-`PlatformEvent` (`src/Event/PlatformEvent.php`) is a one-method interface — `envelope(): EventEnvelope`. Modules usually have an abstract base (e.g. `modules/Customers/Domain/Events/AbstractCustomerPlatformEvent.php`, `modules/Media/Domain/Events/AbstractMediaEvent.php`) whose subclasses carry the entity and build the envelope.
+`PlatformEvent` (`src/Event/PlatformEvent.php`) is a one-method interface — `envelope(): EventEnvelope`. Modules usually have an abstract base (e.g. `src/Customers/Domain/Events/AbstractCustomerPlatformEvent.php`, `src/Media/Domain/Events/AbstractMediaEvent.php`) whose subclasses carry the entity and build the envelope.
 
 ### `EventEnvelope`
 
@@ -99,16 +99,16 @@ flowchart LR
     Q --> J[queue:work → HTTP POST + HMAC]
 ```
 
-## Outbound webhooks (`modules/Webhooks`)
+## Outbound webhooks (`src/Webhooks`)
 
-Core only provides the hook; delivery is implemented by the `webhooks` module (`modules/Webhooks/WebhooksModule.php`):
+Core only provides the hook; delivery is implemented by core webhooks (`Gereq\Webhooks\WebhooksRegistrar`):
 
-- `boot()` registers `platform.event.dispatched` → `WebhookDispatcher::dispatch($envelope)` (`modules/Webhooks/Application/WebhookDispatcher.php`).
+- `boot()` registers `platform.event.dispatched` → `WebhookDispatcher::dispatch($envelope)` (`src/Webhooks/Application/WebhookDispatcher.php`).
 - `dispatch()` loads enabled `Webhook` entities, keeps those whose subscription `matchesEvent(type)`, creates a `WebhookDelivery` row with the `webhookPayload()` body and pushes `DeliverWebhookJob` to the queue; it also calls `processDueRetries()` for deliveries in status `retrying`.
-- `DeliverWebhookJob` (`modules/Webhooks/Application/DeliverWebhookJob.php`) POSTs JSON with headers `X-GEREQ-Event`, `X-GEREQ-Delivery`, `X-GEREQ-Timestamp`, `X-GEREQ-Signature`. Signature (`WebhookSigner`): `sha256=` + `hash_hmac('sha256', "<timestamp>.<rawBody>", secret)`; receivers should reject timestamps older than `api.webhooks.replay_tolerance_seconds` (300 s).
+- `DeliverWebhookJob` (`src/Webhooks/Application/DeliverWebhookJob.php`) POSTs JSON with headers `X-GEREQ-Event`, `X-GEREQ-Delivery`, `X-GEREQ-Timestamp`, `X-GEREQ-Signature`. Signature (`WebhookSigner`): `sha256=` + `hash_hmac('sha256', "<timestamp>.<rawBody>", secret)`; receivers should reject timestamps older than `api.webhooks.replay_tolerance_seconds` (300 s).
 - `SsrfGuard` blocks private/loopback targets unless `WEBHOOKS_ALLOW_PRIVATE_URLS=true`; timeouts and the auto-disable threshold (`WEBHOOKS_MAX_FAILURES`) come from `config/api.php` → `webhooks.*`.
 - Admin UI: endpoints, deliveries with manual retry (`webhooks.deliveries.retry` permission).
-- Inbound webhooks from providers (payment gateways) register through `Gereq\Api\InboundWebhookProviderInterface` and the module's `InboundWebhookRegistry`; see `modules/Webhooks/README.md`.
+- Inbound webhooks from providers (payment gateways) register through `Gereq\Api\InboundWebhookProviderInterface` and `InboundWebhookRegistry`; see [webhooks](../modules/webhooks.md).
 
 ## Queue (`src/Queue`)
 
@@ -120,7 +120,7 @@ Core only provides the hook; delivery is implemented by the `webhooks` module (`
 | `redis` | `RPUSH gereq:queue <serialize($job)>` (uses `ext-redis`, `REDIS_*`) | `LPOP gereq:queue` |
 | `file` | writes the serialized job as `storage/tmp/queue/*.job` | oldest `.job` file (sorted by name), deleted on pop |
 
-`Gereq\Queue\Job` is a single-method interface (`handle(): void`); jobs are plain serializable objects and must resolve their services at run time (e.g. via `gereq()->make()`), not hold them as properties. Examples: `modules/Webhooks/Application/DeliverWebhookJob.php`, `modules/CRM/Application/Jobs/RunWorkflowJob.php`, `modules/Emailing/Application/Jobs/SendOutboxJob.php`, `modules/Ai/Application/Jobs/IngestSourceJob.php`.
+`Gereq\Queue\Job` is a single-method interface (`handle(): void`); jobs are plain serializable objects and must resolve their services at run time (e.g. via `gereq()->make()`), not hold them as properties. Examples: `src/Webhooks/Application/DeliverWebhookJob.php`, `modules/CRM/Application/Jobs/RunWorkflowJob.php`, `modules/Emailing/Application/Jobs/SendOutboxJob.php`, `modules/Ai/Application/Jobs/IngestSourceJob.php`.
 
 Worker: `php gereq queue:work` (`src/Console/Command/QueueWorkCommand.php`) — infinite loop, `sleep(1)` when empty, prints `Hotovo: <class>` or the exception message. There is no automatic retry or dead-letter handling in core (`Gereq\Queue\FailedJob` entity exists but is not written by the worker); modules implement their own retry state (Webhooks `retrying` status). The Docker stack runs the worker as the `queue` service; `config/queue.php` `retry_after = 90` is currently unused by the core worker.
 
@@ -137,7 +137,7 @@ interface Notification
 }
 ```
 
-`Gereq\Notification\Notifier::send(User, Notification)` (`src/Notification/Notifier.php`) iterates `via()`: `database` persists a `DatabaseNotification` row (`user_id`, class, payload); `email` sends a plain-text `Email` through Symfony Mailer (`MAIL_DSN`); `websocket` is accepted but a no-op. A generic implementation is `modules/Notifications/Application/SimpleNotification.php`; the `notifications` module provides the inbox UI.
+`Gereq\Notification\Notifier::send(User, Notification)` (`src/Notification/Notifier.php`) iterates `via()`: `database` persists a `DatabaseNotification` row (`user_id`, class, payload); `email` sends a plain-text `Email` through Symfony Mailer (`MAIL_DSN`); `websocket` is accepted but a no-op. A generic implementation is `src/Notifications/Application/SimpleNotification.php`; core notifications (`Gereq\Notifications`) provide the inbox UI.
 
 ## Related
 

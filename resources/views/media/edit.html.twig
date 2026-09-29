@@ -1,0 +1,90 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ 'media.edit'|trans }}</h1>
+            <p class="muted detail-layout__meta">
+                <code>{{ item.path() }}</code>
+                <span class="badge">{{ item.mime() }}</span>
+            </p>
+        </div>
+        <div class="actions">
+            <button class="btn btn--primary" type="submit" form="media-edit-form">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.media.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'media.save' } %}
+
+    <form
+        id="media-edit-form"
+        method="post"
+        class="detail-layout"
+        action="{{ url('admin.media.update', {id: item.id()}) }}"
+        data-form="media.save"
+        x-data="gereqForm"
+        {% if form_errors('media.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+
+        <div class="detail-layout__main">
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'common.details'|trans }}</h2>
+                </header>
+                <div class="form-grid">
+                    {{ forms().render(item, {
+                        form: 'media.save',
+                        cols: 1,
+                        wrap: false,
+                        choices: { folder_id: folderOptions|default([]) }
+                    }) }}
+                </div>
+            </section>
+
+            {% if item.isImage() %}
+                <section class="detail-hero panel">
+                    <header class="panel__head">
+                        <h2>{{ 'media.field.preview'|trans }}</h2>
+                    </header>
+                    <a class="detail-hero__media" href="{{ url('admin.media.file', {id: item.id()}) }}" target="_blank" rel="noopener">
+                        <img src="{{ url('admin.media.file', {id: item.id()}) }}" alt="{{ item.alt()|default(item.title()) }}">
+                    </a>
+                </section>
+            {% endif %}
+        </div>
+
+        <aside class="detail-layout__aside">
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+                <dl class="meta-list meta-list--flush detail-layout__specs">
+                    <div>
+                        <dt>{{ 'media.field.mime'|trans }}</dt>
+                        <dd><span class="badge">{{ item.mime() }}</span></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'media.field.size'|trans }}</dt>
+                        <dd>{{ (item.size() / 1024)|number_format(1, ',', ' ') }} KB</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'media.field.dimensions'|trans }}</dt>
+                        <dd>{% if item.width() and item.height() %}{{ item.width() }} × {{ item.height() }}{% else %}—{% endif %}</dd>
+                    </div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'media.field.path'|trans }}</dt>
+                        <dd><code>{{ item.path() }}</code></dd>
+                    </div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'media.field.created'|trans }}</dt>
+                        <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                    </div>
+                </dl>
+            </section>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url('admin.media.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>
+            </div>
+        </aside>
+    </form>
+{% endblock %}

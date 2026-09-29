@@ -12,7 +12,7 @@ The Returns module handles RMA / return requests (Czech: *reklamace*) raised aga
 | Requires | `core ^1.0`, `currency ^1.1` |
 | Optional | `orders ^1.0`, `shop ^1.0`, `warehouse ^1.0` (declared in manifest; no hard code dependency on them) |
 | Capabilities provided | `returns` (registered with `ReturnsProvider` as the capability object) |
-| Capabilities consumed | none explicitly; `Modules\Currency\Application\CurrencyBuilder` is injected into the admin controller (hard dependency on [Currency](currency.md)); `Modules\Customers\Domain\Customer` is used behind `class_exists()` in `OpenReturnsWidget` |
+| Capabilities consumed | none explicitly; `Gereq\Currency\Application\CurrencyBuilder` is injected into the admin controller (hard dependency on [Currency](currency.md)); `Gereq\Customers\Domain\Customer` is used behind `class_exists()` in `OpenReturnsWidget` |
 | Groups / packages | none in `module.php`; not listed in `config/module_groups.php` (ungrouped module) |
 | Permissions | `returns.view` (`perm.returns.view`), `returns.manage` (`perm.returns.manage`) — group `perm.group.returns` |
 | API scopes | `returns.read`, `returns.write` |
@@ -186,7 +186,7 @@ Templates used: `admin/dashboard/widgets/shortcut.html.twig`, `metric.html.twig`
 | `Modules\Returns\Http\ReturnController` | Admin CRUD-ish controller; depends on `CurrencyBuilder` from [Currency](currency.md) for currency code normalisation. |
 | `Modules\Returns\Http\Api\ReturnApiController` | REST controller. |
 
-Integration guards: `OpenReturnsWidget::customerNames()` checks `class_exists(Modules\Customers\Domain\Customer::class)` and wraps the query in `try/catch`. No integration code exists for the optional `orders`, `shop` or `warehouse` dependencies (no stock return-to-warehouse or order status linkage).
+Integration guards: `OpenReturnsWidget::customerNames()` checks `class_exists(Gereq\Customers\Domain\Customer::class)` and wraps the query in `try/catch`. No integration code exists for the optional `orders`, `shop` or `warehouse` dependencies (no stock return-to-warehouse or order status linkage).
 
 ## CLI commands
 

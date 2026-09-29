@@ -130,7 +130,7 @@ Registered in `boot()`. See [Dashboard widgets](../architecture/dashboard-widget
 | `Http/TaskController` | Inline task CRUD on the project page; assignee notification bridge. |
 | `Http/Api/ProjectApiController` | REST API. |
 
-Cross-module integration: hard dependency on `Modules\Customers\Domain\Customer` (imports, validation, listing); optional CRM link is a bare `deal_id` string (no lookup); optional Notifications via capability with `method_exists` guards (`bridge()`, `notifyUser()`).
+Cross-module integration: hard dependency on `Gereq\Customers\Domain\Customer` (imports, validation, listing); optional CRM link is a bare `deal_id` string (no lookup); optional Notifications via capability with `method_exists` guards (`bridge()`, `notifyUser()`).
 
 ## CLI commands
 

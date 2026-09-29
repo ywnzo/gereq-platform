@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Gereq\Tests\Unit\Webhook;
 
 use Gereq\Config\Repository;
-use Modules\Webhooks\Application\SsrfGuard;
-use Modules\Webhooks\Application\WebhookSigner;
-use Modules\Webhooks\Domain\Webhook;
+use Gereq\Webhooks\Application\SsrfGuard;
+use Gereq\Webhooks\Application\WebhookSigner;
+use Gereq\Webhooks\Domain\Webhook;
 use PHPUnit\Framework\TestCase;
 
 final class WebhookSecurityTest extends TestCase

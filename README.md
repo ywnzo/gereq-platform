@@ -2,7 +2,7 @@
 
 Interní modulární backendová platforma. Není to CMS ani kopie WordPressu — je to **Core**, na kterém lze stavět administrace, CRM, ERP, portály a další interní systémy.
 
-Verze **0.1** obsahuje funkční jádro, administraci, oprávnění, modulový systém a demonstrační modul **Customers**.
+Verze **0.1** obsahuje funkční jádro, administraci, oprávnění, modulový systém a core entity (Customers, Media, Currency, …).
 
 ## Co platforma umí
 
@@ -196,7 +196,7 @@ Každý modul je **vlastní GitLab projekt** `git.gereq.cz/gereq/module-<id>` a 
 ```text
 GEREQ_PLATFORM                    → git.gereq.cz/gereq/GEREQ_PLATFORM
 └── modules/
-    ├── Customers/                → submodule gereq/module-customers @ v1.6.3
+    ├── CRM/                      → submodule gereq/module-crm @ …
     ├── Listings/                 → submodule gereq/module-listings @ …
     └── …
 ```
@@ -204,7 +204,7 @@ GEREQ_PLATFORM                    → git.gereq.cz/gereq/GEREQ_PLATFORM
 Struktura uvnitř modulu:
 
 ```text
-modules/Customers/
+modules/CRM/
     Domain/
     Application/
     Infrastructure/
@@ -214,7 +214,7 @@ modules/Customers/
     Resources/views/
     Tests/
     module.php
-    CustomersModule.php
+    CrmModule.php
 ```
 
 Manifest `module.php` popisuje id, verzi, závislosti, capabilities a permissions. Modul implementuje `ModuleInterface` (`register` / `boot`).
@@ -237,12 +237,12 @@ IDE tip: po převodu na submodules Cursor/VS Code může u souborů uvnitř `mod
 
 ```bash
 # aktualizovat jeden modul na nový tag
-cd modules/Customers
+cd modules/CRM
 git fetch --tags
 git checkout v1.6.4
 cd ../..
-git add modules/Customers
-git commit -m "chore: pin Customers to v1.6.4"
+git add modules/CRM
+git commit -m "chore: pin CRM to v1.6.4"
 git push
 
 # srovnání lokálních verzí vs GitLab tagy (TUI)
@@ -250,7 +250,7 @@ git push
 ./bin/grq modules status --plain
 ```
 
-Commit kódu modulu patří do **module repo** (`module-customers`). Commit v `GEREQ_PLATFORM` jen posouvá pin submodule (SHA/tag).
+Commit kódu modulu patří do **module repo** (`module-crm`). Commit v `GEREQ_PLATFORM` jen posouvá pin submodule (SHA/tag).
 
 ### Verze a instalace z GitLabu
 
@@ -390,7 +390,7 @@ Každý modul má být plnohodnotná platform capability, ne jen admin CRUD:
 - Verzované API: `/api/v1/…`, OpenAPI: `/api/openapi.json`
 - Auth: session nebo Bearer token `grq_live_*` / `grq_test_*` (Developer → API Tokens)
 - Events: `EventRegistry` + `EventEnvelope`; dispatch přes `EventBus` / `emit()`
-- Outbound webhooks: modul `Webhooks` (HMAC, retries, SSRF protection, delivery log)
+- Outbound webhooks: core `Webhooks` (HMAC, retries, SSRF protection, delivery log)
 - Developer admin: API explorer, Tokens, Events, Webhooks
 
 ```php
@@ -417,16 +417,16 @@ vendor/bin/phpcs
 
 ```text
 GEREQ_PLATFORM (git.gereq.cz/gereq/GEREQ_PLATFORM)
-├── Core
+├── Core (src/)
 │   ├── Auth, Users, Roles, Permissions
 │   ├── Modules, Events, Hooks, Publish
 │   ├── Database, Cache, Queue
-│   ├── Notifications, Files, Settings
+│   ├── Notifications, Media, Webhooks, Settings
+│   ├── Customers, Currency
 │   └── API, Audit, Admin UI
 └── modules/   (git submodules)
-    ├── Customers  → gereq/module-customers
     ├── CRM        → gereq/module-crm
-    ├── Currency   → gereq/module-currency
+    ├── Listings   → gereq/module-listings
     └── …          → gereq/module-<id>
 ```
 

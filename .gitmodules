@@ -13,9 +13,6 @@
 [submodule "modules/CRM"]
 	path = modules/CRM
 	url = ../module-crm.git
-[submodule "modules/Currency"]
-	path = modules/Currency
-	url = ../module-currency.git
 [submodule "modules/CustomerUploads"]
 	path = modules/CustomerUploads
 	url = ../module-customer_uploads.git
@@ -37,9 +34,6 @@
 [submodule "modules/Loyalty"]
 	path = modules/Loyalty
 	url = ../module-loyalty.git
-[submodule "modules/Media"]
-	path = modules/Media
-	url = ../module-media.git
 [submodule "modules/MoneyS3"]
 	path = modules/MoneyS3
 	url = ../module-moneys3.git
@@ -85,9 +79,6 @@
 [submodule "modules/Warehouse"]
 	path = modules/Warehouse
 	url = ../module-warehouse.git
-[submodule "modules/Webhooks"]
-	path = modules/Webhooks
-	url = ../module-webhooks.git
 [submodule "modules/Ai"]
 	path = modules/Ai
 	url = ../module-ai.git
@@ -97,18 +88,12 @@
 [submodule "modules/Cms"]
 	path = modules/Cms
 	url = ../module-cms.git
-[submodule "modules/Customers"]
-	path = modules/Customers
-	url = ../module-customers.git
 [submodule "modules/Emailing"]
 	path = modules/Emailing
 	url = ../module-emailing.git
 [submodule "modules/Listings"]
 	path = modules/Listings
 	url = ../module-listings.git
-[submodule "modules/Notifications"]
-	path = modules/Notifications
-	url = ../module-notifications.git
 [submodule "modules/Payments"]
 	path = modules/Payments
 	url = ../module-payments.git

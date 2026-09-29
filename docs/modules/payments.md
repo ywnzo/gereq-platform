@@ -70,7 +70,7 @@ stateDiagram-v2
 ### Screens
 
 * **Methods list** (`Resources/views/methods/index.html.twig`) — all methods ordered by `sort_order, code`; `?q=` search across `code`, `name`, `provider` (`self_repair_search`).
-* **Method form** (`methods/form.html.twig`) — generated from entity form metadata; code uniqueness enforced in `store()`/`update()` (422 `payments.error.code_taken`); currency normalised through `Modules\Currency\Application\CurrencyBuilder::code()`. Audit: `payments.method.created|updated|deleted` (update logs old/new code+name).
+* **Method form** (`methods/form.html.twig`) — generated from entity form metadata; code uniqueness enforced in `store()`/`update()` (422 `payments.error.code_taken`); currency normalised through `Gereq\Currency\Application\CurrencyBuilder::code()`. Audit: `payments.method.created|updated|deleted` (update logs old/new code+name).
 * There is **no admin screen for payment intents** — they are visible only via dashboard widgets, the REST API and the order detail in [Orders](orders.md).
 
 ### Settings

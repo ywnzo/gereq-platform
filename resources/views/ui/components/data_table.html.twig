@@ -69,15 +69,17 @@
                     >
                         {% if checkable %}
                             <td class="table__check">
-                                <label class="table-check">
-                                    <input
-                                        type="checkbox"
-                                        value="{{ rid }}"
-                                        @change="toggleId('{{ rid|e('html_attr') }}')"
-                                        :checked="isSelected('{{ rid|e('html_attr') }}')"
-                                    >
-                                    <span class="sr-only">{{ rid }}</span>
-                                </label>
+                                {% if (row_checkable[idx] ?? true) and rid %}
+                                    <label class="table-check">
+                                        <input
+                                            type="checkbox"
+                                            value="{{ rid }}"
+                                            @change="toggleId('{{ rid|e('html_attr') }}')"
+                                            :checked="isSelected('{{ rid|e('html_attr') }}')"
+                                        >
+                                        <span class="sr-only">{{ rid }}</span>
+                                    </label>
+                                {% endif %}
                             </td>
                         {% endif %}
                         {% for column in columns %}
@@ -89,12 +91,21 @@
                             {% embed 'ui/row_actions.html.twig' %}
                                 {% block items %}
                                     {% for action in action_cells[idx]|default([]) %}
-                                        {% include 'ui/row_action.html.twig' with {
-                                            href: action.href|default('#'),
-                                            label: action.label|default(''),
-                                            icon: action.icon|default('dot'),
-                                            variant: action.variant|default('')
-                                        } %}
+                                        {% if action.type|default('link') == 'destroy' %}
+                                            {% include 'ui/row_action_destroy.html.twig' with {
+                                                action: action.action|default(action.href|default('#')),
+                                                label: action.label|default('common.delete'|trans),
+                                                confirm: action.confirm|default('ui.confirm.delete_body'|trans),
+                                                confirm_title: action.confirm_title|default('ui.confirm.delete_title'|trans)
+                                            } %}
+                                        {% else %}
+                                            {% include 'ui/row_action.html.twig' with {
+                                                href: action.href|default('#'),
+                                                label: action.label|default(''),
+                                                icon: action.icon|default('dot'),
+                                                variant: action.variant|default('')
+                                            } %}
+                                        {% endif %}
                                     {% endfor %}
                                 {% endblock %}
                             {% endembed %}

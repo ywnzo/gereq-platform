@@ -11,7 +11,7 @@ Loyalty implements a simple customer loyalty program: administrators define **ti
 | Directory | `modules/Loyalty/` |
 | Class | `Modules\Loyalty\LoyaltyModule` |
 | Requires | `core ^1.0` |
-| Optional | none declared (Customer names are resolved via guarded `class_exists(Modules\Customers\Domain\Customer::class)`) |
+| Optional | none declared (Customer names are resolved via guarded `class_exists(Gereq\Customers\Domain\Customer::class)`) |
 | Capabilities provided | `loyalty` → `Application/LoyaltyProvider` instance |
 | Capabilities consumed | none |
 | Groups / packages | none in `module.php`; not listed in `config/module_groups.php` |
@@ -111,7 +111,7 @@ See `../architecture/dashboard-widgets.md`.
 
 Extension points: capability `loyalty` (→ `LoyaltyProvider`) is the intended hook for order modules to call `applyEarn()`. No module in `modules/` currently calls `applyEarn()` (grep). No interfaces are defined.
 
-Integration: `LoyaltyTopMembersWidget` reads `Modules\Customers\Domain\Customer` behind `class_exists` + try/catch.
+Integration: `LoyaltyTopMembersWidget` reads `Gereq\Customers\Domain\Customer` behind `class_exists` + try/catch.
 
 ## CLI commands
 

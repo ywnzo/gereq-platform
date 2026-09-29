@@ -11,7 +11,7 @@ use Integrations\Stripe\Application\StripeGateway;
 use Integrations\Stripe\Application\StripeInboundProvider;
 use Integrations\Stripe\Http\StripeNotifyController;
 use Modules\Payments\Application\PaymentGatewayRegistry;
-use Modules\Webhooks\Application\InboundWebhookRegistry;
+use Gereq\Webhooks\Application\InboundWebhookRegistry;
 
 final class StripeModule implements ModuleInterface
 {

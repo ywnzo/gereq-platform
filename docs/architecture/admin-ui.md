@@ -130,7 +130,7 @@ Table options (selection):
 | `sort` / `dir` / `search` / `query` | when not using `ListQuery` |
 | `checkable` + `row_id` | Alpine `dataTable` checkboxes |
 | `row_search` | client-side filter blob per row |
-| `actions` | `callable($row): list of {href, label, icon, variant?}` |
+| `actions` | `callable(row): list` — link `{href, label, icon, variant?}` or destroy `{type: 'destroy', action, confirm, label?}` |
 | `footer`, `total`, `page`, `pages`, `per_page` | footer / pager |
 | `empty_title`, `empty_hint` | empty body |
 | `hash` | append `#…` on sort/pager links (keep tab) |

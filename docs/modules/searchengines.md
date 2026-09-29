@@ -12,7 +12,7 @@ The SearchEngines module gives admin users a live price-comparison search across
 | Requires | `core ^1.0`, `currency ^1.3` |
 | Optional | none |
 | Capabilities provided | `searchengines` (capability object `SearchEnginesProvider`) |
-| Capabilities consumed | `Modules\Currency\Application\CurrencyBuilder` (hard dependency in `SearchController`) |
+| Capabilities consumed | `Gereq\Currency\Application\CurrencyBuilder` (hard dependency in `SearchController`) |
 | Groups / packages | manifest `groups: ['ebs', 'ecs']`; `config/module_groups.php` lists it in **`ebs`** (not required); `ecs` membership comes only from the manifest merge |
 | Permissions | `searchengines.view` (`perm.searchengines.view`), `searchengines.manage` (`perm.searchengines.manage`) — group `perm.group.searchengines` |
 | API scopes | none |

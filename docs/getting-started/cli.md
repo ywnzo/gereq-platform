@@ -69,7 +69,7 @@ Registered in `ConsoleKernel` regardless of whether the module is enabled; they 
 
 | Command | Module | Arguments / options | What it does |
 | --- | --- | --- | --- |
-| `currency:rates:sync` | Currency (`modules/Currency/Console/SyncRatesCommand.php`) | `--date=<d.m.Y|Y-m-d>` | downloads daily ČNB exchange rates into `exchange_rates` |
+| `currency:rates:sync` | Currency (`src/Currency/Console/SyncRatesCommand.php`) | `--date=<d.m.Y|Y-m-d>` | downloads daily ČNB exchange rates into `exchange_rates` |
 | `uploads:purge` | CustomerUploads (`modules/CustomerUploads/Console/PurgeUploadsCommand.php`) | `--days=<n>`, `--dry-run` | deletes customer uploads older than `retention_days` |
 | `partscatalog:sync-jama` | PartsCatalog (`modules/PartsCatalog/Console/SyncJamaCatalogCommand.php`) | `--brand`, `--structure-only`, `--parts-only`, `--limit-vehicles`, `--delay-ms=200` | crawls autodily-jama.cz brands/models/categories/parts into the DB |
 | `payments:imap-match` | Payments (`modules/Payments/Console/ImapMatchCommand.php`) | `--limit=50` | matches incoming bank payments read over IMAP to payment intents by variable symbol |

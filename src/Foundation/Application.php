@@ -25,7 +25,12 @@ use Gereq\Api\ApiRegistry;
 use Gereq\Hook\HookManager;
 use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleManager;
+use Gereq\Notifications\NotificationsRegistrar;
 use Gereq\Queue\Queue;
+use Gereq\Currency\CurrencyRegistrar;
+use Gereq\Customers\CustomersRegistrar;
+use Gereq\Media\MediaRegistrar;
+use Gereq\Webhooks\WebhooksRegistrar;
 use Gereq\Security\RateLimiter;
 use Gereq\User\PermissionRegistry;
 use Gereq\View\RenderEngine;
@@ -66,6 +71,11 @@ final class Application
         $container->get(DatabaseBootstrap::class)->ensureBareInstallIfEmpty();
 
         $container->get(CoreRegistrar::class)->register();
+        $container->get(NotificationsRegistrar::class)->register();
+        $container->get(WebhooksRegistrar::class)->register();
+        $container->get(MediaRegistrar::class)->register();
+        $container->get(CurrencyRegistrar::class)->register();
+        $container->get(CustomersRegistrar::class)->register();
         if ((bool) $config->get('app.debug', false)) {
             $container->get(DebugBar::class);
         }
@@ -158,7 +168,7 @@ final class Application
                 return $factory->create();
             }),
             Environment::class => \DI\factory(static fn (TwigFactory $factory): Environment => $factory->create()),
-            \Modules\Currency\Application\RateProviderInterface::class => \DI\get(\Modules\Currency\Infrastructure\CnbRateProvider::class),
+            \Gereq\Currency\Application\RateProviderInterface::class => \DI\get(\Gereq\Currency\Infrastructure\CnbRateProvider::class),
             \Modules\Translate\Application\TranslateProviderInterface::class => \DI\get(\Modules\Translate\Application\MicrosoftTranslateProvider::class),
 
             // Scalars / config-driven construction
@@ -240,7 +250,7 @@ final class Application
                 ->constructorParameter('basePath', $basePath),
             \Modules\CustomerUploads\Application\CustomerUploadService::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Modules\Media\Http\MediaController::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Media\Http\MediaController::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Modules\Ai\Application\AiIntegrationGate::class => \DI\get(\Modules\Ai\Application\ModuleAiIntegrationGate::class),
         ];
     }

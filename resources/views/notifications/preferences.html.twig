@@ -1,0 +1,38 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <h1>{{ 'notifications.preferences.title'|trans }}</h1>
+    </header>
+    <form method="post" action="{{ url('admin.notifications.preferences.save') }}" class="stack">
+        {{ csrf_field()|raw }}
+        <div class="table-wrap" data-table>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'notifications.col.event'|trans }}</th>
+                        {% for channel in channels %}
+                            <th>{{ ('notifications.channel.' ~ channel)|trans }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for type in eventTypes %}
+                        <tr>
+                            <td><code>{{ type }}</code></td>
+                            {% for channel in channels %}
+                                {% set key = channel ~ ':' ~ type %}
+                                {% set field = channel ~ '__' ~ type|replace({'.': '_'}) %}
+                                <td>
+                                    <input type="checkbox" name="pref[{{ field }}]" value="1"
+                                        {{ map[key] is defined ? (map[key] ? 'checked' : '') : (channel == 'in_app' ? 'checked' : '') }}>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+    </form>
+{% endblock %}

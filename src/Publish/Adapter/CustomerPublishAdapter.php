@@ -9,13 +9,13 @@ use Gereq\Publish\ChangeCard;
 use Gereq\Publish\Entity\ContentStagingEntry;
 use Gereq\Publish\PublishableAdapterInterface;
 use Gereq\Publish\StagingStore;
-use Modules\Customers\Domain\Customer;
-use Modules\Customers\Domain\CustomerAccount;
-use Modules\Customers\Domain\CustomerAddress;
-use Modules\Customers\Domain\CustomerContact;
-use Modules\Customers\Domain\CustomerNote;
-use Modules\Customers\Domain\CustomerRelation;
-use Modules\Customers\Domain\CustomerTagLink;
+use Gereq\Customers\Domain\Customer;
+use Gereq\Customers\Domain\CustomerAccount;
+use Gereq\Customers\Domain\CustomerAddress;
+use Gereq\Customers\Domain\CustomerContact;
+use Gereq\Customers\Domain\CustomerNote;
+use Gereq\Customers\Domain\CustomerRelation;
+use Gereq\Customers\Domain\CustomerTagLink;
 
 final class CustomerPublishAdapter implements PublishableAdapterInterface
 {

@@ -98,8 +98,21 @@ final class ModuleManager implements EnabledModulesProvider
         return $this->discover()[$id] ?? null;
     }
 
+    /** Feature ids absorbed into core — always treated as enabled for dependency checks. */
+    private const CORE_FEATURE_IDS = [
+        'notifications',
+        'webhooks',
+        'media',
+        'currency',
+        'customers',
+    ];
+
     public function isEnabled(string $id): bool
     {
+        if (in_array($id, self::CORE_FEATURE_IDS, true)) {
+            return true;
+        }
+
         return in_array($id, $this->enabledIds(), true);
     }
 

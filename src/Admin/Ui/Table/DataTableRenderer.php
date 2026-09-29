@@ -33,8 +33,18 @@ final class DataTableRenderer
      *     wrap_class?: string|null,
      *     checkable?: bool,
      *     row_id?: callable(mixed): string,
+     *     row_checkable?: callable(mixed): bool,
      *     row_search?: callable(mixed): string,
-     *     actions?: callable(mixed): list<array{href?: string|null, label: string, icon?: string, variant?: string}>,
+     *     actions?: callable(mixed): list<array{
+     *         href?: string|null,
+     *         label: string,
+     *         icon?: string,
+     *         variant?: string,
+     *         type?: 'link'|'destroy',
+     *         action?: string,
+     *         confirm?: string,
+     *         confirm_title?: string
+     *     }>,
      *     footer?: bool,
      *     hash?: string
      * } $options
@@ -55,10 +65,12 @@ final class DataTableRenderer
             $rowList[] = $row;
         }
 
-        /** @var (callable(mixed): list<array{href?: string|null, label: string, icon?: string, variant?: string}>)|null $actions */
+        /** @var (callable(mixed): list<array<string, mixed>>)|null $actions */
         $actions = $options['actions'] ?? null;
         /** @var (callable(mixed): string)|null $rowId */
         $rowId = $options['row_id'] ?? null;
+        /** @var (callable(mixed): bool)|null $rowCheckable */
+        $rowCheckable = $options['row_checkable'] ?? null;
         /** @var (callable(mixed): string)|null $rowSearch */
         $rowSearch = $options['row_search'] ?? null;
 
@@ -85,6 +97,11 @@ final class DataTableRenderer
             }
         }
 
+        $checkableFlags = [];
+        foreach ($rowList as $index => $row) {
+            $checkableFlags[$index] = $rowCheckable === null ? true : (bool) $rowCheckable($row);
+        }
+
         $searchBlobs = [];
         if ($rowSearch !== null) {
             foreach ($rowList as $index => $row) {
@@ -101,6 +118,7 @@ final class DataTableRenderer
             'cells' => $cells,
             'action_cells' => $actionCells,
             'row_ids' => $ids,
+            'row_checkable' => $checkableFlags,
             'row_search' => $searchBlobs,
             'has_actions' => $actions !== null,
             'checkable' => (bool) ($options['checkable'] ?? false),

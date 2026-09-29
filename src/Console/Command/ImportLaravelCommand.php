@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Console\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Modules\Customers\Domain\Customer;
+use Gereq\Customers\Domain\Customer;
 use Modules\Products\Domain\Product;
 use Modules\Products\Domain\ProductPrice;
 use Symfony\Component\Console\Attribute\AsCommand;

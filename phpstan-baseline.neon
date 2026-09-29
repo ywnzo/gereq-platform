@@ -46,7 +46,7 @@ parameters:
 			message: '#^Expression on left side of \?\? is not nullable\.$#'
 			identifier: nullCoalesce.expr
 			count: 1
-			path: modules/Currency/Infrastructure/CnbRateProvider.php
+			path: src/Currency/Infrastructure/CnbRateProvider.php
 
 		-
 			message: '#^Expression on left side of \?\? is not nullable\.$#'
@@ -94,7 +94,7 @@ parameters:
 			message: '#^Variable \$http_response_header in isset\(\) always exists and is not nullable\.$#'
 			identifier: isset.variable
 			count: 1
-			path: modules/Media/Application/MediaImporter.php
+			path: src/Media/Application/MediaImporter.php
 
 		-
 			message: '#^Expression on left side of \?\? is not nullable\.$#'
@@ -154,7 +154,7 @@ parameters:
 			message: '#^Variable \$http_response_header on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.variable
 			count: 1
-			path: modules/Webhooks/Application/DeliverWebhookJob.php
+			path: src/Webhooks/Application/DeliverWebhookJob.php
 
 		-
 			message: '#^Offset ''is_downgrade'' on array\{version\: string, tag\: string, committed_at\: string\|null, cached\: bool, active\: bool\} in empty\(\) does not exist\.$#'

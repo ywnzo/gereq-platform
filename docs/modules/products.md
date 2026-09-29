@@ -154,7 +154,7 @@ Platform events (`registerPlatformEvents()`, all `webhookEnabled(true)`; dispatc
 
 Publishables (`register()`): `products` (label `publish.category.products`, adapter `Gereq\Publish\Adapter\ProductPublishAdapter`, order 50) and `products.categories` (`ProductCategoryPublishAdapter`, order 51). Staging behaviour in controllers via `FreezeService`: editing/deleting an **active** (public) product first freezes a snapshot (`ProductPublishAdapter::capture()`: id, sku, name, description, status, unit, category_ids…), a newly activated product is `stageCreate`d, deleting an active product is `stageDelete`d instead of removed; categories are always staged (create/update/delete). Public API reads through `FrozenPublicReader` so production sees the frozen state until publish (core `src/Publish/`). See [hooks, events & webhooks](../architecture/hooks-events-webhooks.md).
 
-Hooks added: none. Queue jobs / scheduled tasks: none. Audit log keys: `product.created|updated|status_changed|price_changed|price_removed|variant_created|variant_deleted|image_uploaded|image_attached|image_primary|image_removed|delete_staged|deleted`, `product_category.created|updated|delete_staged|deleted`. When an image is uploaded and `Modules\Media\Domain\Events\MediaUploaded` exists, that event is dispatched too.
+Hooks added: none. Queue jobs / scheduled tasks: none. Audit log keys: `product.created|updated|status_changed|price_changed|price_removed|variant_created|variant_deleted|image_uploaded|image_attached|image_primary|image_removed|delete_staged|deleted`, `product_category.created|updated|delete_staged|deleted`. When an image is uploaded and `Gereq\Media\Domain\Events\MediaUploaded` exists, that event is dispatched too.
 
 ## Dashboard widgets
 

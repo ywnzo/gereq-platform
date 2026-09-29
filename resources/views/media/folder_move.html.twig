@@ -1,0 +1,32 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    {{ ui().pageHeader('media.folder.move'|trans, {meta: folder.name()|e})|raw }}
+
+    {% include 'ui/error-summary.html.twig' with { form: 'media.folder.move' } %}
+
+    <form method="post" class="detail-stack" action="{{ url('admin.media.folders.move.submit', {id: folder.id()}) }}" data-form="media.folder.move" x-data="gereqForm"{% if form_errors('media.folder.move') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            <p class="muted" style="margin:0 0 1rem">{{ 'media.folder.move.hint'|trans({'%name%': folder.name()}) }}</p>
+            <div class="form-grid">
+                {{ ui().select({
+                    name: 'parent_id',
+                    label: 'media.folder.field.parent'|trans,
+                    optional: true,
+                    form: 'media.folder.move',
+                    value: folder.parentId()|default(''),
+                    options: folderOptions,
+                    searchable: true
+                })|raw }}
+            </div>
+        </section>
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'media.folder.move'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.media.index', folder.parentId() ? {folder: folder.parentId()} : {}) }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

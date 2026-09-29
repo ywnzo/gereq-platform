@@ -25,7 +25,7 @@
 .alert-error {
     background: color-mix(in srgb, var(--color-error) 12%, var(--color-base-100));
     border-color: color-mix(in srgb, var(--color-error) 40%, var(--color-base-300));
-    color: var(--color-error);
+    color: var(--color-base-content, var(--text));
 }
 .alert--warn {
     background: color-mix(in srgb, var(--color-warning, #d97706) 14%, var(--color-base-100));
@@ -69,15 +69,18 @@
 .toast--success {
     border-color: color-mix(in srgb, var(--success) 40%, var(--border));
     background: color-mix(in srgb, var(--success) 12%, var(--surface));
+    color: var(--text);
 }
 .toast--error {
     border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
     background: color-mix(in srgb, var(--danger) 12%, var(--surface));
-    color: color-mix(in srgb, var(--danger) 70%, var(--text));
+    color: var(--text);
 }
-.toast--info {
+.toast--info,
+.toast--warning {
     border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
     background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+    color: var(--text);
 }
 
 .badge {
