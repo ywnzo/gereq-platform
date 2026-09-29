@@ -47,6 +47,8 @@ type DriveConfig = {
 };
 
 type MediaDriveState = {
+    /** Alpine magic — injected on the component root at runtime. */
+    $el: HTMLElement;
     view: 'grid' | 'list';
     selected: string[];
     focusId: string | null;
@@ -164,8 +166,33 @@ function parseEntries(root: HTMLElement): DriveEntry[] {
     return JSON.parse(raw) as DriveEntry[];
 }
 
+type GereqUi = {
+    toast?: (message: string, tone?: string) => void;
+    confirm?: (opts: {
+        title?: string;
+        body?: string;
+        danger?: boolean;
+        confirmLabel?: string;
+    }) => Promise<boolean>;
+    prompt?: (opts: {
+        title?: string;
+        body?: string;
+        input?: boolean;
+        inputLabel?: string;
+        inputValue?: string;
+        inputRequired?: boolean;
+        confirmLabel?: string;
+        danger?: boolean;
+    }) => Promise<string | null>;
+};
+
+function gereqUi(): GereqUi {
+    return (window.gereq ?? {}) as GereqUi;
+}
+
 export function registerMediaDrive(alpine: typeof Alpine): void {
-    alpine.data('mediaDrive', (): MediaDriveState => ({
+    // Alpine injects $el at runtime; omit it from the factory return type.
+    alpine.data('mediaDrive', (): Omit<MediaDriveState, '$el'> => ({
         view: 'grid',
         selected: [],
         focusId: null,
@@ -205,8 +232,8 @@ export function registerMediaDrive(alpine: typeof Alpine): void {
         bulkFolderId: '',
         _dragDepth: 0,
 
-        init() {
-            const root = this.$el as HTMLElement;
+        init(this: MediaDriveState) {
+            const root = this.$el;
             const config = parseConfig(root);
             this.entries = parseEntries(root);
             this.canManage = !!config.can_manage;
@@ -225,7 +252,7 @@ export function registerMediaDrive(alpine: typeof Alpine): void {
 
             document.addEventListener('click', (event: MouseEvent) => {
                 const target = event.target as Node | null;
-                const root = this.$el as HTMLElement;
+                const root = this.$el;
                 if (target && root.contains(target)) {
                     const keepNew = (target as Element).closest?.('.media-drive__new');
                     const keepMenu = (target as Element).closest?.('.media-drive__menu');
@@ -553,10 +580,10 @@ export function registerMediaDrive(alpine: typeof Alpine): void {
             this.newOpen = false;
         },
 
-        pickFiles(event?: Event) {
+        pickFiles(this: MediaDriveState, event?: Event) {
             event?.preventDefault();
             event?.stopPropagation();
-            const input = (this.$el as HTMLElement).querySelector<HTMLInputElement>('[data-media-file-input]');
+            const input = this.$el.querySelector<HTMLInputElement>('[data-media-file-input]');
             if (!input) {
                 this.toast(this.i18n.error_generic || 'Something went wrong.', 'error');
                 return;
@@ -662,7 +689,7 @@ export function registerMediaDrive(alpine: typeof Alpine): void {
             const url = entry.kind === 'folder'
                 ? this.urls.folder_update.replace('__ID__', entry.id)
                 : this.urls.asset_update.replace('__ID__', entry.id);
-            const fields = entry.kind === 'folder'
+            const fields: Record<string, string> = entry.kind === 'folder'
                 ? { name: name.trim() }
                 : {
                     title: name.trim(),
@@ -828,12 +855,13 @@ export function registerMediaDrive(alpine: typeof Alpine): void {
         },
 
         toast(message: string, type = 'info') {
-            window.gereq?.toast?.(message, type);
+            gereqUi().toast?.(message, type);
         },
 
         async askConfirm(opts: { title?: string; body?: string; danger?: boolean }) {
-            if (window.gereq?.confirm) {
-                return window.gereq.confirm(opts);
+            const confirm = gereqUi().confirm;
+            if (confirm) {
+                return confirm(opts);
             }
             return window.confirm(opts.body || opts.title || '');
         },
@@ -845,8 +873,9 @@ export function registerMediaDrive(alpine: typeof Alpine): void {
             inputValue?: string;
             confirmLabel?: string;
         }) {
-            if (window.gereq?.prompt) {
-                return window.gereq.prompt({ ...opts, input: true, inputRequired: true, danger: false });
+            const prompt = gereqUi().prompt;
+            if (prompt) {
+                return prompt({ ...opts, input: true, inputRequired: true, danger: false });
             }
             return window.prompt(opts.body || opts.title || '', opts.inputValue || '');
         },
