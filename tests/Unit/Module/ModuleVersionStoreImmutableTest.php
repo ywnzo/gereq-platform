@@ -8,7 +8,7 @@ use Gereq\Config\Repository;
 use Gereq\Module\ModuleFootprint;
 use Gereq\Module\ModuleVersionStore;
 use Gereq\Testing\TestCase;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Gereq\Tests\Support\PassthroughTranslator;
 
 final class ModuleVersionStoreImmutableTest extends TestCase
 {
@@ -45,22 +45,10 @@ final class ModuleVersionStoreImmutableTest extends TestCase
 
     private function store(): ModuleVersionStore
     {
-        $translator = new class () implements TranslatorInterface {
-            public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
-            {
-                return $id;
-            }
-
-            public function getLocale(): string
-            {
-                return 'en';
-            }
-        };
-
         return new ModuleVersionStore(
             $this->tmp,
             new Repository(['modules' => ['versions_path' => 'storage/modules']]),
-            $translator,
+            new PassthroughTranslator(),
         );
     }
 

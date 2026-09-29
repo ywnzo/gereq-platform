@@ -13,8 +13,8 @@ use Gereq\Database\Migrator;
 use Gereq\Module\InstalledModule;
 use Gereq\Module\ModuleManager;
 use Gereq\Testing\TestCase;
+use Gereq\Tests\Support\PassthroughTranslator;
 use Gereq\User\PermissionRegistry;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Ensures php gereq migrate never applies file migrations for disabled modules,
@@ -135,24 +135,12 @@ PHP);
 
     private function moduleManager(EntityManager $em): ModuleManager
     {
-        $translator = new class () implements TranslatorInterface {
-            public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
-            {
-                return $id;
-            }
-
-            public function getLocale(): string
-            {
-                return 'en';
-            }
-        };
-
         return new ModuleManager(
             $this->tmp,
             $em,
             new PermissionRegistry(),
             new Auditor($em, new \Symfony\Component\HttpFoundation\RequestStack()),
-            $translator,
+            new PassthroughTranslator(),
         );
     }
 
