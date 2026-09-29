@@ -1,4 +1,4 @@
-type ToastTone = 'success' | 'error' | 'info';
+type ToastTone = 'success' | 'error' | 'info' | 'warning';
 
 type ToastApi = {
     toast: (message: string, tone?: ToastTone) => void;
@@ -16,10 +16,17 @@ function host(): HTMLElement | null {
     return document.getElementById('toasts');
 }
 
+function normalizeTone(tone: string | undefined): ToastTone {
+    if (tone === 'error' || tone === 'info' || tone === 'warning' || tone === 'success') {
+        return tone;
+    }
+    return 'success';
+}
+
 export function registerToast(): void {
     const api: ToastApi = {
         toast(message, tone = 'success') {
-            const text = message.trim();
+            const text = String(message ?? '').trim();
             if (text === '') {
                 return;
             }
@@ -28,9 +35,10 @@ export function registerToast(): void {
                 return;
             }
 
+            const resolved = normalizeTone(tone);
             const el = document.createElement('div');
-            el.className = `toast toast--${tone}`;
-            el.setAttribute('role', tone === 'error' ? 'alert' : 'status');
+            el.className = `toast toast--${resolved}`;
+            el.setAttribute('role', resolved === 'error' ? 'alert' : 'status');
             el.textContent = text;
             root.appendChild(el);
 

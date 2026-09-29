@@ -1,0 +1,60 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    {{ ui().pageHeader(pageTitle)|raw }}
+
+    {% include 'ui/error-summary.html.twig' with { form: 'media.folder.save' } %}
+
+    {% if mode == 'create' %}
+        <form method="post" class="detail-stack" action="{{ url('admin.media.folders.store') }}" data-form="media.folder.save" x-data="gereqForm"{% if form_errors('media.folder.save') %} data-server-state="1"{% endif %}>
+            {{ csrf_field()|raw }}
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'common.details'|trans }}</h2>
+                </header>
+                <div class="form-grid">
+                    {{ ui().input({
+                        name: 'name',
+                        label: 'media.folder.field.name'|trans,
+                        form: 'media.folder.save',
+                        value: ''
+                    })|raw }}
+                    {{ ui().select({
+                        name: 'parent_id',
+                        label: 'media.folder.field.parent'|trans,
+                        optional: true,
+                        form: 'media.folder.save',
+                        value: parentId,
+                        options: folderOptions,
+                        searchable: true
+                    })|raw }}
+                </div>
+            </section>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">{{ 'media.folder.create'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url('admin.media.index', parentId ? {folder: parentId} : {}) }}">{{ 'common.cancel'|trans }}</a>
+            </div>
+        </form>
+    {% else %}
+        <form method="post" class="detail-stack" action="{{ url('admin.media.folders.update', {id: folder.id()}) }}" data-form="media.folder.save" x-data="gereqForm"{% if form_errors('media.folder.save') %} data-server-state="1"{% endif %}>
+            {{ csrf_field()|raw }}
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'common.details'|trans }}</h2>
+                </header>
+                <div class="form-grid">
+                    {{ ui().input({
+                        name: 'name',
+                        label: 'media.folder.field.name'|trans,
+                        form: 'media.folder.save',
+                        value: folder.name()
+                    })|raw }}
+                </div>
+            </section>
+            <div class="form-actions">
+                <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+                <a class="btn btn--ghost" href="{{ url('admin.media.index', folder.parentId() ? {folder: folder.parentId()} : {}) }}">{{ 'common.cancel'|trans }}</a>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

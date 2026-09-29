@@ -74,7 +74,7 @@ A logged-in admin can call `/api/v1` from the browser (the Developer → API tes
 
 `ApiQuery::meta($total)` returns `{page, per_page, total, pages}` for collections; `offset()` for the query builder.
 
-Write requests send JSON bodies (`Content-Type: application/json`). Controllers validate with the same rulesets as the admin forms (`ValidationRegistry`, e.g. `customers.save`); see `modules/Customers/Http/Api/CustomerApiController.php::validateBody()` for the pattern.
+Write requests send JSON bodies (`Content-Type: application/json`). Controllers validate with the same rulesets as the admin forms (`ValidationRegistry`, e.g. `customers.save`); see `src/Customers/Http/Api/CustomerApiController.php::validateBody()` for the pattern.
 
 Idempotency: `Gereq\Api\IdempotencyService` (`src/Api/IdempotencyService.php`) stores `IdempotencyRecord`s keyed by the `Idempotency-Key` header + hash of method/path/body and replays the stored `JsonResponse`; used by `modules/Shop/Http/Api/CheckoutApiController.php` for `POST /api/v1/shop/checkout`.
 
@@ -97,7 +97,7 @@ Helpers in `Gereq\Api\ApiResponse` (`src/Api/ApiResponse.php`):
 
 Shortcuts: `notFound()` (404 `not_found`), `unauthorized()` (401 `unauthorized`), `forbidden()` (403 `forbidden`). Uncaught exceptions on API paths (or when `Accept: application/json`) are converted by `Gereq\Http\ExceptionHandler::toJson()` into the same envelope with codes `unauthorized`, `forbidden`, `not_found`, `method_not_allowed`, `csrf_mismatch`, `validation_failed` (422 with `fields`), `too_many_requests`, `unavailable`, `server_error`; in debug mode 5xx payloads add `exception`, `file`, `trace`.
 
-Serializers are plain private methods on the API controllers (`serializeCustomer()`, …) returning arrays; there is no shared serializer layer. `modules/Media/Http/Api` and `tests/Unit/Modules/Media/MediaApiContractTest.php` show how a module pins its payload contract with a test.
+Serializers are plain private methods on the API controllers (`serializeCustomer()`, …) returning arrays; there is no shared serializer layer. `src/Media/Http/Api` and `tests/Unit/Media/MediaApiContractTest.php` show how a module pins its payload contract with a test.
 
 ## Rate limits
 

@@ -223,15 +223,15 @@ final class DemoSeeder
 
     /**
      * @param list<string> $log
-     * @return list<\Modules\Customers\Domain\Customer>
+     * @return list<\Gereq\Customers\Domain\Customer>
      */
     private function seedCustomersEnrichment(User $demo, array &$log): array
     {
-        if (!class_exists(\Modules\Customers\Domain\Customer::class)) {
+        if (!class_exists(\Gereq\Customers\Domain\Customer::class)) {
             return [];
         }
 
-        $repo = $this->em->getRepository(\Modules\Customers\Domain\Customer::class);
+        $repo = $this->em->getRepository(\Gereq\Customers\Domain\Customer::class);
         $extra = [
             ['Klára Benešová', 'klara.benesova@nordsoft.cz', '+420 777 880 112', 'NordSoft s.r.o.', 'Preferuje faktury v PDF e-mailem.', 'active'],
             ['Ondřej Malý', 'ondrej.maly@citycafe.cz', '+420 603 119 440', 'City Café Praha', 'Zájem o e-shop modul.', 'lead'],
@@ -242,7 +242,7 @@ final class DemoSeeder
             if ($repo->findOneBy(['email' => $email]) !== null) {
                 continue;
             }
-            $c = new \Modules\Customers\Domain\Customer($name, $email);
+            $c = new \Gereq\Customers\Domain\Customer($name, $email);
             $c->setPhone($phone);
             $c->setCompany($company);
             $c->setNote($note);
@@ -251,15 +251,15 @@ final class DemoSeeder
         }
         $this->em->flush();
 
-        /** @var list<\Modules\Customers\Domain\Customer> $customers */
+        /** @var list<\Gereq\Customers\Domain\Customer> $customers */
         $customers = $repo->findBy([], ['name' => 'ASC']);
 
         $tagVip = null;
         $tagEshop = null;
-        if (class_exists(\Modules\Customers\Domain\CustomerTag::class)) {
-            $tagRepo = $this->em->getRepository(\Modules\Customers\Domain\CustomerTag::class);
-            $tagVip = $tagRepo->findOneBy(['slug' => 'vip']) ?? new \Modules\Customers\Domain\CustomerTag('VIP', 'vip', '#0f766e');
-            $tagEshop = $tagRepo->findOneBy(['slug' => 'eshop']) ?? new \Modules\Customers\Domain\CustomerTag('E-shop', 'eshop', '#1d4ed8');
+        if (class_exists(\Gereq\Customers\Domain\CustomerTag::class)) {
+            $tagRepo = $this->em->getRepository(\Gereq\Customers\Domain\CustomerTag::class);
+            $tagVip = $tagRepo->findOneBy(['slug' => 'vip']) ?? new \Gereq\Customers\Domain\CustomerTag('VIP', 'vip', '#0f766e');
+            $tagEshop = $tagRepo->findOneBy(['slug' => 'eshop']) ?? new \Gereq\Customers\Domain\CustomerTag('E-shop', 'eshop', '#1d4ed8');
             $this->em->persist($tagVip);
             $this->em->persist($tagEshop);
             $this->em->flush();
@@ -280,22 +280,22 @@ final class DemoSeeder
 
         foreach ($customers as $customer) {
             $email = strtolower($customer->email());
-            if (isset($addresses[$email]) && class_exists(\Modules\Customers\Domain\CustomerAddress::class)) {
-                $existing = $this->em->getRepository(\Modules\Customers\Domain\CustomerAddress::class)
+            if (isset($addresses[$email]) && class_exists(\Gereq\Customers\Domain\CustomerAddress::class)) {
+                $existing = $this->em->getRepository(\Gereq\Customers\Domain\CustomerAddress::class)
                     ->findOneBy(['customerId' => $customer->id()]);
                 if ($existing === null) {
                     [$type, $line1, $city, $zip, $country] = $addresses[$email];
-                    $addr = new \Modules\Customers\Domain\CustomerAddress($customer->id(), $type, $line1, $city, $zip, $country);
+                    $addr = new \Gereq\Customers\Domain\CustomerAddress($customer->id(), $type, $line1, $city, $zip, $country);
                     $addr->setIsPrimary(true);
                     $this->em->persist($addr);
                 }
             }
-            if (isset($contacts[$email]) && class_exists(\Modules\Customers\Domain\CustomerContact::class)) {
-                $existing = $this->em->getRepository(\Modules\Customers\Domain\CustomerContact::class)
+            if (isset($contacts[$email]) && class_exists(\Gereq\Customers\Domain\CustomerContact::class)) {
+                $existing = $this->em->getRepository(\Gereq\Customers\Domain\CustomerContact::class)
                     ->findOneBy(['customerId' => $customer->id()]);
                 if ($existing === null) {
                     [$cname, $cemail, $cphone, $crole] = $contacts[$email];
-                    $contact = new \Modules\Customers\Domain\CustomerContact($customer->id(), $cname);
+                    $contact = new \Gereq\Customers\Domain\CustomerContact($customer->id(), $cname);
                     $contact->setEmail($cemail);
                     $contact->setPhone($cphone);
                     $contact->setRole($crole);
@@ -303,38 +303,38 @@ final class DemoSeeder
                     $this->em->persist($contact);
                 }
             }
-            if (class_exists(\Modules\Customers\Domain\CustomerNote::class)) {
-                $noteCount = $this->em->getRepository(\Modules\Customers\Domain\CustomerNote::class)
+            if (class_exists(\Gereq\Customers\Domain\CustomerNote::class)) {
+                $noteCount = $this->em->getRepository(\Gereq\Customers\Domain\CustomerNote::class)
                     ->count(['customerId' => $customer->id()]);
                 if ($noteCount === 0 && in_array($email, ['petra.dvorakova@moravia.cz', 'klara.benesova@nordsoft.cz'], true)) {
-                    $this->em->persist(new \Modules\Customers\Domain\CustomerNote(
+                    $this->em->persist(new \Gereq\Customers\Domain\CustomerNote(
                         $customer->id(),
                         'Demo poznámka: domluven follow-up na příští týden ohledně nabídky.',
                         $demo->id(),
                     ));
                 }
             }
-            if ($tagVip !== null && $tagEshop !== null && class_exists(\Modules\Customers\Domain\CustomerTagLink::class)) {
-                $linkRepo = $this->em->getRepository(\Modules\Customers\Domain\CustomerTagLink::class);
+            if ($tagVip !== null && $tagEshop !== null && class_exists(\Gereq\Customers\Domain\CustomerTagLink::class)) {
+                $linkRepo = $this->em->getRepository(\Gereq\Customers\Domain\CustomerTagLink::class);
                 if (str_contains($email, 'moravia') || str_contains($email, 'nordsoft')) {
                     if ($linkRepo->findOneBy(['customerId' => $customer->id(), 'tagId' => $tagVip->id()]) === null) {
-                        $this->em->persist(new \Modules\Customers\Domain\CustomerTagLink($customer->id(), $tagVip->id()));
+                        $this->em->persist(new \Gereq\Customers\Domain\CustomerTagLink($customer->id(), $tagVip->id()));
                     }
                 }
                 if (str_contains($email, 'citycafe') || str_contains($email, 'nordsoft')) {
                     if ($linkRepo->findOneBy(['customerId' => $customer->id(), 'tagId' => $tagEshop->id()]) === null) {
-                        $this->em->persist(new \Modules\Customers\Domain\CustomerTagLink($customer->id(), $tagEshop->id()));
+                        $this->em->persist(new \Gereq\Customers\Domain\CustomerTagLink($customer->id(), $tagEshop->id()));
                     }
                 }
             }
         }
 
-        if (count($customers) >= 2 && class_exists(\Modules\Customers\Domain\CustomerRelation::class)) {
+        if (count($customers) >= 2 && class_exists(\Gereq\Customers\Domain\CustomerRelation::class)) {
             $from = $customers[0];
             $to = $customers[1];
-            $relRepo = $this->em->getRepository(\Modules\Customers\Domain\CustomerRelation::class);
+            $relRepo = $this->em->getRepository(\Gereq\Customers\Domain\CustomerRelation::class);
             if ($relRepo->findOneBy(['fromCustomerId' => $from->id(), 'toCustomerId' => $to->id()]) === null) {
-                $this->em->persist(new \Modules\Customers\Domain\CustomerRelation($from->id(), $to->id(), 'partner'));
+                $this->em->persist(new \Gereq\Customers\Domain\CustomerRelation($from->id(), $to->id(), 'partner'));
             }
         }
 
@@ -480,7 +480,7 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<string> $log
      * @return list<\Modules\CRM\Domain\Deal>
      */
@@ -833,7 +833,7 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\Products\Domain\Product> $products
      * @param list<string> $log
      */
@@ -888,7 +888,7 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\Products\Domain\Product> $products
      * @param list<string> $log
      */
@@ -963,15 +963,15 @@ final class DemoSeeder
             $products = $this->em->getRepository(\Modules\Products\Domain\Product::class)->findBy([], null, 20);
         }
         $customers = [];
-        if (class_exists(\Modules\Customers\Domain\Customer::class)) {
-            $customers = $this->em->getRepository(\Modules\Customers\Domain\Customer::class)->findBy([], null, 20);
+        if (class_exists(\Gereq\Customers\Domain\Customer::class)) {
+            $customers = $this->em->getRepository(\Gereq\Customers\Domain\Customer::class)->findBy([], null, 20);
         }
         $this->seedReviews($customers, $products, $log);
         $this->seedReturns($customers, $products, $log);
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\Products\Domain\Product> $products
      * @param list<string> $log
      */
@@ -1063,7 +1063,7 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\Products\Domain\Product> $products
      * @param list<string> $log
      */
@@ -1105,7 +1105,7 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\CRM\Domain\Deal> $deals
      * @param list<string> $log
      */
@@ -1177,7 +1177,7 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\CRM\Domain\Deal> $deals
      * @param list<string> $log
      */
@@ -1233,12 +1233,13 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\Products\Domain\Product> $products
      * @param list<string> $log
      */
     private function seedDocumentsAndMedia(User $demo, array $customers, array $products, array &$log): void
     {
+        unset($products);
         $dir = base_path('storage/uploads/demo');
         if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
@@ -1260,56 +1261,146 @@ SVG;
         file_put_contents($heroPath, $svg);
 
         if (class_exists(\Modules\Documents\Domain\Document::class)) {
-            $doc = new \Modules\Documents\Domain\Document(
-                'Nabídka Moravia IT',
-                'demo/nabidka-moravia.txt',
-                'nabidka-moravia.txt',
-                'text/plain',
-                strlen($offerBody),
-                $demo->id(),
-            );
-            $this->em->persist($doc);
-            $this->em->flush();
-            $mora = null;
-            foreach ($customers as $c) {
-                if (str_contains(strtolower($c->email()), 'moravia')) {
-                    $mora = $c;
-                    break;
+            $docRepo = $this->em->getRepository(\Modules\Documents\Domain\Document::class);
+            $existingDoc = $docRepo->findOneBy(['path' => 'demo/nabidka-moravia.txt']);
+            if ($existingDoc === null) {
+                $doc = new \Modules\Documents\Domain\Document(
+                    'Nabídka Moravia IT',
+                    'demo/nabidka-moravia.txt',
+                    'nabidka-moravia.txt',
+                    'text/plain',
+                    strlen($offerBody),
+                    $demo->id(),
+                );
+                $this->em->persist($doc);
+                $this->em->flush();
+                $mora = null;
+                foreach ($customers as $c) {
+                    if (str_contains(strtolower($c->email()), 'moravia')) {
+                        $mora = $c;
+                        break;
+                    }
                 }
-            }
-            if ($mora !== null && class_exists(\Modules\Documents\Domain\DocumentLink::class)) {
-                $this->em->persist(new \Modules\Documents\Domain\DocumentLink($doc->id(), 'customer', $mora->id()));
+                if ($mora !== null && class_exists(\Modules\Documents\Domain\DocumentLink::class)) {
+                    $this->em->persist(new \Modules\Documents\Domain\DocumentLink($doc->id(), 'customer', $mora->id()));
+                }
             }
         }
 
-        if (class_exists(\Modules\Media\Domain\MediaAsset::class)) {
-            $media = new \Modules\Media\Domain\MediaAsset(
-                'Hero GEREQ',
-                'demo/hero-gereq.svg',
-                'image/svg+xml',
-                strlen($svg),
-                $demo->id(),
-                'GEREQ hero banner',
-                640,
-                360,
-            );
-            $this->em->persist($media);
+        if (!class_exists(\Gereq\Media\Domain\MediaAsset::class)) {
+            $this->em->flush();
+            $log[] = 'Dokumenty a média: přeskočeno (Media není k dispozici).';
 
-            $guide = "Interní návod k CMS builderu.\n1. Vytvořte stránku\n2. Přidejte bloky\n3. Publikujte\n";
-            $guidePath = $dir . '/cms-navod.txt';
-            file_put_contents($guidePath, $guide);
-            $this->em->persist(new \Modules\Media\Domain\MediaAsset(
-                'Návod CMS',
-                'demo/cms-navod.txt',
-                'text/plain',
-                strlen($guide),
-                $demo->id(),
-                null,
-            ));
+            return;
+        }
+
+        $branding = $this->ensureMediaFolder('Branding', null);
+        $docsFolder = $this->ensureMediaFolder('Dokumenty', null);
+        $listingsFolder = $this->ensureMediaFolder('Nemovitosti', null);
+        $this->ensureMediaFolder('Exteriéry', $listingsFolder->id());
+        $this->ensureMediaFolder('Interiéry', $listingsFolder->id());
+
+        $this->ensureMediaAsset(
+            'Hero GEREQ',
+            'demo/hero-gereq.svg',
+            'image/svg+xml',
+            strlen($svg),
+            $demo->id(),
+            'GEREQ hero banner',
+            640,
+            360,
+            $branding->id(),
+        );
+
+        $guide = "Interní návod k CMS builderu.\n1. Vytvořte stránku\n2. Přidejte bloky\n3. Publikujte\n";
+        $guidePath = $dir . '/cms-navod.txt';
+        file_put_contents($guidePath, $guide);
+        $this->ensureMediaAsset(
+            'Návod CMS',
+            'demo/cms-navod.txt',
+            'text/plain',
+            strlen($guide),
+            $demo->id(),
+            null,
+            null,
+            null,
+            $docsFolder->id(),
+        );
+
+        // Place existing seed photos into the Listings folder when still in root.
+        $seedAssets = $this->em->getRepository(\Gereq\Media\Domain\MediaAsset::class)
+            ->createQueryBuilder('m')
+            ->andWhere('m.path LIKE :seed')->setParameter('seed', 'seed/%')
+            ->andWhere('m.folderId IS NULL')
+            ->setMaxResults(40)
+            ->getQuery()
+            ->getResult();
+        foreach ($seedAssets as $asset) {
+            if ($asset instanceof \Gereq\Media\Domain\MediaAsset) {
+                $asset->moveTo($listingsFolder->id());
+            }
         }
 
         $this->em->flush();
-        $log[] = 'Dokumenty a média: nabídka + hero SVG.';
+        $log[] = 'Dokumenty a média: složky Branding / Dokumenty / Nemovitosti + demo soubory.';
+    }
+
+    private function ensureMediaFolder(string $name, ?string $parentId): \Gereq\Media\Domain\MediaFolder
+    {
+        $qb = $this->em->getRepository(\Gereq\Media\Domain\MediaFolder::class)->createQueryBuilder('f')
+            ->andWhere('f.name = :name')->setParameter('name', $name)
+            ->setMaxResults(1);
+        if ($parentId === null) {
+            $qb->andWhere('f.parentId IS NULL');
+        } else {
+            $qb->andWhere('f.parentId = :parent')->setParameter('parent', $parentId);
+        }
+        $existing = $qb->getQuery()->getOneOrNullResult();
+        if ($existing instanceof \Gereq\Media\Domain\MediaFolder) {
+            return $existing;
+        }
+
+        $folder = new \Gereq\Media\Domain\MediaFolder($name, $parentId);
+        $this->em->persist($folder);
+        $this->em->flush();
+
+        return $folder;
+    }
+
+    private function ensureMediaAsset(
+        string $title,
+        string $path,
+        string $mime,
+        int $size,
+        ?string $uploadedBy,
+        ?string $alt,
+        ?int $width,
+        ?int $height,
+        ?string $folderId,
+    ): \Gereq\Media\Domain\MediaAsset {
+        $existing = $this->em->getRepository(\Gereq\Media\Domain\MediaAsset::class)->findOneBy(['path' => $path]);
+        if ($existing instanceof \Gereq\Media\Domain\MediaAsset) {
+            $existing->setTitle($title);
+            $existing->setAlt($alt);
+            $existing->moveTo($folderId);
+
+            return $existing;
+        }
+
+        $asset = new \Gereq\Media\Domain\MediaAsset(
+            $title,
+            $path,
+            $mime,
+            $size,
+            $uploadedBy,
+            $alt,
+            $width,
+            $height,
+            $folderId,
+        );
+        $this->em->persist($asset);
+
+        return $asset;
     }
 
     /**
@@ -1686,10 +1777,10 @@ SVG;
             'url' => '/admin/shop/carts',
         ]));
 
-        if (class_exists(\Modules\Notifications\Domain\NotificationPreference::class)) {
+        if (class_exists(\Gereq\Notifications\Domain\NotificationPreference::class)) {
             foreach (['mail', 'database'] as $channel) {
                 foreach (['projects.task_assigned', 'orders.invoice_due', 'warehouse.low_stock'] as $event) {
-                    $this->em->persist(new \Modules\Notifications\Domain\NotificationPreference(
+                    $this->em->persist(new \Gereq\Notifications\Domain\NotificationPreference(
                         $demo->id(),
                         $channel,
                         $event,

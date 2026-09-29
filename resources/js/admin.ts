@@ -1,6 +1,8 @@
 import Alpine from '@alpinejs/csp';
 import { registerUi } from './ui';
 import '../css/kernel.css';
+import '../css/customers.css';
+import '../css/media.css';
 /* Module CSS is built per-module and linked by RenderEngine for enabled modules only. */
 
 type PaletteCommand = {

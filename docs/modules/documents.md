@@ -99,7 +99,7 @@ Hooks added (`registerHooks()` in `boot()`):
 | `customers.show.sections` | filter (`HookPriority::NORMAL`) | Appends section `{id: documents, label: documents.partial.title, order: 40, html}` with the last 20 documents linked to the customer, only if the user `can('documents.view')`. |
 | `customers.deleting` | action (`HookPriority::EARLY`) | Removes all `DocumentLink` rows with `entity_type = customer` for the deleted customer (documents themselves are kept). |
 
-Note `DocumentsModule` imports `Modules\Customers\Domain\Customer` unguarded for the closure type hints.
+Note `DocumentsModule` imports `Gereq\Customers\Domain\Customer` unguarded for the closure type hints.
 
 Validation rulesets: `documents.save` (`title` required ≤190, `entity_type` ≤80, `entity_id` ≤36), `documents.link` (both required), `documents.bulk` (`action in:delete`, `confirmed`). Queue jobs, scheduled tasks, publishables: none.
 

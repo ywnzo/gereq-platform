@@ -11,7 +11,7 @@ use Integrations\Comgate\Application\ComgateGateway;
 use Integrations\Comgate\Application\ComgateInboundProvider;
 use Integrations\Comgate\Http\ComgateNotifyController;
 use Modules\Payments\Application\PaymentGatewayRegistry;
-use Modules\Webhooks\Application\InboundWebhookRegistry;
+use Gereq\Webhooks\Application\InboundWebhookRegistry;
 
 /**
  * Third-party Comgate payment gateway — registers into Payments capability.

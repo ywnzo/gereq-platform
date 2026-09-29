@@ -130,11 +130,11 @@ final class RealEstateAutomationDemoSeeder
     /**
      * @param list<\Modules\Listings\Domain\Listing> $listings
      * @param list<string> $log
-     * @return list<\Modules\Customers\Domain\Customer>
+     * @return list<\Gereq\Customers\Domain\Customer>
      */
     private function seedLeadCustomers(array $listings, array &$log): array
     {
-        if (!class_exists(\Modules\Customers\Domain\Customer::class)) {
+        if (!class_exists(\Gereq\Customers\Domain\Customer::class)) {
             return [];
         }
 
@@ -146,13 +146,13 @@ final class RealEstateAutomationDemoSeeder
             ['Jana Procházková', 'jana.prochazkova.re@example.cz', '+420 731 555 640', 'Prohlídka už domluvena, čeká na nabídku smlouvy.'],
         ];
 
-        $repo = $this->em->getRepository(\Modules\Customers\Domain\Customer::class);
+        $repo = $this->em->getRepository(\Gereq\Customers\Domain\Customer::class);
         $out = [];
         $created = 0;
         foreach ($defs as $i => [$name, $email, $phone, $note]) {
             $customer = $repo->findOneBy(['email' => $email]);
-            if (!$customer instanceof \Modules\Customers\Domain\Customer) {
-                $customer = new \Modules\Customers\Domain\Customer($name, $email);
+            if (!$customer instanceof \Gereq\Customers\Domain\Customer) {
+                $customer = new \Gereq\Customers\Domain\Customer($name, $email);
                 $customer->setPhone($phone);
                 $customer->setStatus('lead');
                 $listingTitle = isset($listings[$i]) ? $listings[$i]->title() : 'katalog';
@@ -171,7 +171,7 @@ final class RealEstateAutomationDemoSeeder
     }
 
     /**
-     * @param list<\Modules\Customers\Domain\Customer> $customers
+     * @param list<\Gereq\Customers\Domain\Customer> $customers
      * @param list<\Modules\Listings\Domain\Listing> $listings
      * @param list<string> $log
      */
@@ -252,18 +252,16 @@ final class RealEstateAutomationDemoSeeder
             }
         }
 
-        // One lost deal for the win-back scenario
-        if (isset($customers[0], $listings[0])) {
-            $lostTitle = 'Poptávka (neúspěšná): ' . $listings[0]->title();
-            if ($dealRepo->findOneBy(['title' => $lostTitle]) === null) {
-                $lost = new \Modules\CRM\Domain\Deal($customers[0]->id(), $lostTitle);
-                $lost->setAmount($listings[0]->price());
-                $lost->setCurrency($listings[0]->currency());
-                $lost->setStage('lost');
-                $lost->setNote('Klient zvolil jinou nemovitost — kandidát na win-back.');
-                $this->em->persist($lost);
-                ++$createdDeals;
-            }
+        // One lost deal for the win-back scenario (callers already require non-empty lists).
+        $lostTitle = 'Poptávka (neúspěšná): ' . $listings[0]->title();
+        if ($dealRepo->findOneBy(['title' => $lostTitle]) === null) {
+            $lost = new \Modules\CRM\Domain\Deal($customers[0]->id(), $lostTitle);
+            $lost->setAmount($listings[0]->price());
+            $lost->setCurrency($listings[0]->currency());
+            $lost->setStage('lost');
+            $lost->setNote('Klient zvolil jinou nemovitost — kandidát na win-back.');
+            $this->em->persist($lost);
+            ++$createdDeals;
         }
 
         $this->em->flush();

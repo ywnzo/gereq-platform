@@ -14,7 +14,7 @@ Provider protocols, model catalog and platform design are documented in [`docs/A
 | Class | `Modules\Ai\AiModule` |
 | Requires | `core ^1.0`; optional `documents`, `customers`, `crm`, `listings`, `emailing`, `media`, `cms` (all `^1.0`) |
 | Provides / capabilities | `ai` → `Application\AiFacade` (`capabilities()->register('ai', …)`) |
-| Capabilities consumed | None formally; uses `Modules\Media\Application\MediaImporter` and `Modules\Emailing\Application\SmtpSender` behind `class_exists`, reads other modules' entities directly in tools |
+| Capabilities consumed | None formally; uses `Gereq\Media\Application\MediaImporter` and `Modules\Emailing\Application\SmtpSender` behind `class_exists`, reads other modules' entities directly in tools |
 | Groups / packages | `module.php` `groups: ['comms']`; not listed in any package of `config/module_groups.php` (the `plugin.ai` group there lists the provider plug-in modules `ollama`, `openai_compat`, `zai`, `deepseek`, `gemini`, `anthropic`, `openai`, whose enablement is checked by `ModuleAiIntegrationGate`) |
 | Permissions | `ai.use` (`perm.ai.use`), `ai.manage` (`perm.ai.manage`), group `perm.group.ai` |
 | API scopes | `ai.admin`, `ai.agent.*` (registered via `registerKnownScope`; per-agent scope `ai.agent.{slug}`) |

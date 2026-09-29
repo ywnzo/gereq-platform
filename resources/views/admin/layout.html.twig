@@ -70,12 +70,16 @@
                 {% set flashes_error = flash('error') %}
                 {% if flashes_success %}
                     {% for message in flashes_success %}
-                        <div class="alert alert-success alert--success" role="status">{{ message }}</div>
+                        {% if message|trim != '' %}
+                            <div class="alert alert-success alert--success" role="status">{{ message }}</div>
+                        {% endif %}
                     {% endfor %}
                 {% endif %}
                 {% if flashes_error %}
                     {% for message in flashes_error %}
-                        <div class="alert alert-error alert--danger" role="alert">{{ message }}</div>
+                        {% if message|trim != '' %}
+                            <div class="alert alert-error alert--danger" role="alert">{{ message }}</div>
+                        {% endif %}
                     {% endfor %}
                 {% endif %}
                 {% block content %}{% endblock %}

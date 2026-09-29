@@ -14,7 +14,7 @@ Related: [Media](media.md) (images in blocks), [Products](products.md) (`product
 | Class | `Modules\Cms\CmsModule` |
 | Requires | `core ^1.0`; optional `documents`, `media`, `products` (`^1.0`) |
 | Provides / capabilities | `cms` → `Application\CmsProvider` (`capabilities()->register('cms', …)`) |
-| Capabilities consumed | None; reads `Modules\Media\Domain\MediaAsset` behind `class_exists` for media URLs |
+| Capabilities consumed | None; reads `Gereq\Media\Domain\MediaAsset` behind `class_exists` for media URLs |
 | Groups / packages | `module.php` has no `groups`; `config/module_groups.php`: **required** in `realestates` |
 | Permissions | `cms.view` (`perm.cms.view`), `cms.manage` (`perm.cms.manage`), group `perm.group.cms` |
 | API scopes | `cms.read`, `cms.write` (`registerKnownScope`) |

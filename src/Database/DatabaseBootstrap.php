@@ -109,6 +109,9 @@ final class DatabaseBootstrap
     }
 
     /**
+     * DB state can change between calls (another worker may finish bare install).
+     *
+     * @phpstan-impure
      * @throws \Throwable when the database server is unreachable (caller may skip)
      */
     private function needsBareInstall(): bool

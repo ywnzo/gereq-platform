@@ -72,15 +72,62 @@ final class DataTableTest extends TestCase
         self::assertStringContainsString('hello', $html);
     }
 
+    public function testTableSupportsDestroyActionAndRowCheckable(): void
+    {
+        $ui = $this->makeUi();
+        $html = $ui->table(
+            [$ui->column('name', 'Name')],
+            [
+                ['id' => 'f1', 'name' => 'Folder', 'kind' => 'folder'],
+                ['id' => 'a1', 'name' => 'Asset', 'kind' => 'asset'],
+            ],
+            [
+                'checkable' => true,
+                'row_id' => static fn (array $row): string => (string) $row['id'],
+                'row_checkable' => static fn (array $row): bool => ($row['kind'] ?? '') === 'asset',
+                'actions' => static function (array $row): array {
+                    if (($row['kind'] ?? '') === 'folder') {
+                        return [
+                            [
+                                'type' => 'destroy',
+                                'action' => '/folders/' . $row['id'] . '/delete',
+                                'label' => 'Delete',
+                                'confirm' => 'Really?',
+                            ],
+                        ];
+                    }
+
+                    return [
+                        ['href' => '/a/' . $row['id'], 'label' => 'View', 'icon' => 'eye'],
+                    ];
+                },
+            ],
+        );
+
+        self::assertStringContainsString('data-confirm=', $html);
+        self::assertStringContainsString('Really', $html);
+        self::assertStringContainsString('/folders/f1/delete', $html);
+        self::assertStringContainsString('table__action-form', $html);
+        self::assertStringContainsString('value="a1"', $html);
+        self::assertStringContainsString('href="/a/a1"', $html);
+        // Folder row has no selectable checkbox (row_checkable=false).
+        self::assertDoesNotMatchRegularExpression(
+            '/type="checkbox"[^>]*value="f1"/',
+            $html,
+        );
+    }
+
     private function makeUi(): Ui
     {
         $views = dirname(__DIR__, 4) . '/resources/views';
         $loader = new FilesystemLoader($views);
         $twig = new Environment($loader, ['cache' => false, 'strict_variables' => false]);
         $twig->addFunction(new \Twig\TwigFunction('icon', static fn (string $name): string => '<span class="g-icon">' . $name . '</span>', ['is_safe' => ['html']]));
+        $twig->addFunction(new \Twig\TwigFunction('csrf_field', static fn (): string => '<input type="hidden" name="_token" value="t">', ['is_safe' => ['html']]));
         $twig->addFunction(new \Twig\TwigFunction('old', static fn (string $k, mixed $d = null): mixed => $d));
         $twig->addFunction(new \Twig\TwigFunction('error', static fn (): ?string => null));
         $twig->addFunction(new \Twig\TwigFunction('field_required', static fn (): bool => false));
+        $twig->addFunction(new \Twig\TwigFunction('trans', static fn (string $id): string => $id));
         $twig->addFilter(new \Twig\TwigFilter('trans', static fn (string $id): string => $id));
         $twig->addFilter(new \Twig\TwigFilter('url_encode', static function (array $qs): string {
             return http_build_query($qs);

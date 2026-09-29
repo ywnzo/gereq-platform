@@ -1,0 +1,32 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    {{ ui().pageHeader('media.move'|trans, {meta: '<strong>' ~ item.title()|e ~ '</strong> <span class="badge">' ~ item.mime()|e ~ '</span>'})|raw }}
+
+    {% include 'ui/error-summary.html.twig' with { form: 'media.move' } %}
+
+    <form method="post" class="detail-stack" action="{{ url('admin.media.move.submit', {id: item.id()}) }}" data-form="media.move" x-data="gereqForm"{% if form_errors('media.move') %} data-server-state="1"{% endif %}>
+        {{ csrf_field()|raw }}
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            <p class="muted" style="margin:0 0 1rem">{{ 'media.move.hint'|trans({'%title%': item.title()}) }}</p>
+            <div class="form-grid">
+                {{ ui().select({
+                    name: 'folder_id',
+                    label: 'media.field.folder'|trans,
+                    optional: true,
+                    form: 'media.move',
+                    value: item.folderId()|default(''),
+                    options: folderOptions,
+                    searchable: true
+                })|raw }}
+            </div>
+        </section>
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'media.move'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.media.show', {id: item.id()}) }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

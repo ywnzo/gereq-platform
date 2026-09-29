@@ -48,7 +48,7 @@ modules/<Name>/Database/Migrations/YYYY_MM_DD_NNNNNN_description.php
 integrations/<Name>/Database/Migrations/…   (same mechanism; integrations must not own core tables)
 ```
 
-Each file returns an anonymous object with `up(Schema $schema)` and `down(Schema $schema)` (DBAL `Schema` API), optionally `afterUp(Connection $conn)` for raw SQL backfills. Example: `modules/Customers/Database/Migrations/2026_09_08_000004_customer_avatar.php`.
+Each file returns an anonymous object with `up(Schema $schema)` and `down(Schema $schema)` (DBAL `Schema` API), optionally `afterUp(Connection $conn)` for raw SQL backfills. Example: `src/Customers/Database/Migrations/2026_09_08_000004_customer_avatar.php`.
 
 ### How `Migrator` runs them
 

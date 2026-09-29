@@ -18,9 +18,11 @@ use Gereq\Http\Middleware\StartSessionMiddleware;
 use Gereq\Module\ModuleManager;
 use Gereq\Validation\ValidationException;
 use Psr\Container\ContainerInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class Kernel
 {
@@ -52,7 +54,10 @@ final class Kernel
         }
 
         $this->auth->applyCookies($response);
-        $response->headers->set('Connection', 'close');
+        // Keep binary/stream responses eligible for Content-Length + Range (HTML5 video/audio).
+        if (!$response instanceof BinaryFileResponse && !$response instanceof StreamedResponse) {
+            $response->headers->set('Connection', 'close');
+        }
         $response->setProtocolVersion('1.1');
         $this->debugBar->mark('done');
 

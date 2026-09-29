@@ -16,7 +16,7 @@ use Gereq\User\PermissionRegistry;
 
 final class Seeder
 {
-    private ?\Modules\Media\Application\MediaImporter $mediaImporter = null;
+    private ?\Gereq\Media\Application\MediaImporter $mediaImporter = null;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -44,11 +44,11 @@ final class Seeder
     }
 
     /**
-     * @param array{name: string, email: string, password: string, role?: string} $admin
+     * @param array{name: string, email: string, password: string, role?: string}|null $admin
      */
-    public function seed(bool $withDemo = true, bool $withSampleCustomers = true, array $admin = []): void
+    public function seed(bool $withDemo = true, bool $withSampleCustomers = true, ?array $admin = null): void
     {
-        if ($admin === [] || trim((string) ($admin['email'] ?? '')) === '' || (string) ($admin['password'] ?? '') === '') {
+        if ($admin === null || trim($admin['email']) === '' || $admin['password'] === '') {
             throw new \InvalidArgumentException('seed() requires admin name/email/password (not from .env).');
         }
         $this->seedPermissions();
@@ -63,8 +63,8 @@ final class Seeder
             $this->seedCustomers();
             $this->em->flush();
         }
-        if (class_exists(\Modules\Media\Application\MediaImporter::class)) {
-            $this->mediaImporter = \Modules\Media\Application\MediaImporter::fromBasePath($this->em, base_path());
+        if (class_exists(\Gereq\Media\Application\MediaImporter::class)) {
+            $this->mediaImporter = \Gereq\Media\Application\MediaImporter::fromBasePath($this->em, base_path());
         }
 
         $forumProfile = strtolower((string) env_value('DEMO_PROFILE', '')) === 'forum';
@@ -292,19 +292,16 @@ final class Seeder
     {
         // Default package when DEMO_PROFILE is unset: RealEstates.
         $defaultEnabled = [
-            'currency', 'customers', 'media', 'cms', 'listings',
-            'crm', 'calendar', 'viewings', 'documents', 'notifications',
-            'reviews', 'newsletter', 'portals', 'translate', 'webhooks',
+            'cms', 'listings',
+            'crm', 'calendar', 'viewings', 'documents',
+            'reviews', 'newsletter', 'portals', 'translate',
             'emailing',
         ];
         $profile = strtolower((string) env_value('DEMO_PROFILE', ''));
         if ($profile === 'forum') {
             // config/module_groups.php → forum
             $defaultEnabled = [
-                'customers',
                 'forum',
-                'media',
-                'notifications',
                 'newsletter',
             ];
         }
@@ -356,11 +353,11 @@ final class Seeder
 
     private function seedCustomers(): void
     {
-        if (!class_exists(\Modules\Customers\Domain\Customer::class)) {
+        if (!class_exists(\Gereq\Customers\Domain\Customer::class)) {
             return;
         }
 
-        $repo = $this->em->getRepository(\Modules\Customers\Domain\Customer::class);
+        $repo = $this->em->getRepository(\Gereq\Customers\Domain\Customer::class);
         if ($repo->count([]) > 0) {
             return;
         }
@@ -374,7 +371,7 @@ final class Seeder
         ];
 
         foreach ($rows as [$name, $email, $phone, $company, $note, $status]) {
-            $customer = new \Modules\Customers\Domain\Customer($name, $email);
+            $customer = new \Gereq\Customers\Domain\Customer($name, $email);
             $customer->setPhone($phone);
             $customer->setCompany($company);
             $customer->setNote($note);
@@ -1104,7 +1101,7 @@ TXT,
         $resolvedUrls = [];
         foreach (array_values($sourceUrls) as $i => $url) {
             $image = null;
-            if ($this->mediaImporter !== null && class_exists(\Modules\Media\Domain\MediaAsset::class)) {
+            if ($this->mediaImporter !== null && class_exists(\Gereq\Media\Domain\MediaAsset::class)) {
                 $asset = $this->mediaImporter->importFromUrl(
                     $url,
                     $title . ' – foto ' . ($i + 1),

@@ -1,0 +1,165 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ item.name() }}</h1>
+            <p class="muted detail-layout__meta">
+                <code>{{ item.url() }}</code>
+                <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'failing' ? 'warn' : 'muted') }}">{{ item.statusLabel()|trans }}</span>
+            </p>
+        </div>
+        <div class="actions">
+            {% if user.can('webhooks.manage') %}
+                <form method="post" action="{{ url('admin.developer.webhooks.test', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--ghost" type="submit">{{ 'webhooks.send_test'|trans }}</button>
+                </form>
+                {% if item.status() == 'paused' %}
+                    <form method="post" action="{{ url('admin.developer.webhooks.activate', {id: item.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--ghost" type="submit">{{ 'webhooks.activate'|trans }}</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{{ url('admin.developer.webhooks.pause', {id: item.id()}) }}">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--ghost" type="submit">{{ 'webhooks.pause'|trans }}</button>
+                    </form>
+                {% endif %}
+                <a class="btn btn--primary" href="{{ url('admin.developer.webhooks.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                <form method="post" action="{{ url('admin.developer.webhooks.destroy', {id: item.id()}) }}" data-confirm="{{ 'webhooks.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="detail-layout">
+        <div class="detail-layout__main">
+            <section class="detail-hero panel">
+                <div class="detail-hero__body">
+                    <div class="detail-hero__highlight">
+                        <span>{{ 'webhooks.field.status'|trans }}</span>
+                        <strong>{{ item.statusLabel()|trans }}</strong>
+                    </div>
+                    <dl class="detail-hero__facts">
+                        <div>
+                            <dt>{{ 'webhooks.field.timeout'|trans }}</dt>
+                            <dd>{{ item.timeoutSeconds() }} s</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'webhooks.field.consecutive_failures'|trans }}</dt>
+                            <dd>{{ item.consecutiveFailures() }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'webhooks.field.last_delivery'|trans }}</dt>
+                            <dd>{{ item.lastDeliveryAt() ? item.lastDeliveryAt().format('d. m. Y H:i:s') : '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'webhooks.field.created'|trans }}</dt>
+                            <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'webhooks.field.events'|trans }}</h2>
+                </header>
+                <div class="module-chip-row detail-layout__chips">
+                    {% for event in item.events() %}
+                        <span class="badge badge--muted">{{ event }}</span>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="panel">
+                <header class="panel__head">
+                    <h2>{{ 'webhooks.recent_deliveries'|trans }}</h2>
+                    <a class="btn btn--ghost btn-sm" href="{{ url('admin.developer.webhook-deliveries.index') }}?webhook={{ item.id() }}">{{ 'webhooks.all_deliveries'|trans }}</a>
+                </header>
+                <div class="table-wrap" data-table>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>{{ 'webhooks.field.event'|trans }}</th>
+                                <th>{{ 'webhooks.field.status'|trans }}</th>
+                                <th>{{ 'webhooks.field.http'|trans }}</th>
+                                <th>{{ 'webhooks.field.attempt'|trans }}</th>
+                                <th>{{ 'webhooks.field.time'|trans }}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for delivery in deliveries %}
+                                <tr>
+                                    <td><code>{{ delivery.eventType() }}</code></td>
+                                    <td>
+                                        <span class="badge badge--{{ delivery.status() == 'delivered' ? 'ok' : (delivery.status() == 'failed' ? 'danger' : 'warn') }}">
+                                            {{ delivery.statusLabel()|trans }}
+                                        </span>
+                                    </td>
+                                    <td>{{ delivery.responseStatus() ?: '—' }}</td>
+                                    <td>{{ delivery.attempt() }}</td>
+                                    <td>{{ delivery.createdAt().format('d. m. Y H:i:s') }}</td>
+                                    <td><a href="{{ url('admin.developer.webhook-deliveries.show', {id: delivery.id()}) }}">{{ 'common.detail'|trans }}</a></td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="empty">
+                                            <h2>{{ 'webhooks.deliveries.empty'|trans }}</h2>
+                                            <p>{{ 'webhooks.deliveries.empty.hint'|trans }}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <aside class="detail-layout__aside">
+            <section class="panel">
+                <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
+                <dl class="meta-list meta-list--flush detail-layout__specs">
+                    <div>
+                        <dt>{{ 'webhooks.field.status'|trans }}</dt>
+                        <dd><span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'failing' ? 'warn' : 'muted') }}">{{ item.statusLabel()|trans }}</span></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'webhooks.field.secret'|trans }}</dt>
+                        <dd><code>{{ item.secretPreview() }}</code></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'webhooks.field.timeout'|trans }}</dt>
+                        <dd>{{ item.timeoutSeconds() }} s</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'webhooks.field.consecutive_failures'|trans }}</dt>
+                        <dd>{{ item.consecutiveFailures() }}</dd>
+                    </div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'webhooks.field.last_delivery'|trans }}</dt>
+                        <dd>{{ item.lastDeliveryAt() ? item.lastDeliveryAt().format('d. m. Y H:i:s') : '—' }}</dd>
+                    </div>
+                    <div class="meta-list__full">
+                        <dt>{{ 'webhooks.field.created'|trans }}</dt>
+                        <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                    </div>
+                </dl>
+                {% if user.can('webhooks.manage') %}
+                    <form method="post" action="{{ url('admin.developer.webhooks.rotate_secret', {id: item.id()}) }}" data-confirm="{{ 'webhooks.rotate_secret.confirm'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+                        {{ csrf_field()|raw }}
+                        <button class="btn btn--ghost" type="submit">{{ 'webhooks.rotate_secret'|trans }}</button>
+                    </form>
+                {% endif %}
+            </section>
+        </aside>
+    </div>
+{% endblock %}

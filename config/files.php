@@ -5,13 +5,17 @@ declare(strict_types=1);
 return [
     'driver' => env_value('FILE_DRIVER', 'local'),
     'local_path' => 'storage/uploads',
-    'max_size' => 10 * 1024 * 1024,
+    // Keep in sync with nginx client_max_body_size / PHP upload_max_filesize (64M).
+    'max_size' => (int) env_value('FILE_MAX_SIZE', (string) (64 * 1024 * 1024)),
     'allowed_mimes' => [
         'image/jpeg',
         'image/png',
         'image/webp',
         'image/avif',
         'image/gif',
+        'video/mp4',
+        'video/webm',
+        'video/quicktime',
         'application/pdf',
         'text/plain',
         'text/csv',

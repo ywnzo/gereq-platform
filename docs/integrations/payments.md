@@ -11,7 +11,7 @@ Three packages in `integrations/` implement `Modules\Payments\Application\Paymen
 | Orchestration | `modules/Payments/Application/PaymentService.php` | `createForOrder(Order, methodCode, context)`: resolves `PaymentMethod` by code, gateway by `strtolower($method->provider() ?: 'manual')`, creates `PaymentIntent`, calls `createPayment()`, stores `status` (`redirect`/`pending`/`failed`), `redirect_url`, `external_id`, `payment_reference`, `spayd_payload`, `meta`, emits event `payment.intent_created`. `markPaid(intent, externalId)` finalises. |
 | Payment methods admin | `/admin/payments/methods` (`modules/Payments/Http/PaymentMethodController.php`) | the **provider** field of a method must equal the gateway key (`comgate`, `stripe`, `gopay`, or empty → manual) |
 | REST | `/api/v1/payments/methods`, `/api/v1/payments/intents/{id}`, `/api/v1/payments/intents/{id}/mark-paid`, `/api/v1/payments/orders/{orderId}/intents` (scopes `payments.read` / `payments.write`) | `modules/Payments/Http/Api/*` |
-| Inbound webhooks (optional) | `modules/Webhooks` — `InboundWebhookRegistry`, `POST /api/v1/webhooks/inbound/{provider}` | each package registers a `Gereq\Api\InboundWebhookProviderInterface` implementation when the Webhooks module class exists |
+| Inbound webhooks (optional) | `src/Webhooks` — `InboundWebhookRegistry`, `POST /api/v1/webhooks/inbound/{provider}` | each package registers a `Gereq\Api\InboundWebhookProviderInterface` implementation when the Webhooks module class exists |
 
 ## Gateway flow
 

@@ -29,7 +29,7 @@ use Gereq\Console\Command\TestCommand;
 use Gereq\Console\Command\TwigTypesCommand;
 use Gereq\Console\Command\UserCreateCommand;
 use Gereq\Support\AppVersion;
-use Modules\Currency\Console\SyncRatesCommand;
+use Gereq\Currency\Console\SyncRatesCommand;
 use Modules\CustomerUploads\Console\PurgeUploadsCommand;
 use Modules\PartsCatalog\Console\SyncJamaCatalogCommand;
 use Modules\Payments\Console\ImapMatchCommand;

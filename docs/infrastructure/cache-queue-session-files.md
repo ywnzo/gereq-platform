@@ -83,7 +83,7 @@ Paths that hold user-visible files:
 
 | Path | Content | Served by |
 | --- | --- | --- |
-| `storage/uploads/` | `FileManager` uploads (`src/File/FileManager.php`), Media module imports (`modules/Media/Application/MediaImporter.php` also writes here) | Media module `GET /media/{id}/file` (`modules/Media/MediaModule.php`) |
+| `storage/uploads/` | `FileManager` uploads (`src/File/FileManager.php`), Media module imports (`src/Media/Application/MediaImporter.php` also writes here) | Media module `GET /media/{id}/file` (`src/Media/MediaRegistrar.php`) |
 | `storage/uploads/brand/` | white-label logo/favicon uploaded in Admin → Settings (`src/Admin/Http/SettingsController.php`) | `GET /brand/asset/{name}` (`src/Http/BrandAssetController.php`) |
 | `public/brand/icons/`, `public/brand/logos/` | static default brand assets (default logo `/brand/icons/favicon.svg`, `src/Brand/Branding.php`) | nginx / PHP built-in server directly |
 | `storage/invoices/` | rendered invoices (`modules/Orders/Application/InvoiceIssuingService.php`) | Orders module |

@@ -11,7 +11,7 @@ use Integrations\GoPay\Application\GoPayGateway;
 use Integrations\GoPay\Application\GoPayInboundProvider;
 use Integrations\GoPay\Http\GoPayNotifyController;
 use Modules\Payments\Application\PaymentGatewayRegistry;
-use Modules\Webhooks\Application\InboundWebhookRegistry;
+use Gereq\Webhooks\Application\InboundWebhookRegistry;
 
 final class GoPayModule implements ModuleInterface
 {

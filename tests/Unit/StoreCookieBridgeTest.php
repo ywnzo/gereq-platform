@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Gereq\Tests\Unit;
 
 use Gereq\Config\Repository as Config;
-use Modules\Customers\Application\StoreCookieBridge;
-use Modules\Customers\Application\StoreTokenService;
-use Modules\Customers\Domain\CustomerAccount;
+use Gereq\Customers\Application\StoreCookieBridge;
+use Gereq\Customers\Application\StoreTokenService;
+use Gereq\Customers\Domain\CustomerAccount;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

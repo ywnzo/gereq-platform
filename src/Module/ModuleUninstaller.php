@@ -7,8 +7,8 @@ namespace Gereq\Module;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Database\Migrator;
 use Gereq\File\FileManager;
-use Modules\Media\Domain\MediaAsset;
-use Modules\Media\Domain\MediaLink;
+use Gereq\Media\Domain\MediaAsset;
+use Gereq\Media\Domain\MediaLink;
 
 /**
  * Deactivation = soft-disable + drop module DB schema (+ optional media).
