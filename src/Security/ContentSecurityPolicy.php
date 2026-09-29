@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Security;
 
-use Gereq\View\AssetManager;
+use Gereq\View\RenderEngine;
 
 final class ContentSecurityPolicy
 {
@@ -14,7 +14,7 @@ final class ContentSecurityPolicy
     /** Response may set to "1" to use X-Frame-Options: SAMEORIGIN instead of DENY. */
     public const HEADER_ALLOW_FRAME = 'X-Gereq-Allow-Frame';
 
-    public function __construct(private readonly AssetManager $assets)
+    public function __construct(private readonly RenderEngine $render)
     {
     }
 
@@ -44,27 +44,14 @@ final class ContentSecurityPolicy
 
     public function header(string $nonce, bool $allowSameOriginFrame = false): string
     {
-        $hot = $this->assets->isHot();
-
         $scriptSrc = ["'self'", "'nonce-{$nonce}'"];
+        $styleSrc = ["'self'", "'nonce-{$nonce}'", 'https://fonts.bunny.net'];
         $connectSrc = ["'self'"];
 
-        // Vite injects <style> without a nonce. If style-src also has a nonce,
-        // browsers ignore 'unsafe-inline' and HMR CSS is blocked → unstyled admin.
-        if ($hot) {
-            $styleSrc = ["'self'", "'unsafe-inline'", 'https://fonts.bunny.net'];
-            $scriptSrc[] = "'unsafe-eval'";
-        } else {
-            $styleSrc = ["'self'", "'nonce-{$nonce}'", 'https://fonts.bunny.net'];
-        }
-
-        foreach ($this->assets->hotOriginsForCsp() as $origin) {
+        foreach ($this->render->cspOrigins() as $origin) {
             $scriptSrc[] = $origin;
+            $styleSrc[] = $origin;
             $connectSrc[] = $origin;
-            $ws = preg_replace('#^http#i', 'ws', $origin);
-            if (is_string($ws) && $ws !== '') {
-                $connectSrc[] = $ws;
-            }
         }
 
         $directives = [

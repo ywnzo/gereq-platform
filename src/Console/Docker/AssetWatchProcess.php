@@ -8,12 +8,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Host-side Bun watch rebuild (`bun run dev` → public/build) for Docker --hot.
- * No Vite HMR / public/hot — AssetManager serves hashed /build assets.
  */
-final class ViteHotProcess
+final class AssetWatchProcess
 {
-    public const PORT = 5173;
-
     private ?int $pid = null;
     private bool $owned = false;
 
@@ -67,8 +64,7 @@ final class ViteHotProcess
             }
         }
 
-        // Never leave a Vite-era hot marker — PHP would request /@vite/client.
-        $this->clearHotMarker();
+        $this->clearLegacyViteHotMarker();
 
         $logFile = $logDir . '/bun-assets.log';
         $pidFile = $this->pidFile();
@@ -138,7 +134,7 @@ SH;
         }
 
         $this->clearPidFile();
-        $this->clearHotMarker();
+        $this->clearLegacyViteHotMarker();
         $this->pid = null;
         $this->owned = false;
     }
@@ -148,7 +144,6 @@ SH;
     {
         $pid = $this->readPidFile();
         if ($pid === null) {
-            // Legacy Vite-era pid file name.
             $legacy = $this->basePath . '/storage/tmp/vite-dev.pid';
             if (is_file($legacy)) {
                 $raw = trim((string) file_get_contents($legacy));
@@ -207,17 +202,9 @@ SH;
 
     private function manifestReady(): bool
     {
-        $candidates = [
-            $this->basePath . '/public/build/.vite/manifest.json',
-            $this->basePath . '/public/build/manifest.json',
-        ];
-        foreach ($candidates as $file) {
-            if (is_file($file) && filesize($file) > 2) {
-                return true;
-            }
-        }
+        $file = $this->basePath . '/public/build/manifest.json';
 
-        return false;
+        return is_file($file) && filesize($file) > 2;
     }
 
     private function bunAvailable(): bool
@@ -228,7 +215,7 @@ SH;
         return $code === 0;
     }
 
-    private function clearHotMarker(): void
+    private function clearLegacyViteHotMarker(): void
     {
         $hot = $this->basePath . '/public/hot';
         if (is_file($hot)) {

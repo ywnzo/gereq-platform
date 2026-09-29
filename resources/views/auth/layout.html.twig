@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ pageTitle|default('auth.login.title'|trans) }} · {{ brand('name') }}</title>
     {% include 'partials/brand-head.html.twig' %}
-    {% if vite_hot() %}
-        {{ vite_tags() }}
-    {% else %}
-        <link rel="stylesheet" href="{{ asset('resources/css/kernel.css') }}">
-    {% endif %}
+    {{ render_css() }}
     {% include 'partials/brand-overrides.html.twig' %}
 </head>
 <body class="auth-body">
@@ -38,9 +34,7 @@
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
         window.__GEREQ_FORM_FP_CLEARED__ = {{ flash('form_fp_cleared')|json_encode|raw }};
     </script>
-    {% if not vite_hot() %}
-        <script type="module" nonce="{{ csp_nonce() }}" src="{{ asset('resources/js/admin.ts') }}"></script>
-        {{ vite_dev_reload() }}
-    {% endif %}
+    {{ render_js() }}
+    {{ render_reload() }}
 </body>
 </html>

@@ -21,6 +21,7 @@ final class Authenticator
     private const REMEMBER_COOKIE = 'gereq_remember';
 
     private ?User $user = null;
+    private bool $identityResolved = false;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -151,6 +152,7 @@ final class Authenticator
         $user->markLoggedIn();
         $this->em->flush();
         $this->user = $user;
+        $this->identityResolved = true;
 
         if ($remember) {
             $this->queueRememberCookie($user);
@@ -167,6 +169,7 @@ final class Authenticator
         $this->clearMfaChallenge();
         $session->migrate(true);
         $this->user = null;
+        $this->identityResolved = true;
 
         $request = $this->requestStack->getCurrentRequest();
         if ($request !== null) {
@@ -216,9 +219,10 @@ final class Authenticator
 
     public function user(): ?User
     {
-        if ($this->user !== null) {
+        if ($this->identityResolved) {
             return $this->user;
         }
+        $this->identityResolved = true;
 
         $request = $this->requestStack->getCurrentRequest();
         if ($request === null || !$request->hasSession()) {

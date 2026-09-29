@@ -16,17 +16,60 @@ import (
 )
 
 type LocalModule struct {
-	Dir     string
-	ID      string
-	Version string
-	Name    string
+	Dir        string
+	ID         string
+	Version    string
+	Name       string
+	Repository string // optional module.php "repository" (group/project or project)
 }
 
 type CompareRow struct {
 	Repo   string
+	ID     string
+	Dir    string
 	Local  string
 	GitLab string
 	Status string
+}
+
+// projectPathCandidates returns GitLab project path names (no group) to try, in priority order.
+// Mirrors Gereq\Module\GitLabModuleClient::projectPathFor, plus underscore→hyphen fallback
+// when id is webplus_ai but the repo is module-webplus-ai.
+func projectPathCandidates(cfg gitlab.Config, m LocalModule) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(s string) {
+		s = strings.TrimSpace(s)
+		if s == "" || seen[s] {
+			return
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	if m.Repository != "" {
+		path := strings.Trim(m.Repository, "/")
+		if i := strings.LastIndex(path, "/"); i >= 0 {
+			add(path[i+1:])
+		} else {
+			add(path)
+		}
+	}
+	add(cfg.Prefix + m.ID)
+	add(cfg.Prefix + strings.ReplaceAll(m.ID, "_", "-"))
+	return out
+}
+
+func matchProject(projectSet map[string]bool, cfg gitlab.Config, m LocalModule) (string, bool) {
+	cands := projectPathCandidates(cfg, m)
+	for _, c := range cands {
+		if projectSet[c] {
+			return c, true
+		}
+	}
+	if len(cands) > 0 {
+		return cands[0], false
+	}
+	return cfg.Prefix + m.ID, false
 }
 
 type ScanResult struct {
@@ -43,7 +86,7 @@ func ScanLocal(root string) ([]LocalModule, error) {
 foreach (glob("modules/*/module.php") as $f) {
   $m = include $f;
   $dir = basename(dirname($f));
-  echo $dir."|".($m["id"]??"")."|".($m["version"]??"")."|".($m["name"]??$dir)."\n";
+  echo $dir."|".($m["id"]??"")."|".($m["version"]??"")."|".($m["name"]??$dir)."|".($m["repository"]??"")."\n";
 }
 `
 	cmd := exec.Command("php", "-r", script)
@@ -59,15 +102,21 @@ foreach (glob("modules/*/module.php") as $f) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 4)
+		parts := strings.SplitN(line, "|", 5)
 		if len(parts) < 3 {
 			continue
 		}
 		name := parts[1]
-		if len(parts) == 4 {
+		if len(parts) >= 4 {
 			name = parts[3]
 		}
-		mods = append(mods, LocalModule{Dir: parts[0], ID: parts[1], Version: parts[2], Name: name})
+		repo := ""
+		if len(parts) >= 5 {
+			repo = parts[4]
+		}
+		mods = append(mods, LocalModule{
+			Dir: parts[0], ID: parts[1], Version: parts[2], Name: name, Repository: repo,
+		})
 	}
 	sort.Slice(mods, func(i, j int) bool {
 		return strings.ToLower(mods[i].Dir) < strings.ToLower(mods[j].Dir)
@@ -89,24 +138,25 @@ func RunScan(root string) ScanResult {
 	if err != nil {
 		return ScanResult{Local: local, Err: err}
 	}
-	localIDs := map[string]LocalModule{}
-	for _, m := range local {
-		localIDs[m.ID] = m
-	}
 	projectSet := map[string]bool{}
 	for _, p := range projects {
 		projectSet[p] = true
 	}
+	localRepos := map[string]bool{}
 	var missing, extra []string
-	for _, m := range local {
-		want := cfg.Prefix + m.ID
-		if !projectSet[want] {
-			missing = append(missing, fmt.Sprintf("%s (local %s %s)", want, m.Dir, m.Version))
+	resolved := make([]string, len(local))
+	found := make([]bool, len(local))
+	for i, m := range local {
+		repo, ok := matchProject(projectSet, cfg, m)
+		resolved[i] = repo
+		found[i] = ok
+		localRepos[repo] = true
+		if !ok {
+			missing = append(missing, fmt.Sprintf("%s (local %s %s)", repo, m.Dir, m.Version))
 		}
 	}
 	for _, p := range projects {
-		id := strings.TrimPrefix(p, cfg.Prefix)
-		if _, ok := localIDs[id]; !ok {
+		if !localRepos[p] {
 			extra = append(extra, p)
 		}
 	}
@@ -121,19 +171,18 @@ func RunScan(root string) ScanResult {
 	sem := make(chan struct{}, 8)
 	for i, m := range local {
 		wg.Add(1)
-		go func(i int, m LocalModule) {
+		go func(i int, m LocalModule, repo string, ok bool) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			repo := cfg.Prefix + m.ID
 			latest := "NONE"
-			if projectSet[repo] {
+			if ok {
 				if t, err := gl.LatestTag(repo); err == nil {
 					latest = t
 				}
 			}
 			ch <- tagRes{idx: i, latest: latest}
-		}(i, m)
+		}(i, m, resolved[i], found[i])
 	}
 	wg.Wait()
 	close(ch)
@@ -142,18 +191,20 @@ func RunScan(root string) ScanResult {
 		latestByIdx[r.idx] = r.latest
 	}
 	for i, m := range local {
-		repo := cfg.Prefix + m.ID
+		repo := resolved[i]
 		latest := latestByIdx[i]
 		status := "ok"
 		switch {
-		case !projectSet[repo]:
+		case !found[i]:
 			status = "MISSING"
 		case latest == "NONE":
 			status = "NO_TAGS"
 		case latest != "v"+m.Version && latest != m.Version:
 			status = "DIFF"
 		}
-		rows[i] = CompareRow{Repo: repo, Local: m.Version, GitLab: latest, Status: status}
+		rows[i] = CompareRow{
+			Repo: repo, ID: m.ID, Dir: m.Dir, Local: m.Version, GitLab: latest, Status: status,
+		}
 	}
 	return ScanResult{Local: local, GitLab: projects, Missing: missing, Extra: extra, Compare: rows}
 }
@@ -192,59 +243,6 @@ func PrintPlain(root string, res ScanResult) {
 	for _, r := range res.Compare {
 		fmt.Printf("%-28s local=%-8s gitlab=%-10s %s\n", r.Repo, r.Local, r.GitLab, r.Status)
 	}
-}
-
-func Update(root string, ids []string, yes bool) error {
-	res := RunScan(root)
-	if res.Err != nil {
-		return res.Err
-	}
-	cfg := gitlab.LoadConfig(root)
-	want := map[string]bool{}
-	for _, id := range ids {
-		want[strings.ToLower(id)] = true
-	}
-	reported := 0
-	for _, row := range res.Compare {
-		id := strings.TrimPrefix(row.Repo, cfg.Prefix)
-		if len(want) > 0 && !want[id] && !want[strings.ToLower(row.Repo)] {
-			continue
-		}
-		if row.Status == "ok" {
-			continue
-		}
-		reported++
-		fmt.Printf("%s  local=%s  gitlab=%s  [%s]\n", row.Repo, row.Local, row.GitLab, row.Status)
-		if row.Status == "DIFF" && yes {
-			tag := row.GitLab
-			modDir := ""
-			for _, m := range res.Local {
-				if m.ID == id {
-					modDir = m.Dir
-					break
-				}
-			}
-			if modDir == "" {
-				continue
-			}
-			sub := filepath.Join(root, "modules", modDir)
-			fmt.Printf("→ fetching %s @ %s\n", modDir, tag)
-			_ = exec.Command("git", "-C", sub, "fetch", "--tags", "origin").Run()
-			if err := exec.Command("git", "-C", sub, "checkout", tag).Run(); err != nil {
-				fmt.Fprintf(os.Stderr, "  checkout failed: %v\n", err)
-				continue
-			}
-			_ = exec.Command("git", "-C", root, "add", filepath.Join("modules", modDir)).Run()
-			fmt.Printf("  ✓ submodule pin updated (commit platform to keep)\n")
-			fmt.Printf("  → then: php gereq module:enable %s  (or Admin → Modules → Update)\n", id)
-		}
-	}
-	if reported == 0 {
-		fmt.Println("✓ all selected modules ok (or nothing to report)")
-	} else if !yes {
-		fmt.Println("\nRe-run with --yes to checkout matching GitLab tags into submodule dirs.")
-	}
-	return nil
 }
 
 type CreateOptions struct {

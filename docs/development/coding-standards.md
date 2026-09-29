@@ -36,13 +36,13 @@ composer test && composer analyse
 | Rule | Source |
 | --- | --- |
 | **Bun only**: `bun install`, `bun run build`, `bun run dev`, `bun x <tool>` — never `npm run` / `npx` | `.cursor/rules/tech-stack.mdc` (always applied) |
-| `tsconfig.json` has `"strict": true`; TS sources live in `resources/js/**` and `modules/*/Resources/assets/js/**` | `tsconfig.json`, `vite.config.ts` |
+| `tsconfig.json` has `"strict": true`; TS sources live in `resources/js/**` and `modules/*/Resources/assets/js/**` | `tsconfig.json` |
 | Alpine components are registered through `register*` functions exported from `resources/js/ui/*.ts` and wired in `resources/js/ui/index.ts` (CSP build of Alpine — no inline JS expressions) | `resources/js/ui/index.ts`, `package.json` (`@alpinejs/csp`) |
 | **No native dialogs**: never `window.alert` / `window.confirm` / `window.prompt`; use `window.gereq.confirm(...)`, `window.gereq.prompt(...)` (`resources/js/ui/confirm.ts`) or `data-confirm` on forms | `.cursor/skills/no-native-dialogs/SKILL.md` |
-| Single Vite entry `admin: resources/js/admin.ts`; module assets are `import`ed from `admin.ts` (e.g. `modules/CarService/Resources/assets/css/admin.css`) rather than added as separate entries; tags rendered by the `vite_tags()` / `vite_hot()` Twig functions | `vite.config.ts`, `resources/js/admin.ts`, `src/View/TwigRuntime.php` |
-| Scripts available: `bun run dev` (Vite dev server / HMR), `bun run build` (production build to `public/build`) | `package.json` |
+| Single Bun entry `resources/js/admin.ts`; module assets are `import`ed from `admin.ts`; tags via `render_css()` / `render_js()` | `scripts/build.ts`, `config/render.php`, `src/View/RenderEngine.php` |
+| Scripts: `bun run dev` (watch → `public/build` + `.dev`), `bun run build` (hashed production assets) | `package.json` |
 
-There is no ESLint/Prettier configuration in the repository; rely on `tsc` strictness and the Vite build.
+There is no ESLint/Prettier configuration in the repository; rely on `tsc` strictness and the Bun build.
 
 ## Twig
 

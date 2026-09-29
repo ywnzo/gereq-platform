@@ -108,10 +108,10 @@ Transport: `Symfony\Component\Mailer\Mailer` built with `Transport::fromDsn(conf
 | `storage/cache/rate` | login rate-limit counters | `RateLimiter` |
 | `storage/logs/gereq.log` | application errors (`src/Http/ExceptionHandler.php`) | runtime |
 | `storage/logs/nplusone.log` | N+1 query report (debug, `serve-docker` TUI / `php gereq nn`) | runtime |
-| `storage/logs/vite-dev.log` | `bun run dev` output when started by `serve-docker --hot` | `ViteHotProcess` |
+| `storage/logs/bun-assets.log` | `bun run dev` output when started by `serve-docker --hot` | `AssetWatchProcess` |
 | `storage/sessions` | file sessions | `SessionHandlerFactory` |
 | `storage/tmp/queue` | file-driver jobs | `Queue` |
-| `storage/tmp/vite-dev.pid` | pid of the Vite process started by `serve-docker --hot` | `ViteHotProcess` |
+| `storage/tmp/bun-assets.pid` | pid of Bun watch started by `serve-docker --hot` | `AssetWatchProcess` |
 | `storage/uploads` (+ `brand/`) | uploads, media, brand assets | `FileManager`, Media, Settings |
 | `storage/invoices` | invoice documents | Orders module |
 | `storage/modules/{id}/{version}/` | downloaded module versions (`src/Module/ModuleVersionStore.php`, config `modules.versions_path`) | module updater |

@@ -264,6 +264,9 @@ html[data-theme="gereq-dark"] {
     word-wrap: normal;
     direction: ltr;
     -webkit-font-smoothing: antialiased;
+    /* Ligatures required — Tailwind preflight sets font-feature-settings: inherit (normal) on buttons. */
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
     user-select: none;
     flex-shrink: 0;

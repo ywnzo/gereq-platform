@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop dockerless background processes (nginx, php-fpm, vite, queue, php -S).
+# Stop dockerless background processes (nginx, php-fpm, bun watch, queue, php -S).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -39,6 +39,7 @@ if [[ -f "${GEREQ_HOME}/run/php-fpm.pid" ]]; then
 fi
 
 stop_pid_name php-server
+stop_pid_name bun-watch
 stop_pid_name vite
 stop_pid_name queue
 

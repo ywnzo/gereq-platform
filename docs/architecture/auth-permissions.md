@@ -120,7 +120,7 @@ In Twig, `current_user()` returns the `User` (so `current_user().can('listings.m
 
 | Header | Value |
 | --- | --- |
-| `Content-Security-Policy` | built by `Gereq\Security\ContentSecurityPolicy::header(nonce, allowFrame)` — nonce-based scripts, Vite dev origin when `public/hot` exists; a controller may override via the `ContentSecurityPolicy::HEADER_OVERRIDE` response header (e-mail preview) or allow same-origin framing via `HEADER_ALLOW_FRAME` |
+| `Content-Security-Policy` | built by `Gereq\Security\ContentSecurityPolicy::header(nonce, allowFrame)` — nonce-based scripts, extra origins from `config/render.php`; a controller may override via the `ContentSecurityPolicy::HEADER_OVERRIDE` response header (e-mail preview) or allow same-origin framing via `HEADER_ALLOW_FRAME` |
 | `X-Content-Type-Options` | `nosniff` |
 | `X-Frame-Options` | `DENY` (or `SAMEORIGIN` when allowed) |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |

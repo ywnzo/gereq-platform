@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ pageTitle|default('errors.title'|trans) }} · {{ brand('name') }}</title>
     {% include 'partials/brand-head.html.twig' %}
-    {% if vite_hot() %}
-        {{ vite_tags() }}
-    {% else %}
-        <link rel="stylesheet" href="{{ asset('resources/css/kernel.css') }}">
-    {% endif %}
+    {{ render_css() }}
     {% include 'partials/brand-overrides.html.twig' %}
 </head>
 <body class="auth-body">

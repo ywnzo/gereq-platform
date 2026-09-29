@@ -33,11 +33,10 @@ When updating an existing install from a **platform ZIP**, also follow [UPDATE-G
 ```bash
 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 bun install
-bun run build            # → public/build (hashed assets + .vite/manifest.json)
+bun run build            # → public/build (hashed assets + manifest.json)
 ```
 
-- `vite.config.ts` writes to `public/build` with `manifest: true`; `src/View/AssetManager.php` reads `public/build/.vite/manifest.json` (or `public/build/manifest.json`) to emit `<link>`/`<script>` tags.
-- Make sure **`public/hot` does not exist** on the server: its presence switches `AssetManager` into HMR mode and pages will try to load `/@vite/client`. (`bun run build` removes it unless a dev server is listening.)
+- `scripts/build.ts` writes `public/build/manifest.json`; `Gereq\View\RenderEngine` emits `<link>`/`<script>` tags. Asset origin/prefix: `config/render.php`.
 - Web root must be `public/` (nginx `root /var/www/html/public` in `docker/nginx/default.conf`; `public/index.php` front controller, `public/router.php` for the PHP built-in server).
 - PHP 8.4 with extensions used by the Docker image: `pdo_sqlite`/`pdo_mysql`/`pdo_pgsql`, `gd` (webp/avif), `zip`, `opcache`, `redis`, plus `mbstring`, `json` (checked by `bin/grq install demo`).
 - Upload limits: `docker/php/php.ini` uses `upload_max_filesize=64M`, `post_max_size=64M`, nginx `client_max_body_size 64M`; `config/files.php` caps a single upload at 10 MiB.
@@ -123,7 +122,7 @@ Headers always set by `src/Http/Middleware/SecurityHeadersMiddleware.php` (regis
 | `X-Frame-Options` | `DENY` (or `SAMEORIGIN` when the route allows framing) |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
-| `Content-Security-Policy` | built per request by `src/Security/ContentSecurityPolicy.php` with a nonce (`csp_nonce()` in Twig); in HMR mode it whitelists the Vite origins from `AssetManager::hotOriginsForCsp()`; a custom CSP string can override it |
+| `Content-Security-Policy` | built per request by `src/Security/ContentSecurityPolicy.php` with a nonce (`csp_nonce()` in Twig); extra origins from `RenderEngine::cspOrigins()` (`config/render.php`); a custom CSP string can override it |
 | `Strict-Transport-Security` | only over HTTPS |
 
 Other security-related code: `config/security.php` (`login_max_attempts=5`, `login_decay_seconds=60`, `password_min_length=10`, `mfa_challenge_ttl=600`, WebAuthn RP settings), `src/Security/Csrf.php`, `src/Security/RateLimiter.php` (file-based in `storage/cache/rate`), `src/Security/HtmlSanitizer.php`, `src/Http/PublicCors.php`.

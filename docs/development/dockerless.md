@@ -76,13 +76,13 @@ Templates live in the repo (`dev/dockerless/nginx/*.template`, `dev/dockerless/p
 
 Alternative: layer packages once with your OS tool (`rpm-ostree install php php-cli php-fpm php-gd … nginx`) and reboot — then re-run `install.sh` without Homebrew.
 
-## Vite HMR
+## Asset watch
 
 ```bash
 ./dev/dockerless/serve.sh --mode=nginx --hot
 ```
 
-nginx proxies `/@vite`, `/@fs`, `/@id`, `/node_modules`, `/resources`, `/modules` to `127.0.0.1:5173`. In `--mode=php`, open the Vite origin separately or rely on `public/hot` from `bun run dev` (AssetManager).
+`bun run dev` writes `public/build` (stable names + `.dev`). PHP serves those files; `render_reload()` refreshes the browser when the manifest changes. There is no Vite origin or `/@vite` proxy.
 
 ## Relation to other entry points
 

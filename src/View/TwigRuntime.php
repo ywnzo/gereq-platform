@@ -25,7 +25,7 @@ final class TwigRuntime
         private readonly Router $router,
         private readonly Csrf $csrf,
         private readonly Authenticator $auth,
-        private readonly AssetManager $assets,
+        private readonly RenderEngine $render,
         private readonly RequestStack $requestStack,
         private readonly Icons $icons,
         private readonly FormState $formState,
@@ -82,23 +82,28 @@ final class TwigRuntime
 
     public function asset(string $entry): string
     {
-        return $this->assets->url($entry);
+        return $this->render->url($entry);
     }
 
-    public function viteHot(): bool
+    public function renderCss(string $entry = 'admin'): string
     {
-        return $this->assets->isHot();
+        return $this->render->cssTags($entry, $this->cspNonce());
     }
 
-    public function viteTags(string $entry = 'resources/js/admin.ts'): string
+    public function renderJs(string $entry = 'admin'): string
     {
-        return $this->assets->tags($entry, $this->cspNonce());
+        return $this->render->scriptTags($entry, $this->cspNonce());
     }
 
-    /** Auto-reload snippet while `bun run dev` is writing public/build/.dev (Docker volume). */
-    public function viteDevReload(): string
+    public function renderTags(string $entry = 'admin'): string
     {
-        return $this->assets->devReloadTags($this->cspNonce());
+        return $this->render->tags($entry, $this->cspNonce());
+    }
+
+    /** Auto-reload while `bun run dev` writes public/build/.dev. */
+    public function renderReload(): string
+    {
+        return $this->render->reloadTags($this->cspNonce());
     }
 
     public function icon(string $name, string $class = ''): string

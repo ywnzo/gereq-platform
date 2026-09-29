@@ -1,0 +1,147 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Gereq\Tests\Unit\View;
+
+use Gereq\Config\Repository;
+use Gereq\View\RenderEngine;
+use PHPUnit\Framework\TestCase;
+
+final class RenderEngineTest extends TestCase
+{
+    public function testSameOriginUrlsFromManifest(): void
+    {
+        $dir = $this->scratch();
+        $this->writeManifest($dir, [
+            'resources/js/admin.ts' => [
+                'file' => 'assets/admin-abc.js',
+                'css' => ['assets/admin-abc.css'],
+            ],
+        ]);
+
+        $engine = new RenderEngine($dir, $this->config());
+
+        self::assertSame('/build/assets/admin-abc.js', $engine->url('admin'));
+        self::assertSame('/build/assets/admin-abc.css', $engine->url('css'));
+        self::assertStringContainsString('href="/build/assets/admin-abc.css"', $engine->cssTags());
+        self::assertStringContainsString('src="/build/assets/admin-abc.js"', $engine->scriptTags('admin', 'n1'));
+        self::assertStringContainsString('nonce="n1"', $engine->scriptTags('admin', 'n1'));
+        self::assertSame('', $engine->reloadTags());
+        self::assertSame([], $engine->cspOrigins());
+    }
+
+    public function testAssetOriginAndPrefixAndCsp(): void
+    {
+        $dir = $this->scratch();
+        $this->writeManifest($dir, [
+            'resources/js/admin.ts' => [
+                'file' => 'assets/admin.js',
+                'css' => ['assets/admin.css'],
+            ],
+        ]);
+
+        $engine = new RenderEngine($dir, $this->config([
+            'asset_origin' => 'https://cdn.example.test',
+            'url_prefix' => '/shop',
+            'csp_origins' => ['https://fonts.example.test'],
+        ]));
+
+        self::assertSame('https://cdn.example.test/shop/build/assets/admin.js', $engine->url('admin'));
+        self::assertSame(
+            ['https://cdn.example.test', 'https://fonts.example.test'],
+            $engine->cspOrigins(),
+        );
+    }
+
+    public function testFallsBackToAppUrlPrefixWhenRenderPrefixEmpty(): void
+    {
+        $dir = $this->scratch();
+        $this->writeManifest($dir, [
+            'resources/js/admin.ts' => [
+                'file' => 'assets/admin.js',
+                'css' => ['assets/admin.css'],
+            ],
+        ]);
+
+        $engine = new RenderEngine($dir, new Repository([
+            'app' => ['url_prefix' => '/realityV3'],
+            'render' => [
+                'asset_origin' => '',
+                'url_prefix' => '',
+                'public_path' => '/build',
+                'manifest' => 'public/build/manifest.json',
+                'dev_marker' => 'public/build/.dev',
+                'entries' => [
+                    'admin' => 'resources/js/admin.ts',
+                    'css' => 'resources/css/kernel.css',
+                ],
+                'csp_origins' => [],
+            ],
+        ]));
+
+        self::assertSame('/realityV3/build/assets/admin.js', $engine->url('admin'));
+    }
+
+    public function testWatchModeCacheBustAndReload(): void
+    {
+        $dir = $this->scratch();
+        $this->writeManifest($dir, [
+            'resources/js/admin.ts' => [
+                'file' => 'assets/admin.js',
+                'css' => ['assets/admin.css'],
+            ],
+        ]);
+        file_put_contents($dir . '/public/build/.dev', '{"mode":"watch"}');
+
+        $engine = new RenderEngine($dir, $this->config(['watch' => ['reload' => true, 'poll_ms' => 500]]));
+
+        self::assertTrue($engine->isWatch());
+        self::assertMatchesRegularExpression('#/build/assets/admin\.js\?v=\d+#', $engine->url('admin'));
+        $reload = $engine->reloadTags('abc');
+        self::assertStringContainsString('nonce="abc"', $reload);
+        self::assertStringContainsString('/build/manifest.json', $reload);
+        self::assertStringContainsString('setInterval(tick, 500)', $reload);
+    }
+
+    /**
+     * @param array<string, mixed> $render
+     */
+    private function config(array $render = []): Repository
+    {
+        return new Repository([
+            'app' => ['url_prefix' => ''],
+            'render' => array_merge([
+                'asset_origin' => '',
+                'url_prefix' => '',
+                'public_path' => '/build',
+                'manifest' => 'public/build/manifest.json',
+                'dev_marker' => 'public/build/.dev',
+                'watch' => ['reload' => true, 'poll_ms' => 1200],
+                'entries' => [
+                    'admin' => 'resources/js/admin.ts',
+                    'css' => 'resources/css/kernel.css',
+                ],
+                'csp_origins' => [],
+            ], $render),
+        ]);
+    }
+
+    /** @param array<string, mixed> $manifest */
+    private function writeManifest(string $dir, array $manifest): void
+    {
+        mkdir($dir . '/public/build', 0775, true);
+        file_put_contents(
+            $dir . '/public/build/manifest.json',
+            json_encode($manifest, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT) . "\n",
+        );
+    }
+
+    private function scratch(): string
+    {
+        $dir = sys_get_temp_dir() . '/gereq-render-' . bin2hex(random_bytes(6));
+        mkdir($dir, 0775, true);
+
+        return $dir;
+    }
+}

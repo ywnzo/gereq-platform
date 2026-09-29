@@ -20,6 +20,7 @@ Runtime settings stored in the database (`Gereq\Setting\Settings`) sit **on top*
 | `env` | `APP_ENV` → `production` | `local`, `production`, `testing` |
 | `debug` | `APP_DEBUG` → `false` | enables debug bar, disables Twig/metadata caches |
 | `url` | `APP_URL` → `http://localhost:8080` | trailing slash stripped |
+| `url_prefix` | `APP_URL_PREFIX` or path of `APP_URL` | subdirectory deploys; used by routing and as fallback for `render.url_prefix` |
 | `key` | `APP_KEY` → `''` | 64 hex chars; used for encrypted settings (AES-256-GCM) and cookies |
 | `timezone` | `Europe/Prague` | hard-coded |
 | `locale` | `cs` | hard-coded default, overridable via setting `app.locale` |
@@ -162,6 +163,21 @@ Declares **packages** (`surface: packages`) and **plugin groups** (`surface: plu
 | `webauthn.rp_id` | `WEBAUTHN_RP_ID` → `''` | hostname only; empty = request host; must not be an IP |
 | `webauthn.local_hostname` | `WEBAUTHN_LOCAL_HOSTNAME` → `''` | suggested `*.localhost` alias for LAN testing |
 
+### `config/render.php`
+
+| Key | Default | Notes |
+| --- | --- | --- |
+| `asset_origin` | `RENDER_ASSET_ORIGIN` → `''` | CDN origin for `/build` assets; empty = same-origin |
+| `url_prefix` | `RENDER_URL_PREFIX` → `''` | asset path prefix; empty uses `app.url_prefix` |
+| `public_path` | `/build` | public URL of the build directory |
+| `manifest` | `public/build/manifest.json` | Bun manifest |
+| `dev_marker` | `public/build/.dev` | present during `bun run dev` |
+| `watch.reload` / `watch.poll_ms` | `true` / `1200` | browser auto-reload in watch mode |
+| `entries` | `admin` → `resources/js/admin.ts` | named bundler entries |
+| `csp_origins` | `RENDER_CSP_ORIGINS` → `''` | extra CSP origins (plus `asset_origin`) |
+
+Consumed by `Gereq\View\RenderEngine`.
+
 ### `config/session.php`
 
 | Key | Default | Notes |
@@ -196,6 +212,10 @@ Declares **packages** (`surface: packages`) and **plugin groups** (`surface: plu
 | `APP_ENV` | `production` | `app.env` |
 | `APP_DEBUG` | `false` | `app.debug` |
 | `APP_URL` | `http://localhost:8080` | `app.url` |
+| `APP_URL_PREFIX` | `''` | `app.url_prefix` |
+| `RENDER_ASSET_ORIGIN` | `''` | `render.asset_origin` |
+| `RENDER_URL_PREFIX` | `''` | `render.url_prefix` |
+| `RENDER_CSP_ORIGINS` | `''` | `render.csp_origins` |
 | `APP_KEY` | `''` | `app.key` |
 | `APP_DEBUG_EDITOR_ROOT` | `''` | `app.debug_editor_root` |
 | `APP_N_PLUS_ONE_THRESHOLD` | `2` | `app.n_plus_one_threshold` |

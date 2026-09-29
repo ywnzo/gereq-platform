@@ -1,6 +1,6 @@
 /**
  * Production (and watch) frontend build via Bun's native bundler.
- * Emits Vite-compatible public/build/.vite/manifest.json for AssetManager.
+ * Writes public/build/manifest.json for Gereq\View\RenderEngine.
  *
  * `bun run build`  → hashed files (immutable cache)
  * `bun run dev`    → stable assets/admin.js|css + public/build/.dev marker
@@ -18,9 +18,14 @@ const entryKey = 'resources/js/admin.ts';
 const watch = process.argv.includes('--watch');
 const devMarker = path.join(outdir, '.dev');
 
-async function clearHotMarker(): Promise<void> {
+async function clearLegacyViteMarkers(): Promise<void> {
   try {
     await rm(path.join(root, 'public/hot'), { force: true });
+  } catch {
+    /* ignore */
+  }
+  try {
+    await rm(path.join(outdir, '.vite'), { recursive: true, force: true });
   } catch {
     /* ignore */
   }
@@ -64,10 +69,7 @@ async function writeManifest(outputs: Bun.BuildArtifact[]): Promise<void> {
     },
   };
 
-  const viteDir = path.join(outdir, '.vite');
-  await mkdir(viteDir, { recursive: true });
   const body = JSON.stringify(manifest, null, 2) + '\n';
-  await writeFile(path.join(viteDir, 'manifest.json'), body);
   await writeFile(path.join(outdir, 'manifest.json'), body);
 }
 
@@ -107,7 +109,7 @@ async function cleanAssetsDir(): Promise<void> {
 }
 
 async function runBuild(): Promise<void> {
-  await clearHotMarker();
+  await clearLegacyViteMarkers();
 
   if (watch) {
     await mkdir(outdir, { recursive: true });

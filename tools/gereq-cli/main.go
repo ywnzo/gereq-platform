@@ -16,7 +16,7 @@ import (
 	"gereq.dev/gereq-cli/internal/root"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 func main() {
 	args := os.Args[1:]
@@ -77,7 +77,7 @@ Usage:
   grq pr [--base BRANCH] [--draft] [--dry-run] [--push] [--fast] [--no-agent]
   grq modules                 interactive TUI
   grq modules status [--plain]
-  grq modules update [id…] [--yes]
+  grq modules update [id…] [--yes] [--push] [--patch]
   grq modules create <Name> [--kind KIND] [--no-agent] [--no-gitlab]
   grq version
 
@@ -290,16 +290,25 @@ func cmdModules(args []string) error {
 		}
 		return nil
 	case "update":
-		yes := false
+		opt := modules.UpdateOptions{}
 		var ids []string
 		for _, a := range args[1:] {
-			if a == "--yes" || a == "-y" {
-				yes = true
-			} else if !strings.HasPrefix(a, "-") {
-				ids = append(ids, a)
+			switch a {
+			case "--yes", "-y":
+				opt.Yes = true
+			case "--push":
+				opt.Push = true
+			case "--patch":
+				opt.Patch = true
+			default:
+				if !strings.HasPrefix(a, "-") {
+					ids = append(ids, a)
+				} else {
+					return fmt.Errorf("unknown flag %s (want --yes / --push / --patch)", a)
+				}
 			}
 		}
-		return modules.Update(r, ids, yes)
+		return modules.Update(r, ids, opt)
 	case "create":
 		if len(args) < 2 {
 			return fmt.Errorf("usage: grq modules create <Name> [--kind KIND] [--no-agent] [--no-gitlab]")
@@ -333,8 +342,14 @@ func cmdModules(args []string) error {
 	case "-h", "--help":
 		fmt.Println(`grq modules
   grq modules status [--plain]
-  grq modules update [id…] [--yes]
-  grq modules create <Name> [--kind KIND] [--no-agent] [--no-gitlab]`)
+  grq modules update [id…] [--yes] [--push] [--patch]
+  grq modules create <Name> [--kind KIND] [--no-agent] [--no-gitlab]
+
+update flags:
+  (default)     report DIFF / NO_TAGS / MISSING
+  --yes         pull: checkout GitLab tag into submodule
+  --push [--yes]  publish local version as tag (HEAD:main --tags)
+  --patch [--yes] bump patch X.Y.Z→X.Y.Z+1, then push`)
 		return nil
 	default:
 		return fmt.Errorf("unknown modules subcommand: %s", args[0])

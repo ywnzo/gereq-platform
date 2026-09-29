@@ -128,7 +128,7 @@ Uses SQLite + file/sync drivers; runtime files go to `~/.local/share/gereq-docke
 
 ```bash
 php gereq serve --port=8080 --host=0.0.0.0
-bun run dev                      # Vite HMR on :5173, writes public/hot
+bun run dev                      # watch rebuild of public/build
 ```
 
 `ServeCommand` (`src/Console/Command/ServeCommand.php`) probes up to 20 following ports if the requested one is taken and runs `php -S <host>:<port> -t public public/router.php`. Use `127.0.0.1`, not `localhost`, in the browser (session cookie behaviour).
@@ -141,7 +141,7 @@ bun run dev                      # Vite HMR on :5173, writes public/hot
 | --- | --- |
 | `--port=8080` | host HTTP port for nginx |
 | `--https` | also publish HTTPS on host port 443 with the self-signed cert (`docker-compose.https.yml`) |
-| `--hot` | start `bun run dev` on the host (`:5173`); nginx proxies `/@vite` to `host.docker.internal:5173` |
+| `--hot` | start `bun run dev` on the host (`AssetWatchProcess`; writes `public/build`) |
 | `--build` | rebuild the PHP image before starting |
 | `-d`, `--detach` | `docker compose up -d` |
 | `--reuse` | `down` then `up` (change port / toggle `--https` without a manual `--down`) |
@@ -157,11 +157,11 @@ Log stream keys: `q` `a` `p` `n` `space` (see README).
 
 ```bash
 bun install
-bun run build        # vite build → public/build (manifest.json)
-bun run dev          # HMR; AssetManager reads public/hot for the dev-server port
+bun run build        # hashed files → public/build/manifest.json
+bun run dev          # watch; RenderEngine reads .dev + cache-busts URLs
 ```
 
-Entry point is `resources/js/admin.ts` (`vite.config.ts`). `Gereq\View\AssetManager` (`src/View/AssetManager.php`) switches between the built manifest and the HMR origin depending on `public/hot`.
+Entry point is `resources/js/admin.ts` (`scripts/build.ts`). `Gereq\View\RenderEngine` (`src/View/RenderEngine.php`) emits tags from `public/build/manifest.json`. Origins and prefixes: `config/render.php`.
 
 ## Demo data
 

@@ -33,7 +33,7 @@ Sources: `tools/gereq-cli/` (Go, vendored). Optional AI via Cursor CLI `agent` o
 | `grq pr …` | Draft MR (Cursor Composer 2.5) + create on GitLab |
 | `grq modules` | TUI: local modules ↔ GitLab tags |
 | `grq modules status [--plain]` | Text status |
-| `grq modules update [id…] [--yes]` | Report / checkout matching tags |
+| `grq modules update [id…] [--yes] [--push] [--patch]` | Report / pull GitLab tags (`--yes`) / publish local (`--push --yes`) / bump patch + push (`--patch --yes`) |
 | `grq modules create Name [--kind …] [--no-agent] [--no-gitlab]` | Scaffold + logo + badges + remote |
 
 ### Pull / merge request

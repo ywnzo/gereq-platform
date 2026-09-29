@@ -6,7 +6,7 @@ namespace Gereq\Console\Command;
 
 use Gereq\Api\Auth\PublicApiKey;
 use Gereq\Console\Docker\ServeLogTui;
-use Gereq\Console\Docker\ViteHotProcess;
+use Gereq\Console\Docker\AssetWatchProcess;
 use Gereq\Support\EnvFile;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -98,7 +98,7 @@ final class ServeDockerCommand extends Command
         $dashboard = (bool) $input->getOption('dashboard');
 
         $lanIp = $this->lanIp();
-        $vite = $hot ? new ViteHotProcess($this->basePath) : null;
+        $watch = $hot ? new AssetWatchProcess($this->basePath) : null;
 
         if ($https) {
             if (!$this->isPortFree(443)) {
@@ -111,7 +111,7 @@ final class ServeDockerCommand extends Command
             }
         }
 
-        if ($vite !== null && !$vite->start($output)) {
+        if ($watch !== null && !$watch->start($output)) {
             return Command::FAILURE;
         }
 
@@ -195,8 +195,8 @@ final class ServeDockerCommand extends Command
                 return $this->runCompose($output, $args, $https);
             } finally {
                 // Detach: Bun watch keeps running (pid file); raw/Ctrl+C: stop watch.
-                if ($vite !== null && !$detach) {
-                    $vite->stop($output);
+                if ($watch !== null && !$detach) {
+                    $watch->stop($output);
                 }
             }
         }
@@ -215,7 +215,7 @@ final class ServeDockerCommand extends Command
         }
         $code = $this->runCompose($output, $upArgs, $https);
         if ($code !== Command::SUCCESS) {
-            $vite?->stop($output);
+            $watch?->stop($output);
 
             return $code;
         }
@@ -244,7 +244,7 @@ final class ServeDockerCommand extends Command
         try {
             return $tui->run() === 0 ? Command::SUCCESS : Command::FAILURE;
         } finally {
-            $vite?->stop($output);
+            $watch?->stop($output);
         }
     }
 
@@ -312,7 +312,7 @@ final class ServeDockerCommand extends Command
     private function stopStack(OutputInterface $output, bool $https, bool $hot): int
     {
         if ($hot || is_file($this->basePath . '/storage/tmp/bun-assets.pid') || is_file($this->basePath . '/storage/tmp/vite-dev.pid')) {
-            (new ViteHotProcess($this->basePath))->stopFromPidFile($output);
+            (new AssetWatchProcess($this->basePath))->stopFromPidFile($output);
         }
         $useHttps = $https || is_file($this->basePath . '/docker-compose.https.yml');
 

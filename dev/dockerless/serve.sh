@@ -30,7 +30,7 @@ Start GEREQ dockerless.
 
   --mode=php|nginx   override runtime mode
   --port=N           HTTP port
-  --hot              start bun run dev (Vite HMR)
+  --hot              start bun run dev (watch rebuild of public/build)
   --queue            start php gereq queue:work (when QUEUE_DRIVER=file)
   -d, --detach       background PHP built-in server (nginx mode is always daemonized)
   -h, --help
@@ -82,17 +82,17 @@ fi
 start_hot() {
   [[ "${HOT}" -eq 1 ]] || return 0
   require_cmd bun
-  if is_running vite; then
-    ok "Vite already running (pid $(read_pid vite))"
+  if is_running bun-watch; then
+    ok "Bun watch already running (pid $(read_pid bun-watch))"
     return 0
   fi
-  log "Starting bun run dev (Vite HMR)"
+  log "Starting bun run dev (asset watch → public/build)"
   (
     cd "${ROOT}"
-    nohup bun run dev >"${GEREQ_HOME}/logs/vite.log" 2>&1 &
-    echo $! >"$(pid_file vite)"
+    nohup bun run dev >"${GEREQ_HOME}/logs/bun-assets.log" 2>&1 &
+    echo $! >"$(pid_file bun-watch)"
   )
-  ok "Vite pid $(read_pid vite) — log ${GEREQ_HOME}/logs/vite.log"
+  ok "Bun watch pid $(read_pid bun-watch) — log ${GEREQ_HOME}/logs/bun-assets.log"
 }
 
 start_queue() {
