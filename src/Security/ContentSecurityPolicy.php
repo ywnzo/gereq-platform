@@ -54,6 +54,14 @@ final class ContentSecurityPolicy
             $connectSrc[] = $origin;
         }
 
+        $frameSrc = ["'self'"];
+        foreach (explode(',', (string) env_value('FRONTEND_ORIGIN', '')) as $origin) {
+            $origin = trim($origin);
+            if ($origin !== '') {
+                $frameSrc[] = $origin;
+            }
+        }
+
         $directives = [
             "default-src 'self'",
             'script-src ' . implode(' ', array_unique([...$scriptSrc, 'https://cdn.jsdelivr.net'])),
@@ -64,6 +72,7 @@ final class ContentSecurityPolicy
             "media-src 'self' blob:",
             'connect-src ' . implode(' ', array_unique([...$connectSrc, 'https://cdn.jsdelivr.net'])),
             $allowSameOriginFrame ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+            'frame-src ' . implode(' ', array_unique($frameSrc)),
             "base-uri 'self'",
             "form-action 'self'",
             "object-src 'none'",
