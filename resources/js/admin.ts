@@ -70,6 +70,12 @@ Alpine.data('gereqAdmin', () => ({
                 this.userOpen = false;
             }
         });
+        document.addEventListener('wheel', (e) => {
+          const el = (e.target as HTMLElement | null)?.closest('.cms-builder__create-body');
+          if (!el) return;
+          el.scrollTop += e.deltaY;
+          e.preventDefault();
+        }, { passive: false });
     },
 
     get sidebarClass(): string {
