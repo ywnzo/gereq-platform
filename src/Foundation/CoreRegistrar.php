@@ -112,9 +112,6 @@ final class CoreRegistrar
             } catch (\Throwable) {
                 $count = 0;
             }
-            if ($count < 1) {
-                return $html;
-            }
 
             $partial = $this->twig->render('admin/partials/publish_badge.html.twig', [
                 'pending_count' => $count,

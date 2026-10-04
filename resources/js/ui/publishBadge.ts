@@ -85,6 +85,10 @@ export function registerPublishBadge(alpine: typeof Alpine): void {
             this.labelCta = el.dataset.labelCta || '';
             this.labelPublishing = el.dataset.labelPublishing || '';
             this.labelSubmit = el.dataset.labelSubmit || '';
+            window.addEventListener('publish:pending-changed', () => {
+              this.loaded = false;
+              void this.ensureLoaded();
+            })
         },
 
         get chipLabel(): string {

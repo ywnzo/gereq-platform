@@ -1,5 +1,4 @@
 {% set count = pending_count|default(0) %}
-{% if count > 0 %}
 <div
     class="publish-badge"
     x-data="publishBadge"
@@ -22,6 +21,7 @@
         @click.prevent="togglePanel"
         :aria-expanded="expandedAttr"
         aria-haspopup="dialog"
+        x-show="count > 0" x-cloak
     >
         <span x-text="chipLabel"></span>
         <span class="publish-badge__count" x-text="count"></span>
@@ -87,4 +87,3 @@
         </div>
     </div>
 </div>
-{% endif %}
