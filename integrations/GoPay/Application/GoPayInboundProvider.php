@@ -29,11 +29,15 @@ final class GoPayInboundProvider implements InboundWebhookProviderInterface
 
     public function verify(Request $request): bool
     {
-        return true;
+        return $this->paymentIdFromRequest($request) !== '';
     }
 
     public function handle(Request $request): Response
     {
+        if (!$this->verify($request)) {
+            return ApiResponse::error('invalid', 'Missing GoPay payment id', [], 400);
+        }
+
         $payload = array_merge($request->query->all(), $request->request->all());
         $raw = $request->getContent();
         if (is_string($raw) && $raw !== '') {
@@ -66,6 +70,30 @@ final class GoPayInboundProvider implements InboundWebhookProviderInterface
             'intent_id' => $intent->id(),
             'external_id' => $result['external_id'],
         ]);
+    }
+
+    private function paymentIdFromRequest(Request $request): string
+    {
+        foreach (['id', 'payment_id'] as $key) {
+            $value = trim((string) ($request->query->get($key, '') ?: $request->request->get($key, '')));
+            if ($value !== '' && preg_match('/^\d{1,32}$/', $value) === 1) {
+                return $value;
+            }
+        }
+        $raw = $request->getContent();
+        if (is_string($raw) && $raw !== '') {
+            $json = json_decode($raw, true);
+            if (is_array($json)) {
+                foreach (['id', 'payment_id'] as $key) {
+                    $value = trim((string) ($json[$key] ?? ''));
+                    if ($value !== '' && preg_match('/^\d{1,32}$/', $value) === 1) {
+                        return $value;
+                    }
+                }
+            }
+        }
+
+        return '';
     }
 
     private function findIntent(?string $externalId, mixed $refId): ?PaymentIntent

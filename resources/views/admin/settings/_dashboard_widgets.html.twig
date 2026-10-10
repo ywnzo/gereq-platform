@@ -15,39 +15,105 @@
 
     <div class="dash-settings__toolbar">
         <p class="muted">{{ 'settings.dashboard.help'|trans }}</p>
-        <div class="dash-settings__actions">
-            <button type="button" class="btn btn--ghost btn-sm" @click="enableAll">{{ 'settings.dashboard.enable_all'|trans }}</button>
-            <button type="button" class="btn btn--ghost btn-sm" @click="disableAll">{{ 'settings.dashboard.disable_all'|trans }}</button>
+        <div class="dash-settings__aside">
+            <label class="dash-settings__search">
+                <span class="sr-only">{{ 'settings.dashboard.search'|trans }}</span>
+                {{ icon('search') }}
+                <input
+                    class="input"
+                    type="search"
+                    x-model="query"
+                    placeholder="{{ 'settings.dashboard.search'|trans|e('html_attr') }}"
+                    autocomplete="off"
+                >
+            </label>
+            <div class="dash-settings__actions">
+                <button type="button" class="btn btn--ghost btn-sm" @click="enableAll">{{ 'settings.dashboard.enable_all'|trans }}</button>
+                <button type="button" class="btn btn--ghost btn-sm" @click="disableAll">{{ 'settings.dashboard.disable_all'|trans }}</button>
+            </div>
         </div>
     </div>
 
     <template x-for="section in sections" :key="section.type">
-        <div class="dash-settings__section">
-            <h3 class="dash-settings__section-title" x-text="section.label"></h3>
-            <ul class="dash-settings__list">
-                <template x-for="item in section.items" :key="item.id">
-                    <li class="dash-settings__row" :class="item.enabled ? '' : 'is-off'">
-                        <label class="dash-settings__toggle">
-                            <input type="checkbox" :checked="item.enabled" @change="toggle(item.id)">
-                            <span class="dash-settings__title" x-text="item.title"></span>
-                        </label>
-                        <select
-                            class="input dash-settings__width"
-                            x-show="showWidth(section.type)"
-                            x-model="item.width"
-                            @change="sync"
-                        >
-                            <template x-for="w in widths" :key="w">
-                                <option :value="w" x-text="widthLabels[w]"></option>
-                            </template>
-                        </select>
-                        <div class="dash-settings__move">
-                            <button type="button" class="icon-btn" @click="move(item.id, -1)" :disabled="!canMoveUp(item.id)" aria-label="{{ 'settings.dashboard.move_up'|trans }}">↑</button>
-                            <button type="button" class="icon-btn" @click="move(item.id, 1)" :disabled="!canMoveDown(item.id)" aria-label="{{ 'settings.dashboard.move_down'|trans }}">↓</button>
+        <section class="dash-settings__section">
+            <header class="dash-settings__section-head">
+                <div>
+                    <h3 class="dash-settings__section-title" x-text="section.label"></h3>
+                    <p class="dash-settings__count">
+                        <span x-text="enabledCount(section.type)"></span>
+                        /
+                        <span x-text="totalCount(section.type)"></span>
+                        {{ 'settings.dashboard.enabled_of'|trans }}
+                    </p>
+                </div>
+                <div class="dash-settings__section-actions">
+                    <button type="button" class="btn btn--ghost btn-sm" @click="enableSection(section.type)">{{ 'settings.dashboard.enable_section'|trans }}</button>
+                    <button type="button" class="btn btn--ghost btn-sm" @click="disableSection(section.type)">{{ 'settings.dashboard.disable_section'|trans }}</button>
+                </div>
+            </header>
+
+            <div :class="canvasClass(section.type)">
+                <template x-for="item in enabledItems(section.type)" :key="item.id">
+                    <article
+                        :class="cardClass(item)"
+                        draggable="true"
+                        @dragstart="onDragStart(item.id, $event)"
+                        @dragover="onDragOver(item.id, $event)"
+                        @drop="onDrop(item.id, $event)"
+                        @dragend="onDragEnd"
+                    >
+                        <span class="dash-settings__grip" aria-hidden="true"></span>
+                        <div class="dash-settings__card-body">
+                            <strong class="dash-settings__title" x-text="item.title"></strong>
+                            <div class="dash-settings__widths" x-show="showWidth(section.type)" x-cloak>
+                                <template x-for="w in widths" :key="w">
+                                    <button
+                                        type="button"
+                                        :class="widthClass(item, w)"
+                                        :aria-pressed="isWidth(item, w)"
+                                        :title="widthLabels[w]"
+                                        @click="setWidth(item.id, w)"
+                                    >
+                                        <span :class="widthBarClass(w)"></span>
+                                        <span class="dash-settings__width-label" x-text="widthLabels[w]"></span>
+                                    </button>
+                                </template>
+                            </div>
                         </div>
-                    </li>
+                        <div class="dash-settings__card-tools">
+                            <div class="dash-settings__move">
+                                <button type="button" class="icon-btn" @click="move(item.id, -1)" :disabled="!canMoveUp(item.id)" aria-label="{{ 'settings.dashboard.move_up'|trans }}">{{ icon('chevron-up') }}</button>
+                                <button type="button" class="icon-btn" @click="move(item.id, 1)" :disabled="!canMoveDown(item.id)" aria-label="{{ 'settings.dashboard.move_down'|trans }}">{{ icon('chevron-down') }}</button>
+                            </div>
+                            <button
+                                type="button"
+                                class="icon-btn"
+                                @click="setEnabled(item.id, false)"
+                                aria-label="{{ 'settings.dashboard.hide'|trans }}"
+                            >{{ icon('x') }}</button>
+                        </div>
+                    </article>
                 </template>
-            </ul>
-        </div>
+                <p class="dash-settings__empty" x-show="enabledCount(section.type) === 0" x-cloak>
+                    {{ 'settings.dashboard.empty_section'|trans }}
+                </p>
+            </div>
+
+            <div class="dash-settings__pool" x-show="poolCount(section.type) > 0" x-cloak>
+                <p class="dash-settings__pool-label">{{ 'settings.dashboard.pool'|trans }}</p>
+                <div class="dash-settings__chips">
+                    <template x-for="item in poolItems(section.type)" :key="item.id">
+                        <button
+                            type="button"
+                            class="dash-settings__chip"
+                            @click="setEnabled(item.id, true)"
+                        >
+                            {{ icon('plus') }}
+                            <span x-text="item.title"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </section>
     </template>
 </div>

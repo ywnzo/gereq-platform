@@ -1121,11 +1121,25 @@ label.g-switch > span {
     max-height: min(92vh, 56rem);
     overflow: auto;
 }
+.g-modal__panel--editor {
+    width: min(56rem, 96vw);
+    max-height: min(92vh, 64rem);
+    overflow: auto;
+}
 .g-modal__title { margin: 0 0 0.4rem; font-family: var(--grq-font-sans); font-size: 1.25rem; color: var(--text); }
 .g-modal__body { color: var(--text-muted); margin: 0 0 1.1rem; }
 .g-confirm__field { margin: 0 0 1.1rem; }
 .g-confirm__field .field { margin: 0; }
 .g-confirm__field .field > span { display: block; margin-bottom: 0.35rem; font-size: var(--grq-text-md); color: var(--text-muted); }
+.g-confirm__label { display: block; margin-bottom: 0.35rem; font-size: var(--grq-text-md); color: var(--text-muted); }
+.g-confirm__field textarea.input { min-height: 6.5rem; resize: vertical; }
+.g-editor--dialog .g-editor__body,
+.g-editor--dialog .g-editor__surface,
+.g-editor--dialog .g-editor__content,
+.g-editor--dialog .g-editor__content.ProseMirror,
+.g-editor--dialog .g-editor__html {
+    min-height: 18rem;
+}
 .g-modal__actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* ——— Media box: compact trigger + compose-style dialog ——— */
@@ -1584,6 +1598,119 @@ html[data-theme="gereq-dark"] .media-box-backdrop {
     .media-box__thumb {
         min-height: 9rem;
     }
+}
+.g-icon-picker { position: relative; }
+.g-icon-picker__trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--control-font);
+    font-weight: 500;
+    line-height: var(--control-line);
+}
+.g-icon-picker__preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: calc(var(--radius) - 2px);
+    background: var(--surface-2, color-mix(in srgb, var(--gereq-ink) 6%, var(--surface)));
+    color: var(--gereq-ink);
+}
+.g-icon-picker.is-empty .g-icon-picker__preview {
+    color: var(--text-muted);
+}
+.g-icon-picker__glyph {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+.g-icon-picker__copy {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.g-icon-picker__placeholder { color: var(--text-muted); }
+.g-icon-picker__name { text-transform: capitalize; }
+.g-icon-picker__list {
+    display: none;
+    position: absolute;
+    z-index: 40;
+    inset-inline: 0;
+    top: calc(100% + 6px);
+    max-height: 22rem;
+    overflow: hidden;
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 40px rgb(10 11 10 / 0.08);
+}
+.g-icon-picker__list.is-open { display: flex; flex-direction: column; }
+.g-icon-picker__search {
+    flex-shrink: 0;
+    padding: 0.5rem 0.65rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+}
+.g-icon-picker__search-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    background: var(--surface-2, var(--surface));
+    color: inherit;
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 0.45rem 0.65rem;
+}
+.g-icon-picker__search-input:focus {
+    outline: 2px solid color-mix(in srgb, var(--gereq-signal) 55%, transparent);
+    outline-offset: 1px;
+}
+.g-icon-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.65rem, 1fr));
+    gap: 4px;
+    padding: 0.55rem;
+    overflow: auto;
+    max-height: 16.5rem;
+}
+.g-icon-picker__cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    margin: 0;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius) - 2px);
+    background: transparent;
+    color: var(--gereq-ink);
+    cursor: pointer;
+}
+.g-icon-picker__cell .g-icon { font-size: 1.35rem; }
+.g-icon-picker__cell:hover,
+.g-icon-picker__cell:focus-visible {
+    background: color-mix(in srgb, var(--gereq-signal) 12%, var(--surface));
+    border-color: color-mix(in srgb, var(--gereq-signal) 35%, var(--border));
+    outline: none;
+}
+.g-icon-picker__cell.is-selected {
+    background: color-mix(in srgb, var(--gereq-signal) 18%, var(--surface));
+    border-color: var(--gereq-signal);
+}
+.g-icon-picker__empty {
+    grid-column: 1 / -1;
+    margin: 0.4rem 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
 }
 @media (max-width: 640px) {
     .media-box-dock {

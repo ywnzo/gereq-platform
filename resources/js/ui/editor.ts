@@ -7,36 +7,10 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import StarterKit from '@tiptap/starter-kit';
-import {
-    type WorkflowVarMeta,
-    varsByPath,
-    workflowVarDecorations,
-} from '../../../modules/CRM/Resources/assets/js/workflowVars';
 import { ChatVideo } from './chatVideo';
 import { FontWeight } from './fontWeight';
 
 type EditorMode = 'editor' | 'html';
-
-type CanvasLike = {
-    variables?: WorkflowVarMeta[];
-};
-
-function findCanvasVars(el: HTMLElement): () => Record<string, WorkflowVarMeta> {
-    return () => {
-        let cur: HTMLElement | null = el;
-        while (cur) {
-            const stack = (cur as HTMLElement & { _x_dataStack?: unknown[] })._x_dataStack;
-            if (Array.isArray(stack) && stack[0] && typeof stack[0] === 'object') {
-                const data = stack[0] as CanvasLike;
-                if (Array.isArray(data.variables)) {
-                    return varsByPath(data.variables);
-                }
-            }
-            cur = cur.parentElement;
-        }
-        return {};
-    };
-}
 
 /**
  * TipTap's Editor/ProseMirror must NOT live on Alpine reactive state —
@@ -46,6 +20,7 @@ export function registerEditor(alpine: typeof Alpine): void {
     alpine.data('gereqEditor', () => {
         let editor: Editor | null = null;
         let insertHandler: ((event: Event) => void) | null = null;
+        let setHandler: ((event: Event) => void) | null = null;
 
         return {
             mode: 'editor' as EditorMode,
@@ -111,7 +86,7 @@ export function registerEditor(alpine: typeof Alpine): void {
                     );
                 }
                 if (root.dataset.highlightVars === '1') {
-                    extensions.push(workflowVarDecorations(findCanvasVars(root)));
+                    // CRM workflow var highlighter lives in the CRM module (not loaded on KdeAco).
                 }
 
                 this.htmlSource = initial;
@@ -180,7 +155,12 @@ export function registerEditor(alpine: typeof Alpine): void {
                         editor.chain().focus().insertContent(detail.text).run();
                     }
                 };
+                setHandler = (event: Event) => {
+                    const html = String((event as CustomEvent<{ html?: string }>).detail?.html ?? '');
+                    self.applyHtmlToEditor(html);
+                };
                 root.addEventListener('gereq-editor-insert', insertHandler);
+                root.addEventListener('gereq-editor-set', setHandler);
 
                 this.refreshModeClasses();
                 this.refreshActive(editor);
@@ -190,6 +170,9 @@ export function registerEditor(alpine: typeof Alpine): void {
                 const root = this.$el as HTMLElement;
                 if (insertHandler) {
                     root.removeEventListener('gereq-editor-insert', insertHandler);
+                }
+                if (setHandler) {
+                    root.removeEventListener('gereq-editor-set', setHandler);
                 }
                 editor?.destroy();
                 editor = null;

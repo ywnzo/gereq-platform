@@ -242,7 +242,7 @@
 
                         <div class="media-box__grid" x-ref="grid">
                             {% for item in library %}
-                                {% set thumb = item.thumb|default('/media/' ~ item.value ~ '/file') %}
+                                {% set thumb = item.thumb|default('/media/' ~ item.value ~ '/file?w=320') %}
                                 {% set ext = item.ext|default('') %}
                                 {% set mime = item.mime|default('') %}
                                 {% set w = item.width|default('') %}

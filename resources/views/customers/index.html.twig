@@ -35,6 +35,10 @@
                 <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>{{ 'customers.status.inactive'|trans }}</option>
                 <option value="archived" {{ status == 'archived' ? 'selected' : '' }}>{{ 'customers.status.archived'|trans }}</option>
             </select>
+            <select name="erasure" class="input" onchange="this.form.submit()">
+                <option value="">{{ 'customers.erasure.filter.all'|trans }}</option>
+                <option value="1" {{ erasure == '1' ? 'selected' : '' }}>{{ 'customers.erasure.filter'|trans }}</option>
+            </select>
         </form>
     </div>
 
@@ -87,10 +91,10 @@
                             </label>
                         </th>
                     {% endif %}
-                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.name'|trans, column: 'name', query: { status: status } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.name'|trans, column: 'name', query: { status: status, erasure: erasure } } %}
                     <th>{{ 'customers.col.contact'|trans }}</th>
-                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.status'|trans, column: 'status', query: { status: status } } %}
-                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.created'|trans, column: 'createdAt', query: { status: status } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.status'|trans, column: 'status', query: { status: status, erasure: erasure } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'customers.field.created'|trans, column: 'createdAt', query: { status: status, erasure: erasure } } %}
                     <th class="table__actions-head"></th>
                 </tr>
             </thead>
@@ -133,6 +137,9 @@
                             <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
                                 {{ item.statusLabel()|trans }}
                             </span>
+                            {% if item.erasureRequestedAt() %}
+                                <span class="badge badge--warn">{{ 'customers.erasure.requested'|trans }}</span>
+                            {% endif %}
                         </td>
                         <td class="is-mute">{{ item.createdAt().format('d. m. Y') }}</td>
                         {% embed 'ui/row_actions.html.twig' %}
@@ -154,8 +161,8 @@
                     <tr>
                         <td colspan="{{ canBulk ? 6 : 5 }}">
                             <div class="empty">
-                                <h2>{{ 'customers.empty'|trans }}</h2>
-                                <p>{{ 'customers.empty.hint'|trans }}</p>
+                                <h2>{{ (erasure == '1' ? 'customers.erasure.empty' : 'customers.empty')|trans }}</h2>
+                                <p>{{ (erasure == '1' ? 'customers.erasure.empty.hint' : 'customers.empty.hint')|trans }}</p>
                             </div>
                         </td>
                     </tr>

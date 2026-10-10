@@ -9,7 +9,7 @@ type ConfirmOptions = {
     input?: boolean;
     inputLabel?: string;
     inputValue?: string;
-    inputType?: 'text' | 'password';
+    inputType?: 'text' | 'password' | 'textarea' | 'editor';
     inputPlaceholder?: string;
     inputRequired?: boolean;
 };
@@ -99,14 +99,27 @@ export function registerConfirm(alpine: typeof Alpine): void {
             this.showInput = Boolean(opts.input);
             this.inputLabel = opts.inputLabel || '';
             this.inputValue = opts.inputValue || '';
-            this.inputType = opts.inputType === 'password' ? 'password' : 'text';
+            this.inputType = opts.inputType === 'password'
+                ? 'password'
+                : opts.inputType === 'textarea'
+                    ? 'textarea'
+                    : opts.inputType === 'editor'
+                        ? 'editor'
+                        : 'text';
             this.inputPlaceholder = opts.inputPlaceholder || '';
             this.inputRequired = Boolean(opts.inputRequired);
             this.open = true;
             this.$nextTick(() => {
+                if (this.inputType === 'editor') {
+                    this.seedEditor(this.inputValue);
+                    return;
+                }
                 if (this.showInput) {
-                    (this.$refs.inputField as HTMLInputElement | undefined)?.focus();
-                    (this.$refs.inputField as HTMLInputElement | undefined)?.select();
+                    const field = this.inputType === 'textarea'
+                        ? (this.$refs.textareaField as HTMLTextAreaElement | undefined)
+                        : (this.$refs.inputField as HTMLInputElement | undefined);
+                    field?.focus();
+                    field?.select();
                 } else {
                     (this.$refs.confirmBtn as HTMLButtonElement | undefined)?.focus();
                 }
@@ -117,13 +130,38 @@ export function registerConfirm(alpine: typeof Alpine): void {
             });
         },
 
+        seedEditor(html: string) {
+            const host = this.$refs.editorHost as HTMLElement | undefined;
+            const root = host?.querySelector('.g-editor') as HTMLElement | undefined;
+            root?.dispatchEvent(new CustomEvent('gereq-editor-set', { detail: { html } }));
+        },
+
+        editorHtml(): string {
+            const host = this.$refs.editorHost as HTMLElement | undefined;
+            const input = host?.querySelector('.g-editor__input') as HTMLTextAreaElement | undefined;
+            return input?.value ?? this.inputValue;
+        },
+
+        isEmptyHtml(html: string): boolean {
+            const text = html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
+            return text === '';
+        },
+
         accept() {
-            if (this.showInput && this.inputRequired && this.inputValue.trim() === '') {
-                (this.$refs.inputField as HTMLInputElement | undefined)?.focus();
+            const value = this.inputType === 'editor' ? this.editorHtml() : this.inputValue;
+            if (this.showInput && this.inputRequired && (this.inputType === 'editor' ? this.isEmptyHtml(value) : value.trim() === '')) {
+                if (this.inputType === 'editor') {
+                    this.seedEditor(value);
+                    return;
+                }
+                const field = this.inputType === 'textarea'
+                    ? (this.$refs.textareaField as HTMLTextAreaElement | undefined)
+                    : (this.$refs.inputField as HTMLInputElement | undefined);
+                field?.focus();
                 return;
             }
             this.open = false;
-            this._resolve?.({ ok: true, value: this.inputValue });
+            this._resolve?.({ ok: true, value });
             this._resolve = null;
         },
 
@@ -180,7 +218,8 @@ export function registerConfirm(alpine: typeof Alpine): void {
             }
 
             const body = form.dataset.confirm?.trim() || '';
-            if (body === '') {
+            const promptName = form.dataset.promptName?.trim() || '';
+            if (body === '' && promptName === '') {
                 return;
             }
 
@@ -188,6 +227,46 @@ export function registerConfirm(alpine: typeof Alpine): void {
             event.stopPropagation();
 
             void (async () => {
+                if (promptName !== '') {
+                    const value = await api.prompt({
+                        title: form.dataset.confirmTitle || defaults.title,
+                        body,
+                        confirmLabel: form.dataset.confirmLabel || undefined,
+                        cancelLabel: form.dataset.confirmCancel || undefined,
+                        danger: form.dataset.confirmDanger !== '0',
+                        inputLabel: form.dataset.promptLabel || undefined,
+                        inputPlaceholder: form.dataset.promptPlaceholder || undefined,
+                        inputType: form.dataset.promptType === 'editor'
+                            ? 'editor'
+                            : form.dataset.promptType === 'textarea'
+                                ? 'textarea'
+                                : 'text',
+                    });
+                    if (value === null) {
+                        return;
+                    }
+                    const looksEmpty = value.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim() === '';
+                    if (looksEmpty) {
+                        return;
+                    }
+                    let field = form.querySelector(`[name="${CSS.escape(promptName)}"]`);
+                    if (!(field instanceof HTMLInputElement) && !(field instanceof HTMLTextAreaElement)) {
+                        const hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = promptName;
+                        form.appendChild(hidden);
+                        field = hidden;
+                    }
+                    field.value = value;
+                    form.dataset.confirmAccepted = '1';
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                    } else {
+                        form.submit();
+                    }
+                    return;
+                }
+
                 const ok = await api.confirm({
                     title: form.dataset.confirmTitle || defaults.title,
                     body,

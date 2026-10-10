@@ -75,7 +75,8 @@ body.admin-body {
     height: 22px;
     display: block;
     flex-shrink: 0;
-    border-radius: var(--radius);
+    border-radius: 30%;
+    overflow: hidden;
 }
 .brand__initials {
     display: grid;
@@ -83,7 +84,7 @@ body.admin-body {
     width: 22px;
     height: 22px;
     flex-shrink: 0;
-    border-radius: var(--radius);
+    border-radius: 30%;
     background: var(--primary);
     color: var(--primary-fg);
     font-size: 0.65rem;

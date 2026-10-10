@@ -31,9 +31,16 @@
             <tbody>
                 {% for item in items %}
                     {% set data = item.data() %}
+                    {% set target = data.meta.url|default(null) %}
                     <tr>
                         <td>
-                            <strong>{{ data.title|default(item.type()) }}</strong>
+                            {% if target %}
+                                <a href="{{ target }}">
+                                    <strong>{{ data.title|default(item.type()) }}</strong>
+                                </a>
+                            {% else %}
+                                <strong>{{ data.title|default(item.type()) }}</strong>
+                            {% endif %}
                             <div class="muted">{{ data.body|default('') }}</div>
                         </td>
                         <td>{{ item.createdAt()|date('d. m. Y H:i') }}</td>

@@ -37,7 +37,7 @@
 .brand--auth .brand__initials {
     width: 28px;
     height: 28px;
-    border-radius: var(--radius);
+    border-radius: 30%;
 }
 .brand--auth .brand__initials {
     font-size: 0.7rem;

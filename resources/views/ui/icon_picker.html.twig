@@ -1,0 +1,92 @@
+{% set name = name|default('') %}
+{% set id = id|default('f-' ~ name) %}
+{% set label = label|default('') %}
+{% set hint = hint|default('') %}
+{% set form = form|default(null) %}
+{% set value = old(name, value|default(''), form) %}
+{% set err = error(name, form) %}
+{% set required = field_required(name, form, required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
+{% set extra = extra|default('') %}
+{% set options = options|default([]) %}
+{% set described = [] %}
+{% if hint %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
+{% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
+{% set seen = {} %}
+
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+    {% if label %}
+        <span class="g-label" id="{{ id }}-label">
+            <span>{{ label }}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
+        </span>
+    {% endif %}
+    <div
+        class="g-icon-picker{% if value == '' %} is-empty{% endif %}"
+        x-data="gereqIconPicker"
+        data-value="{{ value }}"
+    >
+        <input type="hidden" name="{{ name }}" id="{{ id }}" value="{{ value }}" {% if required %}required{% endif %}>
+        <button
+            type="button"
+            class="g-control g-icon-picker__trigger"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            {% if label %}aria-labelledby="{{ id }}-label"{% else %}aria-label="{{ 'ui.icon.pick'|trans }}"{% endif %}
+            {% if err %}aria-invalid="true"{% endif %}
+            {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
+        >
+            <span class="g-icon-picker__preview" aria-hidden="true">
+                <span class="material-symbols-outlined g-icon g-icon-picker__glyph">{{ value != '' ? value : 'apps' }}</span>
+            </span>
+            <span class="g-icon-picker__copy">
+                <span class="g-icon-picker__placeholder"{% if value != '' %} hidden{% endif %}>{{ 'ui.icon.placeholder'|trans }}</span>
+                <span class="g-icon-picker__name"{% if value == '' %} hidden{% endif %}>{{ value|replace({'_': ' '}) }}</span>
+            </span>
+            <span class="g-select__chevron" aria-hidden="true"></span>
+        </button>
+        <div class="g-icon-picker__list" role="listbox" aria-label="{{ 'ui.icon.pick'|trans }}">
+            <div class="g-icon-picker__search">
+                <input
+                    type="search"
+                    class="g-icon-picker__search-input"
+                    placeholder="{{ 'ui.icon.search'|trans }}"
+                    autocomplete="off"
+                >
+            </div>
+            <div class="g-icon-picker__grid">
+                {% for option in options %}
+                    {% set optValue = option.value is defined ? option.value : option %}
+                    {% if optValue != '' %}
+                        {% set seen = seen|merge({ (optValue): true }) %}
+                        <button
+                            type="button"
+                            class="g-icon-picker__cell{% if optValue == value %} is-selected{% endif %}"
+                            role="option"
+                            data-icon="{{ optValue }}"
+                            data-search="{{ optValue|replace({'_': ' '}) }}"
+                            title="{{ optValue|replace({'_': ' '}) }}"
+                            aria-label="{{ optValue|replace({'_': ' '}) }}"
+                        >
+                            <span class="material-symbols-outlined g-icon" aria-hidden="true">{{ optValue }}</span>
+                        </button>
+                    {% endif %}
+                {% endfor %}
+                {% if value != '' and seen[value] is not defined %}
+                    <button
+                        type="button"
+                        class="g-icon-picker__cell is-selected"
+                        role="option"
+                        data-icon="{{ value }}"
+                        data-search="{{ value|replace({'_': ' '}) }}"
+                        title="{{ value|replace({'_': ' '}) }}"
+                        aria-label="{{ value|replace({'_': ' '}) }}"
+                    >
+                        <span class="material-symbols-outlined g-icon" aria-hidden="true">{{ value }}</span>
+                    </button>
+                {% endif %}
+                <p class="g-icon-picker__empty" data-empty="1" hidden>{{ 'ui.icon.empty'|trans }}</p>
+            </div>
+        </div>
+    </div>
+    {% if hint %}<p class="g-hint" id="{{ id }}-hint">{{ hint }}</p>{% endif %}
+    {% if err %}<p class="g-error" id="{{ id }}-error">{{ err }}</p>{% endif %}
+</div>

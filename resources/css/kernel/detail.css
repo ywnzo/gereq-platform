@@ -224,6 +224,94 @@
     font-weight: 650;
 }
 
+.event-gallery-editor {
+    display: grid;
+    gap: 0.85rem;
+}
+.event-gallery-editor__row {
+    padding: 0.85rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    background: var(--surface-2, #f7f8f6);
+}
+.event-gallery-editor__actions {
+    display: flex;
+    align-items: end;
+}
+.event-gallery-editor__file {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+}
+.event-gallery-editor__preview {
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface-2);
+    position: relative;
+    flex-shrink: 0;
+}
+.event-gallery-editor__preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.event-gallery-editor__preview-badge {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    font-size: 9px;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+.event-gallery-picker__kind {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.event-gallery-picker__grid {
+    max-height: 28rem;
+    overflow: auto;
+}
+.event-admin-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+    padding: 0 1rem 1rem;
+}
+.event-admin-gallery__item {
+    margin: 0;
+    display: grid;
+    gap: 0.4rem;
+}
+.event-admin-gallery__item img,
+.event-admin-gallery__item video,
+.event-admin-gallery__item iframe {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 8px;
+    background: var(--surface-2);
+    border: 0;
+}
+.event-admin-gallery__item audio {
+    width: 100%;
+}
+.event-admin-gallery__item figcaption {
+    display: grid;
+    gap: 0.1rem;
+    font-size: var(--grq-text-md);
+}
+
 /* Shared two-column detail layout (listings + all entity shows) */
 .detail-layout,
 .listing-detail {

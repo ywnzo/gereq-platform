@@ -48,8 +48,8 @@
                     <header class="panel__head">
                         <h2>{{ 'media.field.preview'|trans }}</h2>
                     </header>
-                    <a class="detail-hero__media" href="{{ url('admin.media.file', {id: item.id()}) }}" target="_blank" rel="noopener">
-                        <img src="{{ url('admin.media.file', {id: item.id()}) }}" alt="{{ item.alt()|default(item.title()) }}">
+                    <a class="detail-hero__media" href="{{ url('media.public.file', {id: item.id()}) }}" target="_blank" rel="noopener">
+                        <img src="{{ url('media.public.file', {id: item.id()}) }}" alt="{{ item.alt()|default(item.title()) }}">
                     </a>
                 </section>
             {% endif %}

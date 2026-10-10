@@ -45,19 +45,6 @@ final class Storefront
                 'Cache-Control' => 'no-store',
             ]);
         }
-        if ($path === '/dev-ca.cer' || $path === '/dev-ca.crt') {
-            $file = dirname(self::root()) . $path;
-            if (!is_file($file)) {
-                return null;
-            }
-            $ext = $path === '/dev-ca.cer' ? 'cer' : 'crt';
-            $response = new BinaryFileResponse($file);
-            $response->headers->set('Content-Type', 'application/x-x509-ca-cert');
-            $response->headers->set('Content-Disposition', 'attachment; filename="gereq-dev-rootCA.' . $ext . '"');
-            $response->headers->set('Cache-Control', 'no-store');
-
-            return $response;
-        }
 
         $relative = self::staticRelative($path);
         if ($relative === null) {

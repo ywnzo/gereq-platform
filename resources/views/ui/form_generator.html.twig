@@ -17,9 +17,14 @@
             entity: entity|default(null),
             attrs: field.attrs|default('')
         } %}
-        {% if type in ['textarea', 'editor'] %}
+        {% if type == 'editor' %}
+            {% include 'ui/editor.html.twig' with common|merge({
+                extra: (common.extra ~ ' field--full')|trim,
+                placeholder: field.options.placeholder|default('')
+            }) %}
+        {% elseif type == 'textarea' %}
             {% include 'ui/textarea.html.twig' with common|merge({
-                size: type == 'editor' ? 'full' : 'mini',
+                size: 'mini',
                 placeholder: field.options.placeholder|default('')
             }) %}
         {% elseif type == 'select' %}
@@ -27,6 +32,12 @@
                 options: field.choices,
                 searchable: field.options.searchable|default(false)
             }) %}
+        {% elseif type == 'icon' %}
+            {% include 'ui/icon_picker.html.twig' with common|merge({
+                options: field.choices
+            }) %}
+        {% elseif type == 'color' %}
+            {% include 'ui/color_field.html.twig' with common %}
         {% elseif type in ['checkbox', 'switch'] %}
             {% include 'ui/checkbox.html.twig' with {
                 name: field.name,

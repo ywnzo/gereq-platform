@@ -29,22 +29,44 @@
         :aria-hidden="open ? 'false' : 'true'"
         aria-labelledby="gereq-confirm-title"
     >
-        <div class="g-modal__panel g-confirm__panel" @click.stop>
+        <div class="g-modal__panel g-confirm__panel" :class="inputType === 'editor' ? 'g-modal__panel--editor' : ''" @click.stop>
             <h3 class="g-modal__title" id="gereq-confirm-title" x-text="title"></h3>
             <p class="g-modal__body" x-show="body" x-text="body"></p>
-            <div class="g-confirm__field" x-show="showInput" x-cloak>
+            <div class="g-confirm__field" x-show="showInput && inputType !== 'editor'" x-cloak>
                 <label class="field">
                     <span x-show="inputLabel" x-text="inputLabel"></span>
                     <input
                         class="input"
-                        :type="inputType"
+                        :type="inputType === 'textarea' ? 'text' : inputType"
+                        x-show="inputType !== 'textarea'"
                         x-model="inputValue"
                         :placeholder="inputPlaceholder"
                         autocomplete="off"
                         x-ref="inputField"
                         @keydown.enter="accept"
                     >
+                    <textarea
+                        class="input"
+                        x-show="inputType === 'textarea'"
+                        x-model="inputValue"
+                        :placeholder="inputPlaceholder"
+                        rows="4"
+                        x-ref="textareaField"
+                    ></textarea>
                 </label>
+            </div>
+            <div class="g-confirm__field" x-show="showInput && inputType === 'editor'" x-cloak>
+                <span class="g-confirm__label" x-show="inputLabel" x-text="inputLabel"></span>
+                <div x-ref="editorHost">
+                    {% include 'ui/_editor_core.html.twig' with {
+                        id: 'gereq-confirm-editor',
+                        name: '',
+                        value: '',
+                        placeholder: 'events.reject.placeholder'|trans,
+                        extra_class: 'g-editor--dialog',
+                        required: false,
+                    } only %}
+                </div>
             </div>
             <div class="g-modal__actions">
                 <button type="button" class="btn btn--ghost" @click="cancel" x-ref="cancelBtn">

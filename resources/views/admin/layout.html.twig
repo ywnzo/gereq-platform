@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ pageTitle|default('admin.title'|trans) }}{% endblock %} · {{ brand('name') }}</title>
-    {% include 'partials/brand-head.html.twig' %}
+    {% include 'partials/brand-head.html.twig' with { admin_favicon: true } %}
     {{ render_css() }}
     {% include 'partials/brand-overrides.html.twig' %}
 </head>

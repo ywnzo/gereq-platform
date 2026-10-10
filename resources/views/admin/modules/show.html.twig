@@ -497,39 +497,42 @@
                         </p>
                     </div>
                     {% if settingsRoute %}
-                        <a class="btn btn--primary" href="{{ url(settingsRoute) }}">{{ icon('settings') }} {{ 'admin.modules.settings.open'|trans }}</a>
+                        <a class="btn btn--ghost" href="{{ url(settingsRoute) }}">{{ icon('settings') }} {{ 'admin.modules.settings.open'|trans }}</a>
                     {% endif %}
                 </header>
                 {% if report.settings is empty %}
                     <div class="empty"><h2>{{ 'empty.settings'|trans }}</h2><p>{{ 'empty.settings_hint'|trans }}</p></div>
                 {% else %}
-                    <div class="table-wrap">
-                        <table class="table">
-                            <thead>
-                                <tr><th>{{ 'admin.modules.col.key'|trans }}</th><th>{{ 'common.type'|trans }}</th><th>{{ 'admin.modules.col.label'|trans }}</th><th>{{ 'admin.modules.col.default'|trans }}</th></tr>
-                            </thead>
-                            <tbody>
-                                {% for setting in report.settings %}
-                                    <tr>
-                                        <td><code>{{ setting.key }}</code></td>
-                                        <td>{{ setting.type }}</td>
-                                        <td>{{ setting.label|trans }}</td>
-                                        <td class="muted">
-                                            {% if setting.default is same as(null) %}
-                                                {{ 'common.none'|trans }}
-                                            {% elseif setting.default is iterable %}
-                                                <code>{{ setting.default|json_encode }}</code>
-                                            {% elseif setting.default is same as(true) or setting.default is same as(false) %}
-                                                {{ setting.default ? 'common.yes'|trans : 'common.no'|trans }}
-                                            {% else %}
-                                                {{ setting.default }}
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                    <form method="post" action="{{ url('admin.modules.settings', {id: manifest.id}) }}" autocomplete="off">
+                        {{ csrf_field()|raw }}
+                        <div class="form-grid">
+                            {% for setting in report.settings %}
+                                {% set key = setting.key %}
+                                {% set field = key|replace({'.': '__'}) %}
+                                {% set value = settingValues[key]|default(setting.default) %}
+                                {% set secret = setting.type == 'encrypted' or 'secret' in key|lower or 'password' in key|lower or 'token' in key|lower or 'api_key' in key|lower %}
+                                <label class="field">
+                                    <span>{{ setting.label|trans }}</span>
+                                    {% if setting.type == 'boolean' %}
+                                        <select class="input" name="{{ field }}">
+                                            <option value="1" {{ value ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                                            <option value="0" {{ not value ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                                        </select>
+                                    {% elseif setting.type == 'json' %}
+                                        <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ value|json_encode }}</textarea>
+                                    {% elseif secret %}
+                                        <input class="input" type="password" name="{{ field }}" value="{{ value }}" autocomplete="new-password" placeholder="{{ value ? ('settings.secret.placeholder'|trans) : '' }}">
+                                    {% else %}
+                                        <input class="input" type="text" name="{{ field }}" value="{{ value }}">
+                                    {% endif %}
+                                    <small class="field__hint"><code>{{ key }}</code></small>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <div class="actions" style="margin-top:1rem">
+                            <button class="btn btn--primary" type="submit">{{ 'settings.save'|trans }}</button>
+                        </div>
+                    </form>
                 {% endif %}
             </section>
         </section>

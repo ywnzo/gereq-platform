@@ -33,7 +33,7 @@ html[data-theme="gereq-dark"] .sidebar {
 .sidebar__brand .brand__initials {
     width: 30px;
     height: 30px;
-    border-radius: var(--radius);
+    border-radius: 30%;
 }
 .sidebar__brand .brand__initials {
     font-size: 0.72rem;

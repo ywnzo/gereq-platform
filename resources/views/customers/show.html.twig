@@ -31,11 +31,18 @@
                                 <span class="badge badge--{{ item.status() == 'active' ? 'ok' : (item.status() == 'lead' ? 'warn' : 'muted') }}">
                                     {{ item.statusLabel()|trans }}
                                 </span>
+                                {% for section in hookSections|default([]) %}
+                                    {% if section.overview_html is defined and section.overview_html %}
+                                        {{ section.overview_html|raw }}
+                                    {% endif %}
+                                {% endfor %}
                                 {% if item.isCompany() %}
                                     <span class="badge">{{ 'customers.field.is_company'|trans }}</span>
                                     {% if item.ico() %}<span class="muted">IČ {{ item.ico() }}</span>{% endif %}
                                 {% endif %}
-                                <span class="muted">{{ 'customers.field.created'|trans }} {{ item.createdAt().format('d. m. Y') }}</span>
+                                {% if item.erasureRequestedAt() %}
+                                    <span class="badge badge--warn">{{ 'customers.erasure.requested'|trans }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -125,6 +132,17 @@
                                 <dt>{{ 'customers.field.updated'|trans }}</dt>
                                 <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
                             </div>
+                            {% if item.erasureRequestedAt() %}
+                                <div>
+                                    <dt>{{ 'customers.erasure.field.requested_at'|trans }}</dt>
+                                    <dd>{{ item.erasureRequestedAt().format('d. m. Y H:i') }}</dd>
+                                </div>
+                            {% endif %}
+                            {% for section in hookSections|default([]) %}
+                                {% if section.facts_html is defined and section.facts_html %}
+                                    {{ section.facts_html|raw }}
+                                {% endif %}
+                            {% endfor %}
                         </dl>
                         {% if noteHtml %}
                             <div class="customer-section__note">

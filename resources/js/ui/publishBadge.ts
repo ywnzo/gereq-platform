@@ -41,6 +41,23 @@ function csrfToken(): string {
     return (window as Window & { __GEREQ_CSRF__?: string }).__GEREQ_CSRF__ || '';
 }
 
+function errorMessage(json: unknown, fallback: string): string {
+    if (!json || typeof json !== 'object') {
+        return fallback;
+    }
+    const err = (json as { error?: unknown }).error;
+    if (typeof err === 'string' && err !== '') {
+        return err;
+    }
+    if (err && typeof err === 'object') {
+        const message = (err as { message?: unknown }).message;
+        if (typeof message === 'string' && message !== '') {
+            return message;
+        }
+    }
+    return fallback;
+}
+
 function normalizeCategories(
     categories: PendingResponse['data']['categories'],
 ): PendingCategory[] {
@@ -86,9 +103,9 @@ export function registerPublishBadge(alpine: typeof Alpine): void {
             this.labelPublishing = el.dataset.labelPublishing || '';
             this.labelSubmit = el.dataset.labelSubmit || '';
             window.addEventListener('publish:pending-changed', () => {
-              this.loaded = false;
-              void this.ensureLoaded();
-            })
+                this.loaded = false;
+                void this.ensureLoaded();
+            });
         },
 
         get chipLabel(): string {
@@ -200,12 +217,26 @@ export function registerPublishBadge(alpine: typeof Alpine): void {
                     credentials: 'same-origin',
                     body: JSON.stringify({ entry_ids: this.selected }),
                 });
-                const json = await res.json();
-                if (!json.ok) {
-                    window.gereq?.toast?.(json.error || 'Publish failed', 'error');
+                let json: unknown = null;
+                try {
+                    json = await res.json();
+                } catch {
+                    json = null;
+                }
+                if (res.status === 419) {
+                    window.gereq?.toast?.(
+                        errorMessage(json, 'Platnost formuláře vypršela. Obnovuji stránku…'),
+                        'error',
+                    );
+                    window.setTimeout(() => window.location.reload(), 700);
                     return;
                 }
-                const version = json.data?.version ?? '';
+                const payload = json as { ok?: boolean; data?: { version?: string } };
+                if (!payload?.ok) {
+                    window.gereq?.toast?.(errorMessage(json, 'Publish failed'), 'error');
+                    return;
+                }
+                const version = payload.data?.version ?? '';
                 window.gereq?.toast?.(
                     version
                         ? `Publikováno (${version})`
