@@ -9,8 +9,8 @@ return [
     'brand_sub' => 'Platform',
     'theme' => 'system',
     /**
-     * Public URL path segment for the admin UI (no slashes).
-     * Default "admin" → /admin/…; set ADMIN_PATH=panel → /panel/….
+     * Public URL path for the platform admin UI (one or more segments).
+     * Default "admin" → /admin/…; e.g. gereq-platform/admin → /gereq-platform/admin/….
      * Modules may keep writing /admin/…; the router rewrites at register time.
      */
     'path' => AdminPath::sanitize(trim((string) env_value('ADMIN_PATH', AdminPath::CANONICAL), '/')),

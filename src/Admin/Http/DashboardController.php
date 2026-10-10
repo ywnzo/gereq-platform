@@ -11,6 +11,7 @@ use Gereq\Auth\Authenticator;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Http\Storefront;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -34,6 +35,11 @@ final class DashboardController extends Controller
 
     public function home(): Response
     {
+        $page = Storefront::html($this->request());
+        if ($page !== null) {
+            return $page;
+        }
+
         return $this->redirect('admin.login');
     }
 

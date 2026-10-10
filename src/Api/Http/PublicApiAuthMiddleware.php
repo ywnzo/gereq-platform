@@ -49,6 +49,23 @@ final class PublicApiAuthMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        if (str_starts_with($path, '/api/public/auth/') || $path === '/api/public/auth') {
+            return $next($request);
+        }
+
+        if ($path === '/api/public/notifications/stream') {
+            $sseToken = trim((string) $request->query->get('access_token', ''));
+            if ($sseToken === '') {
+                $auth = (string) $request->headers->get('Authorization', '');
+                if (preg_match('/^Bearer\s+(\S+)/i', $auth, $m) === 1) {
+                    $sseToken = trim($m[1]);
+                }
+            }
+            if (\Gereq\Notifications\Application\NotificationSse::looksLikeToken($sseToken)) {
+                return $next($request);
+            }
+        }
+
         if (!$this->publicKey->isConfigured()) {
             return $this->cors(
                 $request,

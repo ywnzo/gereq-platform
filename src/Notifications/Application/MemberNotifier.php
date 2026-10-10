@@ -52,30 +52,156 @@ final class MemberNotifier
     /** @return list<array<string, mixed>> */
     public function inbox(string $accountId, int $limit = 50, ?string $category = null): array
     {
+        $page = $this->inboxPage($accountId, [
+            'page' => 1,
+            'per_page' => $limit,
+            'category' => $category,
+        ]);
+
+        return $page['items'];
+    }
+
+    /**
+     * @param array{page?: int|string, per_page?: int|string, category?: ?string, status?: ?string, event_id?: ?string} $query
+     * @return array{items: list<array<string, mixed>>, total: int, page: int, per_page: int, unread: int}
+     */
+    public function inboxPage(string $accountId, array $query = []): array
+    {
+        $page = max(1, (int) ($query['page'] ?? 1));
+        $perPage = (int) ($query['per_page'] ?? 10);
+        if ($perPage < 1) {
+            $perPage = 10;
+        }
+        if ($perPage > 50) {
+            $perPage = 50;
+        }
+        $category = isset($query['category']) && is_string($query['category']) ? trim($query['category']) : '';
+        $status = isset($query['status']) && is_string($query['status']) ? strtolower(trim($query['status'])) : '';
+        $eventId = isset($query['event_id']) && is_string($query['event_id']) ? trim($query['event_id']) : '';
+
         /** @var list<DatabaseNotification> $rows */
         $rows = $this->em->getRepository(DatabaseNotification::class)->findBy(
             ['userId' => $accountId, 'type' => 'member_feed'],
             ['createdAt' => 'DESC'],
-            $limit,
+            500,
         );
-        $out = [];
+
+        $filtered = [];
         foreach ($rows as $row) {
-            $data = $row->data();
-            $cat = (string) ($data['category'] ?? 'all');
-            if ($category !== null && $category !== '' && $category !== 'all' && $cat !== $category) {
+            $item = $this->serialize($row);
+            if ($category !== '' && $category !== 'all' && $item['category'] !== $category) {
                 continue;
             }
-            $out[] = [
-                'id' => $row->id(),
-                'title' => (string) ($data['title'] ?? ''),
-                'body' => (string) ($data['body'] ?? ''),
-                'category' => $cat,
-                'read' => $row->readAt() !== null,
-                'created_at' => $row->createdAt()->format(\DateTimeInterface::ATOM),
-            ];
+            if ($eventId !== '' && (string) ($item['meta']['event_id'] ?? '') !== $eventId) {
+                continue;
+            }
+            if (!$this->matchesStatus($item, $status)) {
+                continue;
+            }
+            $filtered[] = $item;
+        }
+
+        $total = count($filtered);
+        $offset = ($page - 1) * $perPage;
+        if ($offset >= $total && $total > 0) {
+            $page = (int) max(1, (int) ceil($total / $perPage));
+            $offset = ($page - 1) * $perPage;
+        }
+
+        return [
+            'items' => array_slice($filtered, $offset, $perPage),
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'unread' => $this->unreadCount($accountId),
+        ];
+    }
+
+    /** @param array<string, mixed> $item */
+    private function matchesStatus(array $item, string $status): bool
+    {
+        if ($status === '' || $status === 'all') {
+            return true;
+        }
+        $type = strtolower((string) ($item['event_type'] ?? ''));
+        $read = (bool) ($item['read'] ?? false);
+
+        return match ($status) {
+            'unread' => !$read,
+            'read' => $read,
+            'rejected' => str_contains($type, 'reject') || str_contains($type, 'fail'),
+            'published', 'approved' => str_contains($type, 'publish') || str_contains($type, 'approv'),
+            default => true,
+        };
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function inboxSince(string $accountId, string $afterId, ?\DateTimeImmutable $notBefore = null, int $limit = 20): array
+    {
+        $qb = $this->em->createQueryBuilder()
+            ->select('n')
+            ->from(DatabaseNotification::class, 'n')
+            ->where('n.userId = :uid')
+            ->andWhere('n.type = :type')
+            ->setParameter('uid', $accountId)
+            ->setParameter('type', 'member_feed')
+            ->orderBy('n.id', 'ASC')
+            ->setMaxResults($limit);
+        if ($afterId !== '') {
+            $qb->andWhere('n.id > :after')->setParameter('after', $afterId);
+        } elseif ($notBefore instanceof \DateTimeImmutable) {
+            $qb->andWhere('n.createdAt >= :from')->setParameter('from', $notBefore);
+        } else {
+            return [];
+        }
+
+        /** @var list<DatabaseNotification> $rows */
+        $rows = $qb->getQuery()->getResult();
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = $this->serialize($row);
         }
 
         return $out;
+    }
+
+    /** @return array<string, mixed> */
+    private function serialize(DatabaseNotification $row): array
+    {
+        $data = $row->data();
+
+        $meta = $data['meta'] ?? null;
+        $html = (string) ($data['html'] ?? '');
+        if ($html === '' && is_array($meta)) {
+            $html = (string) ($meta['html'] ?? $meta['reason'] ?? '');
+        }
+
+        $publicMeta = [];
+        if (is_array($meta)) {
+            foreach (['event_id', 'slug', 'reason'] as $key) {
+                if (!array_key_exists($key, $meta)) {
+                    continue;
+                }
+                $value = $meta[$key];
+                if (is_string($value) || is_int($value) || is_float($value)) {
+                    $publicMeta[$key] = (string) $value;
+                }
+            }
+        }
+
+        return [
+            'id' => $row->id(),
+            'title' => (string) ($data['title'] ?? ''),
+            'body' => (string) ($data['body'] ?? ''),
+            'html' => $html,
+            'category' => (string) ($data['category'] ?? 'all'),
+            'event_type' => (string) ($data['event_type'] ?? ''),
+            'meta' => $publicMeta,
+            'read' => $row->readAt() !== null,
+            'created_at' => $row->createdAt()->format(\DateTimeInterface::ATOM),
+        ];
     }
 
     public function markRead(string $accountId, string $id): void

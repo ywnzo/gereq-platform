@@ -6,6 +6,17 @@ namespace Gereq\Security;
 
 final class RateLimiter
 {
+    /** @var list<string> Key prefixes that must fail closed when the store is unusable. */
+    private const SENSITIVE_PREFIXES = [
+        'login:',
+        'mfa:',
+        'login-passkey:',
+        'password-reset:',
+        'store-auth:',
+        'gopay-notify:',
+        'ares:',
+    ];
+
     public function __construct(private readonly string $path)
     {
         $this->ensureDirectory();
@@ -34,18 +45,20 @@ final class RateLimiter
         }
 
         $attempts[] = $now;
-        // Fail open when the rate-limit store is not writable — otherwise every
-        // request becomes 429 (common after root-owned mkdir on bind mounts).
-        if (!is_dir($this->path) || !is_writable($this->path)) {
-            error_log('RateLimiter: store not writable at ' . $this->path . '; allowing request.');
+        $failClosed = $this->isSensitive($key);
 
-            return true;
+        if (!is_dir($this->path) || !is_writable($this->path)) {
+            error_log('RateLimiter: store not writable at ' . $this->path . '; '
+                . ($failClosed ? 'denying sensitive request.' : 'allowing request.'));
+
+            return !$failClosed;
         }
         $written = @file_put_contents($file, json_encode($attempts), LOCK_EX);
         if ($written === false) {
-            error_log('RateLimiter: failed to write ' . $file . '; allowing request.');
+            error_log('RateLimiter: failed to write ' . $file . '; '
+                . ($failClosed ? 'denying sensitive request.' : 'allowing request.'));
 
-            return true;
+            return !$failClosed;
         }
 
         return true;
@@ -57,6 +70,17 @@ final class RateLimiter
         if (is_file($file)) {
             unlink($file);
         }
+    }
+
+    private function isSensitive(string $key): bool
+    {
+        foreach (self::SENSITIVE_PREFIXES as $prefix) {
+            if (str_starts_with($key, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function ensureDirectory(): void

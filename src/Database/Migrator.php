@@ -89,6 +89,7 @@ final class Migrator
     public function syncSchema(): array
     {
         $messages = [];
+        $this->refreshMetadataCache();
         $metadata = $this->schemaMetadata();
         if ($metadata === []) {
             return $messages;
@@ -120,6 +121,20 @@ final class Migrator
             $sql = array_values(array_filter(
                 $tool->getUpdateSchemaSQL($metadata),
                 static function (string $statement) use ($managed): bool {
+                    // Postgres FTS column + GIN index are maintained outside Doctrine indexes
+                    // (tsvector / gin). Stale metadata used to DROP the column while leaving
+                    // the BEFORE INSERT trigger — breaking event submit.
+                    if (preg_match('/\bsearch_vector\b/i', $statement)
+                        && preg_match('/\bDROP\b/i', $statement)
+                    ) {
+                        return false;
+                    }
+                    if (preg_match('/^\s*DROP\s+INDEX\b/i', $statement)
+                        && stripos($statement, 'idx_kdeaco_events_search_vector') !== false
+                    ) {
+                        return false;
+                    }
+
                     // Allow DROP only for entity tables / SQLite __temp__ rebuild.
                     // Otherwise SchemaTool may drop e.g. schema_migrations.
                     if (!preg_match('/^\s*DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?["`\[]?(\w+)/i', $statement, $m)) {
@@ -576,6 +591,22 @@ final class Migrator
             }
         } catch (\Throwable) {
             $this->ranCache = [];
+        }
+    }
+
+    /**
+     * Drop on-disk Doctrine metadata when entities change (app.debug=false).
+     * Does not reload already-warmed ClassMetadata in this EM — DROP filters cover that.
+     */
+    private function refreshMetadataCache(): void
+    {
+        try {
+            $cache = $this->em->getConfiguration()->getMetadataCache();
+            if ($cache instanceof \Psr\Cache\CacheItemPoolInterface) {
+                $cache->clear();
+            }
+        } catch (\Throwable) {
+            // cache optional
         }
     }
 }

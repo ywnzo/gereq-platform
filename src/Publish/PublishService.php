@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Publish;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Gereq\Cache\StoreFrontCache;
 use Gereq\Publish\Entity\ContentRelease;
 use Gereq\Publish\Entity\ContentReleaseItem;
 use Gereq\Publish\Entity\ContentStagingEntry;
@@ -17,6 +18,7 @@ final class PublishService
         private readonly PublishableRegistry $registry,
         private readonly ContentVersion $versions,
         private readonly ContentReadContext $readContext,
+        private readonly StoreFrontCache $storeFrontCache,
     ) {
     }
 
@@ -149,6 +151,8 @@ final class PublishService
 
             $this->em->flush();
             $this->em->commit();
+
+            $this->storeFrontCache->flush();
 
             return [
                 'version' => $version,

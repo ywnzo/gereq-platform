@@ -5,6 +5,8 @@ declare(strict_types=1);
 return [
     'login_max_attempts' => 5,
     'login_decay_seconds' => 60,
+    'store_login_max_attempts' => (int) env_value('STORE_LOGIN_MAX_ATTEMPTS', 5),
+    'store_login_decay_seconds' => (int) env_value('STORE_LOGIN_DECAY_SECONDS', 60),
     'password_min_length' => 10,
     'cookie_samesite' => 'lax',
     'mfa_challenge_ttl' => 600,

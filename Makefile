@@ -30,8 +30,8 @@ COMPOSE_FILES += -f $(ROOT)/docker-compose.https.yml
 endif
 
 export GEREQ_PORT := $(PORT)
-export APP_URL    := $(if $(filter 1,$(HTTPS)),https://127.0.0.1,http://127.0.0.1:$(PORT))
 export TRUSTED_PROXIES := *
+# Do not export APP_URL — docker compose must use backend/.env (HTTPS platform).
 
 COMPOSE := docker compose $(COMPOSE_FILES) --project-directory $(ROOT)
 PHP_RUN := $(COMPOSE) run --rm --no-deps php

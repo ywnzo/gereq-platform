@@ -12,7 +12,12 @@ final class Icons
 {
     public function svg(string $name, string $class = ''): string
     {
-        $glyph = $this->glyphs()[$name] ?? 'circle';
+        $name = trim($name);
+        // Aliases (trash → delete) or raw Material Symbols ligature (dynamic_form, view_timeline…).
+        $glyph = $this->glyphs()[$name] ?? $name;
+        if ($glyph === '' || !preg_match('/^[a-z0-9_]+$/', $glyph)) {
+            $glyph = 'circle';
+        }
         $classes = trim('material-symbols-outlined g-icon ' . $class);
 
         return '<span class="' . htmlspecialchars($classes, ENT_QUOTES)
@@ -118,6 +123,9 @@ final class Icons
             'layout-bottom' => 'horizontal_split',
             'layout-off' => 'crop_16_9',
             'calendar' => 'calendar_month',
+            'calendar_month' => 'calendar_month',
+            'view_timeline' => 'view_timeline',
+            'dynamic_form' => 'dynamic_form',
             'briefcase' => 'work',
             'zap' => 'bolt',
             'fuel' => 'local_gas_station',

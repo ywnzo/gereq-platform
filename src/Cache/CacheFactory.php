@@ -33,6 +33,30 @@ final class CacheFactory
         };
     }
 
+    /**
+     * Dedicated storefront pool (file or redis). Falls back to file when Redis is unavailable.
+     */
+    public function createStorefront(string $driver): CacheItemPoolInterface
+    {
+        $namespace = (string) $this->config->get('cache.storefront.prefix', 'storefront');
+        $normalized = strtolower(trim($driver)) === 'redis' ? 'redis' : 'file';
+
+        if ($normalized === 'redis') {
+            try {
+                return $this->redis($namespace);
+            } catch (\Throwable) {
+                // Public site must keep serving even without Redis.
+            }
+        }
+
+        $dir = $this->basePath . '/storage/cache/storefront';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        return new FilesystemAdapter($namespace, 0, $dir);
+    }
+
     private function redis(string $namespace): CacheItemPoolInterface
     {
         if (!class_exists(\Redis::class)) {

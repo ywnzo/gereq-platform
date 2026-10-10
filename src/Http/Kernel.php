@@ -44,6 +44,21 @@ final class Kernel
         $this->requestStack->push($request);
         $this->debugBar->mark('request');
 
+        $static = KdeacoAdmin::staticFile($request) ?? Storefront::staticFile($request);
+        if ($static !== null) {
+            $this->debugBar->mark('done');
+
+            return $static;
+        }
+
+        $path = $request->getPathInfo();
+        if (strtoupper($request->getMethod()) === 'OPTIONS' && str_starts_with($path, '/api/v1/store/')) {
+            $response = PublicCors::apply(new Response('', 204), $request, 'GET, POST, PATCH, DELETE, OPTIONS');
+            $this->debugBar->mark('done');
+
+            return $this->debugBar->inject($request, $response);
+        }
+
         try {
             $response = $this->dispatch($request);
         } catch (ValidationException $exception) {
@@ -51,6 +66,10 @@ final class Kernel
         } catch (\Throwable $exception) {
             $this->errors->report($exception);
             $response = $this->errors->render($request, $exception);
+        }
+
+        if (str_starts_with($path, '/api/v1/store/')) {
+            PublicCors::apply($response, $request, 'GET, POST, PATCH, DELETE, OPTIONS');
         }
 
         $this->auth->applyCookies($response);
@@ -95,7 +114,9 @@ final class Kernel
         $isApi = str_starts_with((string) $route->getPath(), '/api/');
         if ($isApi) {
             $middleware[] = \Gereq\Api\Http\ApiRateLimitMiddleware::class;
-            $middleware[] = \Modules\Vitality\Http\Middleware\VitalityTimingMiddleware::class;
+            if (class_exists(\Modules\Vitality\Http\Middleware\VitalityTimingMiddleware::class)) {
+                $middleware[] = \Modules\Vitality\Http\Middleware\VitalityTimingMiddleware::class;
+            }
         }
 
         if (PublicCors::isPublicApiPath((string) $route->getPath())) {

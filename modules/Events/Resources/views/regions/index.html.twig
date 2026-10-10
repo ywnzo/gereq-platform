@@ -1,0 +1,84 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.events'|trans, url: url('admin.events.index') },
+        { label: 'events.regions.title'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'events.regions.title'|trans }}</h1>
+        <p class="muted">{{ 'events.regions.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.events.index') }}">{{ 'events.title'|trans }}</a>
+        {% if user.can('events.manage') %}
+            <button class="btn btn--primary" type="submit" form="regions-form">{{ 'common.save'|trans }}</button>
+        {% endif %}
+    </div>
+</header>
+
+<form
+    id="regions-form"
+    method="post"
+    class="detail-stack"
+    action="{{ url('admin.events.regions.save') }}"
+    enctype="multipart/form-data"
+>
+    {{ csrf_field()|raw }}
+
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ 'events.regions.section'|trans }}</h2>
+            <p class="muted">{{ 'events.regions.section_hint'|trans }}</p>
+        </header>
+
+        <div class="field-grid field-grid--2">
+            {% for row in rows %}
+                <div class="field field--full">
+                    {% if user.can('events.manage') %}
+                        {% include 'ui/media_box.html.twig' with {
+                            name: 'image_url[' ~ row.key ~ ']',
+                            file_name: 'file[' ~ row.key ~ ']',
+                            library_name: 'media_asset_id[' ~ row.key ~ ']',
+                            clear_name: 'clear[' ~ row.key ~ ']',
+                            id: 'f-region-' ~ row.key,
+                            label: row.name,
+                            optional: true,
+                            value: row.image_url|default(''),
+                            hint: 'events.regions.box_hint'|trans,
+                            has_media: hasMedia|default(false),
+                            library: libraryImages|default([])
+                        } %}
+                    {% else %}
+                        <div class="g-label">{{ row.name }}</div>
+                        {% if row.image_url %}
+                            <img
+                                src="{{ row.image_url }}"
+                                alt="{{ row.name }}"
+                                width="240"
+                                height="140"
+                                style="width:100%;max-width:280px;height:140px;object-fit:cover;border-radius:8px;display:block;background:#e8ecef"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        {% else %}
+                            <span class="is-mute">{{ 'events.photo.empty'|trans }}</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if user.can('events.manage') %}
+        <div class="actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        </div>
+    {% endif %}
+</form>
+{% endblock %}

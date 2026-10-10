@@ -13,6 +13,8 @@ use Gereq\Admin\Dashboard\Widgets\ModulesStatsWidget;
 use Gereq\Admin\Dashboard\Widgets\SearchHeroWidget;
 use Gereq\Admin\Dashboard\Widgets\SettingsShortcutWidget;
 use Gereq\Admin\Dashboard\Widgets\UsersStatsWidget;
+use Gereq\Admin\Http\Api\AdminAuthApiController;
+use Gereq\Admin\Http\Api\AdminDashboardApiController;
 use Gereq\Admin\Http\AresController;
 use Gereq\Admin\Http\AuditController;
 use Gereq\Admin\Http\AuthController;
@@ -176,6 +178,31 @@ final class CoreRegistrar
             ContentVersion::DEFAULT,
         );
 
+        // Public storefront response cache (file or redis).
+        $this->settings->define(
+            \Gereq\Cache\StoreFrontCache::SETTING_ENABLED,
+            SettingRecord::TYPE_BOOLEAN,
+            'settings.storefront.cache_enabled',
+            (bool) config('cache.storefront.enabled', true),
+        );
+        $this->settings->define(
+            \Gereq\Cache\StoreFrontCache::SETTING_DRIVER,
+            SettingRecord::TYPE_STRING,
+            'settings.storefront.cache_driver',
+            (string) config('cache.storefront.driver', 'file'),
+            null,
+            [
+                'file' => 'settings.storefront.cache_driver.file',
+                'redis' => 'settings.storefront.cache_driver.redis',
+            ],
+        );
+        $this->settings->define(
+            \Gereq\Cache\StoreFrontCache::SETTING_TTL,
+            SettingRecord::TYPE_INTEGER,
+            'settings.storefront.cache_ttl',
+            (int) config('cache.storefront.ttl', 300),
+        );
+
         // White-label branding (admin + public site).
         $this->settings->define('brand.name', SettingRecord::TYPE_STRING, 'settings.brand.name', '');
         $this->settings->define('brand.subtitle', SettingRecord::TYPE_STRING, 'settings.brand.subtitle', '');
@@ -293,6 +320,7 @@ final class CoreRegistrar
             $router->post('/modules/{id}/pause', [ModuleController::class, 'pause'])->name('admin.modules.pause')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/disable', [ModuleController::class, 'disable'])->name('admin.modules.disable')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/update', [ModuleController::class, 'update'])->name('admin.modules.update')->middleware('auth')->permission('modules.manage');
+            $router->post('/modules/{id}/settings', [ModuleController::class, 'saveSettings'])->name('admin.modules.settings')->middleware('auth')->permission('modules.manage');
 
             $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth')->permission('settings.manage');
             $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth')->permission('settings.manage');
@@ -327,6 +355,16 @@ final class CoreRegistrar
         $this->router->get('/api/v1/health', [HealthController::class, 'show'])->name('api.health');
         $this->router->get('/api/openapi.json', [OpenApiController::class, 'show'])->name('api.openapi');
 
+        // Product Vue admin session auth (no api middleware on login).
+        $this->router->post('/api/v1/admin/auth/login', [AdminAuthApiController::class, 'login'])
+            ->name('api.admin.auth.login');
+        $this->router->get('/api/v1/admin/auth/me', [AdminAuthApiController::class, 'me'])
+            ->name('api.admin.auth.me')->middleware('api');
+        $this->router->post('/api/v1/admin/auth/logout', [AdminAuthApiController::class, 'logout'])
+            ->name('api.admin.auth.logout')->middleware('api');
+        $this->router->get('/api/v1/admin/dashboard', [AdminDashboardApiController::class, 'show'])
+            ->name('api.admin.dashboard')->middleware('api');
+
         $this->router->add('/api/public/ares/addresses', ['OPTIONS'], [PublicAresController::class, 'options'])
             ->name('api.public.ares.addresses.options');
         $this->router->get('/api/public/ares/addresses', [PublicAresController::class, 'addresses'])
@@ -339,6 +377,8 @@ final class CoreRegistrar
 
         $this->router->get('/brand/asset/{name}', [BrandAssetController::class, 'show'])
             ->name('brand.asset');
+        $this->router->get('/brand/admin-favicon', [BrandAssetController::class, 'admin'])
+            ->name('brand.admin_favicon');
     }
 
     private function menu(): void

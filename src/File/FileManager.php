@@ -49,6 +49,19 @@ final class FileManager
             throw new \RuntimeException($this->translator->trans('files.mime_not_allowed', ['%mime%' => $mime]));
         }
 
+        // Spoofed Content-Type: verify image magic bytes before accepting.
+        if (str_starts_with($mime, 'image/')) {
+            $info = @getimagesize($uploadedFile->getPathname());
+            $detected = is_array($info) ? strtolower((string) ($info['mime'] ?? '')) : '';
+            if ($detected === '' || !str_starts_with($detected, 'image/')) {
+                throw new \RuntimeException($this->translator->trans('files.mime_not_allowed', ['%mime%' => $mime]));
+            }
+            $mime = $detected;
+            if (is_array($allowed) && $allowed !== [] && !in_array($mime, $allowed, true)) {
+                throw new \RuntimeException($this->translator->trans('files.mime_not_allowed', ['%mime%' => $mime]));
+            }
+        }
+
         $contents = file_get_contents($uploadedFile->getPathname());
         if ($contents === false) {
             throw new \RuntimeException($this->translator->trans('files.unreadable'));

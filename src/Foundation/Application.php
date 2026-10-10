@@ -28,7 +28,10 @@ use Gereq\Module\ModuleManager;
 use Gereq\Notifications\NotificationsRegistrar;
 use Gereq\Queue\Queue;
 use Gereq\Currency\CurrencyRegistrar;
+use Gereq\Customers\Application\CustomerScope;
+use Gereq\Customers\Application\UnrestrictedCustomerScope;
 use Gereq\Customers\CustomersRegistrar;
+use Gereq\Media\Http\MediaFilePath;
 use Gereq\Media\MediaRegistrar;
 use Gereq\Webhooks\WebhooksRegistrar;
 use Gereq\Security\RateLimiter;
@@ -76,12 +79,17 @@ final class Application
         $container->get(MediaRegistrar::class)->register();
         $container->get(CurrencyRegistrar::class)->register();
         $container->get(CustomersRegistrar::class)->register();
-        if ((bool) $config->get('app.debug', false)) {
+        $mediaFile = MediaFilePath::fromGlobals();
+        if ((bool) $config->get('app.debug', false) && !$mediaFile) {
             $container->get(DebugBar::class);
         }
-        $container->get(ModuleManager::class)->boot($container->get(ModuleContext::class));
-        $container->get(ApiRegistry::class)->bind($container->get(Router::class));
-        $container->get(ResourceRegistrar::class)->bindRoutes($container->get(Router::class));
+        // Thumbnails hit /media/{id}/file (and admin equivalent) in parallel; module seed/boot
+        // must not run on those requests or PHP-FPM saturates and the grid stays blank.
+        if (!$mediaFile) {
+            $container->get(ModuleManager::class)->boot($container->get(ModuleContext::class));
+            $container->get(ApiRegistry::class)->bind($container->get(Router::class));
+            $container->get(ResourceRegistrar::class)->bindRoutes($container->get(Router::class));
+        }
 
         return $app;
     }
@@ -126,6 +134,27 @@ final class Application
             $dotenv = \Dotenv\Dotenv::createImmutable($basePath);
             $dotenv->safeLoad();
         }
+        self::hardenProductionEnv();
+    }
+
+    /** Never run with APP_DEBUG in production — forces debug off even if .env is wrong. */
+    private static function hardenProductionEnv(): void
+    {
+        $env = strtolower(trim((string) ($_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? getenv('APP_ENV') ?: 'production')));
+        if (!in_array($env, ['production', 'prod'], true)) {
+            return;
+        }
+
+        $raw = $_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? getenv('APP_DEBUG');
+        $debug = filter_var($raw === false || $raw === null ? false : $raw, FILTER_VALIDATE_BOOLEAN);
+        if (!$debug) {
+            return;
+        }
+
+        $_ENV['APP_DEBUG'] = '0';
+        $_SERVER['APP_DEBUG'] = '0';
+        putenv('APP_DEBUG=0');
+        error_log('GEREQ: APP_DEBUG was enabled while APP_ENV=' . $env . '; forced off.');
     }
 
     private static function loadConfig(string $basePath): Repository
@@ -151,6 +180,7 @@ final class Application
             ContainerInterface::class => \DI\get(Container::class),
 
             // Interfaces / custom factories
+            CacheFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             CacheItemPoolInterface::class => \DI\factory(static function (Repository $config) use ($basePath): CacheItemPoolInterface {
                 return (new CacheFactory($config, $basePath))->create();
             }),
@@ -228,6 +258,8 @@ final class Application
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Http\BrandAssetController::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath),
+            \Gereq\Brand\AdminFavicon::class => \DI\autowire()
+                ->constructorParameter('basePath', $basePath),
             \Gereq\Http\Session\SessionHandlerFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             ExceptionHandler::class => \DI\autowire()
                 ->constructorParameter('basePath', $basePath)
@@ -252,6 +284,34 @@ final class Application
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Media\Http\MediaController::class => \DI\autowire()->constructorParameter('basePath', $basePath),
             \Modules\Ai\Application\AiIntegrationGate::class => \DI\get(\Modules\Ai\Application\ModuleAiIntegrationGate::class),
+            CustomerScope::class => \DI\factory(static function (ContainerInterface $c): CustomerScope {
+                if (!class_exists(\Modules\Listings\Application\BrokerIdentity::class)) {
+                    return new UnrestrictedCustomerScope();
+                }
+                $broker = $c->get(\Modules\Listings\Application\BrokerIdentity::class);
+                if ($broker instanceof CustomerScope) {
+                    return $broker;
+                }
+
+                return new class ($broker) implements CustomerScope {
+                    public function __construct(private readonly object $broker)
+                    {
+                    }
+
+                    public function scopedCustomerIds(mixed $user): ?array
+                    {
+                        /** @var list<string>|null $ids */
+                        $ids = $this->broker->scopedCustomerIds($user);
+
+                        return $ids;
+                    }
+
+                    public function applyCustomerScope(\Doctrine\ORM\QueryBuilder $qb, string $alias, mixed $user): void
+                    {
+                        $this->broker->applyCustomerScope($qb, $alias, $user);
+                    }
+                };
+            }),
         ];
     }
 }

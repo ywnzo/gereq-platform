@@ -27,7 +27,23 @@ final class EntityManagerFactory
     {
         (new DatabaseCreator($this->config))->ensureExists();
 
-        $paths = [$this->basePath . '/src'];
+        // Per-package paths under src/ — skip Testing (PHPUnit) under --no-dev.
+        $paths = [];
+        $srcDir = $this->basePath . '/src';
+        if (is_dir($srcDir)) {
+            foreach (scandir($srcDir) ?: [] as $entry) {
+                if ($entry === '.' || $entry === '..' || $entry === 'Testing') {
+                    continue;
+                }
+                $path = $srcDir . '/' . $entry;
+                if (is_dir($path)) {
+                    $paths[] = $path;
+                }
+            }
+        }
+        if ($paths === []) {
+            $paths[] = $srcDir;
+        }
         $modulesDir = $this->basePath . '/modules';
 
         // Only Domain/ — avoids loading modules/*/Tests (PHPUnit) under --no-dev.

@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Gereq\Support;
 
 /**
- * Configurable admin URL path segment (default "admin").
+ * Configurable admin URL path (default "admin").
  *
  * Code and modules keep the canonical "/admin/…" convention; rewrite() maps
- * those paths to the configured base (e.g. ADMIN_PATH=panel → /panel/…).
+ * those paths to the configured base (e.g. ADMIN_PATH=panel → /panel/…,
+ * ADMIN_PATH=gereq-platform/admin → /gereq-platform/admin/…).
  */
 final class AdminPath
 {
     public const CANONICAL = 'admin';
+
+    /** Reserved first-segment names that must not host the admin UI. */
+    private const RESERVED = ['api', 'build', 'media', 'storage', 'design', 'brand', 'public', 'assets'];
 
     private static ?string $segment = null;
 
@@ -22,7 +26,8 @@ final class AdminPath
     }
 
     /**
-     * Single path segment only (no slashes), e.g. "admin" or "panel".
+     * Configured path without leading slash (one or more segments),
+     * e.g. "admin", "panel", or "gereq-platform/admin".
      */
     public static function segment(): string
     {
@@ -38,7 +43,7 @@ final class AdminPath
         return self::$segment;
     }
 
-    /** Root-absolute admin base, e.g. "/admin" or "/panel". */
+    /** Root-absolute admin base, e.g. "/admin" or "/gereq-platform/admin". */
     public static function base(): string
     {
         return '/' . self::segment();
@@ -95,18 +100,40 @@ final class AdminPath
         return $path === $base || str_starts_with($path, $base . '/');
     }
 
+    /**
+     * Product (KdeAco) Vue admin — always at /admin when platform admin is relocated.
+     * When ADMIN_PATH is still the canonical "admin", product and platform share that path
+     * (Vue takes over only after ADMIN_PATH moves).
+     */
+    public static function productMatches(string $path): bool
+    {
+        return $path === '/admin' || str_starts_with($path, '/admin/');
+    }
+
     public static function sanitize(string $raw): string
     {
         $raw = trim($raw, '/');
-        if ($raw === '' || str_contains($raw, '/') || preg_match('/^[a-zA-Z0-9_-]+$/', $raw) !== 1) {
+        if ($raw === '') {
             return self::CANONICAL;
         }
 
-        $reserved = ['api', 'build', 'media', 'storage', 'design', 'brand', 'public'];
-        if (in_array(strtolower($raw), $reserved, true)) {
+        $parts = explode('/', $raw);
+        foreach ($parts as $part) {
+            if ($part === '' || preg_match('/^[a-zA-Z0-9_-]+$/', $part) !== 1) {
+                return self::CANONICAL;
+            }
+        }
+
+        $first = strtolower($parts[0]);
+        if (in_array($first, self::RESERVED, true)) {
             return self::CANONICAL;
         }
 
-        return $raw;
+        // Keep /admin free for the product Vue SPA when relocating the platform admin.
+        if (count($parts) > 1 && $first === self::CANONICAL) {
+            return self::CANONICAL;
+        }
+
+        return implode('/', $parts);
     }
 }

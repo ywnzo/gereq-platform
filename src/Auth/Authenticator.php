@@ -219,15 +219,17 @@ final class Authenticator
 
     public function user(): ?User
     {
+        $request = $this->requestStack->getCurrentRequest();
+        if ($request === null || !$request->hasSession()) {
+            // Boot / debug / Twig may call this before Kernel pushes the request.
+            // Do not cache a miss — otherwise the rest of the request stays anonymous.
+            return null;
+        }
+
         if ($this->identityResolved) {
             return $this->user;
         }
         $this->identityResolved = true;
-
-        $request = $this->requestStack->getCurrentRequest();
-        if ($request === null || !$request->hasSession()) {
-            return null;
-        }
 
         $id = $request->getSession()->get(self::SESSION_KEY);
         if (is_string($id) && $id !== '') {

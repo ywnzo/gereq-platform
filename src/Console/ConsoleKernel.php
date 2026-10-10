@@ -31,6 +31,7 @@ use Gereq\Console\Command\UserCreateCommand;
 use Gereq\Support\AppVersion;
 use Gereq\Currency\Console\SyncRatesCommand;
 use Modules\CustomerUploads\Console\PurgeUploadsCommand;
+use Modules\Events\Console\ImportEventsCommand;
 use Modules\PartsCatalog\Console\SyncJamaCatalogCommand;
 use Modules\Payments\Console\ImapMatchCommand;
 use Modules\Portals\Console\SeedDemoPortalsCommand;
@@ -51,6 +52,9 @@ final class ConsoleKernel
         $console->setAutoExit(false);
 
         foreach ($this->commands() as $class) {
+            if (!class_exists($class)) {
+                continue;
+            }
             /** @var Command $command */
             $command = $this->container->get($class);
             $console->add($command);
@@ -86,6 +90,7 @@ final class ConsoleKernel
             EnvInitCommand::class,
             EnvValidateCommand::class,
             SyncRatesCommand::class,
+            ImportEventsCommand::class,
             SyncJamaCatalogCommand::class,
             ImportLaravelCommand::class,
             ImportSqliteCommand::class,

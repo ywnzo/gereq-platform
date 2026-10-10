@@ -23,17 +23,27 @@ final class QueueWorkCommand extends Command
         $output->writeln('GEREQ worker běží. Ctrl+C pro ukončení.');
 
         while (true) {
-            $job = $this->queue->pop();
+            try {
+                $job = $this->queue->pop();
+            } catch (\Throwable $e) {
+                $output->writeln('<error>Pop selhal: ' . $e->getMessage() . '</error>');
+                error_log('GEREQ queue:work pop failed: ' . $e->getMessage());
+                sleep(3);
+                continue;
+            }
+
             if ($job === null) {
                 sleep(1);
                 continue;
             }
 
+            $output->writeln('Zpracovávám: ' . $job::class);
             try {
                 $job->handle();
                 $output->writeln('Hotovo: ' . $job::class);
             } catch (\Throwable $e) {
                 $output->writeln('<error>Selhalo: ' . $e->getMessage() . '</error>');
+                error_log('GEREQ queue:work job failed: ' . $job::class . ' — ' . $e->getMessage());
             }
         }
     }

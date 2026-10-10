@@ -10,6 +10,7 @@ use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Brand\Branding;
+use Gereq\Cache\StoreFrontCache;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\I18n\LocaleCatalog;
@@ -38,6 +39,7 @@ final class SettingsController extends Controller
         private readonly TranslatorInterface $translator,
         private readonly Branding $branding,
         private readonly Dashboard $dashboard,
+        private readonly StoreFrontCache $storeFrontCache,
         private readonly string $basePath,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -124,10 +126,15 @@ final class SettingsController extends Controller
         $this->storeBrandUpload($request, 'brand_logo_file', 'brand.logo_url', 'logo');
         $this->storeBrandUpload($request, 'brand_favicon_file', 'brand.favicon_url', 'favicon');
 
+        $tab = (string) $request->request->get('settings_tab', '');
+        // Driver/TTL/enable changes must not leave stale public payloads around.
+        if ($tab === 'storefront') {
+            $this->storeFrontCache->flush();
+        }
+
         $this->auditor->log('settings.updated', 'settings', null);
         $this->flash('success', $this->translator->trans('settings.saved'));
 
-        $tab = (string) $request->request->get('settings_tab', '');
         $params = $tab !== '' ? ['tab' => $tab] : [];
 
         return $this->redirect('admin.settings.index', $params);
@@ -145,7 +152,14 @@ final class SettingsController extends Controller
             return;
         }
 
-        $mime = (string) ($uploaded->getMimeType() ?? '');
+        $mime = strtolower((string) ($uploaded->getMimeType() ?? ''));
+        $originalExt = strtolower((string) pathinfo($uploaded->getClientOriginalName(), PATHINFO_EXTENSION));
+        // SVG is rejected: served as image/svg+xml it can execute script when opened directly.
+        if ($originalExt === 'svg' || str_contains($mime, 'svg')) {
+            $this->flash('error', $this->translator->trans('settings.brand.upload_svg_blocked'));
+
+            return;
+        }
         $allowed = [
             'image/png', 'image/jpeg', 'image/webp', 'image/gif',
             'image/x-icon', 'image/vnd.microsoft.icon',
@@ -156,7 +170,7 @@ final class SettingsController extends Controller
             return;
         }
 
-        $ext = strtolower((string) ($uploaded->guessExtension() ?: pathinfo($uploaded->getClientOriginalName(), PATHINFO_EXTENSION) ?: 'png'));
+        $ext = strtolower((string) ($uploaded->guessExtension() ?: $originalExt ?: 'png'));
         if ($ext === 'jpeg') {
             $ext = 'jpg';
         }
@@ -204,12 +218,13 @@ final class SettingsController extends Controller
      */
     private function groupDefinitions(array $definitions): array
     {
-        $order = ['core', 'dashboard', 'brand', 'orders', 'shop', 'payments', 'cms', 'customer_uploads', 'reviews', 'calendar', 'fleet', 'other'];
+        $order = ['core', 'storefront', 'dashboard', 'brand', 'orders', 'shop', 'payments', 'cms', 'customer_uploads', 'reviews', 'calendar', 'fleet', 'other'];
         $groups = [];
         foreach ($definitions as $key => $definition) {
             $module = $definition['module'] ?? null;
             $groupId = match (true) {
                 str_starts_with($key, 'admin.dashboard.') => 'dashboard',
+                str_starts_with($key, 'storefront.') => 'storefront',
                 $module === null || in_array($module, ['core', 'app', 'admin'], true) => str_starts_with($key, 'brand.') ? 'brand' : 'core',
                 $module === 'orders' => 'orders',
                 $module === 'shop' => 'shop',

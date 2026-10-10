@@ -6,6 +6,7 @@ namespace Gereq\Http\Middleware;
 
 use Gereq\Config\Repository;
 use Gereq\Http\Session\SessionHandlerFactory;
+use Gereq\Media\Http\MediaFilePath;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -21,17 +22,20 @@ final class StartSessionMiddleware implements MiddlewareInterface
 
     public function process(Request $request, callable $next): Response
     {
-        $isApi = str_starts_with($request->getPathInfo(), '/api/');
+        $pathInfo = $request->getPathInfo();
+        $isApi = str_starts_with($pathInfo, '/api/');
         $cookieName = (string) $this->config->get('session.cookie', 'gereq_session');
+        // Vue product admin login must create a session without an existing cookie.
+        $needsFreshSession = str_starts_with($pathInfo, '/api/v1/admin/auth/');
 
         // Public/storefront API is token-based — skip session unless browser sent admin cookie
         // (so Developer API tester / same-origin fetch with credentials works).
-        if ($isApi && !$request->cookies->has($cookieName)) {
+        if ($isApi && !$needsFreshSession && !$request->cookies->has($cookieName)) {
             return $next($request);
         }
 
         // Public media files must stay cookie-free so browsers can cache images.
-        if ((bool) preg_match('#^/media/[^/]+/file$#', $request->getPathInfo())) {
+        if (MediaFilePath::matches($pathInfo) && !\Gereq\Support\AdminPath::matches($pathInfo)) {
             return $next($request);
         }
 

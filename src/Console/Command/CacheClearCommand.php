@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace Gereq\Console\Command;
 
 use Gereq\Cache\AppCache;
+use Gereq\Cache\StoreFrontCache;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'cache:clear', description: 'Clear cache (app, Twig, Doctrine metadata)')]
+#[AsCommand(name: 'cache:clear', description: 'Clear cache (app, storefront, Twig, Doctrine metadata)')]
 final class CacheClearCommand extends Command
 {
     public function __construct(
         private readonly string $basePath,
         private readonly AppCache $cache,
+        private readonly StoreFrontCache $storeFrontCache,
     ) {
         parent::__construct();
     }
@@ -23,16 +25,17 @@ final class CacheClearCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->cache->flush();
+        $this->storeFrontCache->flush();
         $this->wipe($this->basePath . '/storage/cache');
         // Keep directory structure for next writes
-        foreach (['data', 'twig', 'doctrine', 'rate'] as $subdir) {
+        foreach (['data', 'storefront', 'twig', 'doctrine', 'rate'] as $subdir) {
             $path = $this->basePath . '/storage/cache/' . $subdir;
             if (!is_dir($path)) {
                 mkdir($path, 0777, true);
             }
             @chmod($path, 0777);
         }
-        $output->writeln('Cache vymazána (app + twig + doctrine + filesystem).');
+        $output->writeln('Cache vymazána (app + storefront + twig + doctrine + filesystem).');
 
         return Command::SUCCESS;
     }

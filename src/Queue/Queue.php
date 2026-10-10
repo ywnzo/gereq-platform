@@ -46,8 +46,16 @@ final class Queue
         }
 
         $job = $this->unserializeJob($payload);
+        if ($job instanceof Job) {
+            return $job;
+        }
 
-        return $job instanceof Job ? $job : null;
+        // Payload už je z fronty pryč — zaloguj, ať joby „mizí“ tiše.
+        $preview = substr($payload, 0, 180);
+        error_log('GEREQ queue: nelze unserialize job payload: ' . $preview);
+        $this->storeFailedPayload($payload, 'unserialize_failed');
+
+        return null;
     }
 
     private function unserializeJob(string $payload): ?Job
@@ -56,13 +64,23 @@ final class Queue
             return null;
         }
         $class = $m[1];
-        if (!is_a($class, Job::class, true)) {
+        if (!class_exists($class) || !is_a($class, Job::class, true)) {
             return null;
         }
 
         $job = @unserialize($payload, ['allowed_classes' => [$class]]);
 
         return $job instanceof Job ? $job : null;
+    }
+
+    private function storeFailedPayload(string $payload, string $reason): void
+    {
+        $dir = $this->basePath . '/storage/tmp/queue-failed';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        $file = $dir . '/' . date('Ymd-His') . '_' . bin2hex(random_bytes(4)) . '.job';
+        @file_put_contents($file, $reason . "\n" . $payload);
     }
 
     private function pushFile(string $payload): void

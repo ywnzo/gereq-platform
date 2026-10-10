@@ -23,13 +23,12 @@ services:
     volumes:
       - .:/var/www/html:z
       - ./docker/php/zz-www.conf:/usr/local/etc/php-fpm.d/zz-www.conf:ro,z
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/gereq.ini:ro,z
     env_file:
       - .env
     environment:
-      APP_URL: ${APP_URL:-http://127.0.0.1:8080}
+      # APP_URL / FRONTEND_ORIGIN come from .env (not Makefile loopback).
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-*}
-      # storefront CORS (optional). Admin assets are served from /build via Bun.
-      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://127.0.0.1:5173,http://localhost:5173}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       SESSION_DRIVER: redis

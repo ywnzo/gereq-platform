@@ -106,6 +106,10 @@ final class NotificationsRegistrar
         $pub = PublicMemberNotificationsController::class;
         $this->router->get('/api/public/notifications/features', [$pub, 'features'])
             ->name('api.public.notifications.features');
+        $this->router->post('/api/public/notifications/stream-token', [$pub, 'streamToken'])
+            ->name('api.public.notifications.stream_token');
+        $this->router->get('/api/public/notifications/stream', [$pub, 'stream'])
+            ->name('api.public.notifications.stream');
         $this->router->get('/api/public/notifications', [$pub, 'index'])
             ->name('api.public.notifications.index');
         $this->router->post('/api/public/notifications/read-all', [$pub, 'markAllRead'])
@@ -116,6 +120,8 @@ final class NotificationsRegistrar
             [
             '/api/public/notifications/features',
             '/api/public/notifications',
+            '/api/public/notifications/stream-token',
+            '/api/public/notifications/stream',
             '/api/public/notifications/read-all',
             '/api/public/notifications/{id}/read',
             ] as $path

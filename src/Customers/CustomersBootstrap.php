@@ -16,10 +16,14 @@ use Gereq\Module\ModuleContext;
 use Gereq\Module\ModuleInterface;
 use Gereq\Publish\Adapter\CustomerPublishAdapter;
 use Gereq\Customers\Application\Widgets\CustomerCreateHeroWidget;
+use Gereq\Customers\Application\Widgets\CustomerErasureWidget;
 use Gereq\Customers\Application\Widgets\CustomerGrowthChartWidget;
 use Gereq\Customers\Application\Widgets\CustomerStatsWidget;
 use Gereq\Customers\Application\Widgets\CustomersShortcutWidget;
 use Gereq\Customers\Application\CustomersProvider;
+use Gereq\Customers\Application\CustomerCounters;
+use Gereq\Event\EventEnvelope;
+use Gereq\Notifications\Application\NotifierBridge;
 use Gereq\Customers\Domain\Customer;
 use Gereq\Customers\Domain\CustomerAddress;
 use Gereq\Customers\Domain\CustomerContact;
@@ -165,6 +169,8 @@ final class CustomersBootstrap implements ModuleInterface
             $routes->post('/logout', [StoreAuthApiController::class, 'logout'])->name('api.store.auth.logout');
             $routes->get('/me', [StoreAuthApiController::class, 'me'])->name('api.store.auth.me');
             $routes->patch('/me', [StoreAuthApiController::class, 'update'])->name('api.store.auth.me.update');
+            $routes->post('/me/erasure', [StoreAuthApiController::class, 'erasure'])->name('api.store.auth.me.erasure');
+            $routes->delete('/me', [StoreAuthApiController::class, 'destroy'])->name('api.store.auth.me.destroy');
         });
 
         $v = $context->validation();
@@ -173,6 +179,10 @@ final class CustomersBootstrap implements ModuleInterface
             'password' => 'required|min:8|max:120',
             'name' => 'nullable|max:180',
             'phone' => 'nullable|phone|max:40',
+            'region' => 'nullable|max:80',
+            'locality' => 'nullable|max:180',
+            'newsletter' => 'nullable|boolean',
+            'categories' => 'nullable',
         ]);
         $v->ruleset('customers.store.soft_register', [
             'email' => 'required|email|max:190',
@@ -183,6 +193,7 @@ final class CustomersBootstrap implements ModuleInterface
             'email' => 'required|email|max:190',
             'password' => 'required|min:8|max:120',
             'name' => 'nullable|max:180',
+            'completion_token' => 'required|string|min:20|max:800',
         ]);
         $v->ruleset('customers.store.login', [
             'email' => 'required|email|max:190',
@@ -193,12 +204,18 @@ final class CustomersBootstrap implements ModuleInterface
             'phone' => 'nullable|phone|max:40',
             'current_password' => 'nullable|min:1|max:120',
             'password' => 'nullable|min:8|max:120',
+            'region' => 'nullable|max:80',
+            'locality' => 'nullable|max:180',
+            'newsletter' => 'nullable|boolean',
+            'categories' => 'nullable',
         ]);
 
         foreach ([
             'customer.soft_registered' => 'Soft registrace zákazníka',
             'customer.registered' => 'Registrace zákazníka',
             'customer.registration_completed' => 'Dokončení soft registrace',
+            'customer.erasure_requested' => 'Žádost o výmaz osobních údajů',
+            'customer.store_deleted' => 'Smazání storefront účtu',
         ] as $type => $desc) {
             $context->platformEvents()->register(
                 (new EventDefinition($type, $this->id()))->description($desc)->webhookEnabled(true)
@@ -208,6 +225,12 @@ final class CustomersBootstrap implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $erasureCount = 0;
+        try {
+            $erasureCount = $context->get(CustomerCounters::class)->erasure();
+        } catch (\Throwable) {
+        }
+        $erasureBadge = $erasureCount > 0 ? (string) $erasureCount : null;
         $context->menu()->add(new MenuItem(
             id: 'customers',
             label: 'nav.customers',
@@ -216,6 +239,7 @@ final class CustomersBootstrap implements ModuleInterface
             permission: 'customers.view',
             order: 20,
             group: 'Hlavní',
+            badge: $erasureBadge,
         ));
         $context->menu()->add(new MenuItem(
             id: 'customers.create',
@@ -226,11 +250,21 @@ final class CustomersBootstrap implements ModuleInterface
             order: 21,
             hidden: true,
         ));
+        $context->menu()->add(new MenuItem(
+            id: 'customers.erasure',
+            label: 'nav.customers.erasure',
+            url: '/admin/customers?erasure=1',
+            permission: 'customers.view',
+            parent: 'customers',
+            order: 22,
+            badge: $erasureBadge,
+        ));
 
         $twig = $context->get(\Twig\Environment::class);
         $translator = $context->get(\Symfony\Contracts\Translation\TranslatorInterface::class);
         $router = $context->get(\Gereq\Http\Router::class);
         $context->dashboard()->addWidget($context->get(CustomerStatsWidget::class));
+        $context->dashboard()->addWidget($context->get(CustomerErasureWidget::class));
         $context->dashboard()->addWidget($context->get(CustomerGrowthChartWidget::class));
         $context->dashboard()->addWidget(new CustomerCreateHeroWidget($twig, $translator, $router));
         $context->dashboard()->addWidget(new CustomersShortcutWidget($twig, $translator, $router));
@@ -242,6 +276,14 @@ final class CustomersBootstrap implements ModuleInterface
             icon: 'users',
             permission: 'customers.view',
             keywords: ['kontakty', 'firmy', 'customers'],
+        ));
+        $context->commandPalette()->add(new PaletteCommand(
+            id: 'customers.erasure',
+            label: 'palette.customers.erasure',
+            url: '/admin/customers?erasure=1',
+            icon: 'users',
+            permission: 'customers.view',
+            keywords: ['gdpr', 'vymaz', 'smazani', 'erasure', 'soukromi'],
         ));
         $context->commandPalette()->add(new PaletteCommand(
             id: 'customers.create',
@@ -311,6 +353,31 @@ final class CustomersBootstrap implements ModuleInterface
                 }
             },
             HookPriority::EARLY,
+        );
+
+        $context->hooks()->addAction(
+            'platform.event.dispatched',
+            static function (mixed $envelope) use ($context): void {
+                if (!$envelope instanceof EventEnvelope || $envelope->type !== 'customer.erasure_requested') {
+                    return;
+                }
+                $id = (string) ($envelope->resource['id'] ?? $envelope->data['customer_id'] ?? '');
+                $email = (string) ($envelope->data['email'] ?? '');
+                $name = (string) ($envelope->data['name'] ?? '');
+                $who = $name !== '' ? $name . ($email !== '' ? ' (' . $email . ')' : '') : $email;
+                $translator = $context->get(TranslatorInterface::class);
+                $context->get(NotifierBridge::class)->notifyAdmins(
+                    'customer.erasure_requested',
+                    $translator->trans('customers.erasure.notify.title'),
+                    $translator->trans('customers.erasure.notify.body', ['%who%' => $who !== '' ? $who : $id]),
+                    [
+                        'resource' => $envelope->resource,
+                        'event_id' => $envelope->id,
+                        'url' => $id !== '' ? '/admin/customers/' . $id : '/admin/customers?erasure=1',
+                    ],
+                );
+            },
+            HookPriority::NORMAL,
         );
     }
 

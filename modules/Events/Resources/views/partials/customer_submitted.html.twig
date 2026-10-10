@@ -1,0 +1,29 @@
+{% if canManage|default(false) and customer is defined %}
+    <p class="muted">{{ 'events.trust.lead'|trans }}</p>
+    {% if trusted %}
+        <form method="post" action="{{ url('admin.events.organizers.untrust', {customerId: customer.id()}) }}" style="margin-bottom:1rem">
+            {{ csrf_field()|raw }}
+            <button class="btn btn--ghost" type="submit">{{ 'events.trust.revoke'|trans }}</button>
+        </form>
+    {% else %}
+        <form method="post" action="{{ url('admin.events.organizers.trust', {customerId: customer.id()}) }}" style="margin-bottom:1rem">
+            {{ csrf_field()|raw }}
+            <button class="btn btn--primary" type="submit">{{ 'events.trust.grant'|trans }}</button>
+        </form>
+    {% endif %}
+{% endif %}
+{% if items is empty %}
+    <p class="muted">{{ 'events.submitted.customer_empty'|trans }}</p>
+{% else %}
+    <ul class="customer-list">
+        {% for event in items %}
+            <li class="customer-list__item">
+                <div>
+                    <a href="{{ url('admin.events.show', {id: event.id()}) }}"><strong>{{ event.title() }}</strong></a>
+                    <p class="muted">{{ event.place() }} · {{ event.startsAt().format('j. n. Y') }} · {{ event.createdAt().format('j. n. Y H:i') }}</p>
+                </div>
+                <span class="muted">{{ ('events.status.' ~ event.status())|trans }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

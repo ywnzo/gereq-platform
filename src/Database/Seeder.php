@@ -68,7 +68,7 @@ final class Seeder
         }
 
         $forumProfile = strtolower((string) env_value('DEMO_PROFILE', '')) === 'forum';
-        if (!$forumProfile) {
+        if (!$forumProfile && $this->modules->isEnabled('listings')) {
             $brokers = $this->seedBrokers();
             $samples = array_merge($this->coreListingSamples(), $this->moravianSilesianListingSamples());
             $this->seedCities($samples);
@@ -290,12 +290,14 @@ final class Seeder
 
     private function seedModules(): void
     {
-        // Default package when DEMO_PROFILE is unset: RealEstates.
+        // KdeAco: jen portálové moduly (ne RealEstates balík).
         $defaultEnabled = [
-            'cms', 'listings',
-            'crm', 'calendar', 'viewings', 'documents',
-            'reviews', 'newsletter', 'portals', 'translate',
-            'emailing',
+            'cms',
+            'newsletter',
+            'webplus',
+            'webplus_ai',
+            'events',
+            'authorization',
         ];
         $profile = strtolower((string) env_value('DEMO_PROFILE', ''));
         if ($profile === 'forum') {

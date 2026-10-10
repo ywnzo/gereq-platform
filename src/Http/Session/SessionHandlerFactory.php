@@ -38,7 +38,7 @@ final class SessionHandlerFactory
         return new NativeFileSessionHandler($path);
     }
 
-    private function redis(): RedisSessionHandler
+    private function redis(): \SessionHandlerInterface
     {
         if (!class_exists(\Redis::class)) {
             throw new \RuntimeException('SESSION_DRIVER=redis vyžaduje PHP rozšíření redis.');
@@ -48,6 +48,7 @@ final class SessionHandlerFactory
         $port = (int) $this->config->get('session.redis.port', 6379);
         $password = $this->config->get('session.redis.password');
         $ttl = max(60, (int) $this->config->get('session.lifetime', 120) * 60);
+        $prefix = (string) $this->config->get('session.redis.prefix', 'gereq:session:');
 
         $redis = new \Redis();
         if (!$redis->connect($host, $port, 2.0)) {
@@ -58,9 +59,13 @@ final class SessionHandlerFactory
             $redis->auth($password);
         }
 
-        return new RedisSessionHandler($redis, [
-            'prefix' => (string) $this->config->get('session.redis.prefix', 'gereq:session:'),
+        $handler = new RedisSessionHandler($redis, [
+            'prefix' => $prefix,
             'ttl' => $ttl,
         ]);
+
+        // Symfony RedisSessionHandler has no locking — wrap so concurrent AJAX
+        // cannot clobber CSRF / auth session keys (HTTP 419 on publish).
+        return new LockingSessionHandler($handler, $redis, $prefix . 'lock:');
     }
 }

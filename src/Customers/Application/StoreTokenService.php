@@ -67,9 +67,12 @@ final class StoreTokenService
 
     private function key(): string
     {
-        $key = (string) $this->config->get('app.key', '');
+        $key = trim((string) $this->config->get('app.key', ''));
+        if ($key === '') {
+            throw new \RuntimeException('APP_KEY is required for store access tokens.');
+        }
 
-        return $key !== '' ? $key : 'gereq-store-token';
+        return $key;
     }
 
     private function b64(string $raw): string

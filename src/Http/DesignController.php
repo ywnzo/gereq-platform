@@ -838,7 +838,7 @@ PHP,
                         <<<'PHP'
 ui()->partial('ui/breadcrumbs', [
     'items' => [
-        ['label' => 'Admin', 'url' => '/admin'],
+        ['label' => 'Admin', 'url' => \Gereq\Support\AdminPath::base()],
         ['label' => 'Users'],
     ],
 ]);

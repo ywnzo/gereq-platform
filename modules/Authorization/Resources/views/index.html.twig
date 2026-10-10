@@ -1,0 +1,53 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell">
+<header class="page-header">
+    <div>
+        <h1>{{ 'authorization.title'|trans }}</h1>
+        <p class="muted">{{ 'authorization.lead'|trans }}</p>
+    </div>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.modules.index') }}#plugins">{{ 'authorization.plugins'|trans }}</a>
+    </div>
+</header>
+
+<div class="table-wrap" data-table>
+<table class="table">
+    <thead>
+        <tr>
+            <th>{{ 'authorization.col.provider'|trans }}</th>
+            <th>{{ 'authorization.col.plugin'|trans }}</th>
+            <th>{{ 'authorization.col.status'|trans }}</th>
+            <th>{{ 'authorization.col.callback'|trans }}</th>
+            <th class="table__actions-head"></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+        <tr>
+            <td><strong>{{ row.label }}</strong> <span class="muted">{{ row.id }}</span></td>
+            <td><code>{{ row.plugin }}</code></td>
+            <td>
+                {% if row.configured %}
+                    <span class="badge badge--ok">{{ 'authorization.status.ready'|trans }}</span>
+                {% elseif row.enabled %}
+                    <span class="badge badge--warn">{{ 'authorization.status.needs_keys'|trans }}</span>
+                {% else %}
+                    <span class="badge badge--muted">{{ 'authorization.status.off'|trans }}</span>
+                {% endif %}
+            </td>
+            <td class="is-mute"><code>{{ row.callback }}</code></td>
+            <td>
+                <a class="btn btn--ghost btn--sm" href="{{ url('admin.modules.show', {id: row.plugin}) }}#settings">{{ 'authorization.settings'|trans }}</a>
+            </td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="5" class="is-mute">{{ 'authorization.empty'|trans }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+{% endblock %}

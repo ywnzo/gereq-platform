@@ -7,7 +7,7 @@ namespace Gereq\Customers\Application;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Auth\Authenticator;
 use Gereq\Customers\Domain\Customer;
-use Modules\Listings\Application\BrokerIdentity;
+use Gereq\Customers\Application\CustomerScope;
 
 /** Request-scoped counters for dashboard widgets (avoids duplicate COUNT queries). */
 final class CustomerCounters
@@ -16,10 +16,12 @@ final class CustomerCounters
 
     private ?int $active = null;
 
+    private ?int $erasure = null;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly Authenticator $auth,
-        private readonly BrokerIdentity $brokerIdentity,
+        private readonly CustomerScope $customerScope,
     ) {
     }
 
@@ -32,7 +34,7 @@ final class CustomerCounters
         $qb = $this->em->createQueryBuilder()
             ->select('COUNT(c.id)')
             ->from(Customer::class, 'c');
-        $this->brokerIdentity->applyCustomerScope($qb, 'c', $this->auth->user());
+        $this->customerScope->applyCustomerScope($qb, 'c', $this->auth->user());
 
         return $this->total = (int) $qb->getQuery()->getSingleScalarResult();
     }
@@ -48,8 +50,23 @@ final class CustomerCounters
             ->from(Customer::class, 'c')
             ->where('c.status = :status')
             ->setParameter('status', 'active');
-        $this->brokerIdentity->applyCustomerScope($qb, 'c', $this->auth->user());
+        $this->customerScope->applyCustomerScope($qb, 'c', $this->auth->user());
 
         return $this->active = (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    public function erasure(): int
+    {
+        if ($this->erasure !== null) {
+            return $this->erasure;
+        }
+
+        $qb = $this->em->createQueryBuilder()
+            ->select('COUNT(c.id)')
+            ->from(Customer::class, 'c')
+            ->where('c.erasureRequestedAt IS NOT NULL');
+        $this->customerScope->applyCustomerScope($qb, 'c', $this->auth->user());
+
+        return $this->erasure = (int) $qb->getQuery()->getSingleScalarResult();
     }
 }

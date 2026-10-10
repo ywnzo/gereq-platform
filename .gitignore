@@ -8,6 +8,10 @@
 /vendor/
 /node_modules/
 /public/build/
+/public/storefront/
+/public/kdeaco-admin/
+/public/dev-ca.crt
+/public/dev-ca.cer
 /public/hot
 /public/brand/client/
 /storage/logs/*

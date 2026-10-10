@@ -41,12 +41,13 @@ final class PublicAresController extends Controller
         }
 
         $q = trim((string) $request->query->get('q', ''));
+        $city = trim((string) $request->query->get('city', ''));
         $limit = (int) $request->query->get('limit', 8);
 
         try {
             return $this->cors(ApiResponse::collection(
-                $this->ares->searchAddresses($q, $limit),
-                ['q' => $q],
+                $this->ares->searchAddresses($q, $limit, $city !== '' ? $city : null),
+                ['q' => $q, 'city' => $city !== '' ? $city : null],
             ));
         } catch (AresException $e) {
             $status = $e->status();

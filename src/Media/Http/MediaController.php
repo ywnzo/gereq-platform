@@ -736,8 +736,8 @@ final class MediaController extends Controller
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
-        // Public route may only serve images (listings/CMS/city photos). Documents stay behind auth.
-        if (!str_starts_with($asset->mime(), 'image/')) {
+        // Public route may only serve images marked public. Documents / private assets stay behind auth.
+        if (!$asset->isPublic() || !str_starts_with($asset->mime(), 'image/')) {
             $this->abort(404, $this->translator->trans('media.error.not_found'));
         }
 
@@ -756,55 +756,31 @@ final class MediaController extends Controller
 
     private function serveFile(MediaAsset $asset, Request $request, bool $public): Response
     {
+        $this->releaseSession($request);
+
         $absolute = $this->absolutePath($asset->path());
         if ($absolute === null || !is_file($absolute)) {
             $this->abort(404, $this->translator->trans('media.error.file_missing'));
         }
 
-        if ($public && str_starts_with($asset->mime(), 'image/')) {
+        if (str_starts_with($asset->mime(), 'image/')) {
             $resized = $this->maybeServeResized($asset, $absolute, $request);
             if ($resized !== null) {
                 return $resized;
             }
         }
 
-        $response = new BinaryFileResponse($absolute);
-        $response->headers->set('Content-Type', $asset->mime());
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->setAutoLastModified();
-        $response->setAutoEtag();
+        $filename = str_starts_with($asset->mime(), 'image/')
+            ? null
+            : $this->safeDownloadName($asset->title(), $asset->path());
 
-        if ($public || str_starts_with($asset->mime(), 'image/')) {
-            // Default 30d (immutable by asset id); override via cache.media_ttl.
-            $ttl = max(60, (int) $this->config->get('cache.media_ttl', 2592000));
-            $response->setPublic();
-            $response->setMaxAge($ttl);
-            $response->headers->set(
-                'Cache-Control',
-                sprintf('public, max-age=%d, immutable, stale-while-revalidate=%d', $ttl, min(86400, $ttl)),
-            );
-            if ($response->isNotModified($request)) {
-                return $response;
-            }
-        } else {
-            $response->setPrivate();
-            $response->headers->set('Cache-Control', 'private, max-age=300');
-        }
-
-        // Content-Disposition not needed for inline images; UTF-8 names used to break responses.
-        if (!str_starts_with($asset->mime(), 'image/')) {
-            $filename = $this->safeDownloadName($asset->title(), $asset->path());
-            $disposition = $response->headers->makeDisposition(
-                ResponseHeaderBag::DISPOSITION_INLINE,
-                $filename,
-            );
-            $response->headers->set('Content-Disposition', $disposition);
-        }
-
-        // Apply Range / Content-Length before Kernel post-processing so video players can seek.
-        $response->prepare($request);
-
-        return $response;
+        return $this->binaryFile(
+            $request,
+            $absolute,
+            $asset->mime(),
+            $public || str_starts_with($asset->mime(), 'image/'),
+            $filename,
+        );
     }
 
     /**
@@ -868,24 +844,91 @@ final class MediaController extends Controller
             default => 'image/png',
         };
 
-        $response = new BinaryFileResponse($cachePath);
+        $response = $this->binaryFile($request, $cachePath, $mime, public: true);
+        $response->headers->set('Vary', 'Accept');
+
+        return $response;
+    }
+
+    private function binaryFile(
+        Request $request,
+        string $absolute,
+        string $mime,
+        bool $public,
+        ?string $filename = null,
+    ): Response {
+        $response = new BinaryFileResponse($absolute);
         $response->headers->set('Content-Type', $mime);
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('Vary', 'Accept');
         $response->setAutoLastModified();
         $response->setAutoEtag();
-        $ttl = max(60, (int) $this->config->get('cache.media_ttl', 2592000));
-        $response->setPublic();
-        $response->setMaxAge($ttl);
-        $response->headers->set(
-            'Cache-Control',
-            sprintf('public, max-age=%d, immutable, stale-while-revalidate=%d', $ttl, min(86400, $ttl)),
-        );
+
+        if ($public) {
+            $ttl = max(60, (int) $this->config->get('cache.media_ttl', 2592000));
+            $response->setPublic();
+            $response->setMaxAge($ttl);
+            $response->headers->set(
+                'Cache-Control',
+                sprintf('public, max-age=%d, immutable, stale-while-revalidate=%d', $ttl, min(86400, $ttl)),
+            );
+        } else {
+            $response->setPrivate();
+            $response->headers->set('Cache-Control', 'private, max-age=300');
+        }
+
+        if ($filename !== null && $filename !== '') {
+            $disposition = $response->headers->makeDisposition(
+                ResponseHeaderBag::DISPOSITION_INLINE,
+                $filename,
+            );
+            $response->headers->set('Content-Disposition', $disposition);
+        }
+
         if ($response->isNotModified($request)) {
             return $response;
         }
 
+        $accel = $this->accelRedirectPath($absolute);
+        if ($accel !== null) {
+            $light = new Response('', $response->getStatusCode());
+            foreach (['Content-Type', 'Cache-Control', 'ETag', 'Last-Modified', 'X-Content-Type-Options', 'Content-Disposition', 'Vary'] as $header) {
+                $value = $response->headers->get($header);
+                if (is_string($value) && $value !== '') {
+                    $light->headers->set($header, $value);
+                }
+            }
+            $light->headers->set('X-Accel-Redirect', $accel);
+
+            return $light;
+        }
+
+        $response->prepare($request);
+
         return $response;
+    }
+
+    private function accelRedirectPath(string $absolute): ?string
+    {
+        $software = strtolower((string) ($_SERVER['SERVER_SOFTWARE'] ?? ''));
+        if (!str_contains($software, 'nginx')) {
+            return null;
+        }
+
+        $map = [
+            '/internal-media/' => $this->basePath . '/' . trim((string) $this->config->get('files.local_path', 'storage/uploads'), '/'),
+            '/internal-media-cache/' => $this->basePath . '/storage/cache/media',
+        ];
+        foreach ($map as $prefix => $root) {
+            $real = realpath($root);
+            if ($real === false || !str_starts_with($absolute, $real . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+            $relative = str_replace('\\', '/', substr($absolute, strlen($real) + 1));
+
+            return $prefix . $relative;
+        }
+
+        return null;
     }
 
     private function safeDownloadName(string $title, string $path): string
@@ -955,9 +998,11 @@ final class MediaController extends Controller
                 'is_pdf' => $mime === 'application/pdf',
                 'is_text' => $this->isTextPreviewMime($mime),
                 'thumb' => $asset->isImage()
-                    ? $this->router->url('admin.media.file', ['id' => $asset->id()])
+                    ? $this->router->url('media.public.file', ['id' => $asset->id(), 'w' => 320])
                     : null,
-                'file_url' => $this->router->url('admin.media.file', ['id' => $asset->id()]),
+                'file_url' => $asset->isImage()
+                    ? $this->router->url('media.public.file', ['id' => $asset->id()])
+                    : $this->router->url('admin.media.file', ['id' => $asset->id()]),
                 'alt' => $asset->alt(),
                 'folder_id' => $asset->folderId(),
                 'dimensions' => $dims,
@@ -1044,6 +1089,17 @@ final class MediaController extends Controller
             || $mime === 'application/json'
             || $mime === 'text/markdown'
             || $mime === 'text/x-markdown';
+    }
+
+    private function releaseSession(Request $request): void
+    {
+        if (!$request->hasSession()) {
+            return;
+        }
+        $session = $request->getSession();
+        if ($session->isStarted()) {
+            $session->save();
+        }
     }
 
     private function find(string $id): ?MediaAsset

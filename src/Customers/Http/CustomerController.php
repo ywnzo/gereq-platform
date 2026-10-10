@@ -27,7 +27,7 @@ use Gereq\Customers\Domain\CustomerNote;
 use Gereq\Customers\Domain\Events\CustomerArchived;
 use Gereq\Customers\Domain\Events\CustomerRestored;
 use Gereq\Customers\Domain\Events\CustomerUpdated;
-use Modules\Listings\Application\BrokerIdentity;
+use Gereq\Customers\Application\CustomerScope;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -52,7 +52,7 @@ final class CustomerController extends Controller
         private readonly HtmlSanitizer $html,
         private readonly ProductionFreeze $freeze,
         private readonly FileManager $files,
-        private readonly BrokerIdentity $brokerIdentity,
+        private readonly CustomerScope $customerScope,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -85,18 +85,23 @@ final class CustomerController extends Controller
     {
         $list = \Gereq\Http\ListQuery::fromRequest(
             $request,
-            sortable: ['name', 'email', 'company', 'status', 'createdAt'],
-            defaultSort: 'name',
-            filterKeys: ['status'],
+            sortable: ['name', 'email', 'company', 'status', 'createdAt', 'erasureRequestedAt'],
+            defaultSort: (string) $request->query->get('erasure') === '1' ? 'erasureRequestedAt' : 'name',
+            defaultDir: (string) $request->query->get('erasure') === '1' ? 'desc' : 'asc',
+            filterKeys: ['status', 'erasure'],
         );
         $status = $list->filter('status');
+        $erasure = $list->filter('erasure');
 
         $qb = $this->em->getRepository(Customer::class)->createQueryBuilder('c');
         $list->applySearch($qb, 'c', ['name', 'email', 'company', 'phone']);
         if (in_array($status, ['active', 'inactive', 'lead', 'archived'], true)) {
             $qb->andWhere('c.status = :status')->setParameter('status', $status);
         }
-        $this->brokerIdentity->applyCustomerScope($qb, 'c', $this->auth->user());
+        if ($erasure === '1') {
+            $qb->andWhere('c.erasureRequestedAt IS NOT NULL');
+        }
+        $this->customerScope->applyCustomerScope($qb, 'c', $this->auth->user());
 
         $deleteKeys = $this->freeze->pendingDeleteKeys('customers');
         if ($deleteKeys !== []) {
@@ -112,6 +117,7 @@ final class CustomerController extends Controller
             'pageTitle' => $this->translator->trans('customers.title'),
             'items' => $items,
             'status' => $status,
+            'erasure' => $erasure,
         ]));
     }
 
@@ -576,7 +582,7 @@ final class CustomerController extends Controller
             return null;
         }
 
-        $ids = $this->brokerIdentity->scopedCustomerIds($this->auth->user());
+        $ids = $this->customerScope->scopedCustomerIds($this->auth->user());
         if ($ids !== null && !in_array($customer->id(), $ids, true)) {
             return null;
         }

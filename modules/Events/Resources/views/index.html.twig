@@ -1,0 +1,195 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+{% set pageIds = items|map(i => i.id()) %}
+{% set canBulk = user.can('events.manage') %}
+{% set filterQuery = { status: status, region: region, spotlight: spotlight } %}
+{% set colCount = canBulk ? 11 : 10 %}
+<div
+    class="list-shell"
+    x-data="dataTable"
+    data-table-id="kdeaco-events"
+    data-actions-default="1"
+    data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
+    data-bulk-delete-confirm="{{ 'events.bulk.confirm_delete'|trans|e('html_attr') }}"
+>
+<header class="page-header">
+    <h1>{{ 'events.title'|trans }}</h1>
+    <div class="actions">
+        {% if user.can('events.manage') %}
+            <a class="btn btn--ghost" href="{{ url('admin.events.feeds') }}">{{ 'events.feeds.title'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.events.categories') }}">{{ 'events.categories.title'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.events.regions') }}">{{ 'events.regions.title'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.events.messages') }}">{{ 'events.contacts.title'|trans }}</a>
+            <a class="btn btn--primary" href="{{ url('admin.events.create') }}">{{ icon('plus') }} {{ 'events.new'|trans }}</a>
+        {% else %}
+            <a class="btn btn--ghost" href="{{ url('admin.events.feeds') }}">{{ 'events.feeds.title'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.events.categories') }}">{{ 'events.categories.title'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.events.regions') }}">{{ 'events.regions.title'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.events.messages') }}">{{ 'events.contacts.title'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="toolbar--table">
+    <form class="toolbar" method="get">
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'events.search'|trans }}">
+        <select name="status" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'events.all_statuses'|trans }}</option>
+            {% for s in statuses %}
+                <option value="{{ s }}" {{ status == s ? 'selected' : '' }}>{{ ('events.status.' ~ s)|trans }}</option>
+            {% endfor %}
+        </select>
+        <select name="region" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'events.all_regions'|trans }}</option>
+            {% for r in regions %}
+                <option value="{{ r }}" {{ region == r ? 'selected' : '' }}>{{ r }}</option>
+            {% endfor %}
+        </select>
+        <select name="spotlight" class="input" onchange="this.form.submit()">
+            <option value="">{{ 'events.all_spotlights'|trans }}</option>
+            <option value="week" {{ spotlight == 'week' ? 'selected' : '' }}>{{ 'events.spotlight.week'|trans }}</option>
+            <option value="month" {{ spotlight == 'month' ? 'selected' : '' }}>{{ 'events.spotlight.month'|trans }}</option>
+        </select>
+    </form>
+    <div class="toolbar__toggles" role="group" aria-label="{{ 'events.view.label'|trans }}">
+        <button
+            type="button"
+            class="toolbar__toggle"
+            :class="{ 'is-on': $store.eventsList.view === 'table' }"
+            @click="$store.eventsList.setView('table')"
+        >
+            {{ icon('list') }} {{ 'events.view.table'|trans }}
+        </button>
+        <button
+            type="button"
+            class="toolbar__toggle"
+            :class="{ 'is-on': $store.eventsList.view === 'cities' }"
+            @click="$store.eventsList.setView('cities')"
+        >
+            {{ icon('building') }} {{ 'events.view.cities'|trans }}
+        </button>
+    </div>
+</div>
+
+{% if canBulk and items is not empty %}
+    <form
+        class="bulk-bar"
+        method="post"
+        action="{{ url('admin.events.bulk') }}"
+        x-show="selectedCount > 0"
+        x-cloak
+        @submit="confirmBulk"
+    >
+        {{ csrf_field()|raw }}
+        <input type="hidden" name="confirmed" value="1">
+        <template x-for="id in selected" :key="id">
+            <input type="hidden" name="ids[]" :value="id">
+        </template>
+        <div class="bulk-bar__meta">
+            <strong x-text="selectedCount"></strong>
+            <span>{{ 'events.bulk.selected'|trans }}</span>
+            <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'events.bulk.clear'|trans }}</button>
+        </div>
+        <div class="bulk-bar__actions">
+            <select class="input" name="action" x-model="bulkAction" required>
+                <option value="">{{ 'events.bulk.choose'|trans }}</option>
+                <option value="publish">{{ 'events.bulk.action.publish'|trans }}</option>
+                <option value="archive">{{ 'events.bulk.action.archive'|trans }}</option>
+                <option value="delete">{{ 'events.bulk.action.delete'|trans }}</option>
+            </select>
+            <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'events.bulk.apply'|trans }}</button>
+        </div>
+    </form>
+{% endif %}
+
+<div class="table-wrap" data-table x-show="$store.eventsList.view === 'table'" x-cloak>
+<table class="table">
+    <thead><tr>
+{% if canBulk %}
+    <th class="table__check">
+        <label class="table-check">
+            <input type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected">
+            <span class="sr-only">{{ 'events.bulk.select_all'|trans }}</span>
+        </label>
+    </th>
+{% endif %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.title'|trans, column: 'title', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.category'|trans, column: 'category', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.region'|trans, column: 'region', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.starts_at'|trans, column: 'startsAt', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.status'|trans, column: 'status', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.created_at'|trans, column: 'createdAt', query: filterQuery } %}
+<th>{{ 'events.field.submitted_by'|trans }}</th>
+<th>{{ 'events.field.spotlight'|trans }}</th>
+<th>{{ 'events.interest.count'|trans }}</th>
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+    {% include '@events/partials/list_row.html.twig' with { item: item, canBulk: canBulk, grouped: false } %}
+{% else %}
+<tr><td colspan="{{ colCount }}" class="is-mute">{{ 'events.empty'|trans }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="table-wrap" data-table data-city-groups x-show="$store.eventsList.view === 'cities'" x-cloak>
+<table class="table">
+    <thead><tr>
+{% if canBulk %}
+    <th class="table__check">
+        <label class="table-check">
+            <input type="checkbox" @change="toggleAll" :checked="allSelected">
+            <span class="sr-only">{{ 'events.bulk.select_all'|trans }}</span>
+        </label>
+    </th>
+{% endif %}
+<th class="is-sorted" :class="'is-sorted--' + $store.eventsList.cityDir" scope="col" :aria-sort="$store.eventsList.cityDir === 'asc' ? 'ascending' : 'descending'">
+    <button type="button" class="table-sort table-sort--btn" @click="$store.eventsList.toggleCityDir()">
+        <span>{{ 'events.field.city_event'|trans }}</span>
+        <span class="table-sort__icon" aria-hidden="true" x-text="$store.eventsList.cityDir === 'asc' ? '↑' : '↓'"></span>
+    </button>
+</th>
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.category'|trans, column: 'category', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.region'|trans, column: 'region', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.starts_at'|trans, column: 'startsAt', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.status'|trans, column: 'status', query: filterQuery } %}
+{% include 'ui/sort_th.html.twig' with { label: 'events.field.created_at'|trans, column: 'createdAt', query: filterQuery } %}
+<th>{{ 'events.field.submitted_by'|trans }}</th>
+<th>{{ 'events.field.spotlight'|trans }}</th>
+<th>{{ 'events.interest.count'|trans }}</th>
+<th class="table__actions-head"></th>
+</tr></thead>
+{% for city, cityItems in cityGroups %}
+        <tbody data-city="{{ city }}">
+    <tr
+        class="table-group"
+        :class="{ 'is-closed': !$store.eventsList.cityOpen($el.closest('[data-city]').dataset.city) }"
+        @click="$store.eventsList.toggleCity($el.closest('[data-city]').dataset.city)"
+    >
+        <td colspan="{{ colCount }}">
+            <span class="table-group__label">
+                <span class="table-group__chevron">{{ icon('chevron-down') }}</span>
+                <span>{{ city }}</span>
+                <span class="table-group__count">{{ 'events.view.city_count'|trans({'%count%': cityItems|length}) }}</span>
+            </span>
+        </td>
+    </tr>
+    {% for item in cityItems %}
+        {% include '@events/partials/list_row.html.twig' with { item: item, canBulk: canBulk, grouped: true } %}
+    {% endfor %}
+</tbody>
+{% else %}
+<tbody>
+<tr><td colspan="{{ colCount }}" class="is-mute">{{ 'events.empty'|trans }}</td></tr>
+</tbody>
+{% endfor %}
+</table>
+</div>
+
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

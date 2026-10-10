@@ -61,6 +61,13 @@ final class MediaImporter
         }
 
         [$bytes, $mime, $ext] = $downloaded;
+        if ($mime === 'application/pdf' || str_starts_with($bytes, '%PDF')) {
+            $fromPdf = $this->imageFromPdf($bytes);
+            if ($fromPdf === null) {
+                return null;
+            }
+            [$bytes, $mime, $ext] = $fromPdf;
+        }
 
         $converted = $this->converter->convert($bytes, $mime);
         if ($converted !== null) {
@@ -169,8 +176,8 @@ final class MediaImporter
     {
         $context = stream_context_create([
             'http' => [
-                'timeout' => 20,
-                'header' => "User-Agent: RealEstates-Seeder/1.0\r\nAccept: image/*\r\n",
+                'timeout' => 45,
+                'header' => "User-Agent: KdeAco-Seeder/1.0 (https://kdeaco.cz; event catalog photos)\r\nAccept: image/*,application/pdf,*/*\r\n",
                 'follow_location' => 1,
             ],
             'ssl' => [
@@ -184,7 +191,7 @@ final class MediaImporter
             return null;
         }
 
-        $mime = 'image/jpeg';
+        $mime = 'application/octet-stream';
         if (isset($http_response_header) && is_array($http_response_header)) {
             foreach ($http_response_header as $header) {
                 if (preg_match('/^Content-Type:\s*([^\s;]+)/i', $header, $m)) {
@@ -197,9 +204,17 @@ final class MediaImporter
         if (class_exists(\finfo::class)) {
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $detected = $finfo->buffer($bytes);
-            if (is_string($detected) && str_starts_with($detected, 'image/')) {
+            if (is_string($detected) && $detected !== '') {
                 $mime = $detected;
             }
+        }
+
+        if (str_starts_with($bytes, '%PDF')) {
+            return [$bytes, 'application/pdf', 'pdf'];
+        }
+
+        if (!str_starts_with($mime, 'image/')) {
+            return null;
         }
 
         $ext = match ($mime) {
@@ -211,11 +226,70 @@ final class MediaImporter
             default => 'jpg',
         };
 
-        if (!str_starts_with($mime, 'image/')) {
-            $mime = 'image/jpeg';
-            $ext = 'jpg';
+        return [$bytes, $mime, $ext];
+    }
+
+    /**
+     * Pull the largest embedded raster image from a flyer PDF (common for municipal calendars).
+     *
+     * @return array{0: string, 1: string, 2: string}|null
+     */
+    private function imageFromPdf(string $pdf): ?array
+    {
+        $best = null;
+        $bestLen = 0;
+        $bestMime = 'image/jpeg';
+        $bestExt = 'jpg';
+
+        $offset = 0;
+        $length = strlen($pdf);
+        while ($offset < $length) {
+            $jpeg = strpos($pdf, "\xFF\xD8\xFF", $offset);
+            $png = strpos($pdf, "\x89PNG\r\n\x1A\n", $offset);
+            $next = null;
+            $kind = null;
+            if ($jpeg !== false && ($png === false || $jpeg < $png)) {
+                $next = $jpeg;
+                $kind = 'jpeg';
+            } elseif ($png !== false) {
+                $next = $png;
+                $kind = 'png';
+            }
+            if ($next === null || $kind === null) {
+                break;
+            }
+
+            if ($kind === 'jpeg') {
+                $end = strpos($pdf, "\xFF\xD9", $next + 3);
+                if ($end === false) {
+                    $offset = $next + 3;
+                    continue;
+                }
+                $chunk = substr($pdf, $next, $end + 2 - $next);
+                $mime = 'image/jpeg';
+                $ext = 'jpg';
+                $offset = $end + 2;
+            } else {
+                $end = strpos($pdf, 'IEND', $next + 8);
+                if ($end === false) {
+                    $offset = $next + 8;
+                    continue;
+                }
+                $chunk = substr($pdf, $next, $end + 8 - $next); // IEND + CRC
+                $mime = 'image/png';
+                $ext = 'png';
+                $offset = $end + 8;
+            }
+
+            $size = strlen($chunk);
+            if ($size > 8000 && $size > $bestLen && @getimagesizefromstring($chunk) !== false) {
+                $best = $chunk;
+                $bestLen = $size;
+                $bestMime = $mime;
+                $bestExt = $ext;
+            }
         }
 
-        return [$bytes, $mime, $ext];
+        return $best !== null ? [$best, $bestMime, $bestExt] : null;
     }
 }

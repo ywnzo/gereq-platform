@@ -12,7 +12,7 @@ namespace Gereq\Ares;
 final class AresClient
 {
     private const BASE = 'https://ares.gov.cz/ekonomicke-subjekty-v-be/rest';
-    private const UA = 'GEREQ-Platform/0.1 (+ares; RealEstates)';
+    private const UA = 'GEREQ-Platform/0.1 (+ares)';
 
     /**
      * @return array<string, mixed>

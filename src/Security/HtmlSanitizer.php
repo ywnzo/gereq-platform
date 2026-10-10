@@ -16,6 +16,7 @@ final class HtmlSanitizer
         'ul', 'ol', 'li', 'blockquote', 'hr',
         'h1', 'h2', 'h3', 'h4',
         'a', 'span', 'div',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
     ];
 
     /** @var array<string, list<string>> */
@@ -29,6 +30,9 @@ final class HtmlSanitizer
         'div' => ['style'],
         'span' => ['style'],
         'li' => ['style'],
+        'table' => ['style'],
+        'th' => ['style'],
+        'td' => ['style'],
     ];
 
     /** Allowed inline CSS properties (TipTap text-align / font-family / font-weight). */

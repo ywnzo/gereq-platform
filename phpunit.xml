@@ -12,6 +12,9 @@
         </testsuite>
         <testsuite name="Modules">
             <directory>tests/Unit/Modules/ModuleStructure</directory>
+            <directory>modules/Vikendo/Tests</directory>
+            <directory>modules/Events/Tests</directory>
+            <directory>modules/Authorization/Tests</directory>
         </testsuite>
         <testsuite name="File">
             <directory>tests/File</directory>

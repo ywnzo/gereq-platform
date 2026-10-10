@@ -120,6 +120,8 @@ final class ImportSqliteCommand extends Command
                     continue;
                 }
 
+                $conn->executeStatement('DELETE FROM ' . $conn->quoteIdentifier($table));
+
                 $srcColumns = array_keys($rows[0]);
                 $dstColumns = [];
                 $dstBool = [];
@@ -194,6 +196,9 @@ final class ImportSqliteCommand extends Command
                 ));
                 $placeholders = implode(', ', array_fill(0, count($mapped), '?'));
                 $sql = sprintf('INSERT INTO %s (%s) VALUES (%s)', $conn->quoteIdentifier($table), $colList, $placeholders);
+                if ($isPostgres) {
+                    $sql .= ' ON CONFLICT DO NOTHING';
+                }
 
                 $inserted = 0;
                 foreach (array_chunk($rows, 200) as $chunk) {

@@ -21,7 +21,7 @@ final class FormField
         /** Override request/form field name (default: Doctrine column name or snake_case property). */
         public readonly ?string $name = null,
         public readonly string $label = '',
-        /** text|email|number|password|url|textarea|editor|select|checkbox|switch|color|hidden */
+        /** text|email|number|password|url|textarea|editor|select|icon|checkbox|switch|color|hidden */
         public readonly string $type = 'text',
         public readonly array $options = [],
         public readonly array $choices = [],

@@ -25,6 +25,10 @@ final class ApiRateLimitMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        if ($request->getPathInfo() === '/api/public/notifications/stream') {
+            return $next($request);
+        }
+
         if ($this->isPerfBypass($request)) {
             $response = $next($request);
             $response->headers->set('X-Perf-Bypass', '1');

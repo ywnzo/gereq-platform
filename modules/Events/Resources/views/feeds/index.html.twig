@@ -1,0 +1,78 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="kdeaco-event-feeds" data-actions-default="1">
+<header class="page-header">
+    <h1>{{ 'events.feeds.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.events.index') }}">{{ 'events.title'|trans }}</a>
+        {% if user.can('events.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.events.feeds.create') }}">{{ icon('plus') }} {{ 'events.feeds.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<p class="muted">{{ 'events.feeds.intro'|trans }}</p>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+    <th>{{ 'events.feeds.field.sort'|trans }}</th>
+    <th>{{ 'events.feeds.field.name'|trans }}</th>
+    <th>{{ 'events.feeds.field.driver'|trans }}</th>
+    <th>{{ 'events.field.region'|trans }}</th>
+    <th>{{ 'events.feeds.field.enabled'|trans }}</th>
+    <th>{{ 'events.feeds.field.last_sync'|trans }}</th>
+    <th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td class="is-mute">{{ item.sortOrder() }}</td>
+    <td>
+        <strong>{{ item.name() }}</strong>
+        <div class="is-mute"><code>{{ item.key() }}</code></div>
+        {% if item.lastError() %}
+            <div class="badge badge--danger">{{ item.lastError()|length > 80 ? item.lastError()|slice(0, 80) ~ '…' : item.lastError() }}</div>
+        {% endif %}
+    </td>
+    <td>{{ ('events.feeds.driver.' ~ item.driver())|trans }}</td>
+    <td>{{ item.region() }}</td>
+    <td>
+        {% if item.enabled() %}
+            <span class="badge badge--ok">{{ 'common.yes'|trans }}</span>
+        {% else %}
+            <span class="badge badge--muted">{{ 'common.no'|trans }}</span>
+        {% endif %}
+    </td>
+    <td class="is-mute">
+        {% if item.lastSyncedAt() %}
+            {{ item.lastSyncedAt().format('j. n. Y H:i') }}
+            <div>{{ item.lastFetched() }} / +{{ item.lastCreated() }} / ~{{ item.lastUpdated() }}</div>
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% if user.can('events.manage') %}
+                <form method="post" action="{{ url('admin.events.feeds.run', {id: item.id()}) }}" style="display:inline">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--ghost btn--sm" type="submit">{{ 'events.feeds.run'|trans }}</button>
+                </form>
+                <a class="btn btn--ghost btn--sm" href="{{ url('admin.events.feeds.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                {% include 'ui/row_action_destroy.html.twig' with {
+                    action: url('admin.events.feeds.destroy', {id: item.id()}),
+                    confirm: 'events.feeds.confirm_delete'|trans
+                } %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr><td colspan="7" class="is-mute">{{ 'events.feeds.empty'|trans }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endblock %}

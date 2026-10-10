@@ -132,6 +132,13 @@ final class ExceptionHandler
         $exception = $this->normalize($exception);
         $status = $this->status($exception);
 
+        if ($status === 404) {
+            $spa = KdeacoAdmin::html($request) ?? Storefront::html($request);
+            if ($spa !== null) {
+                return $spa;
+            }
+        }
+
         $response = $this->wantsJson($request)
             ? $this->toJson($exception, $status)
             : $this->toHtml($request, $exception, $status);
@@ -361,11 +368,20 @@ final class ExceptionHandler
             $request->attributes->set('csp_nonce', $nonce);
         }
 
+        $customCsp = $response->headers->get(ContentSecurityPolicy::HEADER_OVERRIDE);
+        $response->headers->remove(ContentSecurityPolicy::HEADER_OVERRIDE);
+
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        $response->headers->set('Content-Security-Policy', $this->csp->header($nonce));
+        $response->headers->set(
+            'Content-Security-Policy',
+            is_string($customCsp) && $customCsp !== '' ? $customCsp : $this->csp->header($nonce),
+        );
+        if ($request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
         $response->headers->set('Connection', 'close');
         $response->setProtocolVersion('1.1');
     }

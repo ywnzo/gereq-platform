@@ -1,0 +1,24 @@
+<form
+    method="post"
+    action="{{ url('admin.events.reject', {id: item.id()}) }}"
+    class="{{ form_class|default('table__action-form') }}"
+    data-confirm="{{ 'events.reject.body'|trans|e('html_attr') }}"
+    data-confirm-title="{{ 'events.reject.title'|trans|e('html_attr') }}"
+    data-confirm-label="{{ 'events.action.reject'|trans|e('html_attr') }}"
+    data-confirm-danger="1"
+    data-prompt-name="reason"
+    data-prompt-label="{{ 'events.field.rejection_reason'|trans|e('html_attr') }}"
+    data-prompt-placeholder="{{ 'events.reject.placeholder'|trans|e('html_attr') }}"
+    data-prompt-type="editor"
+>
+    {{ csrf_field()|raw }}
+    <input type="hidden" name="reason" value="">
+    {% if as_button|default(false) %}
+        <button class="btn btn--ghost" type="submit">{{ 'events.action.reject'|trans }}</button>
+    {% else %}
+        <button type="submit" class="table__action-btn table__action-btn--danger" title="{{ 'events.action.reject'|trans }}" aria-label="{{ 'events.action.reject'|trans }}">
+            {{ icon('x') }}
+            <span class="table__action-btn__label">{{ 'events.action.reject'|trans }}</span>
+        </button>
+    {% endif %}
+</form>

@@ -42,12 +42,13 @@ final class AresController extends Controller
     public function addresses(Request $request): JsonResponse
     {
         $q = trim((string) $request->query->get('q', ''));
+        $city = trim((string) $request->query->get('city', ''));
         $limit = (int) $request->query->get('limit', 10);
 
         try {
             return $this->json([
-                'data' => $this->ares->searchAddresses($q, $limit),
-                'meta' => ['q' => $q],
+                'data' => $this->ares->searchAddresses($q, $limit, $city !== '' ? $city : null),
+                'meta' => ['q' => $q, 'city' => $city !== '' ? $city : null],
             ]);
         } catch (AresException $e) {
             return $this->jsonError('ares_error', $e->getMessage(), [], $e->status());

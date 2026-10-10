@@ -1,0 +1,59 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="kdeaco-categories" data-actions-default="1">
+<header class="page-header">
+    <h1>{{ 'events.categories.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.events.index') }}">{{ 'events.title'|trans }}</a>
+        <a class="btn btn--ghost" href="{{ url('admin.events.regions') }}">{{ 'events.regions.title'|trans }}</a>
+        {% if user.can('events.manage') %}
+            <a class="btn btn--primary" href="{{ url('admin.events.categories.create') }}">{{ icon('plus') }} {{ 'events.categories.new'|trans }}</a>
+        {% endif %}
+    </div>
+</header>
+
+<p class="muted">{{ 'events.categories.intro'|trans }}</p>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+    <th>{{ 'events.categories.field.sort'|trans }}</th>
+    <th>{{ 'events.categories.field.name'|trans }}</th>
+    <th>{{ 'events.categories.field.slug'|trans }}</th>
+    <th>{{ 'events.categories.field.homepage'|trans }}</th>
+    <th>{{ 'events.categories.field.assignable'|trans }}</th>
+    <th>{{ 'events.title'|trans }}</th>
+    <th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td class="is-mute">{{ item.sortOrder() }}</td>
+    <td>
+        <strong>{{ item.name() }}</strong>
+        {% if item.blurb() %}<div class="is-mute">{{ item.blurb() }}</div>{% endif %}
+    </td>
+    <td><code>{{ item.slug() }}</code></td>
+    <td>{{ item.showOnHome() ? 'common.yes'|trans : 'common.no'|trans }}</td>
+    <td>{{ item.assignable() ? 'common.yes'|trans : 'common.no'|trans }}</td>
+    <td class="is-mute">{{ counts[item.id()]|default(0) }}</td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% if user.can('events.manage') %}
+                <a class="btn btn--ghost btn--sm" href="{{ url('admin.events.categories.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                {% include 'ui/row_action_destroy.html.twig' with {
+                    action: url('admin.events.categories.destroy', {id: item.id()}),
+                    confirm: 'events.categories.confirm_delete'|trans
+                } %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr><td colspan="7" class="is-mute">{{ 'events.categories.empty'|trans }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endblock %}

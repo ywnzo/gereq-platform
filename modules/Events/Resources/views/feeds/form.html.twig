@@ -1,0 +1,144 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.events'|trans, url: url('admin.events.index') },
+        { label: 'events.feeds.title'|trans, url: url('admin.events.feeds') },
+        { label: item ? item.name() : ('events.feeds.new'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+{% set source = item ?? 'Modules\\Events\\Domain\\EventFeed' %}
+{% set values = defaults|default({}) %}
+{% if item %}
+    {% set values = values|merge({
+        key: item.key(),
+        name: item.name(),
+        driver: item.driver(),
+        url: item.url(),
+        region: item.region(),
+        organizer: item.organizer(),
+        enabled: item.enabled(),
+        sort_order: item.sortOrder(),
+    }) %}
+{% endif %}
+
+<header class="page-header">
+    <div>
+        <h1>{{ item ? 'events.feeds.edit'|trans : 'events.feeds.new'|trans }}</h1>
+        <p class="muted">{{ 'events.feeds.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        <button class="btn btn--primary" type="submit" form="feed-form">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ url('admin.events.feeds') }}">{{ 'common.cancel'|trans }}</a>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'events.feed.save' } %}
+
+<form
+    id="feed-form"
+    method="post"
+    class="detail-stack"
+    action="{{ item ? url('admin.events.feeds.update', {id: item.id()}) : url('admin.events.feeds.store') }}"
+    data-form="events.feed.save"
+    x-data="{ driver: '{{ values.driver|default('ical')|e('js') }}' }"
+    x-init="$el.querySelector('[name=driver]')?.addEventListener('change', e => driver = e.target.value)"
+>
+    {{ csrf_field()|raw }}
+
+    {% embed 'ui/form_panel.html.twig' with { title: 'events.feeds.section.basic'|trans } %}
+        {% block body %}
+            {{ forms().render(source, { form: 'events.feed.save', group: 'basic', cols: 2, values: values }) }}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/form_panel.html.twig' with { title: 'events.feeds.section.driver'|trans } %}
+        {% block body %}
+            <div class="field-grid field-grid--2" x-show="driver === 'tribe_json'" x-cloak>
+                <label class="field">
+                    <span class="field__label">{{ 'events.feeds.config.category'|trans }}</span>
+                    <input class="input" type="text" name="config_category" value="{{ values.config_category|default('mks') }}">
+                    <span class="field__hint">{{ 'events.feeds.config.category.hint'|trans }}</span>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ 'events.feeds.config.per_page'|trans }}</span>
+                    <input class="input" type="number" min="1" max="100" name="config_per_page" value="{{ values.config_per_page|default(50) }}">
+                </label>
+            </div>
+            <div class="field-grid field-grid--2" x-show="driver === 'html_list'" x-cloak>
+                <label class="field">
+                    <span class="field__label">{{ 'events.feeds.config.max_pages'|trans }}</span>
+                    <input class="input" type="number" min="1" max="30" name="config_max_pages" value="{{ values.config_max_pages|default(8) }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ 'events.feeds.config.fetch_details'|trans }}</span>
+                    <label class="checkbox">
+                        <input type="hidden" name="config_fetch_details" value="0">
+                        <input type="checkbox" name="config_fetch_details" value="1" {% if values.config_fetch_details|default(true) %}checked{% endif %}>
+                        <span>{{ 'events.feeds.config.fetch_details.label'|trans }}</span>
+                    </label>
+                    <span class="field__hint">{{ 'events.feeds.config.fetch_details.hint'|trans }}</span>
+                </label>
+            </div>
+            <div x-show="driver === 'html_list'" x-cloak class="mt-3">
+                <details class="details-block">
+                    <summary>{{ 'events.feeds.map.section'|trans }}</summary>
+                    <p class="muted">{{ 'events.feeds.map.hint'|trans }}</p>
+                    <div class="field-grid field-grid--2">
+                        {% set mapKeys = [
+                            'card', 'link', 'title', 'type', 'date_class', 'time_class', 'place_class', 'price_class',
+                            'image', 'page_param', 'detail_body', 'detail_teaser', 'detail_gallery', 'poster_alt'
+                        ] %}
+                        {% for mk in mapKeys %}
+                            {% set field = 'config_map_' ~ mk %}
+                            <label class="field{% if mk in ['link','title','image','detail_body','detail_teaser'] %} field--full{% endif %}">
+                                <span class="field__label">{{ ('events.feeds.map.' ~ mk)|trans }}</span>
+                                <input
+                                    class="input"
+                                    type="text"
+                                    name="{{ field }}"
+                                    value="{{ attribute(values, field)|default('') }}"
+                                    placeholder="{{ attribute(mapDefaults|default({}), mk)|default('') }}"
+                                    autocomplete="off"
+                                >
+                            </label>
+                        {% endfor %}
+                    </div>
+                </details>
+            </div>
+            <div class="field-grid field-grid--2" x-show="driver === 'klatovy_asp'" x-cloak>
+                <label class="field field--full">
+                    <span class="field__label">{{ 'events.feeds.config.venues'|trans }}</span>
+                    <input class="input" type="text" name="config_venues" value="{{ values.config_venues|default('KT_KD') }}">
+                    <span class="field__hint">{{ 'events.feeds.config.venues.hint'|trans }}</span>
+                </label>
+            </div>
+            <div class="field-grid field-grid--2" x-show="driver === 'vikendo'" x-cloak>
+                <label class="field field--full">
+                    <span class="field__label">{{ 'events.feeds.config.district_eids'|trans }}</span>
+                    <input class="input" type="text" name="config_district_eids" value="{{ values.config_district_eids|default('3401, 3404, 3405, 3406, 3407, 3408, 3410') }}">
+                    <span class="field__hint">{{ 'events.feeds.config.district_eids.hint'|trans }}</span>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ 'events.feeds.config.per_page'|trans }}</span>
+                    <input class="input" type="number" min="1" max="100" name="config_per_page" value="{{ values.config_per_page|default(100) }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ 'events.feeds.config.max_pages'|trans }}</span>
+                    <input class="input" type="number" min="1" max="100" name="config_max_pages" value="{{ values.config_max_pages|default(40) }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ 'events.feeds.config.start_from'|trans }}</span>
+                    <input class="input" type="text" name="config_start_from" value="{{ values.config_start_from|default('') }}" placeholder="YYYY-MM-DD" autocomplete="off">
+                    <span class="field__hint">{{ 'events.feeds.config.start_from.hint'|trans }}</span>
+                </label>
+            </div>
+            <p class="muted" x-show="driver === 'ical'" x-cloak>{{ 'events.feeds.driver.ical.hint'|trans }}</p>
+            <p class="muted" x-show="driver === 'vikendo'" x-cloak>{{ 'events.feeds.driver.vikendo.hint'|trans }}</p>
+        {% endblock %}
+    {% endembed %}
+</form>
+{% endblock %}

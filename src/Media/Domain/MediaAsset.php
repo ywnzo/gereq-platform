@@ -18,7 +18,7 @@ use Ramsey\Uuid\Uuid;
 #[FormEntity('media.save')]
 #[FormEntity('media.upload')]
 #[FormGenerator(
-    exclude: ['id', 'path', 'mime', 'size', 'width', 'height', 'uploadedBy', 'createdAt'],
+    exclude: ['id', 'path', 'mime', 'size', 'width', 'height', 'uploadedBy', 'createdAt', 'isPublic'],
     form: 'media.save',
     cols: 1,
 )]
@@ -64,6 +64,10 @@ class MediaAsset
     )]
     private ?string $folderId = null;
 
+    /** When false, /media/{id}/file returns 404 (admin /media admin route still serves). */
+    #[ORM\Column(name: 'is_public', type: 'boolean', options: ['default' => true])]
+    private bool $isPublic = true;
+
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
 
@@ -77,6 +81,7 @@ class MediaAsset
         ?int $width = null,
         ?int $height = null,
         ?string $folderId = null,
+        bool $isPublic = true,
     ) {
         $this->id = Uuid::uuid7()->toString();
         $this->title = $title;
@@ -88,6 +93,7 @@ class MediaAsset
         $this->width = $width;
         $this->height = $height;
         $this->folderId = $folderId !== null && $folderId !== '' ? $folderId : null;
+        $this->isPublic = $isPublic;
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -149,6 +155,16 @@ class MediaAsset
     public function isImage(): bool
     {
         return str_starts_with($this->mime, 'image/');
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->isPublic;
+    }
+
+    public function setPublic(bool $public): void
+    {
+        $this->isPublic = $public;
     }
 
     public function setTitle(string $title): void

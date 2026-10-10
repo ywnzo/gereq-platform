@@ -176,6 +176,26 @@ final class Settings
         );
     }
 
+    /**
+     * Settings registered by a module / plugin (including non-global keys).
+     *
+     * @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}>
+     */
+    public function definitionsForModule(string $moduleId): array
+    {
+        $prefix = $moduleId . '.';
+
+        return array_filter(
+            $this->definitions,
+            static function (array $d, string $key) use ($moduleId, $prefix): bool {
+                $module = $d['module'] ?? null;
+
+                return $module === $moduleId || str_starts_with($key, $prefix);
+            },
+            ARRAY_FILTER_USE_BOTH,
+        );
+    }
+
     /** Loads all settings for the request in one SELECT * (eliminates N+1 from find-per-key). */
     private function warm(): void
     {

@@ -6,6 +6,7 @@ namespace Gereq\Admin\Http;
 
 use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Menu\Menu;
+use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
@@ -18,6 +19,9 @@ use Gereq\Module\ModuleUpdater;
 use Gereq\Module\ModuleVersionActivator;
 use Gereq\Module\ModuleVersionInstaller;
 use Gereq\Database\Migrator;
+use Gereq\Setting\SettingRecord;
+use Gereq\Setting\Settings;
+use Gereq\Support\Json;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,6 +47,8 @@ final class ModuleController extends Controller
         private readonly ModuleVersionActivator $activator,
         private readonly GitLabModuleClient $gitlab,
         private readonly TranslatorInterface $translator,
+        private readonly Settings $settings,
+        private readonly Auditor $auditor,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -130,6 +136,10 @@ final class ModuleController extends Controller
         }
 
         $report = $this->inspector->inspect($manifest);
+        $settingValues = [];
+        foreach ($this->settings->definitionsForModule($manifest->id) as $key => $definition) {
+            $settingValues[$key] = $this->settings->get($key, $definition['default'] ?? null);
+        }
         $versionRows = [];
         $versionsError = null;
         $gitlabConfigured = $this->gitlab->configured();
@@ -161,6 +171,7 @@ final class ModuleController extends Controller
             'missing' => $report['overview']['missing'],
             'report' => $report,
             'settingsRoute' => $report['overview']['settings_route'],
+            'settingValues' => $settingValues,
             'versionRows' => $versionRows,
             'versionsError' => $versionsError,
             'gitlabConfigured' => $gitlabConfigured,
@@ -281,6 +292,51 @@ final class ModuleController extends Controller
         }
 
         return $this->modulesReturnRedirect($id);
+    }
+
+    public function saveSettings(Request $request, string $id): Response
+    {
+        $manifest = $this->modules->manifest($id);
+        if ($manifest === null) {
+            $this->abort(404, $this->translator->trans('admin.modules.not_found'));
+        }
+
+        foreach ($this->settings->definitionsForModule($manifest->id) as $key => $definition) {
+            $posted = $request->request->get(str_replace('.', '__', $key));
+            $type = (string) $definition['type'];
+            $module = is_string($definition['module'] ?? null) ? $definition['module'] : $manifest->id;
+            $secret = $type === SettingRecord::TYPE_ENCRYPTED
+                || str_contains(strtolower($key), 'secret')
+                || str_contains(strtolower($key), 'password')
+                || str_contains(strtolower($key), 'token')
+                || str_contains(strtolower($key), 'api_key');
+            if ($secret && (!is_string($posted) || $posted === '')) {
+                continue;
+            }
+
+            if ($type === SettingRecord::TYPE_BOOLEAN) {
+                $this->settings->set($key, $posted === '1', $type, $module);
+                continue;
+            }
+
+            if ($type === SettingRecord::TYPE_JSON) {
+                $decoded = is_string($posted) && $posted !== '' ? Json::decode($posted) : [];
+                $this->settings->set($key, is_array($decoded) ? $decoded : [], $type, $module);
+                continue;
+            }
+
+            if ($type === SettingRecord::TYPE_INTEGER) {
+                $this->settings->set($key, (int) $posted, $type, $module);
+                continue;
+            }
+
+            $this->settings->set($key, (string) $posted, $type, $module);
+        }
+
+        $this->auditor->log('settings.updated', 'module', $manifest->id);
+        $this->flash('success', $this->translator->trans('settings.saved'));
+
+        return $this->redirectTo($this->router->url('admin.modules.show', ['id' => $id], $this->request()) . '#settings');
     }
 
     public function update(string $id): Response

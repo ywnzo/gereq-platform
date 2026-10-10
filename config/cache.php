@@ -13,6 +13,14 @@ return [
     'twig' => (bool) env_value('CACHE_TWIG', true),
     // Browser cache for /media/{id}/file (seconds)
     'media_ttl' => (int) env_value('CACHE_MEDIA_TTL', 604800),
+    // Public storefront API cache (overridable via Core settings)
+    'storefront' => [
+        'enabled' => (bool) env_value('STOREFRONT_CACHE_ENABLED', true),
+        // file | redis
+        'driver' => env_value('STOREFRONT_CACHE_DRIVER', 'file'),
+        'ttl' => (int) env_value('STOREFRONT_CACHE_TTL', 300),
+        'prefix' => env_value('STOREFRONT_CACHE_PREFIX', 'storefront'),
+    ],
     'redis' => [
         'host' => env_value('REDIS_HOST', '127.0.0.1'),
         'port' => (int) env_value('REDIS_PORT', 6379),

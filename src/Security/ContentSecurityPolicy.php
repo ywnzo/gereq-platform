@@ -45,7 +45,9 @@ final class ContentSecurityPolicy
     public function header(string $nonce, bool $allowSameOriginFrame = false): string
     {
         $scriptSrc = ["'self'", "'nonce-{$nonce}'"];
-        $styleSrc = ["'self'", "'nonce-{$nonce}'", 'https://fonts.bunny.net'];
+        // Nonce in style-src makes Chromium ignore style-src-attr and block
+        // Alpine/admin CSSOM (element.style). Scripts stay nonce-based.
+        $styleSrc = ["'self'", "'unsafe-inline'", 'https://fonts.bunny.net'];
         $connectSrc = ["'self'"];
 
         foreach ($this->render->cspOrigins() as $origin) {
@@ -54,7 +56,7 @@ final class ContentSecurityPolicy
             $connectSrc[] = $origin;
         }
 
-        $frameSrc = ["'self'"];
+        $frameSrc = ["'self'", 'https://gereq.cz', ...$this->render->cspOrigins()];
         foreach (explode(',', (string) env_value('FRONTEND_ORIGIN', '')) as $origin) {
             $origin = trim($origin);
             if ($origin !== '') {
@@ -71,8 +73,8 @@ final class ContentSecurityPolicy
             "img-src 'self' data: blob: https:",
             "media-src 'self' blob:",
             'connect-src ' . implode(' ', array_unique([...$connectSrc, 'https://cdn.jsdelivr.net'])),
-            $allowSameOriginFrame ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
             'frame-src ' . implode(' ', array_unique($frameSrc)),
+            $allowSameOriginFrame ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",
             "object-src 'none'",

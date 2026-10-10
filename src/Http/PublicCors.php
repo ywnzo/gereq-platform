@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class PublicCors
 {
     /** Common Vite / FE ports in local development. */
-    private const DEV_PORTS = [5173, 5174, 5175, 4173, 3000];
+    private const DEV_PORTS = [5173, 5174, 5175, 5155, 4173, 3000];
 
     /**
      * @template T of Response
@@ -43,6 +43,7 @@ final class PublicCors
 
             if ($matched !== null) {
                 $response->headers->set('Access-Control-Allow-Origin', $matched);
+                $response->headers->set('Access-Control-Allow-Credentials', 'true');
                 $response->headers->set('Vary', 'Origin');
             }
             // Do not fall back to a mismatched origin — browsers reject it and it confuses debugging.
@@ -61,16 +62,12 @@ final class PublicCors
     }
 
     /**
-     * Browser storefront on the same site (or allowlisted Origin) — no public API key required.
-     * Bare curl / scripts without Origin or Sec-Fetch-Site still need Bearer grq_pub_*.
+     * Browser storefront with an allowlisted Origin/Referer — no public API key required.
+     * Never trust Sec-Fetch-Site alone (any HTTP client can spoof it).
+     * Bare curl / scripts without allowlisted Origin/Referer still need Bearer grq_pub_*.
      */
     public static function isFirstPartyRequest(Request $request): bool
     {
-        $site = strtolower(trim((string) $request->headers->get('Sec-Fetch-Site', '')));
-        if (in_array($site, ['same-origin', 'same-site'], true)) {
-            return true;
-        }
-
         $origin = trim((string) $request->headers->get('Origin', ''));
         if ($origin !== '' && self::originAllowed($origin)) {
             return true;

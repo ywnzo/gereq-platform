@@ -24,7 +24,7 @@ use Ramsey\Uuid\Uuid;
 )]
 #[FormEntity('customers.save')]
 #[FormGenerator(
-    exclude: ['id', 'avatarFileId', 'isCompany', 'company', 'ico', 'dic', 'companyAddress', 'createdAt', 'updatedAt'],
+    exclude: ['id', 'avatarFileId', 'isCompany', 'company', 'ico', 'dic', 'companyAddress', 'createdAt', 'updatedAt', 'erasureRequestedAt', 'preferredRegion', 'locality', 'newsletterOptIn', 'preferredCategories'],
     form: 'customers.save',
     cols: 2,
 )]
@@ -91,6 +91,22 @@ class Customer
 
     #[ORM\Column(name: 'updated_at')]
     private \DateTimeImmutable $updatedAt;
+
+    #[ORM\Column(name: 'erasure_requested_at', nullable: true)]
+    private ?\DateTimeImmutable $erasureRequestedAt = null;
+
+    #[ORM\Column(name: 'preferred_region', length: 80, nullable: true)]
+    private ?string $preferredRegion = null;
+
+    #[ORM\Column(length: 180, nullable: true)]
+    private ?string $locality = null;
+
+    #[ORM\Column(name: 'newsletter_opt_in', type: 'boolean', options: ['default' => false])]
+    private bool $newsletterOptIn = false;
+
+    /** @var list<string>|null */
+    #[ORM\Column(name: 'preferred_categories', type: 'json', nullable: true)]
+    private ?array $preferredCategories = null;
 
     public function __construct(string $name, string $email)
     {
@@ -169,6 +185,82 @@ class Customer
     public function updatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function erasureRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->erasureRequestedAt;
+    }
+
+    public function preferredRegion(): ?string
+    {
+        return $this->preferredRegion;
+    }
+
+    public function locality(): ?string
+    {
+        return $this->locality;
+    }
+
+    public function newsletterOptIn(): bool
+    {
+        return $this->newsletterOptIn;
+    }
+
+    /** @return list<string> */
+    public function preferredCategories(): array
+    {
+        return $this->preferredCategories ?? [];
+    }
+
+    public function requestErasure(): void
+    {
+        $this->erasureRequestedAt ??= new \DateTimeImmutable();
+        $this->touch();
+    }
+
+    public function setPreferredRegion(?string $region): void
+    {
+        $region = $region !== null ? trim($region) : null;
+        $this->preferredRegion = $region !== null && $region !== '' ? $region : null;
+        $this->touch();
+    }
+
+    public function setLocality(?string $locality): void
+    {
+        $locality = $locality !== null ? trim($locality) : null;
+        $this->locality = $locality !== null && $locality !== '' ? $locality : null;
+        $this->touch();
+    }
+
+    public function setNewsletterOptIn(bool $optIn): void
+    {
+        $this->newsletterOptIn = $optIn;
+        $this->touch();
+    }
+
+    /** @param list<string>|null $categories */
+    public function setPreferredCategories(?array $categories): void
+    {
+        if ($categories === null) {
+            $this->preferredCategories = null;
+            $this->touch();
+
+            return;
+        }
+        $clean = [];
+        foreach ($categories as $item) {
+            if (!is_string($item)) {
+                continue;
+            }
+            $slug = trim($item);
+            if ($slug === '' || in_array($slug, $clean, true)) {
+                continue;
+            }
+            $clean[] = $slug;
+        }
+        $this->preferredCategories = $clean === [] ? null : array_values($clean);
+        $this->touch();
     }
 
     public function setAvatarFileId(?string $avatarFileId): void

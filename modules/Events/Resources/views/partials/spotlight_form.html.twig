@@ -1,0 +1,15 @@
+{% if user.can('events.manage') %}
+    <form method="post" action="{{ url('admin.events.spotlight', {id: item.id()}) }}" class="{{ form_class|default('') }}">
+        {{ csrf_field()|raw }}
+        <p class="muted">{{ 'events.spotlight.per_region'|trans({'%region%': item.region()}) }}</p>
+        {% if item.spotlight() != 'week' %}
+            <button class="btn btn--ghost" type="submit" name="spotlight" value="week">{{ 'events.spotlight.pin_week'|trans({'%region%': item.region()}) }}</button>
+        {% endif %}
+        {% if item.spotlight() != 'month' %}
+            <button class="btn btn--ghost" type="submit" name="spotlight" value="month">{{ 'events.spotlight.pin_month'|trans({'%region%': item.region()}) }}</button>
+        {% endif %}
+        {% if item.spotlight() != 'none' %}
+            <button class="btn btn--ghost" type="submit" name="spotlight" value="none">{{ 'events.spotlight.unpin'|trans }}</button>
+        {% endif %}
+    </form>
+{% endif %}

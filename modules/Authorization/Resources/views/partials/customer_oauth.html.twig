@@ -1,0 +1,16 @@
+<section class="customer-oauth">
+    {% if identities is empty %}
+        <p class="muted">{{ 'authorization.customer.empty'|trans }}</p>
+    {% else %}
+        <ul class="customer-oauth__list">
+            {% for row in identities %}
+                <li>
+                    <span class="badge badge--ok">{{ row.provider|title }}</span>
+                    {% if row.email %}
+                        <span class="muted">{{ row.email }}</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>

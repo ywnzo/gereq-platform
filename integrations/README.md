@@ -16,6 +16,7 @@ They share the same lifecycle as modules (enable / migrate / settings), but:
 |----------|-------|----------|
 | `plugin.payments` | Platby | Comgate, Stripe, GoPay |
 | `plugin.shipping` | Doprava | Packeta |
+| `plugin.oauth` | OAuth | GoogleOauth, FacebookOauth, GithubOauth |
 | `plugin.ai` | AI | Ollama, OpenAiCompat, Zai, DeepSeek, Gemini, Anthropic, OpenAi |
 
 ## Layout

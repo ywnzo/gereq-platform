@@ -39,7 +39,14 @@ final class Csrf
     private function manager(): CsrfTokenManager
     {
         if ($this->manager === null) {
-            $this->manager = new CsrfTokenManager(null, new SessionTokenStorage($this->requestStack));
+            // Fixed empty namespace: behind TLS-terminating proxies $_SERVER['HTTPS']
+            // and Request::isSecure() can disagree across requests, which desyncs
+            // the session CSRF key (https-gereq vs gereq) and yields HTTP 419.
+            $this->manager = new CsrfTokenManager(
+                null,
+                new SessionTokenStorage($this->requestStack),
+                '',
+            );
         }
 
         return $this->manager;

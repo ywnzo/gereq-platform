@@ -1,0 +1,64 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.events'|trans, url: url('admin.events.index') },
+        { label: 'events.categories.title'|trans, url: url('admin.events.categories') },
+        { label: item ? item.name() : ('events.categories.new'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+{% set source = item ?? 'Modules\\Events\\Domain\\EventCategory' %}
+{% set defaults = item ? {} : { show_on_home: true, assignable: true, hide_dates: false, sort_order: 0, image_key: 'other', event_color: 'purple' } %}
+
+<header class="page-header">
+    <div>
+        <h1>{{ item ? 'events.categories.edit'|trans : 'events.categories.new'|trans }}</h1>
+        {% if item %}
+            <p class="muted detail-layout__meta">
+                <code>{{ item.slug() }}</code>
+            </p>
+        {% else %}
+            <p class="muted">{{ 'events.categories.intro'|trans }}</p>
+        {% endif %}
+    </div>
+    <div class="actions">
+        <button class="btn btn--primary" type="submit" form="category-form">{{ 'common.save'|trans }}</button>
+        <a class="btn btn--ghost" href="{{ url('admin.events.categories') }}">{{ 'common.cancel'|trans }}</a>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'events.category.save' } %}
+
+<form
+    id="category-form"
+    method="post"
+    class="detail-stack"
+    action="{{ item ? url('admin.events.categories.update', {id: item.id()}) : url('admin.events.categories.store') }}"
+    data-form="events.category.save"
+    x-data="gereqForm"
+    {% if form_errors('events.category.save') %}data-server-state="1"{% endif %}
+>
+    {{ csrf_field()|raw }}
+
+    {% embed 'ui/form_panel.html.twig' with { title: 'events.categories.section.identity'|trans } %}
+        {% block body %}
+            {{ forms().render(source, { form: 'events.category.save', group: 'identity', cols: 2, values: defaults }) }}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/form_panel.html.twig' with { title: 'events.categories.section.card'|trans } %}
+        {% block body %}
+            {{ forms().render(source, { form: 'events.category.save', group: 'card', cols: 2, values: defaults }) }}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/form_panel.html.twig' with { title: 'events.categories.section.event'|trans } %}
+        {% block body %}
+            {{ forms().render(source, { form: 'events.category.save', group: 'event', cols: 2, values: defaults }) }}
+        {% endblock %}
+    {% endembed %}
+</form>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% if items is empty %}
+    <p class="muted">{{ 'events.interest.customer_empty'|trans }}</p>
+{% else %}
+    <ul class="customer-list">
+        {% for row in items %}
+            <li class="customer-list__item">
+                <div>
+                    <a href="{{ url('admin.events.show', {id: row.event.id()}) }}"><strong>{{ row.event.title() }}</strong></a>
+                    <p class="muted">{{ row.event.place() }} · {{ row.event.startsAt().format('j. n. Y') }}</p>
+                </div>
+                <span class="muted">{{ row.interest.createdAt().format('j. n. Y H:i') }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

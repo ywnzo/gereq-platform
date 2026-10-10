@@ -125,6 +125,19 @@ return [
         ],
         'required' => [],
     ],
+    'plugin.oauth' => [
+        'name' => 'OAuth',
+        'label' => 'admin.plugins.group.oauth',
+        'description' => 'admin.plugins.group.oauth.desc',
+        'surface' => 'plugins',
+        'order' => 25,
+        'modules' => [
+            'google_oauth',
+            'facebook_oauth',
+            'github_oauth',
+        ],
+        'required' => [],
+    ],
     'plugin.ai' => [
         'name' => 'AI',
         'label' => 'admin.plugins.group.ai',
@@ -143,3 +156,4 @@ return [
         'required' => [],
     ],
 ];
+

@@ -12,7 +12,7 @@ use Gereq\Auth\Authenticator;
 use Gereq\Http\Router;
 use Gereq\Customers\Application\CustomerCounters;
 use Gereq\Customers\Domain\Customer;
-use Modules\Listings\Application\BrokerIdentity;
+use Gereq\Customers\Application\CustomerScope;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -27,7 +27,7 @@ final class CustomerGrowthChartWidget extends TwigDashboardWidget
         private readonly TranslatorInterface $translator,
         private readonly Router $router,
         private readonly Authenticator $auth,
-        private readonly BrokerIdentity $brokerIdentity,
+        private readonly CustomerScope $customerScope,
     ) {
         parent::__construct($twig);
     }
@@ -69,7 +69,7 @@ final class CustomerGrowthChartWidget extends TwigDashboardWidget
         $qb = $this->em->getRepository(Customer::class)->createQueryBuilder('c')
             ->where('c.createdAt >= :since')
             ->setParameter('since', $since);
-        $this->brokerIdentity->applyCustomerScope($qb, 'c', $this->auth->user());
+        $this->customerScope->applyCustomerScope($qb, 'c', $this->auth->user());
         /** @var list<Customer> $customers */
         $customers = $qb->getQuery()->getResult();
 

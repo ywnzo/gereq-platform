@@ -7,7 +7,7 @@ use Gereq\Support\AppVersion;
 return [
     'name' => env_value('APP_NAME', 'GEREQ Platform'),
     'env' => env_value('APP_ENV', 'production'),
-    'debug' => (bool) env_value('APP_DEBUG', false),
+    'debug' => filter_var(env_value('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN),
     'url' => rtrim((string) env_value('APP_URL', 'http://localhost:8080'), '/'),
     'url_prefix' => (static function (): string {
         $explicit = trim((string) env_value('APP_URL_PREFIX', ''));

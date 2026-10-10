@@ -7,7 +7,7 @@ namespace Gereq\Customers\Application;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Auth\Authenticator;
 use Gereq\Customers\Domain\Customer;
-use Modules\Listings\Application\BrokerIdentity;
+use Gereq\Customers\Application\CustomerScope;
 
 final class CustomersProvider implements ContactsProvider
 {
@@ -20,7 +20,7 @@ final class CustomersProvider implements ContactsProvider
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly Authenticator $auth,
-        private readonly BrokerIdentity $brokerIdentity,
+        private readonly CustomerScope $customerScope,
     ) {
     }
 
@@ -31,7 +31,7 @@ final class CustomersProvider implements ContactsProvider
             return null;
         }
 
-        $ids = $this->brokerIdentity->scopedCustomerIds($this->auth->user());
+        $ids = $this->customerScope->scopedCustomerIds($this->auth->user());
         if ($ids !== null && !in_array($customer->id(), $ids, true)) {
             return null;
         }
@@ -58,7 +58,7 @@ final class CustomersProvider implements ContactsProvider
             return [];
         }
 
-        $scoped = $this->brokerIdentity->scopedCustomerIds($this->auth->user());
+        $scoped = $this->customerScope->scopedCustomerIds($this->auth->user());
         if ($scoped !== null) {
             $allowed = array_flip($scoped);
             $ids = array_values(array_filter($ids, static fn (string $id): bool => isset($allowed[$id])));
@@ -106,7 +106,7 @@ final class CustomersProvider implements ContactsProvider
             ->createQueryBuilder('c')
             ->setMaxResults($limit);
         self_repair_search($qb, 'c', ['name', 'email', 'company'], $query);
-        $this->brokerIdentity->applyCustomerScope($qb, 'c', $this->auth->user());
+        $this->customerScope->applyCustomerScope($qb, 'c', $this->auth->user());
         $items = $qb->getQuery()->getResult();
 
         return array_map(
