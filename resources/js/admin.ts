@@ -45,9 +45,12 @@ window.gereqConfirmModuleVersion = (form, isDowngrade, activateMsg, downgradeMsg
     return true;
 };
 
+const SIDEBAR_NARROW_MQ = '(max-width: 860px)';
+
 Alpine.data('gereqAdmin', () => ({
     sidebarOpen: false,
     collapsed: localStorage.getItem('gereq-sidebar') === 'collapsed',
+    isNarrow: false,
     paletteOpen: false,
     userOpen: false,
     query: '',
@@ -57,11 +60,25 @@ Alpine.data('gereqAdmin', () => ({
     visibleCommands: [] as PaletteCommand[],
     _searchTimer: null as ReturnType<typeof setTimeout> | null,
     _searchAbort: null as AbortController | null,
+    _narrowMq: null as MediaQueryList | null,
+    _onNarrowChange: null as (() => void) | null,
+    _onKeydown: null as ((event: KeyboardEvent) => void) | null,
 
     init() {
         this.refreshCommands();
-        document.body.dataset.sidebar = this.collapsed ? 'collapsed' : 'expanded';
-        document.addEventListener('keydown', (event: KeyboardEvent) => {
+        this._narrowMq = window.matchMedia(SIDEBAR_NARROW_MQ);
+        this.isNarrow = this._narrowMq.matches;
+        this._onNarrowChange = () => {
+            this.isNarrow = this._narrowMq?.matches ?? false;
+            if (!this.isNarrow) {
+                this.sidebarOpen = false;
+            }
+            this.syncSidebarState();
+        };
+        this._narrowMq.addEventListener('change', this._onNarrowChange);
+        this.syncSidebarState();
+
+        this._onKeydown = (event: KeyboardEvent) => {
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
                 event.preventDefault();
                 this.openPalette();
@@ -69,8 +86,10 @@ Alpine.data('gereqAdmin', () => ({
             if (event.key === 'Escape') {
                 this.closePalette();
                 this.userOpen = false;
+                this.closeSidebar();
             }
-        });
+        };
+        document.addEventListener('keydown', this._onKeydown);
 
         document.addEventListener('wheel', (e) => {
           const el = (e.target as HTMLElement | null)?.closest('.cms-builder__create-body');
@@ -78,10 +97,34 @@ Alpine.data('gereqAdmin', () => ({
           el.scrollTop += e.deltaY;
           e.preventDefault();
         }, { passive: false });
+
+        return () => {
+            if (this._narrowMq && this._onNarrowChange) {
+                this._narrowMq.removeEventListener('change', this._onNarrowChange);
+            }
+            if (this._onKeydown) {
+                document.removeEventListener('keydown', this._onKeydown);
+            }
+            document.documentElement.style.overflow = '';
+        };
+    },
+
+    syncSidebarState() {
+        const railCollapsed = this.collapsed && !this.isNarrow;
+        document.body.dataset.sidebar = railCollapsed ? 'collapsed' : 'expanded';
+        document.documentElement.style.overflow =
+            this.isNarrow && this.sidebarOpen ? 'hidden' : '';
     },
 
     get sidebarClass(): string {
-        return (this.collapsed ? 'is-collapsed ' : '') + (this.sidebarOpen ? 'is-open' : '');
+        const parts: string[] = [];
+        if (this.collapsed && !this.isNarrow) {
+            parts.push('is-collapsed');
+        }
+        if (this.sidebarOpen) {
+            parts.push('is-open');
+        }
+        return parts.join(' ');
     },
 
     get backdropClass(): string {
@@ -97,39 +140,46 @@ Alpine.data('gereqAdmin', () => ({
     },
 
     openSidebar() {
+        if (this.isNarrow) {
+            this.sidebarOpen = true;
+            this.syncSidebarState();
+            return;
+        }
         if (this.collapsed) {
             this.expandSidebar();
             return;
         }
         this.sidebarOpen = true;
+        this.syncSidebarState();
     },
 
     closeSidebar() {
         this.sidebarOpen = false;
+        this.syncSidebarState();
     },
 
     expandSidebar() {
         this.collapsed = false;
         localStorage.setItem('gereq-sidebar', 'expanded');
-        document.body.dataset.sidebar = 'expanded';
+        this.syncSidebarState();
     },
 
     toggleCollapsed() {
+        if (this.isNarrow) {
+            return;
+        }
         this.collapsed = !this.collapsed;
         localStorage.setItem('gereq-sidebar', this.collapsed ? 'collapsed' : 'expanded');
-        document.body.dataset.sidebar = this.collapsed ? 'collapsed' : 'expanded';
         if (!this.collapsed) {
             this.sidebarOpen = false;
         }
+        this.syncSidebarState();
     },
 
     toggleMenu() {
-        if (this.collapsed) {
-            this.expandSidebar();
-            return;
-        }
-        if (window.matchMedia('(max-width: 860px)').matches) {
+        if (this.isNarrow) {
             this.sidebarOpen = !this.sidebarOpen;
+            this.syncSidebarState();
             return;
         }
         this.toggleCollapsed();
@@ -274,6 +324,9 @@ Alpine.data('navGroup', () => ({
     storageKey(): string {
         return 'gereq-nav-group:' + ((this.$el as HTMLElement).dataset.group || '');
     },
+    get groupClass(): string {
+        return this.open ? 'is-open' : 'is-closed';
+    },
     get chevronClass(): string {
         return this.open ? 'is-open' : '';
     },
@@ -286,8 +339,123 @@ Alpine.data('navGroup', () => ({
     },
 }));
 
+type FlyoutHost = {
+    flyoutOpen: boolean;
+    _flyoutId: number;
+    _leaveTimer: ReturnType<typeof setTimeout> | null;
+    _unsubFlyout: (() => void) | null;
+    get flyoutClass(): string;
+    bindFlyoutExclusive(): () => void;
+    flyoutEnter(): void;
+    flyoutLeave(): void;
+    flyoutToggle(): void;
+    flyoutMaybeToggle(event: Event): void;
+};
+
+/** Only one collapsed flyout open at a time — avoids overlapping panels. */
+const navFlyoutBus = {
+    seq: 0,
+    listeners: new Set<(id: number) => void>(),
+    nextId(): number {
+        this.seq += 1;
+        return this.seq;
+    },
+    claim(id: number): void {
+        for (const listener of this.listeners) {
+            listener(id);
+        }
+    },
+    subscribe(listener: (id: number) => void): () => void {
+        this.listeners.add(listener);
+        return () => {
+            this.listeners.delete(listener);
+        };
+    },
+};
+
+function createFlyoutHost(): FlyoutHost {
+    return {
+        flyoutOpen: false,
+        _flyoutId: navFlyoutBus.nextId(),
+        _leaveTimer: null,
+        _unsubFlyout: null,
+        get flyoutClass(): string {
+            return this.flyoutOpen ? 'is-flyout-open' : '';
+        },
+        bindFlyoutExclusive() {
+            this._unsubFlyout = navFlyoutBus.subscribe((id) => {
+                if (id === this._flyoutId) {
+                    return;
+                }
+                if (this._leaveTimer) {
+                    clearTimeout(this._leaveTimer);
+                    this._leaveTimer = null;
+                }
+                this.flyoutOpen = false;
+            });
+            return () => {
+                this._unsubFlyout?.();
+                this._unsubFlyout = null;
+                if (this._leaveTimer) {
+                    clearTimeout(this._leaveTimer);
+                    this._leaveTimer = null;
+                }
+            };
+        },
+        flyoutEnter() {
+            if (this._leaveTimer) {
+                clearTimeout(this._leaveTimer);
+                this._leaveTimer = null;
+            }
+            navFlyoutBus.claim(this._flyoutId);
+            this.flyoutOpen = true;
+        },
+        flyoutLeave() {
+            if (this._leaveTimer) {
+                clearTimeout(this._leaveTimer);
+            }
+            this._leaveTimer = setTimeout(() => {
+                this.flyoutOpen = false;
+                this._leaveTimer = null;
+            }, 160);
+        },
+        flyoutToggle() {
+            if (this._leaveTimer) {
+                clearTimeout(this._leaveTimer);
+                this._leaveTimer = null;
+            }
+            if (!this.flyoutOpen) {
+                navFlyoutBus.claim(this._flyoutId);
+            }
+            this.flyoutOpen = !this.flyoutOpen;
+        },
+        /** Touch / coarse pointer: first tap opens flyout instead of navigating. */
+        flyoutMaybeToggle(event: Event) {
+            if (document.body.dataset.sidebar !== 'collapsed') {
+                return;
+            }
+            if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                return;
+            }
+            if (this.flyoutOpen) {
+                return;
+            }
+            event.preventDefault();
+            this.flyoutToggle();
+        },
+    };
+}
+
+Alpine.data('navFlyout', () => ({
+    ...createFlyoutHost(),
+    init() {
+        return this.bindFlyoutExclusive();
+    },
+}));
+
 Alpine.data('navTree', () => ({
     open: false,
+    ...createFlyoutHost(),
     init() {
         const el = this.$el as HTMLElement;
         const key = this.storageKey();
@@ -302,9 +470,13 @@ Alpine.data('navTree', () => ({
         } else {
             this.open = false;
         }
+        return this.bindFlyoutExclusive();
     },
     storageKey(): string {
         return 'gereq-nav-tree:' + ((this.$el as HTMLElement).dataset.treeId || '');
+    },
+    get treeClass(): string {
+        return (this.open ? 'is-open ' : '') + (this.flyoutOpen ? 'is-flyout-open' : '');
     },
     get chevronClass(): string {
         return this.open ? 'is-open' : '';

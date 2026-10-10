@@ -1,9 +1,10 @@
 <aside class="sidebar" :class="sidebarClass">
+    <button type="button" class="icon-btn sidebar__collapse" @click="toggleCollapsed" aria-label="{{ 'ui.collapse_menu'|trans }}">
+        <span class="sidebar__collapse-arrow" aria-hidden="true">{{ icon('chevron-left') }}</span>
+    </button>
+
     <div class="sidebar__brand">
         {% include 'partials/brand-lockup.html.twig' with { href: url('admin.dashboard') } %}
-        <button type="button" class="icon-btn sidebar__collapse" @click="toggleCollapsed" aria-label="{{ 'ui.collapse_menu'|trans }}">
-            {{ icon('panel') }}
-        </button>
     </div>
 
     {% set pinnedGroups = ['Systém'] %}
@@ -16,7 +17,7 @@
                         class="nav-group"
                         data-group="{{ section.group|e('html_attr') }}"
                         x-data="navGroup"
-                        :class="open ? 'is-open' : 'is-closed'"
+                        :class="groupClass"
                     >
                         <button
                             type="button"
@@ -53,7 +54,7 @@
                     class="nav-group nav-group--pinned"
                     data-group="{{ section.group|e('html_attr') }}"
                     x-data="navGroup"
-                    :class="open ? 'is-open' : 'is-closed'"
+                    :class="groupClass"
                 >
                     <button
                         type="button"
@@ -76,11 +77,11 @@
         {% endfor %}
     </div>
 
-    <div class="sidebar__footer">
+    <div class="sidebar__footer" title="{{ app_env() }} · v{{ app_version() }} · {{ brand('name') }}">
         <div class="sidebar__chip">
             <span class="sidebar__chip-dot" aria-hidden="true"></span>
             <span class="sidebar__env">{{ app_env() }}</span>
         </div>
-        <span class="sidebar__ver" title="{{ brand('name') }}">v{{ app_version() }}</span>
+        <span class="sidebar__ver">v{{ app_version() }}</span>
     </div>
 </aside>

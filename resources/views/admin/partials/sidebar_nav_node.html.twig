@@ -1,6 +1,7 @@
 {% set menuItem = node.item %}
 {% set active = menuItem.route is not null and route_is(menuItem.route) %}
 {% set childActive = node.children|filter(c => c.route and route_is(c.route))|length > 0 %}
+{% set itemLabel = menuItem.label|trans %}
 
 {% if node.children|length > 0 %}
     <div
@@ -8,16 +9,19 @@
         data-tree-id="{{ menuItem.id|e('html_attr') }}"
         data-default-open="{{ (active or childActive) ? '1' : '0' }}"
         x-data="navTree"
-        :class="open ? 'is-open' : ''"
+        :class="treeClass"
+        @mouseenter="flyoutEnter"
+        @mouseleave="flyoutLeave"
     >
         <div class="nav-tree__row">
             <a
                 href="{{ node.url }}"
                 class="nav-item{% if active %} is-active{% elseif childActive %} is-branch{% endif %}"
-                title="{{ menuItem.label|trans }}"
+                title="{{ itemLabel }}"
+                @click="flyoutMaybeToggle"
             >
                 <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
-                <span class="nav-item__label">{{ menuItem.label|trans }}</span>
+                <span class="nav-item__label">{{ itemLabel }}</span>
                 {% if menuItem.badge %}
                     <span class="nav-item__badge">{{ menuItem.badge|raw }}</span>
                 {% endif %}
@@ -27,41 +31,55 @@
                 class="nav-tree__expand"
                 @click.stop="toggle"
                 :aria-expanded="expandedAttr"
-                aria-label="{{ 'ui.toggle_submenu'|trans({ '%label%': menuItem.label|trans }) }}"
+                aria-label="{{ 'ui.toggle_submenu'|trans({ '%label%': itemLabel }) }}"
             >
                 <span class="nav-tree__chevron" :class="chevronClass" aria-hidden="true">{{ icon('chevron-down') }}</span>
             </button>
         </div>
-        <div class="nav-tree__panel">
-            <div class="nav-tree__children" role="group" aria-label="{{ menuItem.label|trans }}">
-                {% for child in node.children %}
-                    {% set childUrl = child.route ? url(child.route) : (child.url|default('#')) %}
-                    {% set childIsActive = child.route and route_is(child.route) %}
-                    <a
-                        href="{{ childUrl }}"
-                        class="nav-item nav-item--child{% if childIsActive %} is-active{% endif %}"
-                        title="{{ child.label|trans }}"
-                    >
-                        <span class="nav-item__rail" aria-hidden="true"></span>
-                        <span class="nav-item__label">{{ child.label|trans }}</span>
-                        {% if child.badge %}
-                            <span class="nav-item__badge">{{ child.badge|raw }}</span>
-                        {% endif %}
-                    </a>
-                {% endfor %}
+        <div class="nav-tree__panel" @mouseenter="flyoutEnter" @mouseleave="flyoutLeave">
+            <div class="nav-tree__panel-inner">
+                <a href="{{ node.url }}" class="nav-flyout__title{% if active %} is-active{% endif %}">{{ itemLabel }}</a>
+                <div class="nav-tree__children" role="group" aria-label="{{ itemLabel }}">
+                    {% for child in node.children %}
+                        {% set childUrl = child.route ? url(child.route) : (child.url|default('#')) %}
+                        {% set childIsActive = child.route and route_is(child.route) %}
+                        <a
+                            href="{{ childUrl }}"
+                            class="nav-item nav-item--child{% if childIsActive %} is-active{% endif %}"
+                            title="{{ child.label|trans }}"
+                        >
+                            <span class="nav-item__rail" aria-hidden="true"></span>
+                            <span class="nav-item__label">{{ child.label|trans }}</span>
+                            {% if child.badge %}
+                                <span class="nav-item__badge">{{ child.badge|raw }}</span>
+                            {% endif %}
+                        </a>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
 {% else %}
-    <a
-        href="{{ node.url }}"
-        class="nav-item{% if active %} is-active{% endif %}"
-        title="{{ menuItem.label|trans }}"
+    <div
+        class="nav-flyout"
+        x-data="navFlyout"
+        :class="flyoutClass"
+        @mouseenter="flyoutEnter"
+        @mouseleave="flyoutLeave"
     >
-        <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
-        <span class="nav-item__label">{{ menuItem.label|trans }}</span>
-        {% if menuItem.badge %}
-            <span class="nav-item__badge">{{ menuItem.badge|raw }}</span>
-        {% endif %}
-    </a>
+        <a
+            href="{{ node.url }}"
+            class="nav-item{% if active %} is-active{% endif %}"
+            title="{{ itemLabel }}"
+        >
+            <span class="nav-item__icon">{{ icon(menuItem.icon|default('dot')) }}</span>
+            <span class="nav-item__label">{{ itemLabel }}</span>
+            {% if menuItem.badge %}
+                <span class="nav-item__badge">{{ menuItem.badge|raw }}</span>
+            {% endif %}
+        </a>
+        <div class="nav-flyout__panel" role="tooltip">
+            <a href="{{ node.url }}" class="nav-flyout__title{% if active %} is-active{% endif %}">{{ itemLabel }}</a>
+        </div>
+    </div>
 {% endif %}

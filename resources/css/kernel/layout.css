@@ -27,6 +27,8 @@ body.admin-body {
     flex-shrink: 0;
     border-right: 1px solid var(--border-soft);
     z-index: 30;
+    overflow: visible;
+    transition: width 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .sidebar.is-collapsed {
@@ -38,25 +40,22 @@ body.admin-body {
 .sidebar.is-collapsed .nav-item__label,
 .sidebar.is-collapsed .nav-item__badge,
 .sidebar.is-collapsed .nav-group__label,
-.sidebar.is-collapsed .nav-group__chevron,
-.sidebar.is-collapsed .sidebar__search-label,
-.sidebar.is-collapsed .sidebar__search-btn kbd,
-.sidebar.is-collapsed .sidebar__footer { display: none; }
+.sidebar.is-collapsed .nav-group__chevron { display: none; }
+.sidebar.is-collapsed .nav-flyout {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
 .sidebar.is-collapsed .sidebar__brand {
     padding: 10px 0 8px;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
     height: auto;
     min-height: var(--topbar-h);
-    gap: 6px;
 }
 .sidebar.is-collapsed .sidebar__brand .brand {
     justify-content: center;
     width: auto;
-}
-.sidebar.is-collapsed .sidebar__collapse {
-    display: grid;
 }
 
 .sidebar__brand {

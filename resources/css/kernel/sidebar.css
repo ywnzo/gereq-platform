@@ -15,8 +15,8 @@ html[data-theme="gereq-dark"] .sidebar {
 
 .sidebar__brand {
     height: auto;
-    min-height: calc(var(--topbar-h) + 8px);
-    padding: 14px 14px 10px;
+    min-height: calc(var(--topbar-h) + 4px);
+    padding: 12px 14px 8px;
     border-bottom: 0;
     gap: 8px;
 }
@@ -38,76 +38,51 @@ html[data-theme="gereq-dark"] .sidebar {
 .sidebar__brand .brand__initials {
     font-size: 0.72rem;
 }
-.sidebar__collapse {
-    width: 30px;
-    height: 30px;
-    border: 1px solid transparent;
-    border-radius: var(--radius);
-    color: var(--sidebar-muted);
-}
-.sidebar__collapse:hover {
-    border-color: var(--border-soft);
-    background: var(--hover-strong);
-    color: var(--sidebar-active);
-}
-
-.sidebar__search {
-    padding: 2px 12px 14px;
-}
-.sidebar__search-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.sidebar .icon-btn.sidebar__collapse {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    z-index: 35;
+    width: 22px;
     height: 36px;
-    padding: 0 10px 0 10px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border-soft);
-    background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    transform: translate(50%, -50%);
+    background: var(--sidebar);
     color: var(--sidebar-muted);
-    cursor: pointer;
-    font-size: var(--grq-text-md);
-    transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
 }
-.sidebar__search-btn:hover {
-    border-color: color-mix(in srgb, var(--sidebar-active) 18%, var(--border));
+.sidebar .icon-btn.sidebar__collapse:hover,
+.sidebar .icon-btn.sidebar__collapse:focus-visible {
+    border-color: color-mix(in srgb, var(--sidebar-active) 28%, var(--border));
+    /* Keep an opaque fill — global .icon-btn:hover uses translucent --hover-strong. */
+    background: color-mix(in srgb, var(--hover-strong) 55%, var(--sidebar));
     color: var(--sidebar-active);
-    background: var(--hover-strong);
 }
-.sidebar__search-icon {
+/* While a flyout is open, ignore the collapse control under the cursor path. */
+.sidebar:has(.is-flyout-open) .icon-btn.sidebar__collapse {
+    pointer-events: none;
+}
+.sidebar__collapse-arrow {
     display: grid;
     place-items: center;
-    opacity: 0.85;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.sidebar__search-btn kbd {
-    margin-left: auto;
-    font-size: var(--grq-text-xxs);
-    font-family: var(--grq-font-sans);
-    opacity: 0.7;
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius);
-    padding: 2px 5px;
-    line-height: 1.2;
+.sidebar__collapse-arrow .g-icon {
+    font-size: 1.15rem;
+}
+.sidebar.is-collapsed .sidebar__collapse-arrow {
+    transform: rotate(180deg);
 }
 
 .sidebar__nav {
-    padding: 0 10px 16px;
+    padding: 0 8px 16px;
     gap: 0;
+    min-height: 0;
     scrollbar-gutter: stable;
-}
-.sidebar.is-collapsed .sidebar__search {
-    padding: 0 0 10px;
-    display: flex;
-    justify-content: center;
-}
-.sidebar.is-collapsed .sidebar__search-btn {
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-    width: 40px;
-    height: 40px;
-    margin: 0;
-    flex: 0 0 40px;
 }
 .sidebar.is-collapsed .sidebar__nav {
     padding: 0 0 12px;
@@ -115,6 +90,27 @@ html[data-theme="gereq-dark"] .sidebar {
     /* Must stay visible — overflow clips the right-side flyout submenu. */
     overflow: visible;
     align-items: stretch;
+}
+/* Accordion uses overflow:hidden; collapsed flyouts must escape the rail. */
+.sidebar.is-collapsed .nav-group,
+.sidebar.is-collapsed .nav-group__body,
+.sidebar.is-collapsed .nav-group__items,
+.sidebar.is-collapsed .nav-ungrouped,
+.sidebar.is-collapsed .sidebar__pin,
+.sidebar.is-collapsed .nav-tree,
+.sidebar.is-collapsed .nav-tree__panel-inner,
+.sidebar.is-collapsed .nav-flyout {
+    overflow: visible !important;
+}
+.sidebar.is-collapsed .nav-group.is-closed .nav-group__body {
+    grid-template-rows: 1fr !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+.sidebar.is-collapsed .nav-group.is-closed .nav-group__items {
+    opacity: 1 !important;
+    transform: none !important;
+    padding: 2px 0 4px !important;
 }
 .sidebar.is-collapsed .nav-group__head,
 .sidebar.is-collapsed .nav-tree__expand {
@@ -145,6 +141,8 @@ html[data-theme="gereq-dark"] .sidebar {
     grid-template-columns: none;
 }
 .sidebar.is-collapsed .nav-tree__row .nav-item,
+.sidebar.is-collapsed .nav-group__items > .nav-flyout > .nav-item,
+.sidebar.is-collapsed .nav-ungrouped > .nav-flyout > .nav-item,
 .sidebar.is-collapsed .nav-group__items > .nav-item,
 .sidebar.is-collapsed .nav-ungrouped > .nav-item {
     width: 40px;
@@ -170,6 +168,11 @@ html[data-theme="gereq-dark"] .sidebar {
     background: var(--hover);
     flex-shrink: 0;
     margin: 0;
+}
+.sidebar.is-collapsed .nav-item.is-active .nav-item__icon,
+.sidebar.is-collapsed .nav-item.is-branch .nav-item__icon {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    color: var(--sidebar-active);
 }
 
 /* Groups */
@@ -208,13 +211,10 @@ html[data-theme="gereq-dark"] .sidebar {
     border-top: 1px solid color-mix(in srgb, var(--border-soft) 80%, transparent);
 }
 
-.sidebar__nav {
-    min-height: 0;
-}
 .sidebar__pin {
     flex: 0 0 auto;
     margin-top: auto;
-    padding: 8px 10px 0;
+    padding: 8px 8px 0;
     border-top: 1px solid color-mix(in srgb, var(--border-soft) 80%, transparent);
     background: var(--sidebar);
 }
@@ -233,7 +233,7 @@ html[data-theme="gereq-dark"] .sidebar {
 }
 .sidebar.is-collapsed .sidebar__pin .nav-group__items {
     align-items: center;
-    padding: 0;
+    padding: 0 0 4px;
     gap: 2px;
 }
 .nav-group__head {
@@ -258,9 +258,9 @@ html[data-theme="gereq-dark"] .sidebar {
 .nav-group__label {
     margin: 0;
     font-size: 0.65rem;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    font-weight: 700;
+    font-weight: 650;
 }
 .nav-group__chevron {
     display: grid;
@@ -275,16 +275,37 @@ html[data-theme="gereq-dark"] .sidebar {
     font-size: 1rem;
 }
 .nav-group__body {
-    display: block;
+    display: grid;
+    grid-template-rows: 1fr;
+    max-height: min(70vh, 48rem);
+    overflow: hidden;
+    transition:
+        grid-template-rows 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+        max-height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .nav-group.is-closed .nav-group__body {
-    display: none;
+    grid-template-rows: 0fr;
+    max-height: 0;
 }
 .nav-group__items {
     display: flex;
     flex-direction: column;
     gap: 1px;
     padding: 2px 0 4px;
+    overflow: hidden;
+    min-height: 0;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 0.2s ease,
+        transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+        padding 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.nav-group.is-closed .nav-group__items {
+    opacity: 0;
+    transform: translateY(-4px);
+    padding-top: 0;
+    padding-bottom: 0;
 }
 .nav-ungrouped {
     display: flex;
@@ -296,12 +317,12 @@ html[data-theme="gereq-dark"] .sidebar {
 /* Items */
 .nav-item {
     gap: 10px;
-    min-height: 36px;
-    padding: 7px 10px;
+    min-height: 34px;
+    padding: 6px 10px;
     border-radius: var(--radius);
     font-size: var(--grq-text-md);
     font-weight: 500;
-    transition: background 0.12s ease, color 0.12s ease;
+    transition: background 0.14s ease, color 0.14s ease, transform 0.14s ease;
 }
 .nav-item:hover {
     color: var(--sidebar-active);
@@ -309,7 +330,7 @@ html[data-theme="gereq-dark"] .sidebar {
 }
 .nav-item.is-active {
     color: var(--sidebar-active);
-    background: color-mix(in srgb, var(--primary) 16%, var(--hover-strong));
+    background: color-mix(in srgb, var(--primary) 14%, var(--hover-strong));
     font-weight: 600;
 }
 .nav-item.is-active::before {
@@ -321,6 +342,8 @@ html[data-theme="gereq-dark"] .sidebar {
     width: 2px;
     border-radius: 0 2px 2px 0;
     background: var(--sidebar-line);
+    transform-origin: center;
+    animation: sidebar-rail-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .nav-item.is-branch {
     color: var(--sidebar-active);
@@ -338,18 +361,26 @@ html[data-theme="gereq-dark"] .sidebar {
     background: color-mix(in srgb, var(--sidebar-line) 55%, transparent);
 }
 .nav-item__icon {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border-radius: var(--radius);
-    background: color-mix(in srgb, var(--hover) 90%, transparent);
-    opacity: 1;
-    transition: background 0.12s ease, color 0.12s ease;
+    background: transparent;
+    opacity: 0.9;
+    transition:
+        background 0.14s ease,
+        color 0.14s ease,
+        opacity 0.14s ease,
+        transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .nav-item:hover .nav-item__icon,
 .nav-item.is-active .nav-item__icon,
 .nav-item.is-branch .nav-item__icon {
-    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    opacity: 1;
     color: var(--sidebar-active);
+}
+.nav-item.is-active .nav-item__icon,
+.nav-item.is-branch .nav-item__icon {
+    background: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 .nav-item__badge {
     margin-left: auto;
@@ -404,12 +435,24 @@ html[data-theme="gereq-dark"] .sidebar {
     font-size: 1.05rem;
 }
 .nav-tree__panel {
-    display: none;
-    margin: 2px 0 6px;
+    display: grid;
+    grid-template-rows: 0fr;
+    margin: 0;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.22s cubic-bezier(0.2, 0.8, 0.2, 1),
+        opacity 0.16s ease,
+        margin 0.22s ease;
 }
 .nav-tree.is-open .nav-tree__panel,
 .nav-tree.is-current:not([x-data]) .nav-tree__panel {
-    display: block;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin: 2px 0 6px;
+}
+.nav-tree__panel-inner {
+    overflow: hidden;
+    min-height: 0;
 }
 .nav-tree__children {
     position: relative;
@@ -461,50 +504,138 @@ html[data-theme="gereq-dark"] .sidebar {
     display: none;
 }
 
-/* Collapsed flyout submenus */
-.sidebar.is-collapsed .nav-tree {
-    overflow: visible;
-    z-index: 1;
+/* Flyout title (collapsed popovers) */
+.nav-flyout {
+    position: relative;
 }
-.sidebar.is-collapsed .nav-tree:hover,
-.sidebar.is-collapsed .nav-tree:focus-within {
-    z-index: 80;
-}
-.sidebar.is-collapsed .nav-tree__panel {
-    display: none;
-    margin: 0;
-}
-.sidebar.is-collapsed .nav-tree.is-open .nav-tree__panel {
-    display: none;
-}
-.sidebar.is-collapsed .nav-tree:hover .nav-tree__panel,
-.sidebar.is-collapsed .nav-tree:focus-within .nav-tree__panel {
-    display: block;
+.nav-flyout__panel {
     position: absolute;
-    /* Overlap the trigger so the pointer never leaves :hover while moving into the panel. */
-    left: calc(100% - 4px);
+    /* Clear of the icon so the parent stays clickable. */
+    left: calc(100% + 6px);
     top: 0;
     z-index: 90;
-    min-width: 196px;
+    min-width: 168px;
     padding: 6px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--sidebar);
     box-shadow: var(--shadow);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-4px) scale(0.98);
+    transform-origin: left center;
+    transition:
+        opacity 0.08s ease,
+        transform 0.08s ease,
+        visibility 0.08s;
 }
-.sidebar.is-collapsed .nav-tree:hover .nav-tree__panel::before,
-.sidebar.is-collapsed .nav-tree:focus-within .nav-tree__panel::before {
+.nav-flyout__panel::before {
     content: "";
     position: absolute;
-    left: -16px;
+    /* Hover bridge across the gap only — must not cover the parent icon. */
+    left: -10px;
     top: 0;
     bottom: 0;
-    width: 16px;
+    width: 10px;
+}
+.nav-flyout__title {
+    display: none;
+    font-size: var(--grq-text-md);
+    font-weight: 600;
+    color: var(--sidebar-active);
+    padding: 6px 8px;
+    margin: 0 0 2px;
+    line-height: 1.25;
+    border-radius: var(--radius);
+    text-decoration: none;
+}
+a.nav-flyout__title:hover,
+a.nav-flyout__title.is-active {
+    background: color-mix(in srgb, var(--primary) 14%, var(--hover-strong));
+    color: var(--sidebar-active);
+}
+
+/* Collapsed Alpine flyouts (trees + leaf labels) */
+.sidebar.is-collapsed .nav-tree,
+.sidebar.is-collapsed .nav-flyout {
+    overflow: visible;
+    z-index: 1;
+}
+.sidebar.is-collapsed .nav-tree.is-flyout-open,
+.sidebar.is-collapsed .nav-flyout.is-flyout-open {
+    z-index: 80;
+}
+/* Keep the parent icon above the flyout bridge so it stays clickable. */
+.sidebar.is-collapsed .nav-tree.is-flyout-open .nav-tree__row,
+.sidebar.is-collapsed .nav-flyout.is-flyout-open > .nav-item {
+    position: relative;
+    z-index: 95;
+}
+.sidebar.is-collapsed .nav-item:hover .nav-item__icon,
+.sidebar.is-collapsed .nav-item:focus-visible .nav-item__icon {
+    transform: scale(1.06);
+}
+.sidebar.is-collapsed .nav-tree__panel {
+    display: block;
+    position: absolute;
+    left: calc(100% + 6px);
+    top: 0;
+    z-index: 90;
+    min-width: 196px;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--sidebar);
+    box-shadow: var(--shadow);
+    grid-template-rows: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-4px) scale(0.98);
+    transform-origin: left center;
+    transition:
+        opacity 0.08s ease,
+        transform 0.08s ease,
+        visibility 0.08s;
+}
+.sidebar.is-collapsed .nav-tree.is-open .nav-tree__panel {
+    /* Accordion open state does not show the panel while collapsed. */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+.sidebar.is-collapsed .nav-tree.is-flyout-open .nav-tree__panel,
+.sidebar.is-collapsed .nav-flyout.is-flyout-open .nav-flyout__panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+}
+.sidebar.is-collapsed .nav-tree.is-flyout-open .nav-tree__panel::before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+}
+.sidebar.is-collapsed .nav-tree__panel-inner {
+    overflow: visible;
+}
+.sidebar.is-collapsed .nav-tree.is-flyout-open .nav-flyout__title,
+.sidebar.is-collapsed .nav-flyout.is-flyout-open .nav-flyout__title {
+    display: block;
+    animation: sidebar-flyout-title-in 0.08s ease both;
 }
 .sidebar.is-collapsed .nav-tree__children {
     margin: 0;
     padding: 0;
     border: 0;
+}
+.sidebar.is-collapsed .nav-tree.is-flyout-open .nav-item--child {
+    animation: sidebar-flyout-item-in 0.08s ease both;
 }
 .sidebar.is-collapsed .nav-item--child {
     color: var(--sidebar-text);
@@ -522,7 +653,7 @@ html[data-theme="gereq-dark"] .sidebar {
     justify-content: space-between;
     gap: 8px;
     flex-shrink: 0;
-    margin: 0 10px 10px;
+    margin: 0 8px 10px;
     padding: 8px 10px;
     border-top: 1px solid color-mix(in srgb, var(--border-soft) 90%, transparent);
     border-radius: 0;
@@ -532,6 +663,36 @@ html[data-theme="gereq-dark"] .sidebar {
     border-bottom: 0;
     font-size: var(--grq-text-xs);
     color: var(--sidebar-muted);
+}
+.sidebar.is-collapsed .sidebar__footer {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    margin: 4px 0 12px;
+    padding: 10px 4px 0;
+    border-top: 1px solid color-mix(in srgb, var(--border-soft) 80%, transparent);
+}
+.sidebar.is-collapsed .sidebar__chip {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.sidebar.is-collapsed .sidebar__env {
+    max-width: 52px;
+    text-align: center;
+    line-height: 1.15;
+    letter-spacing: 0.06em;
+    font-size: 0.58rem;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    word-break: break-all;
+}
+.sidebar.is-collapsed .sidebar__ver {
+    font-size: 0.58rem;
+    line-height: 1.15;
+    opacity: 0.9;
 }
 .sidebar__chip {
     display: inline-flex;
@@ -569,4 +730,109 @@ html[data-theme="gereq-dark"] .sidebar {
 .topbar {
     backdrop-filter: blur(12px);
     background: color-mix(in srgb, var(--background) 82%, transparent);
+}
+
+/* Mobile drawer */
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: block;
+    background: rgb(10 11 10 / 0.45);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+        opacity 0.2s ease,
+        visibility 0.2s;
+}
+.sidebar-backdrop.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+@media (max-width: 860px) {
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 40;
+        width: var(--sidebar-w);
+        max-width: min(var(--sidebar-w), 88vw);
+        transform: translateX(-105%);
+        transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-shadow: var(--shadow);
+    }
+    .sidebar.is-open {
+        transform: none;
+    }
+    .sidebar__collapse {
+        display: none;
+    }
+    button.icon-btn.topbar__menu {
+        display: grid;
+    }
+}
+
+@media (min-width: 861px) {
+    .sidebar-backdrop {
+        display: none;
+    }
+}
+
+@keyframes sidebar-rail-in {
+    from {
+        opacity: 0;
+        transform: scaleY(0.35);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+@keyframes sidebar-flyout-title-in {
+    from {
+        opacity: 0;
+        transform: translateX(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes sidebar-flyout-item-in {
+    from {
+        opacity: 0;
+        transform: translateX(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .sidebar-backdrop,
+    .nav-group__body,
+    .nav-group__chevron,
+    .nav-tree__panel,
+    .nav-tree__chevron,
+    .nav-flyout__panel,
+    .nav-item,
+    .nav-item__icon,
+    .sidebar__collapse,
+    .sidebar__collapse-arrow {
+        transition: none !important;
+        animation: none !important;
+    }
+    .sidebar.is-collapsed .nav-tree.is-flyout-open .nav-item--child,
+    .sidebar.is-collapsed .nav-tree.is-flyout-open .nav-flyout__title,
+    .sidebar.is-collapsed .nav-flyout.is-flyout-open .nav-flyout__title,
+    .nav-item.is-active::before {
+        animation: none !important;
+    }
 }

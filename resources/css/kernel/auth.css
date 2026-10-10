@@ -306,25 +306,9 @@ html.dark .error-code { color: var(--gereq-signal); }
     .setup-grid { grid-template-columns: 1fr; }
 }
 
-.sidebar-backdrop { display: none; }
 code { font-size: var(--grq-text-sm); color: var(--gereq-muted); font-family: var(--grq-font-mono); }
 
 @media (max-width: 860px) {
-    .sidebar {
-        position: fixed;
-        z-index: 40;
-        transform: translateX(-100%);
-        transition: transform 0.16s ease;
-    }
-    .sidebar.is-open { transform: none; }
-    .sidebar-backdrop.is-visible {
-        display: block;
-        position: fixed;
-        inset: 0;
-        background: rgb(10 11 10 / 0.45);
-        z-index: 30;
-    }
-    button.icon-btn.topbar__menu { display: grid; }
     .form-grid,
     .meta-list { grid-template-columns: 1fr; }
     .metrics { flex-direction: column; gap: 16px; }
