@@ -124,3 +124,9 @@
 [submodule "modules/WebPlusAi"]
 	path = modules/WebPlusAi
 	url = ../module-webplus-ai.git
+[submodule "modules/Events"]
+	path = modules/Events
+	url = ../module-events.git
+[submodule "modules/Authorization"]
+	path = modules/Authorization
+	url = ../module-authorization.git
