@@ -28,8 +28,16 @@ RUN apt-get update \
         pdo_pgsql \
         opcache \
         zip \
-    && pecl install redis \
+    && curl -fsSL https://github.com/phpredis/phpredis/archive/refs/tags/6.2.0.tar.gz \
+        | tar xz -C /tmp \
+    && cd /tmp/phpredis-6.2.0 \
+    && phpize \
+    && ./configure \
+    && make -j$(nproc) \
+    && make install \
     && docker-php-ext-enable redis \
+    && cd / \
+    && rm -rf /tmp/phpredis-6.2.0 \
     && pip3 install --break-system-packages --no-cache-dir curl_cffi \
     && apt-get purge -y --auto-remove $PHPIZE_DEPS \
     && rm -rf /var/lib/apt/lists/*

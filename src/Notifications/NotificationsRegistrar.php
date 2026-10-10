@@ -8,8 +8,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\CommandPalette\PaletteCommand;
 use Gereq\Admin\Dashboard\Dashboard;
-use Gereq\Admin\Menu\Menu;
-use Gereq\Admin\Menu\MenuItem;
 use Gereq\Admin\Ui\Icons;
 use Gereq\Api\ApiModule;
 use Gereq\Api\ApiRegistry;
@@ -37,25 +35,24 @@ use Twig\Environment;
 /**
  * Core registration for in-app notifications (formerly modules/Notifications).
  */
-final class NotificationsRegistrar
+final readonly class NotificationsRegistrar
 {
     public function __construct(
-        private readonly Router $router,
-        private readonly Menu $menu,
-        private readonly PermissionRegistry $permissions,
-        private readonly CapabilityRegistry $capabilities,
-        private readonly ApiRegistry $api,
-        private readonly EventRegistry $platformEvents,
-        private readonly Dashboard $dashboard,
-        private readonly CommandPalette $palette,
-        private readonly HookManager $hooks,
-        private readonly EntityManagerInterface $em,
-        private readonly Environment $twig,
-        private readonly TranslatorInterface $translator,
-        private readonly Authenticator $auth,
-        private readonly Icons $icons,
-        private readonly NotifierBridge $bridge,
-        private readonly MemberNotifier $members,
+        private Router $router,
+        private PermissionRegistry $permissions,
+        private CapabilityRegistry $capabilities,
+        private ApiRegistry $api,
+        private EventRegistry $platformEvents,
+        private Dashboard $dashboard,
+        private CommandPalette $palette,
+        private HookManager $hooks,
+        private EntityManagerInterface $em,
+        private Environment $twig,
+        private TranslatorInterface $translator,
+        private Authenticator $auth,
+        private Icons $icons,
+        private NotifierBridge $bridge,
+        private MemberNotifier $members,
     ) {
     }
 
@@ -66,7 +63,6 @@ final class NotificationsRegistrar
         $this->routes();
         $this->api();
         $this->platformEvents();
-        $this->menu();
         $this->dashboard();
         $this->commands();
         $this->hooks();
@@ -144,23 +140,10 @@ final class NotificationsRegistrar
     private function platformEvents(): void
     {
         $this->platformEvents->register(
-            (new EventDefinition('notification.created', 'core'))
+            new EventDefinition('notification.created', 'core')
                 ->description('notifications.event.created')
-                ->webhookEnabled(true)
+                ->webhookEnabled()
         );
-    }
-
-    private function menu(): void
-    {
-        $this->menu->add(new MenuItem(
-            id: 'notifications',
-            label: 'nav.notifications',
-            icon: 'bell',
-            route: 'admin.notifications.index',
-            permission: 'notifications.view',
-            order: 55,
-            group: 'Hlavní',
-        ));
     }
 
     private function dashboard(): void

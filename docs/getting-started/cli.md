@@ -2,6 +2,18 @@
 
 All console commands run through `php gereq <command>` (entry script `gereq` → `Gereq\Console\ConsoleKernel`, `src/Console/ConsoleKernel.php`). The kernel boots the same `Application` container as HTTP, then registers a fixed list of core commands plus a handful of module commands. Commands use Symfony Console, so `php gereq list`, `php gereq help <command>` and the usual `-v`, `-n/--no-interaction`, `-q` flags work. Module commands are **not** discovered automatically — they are listed explicitly in `ConsoleKernel::commands()`.
 
+### Env file (`config.env`)
+
+By default the CLI loads project-root `.env`. Override the file before any command with a global `config.env=` token (stripped before Symfony Console sees argv):
+
+```bash
+php gereq config.env=.env.production about
+php gereq --config.env=.env.production migrate
+php gereq config.env=/abs/path/.env env:validate
+```
+
+Relative paths are resolved from the project root. An explicit path that does not exist fails fast. `env:init` / `env:validate` write/validate the same resolved file.
+
 ## Setup
 
 | Command | Arguments / options | What it does | Source |
@@ -41,7 +53,10 @@ Enabling from the admin UI (`/admin/modules`) goes through the same `ModuleManag
 | Command | Arguments / options | What it does | Source |
 | --- | --- | --- | --- |
 | `cache:clear` | — | wipes `storage/cache` (app pool, Twig compiled templates, Doctrine metadata/proxies) | `CacheClearCommand.php` |
-| `queue:work` | — | infinite loop: `Queue::pop()` → `Job::handle()`; sleeps 1 s when idle; failures are printed and the job is dropped (no retry logic in the worker) | `QueueWorkCommand.php` |
+| `queue:work` | — | infinite loop: promote due delayed jobs → `popRaw()` → `handle()`; sleeps 1 s when idle; failures go to `failed_jobs` and are re-queued until `QUEUE_MAX_ATTEMPTS` | `QueueWorkCommand.php` |
+| `schedule:run` | — | runs due `Schedule` entries once (cron should call every minute); async entries dispatch to the queue | `ScheduleRunCommand.php` |
+| `schedule:list` | — | lists registered schedule entries with next run | `ScheduleListCommand.php` |
+| `queue:failed` | `--limit`, `--retry`, `--forget`, `--prune` | list / retry / forget / prune failed jobs | `QueueFailedCommand.php` |
 
 `queue:work` is pointless with `QUEUE_DRIVER=sync` (jobs run inline). The Docker stack runs it as the `queue` service.
 
@@ -78,13 +93,21 @@ Registered in `ConsoleKernel` regardless of whether the module is enabled; they 
 
 ## Scheduled / cron usage
 
-There is no scheduler in core. Typical cron entries (host or `docker exec gereq-php-1 php gereq …`):
+Core owns `Gereq\Schedule\Schedule`. Modules register entries in `boot()` via `$context->schedule()`; core registers `currency:rates:sync`. Docker runs the `scheduler` service (`schedule:run` every 60 s). Outside Docker install one cron line:
 
 ```cron
-*/5 * * * *  php gereq payments:imap-match
-0 7 * * *    php gereq currency:rates:sync
-0 3 * * *    php gereq uploads:purge
+* * * * *  php /path/to/gereq schedule:run
 ```
+
+Built-in entries (async → job queue unless noted):
+
+| Schedule | When | Mode |
+| --- | --- | --- |
+| `currency:rates:sync` | daily 07:00 Europe/Prague | async |
+| `payments:imap-match` | every 5 minutes | async |
+| `uploads:purge` | daily 03:00 Europe/Prague | async |
+
+One-off delayed jobs from code: `$queue->later($job, $seconds)` or `$queue->later($job, $dateTime)` (redis/file; sync runs inline).
 
 ## Composer scripts
 

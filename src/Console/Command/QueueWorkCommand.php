@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Queue\JobRun;
 use Gereq\Queue\Queue;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -20,29 +21,46 @@ final class QueueWorkCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('GEREQ worker běží. Ctrl+C pro ukončení.');
+        $output->writeln('GEREQ worker running. Ctrl+C to stop.');
 
         while (true) {
             try {
-                $job = $this->queue->pop();
+                $payload = $this->queue->popRaw();
             } catch (\Throwable $e) {
-                $output->writeln('<error>Pop selhal: ' . $e->getMessage() . '</error>');
+                $output->writeln('<error>Pop failed: ' . $e->getMessage() . '</error>');
                 error_log('GEREQ queue:work pop failed: ' . $e->getMessage());
                 sleep(3);
                 continue;
             }
 
-            if ($job === null) {
+            if ($payload === null) {
                 sleep(1);
                 continue;
             }
 
-            $output->writeln('Zpracovávám: ' . $job::class);
+            $job = $this->queue->unserializePayload($payload);
+            if ($job === null) {
+                $this->queue->failRaw($payload, 'unserialize_failed');
+                $output->writeln('<error>Unreadable payload discarded.</error>');
+                continue;
+            }
+
+            $output->writeln('Processing: ' . $job::class);
             try {
-                $job->handle();
-                $output->writeln('Hotovo: ' . $job::class);
+                $this->queue->runTracked($job, JobRun::TRIGGER_WORKER, $payload);
+                $this->queue->clearFailure($payload);
+                $output->writeln('Done: ' . $job::class);
             } catch (\Throwable $e) {
-                $output->writeln('<error>Selhalo: ' . $e->getMessage() . '</error>');
+                $row = $this->queue->fail($job, $payload, $e);
+                $attempts = $row?->attempts() ?? 0;
+                $max = $this->queue->maxAttempts();
+                $output->writeln(sprintf(
+                    '<error>Failed: %s (%d/%d) — %s</error>',
+                    $job::class,
+                    $attempts,
+                    $max,
+                    $e->getMessage(),
+                ));
                 error_log('GEREQ queue:work job failed: ' . $job::class . ' — ' . $e->getMessage());
             }
         }

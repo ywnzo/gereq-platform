@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Env\CliEnvFile;
 use Gereq\Env\EnvSchema;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -31,9 +32,10 @@ final class EnvValidateCommand extends Command
             return Command::FAILURE;
         }
 
-        $problems = $schema->validateEnvFile($this->basePath . '/.env');
+        $envPath = CliEnvFile::resolvedPath() ?? ($this->basePath . '/.env');
+        $problems = $schema->validateEnvFile($envPath);
         if ($problems === []) {
-            $output->writeln('<info>✓</info> .env matches env.schema.toml');
+            $output->writeln('<info>✓</info> ' . basename($envPath) . ' matches env.schema.toml');
 
             return Command::SUCCESS;
         }

@@ -40,18 +40,21 @@ Adapter per driver (`CacheFactory::create()`):
 | --- | --- | --- |
 | `driver` | `QUEUE_DRIVER` | `sync` (`sync`, `redis`, `file`) |
 | `retry_after` | – | `90` (declared; not read by `Queue.php`) |
+| `max_attempts` | `QUEUE_MAX_ATTEMPTS` | `3` |
 
-Behaviour of `Queue::dispatch(Job $job)` / `Queue::pop()`:
+Behaviour of `Queue::dispatch(Job $job)` / `Queue::later(Job, delay)` / `Queue::pop()`:
 
-| Driver | dispatch | pop |
-| --- | --- | --- |
-| `sync` | `$job->handle()` immediately in the request | never returns a job |
-| `redis` | `serialize($job)` → `RPUSH gereq:queue` | `LPOP gereq:queue` |
-| `file` | writes `storage/tmp/queue/job_<uniqid>.job` | oldest `*.job` file by name |
+| Driver | dispatch | later | pop |
+| --- | --- | --- | --- |
+| `sync` | `$job->handle()` immediately | same (no worker to wait) | never returns a job |
+| `redis` | `serialize` → `RPUSH gereq:queue` | `ZADD gereq:queue:delayed` until `available_at` | promote due → `LPOP` |
+| `file` | `storage/tmp/queue/*.job` | `storage/tmp/queue-delayed/{ts}_*.job` | promote due → oldest ready file |
 
-Worker: `php gereq queue:work` (`src/Console/Command/QueueWorkCommand.php`) loops forever, `pop()` → `handle()`, sleeps 1 s when idle, prints `Hotovo: <JobClass>` / `Selhalo: …`. There is no retry, backoff or failed-job storage in the worker itself.
+Worker: `php gereq queue:work` loops forever, promotes delayed jobs, `popRaw()` → `handle()`, sleeps 1 s when idle. Failures go to `failed_jobs` via `FailedJobStore`; the payload is re-queued until `max_attempts` is spent. Admin UI (`/admin/queues`, `/admin/queues/schedule`) and `queue:failed` / `schedule:list` are core.
 
-In Docker the worker is the `queue` service (container `gereq-queue-1`, command `php gereq queue:work`, `restart: unless-stopped`) and both `php` and `queue` receive `QUEUE_DRIVER=redis`, `REDIS_HOST=redis`. Logs: `docker compose logs -f queue`. Outside Docker with `QUEUE_DRIVER=redis` or `file` you must run the worker yourself (systemd/supervisor — recommendation, not provided in the repo).
+Scheduler: `php gereq schedule:run` (once per minute) runs due `Gereq\Schedule\Schedule` entries. Prefer `->async()` so work is dispatched to the queue worker. Register from modules with `$context->schedule()->command(…)` / `->job(…)`.
+
+In Docker: `queue` (`queue:work`) and `scheduler` (`schedule:run` loop), both `QUEUE_DRIVER=redis`. Logs: `docker compose logs -f queue` / `scheduler`. Outside Docker run both under systemd/supervisor (or cron for `schedule:run`).
 
 ## Session (`config/session.php` → `src/Http/Session/SessionHandlerFactory.php`)
 
@@ -110,7 +113,9 @@ Transport: `Symfony\Component\Mailer\Mailer` built with `Transport::fromDsn(conf
 | `storage/logs/nplusone.log` | N+1 query report (debug, `serve-docker` TUI / `php gereq nn`) | runtime |
 | `storage/logs/bun-assets.log` | `bun run dev` output when started by `serve-docker --hot` | `AssetWatchProcess` |
 | `storage/sessions` | file sessions | `SessionHandlerFactory` |
-| `storage/tmp/queue` | file-driver jobs | `Queue` |
+| `storage/tmp/queue` | file-driver ready jobs | `Queue` |
+| `storage/tmp/queue-delayed` | file-driver delayed jobs | `Queue::later` |
+| `storage/tmp/schedule-locks` | `withoutOverlapping` mutex files | `ScheduleLock` |
 | `storage/tmp/bun-assets.pid` | pid of Bun watch started by `serve-docker --hot` | `AssetWatchProcess` |
 | `storage/uploads` (+ `brand/`) | uploads, media, brand assets | `FileManager`, Media, Settings |
 | `storage/invoices` | invoice documents | Orders module |

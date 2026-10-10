@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Gereq\Notification;
+namespace Gereq\Notifications\Channel;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\User\Entity\User;
@@ -31,7 +31,12 @@ final class Notifier
 
     private function toDatabase(User $user, Notification $notification): void
     {
-        $record = new DatabaseNotification($user->id(), $notification::class, $notification->toArray($user));
+        $record = new DatabaseNotification(
+            $user->id(),
+            $notification::class,
+            $notification->toArray($user),
+            DatabaseNotification::ACTOR_USER,
+        );
         $this->em->persist($record);
         $this->em->flush();
     }

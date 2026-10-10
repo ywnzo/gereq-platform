@@ -101,13 +101,14 @@ final class AdminPath
     }
 
     /**
-     * Product Vue admin — always at /admin when platform admin is relocated.
-     * When ADMIN_PATH is still the canonical "admin", product and platform share that path
-     * (Vue takes over only after ADMIN_PATH moves).
+     * Whether $path is the canonical "/admin" segment (even when ADMIN_PATH is relocated).
+     * Used to keep /admin out of storefront SPA fallback when the platform lives elsewhere.
      */
-    public static function productMatches(string $path): bool
+    public static function isCanonicalPath(string $path): bool
     {
-        return $path === '/admin' || str_starts_with($path, '/admin/');
+        $canonical = '/' . self::CANONICAL;
+
+        return $path === $canonical || str_starts_with($path, $canonical . '/');
     }
 
     public static function sanitize(string $raw): string
@@ -129,7 +130,7 @@ final class AdminPath
             return self::CANONICAL;
         }
 
-        // Keep /admin free for the product Vue SPA when relocating the platform admin.
+        // Nested paths under the canonical segment are reserved for rewrite targets only.
         if (count($parts) > 1 && $first === self::CANONICAL) {
             return self::CANONICAL;
         }

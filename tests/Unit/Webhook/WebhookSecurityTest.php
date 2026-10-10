@@ -28,6 +28,19 @@ final class WebhookSecurityTest extends TestCase
         $guard->assertSafe('http://127.0.0.1/hook');
     }
 
+    public function testPinReturnsPublicIpTarget(): void
+    {
+        $guard = new SsrfGuard(new Repository(['api' => ['webhooks' => ['allow_private_urls' => false]]]));
+        $pinned = $guard->pin('https://example.com/hook?x=1');
+
+        self::assertSame('example.com', $pinned->host);
+        self::assertSame('https', $pinned->scheme);
+        self::assertSame('/hook?x=1', $pinned->pathAndQuery);
+        self::assertNotSame('', $pinned->ip);
+        self::assertFalse(str_starts_with($pinned->ip, '127.'));
+        self::assertStringContainsString($pinned->ip, $pinned->connectUrl());
+    }
+
     public function testWildcardMatching(): void
     {
         $hook = new Webhook('Test', 'https://example.com/hook', ['customer.*']);

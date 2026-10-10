@@ -7,37 +7,44 @@ namespace Gereq\Foundation;
 use DI\Container;
 use DI\ContainerBuilder;
 use Doctrine\ORM\EntityManagerInterface;
+use Dotenv\Dotenv;
 use Gereq\Admin\Resource\ResourceRegistrar;
+use Gereq\Api\ApiRegistry;
 use Gereq\Audit\Auditor;
 use Gereq\Cache\CacheFactory;
 use Gereq\Config\Repository;
-use Gereq\Database\EntityManagerFactory;
-use Gereq\Database\DatabaseBootstrap;
-use Gereq\Debug\DebugBar;
-use Gereq\Debug\QueryCollector;
-use Gereq\Debug\Renderer;
-use Gereq\File\FileManager;
-use Gereq\Http\ExceptionHandler;
-use Gereq\Http\Kernel;
-use Gereq\Http\Router;
-use Gereq\I18n\TranslatorFactory;
-use Gereq\Api\ApiRegistry;
-use Gereq\Hook\HookManager;
-use Gereq\Module\ModuleContext;
-use Gereq\Module\ModuleManager;
-use Gereq\Notifications\NotificationsRegistrar;
-use Gereq\Queue\Queue;
 use Gereq\Currency\CurrencyRegistrar;
 use Gereq\Customers\Application\CustomerScope;
 use Gereq\Customers\Application\UnrestrictedCustomerScope;
 use Gereq\Customers\CustomersRegistrar;
+use Gereq\Database\DatabaseBootstrap;
+use Gereq\Database\EntityManagerFactory;
+use Gereq\Debug\DebugBar;
+use Gereq\Debug\QueryCollector;
+use Gereq\Debug\Renderer;
+use Gereq\Env\CliEnvFile;
+use Gereq\File\FileManager;
+use Gereq\Hook\HookManager;
+use Gereq\Http\ExceptionHandler;
+use Gereq\Http\Kernel;
+use Gereq\Http\Router;
+use Gereq\I18n\TranslatorFactory;
 use Gereq\Media\Http\MediaFilePath;
 use Gereq\Media\MediaRegistrar;
-use Gereq\Webhooks\WebhooksRegistrar;
+use Gereq\Module\ModuleContext;
+use Gereq\Module\ModuleManager;
+use Gereq\Notifications\NotificationsRegistrar;
+use Gereq\Queue\FailedJobStore;
+use Gereq\Queue\Queue;
+use Gereq\Queue\QueueRegistrar;
+use Gereq\Schedule\Schedule;
+use Gereq\Schedule\ScheduleLock;
+use Gereq\Schedule\ScheduleRegistrar;
 use Gereq\Security\RateLimiter;
 use Gereq\User\PermissionRegistry;
 use Gereq\View\RenderEngine;
 use Gereq\View\TwigFactory;
+use Gereq\Webhooks\WebhooksRegistrar;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -46,6 +53,8 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
+use function DI\autowire;
+use function DI\factory;
 
 final class Application
 {
@@ -78,6 +87,8 @@ final class Application
         $container->get(WebhooksRegistrar::class)->register();
         $container->get(MediaRegistrar::class)->register();
         $container->get(CurrencyRegistrar::class)->register();
+        $container->get(QueueRegistrar::class)->register();
+        $container->get(ScheduleRegistrar::class)->register();
         $container->get(CustomersRegistrar::class)->register();
         $mediaFile = MediaFilePath::fromGlobals();
         if ((bool) $config->get('app.debug', false) && !$mediaFile) {
@@ -129,9 +140,9 @@ final class Application
 
     private static function loadEnv(string $basePath): void
     {
-        $file = $basePath . '/.env';
+        $file = CliEnvFile::resolve($basePath);
         if (is_file($file)) {
-            $dotenv = \Dotenv\Dotenv::createImmutable($basePath);
+            $dotenv = Dotenv::createImmutable(dirname($file), basename($file));
             $dotenv->safeLoad();
         }
         self::hardenProductionEnv();
@@ -180,37 +191,50 @@ final class Application
             ContainerInterface::class => \DI\get(Container::class),
 
             // Interfaces / custom factories
-            CacheFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            CacheItemPoolInterface::class => \DI\factory(static function (Repository $config) use ($basePath): CacheItemPoolInterface {
+            CacheFactory::class => autowire()->constructorParameter('basePath', $basePath),
+            CacheItemPoolInterface::class => factory(static function (Repository $config) use ($basePath): CacheItemPoolInterface {
                 return (new CacheFactory($config, $basePath))->create();
             }),
-            EntityManagerInterface::class => \DI\factory(static function (
+            EntityManagerInterface::class => factory(static function (
                 Repository $config,
                 QueryCollector $queries,
                 CacheItemPoolInterface $cache,
             ) use ($basePath): EntityManagerInterface {
                 return (new EntityManagerFactory($config, $basePath, $queries))->create($cache);
             }),
-            MailerInterface::class => \DI\factory(static function (Repository $config): MailerInterface {
+            MailerInterface::class => factory(static function (Repository $config): MailerInterface {
                 return new Mailer(Transport::fromDsn((string) $config->get('mail.dsn', 'null://null')));
             }),
-            TranslatorInterface::class => \DI\factory(static function (TranslatorFactory $factory): TranslatorInterface {
+            TranslatorInterface::class => factory(static function (TranslatorFactory $factory): TranslatorInterface {
                 return $factory->create();
             }),
-            Environment::class => \DI\factory(static fn (TwigFactory $factory): Environment => $factory->create()),
+            Environment::class => factory(static fn (TwigFactory $factory): Environment => $factory->create()),
             \Gereq\Currency\Application\RateProviderInterface::class => \DI\get(\Gereq\Currency\Infrastructure\CnbRateProvider::class),
             \Modules\Translate\Application\TranslateProviderInterface::class => \DI\get(\Modules\Translate\Application\MicrosoftTranslateProvider::class),
 
             // Scalars / config-driven construction
-            RenderEngine::class => \DI\factory(static function (Repository $config, ModuleManager $modules) use ($basePath): RenderEngine {
+            RenderEngine::class => factory(static function (Repository $config, ModuleManager $modules) use ($basePath): RenderEngine {
                 return new RenderEngine($basePath, $config, $modules);
             }),
-            QueryCollector::class => \DI\factory(static function (Repository $config): QueryCollector {
+            QueryCollector::class => factory(static function (Repository $config): QueryCollector {
                 return new QueryCollector((int) $config->get('app.n_plus_one_threshold', 2));
             }),
-            Queue::class => \DI\factory(static fn (Repository $config): Queue => new Queue($config, $basePath)),
-            RateLimiter::class => \DI\factory(static fn (): RateLimiter => new RateLimiter($basePath . '/storage/cache/rate')),
-            \Gereq\Search\SelfRepairSearch::class => \DI\factory(static function (Repository $config): \Gereq\Search\SelfRepairSearch {
+            FailedJobStore::class => autowire(),
+            \Gereq\Queue\JobRunStore::class => autowire(),
+            Queue::class => factory(static function (
+                Repository     $config,
+                FailedJobStore $failed,
+                \Gereq\Queue\JobRunStore $runs,
+            ) use ($basePath): Queue {
+                return new Queue($config, $basePath, $failed, $runs);
+            }),
+            Schedule::class => autowire(),
+            ScheduleLock::class => factory(static fn (): ScheduleLock => new ScheduleLock($basePath)),
+            \Gereq\Schedule\ScheduleState::class => factory(
+                static fn (): \Gereq\Schedule\ScheduleState => new \Gereq\Schedule\ScheduleState($basePath),
+            ),
+            RateLimiter::class => factory(static fn (): RateLimiter => new RateLimiter($basePath . '/storage/cache/rate')),
+            \Gereq\Search\SelfRepairSearch::class => factory(static function (Repository $config): \Gereq\Search\SelfRepairSearch {
                 $normalizer = new \Gereq\Search\TextNormalizer();
                 $expander = new \Gereq\Search\TypoExpander(
                     $normalizer,
@@ -220,14 +244,14 @@ final class Application
 
                 return new \Gereq\Search\SelfRepairSearch($normalizer, $expander);
             }),
-            FileManager::class => \DI\factory(static function (
+            FileManager::class => factory(static function (
                 EntityManagerInterface $em,
                 Repository $config,
                 TranslatorInterface $translator,
             ) use ($basePath): FileManager {
                 return new FileManager($em, $config, $basePath, $translator);
             }),
-            ModuleManager::class => \DI\factory(static function (
+            ModuleManager::class => factory(static function (
                 EntityManagerInterface $em,
                 PermissionRegistry $permissions,
                 Auditor $auditor,
@@ -236,55 +260,57 @@ final class Application
             ) use ($basePath): ModuleManager {
                 return new ModuleManager($basePath, $em, $permissions, $auditor, $translator, $hooks);
             }),
-            \Gereq\Module\ModuleVersionStore::class => \DI\autowire()
+            \Gereq\Module\ModuleVersionStore::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Gereq\Module\ModuleVersionActivator::class => \DI\autowire()
+            \Gereq\Module\ModuleVersionActivator::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            DatabaseBootstrap::class => \DI\autowire()
+            DatabaseBootstrap::class => autowire()
                 ->constructorParameter('basePath', $basePath),
 
             // Autowire with scalar constructor params
-            Renderer::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            DebugBar::class => \DI\autowire()
+            Renderer::class => autowire()->constructorParameter('basePath', $basePath),
+            DebugBar::class => autowire()
                 ->constructorParameter('basePath', $basePath)
                 ->constructorParameter('auth', \DI\get(\Gereq\Auth\Authenticator::class))
                 ->constructorParameter('staging', \DI\get(\Gereq\Publish\StagingStore::class))
                 ->constructorParameter('contentVersion', \DI\get(\Gereq\Publish\ContentVersion::class)),
-            TranslatorFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            TwigFactory::class => \DI\autowire()
+            TranslatorFactory::class => autowire()->constructorParameter('basePath', $basePath),
+            TwigFactory::class => autowire()
                 ->constructorParameter('basePath', $basePath)
                 ->constructorParameter('debugBar', \DI\get(DebugBar::class)),
-            \Gereq\Admin\Http\SettingsController::class => \DI\autowire()
+            \Gereq\Admin\Http\SettingsController::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Gereq\Http\BrandAssetController::class => \DI\autowire()
+            \Gereq\Http\BrandAssetController::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Gereq\Brand\AdminFavicon::class => \DI\autowire()
+            \Gereq\Media\Application\MediaFileDelivery::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Gereq\Http\Session\SessionHandlerFactory::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            ExceptionHandler::class => \DI\autowire()
+            \Gereq\Brand\AdminFavicon::class => autowire()
+                ->constructorParameter('basePath', $basePath),
+            \Gereq\Http\Session\SessionHandlerFactory::class => autowire()->constructorParameter('basePath', $basePath),
+            ExceptionHandler::class => autowire()
                 ->constructorParameter('basePath', $basePath)
                 ->constructorParameter('debugBar', \DI\get(DebugBar::class)),
-            \Gereq\Console\Command\InstallCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\CacheClearCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\MakeModuleCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\MakeResourceCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\ServeCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\ServeDockerCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\NnCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\TestCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\ImportSqliteCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\TwigTypesCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\EnvInitCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Gereq\Console\Command\EnvValidateCommand::class => \DI\autowire()->constructorParameter('basePath', $basePath),
-            \Modules\Fleet\Application\VehicleCatalogClient::class => \DI\autowire()
+            \Gereq\Console\Command\InstallCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\CacheClearCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\MakeModuleCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\MakeResourceCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\ServeCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\ServeDockerCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\NnCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\TestCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\ImportSqliteCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\TwigTypesCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\EnvInitCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Console\Command\EnvValidateCommand::class => autowire()->constructorParameter('basePath', $basePath),
+            \Modules\Fleet\Application\VehicleCatalogClient::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Modules\Orders\Application\InvoiceIssuingService::class => \DI\autowire()
+            \Modules\Orders\Application\InvoiceIssuingService::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Modules\CustomerUploads\Application\CustomerUploadService::class => \DI\autowire()
+            \Modules\CustomerUploads\Application\CustomerUploadService::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Gereq\Media\Http\MediaController::class => \DI\autowire()->constructorParameter('basePath', $basePath),
+            \Gereq\Media\Http\MediaController::class => autowire()->constructorParameter('basePath', $basePath),
             \Modules\Ai\Application\AiIntegrationGate::class => \DI\get(\Modules\Ai\Application\ModuleAiIntegrationGate::class),
-            CustomerScope::class => \DI\factory(static function (ContainerInterface $c): CustomerScope {
+            CustomerScope::class => factory(static function (ContainerInterface $c): CustomerScope {
                 if (!class_exists(\Modules\Listings\Application\BrokerIdentity::class)) {
                     return new UnrestrictedCustomerScope();
                 }

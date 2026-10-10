@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Gereq\Notification;
+namespace Gereq\Notifications\Channel;
 
 final class MailMessage
 {

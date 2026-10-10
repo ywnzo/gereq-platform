@@ -10,7 +10,7 @@ use Gereq\Admin\Dashboard\DashboardWidget;
 use Gereq\Admin\Dashboard\TwigDashboardWidget;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Router;
-use Gereq\Notification\DatabaseNotification;
+use Gereq\Notifications\Channel\DatabaseNotification;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -83,7 +83,9 @@ final class UnreadNotificationsWidget extends TwigDashboardWidget
     {
         $qb = $this->em->getRepository(DatabaseNotification::class)->createQueryBuilder('n')
             ->select('COUNT(n.id)')
-            ->where('n.readAt IS NULL');
+            ->where('n.readAt IS NULL')
+            ->andWhere('n.actorType = :actor')
+            ->setParameter('actor', DatabaseNotification::ACTOR_USER);
 
         if ($userId !== null) {
             $qb->andWhere('n.userId = :uid')->setParameter('uid', $userId);

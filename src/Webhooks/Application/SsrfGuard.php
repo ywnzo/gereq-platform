@@ -14,6 +14,14 @@ final class SsrfGuard
 
     public function assertSafe(string $url): void
     {
+        $this->pin($url);
+    }
+
+    /**
+     * Resolve and validate destination IP; caller must dial the pinned IP and set Host.
+     */
+    public function pin(string $url): PinnedUrl
+    {
         $parts = parse_url($url);
         if ($parts === false || !isset($parts['scheme'], $parts['host'])) {
             throw new \InvalidArgumentException('Neplatná URL webhooku.');
@@ -24,22 +32,36 @@ final class SsrfGuard
             throw new \InvalidArgumentException('Webhook URL musí používat HTTP nebo HTTPS.');
         }
 
-        if ((bool) $this->config->get('api.webhooks.allow_private_urls', false)) {
-            return;
-        }
-
         $host = strtolower((string) $parts['host']);
         $host = trim($host, '[]');
+        $port = isset($parts['port']) ? (int) $parts['port'] : ($scheme === 'https' ? 443 : 80);
+        $path = (string) ($parts['path'] ?? '/');
+        if ($path === '') {
+            $path = '/';
+        }
+        if (isset($parts['query']) && $parts['query'] !== '') {
+            $path .= '?' . $parts['query'];
+        }
 
-        if ($this->isBlockedHost($host)) {
+        $allowPrivate = (bool) $this->config->get('api.webhooks.allow_private_urls', false);
+
+        if (!$allowPrivate && $this->isBlockedHost($host)) {
             throw new \InvalidArgumentException('Webhook URL míří na zakázaný hostitel.');
         }
 
-        foreach ($this->resolveIps($host) as $ip) {
-            if ($this->isBlockedIp($ip)) {
-                throw new \InvalidArgumentException('Webhook URL míří na privátní nebo lokální síť.');
+        $ips = $this->resolveIps($host);
+        $safeIp = null;
+        foreach ($ips as $ip) {
+            if ($allowPrivate || !$this->isBlockedIp($ip)) {
+                $safeIp = $ip;
+                break;
             }
         }
+        if ($safeIp === null) {
+            throw new \InvalidArgumentException('Webhook URL míří na privátní nebo lokální síť.');
+        }
+
+        return new PinnedUrl($url, $scheme, $host, $port, $path, $safeIp);
     }
 
     private function isBlockedHost(string $host): bool
@@ -104,7 +126,6 @@ final class SsrfGuard
             return true;
         }
 
-        // 0.0.0.0/8, 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16
         $ranges = [
             ['0.0.0.0', '0.255.255.255'],
             ['127.0.0.0', '127.255.255.255'],
@@ -132,7 +153,6 @@ final class SsrfGuard
             return true;
         }
 
-        // fe80::/10 link-local, fc00::/7 unique local, ::ffff:127.0.0.1 etc.
         if (
             str_starts_with($normalized, 'fe8')
             || str_starts_with($normalized, 'fe9')

@@ -1,0 +1,82 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+    {% set headline = item.exception() ? item.exception()|split("\n")|first : ('queues.runs.status.' ~ item.status())|trans %}
+
+    <header class="page-header">
+        <div>
+            <h1><code>{{ item.job() }}</code></h1>
+            <p class="muted detail-layout__meta">
+                <span class="badge badge--{{ item.status() == 'success' ? 'success' : (item.status() == 'failed' ? 'danger' : 'warn') }}">
+                    {{ ('queues.runs.status.' ~ item.status())|trans }}
+                </span>
+                {{ item.startedAt().format('d. m. Y H:i:s') }}
+                · {{ ('queues.runs.trigger.' ~ item.trigger())|trans }}
+                · {{ item.durationMs() }} ms
+            </p>
+        </div>
+        <div class="actions">
+            <a href="{{ url('admin.queues.runs') }}" class="btn btn--ghost">
+                {{ 'queues.action.back_runs'|trans }}
+            </a>
+        </div>
+    </header>
+
+    <div class="detail-layout">
+        <div class="detail-layout__main">
+            <section class="detail-hero panel">
+                <div class="detail-hero__body">
+                    <div class="detail-hero__highlight">
+                        <span>{{ 'queues.runs.detail.summary'|trans }}</span>
+                        <strong>{{ headline }}</strong>
+                    </div>
+                    <dl class="detail-hero__facts">
+                        <div>
+                            <dt>{{ 'queues.runs.field.status'|trans }}</dt>
+                            <dd>{{ ('queues.runs.status.' ~ item.status())|trans }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'queues.runs.field.trigger'|trans }}</dt>
+                            <dd>{{ ('queues.runs.trigger.' ~ item.trigger())|trans }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'queues.field.queue'|trans }}</dt>
+                            <dd>{{ item.queue() }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'queues.runs.field.duration'|trans }}</dt>
+                            <dd>{{ item.durationMs() }} ms</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'queues.runs.field.started'|trans }}</dt>
+                            <dd>{{ item.startedAt().format('d. m. Y H:i:s') }}</dd>
+                        </div>
+                        <div>
+                            <dt>{{ 'queues.runs.field.finished'|trans }}</dt>
+                            <dd>{{ item.finishedAt().format('d. m. Y H:i:s') }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+
+            {% if item.exception() %}
+                <section class="panel">
+                    <header class="panel__header">
+                        <h2 class="panel__title">{{ 'queues.detail.error'|trans }}</h2>
+                    </header>
+                    <pre class="queues-trace">{{ item.exception() }}</pre>
+                </section>
+            {% endif %}
+
+            {% if item.payload() %}
+                <section class="panel">
+                    <header class="panel__header">
+                        <h2 class="panel__title">{{ 'queues.detail.payload'|trans }}</h2>
+                    </header>
+                    <p class="queues-trace__hint muted">{{ 'queues.detail.payload_hint'|trans }}</p>
+                    <pre class="queues-trace">{{ item.payload() }}</pre>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

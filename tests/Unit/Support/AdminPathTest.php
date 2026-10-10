@@ -67,6 +67,18 @@ final class AdminPathTest extends TestCase
         self::assertSame('foo/bar', AdminPath::sanitize('foo/bar'));
     }
 
+    public function testCanonicalPathExcludedWhenAdminRelocated(): void
+    {
+        $_ENV['ADMIN_PATH'] = 'panel';
+        AdminPath::reset();
+
+        self::assertTrue(AdminPath::isCanonicalPath('/admin'));
+        self::assertTrue(AdminPath::isCanonicalPath('/admin/login'));
+        self::assertFalse(AdminPath::isCanonicalPath('/panel'));
+        self::assertFalse(AdminPath::matches('/admin'));
+        self::assertTrue(AdminPath::matches('/panel'));
+    }
+
     public function testUrlPrefixAppliesRewrite(): void
     {
         $_ENV['ADMIN_PATH'] = 'panel';

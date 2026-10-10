@@ -4,7 +4,7 @@ Configuration lives in plain PHP arrays under `config/*.php`; each file becomes 
 
 ## How values are loaded
 
-1. `Gereq\Foundation\Application::loadEnvironment()` (`src/Foundation/Application.php`) loads `.env` with `Dotenv::createImmutable(...)->safeLoad()` — existing process environment wins over the file.
+1. `Gereq\Foundation\Application::loadEnv()` (`src/Foundation/Application.php`) loads the dotenv file with `Dotenv::createImmutable(...)->safeLoad()` — existing process environment wins over the file. Default file is project-root `.env`; CLI may pass `config.env=<path>` (see [CLI reference](cli.md#env-file-configenv)).
 2. `Application::loadConfiguration()` requires every `config/*.php` and stores the arrays in `Gereq\Config\Repository` (`src/Config/Repository.php`, dot-notation `get()`/`set()`).
 3. `env_value(string $key, mixed $default)` (`src/Support/helpers.php`) reads `$_ENV`, then `$_SERVER`, then `getenv()`. Empty string and `false` fall back to the default. Literal `true`/`false`/`null`/`empty` (optionally in parentheses) are converted to their PHP values.
 

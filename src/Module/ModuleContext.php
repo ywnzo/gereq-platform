@@ -17,6 +17,7 @@ use Gereq\Event\EventRegistry;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Router;
 use Gereq\Publish\PublishableRegistry;
+use Gereq\Schedule\Schedule;
 use Gereq\Setting\Settings;
 use Gereq\User\PermissionRegistry;
 use Gereq\Validation\ValidationRegistry;
@@ -42,6 +43,7 @@ final class ModuleContext
         private readonly EventRegistry $eventRegistry,
         private readonly PublishableRegistry $publishables,
         private readonly WorkflowVariableRegistry $workflowVariables,
+        private readonly Schedule $schedule,
     ) {
     }
 
@@ -138,6 +140,11 @@ final class ModuleContext
     public function publishables(): PublishableRegistry
     {
         return $this->publishables;
+    }
+
+    public function schedule(): Schedule
+    {
+        return $this->schedule;
     }
 
     public function validation(): ValidationRegistry

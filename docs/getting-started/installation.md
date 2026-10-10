@@ -110,7 +110,7 @@ make urls
 
 `make env` (run implicitly by most targets) runs `bin/grq env init --docker`, which writes `.env` from `config/env.schema.toml`, generates `APP_KEY` and `DB_PASSWORD`, and switches drivers to the Docker services (`DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `REDIS_HOST=redis`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `CACHE_DRIVER=redis`). `HTTPS=1` adds `docker-compose.https.yml` and generates a self-signed certificate into `docker/nginx/certs/` (`make certs`).
 
-The compose stack (`docker-compose.yml`, project name `gereq`) contains: `nginx` (port `${GEREQ_PORT:-8080}`), `php` (PHP-FPM, image from `docker/php/Dockerfile`), `postgres` (16, not published to the host), `redis`, `queue` (`php gereq queue:work`, always started) and the opt-in `adminer` (profile `tools`). `DB_PASSWORD` must be set in `.env` or compose fails with `Set a strong DB_PASSWORD in .env`.
+The compose stack (`docker-compose.yml`, project name `gereq`) contains: `nginx` (port `${GEREQ_PORT:-8080}`), `php` (PHP-FPM, image from `docker/php/Dockerfile`), `postgres` (16, not published to the host), `redis`, `queue` (`php gereq queue:work`), `scheduler` (`schedule:run` every 60 s) and the opt-in `adminer` (profile `tools`). `DB_PASSWORD` must be set in `.env` or compose fails with `Set a strong DB_PASSWORD in .env`.
 
 ## Option D — Dockerless / immutable host (`dev/dockerless`)
 

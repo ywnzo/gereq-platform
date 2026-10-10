@@ -7,4 +7,9 @@ use Gereq\Foundation\Application;
 
 require __DIR__ . '/vendor/autoload.php';
 
-exit(Application::create(__DIR__)->runConsole());
+try {
+    exit(Application::create(__DIR__)->runConsole());
+} catch (InvalidArgumentException $e) {
+    fwrite(STDERR, $e->getMessage() . PHP_EOL);
+    exit(1);
+}

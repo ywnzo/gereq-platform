@@ -38,22 +38,7 @@
                 </header>
 
                 {% for demo in group.demos %}
-                    <article class="design-box ui-kit__demo" id="{{ demo.id }}">
-                        <div class="design-box__head">
-                            <h2><code class="design-code">{{ demo.title }}</code></h2>
-                            <p><code class="ui-kit__sig">{{ demo.signature }}</code></p>
-                        </div>
-                        <div class="design-box__body ui-kit__body">
-                            <div class="ui-kit__preview">
-                                <p class="ui-kit__label">{{ 'design.ui.preview'|trans }}</p>
-                                {{ demo.html|raw }}
-                            </div>
-                            <div class="ui-kit__code">
-                                <p class="ui-kit__label">{{ 'design.ui.code'|trans }}</p>
-                                <pre><code>{{ demo.code }}</code></pre>
-                            </div>
-                        </div>
-                    </article>
+                    {% include 'design/partials/ui_kit_demo.html.twig' with { demo: demo } only %}
                 {% endfor %}
             </section>
         {% endfor %}

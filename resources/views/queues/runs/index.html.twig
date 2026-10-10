@@ -1,0 +1,133 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="list-shell">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'queues.runs.title'|trans }}</h1>
+            <p class="muted">{{ 'queues.runs.subtitle'|trans }}</p>
+        </div>
+        <div class="actions queues-head">
+            <span class="status-chip queues-status queues-status--{{ health.tone() }}">
+                <span class="status-chip__dot"></span>
+                {{ ('queues.status.' ~ health.status)|trans }}
+            </span>
+            <dl class="queues-figures" aria-label="{{ 'queues.schedule.figures'|trans }}">
+                <div>
+                    <dt>{{ 'queues.figure.depth'|trans }}</dt>
+                    <dd>{% if pending is null %}<span class="queues-figures__unknown">—</span>{% else %}{{ pending }}{% endif %}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'queues.figure.delayed'|trans }}</dt>
+                    <dd>{% if delayed is null %}<span class="queues-figures__unknown">—</span>{% else %}{{ delayed }}{% endif %}</dd>
+                </div>
+            </dl>
+        </div>
+    </header>
+
+    <div class="toolbar--table">
+        <form class="toolbar queues-filters" method="get">
+            <input
+                class="input"
+                type="search"
+                name="q"
+                value="{{ search|default('') }}"
+                placeholder="{{ 'queues.runs.search'|trans }}"
+                aria-label="{{ 'queues.runs.search'|trans }}"
+            />
+            <input
+                class="input"
+                type="text"
+                name="job"
+                value="{{ job|default('') }}"
+                placeholder="{{ 'queues.runs.filter_job'|trans }}"
+                aria-label="{{ 'queues.runs.filter_job'|trans }}"
+            />
+            <select class="input" name="status" aria-label="{{ 'queues.runs.filter_status'|trans }}">
+                <option value="">{{ 'queues.runs.filter_status'|trans }}</option>
+                {% for s in ['success', 'failed', 'skipped'] %}
+                    <option value="{{ s }}"{% if status == s %} selected{% endif %}>{{ ('queues.runs.status.' ~ s)|trans }}</option>
+                {% endfor %}
+            </select>
+            <select class="input" name="trigger" aria-label="{{ 'queues.runs.filter_trigger'|trans }}">
+                <option value="">{{ 'queues.runs.filter_trigger'|trans }}</option>
+                {% for t in ['worker', 'sync', 'schedule', 'manual'] %}
+                    <option value="{{ t }}"{% if trigger == t %} selected{% endif %}>{{ ('queues.runs.trigger.' ~ t)|trans }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn--ghost">{{ 'common.search'|trans }}</button>
+            {% if search is not empty or job is not empty or status is not empty or trigger is not empty %}
+                <a href="{{ url('admin.queues.runs') }}" class="btn btn--ghost">{{ 'queues.list.reset'|trans }}</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    {% include 'ui/sort_th.html.twig' with {
+                        label: 'queues.runs.field.started'|trans,
+                        column: 'startedAt',
+                        sort: sort|default('startedAt'),
+                        dir: dir|default('desc'),
+                        search: search|default(''),
+                    } %}
+                    {% include 'ui/sort_th.html.twig' with {
+                        label: 'queues.field.job'|trans,
+                        column: 'job',
+                        sort: sort|default('startedAt'),
+                        dir: dir|default('desc'),
+                        search: search|default(''),
+                    } %}
+                    <th>{{ 'queues.runs.field.status'|trans }}</th>
+                    <th>{{ 'queues.runs.field.trigger'|trans }}</th>
+                    {% include 'ui/sort_th.html.twig' with {
+                        label: 'queues.runs.field.duration'|trans,
+                        column: 'durationMs',
+                        sort: sort|default('startedAt'),
+                        dir: dir|default('desc'),
+                        search: search|default(''),
+                    } %}
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td class="muted">{{ item.startedAt().format('d. m. Y H:i:s') }}</td>
+                        <td>
+                            <code>{{ item.job() }}</code>
+                            {% if item.exception() and item.status() == 'failed' %}
+                                <div class="muted grq-text-meta queues-error">{{ item.exception()|split('\n')|first }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge--{{ item.status() == 'success' ? 'success' : (item.status() == 'failed' ? 'danger' : 'warn') }}">
+                                {{ ('queues.runs.status.' ~ item.status())|trans }}
+                            </span>
+                        </td>
+                        <td class="muted">{{ ('queues.runs.trigger.' ~ item.trigger())|trans }}</td>
+                        <td class="muted">{{ item.durationMs() }} ms</td>
+                        <td class="table__actions">
+                            <div class="table__action-btns">
+                                {% include 'ui/row_action.html.twig' with {
+                                    href: url('admin.queues.runs.show', { id: item.id() }),
+                                    label: 'queues.action.detail'|trans,
+                                    icon: 'eye',
+                                } %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="muted">{{ 'queues.runs.empty'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

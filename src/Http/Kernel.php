@@ -6,6 +6,7 @@ namespace Gereq\Http;
 
 use Gereq\Auth\Authenticator;
 use Gereq\Debug\DebugBar;
+use Gereq\Http\Exception\NotFoundHttpException;
 use Gereq\Http\Middleware\AuthMiddleware;
 use Gereq\Http\Middleware\CsrfMiddleware;
 use Gereq\Http\Middleware\GuestMiddleware;
@@ -16,6 +17,7 @@ use Gereq\Http\Middleware\SecurityHeadersMiddleware;
 use Gereq\Http\Middleware\SetLocaleMiddleware;
 use Gereq\Http\Middleware\StartSessionMiddleware;
 use Gereq\Module\ModuleManager;
+use Gereq\Support\AdminPath;
 use Gereq\Validation\ValidationException;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -44,7 +46,7 @@ final class Kernel
         $this->requestStack->push($request);
         $this->debugBar->mark('request');
 
-        $static = ProductAdmin::staticFile($request) ?? Storefront::staticFile($request);
+        $static = Storefront::staticFile($request);
         if ($static !== null) {
             $this->debugBar->mark('done');
 
@@ -54,6 +56,14 @@ final class Kernel
         $path = $request->getPathInfo();
         if (strtoupper($request->getMethod()) === 'OPTIONS' && str_starts_with($path, '/api/v1/store/')) {
             $response = PublicCors::apply(new Response('', 204), $request, 'GET, POST, PATCH, DELETE, OPTIONS');
+            $this->debugBar->mark('done');
+
+            return $this->debugBar->inject($request, $response);
+        }
+
+        // Relocated ADMIN_PATH: keep canonical /admin out of SPA and do not redirect (no URL leak).
+        if (AdminPath::segment() !== AdminPath::CANONICAL && AdminPath::isCanonicalPath($path)) {
+            $response = $this->errors->render($request, new NotFoundHttpException());
             $this->debugBar->mark('done');
 
             return $this->debugBar->inject($request, $response);

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Notifications\Application;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Gereq\Notification\DatabaseNotification;
+use Gereq\Notifications\Channel\DatabaseNotification;
 use Gereq\Notifications\Domain\NotificationPreference;
 
 /**
@@ -30,7 +30,7 @@ final class MemberNotifier
             'category' => $category,
             'event_type' => $eventType,
             'meta' => $meta,
-        ]);
+        ], DatabaseNotification::ACTOR_CUSTOMER);
         $this->em->persist($record);
         $this->em->flush();
     }
@@ -41,9 +41,11 @@ final class MemberNotifier
             ->select('COUNT(n.id)')
             ->from(DatabaseNotification::class, 'n')
             ->where('n.userId = :uid')
+            ->andWhere('n.actorType = :actor')
             ->andWhere('n.type = :type')
             ->andWhere('n.readAt IS NULL')
             ->setParameter('uid', $accountId)
+            ->setParameter('actor', DatabaseNotification::ACTOR_CUSTOMER)
             ->setParameter('type', 'member_feed')
             ->getQuery()
             ->getSingleScalarResult();
@@ -81,7 +83,11 @@ final class MemberNotifier
 
         /** @var list<DatabaseNotification> $rows */
         $rows = $this->em->getRepository(DatabaseNotification::class)->findBy(
-            ['userId' => $accountId, 'type' => 'member_feed'],
+            [
+                'userId' => $accountId,
+                'actorType' => DatabaseNotification::ACTOR_CUSTOMER,
+                'type' => 'member_feed',
+            ],
             ['createdAt' => 'DESC'],
             500,
         );
@@ -144,8 +150,10 @@ final class MemberNotifier
             ->select('n')
             ->from(DatabaseNotification::class, 'n')
             ->where('n.userId = :uid')
+            ->andWhere('n.actorType = :actor')
             ->andWhere('n.type = :type')
             ->setParameter('uid', $accountId)
+            ->setParameter('actor', DatabaseNotification::ACTOR_CUSTOMER)
             ->setParameter('type', 'member_feed')
             ->orderBy('n.id', 'ASC')
             ->setMaxResults($limit);
@@ -207,7 +215,12 @@ final class MemberNotifier
     public function markRead(string $accountId, string $id): void
     {
         $row = $this->em->find(DatabaseNotification::class, $id);
-        if ($row instanceof DatabaseNotification && $row->userId() === $accountId && $row->readAt() === null) {
+        if (
+            $row instanceof DatabaseNotification
+            && $row->actorType() === DatabaseNotification::ACTOR_CUSTOMER
+            && $row->userId() === $accountId
+            && $row->readAt() === null
+        ) {
             $row->markRead();
             $this->em->flush();
         }
@@ -217,6 +230,7 @@ final class MemberNotifier
     {
         $rows = $this->em->getRepository(DatabaseNotification::class)->findBy([
             'userId' => $accountId,
+            'actorType' => DatabaseNotification::ACTOR_CUSTOMER,
             'type' => 'member_feed',
             'readAt' => null,
         ]);

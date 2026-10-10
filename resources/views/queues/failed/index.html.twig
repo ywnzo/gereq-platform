@@ -1,0 +1,172 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+{% set maxAttempts = maxAttempts|default(1) %}
+<div class="list-shell">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'queues.title'|trans }}</h1>
+            <p class="muted">{{ 'queues.subtitle'|trans }}</p>
+        </div>
+        <div class="actions queues-head">
+            <span class="status-chip queues-status queues-status--{{ health.tone() }}">
+                <span class="status-chip__dot"></span>
+                {{ ('queues.status.' ~ health.status)|trans }}
+            </span>
+
+            <a href="{{ url('admin.queues.schedule') }}" class="btn btn--ghost">{{ 'queues.action.schedule'|trans }}</a>
+            {% if user.can('queues.manage') %}
+                <form method="post" action="{{ url('admin.queues.prune') }}" class="queues-head__action">
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="days" value="30" />
+                    <button
+                        type="submit"
+                        class="btn btn--ghost"
+                        data-confirm="{{ 'queues.prune.confirm'|trans|e('html_attr') }}"
+                        data-confirm-danger="1"
+                    >{{ 'queues.action.prune'|trans }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="toolbar--table">
+        <form class="toolbar queues-filters" method="get">
+            <input
+                class="input"
+                type="search"
+                name="q"
+                value="{{ search|default('') }}"
+                placeholder="{{ 'queues.list.search'|trans }}"
+                aria-label="{{ 'queues.list.search'|trans }}"
+            />
+            <input
+                class="input"
+                type="text"
+                name="queue"
+                value="{{ queue|default('') }}"
+                placeholder="{{ 'queues.list.filter_queue'|trans }}"
+                aria-label="{{ 'queues.list.filter_queue'|trans }}"
+            />
+            <input
+                class="input"
+                type="number"
+                name="attempts"
+                min="1"
+                value="{{ attempts|default('') }}"
+                placeholder="{{ 'queues.list.filter_attempts'|trans }}"
+                aria-label="{{ 'queues.list.filter_attempts'|trans }}"
+            />
+            <button type="submit" class="btn btn--ghost">{{ 'common.search'|trans }}</button>
+            {% if search is not empty or queue is not empty or attempts is not empty %}
+                <a href="{{ url('admin.queues.index') }}" class="btn btn--ghost">{{ 'queues.list.reset'|trans }}</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    {% include 'ui/sort_th.html.twig' with {
+                        label: 'queues.field.time'|trans,
+                        column: 'failedAt',
+                        sort: sort|default('failedAt'),
+                        dir: dir|default('desc'),
+                        search: search|default(''),
+                    } %}
+                    {% include 'ui/sort_th.html.twig' with {
+                        label: 'queues.field.job'|trans,
+                        column: 'job',
+                        sort: sort|default('failedAt'),
+                        dir: dir|default('desc'),
+                        search: search|default(''),
+                    } %}
+                    {% include 'ui/sort_th.html.twig' with {
+                        label: 'queues.field.attempts'|trans,
+                        column: 'attempts',
+                        sort: sort|default('failedAt'),
+                        dir: dir|default('desc'),
+                        search: search|default(''),
+                    } %}
+                    <th scope="col">{{ 'queues.field.queue'|trans }}</th>
+                    <th scope="col">{{ 'queues.field.error'|trans }}</th>
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td class="muted">{{ item.failedAt().format('d. m. Y H:i:s') }}</td>
+                        <td>
+                            <div class="table__title">
+                                <a href="{{ url('admin.queues.show', {id: item.id()}) }}">
+                                    {{ item.job()|default('—') }}
+                                </a>
+                                {% if item.job() is empty %}
+                                    <span class="muted">{{ 'queues.failed.unreadable'|trans }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% set exhausted = item.attempts() >= maxAttempts %}
+                            <strong>{{ item.attempts() }} / {{ maxAttempts }}</strong>
+                            {% if not exhausted %}
+                                <span class="badge badge--warn">{{ 'queues.detail.retrying'|trans }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="muted">{{ item.queue() }}</td>
+                        <td class="queues-error">{{ item.exception()|split('\n')|first|trans }}</td>
+                        <td class="table__actions">
+                            <div class="table__action-btns">
+                                {% include 'ui/row_action.html.twig' with {
+                                    href: url('admin.queues.show', {id: item.id()}),
+                                    label: 'queues.action.detail'|trans,
+                                    icon: 'eye',
+                                } %}
+                                {% if user.can('queues.manage') %}
+                                    <form method="post" action="{{ url('admin.queues.retry', {id: item.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button
+                                            type="submit"
+                                            class="btn btn--ghost btn--sm"
+                                            {% if not exhausted %}
+                                                disabled
+                                                title="{{ 'queues.detail.retry_locked'|trans({
+                                                    '%attempts%': item.attempts(), '%max%': maxAttempts
+                                                })|e('html_attr') }}"
+                                            {% else %}
+                                                data-confirm="{{ 'queues.retry.confirm'|trans({'%job%': item.job()})|e('html_attr') }}"
+                                            {% endif %}
+                                        >{{ 'queues.action.retry'|trans }}</button>
+                                    </form>
+                                    <form method="post" action="{{ url('admin.queues.forget', {id: item.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button
+                                            type="submit"
+                                            class="btn btn--ghost btn--sm"
+                                            data-confirm="{{ 'queues.forget.confirm'|trans|e('html_attr') }}"
+                                            data-confirm-danger="1"
+                                        >{{ 'queues.action.forget'|trans }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty">
+                                <h2>{{ 'queues.empty.title'|trans }}</h2>
+                                <p>{{ 'queues.empty.hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

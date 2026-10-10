@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Command;
 
+use Gereq\Env\CliEnvFile;
 use Gereq\Env\EnvSchema;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -33,10 +34,11 @@ final class EnvInitCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $schemaPath = $this->basePath . '/config/env.schema.toml';
-        $envPath = $this->basePath . '/.env';
+        $envPath = CliEnvFile::resolvedPath() ?? ($this->basePath . '/.env');
+        $envLabel = basename($envPath);
 
         if (is_file($envPath) && !$input->getOption('force')) {
-            $output->writeln('<info>.env already exists</info> (use --force to overwrite)');
+            $output->writeln('<info>' . $envLabel . ' already exists</info> (use --force to overwrite)');
 
             return Command::SUCCESS;
         }
@@ -66,8 +68,14 @@ final class EnvInitCommand extends Command
         }
 
         $contents = $schema->renderEnv($overrides);
+        $dir = dirname($envPath);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            $output->writeln('<error>Failed to create directory for ' . $envLabel . '</error>');
+
+            return Command::FAILURE;
+        }
         if (file_put_contents($envPath, $contents) === false) {
-            $output->writeln('<error>Failed to write .env</error>');
+            $output->writeln('<error>Failed to write ' . $envLabel . '</error>');
 
             return Command::FAILURE;
         }
@@ -79,7 +87,7 @@ final class EnvInitCommand extends Command
             }
         }
 
-        $output->writeln('<info>✓</info> Wrote .env from env.schema.toml'
+        $output->writeln('<info>✓</info> Wrote ' . $envLabel . ' from env.schema.toml'
             . ($input->getOption('docker') ? ' (docker profile)' : ''));
 
         return Command::SUCCESS;

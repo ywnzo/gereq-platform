@@ -20,8 +20,21 @@ final class SeedDemoCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        foreach ($this->demoSeeder->seed() as $line) {
-            $output->writeln($line);
+        $env = strtolower(trim((string) env_value('APP_ENV', 'production')));
+        if ($env === 'production') {
+            $output->writeln('<error>Demo seed is disabled when APP_ENV=production.</error>');
+
+            return Command::FAILURE;
+        }
+
+        try {
+            foreach ($this->demoSeeder->seed() as $line) {
+                $output->writeln($line);
+            }
+        } catch (\RuntimeException $e) {
+            $output->writeln('<error>' . $e->getMessage() . '</error>');
+
+            return Command::FAILURE;
         }
 
         return Command::SUCCESS;

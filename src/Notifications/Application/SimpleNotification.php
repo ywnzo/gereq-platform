@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Gereq\Notifications\Application;
 
-use Gereq\Notification\MailMessage;
-use Gereq\Notification\Notification;
+use Gereq\Notifications\Channel\MailMessage;
+use Gereq\Notifications\Channel\Notification as NotificationContract;
 use Gereq\User\Entity\User;
 
-final class SimpleNotification implements Notification
+final class SimpleNotification implements NotificationContract
 {
     /** @param array<string, mixed> $meta */
     public function __construct(

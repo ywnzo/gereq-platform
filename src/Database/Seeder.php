@@ -81,6 +81,10 @@ final class Seeder
         }
 
         if ($withDemo && !$forumProfile) {
+            $env = strtolower(trim((string) env_value('APP_ENV', 'production')));
+            if ($env === 'production') {
+                throw new \RuntimeException('Demo seed is disabled when APP_ENV=production.');
+            }
             $this->demoSeeder->seed();
         }
         if (RealityV3Seeder::isActive()) {

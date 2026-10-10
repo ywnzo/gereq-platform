@@ -5,5 +5,17 @@ services:
     ports:
       - "443:443"
     volumes:
-      - ./docker/nginx/certs:/etc/nginx/certs:ro,z
-      - ./docker/nginx/https.conf:/etc/nginx/conf.d/https.conf:ro,z
+      - type: bind
+        source: ./docker/nginx/certs
+        target: /etc/nginx/certs
+        read_only: true
+        consistency: consistent
+        bind:
+          selinux: z
+      - type: bind
+        source: ./docker/nginx/https.conf
+        target: /etc/nginx/conf.d/https.conf
+        read_only: true
+        consistency: consistent
+        bind:
+          selinux: z

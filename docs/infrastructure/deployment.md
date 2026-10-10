@@ -62,7 +62,15 @@ php gereq queue:work
 
 ## 5. Scheduled tasks
 
-The codebase has **no scheduler/cron runner** (`src/Automation/` contains only workflow variable definitions; no `schedule:run` command exists). Everything time-based is triggered by requests or queue jobs. If periodic work is needed (e.g. `queue:work` restarts, cache pruning), it has to be added externally — **recommendation**.
+Run both workers in production (supervisor/systemd):
+
+```bash
+php gereq queue:work
+# and once per minute:
+* * * * * php /path/to/gereq schedule:run
+```
+
+`schedule:run` dispatches due entries from `Gereq\Schedule\Schedule` (currency rates, module crons, …). Prefer `->async()` so heavy work lands on the queue worker.
 
 ## 6. Cache
 

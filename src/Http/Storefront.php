@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class Storefront
 {
     private const SKIP_PREFIX = [
-        '/api/', '/build/', '/media/', '/brand/', '/tickets/', '/security/', '/product-admin/',
+        '/api/', '/build/', '/media/', '/brand/', '/tickets/', '/security/',
     ];
 
     public static function root(): string
@@ -93,7 +93,7 @@ final class Storefront
         if ($path === '') {
             $path = '/';
         }
-        if (AdminPath::matches($path) || AdminPath::productMatches($path)) {
+        if (AdminPath::matches($path) || AdminPath::isCanonicalPath($path)) {
             return false;
         }
         foreach (self::SKIP_PREFIX as $prefix) {

@@ -11,7 +11,7 @@ use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
-use Gereq\Notification\DatabaseNotification;
+use Gereq\Notifications\Channel\DatabaseNotification;
 use Gereq\User\Entity\User;
 use Gereq\Notifications\Application\NotifierBridge;
 use Gereq\Notifications\Domain\NotificationPreference;
@@ -54,7 +54,11 @@ final class NotificationController extends Controller
     {
         $user = $this->requireUser();
         $item = $this->em->find(DatabaseNotification::class, $id);
-        if (!$item instanceof DatabaseNotification || $item->userId() !== $user->id()) {
+        if (
+            !$item instanceof DatabaseNotification
+            || $item->actorType() !== DatabaseNotification::ACTOR_USER
+            || $item->userId() !== $user->id()
+        ) {
             $this->abort(404, $this->translator->trans('notifications.error.not_found'));
         }
         $item->markRead();
@@ -70,6 +74,7 @@ final class NotificationController extends Controller
         $user = $this->requireUser();
         $items = $this->em->getRepository(DatabaseNotification::class)->findBy([
             'userId' => $user->id(),
+            'actorType' => DatabaseNotification::ACTOR_USER,
             'readAt' => null,
         ]);
         foreach ($items as $item) {

@@ -68,8 +68,12 @@ final class StoreAuthApiController extends Controller
         return $this->authedResponse($account, 201);
     }
 
-    public function softRegister(Request $request): JsonResponse
+    public function softRegister(Request $request): Response
     {
+        if (($denied = $this->gereqGuard($request)) !== null) {
+            return $denied;
+        }
+
         $data = gereq()->make(ValidationRegistry::class)->validate('customers.store.soft_register', $this->body($request));
         $email = (string) $data['email'];
         $throttled = $this->throttleAuth($request, $email);

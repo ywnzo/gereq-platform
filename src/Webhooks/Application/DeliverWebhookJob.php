@@ -40,7 +40,7 @@ final class DeliverWebhookJob implements Job
         }
 
         try {
-            $ssrf->assertSafe($webhook->url());
+            $pinned = $ssrf->pin($webhook->url());
         } catch (\InvalidArgumentException $e) {
             $delivery->markFailed(null, [], $e->getMessage(), 0);
             $webhook->markFailure();
@@ -61,6 +61,7 @@ final class DeliverWebhookJob implements Job
             'X-GEREQ-Signature' => $signature,
             'Content-Type' => 'application/json',
             'User-Agent' => 'GEREQ-Webhooks/1.0',
+            'Host' => $pinned->host . ($this->nonDefaultPort($pinned) ? ':' . $pinned->port : ''),
         ]);
 
         // Persist headers without the signature secret material beyond the signature itself.
@@ -68,7 +69,7 @@ final class DeliverWebhookJob implements Job
         $delivery->setRequestHeaders($safeHeaders);
 
         $started = hrtime(true);
-        $result = $this->send($webhook->url(), $headers, $body, $webhook->timeoutSeconds());
+        $result = $this->send($pinned, $headers, $body, $webhook->timeoutSeconds());
         $durationMs = (int) round((hrtime(true) - $started) / 1_000_000);
 
         if ($result['network_error']) {
@@ -168,11 +169,18 @@ final class DeliverWebhookJob implements Job
         return false;
     }
 
+    private function nonDefaultPort(PinnedUrl $pinned): bool
+    {
+        $default = $pinned->scheme === 'https' ? 443 : 80;
+
+        return $pinned->port !== $default;
+    }
+
     /**
      * @param array<string, string> $headers
      * @return array{network_error: bool, status: ?int, headers: array<string, string>, body: string, error: ?string}
      */
-    private function send(string $url, array $headers, string $body, int $timeout): array
+    private function send(PinnedUrl $pinned, array $headers, string $body, int $timeout): array
     {
         $headerLines = [];
         foreach ($headers as $name => $value) {
@@ -180,19 +188,20 @@ final class DeliverWebhookJob implements Job
         }
 
         if (function_exists('curl_init')) {
-            return $this->sendCurl($url, $headerLines, $body, $timeout);
+            return $this->sendCurl($pinned, $headerLines, $body, $timeout);
         }
 
-        return $this->sendStream($url, $headerLines, $body, $timeout);
+        return $this->sendStream($pinned->connectUrl(), $headerLines, $body, $timeout);
     }
 
     /**
      * @param list<string> $headerLines
      * @return array{network_error: bool, status: ?int, headers: array<string, string>, body: string, error: ?string}
      */
-    private function sendCurl(string $url, array $headerLines, string $body, int $timeout): array
+    private function sendCurl(PinnedUrl $pinned, array $headerLines, string $body, int $timeout): array
     {
-        $ch = curl_init($url);
+        // Dial via original hostname so TLS SNI stays correct; pin DNS with CURLOPT_RESOLVE.
+        $ch = curl_init($pinned->originalUrl);
         if ($ch === false) {
             return [
                 'network_error' => true,
@@ -203,7 +212,7 @@ final class DeliverWebhookJob implements Job
             ];
         }
 
-        curl_setopt_array($ch, [
+        $opts = [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_HTTPHEADER => $headerLines,
@@ -213,7 +222,13 @@ final class DeliverWebhookJob implements Job
             CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_PROTOCOLS => defined('CURLPROTO_HTTP') ? (CURLPROTO_HTTP | CURLPROTO_HTTPS) : 3,
-        ]);
+        ];
+        if (defined('CURLOPT_RESOLVE')) {
+            $opts[CURLOPT_RESOLVE] = [
+                $pinned->host . ':' . $pinned->port . ':' . $pinned->ip,
+            ];
+        }
+        curl_setopt_array($ch, $opts);
 
         $raw = curl_exec($ch);
         $errno = curl_errno($ch);

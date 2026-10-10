@@ -144,7 +144,8 @@ Routes are mounted under `/api/v1/warehouse/…`. Serialization is done in the c
 - Define events in `register()` so they appear in the platform catalogue and in the Webhooks module: `$context->platformEvents()->register((new EventDefinition('stock.adjusted', $this->id()))->description('…')->webhookEnabled(true))`.
 - Emit from services/controllers with the injected `EventBus`: `$this->events->emit('stock.adjusted', ['type' => 'stock', 'id' => $id], $payload)` — the payload is a plain versioned array, never a Doctrine entity.
 - React to other modules in `boot()` via `$context->hooks()->action('viewing.created', fn (...) => …)` or `filter()` for value transformation.
-- Async work: implement `Gereq\Queue\Job` and dispatch with the injected `Gereq\Queue\Queue::dispatch($job)`.
+- Async work: implement `Gereq\Queue\Job` and dispatch with the injected `Gereq\Queue\Queue::dispatch($job)`. Delay with `$queue->later($job, $seconds)` (or a `DateTimeInterface`).
+- Recurring work: in `boot()`, `$context->schedule()->command('my:cmd')->everyFiveMinutes()->async()` or `->job(new MyJob)->daily()`.
 
 Reference: [Hooks, events, webhooks](../architecture/hooks-events-webhooks.md).
 

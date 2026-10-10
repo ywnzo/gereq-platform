@@ -11,7 +11,7 @@ Both entry points build the application the same way:
 
 `Gereq\Foundation\Application::create()` (`src/Foundation/Application.php`):
 
-1. `loadEnv()` — `Dotenv::createImmutable()->safeLoad()` if `.env` exists.
+1. `loadEnv()` — `Dotenv::createImmutable()->safeLoad()` for `.env` (or CLI `config.env=<path>`).
 2. `loadConfig()` — `require`s every `config/*.php` into `Gereq\Config\Repository`.
 3. Builds a PHP-DI `ContainerBuilder` with autowiring + attributes and the explicit `definitions()` map (factories for `EntityManagerInterface`, `CacheItemPoolInterface`, `MailerInterface`, `TranslatorInterface`, Twig `Environment`, `Queue`, `RateLimiter`, `SelfRepairSearch`, `FileManager`, `ModuleManager`, plus `basePath` constructor bindings for a few classes). Everything else is autowired.
 4. `Gereq::set($app)` — static accessor used by the `gereq()` helper.
@@ -64,7 +64,8 @@ flowchart TD
 | `Module` | manifests, discovery, enable/disable, dependency checks, capabilities, GitLab versions, updater | `Module\ModuleManager`, `Module\ModuleContext`, `Module\ModuleManifest`, `Module\ModuleVersionActivator`, `Module\ModuleUpdater` |
 | `Notification` | notification contracts and multi-channel notifier | `Notification\Notifier`, `Notification\Notification` |
 | `Publish` | staging → production content pipeline, content version, publishable registry | `Publish\PublishService`, `Publish\ProductionFreeze`, `Publish\StagingStore`, `Publish\ContentVersion` |
-| `Queue` | job queue with `sync` / `redis` / `file` drivers | `Queue\Queue`, `Queue\Job` |
+| `Queue` | job queue with `sync` / `redis` / `file` drivers, delayed jobs (`later`), failed-job store, admin UI | `Queue\Queue`, `Queue\Job`, `Queue\FailedJobStore`, `Queue\QueueRegistrar` |
+| `Schedule` | recurring tasks (`schedule:run` / `schedule:list`), module registration via `ModuleContext::schedule()` | `Schedule\Schedule`, `Schedule\ScheduleRunner`, `Schedule\ScheduleRegistrar` |
 | `Search` | typo/diacritics tolerant search over Doctrine query builders | `Search\SelfRepairSearch` |
 | `Security` | CSRF, rate limiter, HTML sanitizer, CSP builder | `Security\Csrf`, `Security\RateLimiter`, `Security\HtmlSanitizer`, `Security\ContentSecurityPolicy` |
 | `Setting` | DB-backed settings with definitions, types, encryption, staging overlay | `Setting\Settings`, `Setting\SettingRecord` |

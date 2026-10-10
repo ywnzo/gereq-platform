@@ -12,6 +12,8 @@ flowchart LR
     P --> R[(redis:7-alpine)]
     Q["queue (php gereq queue:work)"] --> PG
     Q --> R
+    S["scheduler (schedule:run loop)"] --> PG
+    S --> R
     A["adminer:4 (profile tools)"] -.-> PG
 ```
 
@@ -23,11 +25,12 @@ Compose project name is `gereq`, so containers are named `gereq-nginx-1`, `gereq
 
 | Service | Image / build | Ports (host:container) | Volumes | Notable env | Depends on / health |
 | --- | --- | --- | --- | --- | --- |
-| `nginx` | `nginx:1.27-alpine` | `${GEREQ_PORT:-8080}:80` | `.:/var/www/html:ro,z`, `docker/nginx/nginx.conf`, `docker/nginx/default.conf` | – (`extra_hosts: host.docker.internal:host-gateway`) | `php` |
-| `php` | build `docker/php/Dockerfile` | none (FPM on `php:9000` internally) | `.:/var/www/html:z`, `docker/php/zz-www.conf` | `env_file: .env` plus overrides: `APP_URL`, `TRUSTED_PROXIES` (default `*`), `FRONTEND_ORIGIN`, `REDIS_HOST=redis`, `REDIS_PORT=6379`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `DB_PORT=5432`, `DB_DATABASE_NAME`, `DB_USERNAME`, `DB_PASSWORD` (required), `PHP_FPM_*` | `redis` started, `postgres` healthy |
+| `nginx` | `nginx:1.27-alpine` | `${GEREQ_PORT:-8080}:80` | bind `.:/var/www/html` (ro, `consistency: consistent`), `docker/nginx/nginx.conf`, `docker/nginx/default.conf` | – (`extra_hosts: host.docker.internal:host-gateway`) | `php` |
+| `php` | build `docker/php/Dockerfile` | none (FPM on `php:9000` internally) | bind `.:/var/www/html` (`consistency: consistent`), `docker/php/zz-www.conf`, `docker/php/php.ini` | `env_file: .env` plus overrides: `APP_URL`, `TRUSTED_PROXIES` (default `*`), `FRONTEND_ORIGIN`, `REDIS_HOST=redis`, `REDIS_PORT=6379`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `DB_PORT=5432`, `DB_DATABASE_NAME`, `DB_USERNAME`, `DB_PASSWORD` (required), `PHP_FPM_*` | `redis` started, `postgres` healthy |
 | `postgres` | `postgres:16-alpine` | not published | named volume `gereq-postgres:/var/lib/postgresql/data` | `POSTGRES_DB/USER/PASSWORD` from `DB_*` | healthcheck `pg_isready -U $DB_USERNAME -d $DB_DATABASE_NAME`, interval 3s, timeout 5s, retries 20 |
 | `redis` | `redis:7-alpine`, `redis-server --appendonly yes` | not published | named volume `gereq-redis:/data` | – | – |
-| `queue` | same build as `php`, command `php gereq queue:work` | none | `.:/var/www/html:z` | `env_file: .env` + `REDIS_HOST=redis`, `QUEUE_DRIVER=redis`, `DB_*` pgsql overrides | `redis`, `postgres` healthy, `php`; `restart: unless-stopped` |
+| `queue` | same build as `php`, command `php gereq queue:work` | none | bind `.:/var/www/html` (`consistency: consistent`) | `env_file: .env` + `REDIS_HOST=redis`, `QUEUE_DRIVER=redis`, `DB_*` pgsql overrides | `redis`, `postgres` healthy, `php`; `restart: unless-stopped` |
+| `scheduler` | same build as `php`, `schedule:run` every 60 s | none | same bind | same Redis/DB overrides as `queue` | `redis`, `postgres`, `php`, `queue`; `restart: unless-stopped` |
 | `adminer` | `adminer:4`, **profile `tools`** | `${GEREQ_ADMINER_PORT:-8086}:8080` | `docker/adminer/autologin.php:/var/www/html/plugins-enabled/autologin.php:ro,z` | `ADMINER_DEFAULT_SERVER=postgres`, `ADMINER_DESIGN=pepa-linha`, `ADMINER_SERVER`, `ADMINER_USERNAME`, `ADMINER_PASSWORD`, `ADMINER_DB` | `postgres` healthy |
 
 Notes derived from the compose file:
@@ -36,6 +39,7 @@ Notes derived from the compose file:
 - The `php` and `queue` services force `pgsql` + Redis regardless of what `.env` says; the SQLite default from `config/env.schema.toml` is never used inside Docker.
 - PHP-FPM pool size is tunable via `PHP_FPM_MAX_CHILDREN` (32), `PHP_FPM_START_SERVERS` (8), `PHP_FPM_MIN_SPARE_SERVERS` (4), `PHP_FPM_MAX_SPARE_SERVERS` (16), `PHP_FPM_MAX_REQUESTS` (500).
 - The queue worker is **always** part of the stack (no profile). The `--queue` flag of `serve-docker` is reported by the command itself as legacy.
+- Project bind mounts use Compose long syntax with `consistency: consistent` (and SELinux `:z`). On **Docker Desktop** the host tree is exposed through a virtualized FS (`fakeowner` / VirtioFS); the short form `.:/var/www/html:z` can lag after atomic renames (editor save, `perl -pi`). `consistent` keeps host writes visible immediately. Dev `php.ini` sets `opcache.revalidate_freq=0` so PHP also re-stats every request.
 
 ### HTTPS override (`docker-compose.https.yml`)
 

@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Gereq\Notification;
+namespace Gereq\Notifications\Channel;
 
 use Gereq\User\Entity\User;
 
 interface Notification
 {
+    /** @return list<string> */
     public function via(): array;
 
     /** @return array<string, mixed> */

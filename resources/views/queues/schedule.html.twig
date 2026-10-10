@@ -1,0 +1,137 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+<div class="list-shell">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'queues.schedule.title'|trans }}</h1>
+            <p class="muted">{{ 'queues.schedule.subtitle'|trans }}</p>
+        </div>
+        <div class="actions queues-head">
+            <span class="status-chip queues-status queues-status--{{ health.tone() }}">
+                <span class="status-chip__dot"></span>
+                {{ ('queues.status.' ~ health.status)|trans }}
+            </span>
+
+            <dl class="queues-figures" aria-label="{{ 'queues.schedule.figures'|trans }}">
+                <div>
+                    <dt>{{ 'queues.figure.depth'|trans }}</dt>
+                    <dd>{% if pending is null %}<span class="queues-figures__unknown">—</span>{% else %}{{ pending }}{% endif %}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'queues.figure.delayed'|trans }}</dt>
+                    <dd>{% if delayed is null %}<span class="queues-figures__unknown">—</span>{% else %}{{ delayed }}{% endif %}</dd>
+                </div>
+                <div>
+                    <dt>{{ 'queues.figure.scheduled'|trans }}</dt>
+                    <dd>{{ events|length }}</dd>
+                </div>
+                {% if pausedCount > 0 %}
+                    <div>
+                        <dt>{{ 'queues.figure.paused'|trans }}</dt>
+                        <dd>{{ pausedCount }}</dd>
+                    </div>
+                {% endif %}
+            </dl>
+
+            <a href="{{ url('admin.queues.index') }}" class="btn btn--ghost">{{ 'queues.action.failed'|trans }}</a>
+        </div>
+    </header>
+
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'queues.schedule.field.expression'|trans }}</th>
+                    <th>{{ 'queues.schedule.field.task'|trans }}</th>
+                    <th>{{ 'queues.schedule.field.type'|trans }}</th>
+                    <th>{{ 'queues.schedule.field.mode'|trans }}</th>
+                    <th>{{ 'queues.schedule.field.status'|trans }}</th>
+                    <th>{{ 'queues.schedule.field.next'|trans }}</th>
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                    <tr{% if event.paused %} class="queues-schedule-row--paused"{% endif %}>
+                        <td><code>{{ event.expression }}</code></td>
+                        <td>
+                            <strong>{{ event.name }}</strong>
+                            {% if event.description %}
+                                <div class="muted grq-text-meta">{{ event.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ event.type }}</td>
+                        <td>{{ event.async ? 'queues.schedule.mode.async'|trans : 'queues.schedule.mode.inline'|trans }}</td>
+                        <td>
+                            {% if event.paused %}
+                                <span class="status-chip queues-status queues-status--warn">
+                                    <span class="status-chip__dot"></span>
+                                    {{ 'queues.schedule.status.paused'|trans }}
+                                </span>
+                            {% else %}
+                                <span class="status-chip queues-status queues-status--ok">
+                                    <span class="status-chip__dot"></span>
+                                    {{ 'queues.schedule.status.active'|trans }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if event.paused %}
+                                <span class="muted">{{ 'queues.schedule.next.paused'|trans }}</span>
+                            {% elseif event.due %}
+                                <span class="status-chip queues-status queues-status--warn">{{ 'queues.schedule.due_now'|trans }}</span>
+                            {% else %}
+                                {{ event.next|default('—') }}
+                            {% endif %}
+                            <div class="muted grq-text-meta">{{ event.timezone }}</div>
+                        </td>
+                        <td class="table__actions">
+                            {% if user.can('queues.manage') and event.runnable %}
+                                <div class="table__action-btns">
+                                    <form method="post" action="{{ url('admin.queues.schedule.run', { name: event.id }) }}">
+                                        {{ csrf_field()|raw }}
+                                        <button
+                                            type="submit"
+                                            class="table__action-btn table__action-btn--success"
+                                            title="{{ 'queues.schedule.action.run'|trans }}"
+                                            aria-label="{{ 'queues.schedule.action.run'|trans }}"
+                                            data-confirm="{{ 'queues.schedule.run.confirm'|trans({ '%name%': event.name })|e('html_attr') }}"
+                                        >{{ icon('play') }}</button>
+                                    </form>
+                                    {% if event.paused %}
+                                        <form method="post" action="{{ url('admin.queues.schedule.resume', { name: event.id }) }}">
+                                            {{ csrf_field()|raw }}
+                                            <button
+                                                type="submit"
+                                                class="table__action-btn table__action-btn--primary"
+                                                title="{{ 'queues.schedule.action.resume'|trans }}"
+                                                aria-label="{{ 'queues.schedule.action.resume'|trans }}"
+                                            >{{ icon('refresh') }}</button>
+                                        </form>
+                                    {% else %}
+                                        <form method="post" action="{{ url('admin.queues.schedule.pause', { name: event.id }) }}">
+                                            {{ csrf_field()|raw }}
+                                            <button
+                                                type="submit"
+                                                class="table__action-btn table__action-btn--warn"
+                                                title="{{ 'queues.schedule.action.pause'|trans }}"
+                                                aria-label="{{ 'queues.schedule.action.pause'|trans }}"
+                                                data-confirm="{{ 'queues.schedule.pause.confirm'|trans({ '%name%': event.name })|e('html_attr') }}"
+                                            >{{ icon('pause') }}</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="muted">{{ 'queues.schedule.empty'|trans }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -25,12 +25,10 @@ final class StartSessionMiddleware implements MiddlewareInterface
         $pathInfo = $request->getPathInfo();
         $isApi = str_starts_with($pathInfo, '/api/');
         $cookieName = (string) $this->config->get('session.cookie', 'gereq_session');
-        // Vue product admin login must create a session without an existing cookie.
-        $needsFreshSession = str_starts_with($pathInfo, '/api/v1/admin/auth/');
 
         // Public/storefront API is token-based — skip session unless browser sent admin cookie
         // (so Developer API tester / same-origin fetch with credentials works).
-        if ($isApi && !$needsFreshSession && !$request->cookies->has($cookieName)) {
+        if ($isApi && !$request->cookies->has($cookieName)) {
             return $next($request);
         }
 

@@ -1,0 +1,125 @@
+/* Queues — header of the failed job list.
+   The kernel has no stat group and no styled filter row, so the numbers that describe the
+   list and the search inputs both needed their own rules. */
+
+.queues-head {
+    align-items: center;
+}
+
+.queues-head .status-chip {
+    height: var(--control-h, 2.625rem);
+    padding-inline: 12px;
+    box-sizing: border-box;
+}
+
+/* .status-chip__dot is green in the kernel and only has a --muted variant, so the tones the
+   health status actually reports are coloured here. */
+.queues-status--ok .status-chip__dot { background: var(--success); }
+.queues-status--warn .status-chip__dot { background: var(--warning); }
+.queues-status--danger .status-chip__dot { background: var(--danger); }
+
+.queues-figures {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.4rem;
+    margin: 0;
+    padding: 0 0.35rem;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+}
+
+.queues-figures > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 0.1rem 0;
+}
+
+.queues-figures dt {
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.queues-figures dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.queues-figures__unknown {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.queues-head__action {
+    margin: 0;
+}
+
+.queues-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.queues-filters input {
+    min-width: 11rem;
+}
+
+.queues-filters input[type='number'] {
+    min-width: 7rem;
+}
+
+@media (max-width: 900px) {
+    .queues-figures {
+        border: 0;
+        padding: 0;
+    }
+
+    .queues-filters input {
+        min-width: 0;
+        flex: 1 1 10rem;
+    }
+}
+
+/* Queues — failed job detail. The kernel has no styled `pre` (only `code` carries inline
+   styles), so the exception trace and the serialized payload need their own block here.
+   Without it both render unstyled and full width, and a 200-line stack trace pushes
+   everything else off the page. */
+
+.queues-trace {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    overflow: auto;
+    max-height: 26rem;
+    background: var(--gereq-paper, #f6f6f4);
+    color: var(--gereq-fg, #1c1c1a);
+    font-family: var(--gereq-font-mono, ui-monospace, monospace);
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 4;
+}
+
+.queues-trace__hint {
+    margin: 0;
+    padding: 0.7rem 1rem 0;
+    font-size: 0.85rem;
+}
+
+.queues-schedule-row--paused td {
+    opacity: 0.72;
+}
+
+.queues-error {
+    max-width: 34rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

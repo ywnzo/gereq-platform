@@ -1,14 +1,38 @@
 name: gereq
 
+# Bind-mount the project with consistency: consistent so Docker Desktop's
+# virtualized FS (fakeowner / VirtioFS) reflects host writes immediately.
+# Short-form ".:/var/www/html:z" can lag after atomic renames (editor/perl -pi).
+x-app-bind: &app-bind
+  type: bind
+  source: .
+  target: /var/www/html
+  consistency: consistent
+  bind:
+    selinux: z
+
 services:
   nginx:
     image: nginx:1.27-alpine
     ports:
       - "${GEREQ_PORT:-8080}:80"
     volumes:
-      - .:/var/www/html:ro,z
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro,z
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro,z
+      - <<: *app-bind
+        read_only: true
+      - type: bind
+        source: ./docker/nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+        consistency: consistent
+        bind:
+          selinux: z
+      - type: bind
+        source: ./docker/nginx/default.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+        consistency: consistent
+        bind:
+          selinux: z
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -21,9 +45,21 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
     volumes:
-      - .:/var/www/html:z
-      - ./docker/php/zz-www.conf:/usr/local/etc/php-fpm.d/zz-www.conf:ro,z
-      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/gereq.ini:ro,z
+      - *app-bind
+      - type: bind
+        source: ./docker/php/zz-www.conf
+        target: /usr/local/etc/php-fpm.d/zz-www.conf
+        read_only: true
+        consistency: consistent
+        bind:
+          selinux: z
+      - type: bind
+        source: ./docker/php/php.ini
+        target: /usr/local/etc/php/conf.d/gereq.ini
+        read_only: true
+        consistency: consistent
+        bind:
+          selinux: z
     env_file:
       - .env
     environment:
@@ -94,7 +130,13 @@ services:
       ADMINER_PASSWORD: ${DB_PASSWORD:?Set a strong DB_PASSWORD in .env}
       ADMINER_DB: ${DB_DATABASE_NAME:-gereq}
     volumes:
-      - ./docker/adminer/autologin.php:/var/www/html/plugins-enabled/autologin.php:ro,z
+      - type: bind
+        source: ./docker/adminer/autologin.php
+        target: /var/www/html/plugins-enabled/autologin.php
+        read_only: true
+        consistency: consistent
+        bind:
+          selinux: z
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,7 +149,7 @@ services:
       dockerfile: docker/php/Dockerfile
     command: ["php", "gereq", "queue:work"]
     volumes:
-      - .:/var/www/html:z
+      - *app-bind
     env_file:
       - .env
     environment:
@@ -126,6 +168,40 @@ services:
       postgres:
         condition: service_healthy
       php:
+        condition: service_started
+    networks:
+      - gereq
+    restart: unless-stopped
+
+  # Fires due Schedule entries once a minute; async tasks are dispatched to Redis
+  # and processed by the queue worker.
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    command: ["sh", "-c", "while true; do php gereq schedule:run; sleep 60; done"]
+    volumes:
+      - *app-bind
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_DRIVER: redis
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE_NAME: ${DB_DATABASE_NAME:-gereq}
+      DB_USERNAME: ${DB_USERNAME:-gereq}
+      DB_PASSWORD: ${DB_PASSWORD:?Set a strong DB_PASSWORD in .env}
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      php:
+        condition: service_started
+      queue:
         condition: service_started
     networks:
       - gereq

@@ -9,7 +9,7 @@ use Gereq\Api\ApiResponse;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
-use Gereq\Notification\DatabaseNotification;
+use Gereq\Notifications\Channel\DatabaseNotification;
 use Gereq\User\Entity\User;
 use Gereq\Notifications\Application\NotifierBridge;
 use Gereq\Notifications\Domain\NotificationPreference;
@@ -45,7 +45,11 @@ final class NotificationApiController extends Controller
     {
         $user = $this->user();
         $item = $this->em->find(DatabaseNotification::class, $id);
-        if (!$item instanceof DatabaseNotification || $item->userId() !== $user->id()) {
+        if (
+            !$item instanceof DatabaseNotification
+            || $item->actorType() !== DatabaseNotification::ACTOR_USER
+            || $item->userId() !== $user->id()
+        ) {
             return $this->jsonError('not_found', 'Notification not found', [], 404);
         }
         $item->markRead();

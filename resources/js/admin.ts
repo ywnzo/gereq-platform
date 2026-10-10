@@ -3,6 +3,7 @@ import { registerUi } from './ui';
 import '../css/kernel.css';
 import '../css/customers.css';
 import '../css/media.css';
+import '../css/queues.css';
 /* Module CSS is built per-module and linked by RenderEngine for enabled modules only. */
 
 type PaletteCommand = {

@@ -11,8 +11,8 @@ use Gereq\Http\Exception\HttpException;
 use Gereq\Http\Exception\HttpExceptionInterface;
 use Gereq\Http\Exception\MethodNotAllowedHttpException;
 use Gereq\Http\Exception\NotFoundHttpException;
-use Gereq\Validation\ValidationException;
 use Gereq\Security\ContentSecurityPolicy;
+use Gereq\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -133,7 +133,7 @@ final class ExceptionHandler
         $status = $this->status($exception);
 
         if ($status === 404) {
-            $spa = ProductAdmin::html($request) ?? Storefront::html($request);
+            $spa = Storefront::html($request);
             if ($spa !== null) {
                 return $spa;
             }

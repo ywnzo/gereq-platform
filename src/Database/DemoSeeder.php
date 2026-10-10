@@ -6,8 +6,8 @@ namespace Gereq\Database;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Auth\PasswordHasher;
-use Gereq\Notification\DatabaseNotification;
-use Gereq\User\Entity\Role;
+use Gereq\Database\Demo\NotificationsDemoSeeder;
+use Gereq\Database\Demo\UsersDemoSeeder;
 use Gereq\User\Entity\User;
 
 /**
@@ -17,7 +17,6 @@ use Gereq\User\Entity\User;
 final class DemoSeeder
 {
     public const DEMO_EMAIL = 'demo@gereq.cz';
-    public const DEMO_PASSWORD = 'demo123';
     public const MARKER_SKU = 'GRQ-SVC-IMPL';
 
     public function __construct(
@@ -29,10 +28,16 @@ final class DemoSeeder
     /** @return list<string> */
     public function seed(): array
     {
-        $log = [];
+        if ($this->isProductionEnv()) {
+            throw new \RuntimeException('Demo seed is disabled when APP_ENV=production.');
+        }
 
-        $users = $this->seedUsers($log);
-        $this->syncRolePermissions($log);
+        $log = [];
+        $password = $this->generatePassword();
+        $usersSeeder = new UsersDemoSeeder($this->em, $this->hasher);
+
+        $users = $usersSeeder->seed($password, $log);
+        $usersSeeder->syncRolePermissions($log);
         $demo = $users['demo'];
         $manager = $users['manager'];
         $editor = $users['editor'];
@@ -70,98 +75,28 @@ final class DemoSeeder
         $this->seedCalendar($demo, $manager, $customers, $deals, $log);
         $this->seedDocumentsAndMedia($demo, $customers, $products, $log);
         $this->seedCms($products, $log);
-        $this->seedNotifications($demo, $manager, $log);
+        (new NotificationsDemoSeeder($this->em))->seed($demo, $manager, $log);
         $this->seedReviews($customers, $products, $log);
         $this->seedReturns($customers, $products, $log);
 
         $this->em->flush();
         $log[] = 'Demo data připravena.';
-        $log[] = sprintf('Přihlášení: %s / %s (role superadmin)', self::DEMO_EMAIL, self::DEMO_PASSWORD);
+        $log[] = sprintf('Přihlášení: %s / %s (role superadmin)', self::DEMO_EMAIL, $password);
 
         return $log;
     }
 
-    /** @param list<string> $log */
-    private function syncRolePermissions(array &$log): void
+    private function isProductionEnv(): bool
     {
-        $this->ensureRole('superadmin', 'Superadmin', 'Plný přístup ke všemu (včetně uživatelů a rolí).', ['administrator']);
-        $this->ensureRole('admin', 'Admin', 'Plný přístup ke všemu (developer) — včetně modulů, rolí a systémových částí.', ['manager']);
-        $this->ensureRole('admin-client', 'Admin klient', 'Plný provozní přístup jako superadmin, bez zapínání a vypínání modulů.', []);
-        $this->ensureRole('editor', 'Editor', 'Úpravy obsahu bez správy uživatelů.', []);
-        $this->ensureRole('view', 'View', 'Pouze čtení.', ['viewer']);
-        $this->em->flush();
-
-        $admin = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin']);
-        $adminClient = $this->em->getRepository(Role::class)->findOneBy(['name' => 'admin-client']);
-        $editorRole = $this->em->getRepository(Role::class)->findOneBy(['name' => 'editor']);
-        $view = $this->em->getRepository(Role::class)->findOneBy(['name' => 'view']);
-        $all = $this->em->getRepository(\Gereq\User\Entity\Permission::class)->findAll();
-
-        // Admin is privileged (isPrivileged); permissions are still synced for UI/DB consistency.
-        if ($admin instanceof Role) {
-            foreach ($all as $permission) {
-                $admin->givePermission($permission);
-            }
-        }
-        if ($adminClient instanceof Role) {
-            foreach ($all as $permission) {
-                $name = $permission->name();
-                if (!str_starts_with($name, 'modules.') && !str_starts_with($name, 'gereq.')) {
-                    $adminClient->givePermission($permission);
-                }
-            }
-        }
-        if ($editorRole instanceof Role) {
-            foreach ($all as $permission) {
-                if (
-                    (str_ends_with($permission->name(), '.view')
-                        || str_ends_with($permission->name(), '.edit')
-                        || str_ends_with($permission->name(), '.create'))
-                    && !str_starts_with($permission->name(), 'users.')
-                    && !str_starts_with($permission->name(), 'modules.')
-                    && !str_starts_with($permission->name(), 'roles.')
-                    && !str_starts_with($permission->name(), 'settings.')
-                ) {
-                    $editorRole->givePermission($permission);
-                }
-            }
-        }
-        if ($view instanceof Role) {
-            foreach ($all as $permission) {
-                if (str_ends_with($permission->name(), '.view')) {
-                    $view->givePermission($permission);
-                }
-            }
-        }
-
-        $this->em->flush();
-        $log[] = 'Oprávnění rolí admin/admin-client/editor/view synchronizována.';
+        return strtolower(trim((string) env_value('APP_ENV', 'production'))) === 'production';
     }
 
-    /** @param list<string> $legacyNames */
-    private function ensureRole(string $name, string $label, string $description, array $legacyNames): void
+    private function generatePassword(): string
     {
-        $existing = $this->em->getRepository(Role::class)->findOneBy(['name' => $name]);
-        if ($existing instanceof Role) {
-            $existing->setLabel($label);
-            $existing->setDescription($description);
-
-            return;
-        }
-
-        foreach ($legacyNames as $legacy) {
-            $old = $this->em->getRepository(Role::class)->findOneBy(['name' => $legacy]);
-            if ($old instanceof Role) {
-                $old->rename($name);
-                $old->setLabel($label);
-                $old->setDescription($description);
-
-                return;
-            }
-        }
-
-        $this->em->persist(new Role($name, $label, $description));
+        return bin2hex(random_bytes(12));
     }
+
+
 
     private function alreadySeeded(): bool
     {
@@ -173,53 +108,6 @@ final class DemoSeeder
             ->findOneBy(['sku' => self::MARKER_SKU]) !== null;
     }
 
-    /**
-     * @param list<string> $log
-     * @return array{demo: User, manager: User, editor: User, view: User, admin: ?User}
-     */
-    private function seedUsers(array &$log): array
-    {
-        $defs = [
-            'demo' => [self::DEMO_EMAIL, 'Anna Demo', 'superadmin', 'cs'],
-            'manager' => ['manazer@gereq.cz', 'Petr Manažer', 'admin', 'cs'],
-            'editor' => ['editor@gereq.cz', 'Lucie Editorová', 'editor', 'cs'],
-            'view' => ['view@gereq.cz', 'Jan View', 'view', 'cs'],
-        ];
-
-        $out = ['demo' => null, 'manager' => null, 'editor' => null, 'view' => null, 'admin' => null];
-
-        foreach ($defs as $key => [$email, $name, $roleName, $locale]) {
-            $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
-            if ($user === null) {
-                $user = new User($name, $email, $this->hasher->hash(self::DEMO_PASSWORD));
-                $role = $this->em->getRepository(Role::class)->findOneBy(['name' => $roleName]);
-                if ($role instanceof Role) {
-                    $user->assignRole($role);
-                }
-                $user->setLocale($locale);
-                $this->em->persist($user);
-                $log[] = "Uživatel {$email} vytvořen (heslo: " . self::DEMO_PASSWORD . ", role: {$roleName}).";
-            } else {
-                $user->setLocale($locale);
-                $role = $this->em->getRepository(Role::class)->findOneBy(['name' => $roleName]);
-                if ($role instanceof Role && !$user->hasRole($roleName)) {
-                    $user->assignRole($role);
-                    $log[] = "Uživateli {$email} doplněna role {$roleName}.";
-                } else {
-                    $log[] = "Uživatel {$email} už existuje.";
-                }
-            }
-            $out[$key] = $user;
-        }
-
-        $admin = $this->em->getRepository(User::class)->findOneBy([], ['id' => 'ASC']);
-        $out['admin'] = $admin instanceof User ? $admin : null;
-
-        $this->em->flush();
-
-        /** @var array{demo: User, manager: User, editor: User, view: User, admin: ?User} */
-        return $out;
-    }
 
     /**
      * @param list<string> $log
@@ -1745,52 +1633,4 @@ SVG;
         $this->em->flush();
     }
 
-    /** @param list<string> $log */
-    private function seedNotifications(User $demo, User $manager, array &$log): void
-    {
-        $this->em->persist(new DatabaseNotification($demo->id(), 'projects.task_assigned', [
-            'title' => 'Nový úkol',
-            'body' => 'Byl vám přiřazen úkol „Nasazení staging prostředí“.',
-            'url' => '/admin/projects',
-        ]));
-        $this->em->persist(new DatabaseNotification($demo->id(), 'orders.invoice_due', [
-            'title' => 'Splatná faktura',
-            'body' => 'Faktura INV-2026-0002 je splatná za 11 dní.',
-            'url' => '/admin/orders',
-        ]));
-        $this->em->persist(new DatabaseNotification($demo->id(), 'warehouse.low_stock', [
-            'title' => 'Nízká zásoba',
-            'body' => 'Monitor 27" 4K — zbývají 2 ks ve skladu Praha.',
-            'url' => '/admin/warehouse',
-        ]));
-        $read = new DatabaseNotification($demo->id(), 'crm.deal_won', [
-            'title' => 'Obchod vyhraný',
-            'body' => 'Licence 2026 renewal — Logistik CZ.',
-            'url' => '/admin/crm',
-        ]);
-        $read->markRead();
-        $this->em->persist($read);
-
-        $this->em->persist(new DatabaseNotification($manager->id(), 'shop.cart_open', [
-            'title' => 'Otevřený košík',
-            'body' => 'City Café má otevřený košík s 2 položkami.',
-            'url' => '/admin/shop/carts',
-        ]));
-
-        if (class_exists(\Gereq\Notifications\Domain\NotificationPreference::class)) {
-            foreach (['mail', 'database'] as $channel) {
-                foreach (['projects.task_assigned', 'orders.invoice_due', 'warehouse.low_stock'] as $event) {
-                    $this->em->persist(new \Gereq\Notifications\Domain\NotificationPreference(
-                        $demo->id(),
-                        $channel,
-                        $event,
-                        true,
-                    ));
-                }
-            }
-        }
-
-        $this->em->flush();
-        $log[] = 'Notifikace: inbox pro demo + preference.';
-    }
 }
