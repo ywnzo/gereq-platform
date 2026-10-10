@@ -35,9 +35,9 @@ final class MediaFileDelivery
         }
 
         if (str_starts_with($asset->mime(), 'image/')) {
-            $resized = $this->maybeServeResized($asset, $absolute, $request);
-            if ($resized !== null) {
-                return $resized;
+            $optimized = $this->maybeServeOptimized($asset, $absolute, $request);
+            if ($optimized !== null) {
+                return $optimized;
             }
         }
 
@@ -54,57 +54,75 @@ final class MediaFileDelivery
         );
     }
 
-    private function maybeServeResized(MediaAsset $asset, string $absolute, Request $request): ?Response
+    /**
+     * Resize (optional ?w=) and negotiate AVIF/WebP via Accept.
+     * Format conversion runs even when the source is already small enough.
+     */
+    private function maybeServeOptimized(MediaAsset $asset, string $absolute, Request $request): ?Response
     {
-        $w = (int) $request->query->get('w', 0);
-        if ($w < 64 || $w > 2400) {
+        $converter = $this->files->converter();
+        $forced = strtolower((string) $request->query->get('format', ''));
+        if ($forced === 'webp' && $converter->supportsWebp()) {
+            $ext = 'webp';
+        } elseif ($forced === 'avif' && $converter->supportsAvif()) {
+            $ext = 'avif';
+        } else {
+            $preferAvif = $converter->supportsAvif()
+                && str_contains(strtolower($request->headers->get('Accept', '')), 'image/avif');
+            $ext = $preferAvif ? 'avif' : ($converter->supportsWebp() ? 'webp' : null);
+        }
+        if ($ext === null) {
             return null;
         }
 
-        $target = self::WIDTH_STEPS[0];
-        foreach (self::WIDTH_STEPS as $step) {
-            $target = $step;
-            if ($w <= $step) {
-                break;
-            }
+        // Already in the preferred modern format — serve original.
+        $srcMime = strtolower($asset->mime());
+        if (($ext === 'avif' && $srcMime === 'image/avif')
+            || ($ext === 'webp' && $srcMime === 'image/webp')) {
+            return null;
         }
 
+        $target = $this->requestedWidthStep($request);
         $srcW = $asset->width();
-        if ($srcW !== null && $srcW > 0 && $srcW <= $target) {
-            return null;
-        }
+        $needsResize = $target !== null
+            && ($srcW === null || $srcW <= 0 || $srcW > $target);
+        $cacheKey = $needsResize ? 'w' . $target : 'full';
 
         $cacheDir = $this->basePath . '/storage/cache/media/' . $asset->id();
         if (!is_dir($cacheDir) && !@mkdir($cacheDir, 0775, true) && !is_dir($cacheDir)) {
             return null;
         }
 
-        $converter = $this->files->converter();
-        $preferAvif = $converter->supportsAvif()
-            && str_contains(strtolower($request->headers->get('Accept', '')), 'image/avif');
-        $ext = $preferAvif ? 'avif' : ($converter->supportsWebp() ? 'webp' : 'jpg');
-        $cachePath = $cacheDir . '/w' . $target . '.' . $ext;
+        $cachePath = $cacheDir . '/' . $cacheKey . '.' . $ext;
 
         if (!is_file($cachePath) || filemtime($cachePath) < filemtime($absolute)) {
             $bytes = @file_get_contents($absolute);
             if (!is_string($bytes) || $bytes === '') {
                 return null;
             }
-            $resized = $this->resizeToWidth($bytes, $asset->mime(), $target);
-            if ($resized === null) {
+
+            $workMime = $asset->mime();
+            if ($needsResize && $target !== null) {
+                $resized = $this->resizeToWidth($bytes, $workMime, $target);
+                if ($resized === null) {
+                    // Can't downscale (decoder/size) — still try format-only convert.
+                    $needsResize = false;
+                    $cacheKey = 'full';
+                    $cachePath = $cacheDir . '/full.' . $ext;
+                } else {
+                    $bytes = $resized['contents'];
+                    $workMime = $resized['mime'];
+                }
+            }
+
+            $converted = $converter->convert($bytes, $workMime, $ext);
+            if ($converted === null) {
                 return null;
             }
-            $converted = $converter->convert($resized['contents'], $resized['mime']);
-            if ($converted === null) {
-                $cachePath = $cacheDir . '/w' . $target . '.jpg';
-                if (file_put_contents($cachePath, $resized['contents']) === false) {
-                    return null;
-                }
-            } else {
-                $cachePath = $cacheDir . '/w' . $target . '.' . $converted['extension'];
-                if (file_put_contents($cachePath, $converted['contents']) === false) {
-                    return null;
-                }
+
+            $cachePath = $cacheDir . '/' . $cacheKey . '.' . $converted['extension'];
+            if (file_put_contents($cachePath, $converted['contents']) === false) {
+                return null;
             }
             @chmod($cachePath, 0664);
         }
@@ -120,6 +138,24 @@ final class MediaFileDelivery
         $response->headers->set('Vary', 'Accept');
 
         return $response;
+    }
+
+    private function requestedWidthStep(Request $request): ?int
+    {
+        $w = (int) $request->query->get('w', 0);
+        if ($w < 64 || $w > 2400) {
+            return null;
+        }
+
+        $target = self::WIDTH_STEPS[0];
+        foreach (self::WIDTH_STEPS as $step) {
+            $target = $step;
+            if ($w <= $step) {
+                break;
+            }
+        }
+
+        return $target;
     }
 
     /**

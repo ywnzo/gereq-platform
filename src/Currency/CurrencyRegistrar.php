@@ -21,6 +21,7 @@ use Gereq\Currency\Application\Widgets\CurrencyShortcutWidget;
 use Gereq\Currency\Application\Widgets\CurrencyStatsWidget;
 use Gereq\Currency\Application\Widgets\ExchangeRatesWidget;
 use Gereq\Currency\Domain\Currency;
+use Gereq\Currency\Domain\ExchangeRate;
 use Gereq\Currency\Http\ConvertApiController;
 use Gereq\Currency\Http\CurrencyAdminController;
 use Gereq\Currency\Http\CurrencyApiController;
@@ -84,6 +85,7 @@ final class CurrencyRegistrar
         $this->seedDefaults();
         $this->registerTwig();
         $this->registerProfileHooks();
+        $this->registerSettingsPanel();
     }
 
     private function permissions(): void
@@ -239,14 +241,16 @@ final class CurrencyRegistrar
 
     private function menu(): void
     {
+        // Hidden — managed under Settings → Platform; kept for breadcrumbs / active state.
         $this->menu->add(new MenuItem(
             id: 'currencies',
             label: 'nav.currencies',
             icon: 'coins',
             route: 'admin.currencies.index',
             permission: 'currency.view',
+            parent: 'settings',
             order: 40,
-            group: 'Hlavní',
+            hidden: true,
         ));
         $this->menu->add(new MenuItem(
             id: 'currencies.create',
@@ -288,10 +292,10 @@ final class CurrencyRegistrar
         $this->palette->add(new PaletteCommand(
             id: 'currencies.index',
             label: 'palette.currency.index',
-            url: '/admin/currencies',
+            url: '/admin/settings?tab=core#settings-currencies',
             icon: 'coins',
-            permission: 'currency.view',
-            keywords: ['currency', 'kurz', 'měna', 'czk'],
+            permission: 'settings.manage',
+            keywords: ['currency', 'kurz', 'měna', 'czk', 'settings', 'nastavení', 'platforma'],
         ));
         $this->palette->add(new PaletteCommand(
             id: 'currencies.create',
@@ -301,6 +305,93 @@ final class CurrencyRegistrar
             permission: 'currency.manage',
             group: 'Akce',
         ));
+    }
+
+    private function registerSettingsPanel(): void
+    {
+        $em = $this->em;
+        $twig = $this->twig;
+        $auth = $this->auth;
+        /** @var list<Currency>|null $cachedItems */
+        $cachedItems = null;
+
+        $loadItems = function () use ($em, &$cachedItems): array {
+            if ($cachedItems !== null) {
+                return $cachedItems;
+            }
+            /** @var list<Currency> $rows */
+            $rows = $em->getRepository(Currency::class)->createQueryBuilder('c')
+                ->orderBy('c.isDefault', 'DESC')
+                ->addOrderBy('c.code', 'ASC')
+                ->getQuery()
+                ->getResult();
+            $cachedItems = $rows;
+
+            return $cachedItems;
+        };
+
+        $this->hooks->addFilter('admin.settings.panel.core', function (string $html) use ($twig, $auth, $loadItems): string {
+            $user = $auth->user();
+            if (!$user instanceof User || !$user->can('currency.view')) {
+                return $html;
+            }
+
+            return $html . $twig->render('currency/partials/manage.html.twig', [
+                'items' => $loadItems(),
+                'rates' => $this->latestCnbRatesForSettings(),
+                'embedded' => true,
+                'user' => $user,
+            ]);
+        });
+
+        // Must render outside <form id="settings-form"> (no nested forms).
+        $this->hooks->addFilter('admin.settings.extra_forms', function (string $html) use ($twig, $auth, $loadItems): string {
+            $user = $auth->user();
+            if (!$user instanceof User || !$user->can('currency.manage')) {
+                return $html;
+            }
+
+            return $html . $twig->render('currency/partials/manage_forms.html.twig', [
+                'items' => $loadItems(),
+                'user' => $user,
+            ]);
+        });
+    }
+
+    /**
+     * @return list<array{base: string, quote: string, rate: string, provider: string, valid_at: string}>
+     */
+    private function latestCnbRatesForSettings(): array
+    {
+        /** @var list<ExchangeRate> $rows */
+        $rows = $this->em->getRepository(ExchangeRate::class)->createQueryBuilder('r')
+            ->where('r.provider = :provider')
+            ->setParameter('provider', 'cnb')
+            ->orderBy('r.validAt', 'DESC')
+            ->addOrderBy('r.baseCode', 'ASC')
+            ->setMaxResults(50)
+            ->getQuery()
+            ->getResult();
+
+        $latestByPair = [];
+        foreach ($rows as $row) {
+            if (!$row instanceof ExchangeRate) {
+                continue;
+            }
+            $key = $row->baseCode() . '/' . $row->quoteCode();
+            if (isset($latestByPair[$key])) {
+                continue;
+            }
+            $latestByPair[$key] = [
+                'base' => $row->baseCode(),
+                'quote' => $row->quoteCode(),
+                'rate' => rtrim(rtrim($row->rate(), '0'), '.') ?: '0',
+                'provider' => $row->provider(),
+                'valid_at' => $row->validAt()->format('d.m.Y H:i'),
+            ];
+        }
+
+        return array_values($latestByPair);
     }
 
     private function registerTwig(): void

@@ -1,0 +1,57 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'site_inquiries.settings.title'|trans }}</h1>
+    <div class="actions">
+        <a class="btn btn--ghost" href="{{ url('admin.site_inquiries.index') }}">{{ 'site_inquiries.index.title'|trans }}</a>
+        <button class="btn btn--primary" type="submit" form="site-inquiries-settings">{{ 'common.save'|trans }}</button>
+    </div>
+</header>
+
+<p class="muted">{{ 'site_inquiries.settings.lead'|trans }}</p>
+
+<form id="site-inquiries-settings" class="detail-stack" method="post" action="{{ url('admin.site_inquiries.settings.update') }}">
+    {{ csrf_field()|raw }}
+    <section class="panel">
+        <header class="panel__head"><h2>{{ 'nav.site_inquiries.settings'|trans }}</h2></header>
+        <div class="form-grid form-grid--2">
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_person'|trans }}</span>
+                <input class="input" name="contact_person" value="{{ values.contact_person }}">
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_ico'|trans }}</span>
+                <input class="input" name="contact_ico" value="{{ values.contact_ico }}">
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_dic'|trans }}</span>
+                <input class="input" name="contact_dic" value="{{ values.contact_dic }}" placeholder="CZ12345678">
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_phone'|trans }}</span>
+                <input class="input" name="contact_phone" value="{{ values.contact_phone }}">
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_phone_tel'|trans }}</span>
+                <input class="input" name="contact_phone_tel" value="{{ values.contact_phone_tel }}">
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_email'|trans }}</span>
+                <input class="input" type="email" name="contact_email" value="{{ values.contact_email }}">
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.notify_email'|trans }}</span>
+                <input class="input" type="email" name="notify_email" value="{{ values.notify_email }}">
+            </label>
+            <label class="field field--full">
+                <span>{{ 'site_inquiries.settings.contact_address'|trans }}</span>
+                <input class="input" name="contact_address" value="{{ values.contact_address }}">
+            </label>
+            <label class="field field--full">
+                <span>{{ 'site_inquiries.settings.tagline'|trans }}</span>
+                <input class="input" name="tagline" value="{{ values.tagline }}">
+            </label>
+        </div>
+    </section>
+</form>
+{% endblock %}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Admin\Http;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Dashboard\Dashboard;
 use Gereq\Admin\Menu\Menu;
@@ -13,7 +14,11 @@ use Gereq\Brand\Branding;
 use Gereq\Cache\StoreFrontCache;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Http\StorefrontRebuild;
 use Gereq\I18n\LocaleCatalog;
+use Gereq\Media\Domain\MediaAsset;
+use Gereq\Media\Domain\MediaFolder;
+use Gereq\Module\CapabilityRegistry;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 use Gereq\Support\Json;
@@ -40,6 +45,9 @@ final class SettingsController extends Controller
         private readonly Branding $branding,
         private readonly Dashboard $dashboard,
         private readonly StoreFrontCache $storeFrontCache,
+        private readonly StorefrontRebuild $storefrontRebuild,
+        private readonly CapabilityRegistry $capabilities,
+        private readonly EntityManagerInterface $em,
         private readonly string $basePath,
     ) {
         parent::__construct($twig, $router, $requestStack);
@@ -86,6 +94,7 @@ final class SettingsController extends Controller
             'cssVariables' => $this->branding->documentedVariables(),
             'dashboardCatalog' => $this->dashboard->catalog(null),
             'adminPath' => \Gereq\Support\AdminPath::base(),
+            'libraryImages' => $this->libraryImages(),
         ]);
     }
 
@@ -100,6 +109,11 @@ final class SettingsController extends Controller
                     $items = is_array($decoded) ? $decoded : [];
                 }
                 $this->dashboard->saveLayout($items);
+                continue;
+            }
+
+            // Brand assets are resolved from media box (file / library / clear / URL).
+            if ($key === 'brand.logo_url' || $key === 'brand.favicon_url') {
                 continue;
             }
 
@@ -123,8 +137,24 @@ final class SettingsController extends Controller
             $this->settings->set($key, $value, $definition['type'], $definition['module']);
         }
 
-        $this->storeBrandUpload($request, 'brand_logo_file', 'brand.logo_url', 'logo');
-        $this->storeBrandUpload($request, 'brand_favicon_file', 'brand.favicon_url', 'favicon');
+        $this->resolveBrandAsset(
+            $request,
+            'logo',
+            'brand.logo_url',
+            'brand_logo_file',
+            'brand_logo_media_asset_id',
+            'clear_brand_logo',
+            'brand__logo_url',
+        );
+        $this->resolveBrandAsset(
+            $request,
+            'favicon',
+            'brand.favicon_url',
+            'brand_favicon_file',
+            'brand_favicon_media_asset_id',
+            'clear_brand_favicon',
+            'brand__favicon_url',
+        );
 
         $tab = (string) $request->request->get('settings_tab', '');
         // Driver/TTL/enable changes must not leave stale public payloads around.
@@ -140,12 +170,111 @@ final class SettingsController extends Controller
         return $this->redirect('admin.settings.index', $params);
     }
 
-    private function storeBrandUpload(Request $request, string $fileKey, string $settingKey, string $basename): void
+    public function rebuildStorefront(Request $request): Response
     {
-        $uploaded = $request->files->get($fileKey);
-        if (!$uploaded instanceof UploadedFile) {
+        // Prefer values from the open settings form so path can be tried before Save.
+        $postedPath = trim((string) $request->request->get('storefront__path', ''));
+        $postedCommand = trim((string) $request->request->get('storefront__build_command', ''));
+        if ($postedPath !== '') {
+            $this->settings->set(
+                StorefrontRebuild::SETTING_PATH,
+                $postedPath,
+                SettingRecord::TYPE_STRING,
+                'core',
+            );
+        }
+        if ($postedCommand !== '') {
+            $this->settings->set(
+                StorefrontRebuild::SETTING_COMMAND,
+                $postedCommand,
+                SettingRecord::TYPE_STRING,
+                'core',
+            );
+        }
+
+        $result = $this->storefrontRebuild->run(
+            $postedPath !== '' ? $postedPath : null,
+            $postedCommand !== '' ? $postedCommand : null,
+        );
+        $this->auditor->log(
+            $result['ok'] ? 'storefront.rebuild.ok' : 'storefront.rebuild.failed',
+            'settings',
+            null,
+            null,
+            [
+                'path' => $result['path'],
+                'remote' => $result['remote'],
+                'exit_code' => $result['exit_code'],
+            ],
+        );
+
+        if ($result['ok']) {
+            $this->storeFrontCache->flush();
+            $msg = $this->translator->trans('settings.storefront.rebuild.ok', [
+                '%path%' => $result['path'],
+            ]);
+            if ($result['output'] !== '') {
+                $msg .= ' — ' . $this->shortOutput($result['output']);
+            }
+            $this->flash('success', $msg);
+        } else {
+            $detail = $result['error'] ?? $this->translator->trans('settings.storefront.rebuild.failed');
+            if ($result['output'] !== '') {
+                $detail .= ' — ' . $this->shortOutput($result['output']);
+            }
+            $this->flash('error', $detail);
+        }
+
+        return $this->redirect('admin.settings.index', ['tab' => 'storefront']);
+    }
+
+    private function shortOutput(string $output): string
+    {
+        $line = trim(preg_replace('/\s+/', ' ', $output) ?? $output);
+        if (mb_strlen($line) > 280) {
+            return mb_substr($line, -280);
+        }
+
+        return $line;
+    }
+
+    private function resolveBrandAsset(
+        Request $request,
+        string $basename,
+        string $settingKey,
+        string $fileKey,
+        string $libraryKey,
+        string $clearKey,
+        string $urlField,
+    ): void {
+        $clear = $request->request->get($clearKey);
+        if ($clear === '1' || $clear === 'on') {
+            $this->settings->set($settingKey, '', SettingRecord::TYPE_STRING, 'core');
+            $this->deleteBrandFiles($basename);
+
             return;
         }
+
+        $uploaded = $request->files->get($fileKey);
+        if ($uploaded instanceof UploadedFile) {
+            $this->storeBrandUpload($uploaded, $settingKey, $basename);
+
+            return;
+        }
+
+        $mediaId = trim((string) $request->request->get($libraryKey, ''));
+        if ($mediaId !== '') {
+            $this->storeBrandFromMedia($mediaId, $settingKey, $basename);
+
+            return;
+        }
+
+        $posted = trim((string) $request->request->get($urlField, ''));
+        $this->settings->set($settingKey, $this->normalizeBrandUrl($posted), SettingRecord::TYPE_STRING, 'core');
+    }
+
+    private function storeBrandUpload(UploadedFile $uploaded, string $settingKey, string $basename): void
+    {
         if (!$uploaded->isValid()) {
             $this->flash('error', $this->translator->trans('settings.brand.upload_failed') . ' (' . $uploaded->getErrorMessage() . ')');
 
@@ -180,16 +309,12 @@ final class SettingsController extends Controller
             return;
         }
 
-        $dir = $this->basePath . '/storage/uploads/brand';
-        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
-            $this->flash('error', $this->translator->trans('settings.brand.upload_failed'));
-
+        $dir = $this->brandUploadDir();
+        if ($dir === null) {
             return;
         }
 
-        foreach (glob($dir . '/' . $basename . '.*') ?: [] as $old) {
-            @unlink($old);
-        }
+        $this->deleteBrandFiles($basename);
 
         $filename = $basename . '.' . $ext;
         try {
@@ -210,6 +335,211 @@ final class SettingsController extends Controller
         $url = \Gereq\Support\UrlPrefix::path('/brand/asset/' . $filename) . '?v=' . time();
         $this->settings->set($settingKey, $url, SettingRecord::TYPE_STRING, 'core');
         $this->flash('success', $this->translator->trans('settings.brand.upload_ok', ['%file%' => $filename]));
+    }
+
+    private function storeBrandFromMedia(string $mediaId, string $settingKey, string $basename): void
+    {
+        if (!$this->mediaAvailable()) {
+            $this->flash('error', $this->translator->trans('settings.brand.media_required'));
+
+            return;
+        }
+
+        $asset = $this->em->find(MediaAsset::class, $mediaId);
+        if (!$asset instanceof MediaAsset || !$asset->isImage()) {
+            $this->flash('error', $this->translator->trans('settings.brand.media_not_found'));
+
+            return;
+        }
+
+        $mime = strtolower($asset->mime());
+        if (str_contains($mime, 'svg')) {
+            $this->flash('error', $this->translator->trans('settings.brand.upload_svg_blocked'));
+
+            return;
+        }
+
+        $ext = $this->mediaExt($mime, $asset->path());
+        if ($ext === 'jpeg') {
+            $ext = 'jpg';
+        }
+        if (!in_array($ext, ['png', 'jpg', 'webp', 'gif', 'ico'], true)) {
+            $this->flash('error', $this->translator->trans('settings.brand.upload_image_only'));
+
+            return;
+        }
+
+        $source = $this->absoluteMediaPath($asset->path());
+        if ($source === null || !is_file($source)) {
+            $this->flash('error', $this->translator->trans('settings.brand.media_not_found'));
+
+            return;
+        }
+
+        $dir = $this->brandUploadDir();
+        if ($dir === null) {
+            return;
+        }
+
+        $this->deleteBrandFiles($basename);
+        $filename = $basename . '.' . $ext;
+        if (!@copy($source, $dir . '/' . $filename)) {
+            $this->flash('error', $this->translator->trans('settings.brand.upload_failed'));
+
+            return;
+        }
+
+        @chmod($dir . '/' . $filename, 0664);
+        $url = \Gereq\Support\UrlPrefix::path('/brand/asset/' . $filename) . '?v=' . time();
+        $this->settings->set($settingKey, $url, SettingRecord::TYPE_STRING, 'core');
+        $this->flash('success', $this->translator->trans('settings.brand.upload_ok', ['%file%' => $filename]));
+    }
+
+    private function brandUploadDir(): ?string
+    {
+        $dir = $this->basePath . '/storage/uploads/brand';
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            $this->flash('error', $this->translator->trans('settings.brand.upload_failed'));
+
+            return null;
+        }
+
+        return $dir;
+    }
+
+    private function deleteBrandFiles(string $basename): void
+    {
+        $dir = $this->basePath . '/storage/uploads/brand';
+        if (!is_dir($dir)) {
+            return;
+        }
+        foreach (glob($dir . '/' . $basename . '.*') ?: [] as $old) {
+            @unlink($old);
+        }
+    }
+
+    private function normalizeBrandUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+        $path = parse_url($url, PHP_URL_PATH);
+        if (is_string($path) && (str_starts_with($path, '/media/') || str_starts_with($path, '/brand/'))) {
+            return $path;
+        }
+        if (preg_match('#^https?://#i', $url) === 1) {
+            return $url;
+        }
+
+        return str_starts_with($url, '/') ? $url : '/' . $url;
+    }
+
+    private function mediaAvailable(): bool
+    {
+        return $this->capabilities->has('media') && class_exists(MediaAsset::class);
+    }
+
+    /**
+     * @return list<array{value: string, label: string, thumb: string, mime: string, ext: string, width: ?int, height: ?int, created: int, folder_id: string, folder: string}>
+     */
+    private function libraryImages(): array
+    {
+        if (!$this->mediaAvailable()) {
+            return [];
+        }
+
+        $provider = $this->capabilities->get('media');
+        if (!is_object($provider) || !method_exists($provider, 'images')) {
+            return [];
+        }
+
+        $folderNames = $this->mediaFolderNames();
+        $options = [];
+        foreach ($provider->images(250) as $asset) {
+            if (!$asset instanceof MediaAsset) {
+                continue;
+            }
+            $folderId = $asset->folderId() ?? '';
+            $mime = $asset->mime();
+            $options[] = [
+                'value' => $asset->id(),
+                'label' => $asset->title(),
+                'thumb' => '/media/' . $asset->id() . '/file',
+                'mime' => $mime,
+                'ext' => $this->mediaExt($mime, $asset->path()),
+                'width' => $asset->width(),
+                'height' => $asset->height(),
+                'created' => $asset->createdAt()->getTimestamp(),
+                'folder_id' => $folderId,
+                'folder' => $folderId !== '' ? ($folderNames[$folderId] ?? '') : '',
+            ];
+        }
+
+        return $options;
+    }
+
+    /** @return array<string, string> */
+    private function mediaFolderNames(): array
+    {
+        if (!class_exists(MediaFolder::class)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($this->em->getRepository(MediaFolder::class)->findAll() as $folder) {
+            if ($folder instanceof MediaFolder) {
+                $out[$folder->id()] = $folder->name();
+            }
+        }
+
+        return $out;
+    }
+
+    private function mediaExt(string $mime, string $path): string
+    {
+        $map = [
+            'image/jpeg' => 'jpg',
+            'image/jpg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            'image/avif' => 'avif',
+            'image/svg+xml' => 'svg',
+            'image/x-icon' => 'ico',
+            'image/vnd.microsoft.icon' => 'ico',
+        ];
+        if (isset($map[$mime])) {
+            return $map[$mime];
+        }
+
+        $ext = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
+        if ($ext !== '') {
+            return $ext;
+        }
+
+        $pos = strrpos($mime, '/');
+
+        return $pos === false ? '' : substr($mime, $pos + 1);
+    }
+
+    private function absoluteMediaPath(string $relative): ?string
+    {
+        $relative = ltrim(str_replace('\\', '/', $relative), '/');
+        if ($relative === '' || str_contains($relative, '..')) {
+            return null;
+        }
+        $root = realpath($this->basePath . '/storage/uploads');
+        if ($root === false) {
+            return null;
+        }
+        $absolute = $root . '/' . $relative;
+        $real = realpath($absolute);
+        if ($real === false || !str_starts_with($real, $root . DIRECTORY_SEPARATOR)) {
+            return is_file($absolute) ? $absolute : null;
+        }
+
+        return $real;
     }
 
     /**

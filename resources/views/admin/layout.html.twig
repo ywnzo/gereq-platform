@@ -82,22 +82,6 @@
             </header>
 
             <main class="page">
-                {% set flashes_success = flash('success') %}
-                {% set flashes_error = flash('error') %}
-                {% if flashes_success %}
-                    {% for message in flashes_success %}
-                        {% if message|trim != '' %}
-                            <div class="alert alert-success alert--success" role="status">{{ message }}</div>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-                {% if flashes_error %}
-                    {% for message in flashes_error %}
-                        {% if message|trim != '' %}
-                            <div class="alert alert-error alert--danger" role="alert">{{ message }}</div>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
                 {% block content %}{% endblock %}
             </main>
         </div>
@@ -173,7 +157,11 @@
                 </div>
             </div>
         </div>
-        <div class="toasts" id="toasts"></div>
+        {% set flashes_success = flash('success') %}
+        {% set flashes_error = flash('error') %}
+        {% set flashes_warning = flash('warning') %}
+        {% set flashes_info = flash('info') %}
+        <div class="toasts" id="toasts" data-close="{{ 'common.close'|trans|e('html_attr') }}" aria-live="polite" aria-relevant="additions"></div>
     </div>
 
     {{ apply_filters('admin.layout.end', '')|raw }}
@@ -190,6 +178,20 @@
 
     <script nonce="{{ csp_nonce() }}">
         window.__GEREQ_URL_PREFIX__ = {{ config('app.url_prefix')|json_encode|raw }};
+        window.__GEREQ_FLASHES__ = [
+            {%- for message in flashes_success|default([]) -%}
+                {%- if message|trim != '' -%}{"tone":"success","message":{{ message|json_encode|raw }}},{%- endif -%}
+            {%- endfor -%}
+            {%- for message in flashes_error|default([]) -%}
+                {%- if message|trim != '' -%}{"tone":"error","message":{{ message|json_encode|raw }}},{%- endif -%}
+            {%- endfor -%}
+            {%- for message in flashes_warning|default([]) -%}
+                {%- if message|trim != '' -%}{"tone":"warning","message":{{ message|json_encode|raw }}},{%- endif -%}
+            {%- endfor -%}
+            {%- for message in flashes_info|default([]) -%}
+                {%- if message|trim != '' -%}{"tone":"info","message":{{ message|json_encode|raw }}},{%- endif -%}
+            {%- endfor -%}
+        ];
         window.__GEREQ_COMMANDS__ = [
             {%- for command in commands|default([]) -%}
             {

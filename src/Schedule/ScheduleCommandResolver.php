@@ -28,6 +28,7 @@ use Gereq\Console\Command\SeedDemoCommand;
 use Gereq\Console\Command\SeedRealityV3Command;
 use Gereq\Console\Command\ServeCommand;
 use Gereq\Console\Command\ServeDockerCommand;
+use Gereq\Console\Command\StorefrontRebuildCommand;
 use Gereq\Console\Command\TestCommand;
 use Gereq\Console\Command\TwigTypesCommand;
 use Gereq\Console\Command\UserCreateCommand;
@@ -70,6 +71,7 @@ final class ScheduleCommandResolver
             SeedRealityV3Command::class,
             ServeCommand::class,
             ServeDockerCommand::class,
+            StorefrontRebuildCommand::class,
             NnCommand::class,
             TestCommand::class,
             TwigTypesCommand::class,

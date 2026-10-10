@@ -11,8 +11,8 @@ return [
     'doctrine_result' => (bool) env_value('CACHE_DOCTRINE_RESULT', true),
     // Compiled Twig templates (off when APP_DEBUG=true)
     'twig' => (bool) env_value('CACHE_TWIG', true),
-    // Browser cache for /media/{id}/file (seconds)
-    'media_ttl' => (int) env_value('CACHE_MEDIA_TTL', 604800),
+    // Browser cache for /media/{id}/file (seconds) — 30 days
+    'media_ttl' => (int) env_value('CACHE_MEDIA_TTL', 2592000),
     // Public storefront API cache (overridable via Core settings)
     'storefront' => [
         'enabled' => (bool) env_value('STOREFRONT_CACHE_ENABLED', true),

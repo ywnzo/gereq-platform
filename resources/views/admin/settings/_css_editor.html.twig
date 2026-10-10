@@ -1,7 +1,7 @@
 {% set scope = key == 'cms.custom_css_public' ? 'public' : 'admin' %}
 {% set vars = cssVariables[scope]|default([]) %}
 <div
-    class="css-editor"
+    class="css-editor grq-stack grq-stack--md"
     x-data="gereqCssEditor"
     data-vars="{{ vars|json_encode|e('html_attr') }}"
 >
@@ -14,10 +14,13 @@
             hidden
         >{{ values[key] }}</textarea>
     </div>
-    <aside class="css-editor__vars">
-        <div class="css-editor__vars-head">
-            <strong>{{ 'settings.css.vars_title'|trans }}</strong>
-            <p class="muted">{{ scope == 'admin' ? ('settings.css.vars_admin'|trans) : ('settings.css.vars_public'|trans) }}</p>
+
+    <div class="css-editor__vars grq-box grq-box--soft grq-box--sm">
+        <div class="grq-cluster grq-cluster--between">
+            <div class="grq-stack grq-stack--xs">
+                <strong class="grq-text-ui">{{ 'settings.css.vars_title'|trans }}</strong>
+                <p class="muted grq-text-meta">{{ scope == 'admin' ? ('settings.css.vars_admin'|trans) : ('settings.css.vars_public'|trans) }}</p>
+            </div>
             <input
                 class="input css-editor__filter"
                 type="search"
@@ -26,19 +29,22 @@
                 @input="applyFilter"
             >
         </div>
-        <ul class="css-editor__list">
+        <div class="css-editor__chips grq-cluster" role="list">
             <template x-for="item in filteredVars" :key="item.name">
-                <li>
-                    <button type="button" class="css-editor__var" @click="insertVar(item.name)">
-                        <span class="css-editor__swatch" :style="swatchStyle(item.value)"></span>
-                        <span class="css-editor__var-meta">
-                            <code x-text="item.name"></code>
-                            <span class="css-editor__var-hint" x-text="item.hint"></span>
-                        </span>
-                        <span class="css-editor__var-value" x-text="item.value"></span>
-                    </button>
-                </li>
+                <button
+                    type="button"
+                    class="css-editor__chip"
+                    role="listitem"
+                    :title="item.hint + ' · ' + item.value"
+                    @click="insertVar(item.name)"
+                >
+                    <span class="css-editor__swatch" :style="swatchStyle(item.value)"></span>
+                    <code x-text="item.name"></code>
+                </button>
             </template>
-        </ul>
-    </aside>
+        </div>
+        <p class="muted grq-text-meta" x-show="filteredVars.length === 0" x-cloak>
+            {{ 'settings.css.vars_empty'|trans }}
+        </p>
+    </div>
 </div>

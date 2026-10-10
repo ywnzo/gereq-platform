@@ -3,6 +3,12 @@ set -e
 
 cd /var/www/html
 
+# Sibling storefront (../fe) writes outDir to ../platform/public/storefront —
+# alias the platform mount so Vite's relative path resolves inside the container.
+if [ -d /var/www/fe ] && [ ! -e /var/www/platform ]; then
+    ln -sfn /var/www/html /var/www/platform
+fi
+
 for dir in \
     storage/cache \
     storage/logs \

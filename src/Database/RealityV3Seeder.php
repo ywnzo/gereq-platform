@@ -352,7 +352,7 @@ final class RealityV3Seeder
             $cmsBySlug['cookies'] ?? null,
         );
 
-        // Also expose CMS pages under /stranka/{slug} (FE routes) — without duplicate cms_page_id
+        // Also expose Cms pages under /stranka/{slug} (FE routes) — without duplicate cms_page_id
         foreach (['o-nas', 'ochrana-osobnich-udaju', 'cookies', 'kontakt'] as $slug) {
             $sourcePath = '/' . $slug;
             $source = $repo->findOneBy(['path' => $sourcePath]);

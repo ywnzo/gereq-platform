@@ -53,7 +53,7 @@ final class CurrencyShortcutWidget extends TwigDashboardWidget
     protected function data(): array
     {
         return [
-            'href' => $this->router->url('admin.currencies.index'),
+            'href' => $this->router->url('admin.settings.index', ['tab' => 'core']) . '#settings-currencies',
             'icon' => 'coins',
             'label' => $this->translator->trans('nav.currencies'),
             'hint' => $this->translator->trans('admin.dashboard.hint.currency'),

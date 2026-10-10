@@ -13,7 +13,7 @@ use Modules\Cms\Domain\Page;
 use Modules\Cms\Domain\PageBlock;
 
 /**
- * CMS pages + blocks (freeze / staged delete / staged create).
+ * Cms pages + blocks (freeze / staged delete / staged create).
  */
 final class CmsPagePublishAdapter implements PublishableAdapterInterface
 {

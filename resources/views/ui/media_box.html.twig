@@ -15,13 +15,14 @@
 {% set optional = optional|default(true) %}
 {% set has_media = has_media|default(false) %}
 {% set library = library|default([]) %}
+{% set full = full|default(true) %}
 {% set id = id|default('f-' ~ name) %}
 {% set err = error(name, form) %}
 {% set dialog_title_id = id ~ '-dialog-title' %}
 {% set has_library = has_media and library is not empty %}
 
 <div
-    class="media-box field--full{% if err %} is-invalid{% endif %}"
+    class="media-box{% if full %} field--full{% endif %}{% if err %} is-invalid{% endif %}"
     data-field="{{ name }}"
     x-data="gereqMediaBox"
     data-preview="{{ value|e('html_attr') }}"

@@ -100,6 +100,20 @@ final class CoreSettingsRegistrar
             ContentVersion::DEFAULT,
         );
 
+        // Storefront source + rebuild (local path or user@host:/path).
+        $this->settings->define(
+            \Gereq\Http\StorefrontRebuild::SETTING_PATH,
+            SettingRecord::TYPE_STRING,
+            'settings.storefront.path',
+            '',
+        );
+        $this->settings->define(
+            \Gereq\Http\StorefrontRebuild::SETTING_COMMAND,
+            SettingRecord::TYPE_STRING,
+            'settings.storefront.build_command',
+            \Gereq\Http\StorefrontRebuild::DEFAULT_COMMAND,
+        );
+
         // Public storefront response cache (file or redis).
         $this->settings->define(
             \Gereq\Cache\StoreFrontCache::SETTING_ENABLED,

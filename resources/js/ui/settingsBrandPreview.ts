@@ -62,6 +62,22 @@ function val(root: HTMLElement, name: string, fallback = ''): string {
     return (el.value || fallback).trim();
 }
 
+function logoPreview(root: HTMLElement): string {
+    const box = root.querySelector<HTMLElement>('.media-box[data-field="brand__logo_url"]');
+    if (box) {
+        const clear = box.querySelector<HTMLInputElement>('.media-box__clear-flag');
+        if (clear?.checked) {
+            return '';
+        }
+        const thumb = box.querySelector<HTMLImageElement>('.media-box__thumb-img');
+        const src = (thumb?.getAttribute('src') || thumb?.src || '').trim();
+        if (src !== '') {
+            return src;
+        }
+    }
+    return val(root, 'brand__logo_url');
+}
+
 function contrastOn(hex: string): string {
     const raw = hex.replace('#', '');
     const full = raw.length === 3 ? raw[0] + raw[0] + raw[1] + raw[1] + raw[2] + raw[2] : raw;
@@ -147,6 +163,7 @@ export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
             this.$el.addEventListener('input', () => this.touch());
             this.$el.addEventListener('change', () => this.touch());
             this.$el.addEventListener('color-change', () => this.touch());
+            this.$el.addEventListener('media-change', () => this.touch());
         },
 
         touch() {
@@ -157,7 +174,7 @@ export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
             const root = this.$el;
             this.name = val(root, 'brand__name') || val(root, 'app__name', 'GEREQ').split(/\s+/)[0] || 'GEREQ';
             this.subtitle = val(root, 'brand__subtitle', 'Platform');
-            this.logoUrl = val(root, 'brand__logo_url') || '/brand/icons/favicon.svg';
+            this.logoUrl = logoPreview(root) || '/brand/icons/favicon.svg';
             this.signal = val(root, 'brand__color_signal', '#d7ff45');
             this.ink = val(root, 'brand__color_ink', '#0a0b0a');
             this.cream = val(root, 'brand__color_cream', '#f5f5ef');
@@ -170,13 +187,19 @@ export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
 
         paint() {
             const onSignal = contrastOn(this.signal);
-            this.adminStyle = `background:${this.cream};color:${this.ink};border-color:color-mix(in srgb, ${this.ink} 12%, transparent)`;
+            this.adminStyle = [
+                `background:${this.cream}`,
+                `color:${this.ink}`,
+                `--brand-preview-ink:${this.ink}`,
+                `--brand-preview-signal:${this.signal}`,
+                `border-color:color-mix(in srgb, ${this.ink} 14%, transparent)`,
+            ].join(';');
             this.btnStyle = `background:${this.signal};color:${onSignal}`;
             this.siteBarStyle = `background:${this.sitePrimary};color:#fff`;
             this.badgeStyle = 'background:rgba(255,255,255,.18);color:#fff';
             this.swatchSignal = `background:${this.signal}`;
             this.swatchInk = `background:${this.ink}`;
-            this.swatchCream = `background:${this.cream}`;
+            this.swatchCream = `background:${this.cream};box-shadow:inset 0 0 0 1px color-mix(in srgb, ${this.ink} 18%, transparent)`;
             this.swatchSite = `background:${this.sitePrimary}`;
             applyLiveBrand(this.signal, onSignal, this.ink, this.cream);
         },

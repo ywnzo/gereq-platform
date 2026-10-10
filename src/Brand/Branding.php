@@ -148,7 +148,7 @@ final class Branding
             return $this->sanitizeCss($this->string('brand.custom_css', ''));
         }
 
-        // Legacy keys (CMS / shared CSS) until first save under brand.custom_css.
+        // Legacy keys (Cms / shared CSS) until first save under brand.custom_css.
         $raw = $this->string('cms.custom_css_admin', '');
         if ($raw === '') {
             $raw = $this->string('cms.custom_css', '');

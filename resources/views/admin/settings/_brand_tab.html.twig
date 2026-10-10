@@ -1,0 +1,168 @@
+{#
+  Brand settings tab — form-grid cols + grq-grid split + live preview.
+  Expects: group, values, cssVariables, wideKeys, libraryImages
+#}
+{% set byKey = {} %}
+{% for item in group.items %}
+    {% set byKey = byKey|merge({ (item.key): item }) %}
+{% endfor %}
+
+{% set brandWide = ['brand.custom_css'] %}
+{% set fieldCtx = {
+    values: values,
+    groupId: 'brand',
+    cssVariables: cssVariables,
+    wideKeys: brandWide,
+    libraryImages: libraryImages|default([])
+} %}
+
+<div class="grq-grid grq-grid--split" x-data="settingsBrandPreview">
+    <div class="detail-stack">
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'settings.brand.section.identity'|trans }}</h2>
+                    <p class="muted">{{ 'settings.brand.section.identity.help'|trans }}</p>
+                </div>
+            </header>
+            <div class="form-grid">
+                {% for key in ['brand.name', 'brand.subtitle'] %}
+                    {% if byKey[key] is defined %}
+                        {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="form-grid">
+                {% for key in ['brand.logo_url', 'brand.favicon_url'] %}
+                    {% if byKey[key] is defined %}
+                        {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head panel__head--actions">
+                <div>
+                    <h2>{{ 'settings.brand.section.colors'|trans }}</h2>
+                    <p class="muted">{{ 'settings.brand.section.colors.help'|trans }}</p>
+                </div>
+                <button type="button" class="btn btn--ghost btn--sm" @click="generateStyle">
+                    {{ icon('palette') }} {{ 'settings.brand.generate_style'|trans }}
+                </button>
+            </header>
+            <div class="form-grid form-grid--cols-3">
+                {% for key in ['brand.color_signal', 'brand.color_ink', 'brand.color_cream'] %}
+                    {% if byKey[key] is defined %}
+                        {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <p class="field__hint">{{ 'settings.brand.generate_style.hint'|trans }}</p>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'settings.brand.section.public'|trans }}</h2>
+                    <p class="muted">{{ 'settings.brand.section.public.help'|trans }}</p>
+                </div>
+            </header>
+            <div class="form-grid">
+                {% for key in ['brand.site_name', 'brand.site_mark', 'brand.site_primary', 'brand.tagline'] %}
+                    {% if byKey[key] is defined %}
+                        {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
+                    {% endif %}
+                {% endfor %}
+                {% if byKey['brand.footnote'] is defined %}
+                    {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey['brand.footnote'], forceFull: true }) %}
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'settings.brand.section.css'|trans }}</h2>
+                    <p class="muted">{{ 'settings.brand.section.css.help'|trans }}</p>
+                </div>
+            </header>
+            {% if byKey['brand.custom_css'] is defined %}
+                {% set item = byKey['brand.custom_css'] %}
+                {% set key = item.key %}
+                {% set definition = item.definition %}
+                {% set field = key|replace({'.': '__'}) %}
+                {% include 'admin/settings/_css_editor.html.twig' %}
+            {% endif %}
+        </section>
+    </div>
+
+    <aside class="grq-aside" aria-label="{{ 'settings.preview'|trans }}">
+        <section class="panel">
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'settings.preview'|trans }}</h2>
+                    <p class="muted">{{ 'settings.brand.preview.help'|trans }}</p>
+                </div>
+            </header>
+
+            <div class="brand-preview" aria-live="polite">
+                <div class="brand-preview__block">
+                    <span class="brand-preview__label">{{ 'settings.brand.preview.admin'|trans }}</span>
+                    <div class="brand-preview__admin" :style="adminStyle">
+                        <div class="brand-preview__rail" aria-hidden="true">
+                            <span class="brand-preview__rail-dot" :style="swatchSignal"></span>
+                            <span class="brand-preview__rail-line"></span>
+                            <span class="brand-preview__rail-line"></span>
+                            <span class="brand-preview__rail-line brand-preview__rail-line--muted"></span>
+                        </div>
+                        <div class="brand-preview__admin-main">
+                            <div class="brand-preview__lockup">
+                                <img class="brand-preview__mark" :src="logoUrl" width="32" height="32" alt="">
+                                <div class="brand-preview__lockup-text">
+                                    <div class="brand-preview__name" x-text="name"></div>
+                                    <div class="brand-preview__sub" x-text="subtitle"></div>
+                                </div>
+                            </div>
+                            <div class="brand-preview__chrome">
+                                <span class="brand-preview__chip" :style="btnStyle">{{ 'settings.save'|trans }}</span>
+                                <span class="brand-preview__ghost">Ctrl K</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="brand-preview__block">
+                    <span class="brand-preview__label">{{ 'settings.brand.preview.site'|trans }}</span>
+                    <div class="brand-preview__site">
+                        <div class="brand-preview__site-bar" :style="siteBarStyle">
+                            <span class="brand-preview__badge" :style="badgeStyle" x-text="siteMark"></span>
+                            <span class="brand-preview__site-name" x-text="siteName"></span>
+                        </div>
+                        <p class="brand-preview__tagline" x-show="tagline" x-text="tagline"></p>
+                        <p class="brand-preview__tagline" x-show="!tagline">{{ 'settings.preview.tagline_fallback'|trans }}</p>
+                    </div>
+                </div>
+
+                <div class="brand-preview__swatches" role="list" aria-label="{{ 'settings.brand.section.colors'|trans }}">
+                    <div class="brand-preview__swatch" role="listitem">
+                        <span :style="swatchSignal"></span>
+                        <small>{{ 'settings.brand.color_signal'|trans }}</small>
+                    </div>
+                    <div class="brand-preview__swatch" role="listitem">
+                        <span :style="swatchInk"></span>
+                        <small>{{ 'settings.brand.color_ink'|trans }}</small>
+                    </div>
+                    <div class="brand-preview__swatch" role="listitem">
+                        <span :style="swatchCream"></span>
+                        <small>{{ 'settings.brand.color_cream'|trans }}</small>
+                    </div>
+                    <div class="brand-preview__swatch" role="listitem">
+                        <span :style="swatchSite"></span>
+                        <small>{{ 'settings.brand.site_primary'|trans }}</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </aside>
+</div>

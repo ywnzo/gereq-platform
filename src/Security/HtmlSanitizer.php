@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gereq\Security;
 
 /**
- * Allowlist HTML sanitizer for TipTap / CMS rich text.
+ * Allowlist HTML sanitizer for TipTap / Cms rich text.
  * Strips scripts, event handlers, and dangerous URLs.
  */
 final class HtmlSanitizer

@@ -148,7 +148,6 @@
     --btn-hover-bg: color-mix(in srgb, var(--primary) 88%, #fff);
     --btn-hover-border: color-mix(in srgb, var(--primary) 88%, #fff);
     --btn-active-bg: color-mix(in srgb, var(--primary) 82%, var(--text));
-    --btn-shadow: 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
 }
 .btn--danger:hover {
     --btn-hover-bg: color-mix(in srgb, var(--danger) 88%, #fff);
@@ -177,4 +176,30 @@
     background:
         radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--accent, var(--primary)) 10%, transparent), transparent 55%),
         var(--surface);
+}
+
+/* Toasts — keep soft tints out of LightningCSS (it collapses color-mix to solid accent). */
+.toast {
+    border-color: color-mix(in srgb, var(--toast-accent, var(--primary)) 28%, var(--border));
+    background: color-mix(in srgb, var(--toast-accent, var(--primary)) 8%, var(--surface));
+}
+.toast--success {
+    --toast-accent: var(--success, #16a34a);
+    border-color: color-mix(in srgb, var(--success, #16a34a) 28%, var(--border));
+    background: color-mix(in srgb, var(--success, #16a34a) 8%, var(--surface));
+}
+.toast--error {
+    --toast-accent: var(--danger, #dc2626);
+    border-color: color-mix(in srgb, var(--danger, #dc2626) 28%, var(--border));
+    background: color-mix(in srgb, var(--danger, #dc2626) 8%, var(--surface));
+}
+.toast--warning {
+    --toast-accent: var(--warning, #d97706);
+    border-color: color-mix(in srgb, var(--warning, #d97706) 28%, var(--border));
+    background: color-mix(in srgb, var(--warning, #d97706) 8%, var(--surface));
+}
+.toast--info {
+    --toast-accent: var(--info, var(--color-info, #2563eb));
+    border-color: color-mix(in srgb, var(--info, var(--color-info, #2563eb)) 28%, var(--border));
+    background: color-mix(in srgb, var(--info, var(--color-info, #2563eb)) 8%, var(--surface));
 }

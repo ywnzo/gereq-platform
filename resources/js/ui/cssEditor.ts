@@ -86,13 +86,13 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                             },
                             '.cm-scroller': {
                                 fontFamily: 'var(--gereq-font-mono, ui-monospace, monospace)',
-                                minHeight: '220px',
-                                maxHeight: '420px',
+                                minHeight: '160px',
+                                maxHeight: '280px',
                             },
                             '.cm-content': {
                                 caretColor: 'var(--text)',
                                 color: 'var(--text)',
-                                padding: '12px 0',
+                                padding: '10px 0',
                             },
                             '.cm-gutters': {
                                 background: 'var(--surface-2)',

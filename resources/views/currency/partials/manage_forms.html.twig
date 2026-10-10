@@ -1,0 +1,16 @@
+{#
+  Standalone POST forms for currency actions (must stay outside settings-form).
+  Vars: items
+#}
+{% if user.can('currency.manage') %}
+    <form id="currency-sync-form" method="post" action="{{ url('admin.currencies.rates.sync') }}" hidden>
+        {{ csrf_field()|raw }}
+    </form>
+    {% for item in items %}
+        {% if not item.isDefault() %}
+            <form id="currency-default-{{ item.code() }}" method="post" action="{{ url('admin.currencies.default', {code: item.code()}) }}" hidden>
+                {{ csrf_field()|raw }}
+            </form>
+        {% endif %}
+    {% endfor %}
+{% endif %}

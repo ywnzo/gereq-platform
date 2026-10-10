@@ -82,7 +82,7 @@ final class CurrencyAdminController extends Controller
             $this->flash('error', $this->translator->trans('currency.flash.rates_failed', ['%error%' => $e->getMessage()]));
         }
 
-        return $this->redirect('admin.currencies.index');
+        return $this->redirectBackToCurrencies();
     }
 
     /**
@@ -152,7 +152,7 @@ final class CurrencyAdminController extends Controller
         $this->forgetForm('currency.save');
         $this->flash('success', $this->translator->trans('currency.flash.created', ['%code%' => $currency->code()]));
 
-        return $this->redirect('admin.currencies.index');
+        return $this->redirectBackToCurrencies();
     }
 
     public function edit(string $code): Response
@@ -215,7 +215,7 @@ final class CurrencyAdminController extends Controller
         $this->forgetForm('currency.save');
         $this->flash('success', $this->translator->trans('currency.flash.saved'));
 
-        return $this->redirect('admin.currencies.index');
+        return $this->redirectBackToCurrencies();
     }
 
     public function setDefault(string $code): Response
@@ -235,7 +235,12 @@ final class CurrencyAdminController extends Controller
         $this->auditor->log('currency.default_changed', 'currency', $currency->code());
         $this->flash('success', $this->translator->trans('currency.flash.default_set', ['%code%' => $currency->code()]));
 
-        return $this->redirect('admin.currencies.index');
+        return $this->redirectBackToCurrencies();
+    }
+
+    private function redirectBackToCurrencies(): Response
+    {
+        return $this->redirectBack('admin.settings.index', ['tab' => 'core']);
     }
 
     private function find(string $code): ?Currency
