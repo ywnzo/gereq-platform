@@ -463,10 +463,6 @@ a.package-row__mod.is-busy {
 .module-versions-callout .btn {
     flex: 0 0 auto;
 }
-.alert--info {
-    border-color: color-mix(in srgb, var(--info, #3b82f6) 40%, var(--border));
-    background: color-mix(in srgb, var(--info, #3b82f6) 10%, var(--surface));
-}
 .module-tabs {
     /* inherits sticky from .detail-tabs when used on detail pages */
     z-index: 12;
@@ -751,35 +747,7 @@ a.package-row__mod.is-busy {
     gap: 12px;
     width: 100%;
 }
-.detail-stack--brand {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
-    gap: 14px;
-    align-items: start;
-}
-.detail-stack--brand > .panel:first-child {
-    min-width: 0;
-}
-.settings-brand-preview {
-    position: sticky;
-    top: calc(var(--topbar-h) + 0.75rem);
-    align-self: start;
-}
-.settings-brand-preview .panel__head--actions {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-.settings-brand-preview .settings-preview {
-    grid-template-columns: 1fr;
-}
-@media (max-width: 1100px) {
-    .detail-stack--brand {
-        grid-template-columns: 1fr;
-    }
-    .settings-brand-preview {
-        position: static;
-    }
-}
+/* Brand settings layout lives in settings.css (.brand-settings). */
 .detail-stack > .panel,
 .detail-stack > .hook-section {
     margin: 0;

@@ -48,7 +48,7 @@
         </footer>
     </div>
 
-    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <div id="toasts" class="toasts" data-close="{{ 'common.close'|trans|e('html_attr') }}" aria-live="polite" aria-relevant="additions"></div>
     {{ render_js() }}
     <script>
         document.querySelectorAll('[data-ui-toast]').forEach((btn) => {

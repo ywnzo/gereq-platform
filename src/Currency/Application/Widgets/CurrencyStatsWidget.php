@@ -80,7 +80,7 @@ final class CurrencyStatsWidget extends TwigDashboardWidget
             'label' => $this->translator->trans('currency.widget.stats.title'),
             'value' => (string) $active,
             'hint' => $hint,
-            'href' => $this->router->url('admin.currencies.index'),
+            'href' => $this->router->url('admin.settings.index', ['tab' => 'core']) . '#settings-currencies',
         ];
     }
 }

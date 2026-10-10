@@ -33,7 +33,11 @@ final class SyncExchangeRates
     {
         /** @var list<Currency> $currencies */
         $currencies = $this->em->getRepository(Currency::class)->findBy(['isActive' => true]);
-        $codes = array_map(static fn (Currency $c): string => $c->code(), $currencies);
+        $knownCodes = [];
+        foreach ($currencies as $currency) {
+            $knownCodes[$currency->code()] = true;
+        }
+        $codes = array_keys($knownCodes);
 
         $quotes = $this->provider->fetch($codes, $asOf);
         $created = 0;
@@ -41,19 +45,17 @@ final class SyncExchangeRates
         $skipped = 0;
         $pairs = [];
         $validAt = null;
+        $existingByPairDay = $this->loadExistingByPairDay($quotes);
 
         foreach ($quotes as $quote) {
-            if ($this->em->find(Currency::class, $quote->baseCode) === null) {
-                $skipped++;
-                continue;
-            }
-            if ($this->em->find(Currency::class, $quote->quoteCode) === null) {
+            if (!isset($knownCodes[$quote->baseCode], $knownCodes[$quote->quoteCode])) {
                 $skipped++;
                 continue;
             }
 
             $validAt ??= $quote->validAt;
-            $existing = $this->findSameDay($quote);
+            $dayKey = $this->pairDayKey($quote->baseCode, $quote->quoteCode, $quote->validAt);
+            $existing = $existingByPairDay[$dayKey] ?? null;
             if ($existing instanceof ExchangeRate) {
                 $sameRate = abs((float) $existing->rate() - (float) $quote->rate) < 0.000000000001;
                 if ($sameRate && $existing->provider() === $quote->provider) {
@@ -82,11 +84,11 @@ final class SyncExchangeRates
                     $quote->provider,
                 );
                 $this->em->persist($rate);
+                $existingByPairDay[$dayKey] = $rate;
                 $created++;
                 $action = 'created';
             }
 
-            $this->em->flush();
             $payload = [
                 'id' => $rate->id(),
                 'base_code' => $rate->baseCode(),
@@ -108,6 +110,10 @@ final class SyncExchangeRates
             ];
         }
 
+        if ($created > 0 || $updated > 0) {
+            $this->em->flush();
+        }
+
         return [
             'provider' => $this->provider->id(),
             'label' => $this->provider->label(),
@@ -119,27 +125,57 @@ final class SyncExchangeRates
         ];
     }
 
-    private function findSameDay(RateQuote $quote): ?ExchangeRate
+    /**
+     * Prefetch same-day rates for all quote pairs in one query (avoids N+1 in sync loop).
+     *
+     * @param list<RateQuote> $quotes
+     * @return array<string, ExchangeRate>
+     */
+    private function loadExistingByPairDay(array $quotes): array
     {
-        $dayStart = $quote->validAt->setTime(0, 0);
-        $dayEnd = $dayStart->modify('+1 day');
+        if ($quotes === []) {
+            return [];
+        }
 
-        $qb = $this->em->getRepository(ExchangeRate::class)->createQueryBuilder('r')
-            ->where('r.baseCode = :base')
-            ->andWhere('r.quoteCode = :quote')
-            ->andWhere('r.provider = :provider')
+        $provider = $quotes[0]->provider;
+        $minDay = $quotes[0]->validAt->setTime(0, 0);
+        $maxDay = $minDay;
+        foreach ($quotes as $quote) {
+            $day = $quote->validAt->setTime(0, 0);
+            if ($day < $minDay) {
+                $minDay = $day;
+            }
+            if ($day > $maxDay) {
+                $maxDay = $day;
+            }
+        }
+
+        /** @var list<ExchangeRate> $rows */
+        $rows = $this->em->getRepository(ExchangeRate::class)->createQueryBuilder('r')
+            ->where('r.provider = :provider')
             ->andWhere('r.validAt >= :from')
             ->andWhere('r.validAt < :to')
-            ->setParameter('base', $quote->baseCode)
-            ->setParameter('quote', $quote->quoteCode)
-            ->setParameter('provider', $quote->provider)
-            ->setParameter('from', $dayStart)
-            ->setParameter('to', $dayEnd)
+            ->setParameter('provider', $provider)
+            ->setParameter('from', $minDay)
+            ->setParameter('to', $maxDay->modify('+1 day'))
             ->orderBy('r.validAt', 'DESC')
-            ->setMaxResults(1);
+            ->getQuery()
+            ->getResult();
 
-        $row = $qb->getQuery()->getOneOrNullResult();
+        $map = [];
+        foreach ($rows as $row) {
+            $key = $this->pairDayKey($row->baseCode(), $row->quoteCode(), $row->validAt());
+            // Ordered by validAt DESC — keep the latest row per pair/day.
+            if (!isset($map[$key])) {
+                $map[$key] = $row;
+            }
+        }
 
-        return $row instanceof ExchangeRate ? $row : null;
+        return $map;
+    }
+
+    private function pairDayKey(string $base, string $quote, \DateTimeImmutable $validAt): string
+    {
+        return strtoupper($base) . '|' . strtoupper($quote) . '|' . $validAt->format('Y-m-d');
     }
 }

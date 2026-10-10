@@ -114,7 +114,7 @@ final class ExchangeRatesWidget extends TwigDashboardWidget
         return [
             'title' => $this->translator->trans('currency.widget.rates.title'),
             'subtitle' => $this->translator->trans('currency.widget.rates.subtitle', ['%default%' => $default]),
-            'href' => $this->router->url('admin.currencies.index'),
+            'href' => $this->router->url('admin.settings.index', ['tab' => 'core']) . '#settings-currencies',
             'link_label' => $this->translator->trans('nav.currencies'),
             'items' => $items,
             'empty_message' => $this->translator->trans('currency.widget.rates.empty'),

@@ -1,5 +1,14 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.settings'|trans, url: url('admin.settings.index') },
+        { label: 'settings.group.core'|trans, url: url('admin.settings.index', {tab: 'core'}) },
+        { label: item ? 'currency.edit'|trans : 'currency.new'|trans },
+    ] } %}
+{% endblock %}
+
 {% block content %}
     <header class="page-header">
         <h1>{{ item ? 'currency.edit'|trans : 'currency.new'|trans }}</h1>
@@ -22,7 +31,7 @@
         </section>
         <div class="form-actions">
             <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.currencies.index') }}">{{ 'common.cancel'|trans }}</a>
+            <a class="btn btn--ghost" href="{{ url('admin.settings.index', {tab: 'core'}) }}#settings-currencies">{{ 'common.cancel'|trans }}</a>
         </div>
     </form>
 {% endblock %}

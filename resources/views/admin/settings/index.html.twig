@@ -12,9 +12,7 @@
     {% set wideKeys = [
         'admin.dashboard.layout',
         'brand.custom_css',
-        'cms.custom_css_public',
-        'brand.logo_url',
-        'brand.favicon_url'
+        'cms.custom_css_public'
     ] %}
 
     <form
@@ -54,120 +52,89 @@
                     class="design-panel"
                     data-panel="{{ groupId }}"
                     role="tabpanel"
-                    {% if groupId == 'brand' %}x-data="settingsBrandPreview"{% endif %}
                 >
-                    <div class="detail-stack{% if groupId == 'brand' %} detail-stack--brand{% endif %}">
-                        <section class="panel">
-                            <header class="panel__head">
-                                <div>
-                                    <h2>{{ group.label|trans }}</h2>
-                                    {% if groupHelp|trans != groupHelp %}
-                                        <p class="muted">{{ groupHelp|trans }}</p>
-                                    {% endif %}
-                                </div>
-                            </header>
-                            <div class="form-grid">
-                                {% if groupId == 'core' %}
-                                    <label class="field">
-                                        <span>{{ 'settings.admin.path'|trans }}</span>
-                                        <input class="input" type="text" value="{{ adminPath }}" readonly disabled>
-                                        <small class="field__hint">{{ 'settings.admin.path.help'|trans }}</small>
-                                    </label>
-                                {% endif %}
-                                {% for item in group.items %}
-                                    {% set key = item.key %}
-                                    {% set definition = item.definition %}
-                                    {% set field = key|replace({'.': '__'}) %}
-                                    {% set helpKey = definition.label ~ '.help' %}
-                                    {% set isColor = 'color_' in key or key ends with '_primary' %}
-                                    {% set isWide = key in wideKeys %}
-                                    {% set isWidget = isColor or isWide %}
-                                    {% if isWidget %}
-                                        <div class="settings-row{% if isWide %} field--full{% endif %}">
-                                        <span class="settings-row__label">{{ definition.label|trans }}</span>
-                                    {% else %}
-                                        <label class="field">
-                                        <span>{{ definition.label|trans }}</span>
-                                    {% endif %}
-                                        {% if definition.type == 'boolean' %}
-                                            <select class="input" name="{{ field }}">
-                                                <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
-                                                <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
-                                            </select>
-                                        {% elseif definition.options is defined and definition.options is not empty %}
-                                            <select class="input" name="{{ field }}">
-                                                {% for optionValue, optionLabel in definition.options %}
-                                                    <option value="{{ optionValue }}" {{ values[key] == optionValue ? 'selected' : '' }}>{{ optionLabel|trans }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        {% elseif item.secret %}
-                                            <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
-                                        {% elseif isColor %}
-                                            {% include 'admin/settings/_color_picker.html.twig' %}
-                                        {% elseif key in ['brand.logo_url', 'brand.favicon_url'] %}
-                                            {% include 'admin/settings/_brand_asset.html.twig' %}
-                                        {% elseif key in ['brand.custom_css', 'cms.custom_css_public'] %}
-                                            {% include 'admin/settings/_css_editor.html.twig' %}
-                                        {% elseif key == 'admin.dashboard.layout' %}
-                                            {% include 'admin/settings/_dashboard_widgets.html.twig' %}
-                                        {% elseif definition.type == 'json' %}
-                                            <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ values[key]|json_encode }}</textarea>
-                                        {% else %}
-                                            <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}"
-                                                {% if groupId == 'brand' %}@input="touch"{% endif %}>
-                                        {% endif %}
-                                        {% if helpKey|trans != helpKey and key != 'admin.dashboard.layout' %}
-                                            <small class="field__hint">{{ helpKey|trans }}</small>
-                                        {% endif %}
-                                    {% if isWidget %}</div>{% else %}</label>{% endif %}
-                                {% endfor %}
-                            </div>
-                        </section>
-
-                        {% if groupId == 'brand' %}
-                            <aside class="panel settings-brand-preview" aria-label="{{ 'settings.preview'|trans }}">
-                                <header class="panel__head panel__head--actions">
+                    {% if groupId == 'brand' %}
+                        {% include 'admin/settings/_brand_tab.html.twig' with {
+                            group: group,
+                            values: values,
+                            cssVariables: cssVariables,
+                            wideKeys: wideKeys,
+                            libraryImages: libraryImages|default([]),
+                        } %}
+                    {% else %}
+                        <div class="detail-stack">
+                            <section class="panel">
+                                <header class="panel__head">
                                     <div>
-                                        <h2>{{ 'settings.preview'|trans }}</h2>
-                                        <p class="muted">{{ 'settings.brand.generate_style.hint'|trans }}</p>
+                                        <h2>{{ group.label|trans }}</h2>
+                                        {% if groupHelp|trans != groupHelp %}
+                                            <p class="muted">{{ groupHelp|trans }}</p>
+                                        {% endif %}
                                     </div>
-                                    <button
-                                        type="button"
-                                        class="btn btn--ghost"
-                                        @click="generateStyle"
-                                    >{{ 'settings.brand.generate_style'|trans }}</button>
                                 </header>
-                                <div class="settings-preview" aria-live="polite">
-                                    <div class="settings-preview__admin" :style="adminStyle">
-                                        <div class="settings-preview__lockup">
-                                            <img class="settings-preview__mark" :src="logoUrl" width="36" height="36" alt="">
-                                            <div>
-                                                <div class="settings-preview__name" x-text="name"></div>
-                                                <div class="settings-preview__sub" x-text="subtitle"></div>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="settings-preview__btn" :style="btnStyle">{{ 'settings.save'|trans }}</button>
-                                    </div>
-                                    <div class="settings-preview__site">
-                                        <div class="settings-preview__site-bar" :style="siteBarStyle">
-                                            <span class="settings-preview__badge" :style="badgeStyle" x-text="siteMark"></span>
-                                            <span class="settings-preview__site-name" x-text="siteName"></span>
-                                        </div>
-                                        <p class="settings-preview__tagline" x-show="tagline" x-text="tagline"></p>
-                                        <p class="settings-preview__tagline" x-show="!tagline">{{ 'settings.preview.tagline_fallback'|trans }}</p>
-                                    </div>
-                                    <div class="settings-preview__swatches">
-                                        <span class="settings-preview__swatch" :style="swatchSignal" title="{{ 'settings.brand.color_signal'|trans }}"></span>
-                                        <span class="settings-preview__swatch" :style="swatchInk" title="{{ 'settings.brand.color_ink'|trans }}"></span>
-                                        <span class="settings-preview__swatch" :style="swatchCream" title="{{ 'settings.brand.color_cream'|trans }}"></span>
-                                        <span class="settings-preview__swatch" :style="swatchSite" title="{{ 'settings.brand.site_primary'|trans }}"></span>
-                                    </div>
+                                <div class="form-grid">
+                                    {% if groupId == 'core' %}
+                                        <label class="field">
+                                            <span>{{ 'settings.admin.path'|trans }}</span>
+                                            <input class="input" type="text" value="{{ adminPath }}" readonly disabled>
+                                            <small class="field__hint">{{ 'settings.admin.path.help'|trans }}</small>
+                                        </label>
+                                    {% endif %}
+                                    {% for item in group.items %}
+                                        {% set key = item.key %}
+                                        {% set definition = item.definition %}
+                                        {% set field = key|replace({'.': '__'}) %}
+                                        {% set helpKey = definition.label ~ '.help' %}
+                                        {% set isColor = 'color_' in key or key ends with '_primary' %}
+                                        {% set isWide = key in wideKeys %}
+                                        {% set isWidget = isColor or isWide %}
+                                        {% if isWidget %}
+                                            <div class="settings-row{% if isWide %} field--full{% endif %}">
+                                            <span class="settings-row__label">{{ definition.label|trans }}</span>
+                                        {% else %}
+                                            <label class="field">
+                                            <span>{{ definition.label|trans }}</span>
+                                        {% endif %}
+                                            {% if definition.type == 'boolean' %}
+                                                <select class="input" name="{{ field }}">
+                                                    <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                                                    <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                                                </select>
+                                            {% elseif definition.options is defined and definition.options is not empty %}
+                                                <select class="input" name="{{ field }}">
+                                                    {% for optionValue, optionLabel in definition.options %}
+                                                        <option value="{{ optionValue }}" {{ values[key] == optionValue ? 'selected' : '' }}>{{ optionLabel|trans }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            {% elseif item.secret %}
+                                                <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
+                                            {% elseif isColor %}
+                                                {% include 'admin/settings/_color_picker.html.twig' %}
+                                            {% elseif key in ['brand.custom_css', 'cms.custom_css_public'] %}
+                                                {% include 'admin/settings/_css_editor.html.twig' %}
+                                            {% elseif key == 'admin.dashboard.layout' %}
+                                                {% include 'admin/settings/_dashboard_widgets.html.twig' %}
+                                            {% elseif definition.type == 'json' %}
+                                                <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ values[key]|json_encode }}</textarea>
+                                            {% else %}
+                                                <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}">
+                                            {% endif %}
+                                            {% if helpKey|trans != helpKey and key != 'admin.dashboard.layout' %}
+                                                <small class="field__hint">{{ helpKey|trans }}</small>
+                                            {% endif %}
+                                        {% if isWidget %}</div>{% else %}</label>{% endif %}
+                                    {% endfor %}
                                 </div>
-                            </aside>
-                        {% endif %}
-                    </div>
+                            </section>
+
+                            {% if groupId == 'core' %}
+                                {{ apply_filters('admin.settings.panel.core', '')|raw }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 </section>
             {% endfor %}
         </div>
     </form>
+    {{ apply_filters('admin.settings.extra_forms', '')|raw }}
 {% endblock %}

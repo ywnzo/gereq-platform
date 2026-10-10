@@ -102,7 +102,7 @@
         --btn-hover-fg: var(--primary-fg);
         --btn-hover-border: color-mix(in srgb, var(--primary) 88%, #fff);
         --btn-active-bg: color-mix(in srgb, var(--primary) 82%, var(--text));
-        --btn-shadow: 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent);
+        --btn-shadow: none;
         --btn-weight: var(--grq-weight-semibold);
         --btn-tracking: -0.014em;
     }
@@ -200,7 +200,7 @@
         --btn-hover-fg: #fff;
         --btn-hover-border: color-mix(in srgb, var(--danger) 88%, #fff);
         --btn-active-bg: color-mix(in srgb, var(--danger) 82%, #000);
-        --btn-shadow: 0 1px 0 color-mix(in srgb, var(--danger) 25%, transparent);
+        --btn-shadow: none;
         --btn-weight: var(--grq-weight-semibold);
         --btn-tracking: -0.014em;
     }

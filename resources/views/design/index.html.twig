@@ -611,7 +611,10 @@
                         <button class="btn btn--ghost" type="button" data-design-confirm>{{ 'design.feedback.confirm_btn'|trans }}</button>
                         <button class="btn btn--danger" type="button" data-design-confirm-danger>{{ 'design.feedback.confirm_danger_btn'|trans }}</button>
                         <button class="btn btn--ghost" type="button" data-design-prompt>{{ 'design.feedback.prompt_btn'|trans }}</button>
-                        <button class="btn btn--ghost" type="button" data-design-toast>{{ 'design.feedback.toast_btn'|trans }}</button>
+                        <button class="btn btn--ghost" type="button" data-design-toast="success">{{ 'design.feedback.toast_btn'|trans }}</button>
+                        <button class="btn btn--ghost" type="button" data-design-toast="error">Error</button>
+                        <button class="btn btn--ghost" type="button" data-design-toast="warning">Warning</button>
+                        <button class="btn btn--ghost" type="button" data-design-toast="info">Info</button>
                     </div>
                     <script nonce="{{ csp_nonce() }}">
                         document.querySelector('[data-design-confirm]')?.addEventListener('click', async () => {
@@ -637,8 +640,11 @@
                                 inputValue: 'Demo'
                             });
                         });
-                        document.querySelector('[data-design-toast]')?.addEventListener('click', () => {
-                            window.gereq?.toast?.({{ 'design.feedback.toast_msg'|trans|json_encode|raw }}, 'success');
+                        document.querySelectorAll('[data-design-toast]').forEach((btn) => {
+                            btn.addEventListener('click', () => {
+                                const tone = btn.getAttribute('data-design-toast') || 'success';
+                                window.gereq?.toast?.({{ 'design.feedback.toast_msg'|trans|json_encode|raw }}, tone);
+                            });
                         });
                     </script>
                 </div>
@@ -1159,6 +1165,7 @@
     </div>
 
     {% include 'ui/confirm_dialog.html.twig' %}
+    <div class="toasts" id="toasts" data-close="{{ 'common.close'|trans|e('html_attr') }}" aria-live="polite" aria-relevant="additions"></div>
     <script nonce="{{ csp_nonce() }}">
         window.__GEREQ_COMMANDS__ = [];
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};

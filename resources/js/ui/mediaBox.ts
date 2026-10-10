@@ -230,10 +230,12 @@ export function registerMediaBox(alpine: typeof Alpine): void {
         setUrlValue(this: GereqMediaBoxCtx, value: string) {
             if (this.$refs.url) {
                 this.$refs.url.value = value;
+                this.$refs.url.dispatchEvent(new Event('input', { bubbles: true }));
             }
             if (this.$refs.urlVisible) {
                 this.$refs.urlVisible.value = value;
             }
+            this.$el.dispatchEvent(new CustomEvent('media-change', { bubbles: true, detail: { value } }));
         },
 
         syncUrlVisible(this: GereqMediaBoxCtx) {
@@ -300,6 +302,10 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             }
             this.revokeBlob();
             this.preview = URL.createObjectURL(file);
+            this.$el.dispatchEvent(new CustomEvent('media-change', {
+                bubbles: true,
+                detail: { value: this.preview },
+            }));
         },
 
         onUrlVisibleInput(this: GereqMediaBoxCtx) {
