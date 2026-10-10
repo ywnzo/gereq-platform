@@ -103,6 +103,7 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('render_tags', [$runtime, 'renderTags'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('render_reload', [$runtime, 'renderReload'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('icon', [$runtime, 'icon'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('gravatar_url', [$runtime, 'gravatarUrl']));
         $twig->addFunction(new TwigFunction('current_user', [$runtime, 'currentUser']));
         $twig->addFunction(new TwigFunction('route_is', [$runtime, 'routeIs']));
         $twig->addFunction(new TwigFunction('admin_breadcrumbs', [$runtime, 'adminBreadcrumbs']));

@@ -191,10 +191,20 @@ final class DataTableRenderer
             $initials = strtoupper(mb_substr($parts[0] ?? '?', 0, 1) . mb_substr($parts[1] ?? '', 0, 1));
         }
 
+        $email = '';
+        $avatarSrc = null;
+        if (is_array($row)) {
+            $email = (string) ($row[(string) ($column->meta['email_key'] ?? 'email')] ?? '');
+            $rawSrc = $row[(string) ($column->meta['avatar_src_key'] ?? 'avatar_src')] ?? null;
+            $avatarSrc = is_string($rawSrc) && $rawSrc !== '' ? $rawSrc : null;
+        }
+
         return $this->twig->render('ui/components/table_user_cell.html.twig', [
             'name' => $name !== '' ? $name : '—',
             'meta' => $meta,
             'initials' => $initials !== '' ? $initials : '?',
+            'email' => $email !== '' ? $email : null,
+            'avatar_src' => $avatarSrc,
             'href' => is_array($row) ? ($row[$column->meta['href_key'] ?? 'href'] ?? null) : null,
         ]);
     }

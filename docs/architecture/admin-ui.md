@@ -41,9 +41,9 @@ Controllers typically call `$this->render('admin/users/index.html.twig', [...])`
 ### Command palette and admin search
 
 - `Gereq\Admin\CommandPalette\CommandPalette` (`src/Admin/CommandPalette/CommandPalette.php`): `add(PaletteCommand)`, `all(user)` (permission-filtered). `PaletteCommand(id, label, url, icon, permission, keywords[], group = 'Navigace')`.
-- `Gereq\Admin\Search\AdminSearchRegistry` (`src/Admin/Search/AdminSearchRegistry.php`): `add(id, fields, callable(string $q, int $limit): AdminSearchHit[], permission, group = 'Data', icon, limit = 8)` or `source(AdminSearchSource)`; `sources(user)`, `search(query, user, maxTotal = 24)`. Hits are `AdminSearchHit(id, label, url, group, subtitle, icon, keywords)`.
-- The palette UI (`layout.html.twig`, class `palette`) filters commands client-side and, for longer queries, calls `GET /admin/search?q=` (`src/Admin/Http/SearchController.php`, route `admin.search`) which runs the registry; hits appear with `kind: 'hit'`.
-- Core registers a `users` search source in `CoreRegistrar::adminSearch()` using `self_repair_search()` for typo tolerance; modules add their own (customers, listings, …) in `boot()`.
+- `Gereq\Admin\Search\AdminSearchRegistry` (`src/Admin/Search/AdminSearchRegistry.php`): `add(id, fields, callable(string $q, int $limit): AdminSearchHit[], permission, group = 'Data', icon, limit = 8)` or `source(AdminSearchSource)`; `sources(user)`, `describe(user)`, `search(query, user, maxTotal = 32)` with fair per-source budgets. Hits are `AdminSearchHit(id, label, url, group, subtitle, icon, keywords)`.
+- The palette UI (`layout.html.twig`, class `palette`) is an animated command palette (Ctrl/Cmd+K): recent items, keyboard navigation, chips for **enabled** search sources only, client-side command filter, and live hits from `GET /admin/search?q=` (`src/Admin/Http/SearchController.php`, route `admin.search`). `?meta=1` returns source metadata without querying data. Hits appear with `kind: 'hit'`.
+- Core registers a `users` search source in `CoreRegistrar::adminSearch()` using `self_repair_search()` for typo tolerance; modules add their own in `boot()` (customers, listings, CMS pages, CRM deals, products, orders, …). Disabled modules never register sources or palette commands.
 
 ## UI component system
 
@@ -69,6 +69,7 @@ Prefer `/design/ui.html` when looking up how to call a helper; use `/design.html
 | `cell(body, span, class)` | `components/cell.html.twig` — `span` is `1`–`3` or `'full'` |
 | `drawer(...)`, `drawerTrigger(...)` | side drawer + opener |
 | `badge(label, tone = 'muted', class)` | `components/badge.html.twig` |
+| `avatar(options)` | `components/avatar.html.twig` — local `src` or Gravatar from `email`, initials underneath (`d=blank`) |
 | `emptyState(title, hint, actionHtml)` | `components/empty.html.twig` |
 | `pageHeader(title, options)` | `components/page_header.html.twig` (`meta`, `actions`) |
 | `icon(name, class)` | `Icons::svg()` |
@@ -200,6 +201,7 @@ Registered in `Gereq\View\TwigFactory::create()` (`src/View/TwigFactory.php`), i
 | `asset(entry)`, `render_css()`, `render_js()`, `render_tags()`, `render_reload()` | Bun manifest URLs (`RenderEngine`, `config/render.php`) |
 | `csrf_field()`, `csrf_token()`, `csp_nonce()` | security |
 | `icon(name, class)` | inline SVG |
+| `gravatar_url(email, size = 80, default = 'blank')` | Gravatar URL (`Gereq\Support\Gravatar`) |
 | `current_user()` | `User` or null |
 | `admin_breadcrumbs(pageTitle)` | from `Menu::breadcrumbsFor()` |
 | `flash(key)` | session flash |

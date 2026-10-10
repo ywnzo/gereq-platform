@@ -18,11 +18,13 @@
         <div class="user-edit-header__banner" style="background-image:url('{{ url('admin.users.banner', {id: item.id()}) }}')" aria-hidden="true"></div>
     {% endif %}
     <div class="user-edit-hero">
-        {% if item and item.avatarFileId() %}
-            <img class="avatar avatar--xl" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="{{ item.name() }}">
-        {% else %}
-            <span class="avatar avatar--xl">{{ item ? item.initials() : '?' }}</span>
-        {% endif %}
+        {{ ui().avatar({
+            email: item ? item.email() : null,
+            initials: item ? item.initials() : '?',
+            src: item and item.avatarFileId() ? url('admin.users.avatar', {id: item.id()}) : null,
+            alt: item ? item.name() : '',
+            size: 'xl',
+        })|raw }}
         <div>
             <h1>{{ item ? item.name() : 'admin.users.new'|trans }}</h1>
             {% if item %}
@@ -85,11 +87,12 @@
             <div class="form-grid">
                 <div class="field field--full user-edit__media">
                     <div class="user-edit__photo">
-                        {% if item and item.avatarFileId() %}
-                            <img class="avatar avatar--xl" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="">
-                        {% else %}
-                            <span class="avatar avatar--xl">{{ item ? item.initials() : '?' }}</span>
-                        {% endif %}
+                        {{ ui().avatar({
+                            email: item ? item.email() : null,
+                            initials: item ? item.initials() : '?',
+                            src: item and item.avatarFileId() ? url('admin.users.avatar', {id: item.id()}) : null,
+                            size: 'xl',
+                        })|raw }}
                         <div class="user-edit__photo-actions">
                             {% include 'ui/file.html.twig' with {
                                 name: 'avatar',

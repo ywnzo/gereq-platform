@@ -15,7 +15,7 @@ final class AdminSearchSource
     private $search;
 
     /**
-     * @param list<string> $fields dokumentace / UI hint (plate, vin, name, …)
+     * @param list<string> $fields documentation / UI hint (plate, vin, name, …)
      * @param SearchFn $search
      */
     public function __construct(
@@ -33,13 +33,13 @@ final class AdminSearchSource
     /**
      * @return list<AdminSearchHit>
      */
-    public function search(string $query): array
+    public function search(string $query, ?int $limit = null): array
     {
         $query = trim($query);
         if ($query === '') {
             return [];
         }
-        $hits = ($this->search)($query, $this->limit);
+        $hits = ($this->search)($query, $limit ?? $this->limit);
 
         return array_values(array_filter(
             $hits,

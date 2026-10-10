@@ -10,7 +10,14 @@
 </head>
 <body class="admin-body" data-sidebar="expanded">
     <div id="g-page-progress" class="g-page-progress" role="progressbar" aria-hidden="true" aria-valuemin="0" aria-valuemax="100"></div>
-    <div class="app-shell" x-data="gereqAdmin" x-cloak>
+    <div
+        class="app-shell"
+        x-data="gereqAdmin"
+        x-cloak
+        data-theme-label-dark="{{ 'settings.theme.dark'|trans|e('html_attr') }}"
+        data-theme-label-light="{{ 'settings.theme.light'|trans|e('html_attr') }}"
+        data-theme-label-system="{{ 'settings.theme.system'|trans|e('html_attr') }}"
+    >
         <div class="sidebar-backdrop" @click="closeSidebar" :class="backdropClass"></div>
 
         {% include 'admin/partials/sidebar.html.twig' %}
@@ -36,30 +43,39 @@
                 </div>
                 <div class="topbar__right">
                     {{ apply_filters('admin.topbar.context', '')|raw }}
-                    <button type="button" class="search-trigger" @click="openPalette">
-                        {{ icon('search') }}
-                        <span>{{ 'common.search'|trans }}</span>
-                        <kbd>Ctrl K</kbd>
-                    </button>
-                    <button type="button" class="icon-btn" @click="cycleTheme" aria-label="{{ 'ui.theme'|trans }}">
-                        {{ icon('sun') }}
-                    </button>
-                    {{ apply_filters('admin.topbar.actions', '')|raw }}
-                    <div class="user-menu" @click.outside="closeUserMenu">
-                        <button type="button" class="avatar-btn" @click="toggleUserMenu">
-                            <span class="avatar">{{ user ? user.initials() : 'G' }}</span>
+                    <div class="topbar__tools">
+                        <button type="button" class="search-trigger" @click="openPalette">
+                            {{ icon('search') }}
+                            <span class="search-trigger__label">{{ 'common.search'|trans }}</span>
+                            <kbd>Ctrl K</kbd>
                         </button>
-                        <div class="flyout" :class="userMenuClass">
-                            <div class="flyout__meta">
-                                <strong>{{ user ? user.name() : '' }}</strong>
-                                <span>{{ user ? user.email() : '' }}</span>
+                        <div class="topbar__icons">
+                            <button type="button" class="icon-btn" @click="cycleTheme" :aria-label="themeLabel" :title="themeLabel">
+                                <span class="material-symbols-outlined g-icon" aria-hidden="true" x-text="themeIcon">dark_mode</span>
+                            </button>
+                            {{ apply_filters('admin.topbar.actions', '')|raw }}
+                        </div>
+                        <div class="user-menu" @click.outside="closeUserMenu">
+                            <button type="button" class="avatar-btn" @click="toggleUserMenu" aria-label="{{ user ? user.name() : 'admin.profile'|trans }}" :aria-expanded="userMenuExpanded">
+                                {{ ui().avatar({
+                                    email: user ? user.email() : null,
+                                    initials: user ? user.initials() : 'G',
+                                    src: user and user.avatarFileId() ? url('admin.users.avatar', {id: user.id()}) : null,
+                                    alt: '',
+                                })|raw }}
+                            </button>
+                            <div class="flyout" :class="userMenuClass">
+                                <div class="flyout__meta">
+                                    <strong>{{ user ? user.name() : '' }}</strong>
+                                    <span>{{ user ? user.email() : '' }}</span>
+                                </div>
+                                <a href="{{ url('admin.profile') }}">{{ 'admin.profile'|trans }}</a>
+                                <a href="{{ url('admin.settings.index') }}">{{ 'nav.settings'|trans }}</a>
+                                <form method="post" action="{{ url('admin.logout') }}" id="logout-form">
+                                    {{ csrf_field()|raw }}
+                                    <button type="submit">{{ 'admin.logout'|trans }}</button>
+                                </form>
                             </div>
-                            <a href="{{ url('admin.profile') }}">{{ 'admin.profile'|trans }}</a>
-                            <a href="{{ url('admin.settings.index') }}">{{ 'nav.settings'|trans }}</a>
-                            <form method="post" action="{{ url('admin.logout') }}" id="logout-form">
-                                {{ csrf_field()|raw }}
-                                <button type="submit">{{ 'admin.logout'|trans }}</button>
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -86,27 +102,75 @@
             </main>
         </div>
 
-        <div class="palette" :class="paletteClass">
+        <div class="palette" :class="paletteClass" role="dialog" aria-modal="true" aria-label="{{ 'common.search'|trans }}">
             <div class="palette__backdrop" @click="closePalette"></div>
             <div class="palette__panel">
-                <input type="search" class="palette__input" placeholder="{{ 'ui.palette.placeholder'|trans }}" x-model="query" @input="refreshCommands" x-ref="paletteInput" autocomplete="off">
-                <p class="palette__hint" x-show="searchLoading" x-cloak>{{ 'ui.palette.searching'|trans }}</p>
-                <ul class="palette__list">
-                    <template x-for="command in visibleCommands" :key="command.id">
-                        <li>
-                            <a :href="command.url" class="palette__item" :class="command.kind === 'hit' ? 'is-hit' : ''" :data-command="command.id" @click="onCommandClick">
-                                <span class="palette__main">
-                                    <span class="palette__label" x-text="command.label"></span>
-                                    <span class="palette__sub" x-show="command.subtitle" x-text="command.subtitle"></span>
-                                </span>
-                                <span class="palette__group" x-text="command.group"></span>
-                            </a>
-                        </li>
+                <div class="palette__header">
+                    <span class="material-symbols-outlined g-icon palette__search-icon" aria-hidden="true">search</span>
+                    <input
+                        type="search"
+                        class="palette__input"
+                        :placeholder="placeholder"
+                        x-model="query"
+                        @input="refreshCommands"
+                        x-ref="paletteInput"
+                        autocomplete="off"
+                        aria-autocomplete="list"
+                        aria-controls="palette-results"
+                    >
+                    <span class="palette__kbd">esc</span>
+                </div>
+                <div class="palette__meta" x-show="!query.trim() && sourceChips.length > 0" x-cloak>
+                    <template x-for="source in sourceChips" :key="source.id">
+                        <span class="palette__chip">
+                            <span class="material-symbols-outlined" aria-hidden="true" x-text="iconGlyph(source.icon)"></span>
+                            <span x-text="source.group"></span>
+                        </span>
                     </template>
-                    <li class="palette__empty" x-show="query.trim().length >= 2 && !searchLoading && visibleCommands.length === 0" x-cloak>
+                </div>
+                <p class="palette__status" x-show="searchLoading" x-cloak>
+                    <span class="palette__spinner" aria-hidden="true"></span>
+                    <span>{{ 'ui.palette.searching'|trans }}</span>
+                </p>
+                <div class="palette__body" id="palette-results">
+                    <template x-for="section in sections" :key="section.key">
+                        <section class="palette__section">
+                            <h3 class="palette__section-title" x-text="section.title"></h3>
+                            <ul class="palette__list">
+                                <template x-for="command in section.items" :key="command.id">
+                                    <li>
+                                        <a
+                                            :href="command.url"
+                                            class="palette__item"
+                                            :class="itemClass(command, command.index)"
+                                            :data-index="command.index"
+                                            :data-command="command.id"
+                                            @mouseenter="setActive(command.index)"
+                                            @click="onCommandClick($event, command)"
+                                        >
+                                            <span class="material-symbols-outlined g-icon palette__icon" aria-hidden="true" x-text="iconGlyph(command.icon)"></span>
+                                            <span class="palette__main">
+                                                <span class="palette__label" x-text="command.label"></span>
+                                                <span class="palette__sub" x-show="command.subtitle" x-text="command.subtitle"></span>
+                                            </span>
+                                            <span class="palette__group" x-text="command.group"></span>
+                                            <span class="palette__enter">↵</span>
+                                        </a>
+                                    </li>
+                                </template>
+                            </ul>
+                        </section>
+                    </template>
+                    <p class="palette__empty" x-show="query.trim().length >= 2 && !searchLoading && visibleCommands.length === 0" x-cloak>
+                        <span class="material-symbols-outlined palette__empty-icon" aria-hidden="true">search_off</span>
                         <span>{{ 'ui.palette.empty'|trans }}</span>
-                    </li>
-                </ul>
+                    </p>
+                </div>
+                <div class="palette__footer">
+                    <span><kbd>↑</kbd><kbd>↓</kbd> {{ 'ui.palette.hint_nav'|trans }}</span>
+                    <span><kbd>↵</kbd> {{ 'ui.palette.hint_open'|trans }}</span>
+                    <span><kbd>esc</kbd> {{ 'ui.palette.hint_close'|trans }}</span>
+                </div>
             </div>
         </div>
         <div class="toasts" id="toasts"></div>
@@ -142,6 +206,17 @@
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
         window.__GEREQ_FORM_FP_CLEARED__ = {{ flash('form_fp_cleared')|json_encode|raw }};
         window.__GEREQ_SEARCH_URL__ = {{ url('admin.search')|json_encode|raw }};
+        window.__GEREQ_PALETTE_I18N__ = {
+            placeholderNav: {{ 'ui.palette.placeholder_nav'|trans|json_encode|raw }},
+            placeholderData: {{ 'ui.palette.placeholder_data'|trans|json_encode|raw }},
+            recent: {{ 'ui.palette.recent'|trans|json_encode|raw }},
+            actions: {{ 'ui.palette.actions'|trans|json_encode|raw }},
+            navigation: {{ 'ui.palette.navigation'|trans|json_encode|raw }},
+            results: {{ 'ui.palette.results'|trans|json_encode|raw }},
+            empty: {{ 'ui.palette.empty'|trans|json_encode|raw }},
+            searching: {{ 'ui.palette.searching'|trans|json_encode|raw }},
+            hint: {{ 'ui.palette.hint'|trans|json_encode|raw }}
+        };
     </script>
     {{ render_js() }}
     {{ render_reload() }}

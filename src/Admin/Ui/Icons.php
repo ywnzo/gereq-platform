@@ -12,16 +12,24 @@ final class Icons
 {
     public function svg(string $name, string $class = ''): string
     {
-        $name = trim($name);
-        // Aliases (trash → delete) or raw Material Symbols ligature (dynamic_form, view_timeline…).
-        $glyph = $this->glyphs()[$name] ?? $name;
-        if ($glyph === '' || !preg_match('/^[a-z0-9_]+$/', $glyph)) {
-            $glyph = 'circle';
-        }
+        $glyph = $this->glyph($name);
         $classes = trim('material-symbols-outlined g-icon ' . $class);
 
         return '<span class="' . htmlspecialchars($classes, ENT_QUOTES)
             . '" aria-hidden="true">' . htmlspecialchars($glyph, ENT_QUOTES) . '</span>';
+    }
+
+    /** Resolve alias or raw Material Symbols ligature name. */
+    public function glyph(string $name): string
+    {
+        $name = trim($name);
+        // Aliases (trash → delete) or raw Material Symbols ligature (dynamic_form, view_timeline…).
+        $glyph = $this->glyphs()[$name] ?? $name;
+        if ($glyph === '' || !preg_match('/^[a-z0-9_]+$/', $glyph)) {
+            return 'circle';
+        }
+
+        return $glyph;
     }
 
     /** @return array<string, string> */
@@ -59,6 +67,7 @@ final class Icons
             'bell' => 'notifications',
             'sun' => 'light_mode',
             'moon' => 'dark_mode',
+            'theme-system' => 'contrast',
             'building' => 'apartment',
             'mail' => 'mail',
             'inbox' => 'inbox',

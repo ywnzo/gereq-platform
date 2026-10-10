@@ -1,0 +1,48 @@
+{#
+  User avatar: local src when set, otherwise Gravatar (identicon when no Gravatar photo).
+  Vars: email?, initials?, src?, alt?, size? (sm|md|lg|xl), class?, pixel_size?, default?
+#}
+{% set initials = initials|default('G') %}
+{% set alt = alt|default('') %}
+{% set size = size|default('') %}
+{% set class = class|default('') %}
+{% set src = src|default(null) %}
+{% set email = email|default(null) %}
+{% set default = default|default('identicon') %}
+{% set pixel_size = pixel_size|default(null) %}
+{% if pixel_size is null %}
+    {% if size == 'sm' %}
+        {% set pixel_size = 48 %}
+    {% elseif size == 'md' %}
+        {% set pixel_size = 72 %}
+    {% elseif size == 'lg' %}
+        {% set pixel_size = 96 %}
+    {% elseif size == 'xl' %}
+        {% set pixel_size = 112 %}
+    {% else %}
+        {% set pixel_size = 64 %}
+    {% endif %}
+{% endif %}
+{% set image_src = src %}
+{% if not image_src and email %}
+    {% set image_src = gravatar_url(email, pixel_size, default) %}
+{% endif %}
+{% set classes = 'avatar' %}
+{% if size %}{% set classes = classes ~ ' avatar--' ~ size %}{% endif %}
+{% if class %}{% set classes = classes ~ ' ' ~ class %}{% endif %}
+{% if image_src %}{% set classes = classes ~ ' avatar--photo' %}{% endif %}
+<span class="{{ classes }}"{% if alt == '' %} aria-hidden="true"{% endif %}>
+    <span class="avatar__fallback">{{ initials }}</span>
+    {% if image_src %}
+        <img
+            class="avatar__img"
+            src="{{ image_src }}"
+            alt="{{ alt }}"
+            width="{{ pixel_size }}"
+            height="{{ pixel_size }}"
+            loading="lazy"
+            decoding="async"
+            referrerpolicy="no-referrer"
+        >
+    {% endif %}
+</span>

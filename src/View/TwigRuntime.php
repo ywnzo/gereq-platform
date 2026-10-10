@@ -12,6 +12,7 @@ use Gereq\Http\FormState;
 use Gereq\Http\Router;
 use Gereq\I18n\LocaleCatalog;
 use Gereq\Security\Csrf;
+use Gereq\Support\Gravatar;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -109,6 +110,11 @@ final class TwigRuntime
     public function icon(string $name, string $class = ''): string
     {
         return $this->icons->svg($name, $class);
+    }
+
+    public function gravatarUrl(?string $email, int $size = 80, string $default = Gravatar::DEFAULT_IDENTICON): string
+    {
+        return Gravatar::url($email, $size, $default);
     }
 
     public function currentUser(): mixed

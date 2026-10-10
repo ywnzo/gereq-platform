@@ -113,10 +113,11 @@
 .empty h2 { margin: 0 0 6px; font-size: 1rem; color: var(--text); }
 
 .avatar {
+    position: relative;
     width: 28px;
     height: 28px;
     border-radius: 999px;
-    display: grid;
+    display: inline-grid;
     place-items: center;
     background: #27272a;
     color: var(--primary);
@@ -124,10 +125,23 @@
     font-size: var(--grq-text-xs);
     font-weight: 700;
     flex-shrink: 0;
+    overflow: hidden;
+    isolation: isolate;
 }
+.avatar__fallback {
+    grid-area: 1 / 1;
+    line-height: 1;
+    z-index: 0;
+}
+.avatar__img,
 img.avatar {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     display: block;
+    border-radius: inherit;
+    z-index: 1;
 }
 html:not(.dark) .avatar {
     background: #18181b;
@@ -135,6 +149,7 @@ html:not(.dark) .avatar {
 }
 .avatar--sm { width: 24px; height: 24px; font-size: var(--grq-text-xxs); }
 .avatar--md { width: 36px; height: 36px; font-size: var(--grq-text-sm); }
+.avatar--lg { width: 44px; height: 44px; font-size: var(--grq-text-base); }
 .avatar--xl { width: 56px; height: 56px; font-size: 1.05rem; font-weight: 700; }
 .avatar-btn { border: 0; background: transparent; cursor: pointer; padding: 0; }
 .cell-user { display: flex; align-items: center; gap: 10px; }

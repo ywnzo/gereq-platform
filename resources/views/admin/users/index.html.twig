@@ -45,11 +45,12 @@
                     <tr>
                         <td>
                             <div class="cell-user">
-                                {% if item.avatarFileId() %}
-                                    <img class="avatar avatar--sm" src="{{ url('admin.users.avatar', {id: item.id()}) }}" alt="">
-                                {% else %}
-                                    <span class="avatar avatar--sm">{{ item.initials() }}</span>
-                                {% endif %}
+                                {{ ui().avatar({
+                                    email: item.email(),
+                                    initials: item.initials(),
+                                    src: item.avatarFileId() ? url('admin.users.avatar', {id: item.id()}) : null,
+                                    size: 'sm',
+                                })|raw }}
                                 <span class="cell-user__text">
                                     <strong>{{ item.name() }}</strong>
                                     {% if item.phone() %}

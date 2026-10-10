@@ -724,12 +724,11 @@ a.nav-flyout__title.is-active {
 
 .breadcrumbs {
     display: block;
-    font-weight: 500;
 }
 
 .topbar {
-    backdrop-filter: blur(12px);
-    background: color-mix(in srgb, var(--background) 82%, transparent);
+    backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
 /* Mobile drawer */

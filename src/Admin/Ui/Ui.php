@@ -152,6 +152,22 @@ final class Ui
         ]);
     }
 
+    /**
+     * @param array{
+     *     email?: string|null,
+     *     initials?: string|null,
+     *     src?: string|null,
+     *     alt?: string|null,
+     *     size?: string|null,
+     *     class?: string|null,
+     *     pixel_size?: int|null
+     * } $options
+     */
+    public function avatar(array $options = []): string
+    {
+        return $this->component('avatar', $options);
+    }
+
     public function emptyState(string $title, ?string $hint = null, ?string $actionHtml = null): string
     {
         return $this->component('empty', [

@@ -5,10 +5,20 @@
 {% set name = name|default('—') %}
 {% set meta = meta|default('') %}
 {% set initials = initials|default('?') %}
+{% set email = email|default(null) %}
+{% set avatar_src = avatar_src|default(null) %}
 {% set href = href|default(null) %}
+{% set avatar_html %}
+    {{ ui().avatar({
+        email: email,
+        initials: initials,
+        src: avatar_src,
+        size: 'sm',
+    })|raw }}
+{% endset %}
 {% if href %}
     <a class="cell-user cell-user--stack" href="{{ href }}">
-        <span class="avatar avatar--sm">{{ initials }}</span>
+        {{ avatar_html }}
         <span class="cell-user__text">
             <strong>{{ name }}</strong>
             {% if meta %}<small class="muted">{{ meta }}</small>{% endif %}
@@ -16,7 +26,7 @@
     </a>
 {% else %}
     <div class="cell-user">
-        <span class="avatar avatar--sm">{{ initials }}</span>
+        {{ avatar_html }}
         <span class="cell-user__text">
             <strong>{{ name }}</strong>
             {% if meta %}<small class="muted">{{ meta }}</small>{% endif %}

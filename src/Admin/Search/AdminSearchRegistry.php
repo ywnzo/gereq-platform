@@ -74,18 +74,55 @@ final class AdminSearchRegistry
     }
 
     /**
+     * Metadata of sources the user may query (enabled modules + permissions only).
+     *
+     * @return list<array{id: string, group: string, icon: string|null, fields: list<string>}>
+     */
+    public function describe(?User $user = null): array
+    {
+        $out = [];
+        foreach ($this->sources($user) as $source) {
+            $out[] = [
+                'id' => $source->id,
+                'group' => $source->group,
+                'icon' => $source->icon,
+                'fields' => $source->fields,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Search all permitted sources with fair per-source budgets so early registrants
+     * cannot starve later modules.
+     *
      * @return list<AdminSearchHit>
      */
-    public function search(string $query, ?User $user = null, int $maxTotal = 24): array
+    public function search(string $query, ?User $user = null, int $maxTotal = 32): array
     {
         $query = trim($query);
         if (mb_strlen($query) < 2) {
             return [];
         }
 
+        $sources = $this->sources($user);
+        if ($sources === []) {
+            return [];
+        }
+
+        $maxTotal = max(1, min(64, $maxTotal));
+        $count = count($sources);
+        $base = intdiv($maxTotal, $count);
+        $extra = $maxTotal % $count;
+
         $hits = [];
-        foreach ($this->sources($user) as $source) {
-            foreach ($source->search($query) as $hit) {
+        foreach ($sources as $index => $source) {
+            $budget = min($source->limit, $base + ($index < $extra ? 1 : 0));
+            if ($budget < 1) {
+                $budget = 1;
+            }
+            foreach ($source->search($query, $budget) as $hit) {
                 $hits[] = $hit;
                 if (count($hits) >= $maxTotal) {
                     return $hits;

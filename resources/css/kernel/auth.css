@@ -324,8 +324,19 @@ code { font-size: var(--grq-text-sm); color: var(--gereq-muted); font-family: va
         padding: var(--page-pad-top) var(--page-pad-x) var(--page-pad-bottom);
     }
     .topbar { padding: 0 10px; }
-    .search-trigger { min-width: 0; }
-    .search-trigger span, .search-trigger kbd { display: none; }
+    .topbar__tools { gap: 6px; }
+    .topbar .user-menu {
+        margin-left: 0;
+        padding-left: 8px;
+    }
+    .search-trigger {
+        min-width: 0;
+        width: 30px;
+        padding: 0;
+        justify-content: center;
+    }
+    .search-trigger__label,
+    .search-trigger kbd { display: none; }
     .metrics, .system-strip { grid-template-columns: 1fr; }
     .module-list { min-width: 0; }
 }

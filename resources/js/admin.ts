@@ -15,14 +15,130 @@ type PaletteCommand = {
     keywords?: string[];
     group?: string;
     subtitle?: string | null;
-    kind?: 'command' | 'hit';
+    kind?: 'command' | 'hit' | 'recent';
 };
+
+type SearchSourceMeta = {
+    id: string;
+    group: string;
+    icon?: string | null;
+    fields: string[];
+};
+
+type PaletteSectionItem = PaletteCommand & { index: number };
+
+type PaletteSection = {
+    key: string;
+    title: string;
+    items: PaletteSectionItem[];
+};
+
+const PALETTE_RECENT_KEY = 'gereq-palette-recent';
+const PALETTE_RECENT_MAX = 8;
+const THEME_ORDER = ['dark', 'light', 'system'] as const;
+type ThemeMode = (typeof THEME_ORDER)[number];
+
+function readThemeMode(): ThemeMode {
+    const stored = localStorage.getItem('gereq-theme');
+    if (stored === 'light' || stored === 'system' || stored === 'dark') {
+        return stored;
+    }
+
+    return 'dark';
+}
+
+function applyDocumentTheme(mode: ThemeMode): void {
+    const dark =
+        mode === 'dark' ||
+        (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.dataset.theme = dark ? 'gereq-dark' : 'gereq';
+}
+
+const ICON_ALIASES: Record<string, string> = {
+    users: 'manage_accounts',
+    user: 'person',
+    modules: 'grid_view',
+    car: 'directions_car',
+    bike: 'pedal_bike',
+    briefcase: 'work',
+    package: 'inventory_2',
+    cart: 'shopping_cart',
+    receipt: 'receipt_long',
+    clipboard: 'content_paste',
+    file: 'description',
+    layout: 'dashboard',
+    building: 'apartment',
+    calendar: 'calendar_month',
+    plus: 'add',
+    logout: 'logout',
+    shield: 'shield',
+    activity: 'monitoring',
+    settings: 'settings',
+    home: 'home',
+    search: 'search',
+    mail: 'mail',
+    tag: 'sell',
+    build: 'build',
+};
+
+function iconGlyph(name?: string | null): string {
+    if (!name) {
+        return 'search';
+    }
+    if (ICON_ALIASES[name]) {
+        return ICON_ALIASES[name];
+    }
+    return name.replace(/-/g, '_');
+}
+
+function loadRecentCommands(): PaletteCommand[] {
+    try {
+        const raw = localStorage.getItem(PALETTE_RECENT_KEY);
+        if (!raw) {
+            return [];
+        }
+        const parsed = JSON.parse(raw) as PaletteCommand[];
+        return Array.isArray(parsed) ? parsed.slice(0, PALETTE_RECENT_MAX) : [];
+    } catch {
+        return [];
+    }
+}
+
+function pushRecentCommand(command: PaletteCommand): void {
+    const recent: PaletteCommand = {
+        id: command.id,
+        label: command.label,
+        url: command.url,
+        icon: command.icon ?? null,
+        group: command.group ?? '',
+        subtitle: command.subtitle ?? null,
+        keywords: command.keywords ?? [],
+        kind: 'recent',
+    };
+    const next = [recent, ...loadRecentCommands().filter((row) => row.id !== command.id)].slice(
+        0,
+        PALETTE_RECENT_MAX,
+    );
+    localStorage.setItem(PALETTE_RECENT_KEY, JSON.stringify(next));
+}
 
 declare global {
     interface Window {
         __GEREQ_COMMANDS__: PaletteCommand[];
         __GEREQ_CSRF__: string;
         __GEREQ_SEARCH_URL__?: string;
+        __GEREQ_PALETTE_I18N__?: {
+            placeholderNav: string;
+            placeholderData: string;
+            recent: string;
+            actions: string;
+            navigation: string;
+            results: string;
+            empty: string;
+            searching: string;
+            hint: string;
+        };
         Alpine: typeof Alpine;
         gereqConfirmModuleVersion?: (
             form: HTMLFormElement,
@@ -53,18 +169,37 @@ Alpine.data('gereqAdmin', () => ({
     isNarrow: false,
     paletteOpen: false,
     userOpen: false,
+    themeMode: readThemeMode() as ThemeMode,
     query: '',
     commands: window.__GEREQ_COMMANDS__ ?? [],
     liveHits: [] as PaletteCommand[],
+    recentCommands: loadRecentCommands(),
+    searchSources: [] as SearchSourceMeta[],
     searchLoading: false,
+    sourcesLoaded: false,
     visibleCommands: [] as PaletteCommand[],
+    sections: [] as PaletteSection[],
+    activeIndex: 0,
+    placeholder: window.__GEREQ_PALETTE_I18N__?.placeholderNav ?? '',
     _searchTimer: null as ReturnType<typeof setTimeout> | null,
     _searchAbort: null as AbortController | null,
     _narrowMq: null as MediaQueryList | null,
     _onNarrowChange: null as (() => void) | null,
     _onKeydown: null as ((event: KeyboardEvent) => void) | null,
+    _colorSchemeMq: null as MediaQueryList | null,
+    _onColorSchemeChange: null as (() => void) | null,
 
     init() {
+        this.themeMode = readThemeMode();
+        applyDocumentTheme(this.themeMode);
+        this._colorSchemeMq = window.matchMedia('(prefers-color-scheme: dark)');
+        this._onColorSchemeChange = () => {
+            if (this.themeMode === 'system') {
+                applyDocumentTheme('system');
+            }
+        };
+        this._colorSchemeMq.addEventListener('change', this._onColorSchemeChange);
+
         this.refreshCommands();
         this._narrowMq = window.matchMedia(SIDEBAR_NARROW_MQ);
         this.isNarrow = this._narrowMq.matches;
@@ -82,11 +217,26 @@ Alpine.data('gereqAdmin', () => ({
             if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
                 event.preventDefault();
                 this.openPalette();
+                return;
             }
             if (event.key === 'Escape') {
                 this.closePalette();
                 this.userOpen = false;
                 this.closeSidebar();
+                return;
+            }
+            if (!this.paletteOpen) {
+                return;
+            }
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                this.moveActive(1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                this.moveActive(-1);
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                this.activateSelected();
             }
         };
         document.addEventListener('keydown', this._onKeydown);
@@ -101,6 +251,9 @@ Alpine.data('gereqAdmin', () => ({
         return () => {
             if (this._narrowMq && this._onNarrowChange) {
                 this._narrowMq.removeEventListener('change', this._onNarrowChange);
+            }
+            if (this._colorSchemeMq && this._onColorSchemeChange) {
+                this._colorSchemeMq.removeEventListener('change', this._onColorSchemeChange);
             }
             if (this._onKeydown) {
                 document.removeEventListener('keydown', this._onKeydown);
@@ -135,9 +288,42 @@ Alpine.data('gereqAdmin', () => ({
         return this.paletteOpen ? 'is-open' : '';
     },
 
+    get sourceChips(): SearchSourceMeta[] {
+        return this.searchSources.slice(0, 6);
+    },
+
     get userMenuClass(): string {
         return this.userOpen ? 'is-open' : '';
     },
+
+    get userMenuExpanded(): string {
+        return this.userOpen ? 'true' : 'false';
+    },
+
+    get themeIcon(): string {
+        if (this.themeMode === 'light') {
+            return 'light_mode';
+        }
+        if (this.themeMode === 'system') {
+            return 'contrast';
+        }
+
+        return 'dark_mode';
+    },
+
+    get themeLabel(): string {
+        const root = this.$el as HTMLElement;
+        if (this.themeMode === 'light') {
+            return root.dataset.themeLabelLight || 'Light';
+        }
+        if (this.themeMode === 'system') {
+            return root.dataset.themeLabelSystem || 'System';
+        }
+
+        return root.dataset.themeLabelDark || 'Dark';
+    },
+
+    iconGlyph,
 
     openSidebar() {
         if (this.isNarrow) {
@@ -187,16 +373,24 @@ Alpine.data('gereqAdmin', () => ({
 
     openPalette() {
         this.paletteOpen = true;
+        this.recentCommands = loadRecentCommands();
+        this.activeIndex = 0;
+        this.refreshCommands();
+        void this.ensureSources();
         this.$nextTick(() => (this.$refs.paletteInput as HTMLInputElement | undefined)?.focus());
     },
 
     closePalette() {
         this.paletteOpen = false;
+        this.query = '';
+        this.liveHits = [];
+        this.activeIndex = 0;
         this._searchAbort?.abort();
         if (this._searchTimer) {
             clearTimeout(this._searchTimer);
             this._searchTimer = null;
         }
+        this.refreshCommands();
     },
 
     toggleUserMenu() {
@@ -208,13 +402,11 @@ Alpine.data('gereqAdmin', () => ({
     },
 
     cycleTheme() {
-        const order = ['dark', 'light', 'system'] as const;
-        const current = localStorage.getItem('gereq-theme') || 'dark';
-        const next = order[(order.indexOf(current as typeof order[number]) + 1) % order.length];
+        const current = readThemeMode();
+        const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
+        this.themeMode = next;
         localStorage.setItem('gereq-theme', next);
-        const dark = next === 'dark' || (next === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.classList.toggle('dark', dark);
-        document.documentElement.dataset.theme = dark ? 'gereq-dark' : 'gereq';
+        applyDocumentTheme(next);
     },
 
     refreshCommands() {
@@ -222,27 +414,72 @@ Alpine.data('gereqAdmin', () => ({
         if (!q) {
             this.liveHits = [];
             this.searchLoading = false;
-            this.visibleCommands = this.commands;
             this._searchAbort?.abort();
             if (this._searchTimer) {
                 clearTimeout(this._searchTimer);
                 this._searchTimer = null;
             }
+            this.mergeVisible();
             return;
         }
 
-        const staticHits = this.commands.filter((command: PaletteCommand) => {
-            const haystack = [command.label, command.group, ...(command.keywords ?? [])].join(' ').toLowerCase();
-            return haystack.includes(q);
-        });
-        this.visibleCommands = [...staticHits, ...this.liveHits];
+        this.mergeVisible();
 
         if (this._searchTimer) {
             clearTimeout(this._searchTimer);
         }
         this._searchTimer = setTimeout(() => {
             void this.fetchLiveHits(q);
-        }, 220);
+        }, 180);
+    },
+
+    async ensureSources() {
+        const url = window.__GEREQ_SEARCH_URL__;
+        if (!url || this.sourcesLoaded) {
+            this.updatePlaceholder();
+            return;
+        }
+        try {
+            const res = await fetch(`${url}?meta=1`, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+            const json = await res.json();
+            this.applySources(json.sources);
+            this.sourcesLoaded = true;
+        } catch {
+            this.searchSources = [];
+        }
+        this.updatePlaceholder();
+    },
+
+    applySources(raw: unknown) {
+        if (!Array.isArray(raw)) {
+            this.searchSources = [];
+            return;
+        }
+        this.searchSources = raw.map((row: Record<string, unknown>) => ({
+            id: String(row.id ?? ''),
+            group: String(row.group ?? ''),
+            icon: row.icon != null ? String(row.icon) : null,
+            fields: Array.isArray(row.fields) ? row.fields.map(String) : [],
+        }));
+    },
+
+    updatePlaceholder() {
+        const i18n = window.__GEREQ_PALETTE_I18N__;
+        if (!i18n) {
+            return;
+        }
+        if (this.searchSources.length === 0) {
+            this.placeholder = i18n.placeholderNav;
+            return;
+        }
+        const labels = this.searchSources.slice(0, 4).map((s) => s.group).filter(Boolean);
+        this.placeholder = i18n.placeholderData.replace('%sources%', labels.join(', '));
     },
 
     async fetchLiveHits(q: string) {
@@ -266,6 +503,9 @@ Alpine.data('gereqAdmin', () => ({
                 throw new Error(`HTTP ${res.status}`);
             }
             const json = await res.json();
+            this.applySources(json.sources);
+            this.sourcesLoaded = true;
+            this.updatePlaceholder();
             const results = Array.isArray(json.results) ? json.results : [];
             this.liveHits = results.map((row: Record<string, unknown>) => ({
                 id: String(row.id ?? ''),
@@ -290,23 +530,128 @@ Alpine.data('gereqAdmin', () => ({
 
     mergeVisible() {
         const q = this.query.trim().toLowerCase();
+        const i18n = window.__GEREQ_PALETTE_I18N__;
+        const rawSections: Array<{ key: string; title: string; items: PaletteCommand[] }> = [];
+
         if (!q) {
-            this.visibleCommands = this.commands;
-            return;
+            if (this.recentCommands.length > 0) {
+                rawSections.push({
+                    key: 'recent',
+                    title: i18n?.recent ?? 'Recent',
+                    items: this.recentCommands,
+                });
+            }
+            const actions = this.commands.filter((c) => (c.group ?? '') === 'Akce').slice(0, 6);
+            const nav = this.commands
+                .filter((c) => (c.group ?? '') !== 'Akce' && (c.group ?? '') !== 'Účet')
+                .slice(0, 10);
+            if (actions.length > 0) {
+                rawSections.push({ key: 'actions', title: i18n?.actions ?? 'Actions', items: actions });
+            }
+            if (nav.length > 0) {
+                rawSections.push({ key: 'nav', title: i18n?.navigation ?? 'Navigation', items: nav });
+            }
+        } else {
+            const staticHits = this.commands.filter((command: PaletteCommand) => {
+                const haystack = [command.label, command.group, command.subtitle, ...(command.keywords ?? [])]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+                return haystack.includes(q);
+            });
+            if (this.liveHits.length > 0) {
+                rawSections.push({
+                    key: 'hits',
+                    title: i18n?.results ?? 'Results',
+                    items: this.liveHits,
+                });
+            }
+            if (staticHits.length > 0) {
+                const byGroup = new Map<string, PaletteCommand[]>();
+                for (const cmd of staticHits) {
+                    const key = cmd.group || (i18n?.navigation ?? 'Navigation');
+                    const list = byGroup.get(key) ?? [];
+                    list.push(cmd);
+                    byGroup.set(key, list);
+                }
+                for (const [title, items] of byGroup) {
+                    rawSections.push({ key: 'cmd:' + title, title, items });
+                }
+            }
         }
-        const staticHits = this.commands.filter((command: PaletteCommand) => {
-            const haystack = [command.label, command.group, ...(command.keywords ?? [])].join(' ').toLowerCase();
-            return haystack.includes(q);
-        });
-        this.visibleCommands = [...staticHits, ...this.liveHits];
+
+        let index = 0;
+        const sections: PaletteSection[] = [];
+        const flat: PaletteCommand[] = [];
+        for (const section of rawSections) {
+            const items: PaletteSectionItem[] = [];
+            for (const item of section.items) {
+                items.push({ ...item, index });
+                flat.push(item);
+                index += 1;
+            }
+            sections.push({ key: section.key, title: section.title, items });
+        }
+
+        this.sections = sections;
+        this.visibleCommands = flat;
+        if (this.activeIndex >= this.visibleCommands.length) {
+            this.activeIndex = Math.max(0, this.visibleCommands.length - 1);
+        }
     },
 
-    onCommandClick(event: Event) {
-        const target = event.currentTarget as HTMLAnchorElement | null;
-        if (target?.dataset.command === 'logout') {
-            event.preventDefault();
-            (document.getElementById('logout-form') as HTMLFormElement | null)?.submit();
+    setActive(index: number) {
+        this.activeIndex = index;
+    },
+
+    moveActive(delta: number) {
+        if (this.visibleCommands.length === 0) {
+            return;
         }
+        const len = this.visibleCommands.length;
+        this.activeIndex = (this.activeIndex + delta + len) % len;
+        this.$nextTick(() => {
+            const el = document.querySelector<HTMLElement>(`.palette__item[data-index="${this.activeIndex}"]`);
+            el?.scrollIntoView({ block: 'nearest' });
+        });
+    },
+
+    activateSelected() {
+        const cmd = this.visibleCommands[this.activeIndex];
+        if (!cmd) {
+            return;
+        }
+        this.selectCommand(cmd);
+    },
+
+    selectCommand(command: PaletteCommand) {
+        pushRecentCommand(command);
+        this.recentCommands = loadRecentCommands();
+        if (command.id === 'logout') {
+            this.closePalette();
+            (document.getElementById('logout-form') as HTMLFormElement | null)?.submit();
+            return;
+        }
+        this.closePalette();
+        if (command.url && command.url !== '#') {
+            window.location.href = command.url;
+        }
+    },
+
+    onCommandClick(event: Event, command: PaletteCommand) {
+        event.preventDefault();
+        this.selectCommand(command);
+    },
+
+    itemClass(command: PaletteCommand, index: number): string {
+        const parts: string[] = [];
+        if (command.kind === 'hit') {
+            parts.push('is-hit');
+        }
+        if (index === this.activeIndex) {
+            parts.push('is-active');
+        }
+        return parts.join(' ');
     },
 }));
 
