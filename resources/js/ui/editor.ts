@@ -86,7 +86,7 @@ export function registerEditor(alpine: typeof Alpine): void {
                     );
                 }
                 if (root.dataset.highlightVars === '1') {
-                    // CRM workflow var highlighter lives in the CRM module (not loaded on KdeAco).
+                    // CRM workflow var highlighter lives in the CRM module (not always loaded).
                 }
 
                 this.htmlSource = initial;

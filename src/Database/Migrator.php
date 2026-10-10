@@ -130,7 +130,10 @@ final class Migrator
                         return false;
                     }
                     if (preg_match('/^\s*DROP\s+INDEX\b/i', $statement)
-                        && stripos($statement, 'idx_kdeaco_events_search_vector') !== false
+                        && (
+                            stripos($statement, 'idx_events_catalog_search_vector') !== false
+                            || stripos($statement, 'idx_events_search_vector') !== false
+                        )
                     ) {
                         return false;
                     }

@@ -177,7 +177,7 @@ final class MediaImporter
         $context = stream_context_create([
             'http' => [
                 'timeout' => 45,
-                'header' => "User-Agent: KdeAco-Seeder/1.0 (https://kdeaco.cz; event catalog photos)\r\nAccept: image/*,application/pdf,*/*\r\n",
+                'header' => "User-Agent: GEREQ-Seeder/1.0 (https://gereq.cz; event catalog photos)\r\nAccept: image/*,application/pdf,*/*\r\n",
                 'follow_location' => 1,
             ],
             'ssl' => [

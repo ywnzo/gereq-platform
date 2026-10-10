@@ -290,7 +290,7 @@ final class Seeder
 
     private function seedModules(): void
     {
-        // KdeAco: jen portálové moduly (ne RealEstates balík).
+        // Portal modules only (skip RealEstates pack).
         $defaultEnabled = [
             'cms',
             'newsletter',

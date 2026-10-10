@@ -101,7 +101,7 @@ final class AdminPath
     }
 
     /**
-     * Product (KdeAco) Vue admin — always at /admin when platform admin is relocated.
+     * Product Vue admin — always at /admin when platform admin is relocated.
      * When ADMIN_PATH is still the canonical "admin", product and platform share that path
      * (Vue takes over only after ADMIN_PATH moves).
      */

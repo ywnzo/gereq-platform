@@ -60,7 +60,7 @@ final class PublicApiAuthMiddlewareTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
     }
 
-    public function testAcceptsFirstPartySecFetchSiteWithoutKey(): void
+    public function testRejectsSecFetchSiteAloneWithoutKey(): void
     {
         $mw = new PublicApiAuthMiddleware(new PublicApiKey(new Repository([
             'api' => ['public_key' => 'grq_pub_' . str_repeat('11', 24)],
@@ -71,8 +71,8 @@ final class PublicApiAuthMiddlewareTest extends TestCase
 
         $response = $mw->process($request, static fn () => new Response('ok'));
 
-        self::assertSame(200, $response->getStatusCode());
-        self::assertTrue($request->attributes->get('_api_public_first_party'));
+        // Sec-Fetch-Site is spoofable; first-party requires allowlisted Origin/Referer.
+        self::assertSame(401, $response->getStatusCode());
     }
 
     public function testAcceptsAllowlistedOriginWithoutKey(): void

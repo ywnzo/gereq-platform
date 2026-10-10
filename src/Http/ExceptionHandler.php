@@ -133,7 +133,7 @@ final class ExceptionHandler
         $status = $this->status($exception);
 
         if ($status === 404) {
-            $spa = KdeacoAdmin::html($request) ?? Storefront::html($request);
+            $spa = ProductAdmin::html($request) ?? Storefront::html($request);
             if ($spa !== null) {
                 return $spa;
             }

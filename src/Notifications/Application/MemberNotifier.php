@@ -75,9 +75,9 @@ final class MemberNotifier
         if ($perPage > 50) {
             $perPage = 50;
         }
-        $category = isset($query['category']) && is_string($query['category']) ? trim($query['category']) : '';
-        $status = isset($query['status']) && is_string($query['status']) ? strtolower(trim($query['status'])) : '';
-        $eventId = isset($query['event_id']) && is_string($query['event_id']) ? trim($query['event_id']) : '';
+        $category = trim((string) ($query['category'] ?? ''));
+        $status = strtolower(trim((string) ($query['status'] ?? '')));
+        $eventId = trim((string) ($query['event_id'] ?? ''));
 
         /** @var list<DatabaseNotification> $rows */
         $rows = $this->em->getRepository(DatabaseNotification::class)->findBy(

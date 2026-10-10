@@ -10,12 +10,12 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/** Serves the Vite Vue product admin from public/kdeaco-admin under /admin. */
-final class KdeacoAdmin
+/** Serves the Vite Vue product admin from public/product-admin under /admin. */
+final class ProductAdmin
 {
     public static function root(): string
     {
-        return dirname(__DIR__, 2) . '/public/kdeaco-admin';
+        return dirname(__DIR__, 2) . '/public/product-admin';
     }
 
     public static function exists(): bool
@@ -81,12 +81,12 @@ final class KdeacoAdmin
             return 'assets/' . substr($path, strlen('/admin/assets/'));
         }
         // Root public files copied into build (favicon, logo).
-        if (preg_match('#^/admin/(favicon\.(?:png|svg|ico)|kdeaco-logo\.png|icons\.svg)$#', $path, $m) === 1) {
+        if (preg_match('#^/admin/(favicon\.(?:png|svg|ico)|product-logo\.png|icons\.svg)$#', $path, $m) === 1) {
             return $m[1];
         }
-        // Optional direct public/kdeaco-admin access
-        if (str_starts_with($path, '/kdeaco-admin/')) {
-            return substr($path, strlen('/kdeaco-admin/'));
+        // Optional direct public/product-admin access
+        if (str_starts_with($path, '/product-admin/')) {
+            return substr($path, strlen('/product-admin/'));
         }
 
         return null;

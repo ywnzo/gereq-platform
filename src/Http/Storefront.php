@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class Storefront
 {
     private const SKIP_PREFIX = [
-        '/api/', '/build/', '/media/', '/brand/', '/tickets/', '/security/', '/kdeaco-admin/',
+        '/api/', '/build/', '/media/', '/brand/', '/tickets/', '/security/', '/product-admin/',
     ];
 
     public static function root(): string

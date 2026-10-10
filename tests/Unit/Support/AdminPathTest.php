@@ -60,9 +60,11 @@ final class AdminPathTest extends TestCase
     public function testSanitizeRejectsInvalidAndReserved(): void
     {
         self::assertSame('admin', AdminPath::sanitize(''));
-        self::assertSame('admin', AdminPath::sanitize('foo/bar'));
         self::assertSame('admin', AdminPath::sanitize('api'));
+        self::assertSame('admin', AdminPath::sanitize('foo bar'));
+        self::assertSame('admin', AdminPath::sanitize('admin/nested'));
         self::assertSame('my-panel', AdminPath::sanitize('my-panel'));
+        self::assertSame('foo/bar', AdminPath::sanitize('foo/bar'));
     }
 
     public function testUrlPrefixAppliesRewrite(): void

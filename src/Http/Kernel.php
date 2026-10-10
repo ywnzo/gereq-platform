@@ -44,7 +44,7 @@ final class Kernel
         $this->requestStack->push($request);
         $this->debugBar->mark('request');
 
-        $static = KdeacoAdmin::staticFile($request) ?? Storefront::staticFile($request);
+        $static = ProductAdmin::staticFile($request) ?? Storefront::staticFile($request);
         if ($static !== null) {
             $this->debugBar->mark('done');
 

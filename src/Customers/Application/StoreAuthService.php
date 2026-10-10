@@ -357,7 +357,7 @@ final class StoreAuthService
         $provider = $this->capabilities->get('newsletter');
         try {
             if ($optIn && method_exists($provider, 'subscribe')) {
-                $provider->subscribe($email, $name, 'kdeaco-account');
+                $provider->subscribe($email, $name, 'store-account');
             } elseif (!$optIn && method_exists($provider, 'unsubscribe')) {
                 $provider->unsubscribe($email);
             }

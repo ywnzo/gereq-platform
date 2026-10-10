@@ -103,7 +103,7 @@ final class AresService
     }
 
     /**
-     * Restrict results to one okres (KdeAco region). ARES `nazevOkresu` alone is unreliable,
+     * Restrict results to one okres (events region). ARES `nazevOkresu` alone is unreliable,
      * so we bias the text query and then filter on the returned okres name.
      *
      * @return list<array<string, mixed>>
