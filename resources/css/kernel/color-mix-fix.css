@@ -16,6 +16,29 @@
     border-color: color-mix(in srgb, var(--warning, #fbbf24) 36%, var(--border));
     color: color-mix(in srgb, var(--warning, #fbbf24) 72%, var(--text));
 }
+/* Publish badge pending: solid amber even without hover (not ghost-warn). */
+.publish-badge__chip.badge--warn {
+    background: color-mix(in srgb, var(--warning, #d97706) 20%, var(--surface));
+    border-color: color-mix(in srgb, var(--warning, #d97706) 58%, var(--border));
+    color: #b45309;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--warning, #d97706) 24%, transparent);
+}
+.publish-badge__chip.badge--warn .publish-badge__count {
+    background: color-mix(in srgb, var(--warning, #d97706) 34%, transparent);
+    color: #92400e;
+}
+html.dark .publish-badge__chip.badge--warn,
+html[data-theme="gereq-dark"] .publish-badge__chip.badge--warn {
+    background: color-mix(in srgb, var(--warning, #fbbf24) 22%, var(--surface));
+    border-color: color-mix(in srgb, var(--warning, #fbbf24) 42%, transparent);
+    color: color-mix(in srgb, var(--warning, #fbbf24) 85%, var(--text));
+    box-shadow: none;
+}
+html.dark .publish-badge__chip.badge--warn .publish-badge__count,
+html[data-theme="gereq-dark"] .publish-badge__chip.badge--warn .publish-badge__count {
+    background: color-mix(in srgb, var(--warning, #fbbf24) 28%, transparent);
+    color: inherit;
+}
 .badge--danger {
     background: color-mix(in srgb, var(--danger, #f87171) 14%, var(--surface));
     border-color: color-mix(in srgb, var(--danger, #f87171) 34%, var(--border));

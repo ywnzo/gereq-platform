@@ -1615,7 +1615,7 @@ SVG;
     private function syncHomePublicSnapshot(\Modules\Cms\Domain\Page $home): void
     {
         if (!class_exists(\Gereq\Publish\Entity\ContentStagingEntry::class)
-            || !class_exists(\Gereq\Publish\Adapter\CmsPagePublishAdapter::class)
+            || !class_exists(\Modules\Cms\Publish\CmsPagePublishAdapter::class)
         ) {
             return;
         }

@@ -56,6 +56,83 @@ final class CustomerPublishAdapter implements PublishableAdapterInterface
         // CREATE / UPDATE: working copy already holds desired state.
     }
 
+    public function discard(ContentStagingEntry $entry): void
+    {
+        if ($entry->action() === ContentStagingEntry::ACTION_CREATE) {
+            $this->hardDelete($entry->resourceKey());
+
+            return;
+        }
+
+        if ($entry->action() !== ContentStagingEntry::ACTION_UPDATE) {
+            return;
+        }
+
+        $snap = $entry->payload()['production_snapshot'] ?? null;
+        if (!is_array($snap)) {
+            return;
+        }
+
+        $customer = $this->em->find(Customer::class, $entry->resourceKey());
+        if (!$customer instanceof Customer) {
+            return;
+        }
+
+        $customer->setName((string) ($snap['name'] ?? $customer->name()));
+        if (isset($snap['email']) && is_string($snap['email']) && $snap['email'] !== '') {
+            $customer->setEmail($snap['email']);
+        }
+        if (method_exists($customer, 'setPhone')) {
+            $customer->setPhone(isset($snap['phone']) && is_string($snap['phone']) ? $snap['phone'] : null);
+        }
+        if (method_exists($customer, 'setIsCompany')) {
+            $customer->setIsCompany((bool) ($snap['is_company'] ?? false));
+        }
+        if (method_exists($customer, 'setCompany')) {
+            $customer->setCompany(isset($snap['company']) && is_string($snap['company']) ? $snap['company'] : null);
+        }
+        if (method_exists($customer, 'setIco')) {
+            $customer->setIco(isset($snap['ico']) && is_string($snap['ico']) ? $snap['ico'] : null);
+        }
+        if (method_exists($customer, 'setDic')) {
+            $customer->setDic(isset($snap['dic']) && is_string($snap['dic']) ? $snap['dic'] : null);
+        }
+        if (method_exists($customer, 'setNote')) {
+            $customer->setNote(isset($snap['note']) && is_string($snap['note']) ? $snap['note'] : null);
+        }
+        if (isset($snap['status']) && is_string($snap['status']) && method_exists($customer, 'setStatus')) {
+            $customer->setStatus($snap['status']);
+        }
+        $this->em->flush();
+    }
+
+    public function restore(string $resourceKey, ?array $snapshot): void
+    {
+        if ($snapshot === null) {
+            $entry = new ContentStagingEntry(
+                'customers',
+                'resource',
+                $resourceKey,
+                ContentStagingEntry::ACTION_CREATE,
+                ['pending_create' => true],
+                'rollback',
+            );
+            $this->discard($entry);
+
+            return;
+        }
+
+        $entry = new ContentStagingEntry(
+            'customers',
+            'resource',
+            $resourceKey,
+            ContentStagingEntry::ACTION_UPDATE,
+            ['production_snapshot' => $snapshot],
+            'rollback',
+        );
+        $this->discard($entry);
+    }
+
     public function describe(ContentStagingEntry $entry): ChangeCard
     {
         $snap = $entry->payload()['production_snapshot'] ?? [];

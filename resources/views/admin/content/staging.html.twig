@@ -1,0 +1,196 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.content.staging'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1 class="page-header__title">{{ 'publish.workspace.title'|trans }}</h1>
+            <p class="page-header__subtitle muted">
+                {{ 'publish.workspace.intro'|trans({'%version%': content_version}) }}
+            </p>
+        </div>
+        <div class="page-header__actions">
+            <span class="badge badge--ghost-warn">{{ pending_count }}</span>
+        </div>
+    </header>
+
+    <div
+        class="grq-stack"
+        style="gap: var(--grq-space-6);"
+        x-data="publishWorkspace"
+        data-pending-url="{{ url('admin.publish.pending')|e('html_attr') }}"
+        data-publish-url="{{ url('admin.publish.run')|e('html_attr') }}"
+        data-discard-url="{{ url('admin.content.staging.discard')|e('html_attr') }}"
+        data-rollback-url="{{ url('admin.content.staging.rollback')|e('html_attr') }}"
+        data-count-url="{{ url('admin.content.staging.count')|e('html_attr') }}"
+        data-workspace-url="{{ url('admin.content.staging')|e('html_attr') }}"
+        data-detail-base="{{ url('admin.content.staging')|e('html_attr') }}"
+        data-count="{{ pending_count }}"
+        data-releases="{{ releases|json_encode|e('html_attr') }}"
+        data-label-rollback-ok="{{ 'publish.workspace.rollback_ok'|trans|e('html_attr') }}"
+        data-label-rollback-partial="{{ 'publish.workspace.rollback_partial'|trans|e('html_attr') }}"
+        data-label-rollback-failed="{{ 'publish.workspace.rollback_failed'|trans|e('html_attr') }}"
+    >
+        <section class="panel">
+            <div class="panel__header">
+                <h2 class="panel__title">{{ 'publish.workspace.pending'|trans }}</h2>
+                <div class="grq-cluster" style="gap: var(--grq-space-2);">
+                    <button type="button" class="btn btn--ghost" @click="refresh" :disabled="loading">{{ 'publish.workspace.refresh'|trans }}</button>
+                    <button type="button" class="btn btn--ghost" @click="discardSelected" :disabled="cannotAct">{{ 'publish.workspace.discard'|trans }}</button>
+                    <button type="button" class="btn btn--primary" @click="publishSelected" :disabled="cannotAct">{{ 'publish.modal.submit'|trans }}</button>
+                </div>
+            </div>
+            <div class="panel__body">
+                <template x-if="loading && categories.length === 0">
+                    <p class="muted">{{ 'publish.loading'|trans }}</p>
+                </template>
+                <template x-if="!loading && categories.length === 0">
+                    <p class="muted">{{ 'publish.empty'|trans }}</p>
+                </template>
+                <template x-for="cat in categories" :key="cat.category">
+                    <section class="publish-workspace__group">
+                        <label class="publish-check publish-check--category">
+                            <span class="publish-check__control">
+                                <input type="checkbox" :checked="isCategoryChecked(cat)" @click.prevent="toggleCategory(cat)">
+                                <span class="publish-check__mark" aria-hidden="true"></span>
+                            </span>
+                            <span class="publish-check__text">
+                                <strong x-text="cat.label"></strong>
+                                <span class="muted" x-text="cat.countLabel"></span>
+                            </span>
+                        </label>
+                        <ul class="publish-workspace__items">
+                            <template x-for="item in cat.items" :key="item.id">
+                                <li class="publish-workspace__item">
+                                    <label class="publish-check">
+                                        <span class="publish-check__control">
+                                            <input type="checkbox" :checked="isItemChecked(item)" @click.prevent="toggleItem(item)">
+                                            <span class="publish-check__mark" aria-hidden="true"></span>
+                                        </span>
+                                        <span class="publish-check__text">
+                                            <span x-text="item.display"></span>
+                                            <span class="muted" x-text="item.summary"></span>
+                                        </span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        class="btn btn--ghost btn--sm"
+                                        @click="openDetail(item)"
+                                    >{{ 'publish.workspace.detail'|trans }}</button>
+                                </li>
+                            </template>
+                        </ul>
+                    </section>
+                </template>
+            </div>
+        </section>
+
+        <div
+            class="g-modal__backdrop"
+            :class="detailOpen ? 'is-open' : ''"
+            @click="closeDetail"
+            x-cloak
+        ></div>
+        <div
+            class="g-modal"
+            :class="detailOpen ? 'is-open' : ''"
+            role="dialog"
+            aria-modal="true"
+            :aria-hidden="detailOpen ? 'false' : 'true'"
+            aria-labelledby="publish-detail-title"
+            @keydown.escape.window="closeDetail"
+            x-cloak
+        >
+            <div class="g-modal__panel g-modal__panel--editor publish-workspace__detail" @click.stop>
+                <template x-if="detailLoading && !detail">
+                    <p class="muted">{{ 'publish.loading'|trans }}</p>
+                </template>
+                <template x-if="detail">
+                    <div>
+                        <h3 class="g-modal__title" id="publish-detail-title" x-text="detail.title"></h3>
+                        <p class="g-modal__body muted">
+                            <span x-text="detail.category_label"></span>
+                            · <span x-text="detail.action"></span>
+                            · <span x-text="detail.updated_at"></span>
+                        </p>
+                        <div class="publish-workspace__detail-grid">
+                            <section>
+                                <h4 class="publish-workspace__detail-heading">{{ 'publish.workspace.production_snapshot'|trans }}</h4>
+                                <template x-if="detail.production_snapshot">
+                                    <pre class="publish-workspace__json" x-text="formatJson(detail.production_snapshot)"></pre>
+                                </template>
+                                <template x-if="!detail.production_snapshot">
+                                    <p class="muted">{{ 'publish.workspace.no_snapshot'|trans }}</p>
+                                </template>
+                            </section>
+                            <section>
+                                <h4 class="publish-workspace__detail-heading">{{ 'publish.workspace.payload'|trans }}</h4>
+                                <pre class="publish-workspace__json" x-text="formatJson(detail.payload)"></pre>
+                            </section>
+                        </div>
+                        <div class="g-modal__actions">
+                            <a
+                                class="btn btn--ghost"
+                                x-show="detail.href"
+                                x-cloak
+                                :href="detail.href"
+                                target="_blank"
+                                rel="noopener"
+                            >{{ 'publish.workspace.open_resource'|trans }}</a>
+                            <button type="button" class="btn btn--ghost" @click="closeDetail">{{ 'common.close'|trans }}</button>
+                            <button type="button" class="btn btn--ghost" @click="discardDetail" :disabled="busy">{{ 'publish.workspace.discard_one'|trans }}</button>
+                            <button type="button" class="btn btn--primary" @click="publishDetail" :disabled="busy">{{ 'publish.modal.submit'|trans }}</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <section class="panel" x-show="releases.length > 0">
+            <div class="panel__header">
+                <h2 class="panel__title">{{ 'publish.workspace.releases'|trans }}</h2>
+            </div>
+            <div class="panel__body">
+                <p class="muted" style="margin-top:0;">{{ 'publish.workspace.rollback_hint'|trans }}</p>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'publish.workspace.col.version'|trans }}</th>
+                            <th>{{ 'publish.workspace.col.changes'|trans }}</th>
+                            <th>{{ 'publish.workspace.col.when'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="release in releases" :key="release.id">
+                            <tr>
+                                <td>
+                                    <code x-text="release.version"></code>
+                                    <span class="badge badge--muted" x-show="release.kind === 'rollback'" x-cloak>{{ 'publish.workspace.kind.rollback'|trans }}</span>
+                                </td>
+                                <td x-text="release.change_count"></td>
+                                <td class="muted" x-text="release.created_at"></td>
+                                <td class="table__actions">
+                                    <button
+                                        type="button"
+                                        class="btn btn--ghost btn--sm"
+                                        x-show="release.can_rollback"
+                                        x-cloak
+                                        @click="rollbackRelease(release)"
+                                        :disabled="busy"
+                                    >{{ 'publish.workspace.rollback'|trans }}</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+{% endblock %}

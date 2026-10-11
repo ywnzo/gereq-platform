@@ -1,0 +1,58 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.content.staging'|trans, url: url('admin.content.staging') },
+        { label: entry.title },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1 class="page-header__title">{{ entry.title }}</h1>
+            <p class="page-header__subtitle muted">
+                {{ entry.category_label }} · {{ entry.action }} · {{ entry.updated_at }}
+            </p>
+        </div>
+        <div
+            class="page-header__actions grq-cluster"
+            style="gap: var(--grq-space-2);"
+            x-data="publishEntryActions"
+            data-entry-id="{{ entry.id|e('html_attr') }}"
+            data-publish-url="{{ url('admin.publish.run')|e('html_attr') }}"
+            data-discard-url="{{ url('admin.content.staging.discard')|e('html_attr') }}"
+            data-workspace-url="{{ url('admin.content.staging')|e('html_attr') }}"
+        >
+            {% if entry.href %}
+                <a class="btn btn--ghost" href="{{ entry.href }}">{{ 'publish.workspace.open_resource'|trans }}</a>
+            {% endif %}
+            <button type="button" class="btn btn--ghost" @click="discard" :disabled="busy">{{ 'publish.workspace.discard'|trans }}</button>
+            <button type="button" class="btn btn--primary" @click="publish" :disabled="busy">{{ 'publish.modal.submit'|trans }}</button>
+        </div>
+    </header>
+
+    <div class="grq-grid" style="grid-template-columns: 1fr 1fr; gap: var(--grq-space-4);">
+        <section class="panel">
+            <div class="panel__header">
+                <h2 class="panel__title">{{ 'publish.workspace.production_snapshot'|trans }}</h2>
+            </div>
+            <div class="panel__body">
+                {% if entry.production_snapshot %}
+                    <pre class="code-block">{{ entry.production_snapshot|json_encode }}</pre>
+                {% else %}
+                    <p class="muted">{{ 'publish.workspace.no_snapshot'|trans }}</p>
+                {% endif %}
+            </div>
+        </section>
+        <section class="panel">
+            <div class="panel__header">
+                <h2 class="panel__title">{{ 'publish.workspace.payload'|trans }}</h2>
+            </div>
+            <div class="panel__body">
+                <pre class="code-block">{{ entry.payload|json_encode }}</pre>
+            </div>
+        </section>
+    </div>
+{% endblock %}

@@ -12,15 +12,17 @@ Rule: `.cursor/rules/publishables.mdc` — everything an admin edits that is vis
 | --- | --- |
 | `Gereq\Publish\ContentReadContext` (`src/Publish/ContentReadContext.php`) | per-request mode `staging` / `production`; `ContentWorkspaceMiddleware` (`src/Http/Middleware/ContentWorkspaceMiddleware.php`) sets `useProduction()` for `/api/public*` and `useStaging()` for everything else; `withProduction(callable)` for temporary switches |
 | `PublishableRegistry` | `register(category, label, adapter, module)`, `has()`, `get()`, `adapter()`, `isSettingsKey(key)`, `categoryForSettingsKey()`, `all()`, `categories()`, `forModule()` |
-| `PublishableAdapterInterface` | per category: `settingsKeys(): list<string>`, `snapshot(resourceKeys): array<key, array>` (current production payload), `apply(ContentStagingEntry)` (promote), `describe(entry): ChangeCard` (UI card) |
-| `StagingStore` | persistence of `ContentStagingEntry` rows (`category`, `resourceType`, `resourceKey`, `action` = `update|delete|create|setting`, `payload` incl. production snapshot, labels); `count()`, `all()`, `find()`, `upsert()`, `remove()`, `pendingDeleteKeys()`, preload helpers |
+| `Publishing` / `PublishingCategoryBuilder` | fluent module API: `$context->publishing($moduleId)->category(…)->labelKey(…)->sort(…)->adapter(Class)` |
+| `PublishableAdapterInterface` | per category: `settingsKeys()`, `snapshot()`, `apply()`, `discard()`, `describe()` |
+| `StagingStore` | persistence of `ContentStagingEntry` rows; bumps `StagingSignal` on upsert/remove |
+| `StagingSignal` | request-scoped revision counter for live admin badge refresh |
 | `StagingWriter` | `stageSetting()`, `unstageSetting()`, `stageResource()` — used by `Settings` and adapters |
-| `ProductionFreeze` | the module-facing API: `freezeIfNeeded(category, resourceType, resourceKey, snapshotFn, label)`, `stageDelete(...)`, `stageCreate(...)`, `productionSnapshot()`, `hasFreeze()`, `isPendingDelete()`, `isPendingCreate()`, `pendingDeleteKeys()` |
-| `FrozenPublicReader` | read side for public controllers: `snapshot()`, `findSnapshotBy()`, `isFrozen()`, `isPendingDelete()`, `isPendingCreate()`, `allSnapshots()`, preloads |
-| `PublishService` | `pending(previewLimit)` (grouped change cards), `publish(entryIds, actorId)` (applies each entry through its adapter, records a `ContentRelease` + `ContentReleaseItem`s with a backup, bumps the content version), `releases(limit)` |
-| `ContentVersion` | setting `app.content_version` (default `0.1.0`): `current()`, `bump(changeCount)` — ≤5 changes append/advance a letter (`0.1.0` → `0.1.0a` → `0.1.0b` …, `z` rolls to next patch), >5 changes bump the patch |
+| `ProductionFreeze` | module-facing mutate API: `freezeIfNeeded`, `stageDelete`, `stageCreate`, … |
+| `FrozenPublicReader` | read side for public controllers |
+| `PublishService` | `pending()`, `publish()`, `discard()`, `entry()`, `releases()` |
+| `ContentVersion` | setting `app.content_version` (default `0.1.0`): letter bump ≤5 changes, else patch |
 
-Built-in adapters: `src/Publish/Adapter/{Branding,Broker,City,CmsMenu,CmsPage,Customer,Listing,ProductCategory,Product}PublishAdapter.php` (note: RealEstates adapters live in core, not in the modules).
+Core adapters only: `src/Publish/Adapter/{Branding,Customer}PublishAdapter.php`. Module adapters live in `modules/*/Publish/` (Listings, Cms, Products, Forum, …). Admin workspace: `/admin/content/staging`. Topbar badge refreshes via `X-Gereq-Staging-Count` and `publish:pending-changed`.
 
 ### Flow
 

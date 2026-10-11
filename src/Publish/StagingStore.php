@@ -17,8 +17,10 @@ final class StagingStore
 
     private bool $allLoaded = false;
 
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly StagingSignal $signal = new StagingSignal(),
+    ) {
     }
 
     /**
@@ -235,6 +237,7 @@ final class StagingStore
             $existing->replace($action, $payload, $label, $createdBy);
             $this->em->flush();
             $this->findCache[$category . "\0" . $resourceKey] = $existing;
+            $this->signal->bump();
 
             return $existing;
         }
@@ -251,6 +254,7 @@ final class StagingStore
         $this->em->persist($entry);
         $this->em->flush();
         $this->findCache[$category . "\0" . $resourceKey] = $entry;
+        $this->signal->bump();
 
         return $entry;
     }
@@ -260,16 +264,21 @@ final class StagingStore
         unset($this->findCache[$entry->category() . "\0" . $entry->resourceKey()]);
         $this->em->remove($entry);
         $this->em->flush();
+        $this->signal->bump();
     }
 
     /** @param list<ContentStagingEntry> $entries */
     public function removeMany(array $entries): void
     {
+        if ($entries === []) {
+            return;
+        }
         foreach ($entries as $entry) {
             unset($this->findCache[$entry->category() . "\0" . $entry->resourceKey()]);
             $this->em->remove($entry);
         }
         $this->em->flush();
+        $this->signal->bump();
     }
 
     public function isPendingDelete(string $category, string $resourceKey): bool

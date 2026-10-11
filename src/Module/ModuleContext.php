@@ -17,6 +17,7 @@ use Gereq\Event\EventRegistry;
 use Gereq\Hook\HookManager;
 use Gereq\Http\Router;
 use Gereq\Publish\PublishableRegistry;
+use Gereq\Publish\Publishing;
 use Gereq\Schedule\Schedule;
 use Gereq\Setting\Settings;
 use Gereq\User\PermissionRegistry;
@@ -140,6 +141,20 @@ final class ModuleContext
     public function publishables(): PublishableRegistry
     {
         return $this->publishables;
+    }
+
+    /**
+     * Fluent publishable registration bound to a module id.
+     * Prefer this over publishables()->register() in new code.
+     */
+    public function publishing(string $moduleId): Publishing
+    {
+        return new Publishing(
+            $this->publishables,
+            $this->container,
+            $this->container->get(\Symfony\Contracts\Translation\TranslatorInterface::class),
+            $moduleId,
+        );
     }
 
     public function schedule(): Schedule

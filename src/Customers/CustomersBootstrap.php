@@ -52,14 +52,11 @@ final class CustomersBootstrap implements ModuleInterface
         $provider = $context->get(CustomersProvider::class);
         $context->capabilities()->register('contacts', $this->id(), $provider);
 
-        $translator = $context->get(TranslatorInterface::class);
-        $context->publishables()->register(
-            'customers',
-            $translator->trans('publish.category.customers'),
-            $context->get(CustomerPublishAdapter::class),
-            $this->id(),
-            60,
-        );
+        $context->publishing($this->id())
+            ->category('customers')
+            ->labelKey('publish.category.customers')
+            ->sort(60)
+            ->adapter(CustomerPublishAdapter::class);
 
         (new CustomersRoutesRegistrar($this->id()))->register($context);
         (new CustomersStoreAuthRegistrar($this->id()))->register($context);

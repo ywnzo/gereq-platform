@@ -3,6 +3,7 @@ import { registerAres } from './ares';
 import { registerCmsBlockForm } from '../../../modules/Cms/Resources/assets/js/cmsBlockForm';
 import { registerCmsBuilder } from '../../../modules/Cms/Resources/assets/js/cmsBuilder';
 import { registerCmsPageForm } from '../../../modules/Cms/Resources/assets/js/cmsPageForm';
+import { registerCmsPagePreview } from '../../../modules/Cms/Resources/assets/js/cmsPagePreview';
 import { registerPassword, registerSwitch, registerTableToggle, registerTextarea } from './controls';
 import { registerDrawer } from './drawer';
 import { registerEditor } from './editor';
@@ -69,6 +70,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerCmsBlockForm(alpine);
     registerCmsPageForm(alpine);
     registerCmsBuilder(alpine);
+    registerCmsPagePreview(alpine);
     registerModuleTable(alpine);
     registerPackageModuleToggle();
     registerChart(alpine);

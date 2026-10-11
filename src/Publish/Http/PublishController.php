@@ -19,14 +19,13 @@ final class PublishController
 
     public function pending(Request $request): JsonResponse
     {
-        $preview = max(0, (int) $request->query->get('preview', 0));
-        $data = $this->publish->pending($preview);
-
-        // Release the session lock before JSON encode — badge hover is concurrent
-        // with other admin GETs and must not hold Redis session locks longer than needed.
+        // Release session lock BEFORE work — concurrent badge/workspace GETs must not queue.
         if ($request->hasSession() && $request->getSession()->isStarted()) {
             $request->getSession()->save();
         }
+
+        $preview = max(0, (int) $request->query->get('preview', 0));
+        $data = $this->publish->pending($preview);
 
         return new JsonResponse([
             'ok' => true,

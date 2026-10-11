@@ -75,6 +75,21 @@ final class BrandingPublishAdapter implements PublishableAdapterInterface
         $this->settings->setLive($key, $value, $type, $module);
     }
 
+    public function discard(ContentStagingEntry $entry): void
+    {
+        // Settings overlay lives only in staging — removing the entry restores production reads.
+    }
+
+    public function restore(string $resourceKey, ?array $snapshot): void
+    {
+        if ($snapshot === null) {
+            return;
+        }
+
+        $type = (string) ($snapshot['type'] ?? SettingRecord::TYPE_STRING);
+        $this->settings->setLive($resourceKey, $snapshot['value'] ?? null, $type);
+    }
+
     public function describe(ContentStagingEntry $entry): ChangeCard
     {
         $key = $entry->resourceKey();

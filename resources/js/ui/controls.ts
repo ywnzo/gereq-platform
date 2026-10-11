@@ -141,6 +141,9 @@ export function registerTableToggle(alpine: typeof Alpine): void {
                     bubbles: true,
                     detail: { on: this.on, action, message },
                 }));
+                void (window as Window & {
+                    gereq?: { staging?: { refreshCount?: () => Promise<void> } };
+                }).gereq?.staging?.refreshCount?.();
             } catch {
                 this.on = prev;
                 window.gereq?.toast?.(el.dataset.toastError || 'Uložení se nezdařilo.', 'error');

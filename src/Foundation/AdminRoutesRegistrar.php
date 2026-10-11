@@ -34,6 +34,7 @@ use Gereq\Admin\Search\AdminSearchRegistry;
 use Gereq\Http\DesignController;
 use Gereq\Http\Router;
 use Gereq\Module\ModuleManager;
+use Gereq\Publish\Http\ContentWorkspaceController;
 use Gereq\Publish\Http\PublishController;
 use Gereq\Publish\StagingStore;
 use Doctrine\ORM\EntityManagerInterface;
@@ -80,6 +81,9 @@ final class AdminRoutesRegistrar
                 'pending_count' => $count,
                 'pending_url' => $this->router->url('admin.publish.pending'),
                 'publish_url' => $this->router->url('admin.publish.run'),
+                'discard_url' => $this->router->url('admin.content.staging.discard'),
+                'workspace_url' => $this->router->url('admin.content.staging'),
+                'count_url' => $this->router->url('admin.content.staging.count'),
             ]);
 
             return $html . $partial;
@@ -162,6 +166,11 @@ final class AdminRoutesRegistrar
             $router->get('/publish/pending', [PublishController::class, 'pending'])->name('admin.publish.pending')->middleware('auth')->permission('settings.manage');
             $router->post('/publish', [PublishController::class, 'publish'])->name('admin.publish.run')->middleware('auth')->permission('settings.manage');
             $router->get('/publish/releases', [PublishController::class, 'releases'])->name('admin.publish.releases')->middleware('auth')->permission('settings.manage');
+            $router->get('/content/staging', [ContentWorkspaceController::class, 'index'])->name('admin.content.staging')->middleware('auth')->permission('settings.manage');
+            $router->get('/content/staging/count', [ContentWorkspaceController::class, 'count'])->name('admin.content.staging.count')->middleware('auth')->permission('settings.manage');
+            $router->get('/content/staging/{id}', [ContentWorkspaceController::class, 'show'])->name('admin.content.staging.show')->middleware('auth')->permission('settings.manage');
+            $router->post('/content/staging/discard', [ContentWorkspaceController::class, 'discard'])->name('admin.content.staging.discard')->middleware('auth')->permission('settings.manage');
+            $router->post('/content/staging/rollback', [ContentWorkspaceController::class, 'rollback'])->name('admin.content.staging.rollback')->middleware('auth')->permission('settings.manage');
             $router->get('/settings/audit', [AuditController::class, 'index'])->name('admin.audit.index')->middleware('auth')->permission('audit.view');
             $router->get('/audit', [AuditController::class, 'index'])->middleware('auth')->permission('audit.view');
             $router->get('/profile', [ProfileController::class, 'edit'])->name('admin.profile')->middleware('auth');
@@ -191,6 +200,15 @@ final class AdminRoutesRegistrar
     private function menu(): void
     {
         $this->menu->add(new MenuItem(id: 'dashboard', label: 'nav.overview', icon: 'home', route: 'admin.dashboard', order: 10, group: 'Hlavní'));
+        $this->menu->add(new MenuItem(
+            id: 'content.staging',
+            label: 'nav.content.staging',
+            icon: 'publish',
+            route: 'admin.content.staging',
+            permission: 'settings.manage',
+            order: 15,
+            group: 'Obsah',
+        ));
         $this->menu->add(new MenuItem(id: 'developer', label: 'nav.developer', icon: 'key', route: 'admin.developer.api', permission: 'developer.api.view', order: 110, group: 'Systém'));
         $this->menu->add(new MenuItem(id: 'developer.api', label: 'nav.api', route: 'admin.developer.api', permission: 'developer.api.view', parent: 'developer', order: 10, group: 'Systém'));
         $this->menu->add(new MenuItem(id: 'developer.tokens', label: 'nav.api_tokens', route: 'admin.developer.tokens.index', permission: 'developer.tokens.manage', parent: 'developer', order: 20, group: 'Systém'));
@@ -206,6 +224,14 @@ final class AdminRoutesRegistrar
     {
         $p = static fn (string $path): string => \Gereq\Support\UrlPrefix::path($path);
         $this->palette->add(new PaletteCommand('go-dashboard', 'palette.go_dashboard', $p('/admin'), 'home', keywords: ['home', 'dashboard']));
+        $this->palette->add(new PaletteCommand(
+            'go-content-staging',
+            'palette.content.staging',
+            $p('/admin/content/staging'),
+            'publish',
+            'settings.manage',
+            keywords: ['publish', 'staging', 'obsah', 'nepublikovane', 'changes'],
+        ));
         $this->palette->add(new PaletteCommand('go-users', 'palette.go_users', $p('/admin/users'), 'users', 'users.view'));
         $this->palette->add(new PaletteCommand('go-roles', 'palette.go_roles', $p('/admin/users/roles'), 'shield', 'roles.view', keywords: ['role', 'opravneni', 'permissions']));
         $this->palette->add(new PaletteCommand('go-modules', 'palette.go_modules', $p('/admin/modules'), 'modules', 'modules.manage'));

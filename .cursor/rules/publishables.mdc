@@ -8,28 +8,32 @@ Scope:
 
 **Still live immediately:** auth/permissions, payments, runtime/intake public endpoints (Shop cart/checkout, Viewings requests, CustomerUploads).
 
-## Contract
+## Fluent registration (preferred)
 
-In `register()`:
+In `register()` — adapters live in the **module**, never add module adapters into `src/Publish/Adapter/`:
 
 ```php
-$context->publishables()->register(
-    category: 'my.category',
-    label: $translator->trans('…'),
-    adapter: $context->get(MyPublishAdapter::class),
-    module: $this->id(),
-);
+$context->publishing($this->id())
+    ->category('my.category')
+    ->labelKey('publish.category.my')
+    ->sort(40)
+    ->adapter(MyPublishAdapter::class);
 ```
 
-Adapters implement `Gereq\Publish\PublishableAdapterInterface`.
+Adapters implement `Gereq\Publish\PublishableAdapterInterface` (`settingsKeys`, `snapshot`, `apply`, `discard`, `describe`).
+
+Legacy `publishables()->register(...)` still works.
 
 ## Patterns
 
-1. **Settings keys** — list them in `settingsKeys()`; `Settings::set` stages only when the value differs from production; public reads production only.
+1. **Settings keys** — list them in `settingsKeys()`; `Settings::set` stages only when the value differs from production; public reads production.
 2. **Entity update** — before mutating already-public content call `ProductionFreeze::freezeIfNeeded(...)` with a production snapshot. Admin keeps writing the working copy; `/api/public/*` serves the frozen snapshot until topbar publish. `apply(UPDATE)` is typically a no-op (drop freeze).
 3. **Entity delete** — call `ProductionFreeze::stageDelete(...)` (keeps DB row + freeze for public). Admin lists hide pending deletes. `apply(DELETE)` hard-deletes.
 4. **Entity create → public** — call `ProductionFreeze::stageCreate(...)` so public excludes the resource until publish. Draft/inactive creates may stay live without staging.
+5. **Discard** — `adapter->discard()` restores working copy from `production_snapshot` (or hard-deletes pending creates). UI: Obsah → Nepublikované změny + topbar.
 
 ## UI
 
-Unpublished staging entries appear in the admin topbar badge (labels like „Smazat:“ / „Nové:“). Selective publish promotes selected entries and bumps `app.content_version`.
+- Topbar badge is always visible and refreshes via `X-Gereq-Staging-Count` / `publish:pending-changed`.
+- Full workspace: `/admin/content/staging` (publish / discard / snapshot detail).
+- Selective publish promotes selected entries and bumps `app.content_version`.

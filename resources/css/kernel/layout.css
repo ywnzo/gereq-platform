@@ -254,8 +254,74 @@ button.icon-btn.topbar__menu { display: none; }
     position: relative;
 }
 .publish-badge__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    min-height: 2.15rem;
+    padding: 0.4rem 0.85rem;
+    font-size: var(--grq-text-md, 0.9rem);
+    font-weight: 600;
+    line-height: 1.2;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.publish-badge__icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+}
+.publish-badge__chip--idle {
+    background: color-mix(in srgb, var(--success, #4ade80) 22%, var(--surface));
+    border-color: color-mix(in srgb, var(--success, #4ade80) 48%, var(--border));
+    color: color-mix(in srgb, var(--success, #4ade80) 78%, var(--text));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--success, #4ade80) 18%, transparent);
+}
+.publish-workspace__group {
+    margin-bottom: var(--grq-space-4, 1rem);
+}
+.publish-workspace__items {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+}
+.publish-workspace__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--grq-border, rgba(0, 0, 0, 0.08));
+}
+.publish-workspace__detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--grq-space-4, 1rem);
+    margin: 0 0 1.1rem;
+}
+@media (max-width: 720px) {
+    .publish-workspace__detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.publish-workspace__detail-heading {
+    margin: 0 0 0.4rem;
+    font-size: var(--grq-text-md, 0.9rem);
+    font-weight: 650;
+    color: var(--text);
+}
+.publish-workspace__json {
+    margin: 0;
+    max-height: 22rem;
+    overflow: auto;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2, var(--background));
+    color: var(--text);
+    font-size: var(--grq-text-sm, 0.8rem);
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 .publish-badge__chip--solid {
     box-shadow: none;
@@ -263,12 +329,12 @@ button.icon-btn.topbar__menu { display: none; }
 .publish-badge__count {
     display: inline-grid;
     place-items: center;
-    min-width: 1.1rem;
-    height: 1.1rem;
-    padding: 0 0.28rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.35rem;
     border-radius: 999px;
-    background: color-mix(in srgb, #f59e0b 22%, transparent);
-    font-size: var(--grq-text-xxs);
+    background: color-mix(in srgb, #f59e0b 28%, transparent);
+    font-size: var(--grq-text-xs, 0.75rem);
     font-weight: 700;
 }
 .publish-badge__popover {
@@ -280,7 +346,8 @@ button.icon-btn.topbar__menu { display: none; }
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: 0 14px 36px color-mix(in srgb, var(--text) 14%, transparent);
+    /* Never shadow with --text — in dark mode that becomes a white glow. */
+    box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
     padding: 0.9rem 0.95rem 0.85rem;
     z-index: 40;
 }
@@ -337,6 +404,7 @@ button.icon-btn.topbar__menu { display: none; }
 }
 .publish-check__control input {
     appearance: none;
+    -webkit-appearance: none;
     width: 1rem;
     height: 1rem;
     margin: 0;
@@ -347,7 +415,7 @@ button.icon-btn.topbar__menu { display: none; }
 }
 .publish-check__control input:checked {
     background: var(--gereq-signal, #d7ff45);
-    border-color: var(--gereq-ink, #0a0b0a);
+    border-color: color-mix(in srgb, var(--gereq-signal, #d7ff45) 55%, #000);
 }
 .publish-check__mark {
     pointer-events: none;
@@ -356,8 +424,8 @@ button.icon-btn.topbar__menu { display: none; }
     margin: auto;
     width: 8px;
     height: 5px;
-    border-left: 1.7px solid var(--gereq-ink, #0a0b0a);
-    border-bottom: 1.7px solid var(--gereq-ink, #0a0b0a);
+    border-left: 1.7px solid #0a0b0a;
+    border-bottom: 1.7px solid #0a0b0a;
     transform: rotate(-45deg) translate(1px, -1px);
     opacity: 0;
 }
@@ -381,10 +449,11 @@ button.icon-btn.topbar__menu { display: none; }
     .topbar__center {
         max-width: min(36vw, 220px);
     }
-    .publish-badge__chip span:first-child {
+    .publish-badge__label {
         max-width: 9rem;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
