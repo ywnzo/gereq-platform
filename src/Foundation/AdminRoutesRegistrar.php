@@ -158,6 +158,7 @@ final class AdminRoutesRegistrar
 
             $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth')->permission('settings.manage');
             $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth')->permission('settings.manage');
+            $router->post('/settings/storefront/rebuild', [SettingsController::class, 'rebuildStorefront'])->name('admin.settings.storefront.rebuild')->middleware('auth')->permission('settings.manage');
             $router->get('/publish/pending', [PublishController::class, 'pending'])->name('admin.publish.pending')->middleware('auth')->permission('settings.manage');
             $router->post('/publish', [PublishController::class, 'publish'])->name('admin.publish.run')->middleware('auth')->permission('settings.manage');
             $router->get('/publish/releases', [PublishController::class, 'releases'])->name('admin.publish.releases')->middleware('auth')->permission('settings.manage');

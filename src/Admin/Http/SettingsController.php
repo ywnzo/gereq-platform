@@ -14,6 +14,7 @@ use Gereq\Brand\Branding;
 use Gereq\Cache\StoreFrontCache;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Http\StorefrontRebuild;
 use Gereq\I18n\LocaleCatalog;
 use Gereq\Media\Domain\MediaAsset;
 use Gereq\Media\Domain\MediaFolder;
@@ -44,6 +45,7 @@ final class SettingsController extends Controller
         private readonly Branding $branding,
         private readonly Dashboard $dashboard,
         private readonly StoreFrontCache $storeFrontCache,
+        private readonly StorefrontRebuild $storefrontRebuild,
         private readonly CapabilityRegistry $capabilities,
         private readonly EntityManagerInterface $em,
         private readonly string $basePath,
@@ -166,6 +168,74 @@ final class SettingsController extends Controller
         $params = $tab !== '' ? ['tab' => $tab] : [];
 
         return $this->redirect('admin.settings.index', $params);
+    }
+
+    public function rebuildStorefront(Request $request): Response
+    {
+        // Prefer values from the open settings form so path can be tried before Save.
+        $postedPath = trim((string) $request->request->get('storefront__path', ''));
+        $postedCommand = trim((string) $request->request->get('storefront__build_command', ''));
+        if ($postedPath !== '') {
+            $this->settings->set(
+                StorefrontRebuild::SETTING_PATH,
+                $postedPath,
+                SettingRecord::TYPE_STRING,
+                'core',
+            );
+        }
+        if ($postedCommand !== '') {
+            $this->settings->set(
+                StorefrontRebuild::SETTING_COMMAND,
+                $postedCommand,
+                SettingRecord::TYPE_STRING,
+                'core',
+            );
+        }
+
+        $result = $this->storefrontRebuild->run(
+            $postedPath !== '' ? $postedPath : null,
+            $postedCommand !== '' ? $postedCommand : null,
+        );
+        $this->auditor->log(
+            $result['ok'] ? 'storefront.rebuild.ok' : 'storefront.rebuild.failed',
+            'settings',
+            null,
+            null,
+            [
+                'path' => $result['path'],
+                'remote' => $result['remote'],
+                'exit_code' => $result['exit_code'],
+            ],
+        );
+
+        if ($result['ok']) {
+            $this->storeFrontCache->flush();
+            $msg = $this->translator->trans('settings.storefront.rebuild.ok', [
+                '%path%' => $result['path'],
+            ]);
+            if ($result['output'] !== '') {
+                $msg .= ' — ' . $this->shortOutput($result['output']);
+            }
+            $this->flash('success', $msg);
+        } else {
+            $detail = $result['error'] ?? $this->translator->trans('settings.storefront.rebuild.failed');
+            if ($result['output'] !== '') {
+                $detail .= ' — ' . $this->shortOutput($result['output']);
+            }
+            $this->flash('error', $detail);
+        }
+
+        return $this->redirect('admin.settings.index', ['tab' => 'storefront']);
+    }
+
+    private function shortOutput(string $output): string
+    {
+        $line = trim(preg_replace('/\s+/', ' ', $output) ?? $output);
+        if (mb_strlen($line) > 280) {
+            return mb_substr($line, -280);
+        }
+
+        return $line;
     }
 
     private function resolveBrandAsset(

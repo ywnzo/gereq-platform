@@ -59,7 +59,7 @@ final class BrandAssetController
         };
         $response = new BinaryFileResponse($path);
         $response->headers->set('Content-Type', $mime);
-        $response->headers->set('Cache-Control', 'public, max-age=86400');
+        $response->headers->set('Cache-Control', 'public, max-age=2592000, immutable');
         // Legacy SVG uploads: force download so script in SVG does not run in the browser.
         if ($ext === 'svg') {
             $response->headers->set('Content-Disposition', 'attachment; filename="' . $name . '"');

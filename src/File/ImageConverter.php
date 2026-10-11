@@ -21,14 +21,16 @@ final class ImageConverter
 
     public function __construct(
         private readonly int $avifQuality = 55,
-        private readonly int $webpQuality = 82,
+        private readonly int $webpQuality = 90,
     ) {
     }
 
     /**
+     * @param 'avif'|'webp'|null $prefer Force a format; null = AVIF then WebP.
+     *
      * @return array{contents: string, mime: string, extension: string, width: ?int, height: ?int}|null
      */
-    public function convert(string $contents, string $mime): ?array
+    public function convert(string $contents, string $mime, ?string $prefer = null): ?array
     {
         if ($contents === '' || !extension_loaded('gd')) {
             return null;
@@ -39,8 +41,13 @@ final class ImageConverter
             return null;
         }
 
-        // Already AVIF — skip re-encoding.
-        if ($mime === 'image/avif' && $this->supportsAvif()) {
+        $prefer = $prefer === 'avif' || $prefer === 'webp' ? $prefer : null;
+
+        // Already in the preferred (or default-best) modern format — skip re-encoding.
+        if ($prefer === 'webp' && $mime === 'image/webp' && $this->supportsWebp()) {
+            return null;
+        }
+        if ($prefer !== 'webp' && $mime === 'image/avif' && $this->supportsAvif()) {
             return null;
         }
 
@@ -55,7 +62,7 @@ final class ImageConverter
         $width = imagesx($image);
         $height = imagesy($image);
 
-        if ($this->supportsAvif()) {
+        if ($prefer !== 'webp' && $this->supportsAvif()) {
             $encoded = $this->encodeAvif($image);
             if ($encoded !== null) {
                 return [
@@ -69,7 +76,7 @@ final class ImageConverter
         }
 
         if ($this->supportsWebp()) {
-            // Already WebP and AVIF unavailable — keep original.
+            // Already WebP — keep original.
             if ($mime === 'image/webp') {
                 return null;
             }

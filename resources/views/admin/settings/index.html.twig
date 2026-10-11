@@ -125,6 +125,24 @@
                                         {% if isWidget %}</div>{% else %}</label>{% endif %}
                                     {% endfor %}
                                 </div>
+                            {% if groupId == 'storefront' %}
+                                <div class="form-grid" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border, rgba(0,0,0,.08))">
+                                    <div class="field field--full">
+                                        <span class="settings-row__label">{{ 'settings.storefront.rebuild'|trans }}</span>
+                                        <p class="muted" style="margin:.35rem 0 .75rem">{{ 'settings.storefront.rebuild.help'|trans }}</p>
+                                        <button
+                                            type="submit"
+                                            class="btn btn--primary"
+                                            formaction="{{ url('admin.settings.storefront.rebuild') }}"
+                                            formmethod="post"
+                                            data-confirm="{{ 'settings.storefront.rebuild.confirm'|trans|e('html_attr') }}"
+                                            data-confirm-title="{{ 'settings.storefront.rebuild'|trans|e('html_attr') }}"
+                                            data-confirm-label="{{ 'settings.storefront.rebuild'|trans|e('html_attr') }}"
+                                            data-confirm-danger="0"
+                                        >{{ 'settings.storefront.rebuild'|trans }}</button>
+                                    </div>
+                                </div>
+                            {% endif %}
                             </section>
 
                             {% if groupId == 'core' %}

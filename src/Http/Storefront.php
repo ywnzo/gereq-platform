@@ -79,10 +79,12 @@ final class Storefront
         }
 
         $html = (string) file_get_contents(self::root() . '/index.html');
+        // CMS builder embeds the storefront in a same-origin iframe (?edit=1).
         $response = new Response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Cache-Control' => 'no-cache',
             ContentSecurityPolicy::HEADER_OVERRIDE => self::csp(),
+            ContentSecurityPolicy::HEADER_ALLOW_FRAME => '1',
         ]);
 
         return $response;
@@ -127,7 +129,7 @@ final class Storefront
         $ext = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
 
         return match ($ext) {
-            'js', 'mjs' => 'application/javascript; charset=utf-8',
+            'js', 'mjs', 'cjs' => 'application/javascript; charset=utf-8',
             'css' => 'text/css; charset=utf-8',
             'map' => 'application/json',
             'json' => 'application/json',
@@ -136,6 +138,7 @@ final class Storefront
             'png' => 'image/png',
             'jpg', 'jpeg' => 'image/jpeg',
             'webp' => 'image/webp',
+            'avif' => 'image/avif',
             'ico' => 'image/x-icon',
             'woff' => 'font/woff',
             'crt' => 'application/x-x509-ca-cert',
@@ -158,7 +161,8 @@ final class Storefront
             "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://gereq.cz",
             "child-src 'none'",
             "worker-src 'self'",
-            "frame-ancestors 'none'",
+            // Same-origin only — CMS admin builder preview iframe.
+            "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",
             "object-src 'none'",

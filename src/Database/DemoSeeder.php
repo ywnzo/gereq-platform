@@ -48,7 +48,7 @@ final class DemoSeeder
         $this->seedCoupons($log);
         $this->seedNewsletter($log);
         $this->seedLoyaltyFeedsBundles($log);
-        // CMS one-page (home) — always refresh landing section content
+        // Cms one-page (home) — always refresh landing section content
         $this->ensureCmsHomeOnePage($log);
         // Real-estate CRM + listing → e-mail automation — always upsert
         $automation = new RealEstateAutomationDemoSeeder($this->em);
@@ -263,7 +263,7 @@ final class DemoSeeder
             ['GRQ-SUP-M', 'Měsíční podpora Standard', 'SLA 8×5, e-mail a telefon.', 'měs', '4900', 'sluzby'],
             ['GRQ-LIC-PRO', 'Licence GEREQ Pro (rok)', 'Roční licence pro až 25 uživatelů.', 'ks', '36000', 'licence'],
             ['GRQ-SHOP-ADD', 'Modul E-shop (add-on)', 'Košík, doprava a checkout napojený na objednávky.', 'ks', '12000', 'licence'],
-            ['GRQ-CMS-ADD', 'Modul CMS Builder', 'Stránky a block builder pro interní weby.', 'ks', '8500', 'licence'],
+            ['GRQ-Cms-ADD', 'Modul Cms Builder', 'Stránky a block builder pro interní weby.', 'ks', '8500', 'licence'],
             ['GRQ-NB-14', 'Notebook konzultant 14"', 'Zapůjčení / prodej notebooku pro projektový tým.', 'ks', '24990', 'hardware'],
             ['GRQ-MON-27', 'Monitor 27" 4K', 'Kancelářský monitor pro demo stanici.', 'ks', '8990', 'hardware'],
             ['GRQ-TRAIN-1D', 'Školení uživatelů (1 den)', 'On-site nebo online školení administrátorů.', 'den', '18000', 'sluzby'],
@@ -322,7 +322,7 @@ final class DemoSeeder
             'GRQ-MON-27' => ['12', '2'],
             'GRQ-LIC-PRO' => ['999', '0'],
             'GRQ-SHOP-ADD' => ['999', '0'],
-            'GRQ-CMS-ADD' => ['999', '0'],
+            'GRQ-Cms-ADD' => ['999', '0'],
             'GRQ-TRAIN-1D' => ['40', '0'],
             'GRQ-SUP-M' => ['200', '0'],
             self::MARKER_SKU => ['30', '0'],
@@ -388,7 +388,7 @@ final class DemoSeeder
             ['klara.benesova@nordsoft.cz', 'Implementace + školení', '107000', 'qualified', '+20 days'],
             ['ondrej.maly@citycafe.cz', 'E-shop pro pobočky', '48000', 'lead', '+60 days'],
             ['helena.richter@logistik-cz.eu', 'Licence 2026 renewal', '36000', 'won', '-10 days'],
-            ['eva.kralova@plzensky-pivovar.cz', 'Interní CMS portál', '29500', 'lost', '-5 days'],
+            ['eva.kralova@plzensky-pivovar.cz', 'Interní Cms portál', '29500', 'lost', '-5 days'],
         ];
 
         $deals = [];
@@ -908,7 +908,7 @@ final class DemoSeeder
         $this->em->persist($o2);
         $this->em->flush();
         $lines2 = [];
-        foreach ([['GRQ-SHOP-ADD', '1', '12000'], ['GRQ-CMS-ADD', '1', '8500'], ['GRQ-SUP-M', '3', '4900']] as [$sku, $qty, $price]) {
+        foreach ([['GRQ-SHOP-ADD', '1', '12000'], ['GRQ-Cms-ADD', '1', '8500'], ['GRQ-SUP-M', '3', '4900']] as [$sku, $qty, $price]) {
             $line = new \Modules\Orders\Domain\OrderLine($o2->id(), $bySku[$sku]->name(), $qty, $price, '21');
             $line->setProductId($bySku[$sku]->id());
             $this->em->persist($line);
@@ -976,7 +976,7 @@ final class DemoSeeder
         $this->em->persist($open);
         $this->em->flush();
 
-        foreach ([['GRQ-SHOP-ADD', '1', '12000'], ['GRQ-CMS-ADD', '1', '8500']] as [$sku, $qty, $price]) {
+        foreach ([['GRQ-SHOP-ADD', '1', '12000'], ['GRQ-Cms-ADD', '1', '8500']] as [$sku, $qty, $price]) {
             $p = $bySku[$sku];
             $this->em->persist(new \Modules\Shop\Domain\CartItem($open->id(), $p->id(), $p->name(), $p->sku(), $qty, $price, 'CZK'));
         }
@@ -1134,7 +1134,7 @@ final class DemoSeeder
         }
 
         $offerPath = $dir . '/nabidka-moravia.txt';
-        $offerBody = "GEREQ Platform — nabídka pro Moravia IT\nDatum: " . date('Y-m-d') . "\nPoložky: Shop + CMS + podpora.\n";
+        $offerBody = "GEREQ Platform — nabídka pro Moravia IT\nDatum: " . date('Y-m-d') . "\nPoložky: Shop + Cms + podpora.\n";
         file_put_contents($offerPath, $offerBody);
 
         $svg = <<<'SVG'
@@ -1200,11 +1200,11 @@ SVG;
             $branding->id(),
         );
 
-        $guide = "Interní návod k CMS builderu.\n1. Vytvořte stránku\n2. Přidejte bloky\n3. Publikujte\n";
+        $guide = "Interní návod k Cms builderu.\n1. Vytvořte stránku\n2. Přidejte bloky\n3. Publikujte\n";
         $guidePath = $dir . '/cms-navod.txt';
         file_put_contents($guidePath, $guide);
         $this->ensureMediaAsset(
-            'Návod CMS',
+            'Návod Cms',
             'demo/cms-navod.txt',
             'text/plain',
             strlen($guide),
@@ -1405,7 +1405,7 @@ SVG;
         }
 
         $this->em->flush();
-        $log[] = 'CMS: stránky (home/o-nas/cookies/GDPR/draft) + menu pro storefront.';
+        $log[] = 'Cms: stránky (home/o-nas/cookies/GDPR/draft) + menu pro storefront.';
     }
 
     /** @param \Doctrine\ORM\EntityRepository<\Modules\Cms\Domain\Page> $pageRepo */
@@ -1529,7 +1529,7 @@ SVG;
 
         $this->replaceHomeBlocks($home->id());
         $this->syncHomePublicSnapshot($home);
-        $log[] = 'CMS: úvodní one-page (home, template=landing) obnoven.';
+        $log[] = 'Cms: úvodní one-page (home, template=landing) obnoven.';
     }
 
     private function replaceHomeBlocks(string $pageId): void
