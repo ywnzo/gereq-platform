@@ -33,20 +33,7 @@ final class Storefront
             return null;
         }
 
-        $path = $request->getPathInfo();
-        if ($path === '/dev-ca') {
-            $html = dirname(self::root()) . '/dev-ca.html';
-            if (!is_file($html)) {
-                return null;
-            }
-
-            return new Response((string) file_get_contents($html), 200, [
-                'Content-Type' => 'text/html; charset=UTF-8',
-                'Cache-Control' => 'no-store',
-            ]);
-        }
-
-        $relative = self::staticRelative($path);
+        $relative = self::staticRelative($request->getPathInfo());
         if ($relative === null) {
             return null;
         }

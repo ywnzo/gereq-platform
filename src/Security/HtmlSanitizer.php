@@ -35,8 +35,20 @@ final class HtmlSanitizer
         'td' => ['style'],
     ];
 
-    /** Allowed inline CSS properties (TipTap text-align / font-family / font-weight). */
-    private const ALLOWED_STYLES = ['text-align', 'font-family', 'font-weight'];
+    /**
+     * Allowed inline CSS properties for rich text
+     * (align / font / weight / size / color / highlight).
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_STYLES = [
+        'text-align',
+        'font-family',
+        'font-weight',
+        'font-size',
+        'color',
+        'background-color',
+    ];
 
     public function sanitize(?string $html): string
     {
@@ -193,9 +205,70 @@ final class HtmlSanitizer
                 $parts[] = $prop . ': ' . $val;
                 continue;
             }
+            if ($prop === 'font-size') {
+                $cleanSize = $this->safeFontSize($val);
+                if ($cleanSize === null) {
+                    continue;
+                }
+                $parts[] = $prop . ': ' . $cleanSize;
+                continue;
+            }
+            if ($prop === 'color' || $prop === 'background-color') {
+                $cleanColor = $this->safeCssColor($val);
+                if ($cleanColor === null) {
+                    continue;
+                }
+                $parts[] = $prop . ': ' . $cleanColor;
+                continue;
+            }
             $parts[] = $prop . ': ' . strtolower($val);
         }
 
         return implode('; ', $parts);
+    }
+
+    private function safeFontSize(string $val): ?string
+    {
+        $val = trim($val);
+        $lower = strtolower($val);
+        if (in_array($lower, ['inherit', 'smaller', 'larger', 'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'], true)) {
+            return $lower;
+        }
+        // 1.15em, 14px, 120%, 0.85rem
+        if (preg_match('/^(\d+\.?\d*|\.\d+)(px|em|rem|%)$/i', $val) === 1) {
+            return strtolower($val);
+        }
+
+        return null;
+    }
+
+    private function safeCssColor(string $val): ?string
+    {
+        $val = trim($val);
+        $lower = strtolower($val);
+        if (in_array($lower, ['inherit', 'transparent', 'currentcolor'], true)) {
+            return $lower;
+        }
+        if (preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $val) === 1) {
+            return strtolower($val);
+        }
+        // rgb(245, 197, 24) / rgba(245, 197, 24, 0.5) — browsers often emit this from foreColor
+        if (preg_match('/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|0?\.\d+|1(\.0)?))?\s*\)$/i', $val, $m) === 1) {
+            $r = min(255, max(0, (int) $m[1]));
+            $g = min(255, max(0, (int) $m[2]));
+            $b = min(255, max(0, (int) $m[3]));
+            if (isset($m[4]) && $m[4] !== '') {
+                $a = (float) $m[4];
+                if ($a < 0 || $a > 1) {
+                    return null;
+                }
+
+                return sprintf('rgba(%d, %d, %d, %s)', $r, $g, $b, rtrim(rtrim(sprintf('%.3f', $a), '0'), '.'));
+            }
+
+            return sprintf('rgb(%d, %d, %d)', $r, $g, $b);
+        }
+
+        return null;
     }
 }

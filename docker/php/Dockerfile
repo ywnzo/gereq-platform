@@ -4,6 +4,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         unzip \
+        curl \
+        ca-certificates \
+        openssh-client \
         python3 \
         python3-pip \
         python3-venv \
@@ -40,6 +43,11 @@ RUN apt-get update \
     && rm -rf /tmp/phpredis-6.2.0 \
     && pip3 install --break-system-packages --no-cache-dir curl_cffi \
     && apt-get purge -y --auto-remove $PHPIZE_DEPS \
+    && curl -fsSL https://bun.sh/install | bash \
+    && cp /root/.bun/bin/bun /usr/local/bin/bun \
+    && chmod 755 /usr/local/bin/bun \
+    && ln -sf /usr/local/bin/bun /usr/local/bin/node \
+    && bun --version \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

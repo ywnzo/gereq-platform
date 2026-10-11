@@ -1,4 +1,4 @@
-name: gereq
+name: gereq-doprovodvohralik
 
 # Bind-mount the project with consistency: consistent so Docker Desktop's
 # virtualized FS (fakeowner / VirtioFS) reflects host writes immediately.
@@ -7,6 +7,23 @@ x-app-bind: &app-bind
   type: bind
   source: .
   target: /var/www/html
+  consistency: consistent
+  bind:
+    selinux: z
+
+# Sibling storefront layout (../fe + ../cms-lib). From /var/www/html, ../fe → /var/www/fe.
+x-fe-bind: &fe-bind
+  type: bind
+  source: ../fe
+  target: /var/www/fe
+  consistency: consistent
+  bind:
+    selinux: z
+
+x-cms-lib-bind: &cms-lib-bind
+  type: bind
+  source: ../cms-lib
+  target: /var/www/cms-lib
   consistency: consistent
   bind:
     selinux: z
@@ -46,6 +63,8 @@ services:
       dockerfile: docker/php/Dockerfile
     volumes:
       - *app-bind
+      - *fe-bind
+      - *cms-lib-bind
       - type: bind
         source: ./docker/php/zz-www.conf
         target: /usr/local/etc/php-fpm.d/zz-www.conf

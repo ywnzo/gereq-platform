@@ -892,9 +892,11 @@ Alpine.data('dataTable', () => ({
     pageIds: [] as string[],
     bulkAction: '',
     query: '',
+    closedDays: {} as Record<string, boolean>,
     init() {
         const el = this.$el as HTMLElement;
         this.query = el.dataset.initialQuery || '';
+        this.closedDays = {};
         try {
             this.pageIds = JSON.parse(el.dataset.pageIds || '[]') as string[];
         } catch {
@@ -906,6 +908,15 @@ Alpine.data('dataTable', () => ({
             this.syncSelectAll();
             this.syncFit();
         });
+    },
+    isDayClosed(key: string): boolean {
+        return !!this.closedDays[key];
+    },
+    toggleDay(key: string) {
+        this.closedDays = {
+            ...this.closedDays,
+            [key]: !this.closedDays[key],
+        };
     },
     matchText(text: string): boolean {
         const q = this.query.trim().toLowerCase();

@@ -36,10 +36,6 @@ import { registerWebauthn } from './webauthn';
 import { registerPublishBadge } from './publishBadge';
 import { registerApiTester } from './apiTester';
 import { registerWebplusOgPreview } from '../../../modules/WebPlus/Resources/assets/js/ogPreview';
-import { registerEventGalleryEditor } from '../../../modules/Events/Resources/assets/js/eventGalleryEditor';
-import { registerEventSchedule } from '../../../modules/Events/Resources/assets/js/eventSchedule';
-import { registerEventsIndex } from '../../../modules/Events/Resources/assets/js/eventsIndex';
-import { registerCalendarBoard } from '../../../modules/Calendar/Resources/assets/js/calendarBoard';
 
 export function registerUi(alpine: typeof Alpine): void {
     registerPageProgress();
@@ -83,8 +79,4 @@ export function registerUi(alpine: typeof Alpine): void {
     registerPublishBadge(alpine);
     registerApiTester(alpine);
     registerWebplusOgPreview(alpine);
-    registerEventGalleryEditor(alpine);
-    registerEventSchedule(alpine);
-    registerEventsIndex(alpine);
-    registerCalendarBoard(alpine);
 }
