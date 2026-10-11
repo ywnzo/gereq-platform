@@ -27,12 +27,17 @@ final class EnvInitCommand extends Command
     {
         $this
             ->addOption('docker', null, InputOption::VALUE_NONE, 'Apply Docker Compose service defaults (pgsql/redis)')
+            ->addOption('cli', null, InputOption::VALUE_NONE, 'Write .env.cli host overrides for php gereq on this machine')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Overwrite existing .env')
             ->addOption('port', null, InputOption::VALUE_REQUIRED, 'APP_URL host port when using --docker', '8080');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if ($input->getOption('cli')) {
+            return $this->writeCliOverlay($input, $output);
+        }
+
         $schemaPath = $this->basePath . '/config/env.schema.toml';
         $envPath = CliEnvFile::resolvedPath() ?? ($this->basePath . '/.env');
         $envLabel = basename($envPath);
@@ -89,6 +94,36 @@ final class EnvInitCommand extends Command
 
         $output->writeln('<info>✓</info> Wrote ' . $envLabel . ' from env.schema.toml'
             . ($input->getOption('docker') ? ' (docker profile)' : ''));
+
+        return Command::SUCCESS;
+    }
+
+    private function writeCliOverlay(InputInterface $input, OutputInterface $output): int
+    {
+        $envPath = $this->basePath . '/.env.cli';
+        if (is_file($envPath) && !$input->getOption('force')) {
+            $output->writeln('<info>.env.cli already exists</info> (use --force to overwrite)');
+
+            return Command::SUCCESS;
+        }
+
+        $contents = implode("\n", [
+            '# Host overrides for php gereq (loaded after .env when this file exists)',
+            '# Requires Docker services published on localhost (see docker-compose.yml).',
+            'DB_HOST=127.0.0.1',
+            'DB_PORT=5432',
+            'REDIS_HOST=127.0.0.1',
+            'REDIS_PORT=6379',
+            '',
+        ]);
+
+        if (file_put_contents($envPath, $contents) === false) {
+            $output->writeln('<error>Failed to write .env.cli</error>');
+
+            return Command::FAILURE;
+        }
+
+        $output->writeln('<info>✓</info> Wrote .env.cli (DB/Redis → 127.0.0.1 for host CLI)');
 
         return Command::SUCCESS;
     }

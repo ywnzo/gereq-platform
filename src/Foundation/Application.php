@@ -145,6 +145,13 @@ final class Application
             $dotenv = Dotenv::createImmutable(dirname($file), basename($file));
             $dotenv->safeLoad();
         }
+        if (\PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg') {
+            $overlay = CliEnvFile::cliOverlayPath($basePath);
+            if ($overlay !== null) {
+                $dotenv = Dotenv::createMutable(dirname($overlay), basename($overlay));
+                $dotenv->load();
+            }
+        }
         self::hardenProductionEnv();
     }
 

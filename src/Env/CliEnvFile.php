@@ -13,11 +13,17 @@ final class CliEnvFile
 {
     public const OPTION = 'config.env';
 
+    /** @var list<string> */
+    public const CLI_OVERLAY_FILES = ['.env.cli', '.env.bin'];
+
     private static ?string $resolvedPath = null;
+
+    private static bool $explicitEnvFile = false;
 
     public static function reset(): void
     {
         self::$resolvedPath = null;
+        self::$explicitEnvFile = false;
     }
 
     /** Absolute path last resolved by {@see resolve()}, or null before first resolve. */
@@ -41,6 +47,7 @@ final class CliEnvFile
         }
 
         $explicit = self::extractOption($argv);
+        self::$explicitEnvFile = $explicit !== null;
         $relativeOrAbsolute = $explicit ?? '.env';
         $absolute = self::absolutePath($basePath, $relativeOrAbsolute);
 
@@ -60,6 +67,26 @@ final class CliEnvFile
         self::$resolvedPath = $absolute;
 
         return $absolute;
+    }
+
+    /**
+     * Optional host CLI overlay loaded after the primary env file (see Application::loadEnv()).
+     */
+    public static function cliOverlayPath(string $basePath): ?string
+    {
+        if (self::$explicitEnvFile) {
+            return null;
+        }
+
+        $basePath = rtrim($basePath, '/');
+        foreach (self::CLI_OVERLAY_FILES as $name) {
+            $path = $basePath . '/' . $name;
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     public static function absolutePath(string $basePath, string $envFile): string

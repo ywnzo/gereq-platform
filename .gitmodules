@@ -130,3 +130,6 @@
 [submodule "modules/Authorization"]
 	path = modules/Authorization
 	url = ../module-authorization.git
+[submodule "modules/SiteInquiries"]
+	path = modules/SiteInquiries
+	url = ../module-site_inquiries.git

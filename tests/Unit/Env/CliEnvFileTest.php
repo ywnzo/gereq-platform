@@ -90,4 +90,22 @@ final class CliEnvFileTest extends TestCase
             CliEnvFile::absolutePath('/app', './.env.production'),
         );
     }
+
+    public function testCliOverlayPrefersEnvCli(): void
+    {
+        file_put_contents($this->tmpDir . '/.env.cli', "DB_HOST=127.0.0.1\n");
+        $argv = ['gereq', 'about'];
+        CliEnvFile::resolve($this->tmpDir, $argv);
+
+        self::assertSame($this->tmpDir . '/.env.cli', CliEnvFile::cliOverlayPath($this->tmpDir));
+    }
+
+    public function testCliOverlaySkippedWhenConfigEnvExplicit(): void
+    {
+        file_put_contents($this->tmpDir . '/.env.cli', "DB_HOST=127.0.0.1\n");
+        $argv = ['gereq', 'config.env=.env.production', 'about'];
+        CliEnvFile::resolve($this->tmpDir, $argv);
+
+        self::assertNull(CliEnvFile::cliOverlayPath($this->tmpDir));
+    }
 }

@@ -4,7 +4,9 @@ All console commands run through `php gereq <command>` (entry script `gereq` →
 
 ### Env file (`config.env`)
 
-By default the CLI loads project-root `.env`. Override the file before any command with a global `config.env=` token (stripped before Symfony Console sees argv):
+By default the CLI loads project-root `.env`. When `.env.cli` or `.env.bin` exists, it is loaded **after** `.env` (host overrides for `php gereq` on the machine — typically `DB_HOST=127.0.0.1` while Docker keeps `postgres` in `.env`). Generate with `php gereq env:init --cli`.
+
+Override the primary file before any command with a global `config.env=` token (stripped before Symfony Console sees argv):
 
 ```bash
 php gereq config.env=.env.production about
@@ -12,7 +14,7 @@ php gereq --config.env=.env.production migrate
 php gereq config.env=/abs/path/.env env:validate
 ```
 
-Relative paths are resolved from the project root. An explicit path that does not exist fails fast. `env:init` / `env:validate` write/validate the same resolved file.
+Relative paths are resolved from the project root. An explicit path that does not exist fails fast. `env:init` / `env:validate` write/validate the same resolved file (overlay is not used when `config.env=` is set).
 
 ## Setup
 

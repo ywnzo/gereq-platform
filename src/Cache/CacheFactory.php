@@ -6,6 +6,7 @@ namespace Gereq\Cache;
 
 use Doctrine\DBAL\DriverManager;
 use Gereq\Config\Repository;
+use Gereq\Database\DbalConnectionParams;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\DoctrineDbalAdapter;
@@ -27,7 +28,7 @@ final class CacheFactory
 
         return match ($driver) {
             'array' => new ArrayAdapter(),
-            'redis' => $this->redis($namespace),
+            'redis' => $this->redisOrFile($namespace),
             'database', 'db' => $this->database($namespace),
             default => new FilesystemAdapter($namespace, 0, $this->basePath . '/storage/cache/data'),
         };
@@ -57,6 +58,15 @@ final class CacheFactory
         return new FilesystemAdapter($namespace, 0, $dir);
     }
 
+    private function redisOrFile(string $namespace): CacheItemPoolInterface
+    {
+        try {
+            return $this->redis($namespace);
+        } catch (\Throwable) {
+            return new FilesystemAdapter($namespace, 0, $this->basePath . '/storage/cache/data');
+        }
+    }
+
     private function redis(string $namespace): CacheItemPoolInterface
     {
         if (!class_exists(\Redis::class)) {
@@ -71,7 +81,7 @@ final class CacheFactory
         $password = $this->config->get('cache.redis.password');
 
         $auth = is_string($password) && $password !== '' ? $password . '@' : '';
-        $dsn = sprintf('redis://%s%s:%d', $auth, $host, $port);
+        $dsn = sprintf('redis://%s%s:%d?timeout=2', $auth, $host, $port);
 
         $connection = RedisAdapter::createConnection($dsn);
 
@@ -98,46 +108,6 @@ final class CacheFactory
     /** @return array<string, mixed> */
     private function dbParams(): array
     {
-        $driver = (string) $this->config->get('database.connection', 'sqlite');
-
-        return match ($driver) {
-            'mysql' => [
-                'driver' => 'pdo_mysql',
-                'host' => $this->config->get('database.host'),
-                'port' => $this->config->get('database.port'),
-                'dbname' => $this->config->get('database.name'),
-                'user' => $this->config->get('database.username'),
-                'password' => $this->config->get('database.password'),
-                'charset' => 'utf8mb4',
-            ],
-            'pgsql' => [
-                'driver' => 'pdo_pgsql',
-                'host' => $this->config->get('database.host'),
-                'port' => $this->config->get('database.port') ?: 5432,
-                'dbname' => $this->config->get('database.name'),
-                'user' => $this->config->get('database.username'),
-                'password' => $this->config->get('database.password'),
-                'charset' => 'utf8',
-            ],
-            default => [
-                'driver' => 'pdo_sqlite',
-                'path' => $this->sqlitePath(),
-            ],
-        };
-    }
-
-    private function sqlitePath(): string
-    {
-        $path = (string) $this->config->get('database.database', 'storage/database.sqlite');
-        if (!str_starts_with($path, '/')) {
-            $path = $this->basePath . '/' . $path;
-        }
-
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
-        return $path;
+        return DbalConnectionParams::forConfig($this->config, $this->basePath);
     }
 }

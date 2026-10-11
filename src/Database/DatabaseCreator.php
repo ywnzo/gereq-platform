@@ -46,14 +46,7 @@ final class DatabaseCreator
             return false;
         }
 
-        $params = [
-            'driver' => 'pdo_pgsql',
-            'host' => $this->config->get('database.host'),
-            'port' => $this->config->get('database.port') ?: 5432,
-            'dbname' => 'postgres',
-            'user' => $this->config->get('database.username'),
-            'password' => $this->config->get('database.password'),
-        ];
+        $params = DbalConnectionParams::forConfig($this->config, '', 'postgres');
 
         try {
             $conn = DriverManager::getConnection($params);
@@ -89,14 +82,8 @@ final class DatabaseCreator
             return false;
         }
 
-        $params = [
-            'driver' => 'pdo_mysql',
-            'host' => $this->config->get('database.host'),
-            'port' => $this->config->get('database.port') ?: 3306,
-            'user' => $this->config->get('database.username'),
-            'password' => $this->config->get('database.password'),
-            'charset' => 'utf8mb4',
-        ];
+        $params = DbalConnectionParams::forConfig($this->config, '');
+        unset($params['dbname']);
 
         try {
             $conn = DriverManager::getConnection($params);

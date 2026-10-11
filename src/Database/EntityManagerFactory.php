@@ -92,49 +92,9 @@ final class EntityManagerFactory
     /** @return array<string, mixed> */
     private function params(): array
     {
-        $driver = (string) $this->config->get('database.connection', 'sqlite');
+        $params = DbalConnectionParams::forConfig($this->config, $this->basePath);
+        $params['wrapperClass'] = CachingConnection::class;
 
-        return match ($driver) {
-            'mysql' => [
-                'driver' => 'pdo_mysql',
-                'host' => $this->config->get('database.host'),
-                'port' => $this->config->get('database.port'),
-                'dbname' => $this->config->get('database.name'),
-                'user' => $this->config->get('database.username'),
-                'password' => $this->config->get('database.password'),
-                'charset' => 'utf8mb4',
-                'wrapperClass' => CachingConnection::class,
-            ],
-            'pgsql' => [
-                'driver' => 'pdo_pgsql',
-                'host' => $this->config->get('database.host'),
-                'port' => $this->config->get('database.port') ?: 5432,
-                'dbname' => $this->config->get('database.name'),
-                'user' => $this->config->get('database.username'),
-                'password' => $this->config->get('database.password'),
-                'charset' => 'utf8',
-                'wrapperClass' => CachingConnection::class,
-            ],
-            default => [
-                'driver' => 'pdo_sqlite',
-                'path' => $this->sqlitePath(),
-                'wrapperClass' => CachingConnection::class,
-            ],
-        };
-    }
-
-    private function sqlitePath(): string
-    {
-        $path = (string) $this->config->get('database.database', 'storage/database.sqlite');
-        if (!str_starts_with($path, '/')) {
-            $path = $this->basePath . '/' . $path;
-        }
-
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
-        return $path;
+        return $params;
     }
 }
