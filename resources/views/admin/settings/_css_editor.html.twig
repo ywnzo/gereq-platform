@@ -1,7 +1,8 @@
 {% set scope = key == 'cms.custom_css_public' ? 'public' : 'admin' %}
 {% set vars = cssVariables[scope]|default([]) %}
+{% set editorClass = editorClass|default('') %}
 <div
-    class="css-editor grq-stack grq-stack--md"
+    class="css-editor grq-stack grq-stack--md{{ editorClass ? ' ' ~ editorClass : '' }}"
     x-data="gereqCssEditor"
     data-vars="{{ vars|json_encode|e('html_attr') }}"
 >

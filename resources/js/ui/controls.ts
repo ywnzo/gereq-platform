@@ -125,7 +125,7 @@ export function registerTableToggle(alpine: typeof Alpine): void {
                 if (!res.ok) {
                     throw new Error('toggle failed');
                 }
-                const payload = await res.json() as { data?: { on?: boolean; message?: string } };
+                const payload = await res.json() as { data?: { on?: boolean; message?: string; reload?: boolean } };
                 if (typeof payload?.data?.on === 'boolean') {
                     this.on = payload.data.on;
                 }
@@ -144,6 +144,10 @@ export function registerTableToggle(alpine: typeof Alpine): void {
                 void (window as Window & {
                     gereq?: { staging?: { refreshCount?: () => Promise<void> } };
                 }).gereq?.staging?.refreshCount?.();
+                if (payload?.data?.reload) {
+                    window.location.reload();
+                    return;
+                }
             } catch {
                 this.on = prev;
                 window.gereq?.toast?.(el.dataset.toastError || 'Uložení se nezdařilo.', 'error');

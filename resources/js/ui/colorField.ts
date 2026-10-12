@@ -51,7 +51,7 @@ function contrastOn(hex: string): string {
     const g = parseInt(full.slice(2, 4), 16);
     const b = parseInt(full.slice(4, 6), 16);
     const luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-    return luma > 0.62 ? '#18181b' : '#ffffff';
+    return luma > 0.55 ? '#18181b' : '#ffffff';
 }
 
 type ColorFieldState = {

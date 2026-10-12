@@ -28,7 +28,7 @@ return [
     ],
     'image_convert' => [
         'enabled' => filter_var(env_value('FILE_IMAGE_CONVERT', '1'), FILTER_VALIDATE_BOOL),
-        'avif_quality' => (int) env_value('FILE_AVIF_QUALITY', '55'),
+        'avif_quality' => (int) env_value('FILE_AVIF_QUALITY', '90'),
         'webp_quality' => (int) env_value('FILE_WEBP_QUALITY', '90'),
     ],
     's3' => [

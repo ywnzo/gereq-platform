@@ -197,20 +197,19 @@ body.admin-body {
     display: flex;
     align-items: center;
     gap: var(--grq-space-2);
+    flex: 1 1 0;
     min-width: 0;
 }
 .topbar__right {
     justify-content: flex-end;
-    margin-left: auto;
     gap: var(--grq-space-3);
 }
 .topbar__center {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     align-items: center;
-    z-index: 2;
+    justify-content: center;
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: min(42vw, 360px);
 }
 .topbar__tools {
@@ -218,11 +217,13 @@ body.admin-body {
     align-items: center;
     gap: var(--grq-space-2);
     min-width: 0;
+    flex-shrink: 1;
 }
 .topbar__icons {
     display: flex;
     align-items: center;
     gap: 1px;
+    flex-shrink: 0;
 }
 .topbar__icons .icon-btn {
     width: 30px;
@@ -232,6 +233,7 @@ body.admin-body {
 .topbar .user-menu {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     margin-left: 2px;
     padding-left: 10px;
     border-left: 1px solid var(--border-soft);
@@ -252,12 +254,16 @@ button.icon-btn.topbar__menu { display: none; }
 
 .publish-badge {
     position: relative;
+    max-width: 100%;
+    min-width: 0;
 }
 .publish-badge__chip {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     cursor: pointer;
+    max-width: 100%;
+    min-width: 0;
     min-height: 2.15rem;
     padding: 0.4rem 0.85rem;
     font-size: var(--grq-text-md, 0.9rem);
@@ -265,7 +271,14 @@ button.icon-btn.topbar__menu { display: none; }
     line-height: 1.2;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
+.publish-badge__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .publish-badge__icon {
+    flex-shrink: 0;
     font-size: 1.15rem;
     line-height: 1;
     font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
@@ -439,21 +452,28 @@ button.icon-btn.topbar__menu { display: none; }
     margin-top: 0.85rem;
     display: flex;
     justify-content: flex-start;
+    gap: 0.5rem;
 }
 .publish-badge__submit {
     min-height: 2.15rem;
     padding-inline: 0.95rem;
     font-weight: 700;
 }
+@media (max-width: 1100px) {
+    .search-trigger {
+        min-width: 0;
+        max-width: 11.5rem;
+    }
+}
 @media (max-width: 900px) {
     .topbar__center {
-        max-width: min(36vw, 220px);
+        max-width: min(32vw, 200px);
     }
     .publish-badge__label {
-        max-width: 9rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        max-width: 8rem;
+    }
+    .search-trigger {
+        max-width: 9.5rem;
     }
 }
 
@@ -583,7 +603,10 @@ button.icon-btn.topbar__menu { display: none; }
     align-items: center;
     gap: 7px;
     height: 30px;
-    min-width: 208px;
+    min-width: 0;
+    width: 208px;
+    max-width: 100%;
+    flex-shrink: 1;
     padding: 0 8px 0 9px;
     border: 1px solid var(--border);
     border-radius: var(--radius);

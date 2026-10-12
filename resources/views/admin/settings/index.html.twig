@@ -11,8 +11,7 @@
     {% set firstGroup = groups|keys|first %}
     {% set wideKeys = [
         'admin.dashboard.layout',
-        'brand.custom_css',
-        'cms.custom_css_public'
+        'brand.custom_css'
     ] %}
 
     <form
@@ -110,7 +109,7 @@
                                                 <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
                                             {% elseif isColor %}
                                                 {% include 'admin/settings/_color_picker.html.twig' %}
-                                            {% elseif key in ['brand.custom_css', 'cms.custom_css_public'] %}
+                                            {% elseif key == 'brand.custom_css' %}
                                                 {% include 'admin/settings/_css_editor.html.twig' %}
                                             {% elseif key == 'admin.dashboard.layout' %}
                                                 {% include 'admin/settings/_dashboard_widgets.html.twig' %}

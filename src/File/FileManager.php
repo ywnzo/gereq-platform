@@ -31,8 +31,8 @@ final class FileManager
 
         $this->filesystem = new Filesystem(new LocalFilesystemAdapter($root));
         $this->converter = $converter ?? new ImageConverter(
-            avifQuality: (int) $this->config->get('files.image_convert.avif_quality', 55),
-            webpQuality: (int) $this->config->get('files.image_convert.webp_quality', 82),
+            avifQuality: (int) $this->config->get('files.image_convert.avif_quality', 90),
+            webpQuality: (int) $this->config->get('files.image_convert.webp_quality', 90),
         );
     }
 

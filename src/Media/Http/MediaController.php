@@ -283,6 +283,9 @@ final class MediaController extends Controller
                 'id' => $asset->id(),
                 'title' => $asset->title(),
                 'folder_id' => $asset->folderId(),
+                'url' => '/media/' . $asset->id() . '/file',
+                'mime' => $asset->mime(),
+                'alt' => (string) ($asset->alt() ?? ''),
             ]);
         }
 

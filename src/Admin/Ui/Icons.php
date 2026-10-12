@@ -32,6 +32,35 @@ final class Icons
         return $glyph;
     }
 
+    /**
+     * Full Material Symbols catalog for admin icon pickers (~3900).
+     *
+     * @return list<array{name: string, glyph: string}>
+     */
+    public function catalog(): array
+    {
+        $seen = [];
+        $out = [];
+        foreach (MaterialSymbolsCatalog::names() as $name) {
+            if (isset($seen[$name]) || !preg_match('/^[a-z0-9_]+$/', $name)) {
+                continue;
+            }
+            $seen[$name] = true;
+            $out[] = ['name' => $name, 'glyph' => $name];
+        }
+        // Keep admin aliases that aren't already in the Google catalog.
+        foreach ($this->glyphs() as $alias => $glyph) {
+            if (isset($seen[$glyph]) || !preg_match('/^[a-z0-9_]+$/', $glyph)) {
+                continue;
+            }
+            $seen[$glyph] = true;
+            $out[] = ['name' => $glyph, 'glyph' => $glyph];
+        }
+        usort($out, static fn (array $a, array $b): int => strcmp($a['name'], $b['name']));
+
+        return $out;
+    }
+
     /** @return array<string, string> */
     private function glyphs(): array
     {
@@ -104,9 +133,18 @@ final class Icons
             'cart' => 'shopping_cart',
             'bag' => 'shopping_bag',
             'truck' => 'local_shipping',
+            'local_shipping' => 'local_shipping',
             'car' => 'directions_car',
             'bike' => 'pedal_bike',
             'pedal_bike' => 'pedal_bike',
+            'verified' => 'verified_user',
+            'verified_user' => 'verified_user',
+            'route' => 'alt_route',
+            'alt_route' => 'alt_route',
+            'north-east' => 'north_east',
+            'north_east' => 'north_east',
+            'arrow' => 'north_east',
+            'circle' => 'circle',
             'build' => 'build',
             'credit-card' => 'credit_card',
             'tag' => 'sell',

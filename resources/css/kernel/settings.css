@@ -363,8 +363,38 @@
 .css-editor {
     min-width: 0;
 }
+.css-editor__host {
+    min-height: 10rem;
+    min-width: 0;
+}
+.css-editor--dialog .css-editor__host {
+    min-height: min(42vh, 22rem);
+}
+.css-editor--dialog .cm-editor {
+    min-height: min(42vh, 22rem);
+}
+.css-editor--dialog .cm-scroller {
+    min-height: min(42vh, 22rem) !important;
+    max-height: min(48vh, 26rem) !important;
+}
 .css-editor__main {
     min-width: 0;
+}
+.cms-css-settings__editor {
+    margin: 0 0 1.1rem;
+    min-width: 0;
+}
+.cms-css-settings .css-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--grq-space-3, 0.75rem);
+}
+/* Color swatches from @uiw/codemirror-extensions-color */
+.cm-color-picker-wrapper {
+    outline: none !important;
+}
+.cm-css-color-picker-wrapper {
+    outline-color: transparent;
 }
 .css-editor__input {
     display: none !important;

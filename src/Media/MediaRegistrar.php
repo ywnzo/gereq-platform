@@ -217,7 +217,8 @@ final class MediaRegistrar
             icon: 'image',
             route: 'admin.media.index',
             permission: 'media.view',
-            order: 50,
+            parent: 'cms',
+            order: 20,
             group: 'Obsah',
         ));
         $this->menu->add(new MenuItem(

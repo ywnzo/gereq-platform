@@ -60,6 +60,16 @@ final class SettingsController extends Controller
         foreach ($definitions as $key => $definition) {
             $values[$key] = $this->settings->get($key, $definition['default']);
         }
+        // One-time: CMS site title → Brand public site name.
+        if (
+            trim((string) ($values['brand.site_name'] ?? '')) === ''
+            && !$this->settings->has('brand.site_name')
+        ) {
+            $legacyTitle = trim((string) $this->settings->get('cms.site_title', ''));
+            if ($legacyTitle !== '' && $legacyTitle !== 'GEREQ Site') {
+                $values['brand.site_name'] = $legacyTitle;
+            }
+        }
         // Migrate legacy admin CSS into brand.custom_css when not yet stored.
         if (!$this->settings->has('brand.custom_css')) {
             $fromCmsAdmin = trim((string) $this->settings->get('cms.custom_css_admin', ''));

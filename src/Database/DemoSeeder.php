@@ -1358,54 +1358,49 @@ SVG;
 
         $this->em->flush();
 
-        if (class_exists(\Modules\Cms\Domain\SiteMenu::class)) {
-            $menuRepo = $this->em->getRepository(\Modules\Cms\Domain\SiteMenu::class);
-            $header = $menuRepo->findOneBy(['location' => 'header']);
-            if ($header === null) {
-                $header = new \Modules\Cms\Domain\SiteMenu('Hlavní menu', 'header');
-                $this->em->persist($header);
-                $this->em->flush();
-                $aboutPage = $pageRepo->findOneBy(['slug' => 'o-nas']);
-                $i = 0;
-                $sale = new \Modules\Cms\Domain\SiteMenuItem($header->id(), 'Koupit', $i++);
-                $sale->setUrl('/?offer=sale');
-                $this->em->persist($sale);
-                $rent = new \Modules\Cms\Domain\SiteMenuItem($header->id(), 'Pronajmout', $i++);
-                $rent->setUrl('/?offer=rent');
-                $this->em->persist($rent);
-                if ($aboutPage !== null) {
-                    $item = new \Modules\Cms\Domain\SiteMenuItem($header->id(), 'O nás', $i++);
-                    $item->setPageId($aboutPage->id());
-                    $this->em->persist($item);
-                }
+        if (class_exists(\Modules\Cms\Domain\NavLink::class)) {
+            $linkRepo = $this->em->getRepository(\Modules\Cms\Domain\NavLink::class);
+            $aboutPage = $pageRepo->findOneBy(['slug' => 'o-nas']);
+            if ($aboutPage instanceof \Modules\Cms\Domain\Page && $aboutPage->menuLocation() === null) {
+                $aboutPage->setMenuLocation('header');
+                $aboutPage->setMenuSortOrder(2);
+            }
+            $privacy = $pageRepo->findOneBy(['slug' => 'ochrana-osobnich-udaju']);
+            if ($privacy instanceof \Modules\Cms\Domain\Page && $privacy->menuLocation() === null) {
+                $privacy->setMenuLocation('footer');
+                $privacy->setMenuSortOrder(0);
+            }
+            $cookies = $pageRepo->findOneBy(['slug' => 'cookies']);
+            if ($cookies instanceof \Modules\Cms\Domain\Page && $cookies->menuLocation() === null) {
+                $cookies->setMenuLocation('footer');
+                $cookies->setMenuSortOrder(1);
             }
 
-            $footer = $menuRepo->findOneBy(['location' => 'footer']);
-            if ($footer === null) {
-                $footer = new \Modules\Cms\Domain\SiteMenu('Patička', 'footer');
-                $this->em->persist($footer);
-                $this->em->flush();
-                $privacy = $pageRepo->findOneBy(['slug' => 'ochrana-osobnich-udaju']);
-                $cookies = $pageRepo->findOneBy(['slug' => 'cookies']);
-                $i = 0;
-                if ($privacy !== null) {
-                    $item = new \Modules\Cms\Domain\SiteMenuItem($footer->id(), 'Ochrana osobních údajů', $i++);
-                    $item->setPageId($privacy->id());
-                    $this->em->persist($item);
-                }
-                if ($cookies !== null) {
-                    $item = new \Modules\Cms\Domain\SiteMenuItem($footer->id(), 'Cookies', $i++);
-                    $item->setPageId($cookies->id());
-                    $this->em->persist($item);
-                }
-                $item = new \Modules\Cms\Domain\SiteMenuItem($footer->id(), 'Napsat e-mail', $i);
-                $item->setUrl('mailto:info@realestates.cz');
-                $this->em->persist($item);
+            if ($linkRepo->findOneBy(['url' => '/?offer=sale']) === null) {
+                $sale = new \Modules\Cms\Domain\NavLink('Koupit', '/?offer=sale');
+                $sale->setStatus('published');
+                $sale->setMenuLocations(['header']);
+                $sale->setMenuSortOrder(0);
+                $this->em->persist($sale);
+            }
+            if ($linkRepo->findOneBy(['url' => '/?offer=rent']) === null) {
+                $rent = new \Modules\Cms\Domain\NavLink('Pronajmout', '/?offer=rent');
+                $rent->setStatus('published');
+                $rent->setMenuLocations(['header']);
+                $rent->setMenuSortOrder(1);
+                $this->em->persist($rent);
+            }
+            if ($linkRepo->findOneBy(['url' => 'mailto:info@realestates.cz']) === null) {
+                $mail = new \Modules\Cms\Domain\NavLink('Napsat e-mail', 'mailto:info@realestates.cz');
+                $mail->setStatus('published');
+                $mail->setMenuLocations(['footer']);
+                $mail->setMenuSortOrder(2);
+                $this->em->persist($mail);
             }
         }
 
         $this->em->flush();
-        $log[] = 'Cms: stránky (home/o-nas/cookies/GDPR/draft) + menu pro storefront.';
+        $log[] = 'Cms: stránky (home/o-nas/cookies/GDPR/draft) + navigace pro storefront.';
     }
 
     /** @param \Doctrine\ORM\EntityRepository<\Modules\Cms\Domain\Page> $pageRepo */

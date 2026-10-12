@@ -5,7 +5,8 @@
  *   .btn                    default (bordered)
  *   .btn--primary           filled signal
  *   .btn--dashed            dashed border
- *   .btn--text / .btn--ghost  text button
+ *   .btn--text              text button (no chrome)
+ *   .btn--ghost             transparent + border
  *   .btn--link              link
  *   .btn--danger            danger filled
  *   .btn--danger-outline    danger bordered
@@ -131,9 +132,7 @@
         border-style: dashed;
     }
 
-    .btn--text,
-    .btn--ghost,
-    .btn-ghost {
+    .btn--text {
         --btn-bg: transparent;
         --btn-fg: var(--text);
         --btn-border: transparent;
@@ -141,6 +140,19 @@
         --btn-hover-fg: var(--text);
         --btn-hover-border: transparent;
         --btn-active-bg: color-mix(in srgb, var(--text) 10%, transparent);
+        box-shadow: none;
+    }
+
+    /* Ghost = bordered transparent (secondary chrome). Text stays chrome-less. */
+    .btn--ghost,
+    .btn-ghost {
+        --btn-bg: transparent;
+        --btn-fg: var(--text);
+        --btn-border: var(--border);
+        --btn-hover-bg: var(--hover-strong);
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: color-mix(in srgb, var(--text) 28%, var(--border));
+        --btn-active-bg: color-mix(in srgb, var(--text) 8%, transparent);
         box-shadow: none;
     }
 

@@ -64,7 +64,11 @@ final class Branding
         $cream = $this->hex('brand.color_cream', self::DEFAULT_CREAM);
         $sitePrimary = $this->hex('brand.site_primary', self::DEFAULT_SITE_PRIMARY);
 
+        // Public site name comes from Brand (Značka); cms.site_title is legacy fallback only.
         $siteName = $this->string('brand.site_name', '');
+        if ($siteName === '') {
+            $siteName = $this->string('brand.name', '');
+        }
         if ($siteName === '') {
             $cmsTitle = $this->string('cms.site_title', '');
             if ($cmsTitle !== '' && $cmsTitle !== 'GEREQ Site') {
@@ -169,12 +173,21 @@ final class Branding
 
     /**
      * Documented tokens for the CSS editor (admin vs public storefront).
+     * Public color defaults come from Brand (Značka); custom CSS overrides chip swatches.
      *
      * @return array{admin: list<array{name: string, value: string, hint: string}>, public: list<array{name: string, value: string, hint: string}>}
      */
     public function documentedVariables(): array
     {
         $b = $this->resolve();
+        $public = $this->publicCssDefaults($b);
+        $fromCss = $this->parseCssCustomProperties($b['custom_css_public']);
+        foreach ($public as $i => $item) {
+            $name = $item['name'];
+            if (isset($fromCss[$name]) && $fromCss[$name] !== '') {
+                $public[$i]['value'] = $fromCss[$name];
+            }
+        }
 
         return [
             'admin' => [
@@ -188,29 +201,117 @@ final class Branding
                 ['name' => '--gereq-signal', 'value' => $b['color_signal'], 'hint' => 'Token signal'],
                 ['name' => '--brand-ink', 'value' => $b['color_ink'], 'hint' => 'Brand ink (konstanta)'],
                 ['name' => '--brand-cream', 'value' => $b['color_cream'], 'hint' => 'Brand cream (konstanta)'],
-                ['name' => '--gereq-ink', 'value' => 'theme', 'hint' => 'UI ink / text (theme)'],
-                ['name' => '--gereq-cream', 'value' => 'theme', 'hint' => 'UI cream (theme)'],
-                ['name' => '--gereq-paper', 'value' => 'theme', 'hint' => 'Paper surface (theme)'],
-                ['name' => '--background', 'value' => 'theme', 'hint' => 'Pozadí stránky'],
-                ['name' => '--surface', 'value' => 'theme', 'hint' => 'Karty / panely'],
-                ['name' => '--text', 'value' => 'theme', 'hint' => 'Hlavní text'],
-                ['name' => '--text-muted', 'value' => 'theme', 'hint' => 'Vedlejší text'],
-                ['name' => '--border', 'value' => 'theme', 'hint' => 'Ohraničení'],
+                ['name' => '--gereq-ink', 'value' => $b['color_ink'], 'hint' => 'UI ink / text'],
+                ['name' => '--gereq-cream', 'value' => $b['color_cream'], 'hint' => 'UI cream'],
+                ['name' => '--gereq-paper', 'value' => $b['color_cream'], 'hint' => 'Paper surface'],
+                ['name' => '--background', 'value' => $b['color_cream'], 'hint' => 'Pozadí stránky'],
+                ['name' => '--surface', 'value' => $this->mixHex($b['color_cream'], '#ffffff', 0.35), 'hint' => 'Karty / panely'],
+                ['name' => '--text', 'value' => $b['color_ink'], 'hint' => 'Hlavní text'],
+                ['name' => '--text-muted', 'value' => $this->mixHex($b['color_ink'], $b['color_cream'], 0.45), 'hint' => 'Vedlejší text'],
+                ['name' => '--border', 'value' => $this->mixHex($b['color_ink'], $b['color_cream'], 0.78), 'hint' => 'Ohraničení'],
             ],
-            'public' => [
-                ['name' => '--color-brand-50', 'value' => 'scale', 'hint' => 'Nejsvětlejší brand'],
-                ['name' => '--color-brand-600', 'value' => $b['site_primary'], 'hint' => 'Brand střed'],
-                ['name' => '--color-brand-700', 'value' => $b['site_primary'], 'hint' => 'Primární barva webu'],
-                ['name' => '--color-brand-900', 'value' => 'scale', 'hint' => 'Nejtmavší brand'],
-                ['name' => '--color-paper', 'value' => '#f5f6f8', 'hint' => 'Pozadí stránky'],
-                ['name' => '--color-surface', 'value' => '#ffffff', 'hint' => 'Karty'],
-                ['name' => '--color-ink-600', 'value' => '#545e70', 'hint' => 'Text muted'],
-                ['name' => '--color-ink-900', 'value' => '#1b202b', 'hint' => 'Hlavní text'],
-                ['name' => '--font-sans', 'value' => 'Archivo', 'hint' => 'Základní font'],
-                ['name' => '--radius-card', 'value' => '0.75rem', 'hint' => 'Radius karet'],
-                ['name' => '--radius-control', 'value' => '0.5rem', 'hint' => 'Radius inputů'],
-            ],
+            'public' => $public,
         ];
+    }
+
+    /**
+     * Default public FE tokens from Brand settings (before custom CSS).
+     *
+     * @param array{site_primary: string, color_ink: string, color_cream: string, color_on_signal: string} $b
+     * @return list<array{name: string, value: string, hint: string}>
+     */
+    private function publicCssDefaults(array $b): array
+    {
+        $primary = $b['site_primary'];
+        $ink = $b['color_ink'];
+        $cream = $b['color_cream'];
+        // Dark public sites use ink as paper; light sites use cream.
+        $paperLuma = $this->hexLuma($ink);
+        $paper = $paperLuma < 0.45 ? $ink : $cream;
+        $surface = $paperLuma < 0.45
+            ? $this->mixHex($ink, '#ffffff', 0.08)
+            : $this->mixHex($cream, '#ffffff', 0.55);
+        $ink900 = $this->contrastOn($paper);
+        $ink600 = $this->mixHex($ink900, $paper, 0.42);
+
+        return [
+            ['name' => '--color-brand-50', 'value' => $this->mixHex($primary, '#ffffff', 0.88), 'hint' => 'Nejsvětlejší brand'],
+            ['name' => '--color-brand-600', 'value' => $this->mixHex($primary, '#000000', 0.08), 'hint' => 'Brand střed'],
+            ['name' => '--color-brand-700', 'value' => $primary, 'hint' => 'Primární barva webu (Značka)'],
+            ['name' => '--color-brand-900', 'value' => $this->mixHex($primary, '#000000', 0.42), 'hint' => 'Nejtmavší brand'],
+            ['name' => '--color-paper', 'value' => $paper, 'hint' => 'Pozadí stránky'],
+            ['name' => '--color-surface', 'value' => $surface, 'hint' => 'Karty'],
+            ['name' => '--color-ink-600', 'value' => $ink600, 'hint' => 'Text muted'],
+            ['name' => '--color-ink-900', 'value' => $ink900, 'hint' => 'Hlavní text'],
+            ['name' => '--font-sans', 'value' => 'Archivo', 'hint' => 'Základní font'],
+            ['name' => '--radius-card', 'value' => '0.75rem', 'hint' => 'Radius karet'],
+            ['name' => '--radius-control', 'value' => '0.5rem', 'hint' => 'Radius inputů'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function parseCssCustomProperties(string $css): array
+    {
+        if ($css === '') {
+            return [];
+        }
+        $out = [];
+        if (preg_match_all('/(--[a-zA-Z0-9_-]+)\s*:\s*([^;}+{]+);/u', $css, $matches, PREG_SET_ORDER) === false) {
+            return [];
+        }
+        foreach ($matches as $match) {
+            $name = trim($match[1]);
+            $value = trim($match[2]);
+            if ($name === '' || $value === '' || str_starts_with($value, '/*')) {
+                continue;
+            }
+            $out[$name] = $value;
+        }
+
+        return $out;
+    }
+
+    private function mixHex(string $from, string $to, float $amount): string
+    {
+        $a = $this->hexToRgb($from);
+        $b = $this->hexToRgb($to);
+        if ($a === null || $b === null) {
+            return $from;
+        }
+        $t = max(0.0, min(1.0, $amount));
+        $r = (int) round($a[0] + ($b[0] - $a[0]) * $t);
+        $g = (int) round($a[1] + ($b[1] - $a[1]) * $t);
+        $bl = (int) round($a[2] + ($b[2] - $a[2]) * $t);
+
+        return sprintf('#%02x%02x%02x', $r, $g, $bl);
+    }
+
+    /** @return array{0: int, 1: int, 2: int}|null */
+    private function hexToRgb(string $hex): ?array
+    {
+        $hex = ltrim(trim($hex), '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if (preg_match('/^[0-9a-fA-F]{6}$/', $hex) !== 1) {
+            return null;
+        }
+
+        return [
+            (int) hexdec(substr($hex, 0, 2)),
+            (int) hexdec(substr($hex, 2, 2)),
+            (int) hexdec(substr($hex, 4, 2)),
+        ];
+    }
+
+    private function hexLuma(string $hex): float
+    {
+        $rgb = $this->hexToRgb($hex);
+        if ($rgb === null) {
+            return 0.5;
+        }
+
+        return (0.2126 * $rgb[0] + 0.7152 * $rgb[1] + 0.0722 * $rgb[2]) / 255;
     }
 
     private function sanitizeCss(string $raw): string

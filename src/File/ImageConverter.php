@@ -20,7 +20,7 @@ final class ImageConverter
     ];
 
     public function __construct(
-        private readonly int $avifQuality = 55,
+        private readonly int $avifQuality = 90,
         private readonly int $webpQuality = 90,
     ) {
     }

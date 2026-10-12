@@ -516,9 +516,10 @@ form > .table,
     color: var(--text);
 }
 .toolbar__toggle.is-on {
-    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-    background: color-mix(in srgb, var(--primary) 16%, var(--surface));
-    color: var(--text);
+    /* Solid primary (no color-mix — LightningCSS collapses mixes to var(--primary)). */
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-fg);
 }
 .toolbar__toggle .g-icon {
     font-size: 1.1rem;

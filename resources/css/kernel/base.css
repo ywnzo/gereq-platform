@@ -232,8 +232,9 @@ html[data-theme="gereq-dark"] {
 }
 
 .material-symbols-outlined,
+.material-symbols-rounded,
+.material-symbols-sharp,
 .g-icon {
-    font-family: 'Material Symbols Outlined', sans-serif;
     font-weight: 400;
     font-style: normal;
     font-size: 1.25rem;
@@ -257,6 +258,16 @@ html[data-theme="gereq-dark"] {
     user-select: none;
     flex-shrink: 0;
     vertical-align: middle;
+}
+.material-symbols-outlined,
+.g-icon {
+    font-family: 'Material Symbols Outlined', sans-serif;
+}
+.material-symbols-rounded {
+    font-family: 'Material Symbols Rounded', sans-serif;
+}
+.material-symbols-sharp {
+    font-family: 'Material Symbols Sharp', sans-serif;
 }
 .nav-item__icon .g-icon { font-size: 1.35rem; }
 .icon-btn .g-icon { font-size: 1.25rem; }
