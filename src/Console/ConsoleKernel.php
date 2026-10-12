@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Gereq\Console;
 
+use Gereq\Foundation\Application;
 use Gereq\Schedule\ScheduleCommandResolver;
 use Gereq\Support\AppVersion;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 
-final class ConsoleKernel
+final readonly class ConsoleKernel
 {
-    public function __construct(private readonly ContainerInterface $container)
+    public function __construct(private ContainerInterface $container)
     {
     }
 
