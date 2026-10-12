@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\Test;
 final class GravatarTest extends TestCase
 {
     #[Test]
-    public function it_hashes_normalized_email(): void
+    public function itHashesNormalizedEmail(): void
     {
         self::assertSame(
             md5('jane@example.com'),
@@ -20,7 +20,7 @@ final class GravatarTest extends TestCase
     }
 
     #[Test]
-    public function it_builds_gravatar_url(): void
+    public function itBuildsGravatarUrl(): void
     {
         $url = Gravatar::url('jane@example.com', 64);
 
@@ -31,7 +31,7 @@ final class GravatarTest extends TestCase
     }
 
     #[Test]
-    public function it_clamps_size_and_handles_empty_email(): void
+    public function itClampsSizeAndHandlesEmptyEmail(): void
     {
         $url = Gravatar::url(null, 0);
 

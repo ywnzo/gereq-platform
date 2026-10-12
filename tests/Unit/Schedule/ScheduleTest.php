@@ -103,12 +103,17 @@ final class ScheduleTest extends TestCase
         if (!is_dir($path)) {
             return;
         }
-        foreach (scandir($path) ?: [] as $item) {
+        $items = scandir($path);
+        foreach ($items === false ? [] : $items as $item) {
             if ($item === '.' || $item === '..') {
                 continue;
             }
             $full = $path . '/' . $item;
-            is_dir($full) ? $this->deleteTree($full) : unlink($full);
+            if (is_dir($full)) {
+                $this->deleteTree($full);
+            } else {
+                unlink($full);
+            }
         }
         rmdir($path);
     }

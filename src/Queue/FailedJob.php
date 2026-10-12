@@ -49,9 +49,8 @@ class FailedJob
         string $queue = 'default',
         string $job = '',
         string $uuid = '',
-        int    $attempts = 1,
-    )
-    {
+        int $attempts = 1
+    ) {
         $this->id = Uuid::uuid7()->toString();
         $this->payload = $payload;
         $this->payloadHash = hash('sha256', $payload);

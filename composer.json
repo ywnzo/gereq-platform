@@ -51,7 +51,8 @@
             "Integrations\\": "integrations/"
         },
         "files": [
-            "src/Support/helpers.php"
+            "src/Support/helpers.php",
+            "src/Support/legacy_aliases.php"
         ]
     },
     "autoload-dev": {

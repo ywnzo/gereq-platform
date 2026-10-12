@@ -24,7 +24,8 @@ final class CliEnvFileTest extends TestCase
     protected function tearDown(): void
     {
         CliEnvFile::reset();
-        foreach (glob($this->tmpDir . '/{.*,*}', GLOB_BRACE) ?: [] as $file) {
+        $files = glob($this->tmpDir . '/{.*,*}', GLOB_BRACE);
+        foreach ($files === false ? [] : $files as $file) {
             if (is_file($file)) {
                 unlink($file);
             }

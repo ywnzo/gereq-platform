@@ -285,5 +285,4 @@ final class AdminRoutesRegistrar
         $this->dashboard->addWidget(new SettingsShortcutWidget($this->twig, $this->translator, $this->router));
         $this->dashboard->addWidget(new SearchHeroWidget($this->twig, $this->translator));
     }
-
 }

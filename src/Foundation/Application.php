@@ -229,7 +229,7 @@ final class Application
             FailedJobStore::class => autowire(),
             \Gereq\Queue\JobRunStore::class => autowire(),
             Queue::class => factory(static function (
-                Repository     $config,
+                Repository $config,
                 FailedJobStore $failed,
                 \Gereq\Queue\JobRunStore $runs,
             ) use ($basePath): Queue {

@@ -53,7 +53,7 @@ final class StorefrontRebuildTest extends TestCase
 
         self::assertFalse($result['ok']);
         self::assertNotNull($result['error']);
-        self::assertStringContainsString('storefront.path', (string) $result['error']);
+        self::assertStringContainsString('storefront.path', $result['error']);
     }
 
     private function makeRebuild(?string $basePath = null): StorefrontRebuild

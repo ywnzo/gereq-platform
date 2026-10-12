@@ -1361,18 +1361,18 @@ SVG;
         if (class_exists(\Modules\Cms\Domain\NavLink::class)) {
             $linkRepo = $this->em->getRepository(\Modules\Cms\Domain\NavLink::class);
             $aboutPage = $pageRepo->findOneBy(['slug' => 'o-nas']);
-            if ($aboutPage instanceof \Modules\Cms\Domain\Page && $aboutPage->menuLocation() === null) {
-                $aboutPage->setMenuLocation('header');
+            if ($aboutPage instanceof \Modules\Cms\Domain\Page && $aboutPage->menuLocations() === []) {
+                $aboutPage->setMenuLocations(['header']);
                 $aboutPage->setMenuSortOrder(2);
             }
             $privacy = $pageRepo->findOneBy(['slug' => 'ochrana-osobnich-udaju']);
-            if ($privacy instanceof \Modules\Cms\Domain\Page && $privacy->menuLocation() === null) {
-                $privacy->setMenuLocation('footer');
+            if ($privacy instanceof \Modules\Cms\Domain\Page && $privacy->menuLocations() === []) {
+                $privacy->setMenuLocations(['footer']);
                 $privacy->setMenuSortOrder(0);
             }
             $cookies = $pageRepo->findOneBy(['slug' => 'cookies']);
-            if ($cookies instanceof \Modules\Cms\Domain\Page && $cookies->menuLocation() === null) {
-                $cookies->setMenuLocation('footer');
+            if ($cookies instanceof \Modules\Cms\Domain\Page && $cookies->menuLocations() === []) {
+                $cookies->setMenuLocations(['footer']);
                 $cookies->setMenuSortOrder(1);
             }
 
@@ -1627,5 +1627,4 @@ SVG;
         $this->em->remove($entry);
         $this->em->flush();
     }
-
 }

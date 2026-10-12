@@ -84,7 +84,8 @@ final class QueueTest extends TestCase
         if (!is_dir($path)) {
             return;
         }
-        $items = scandir($path) ?: [];
+        $scanned = scandir($path);
+        $items = $scanned === false ? [] : $scanned;
         foreach ($items as $item) {
             if ($item === '.' || $item === '..') {
                 continue;

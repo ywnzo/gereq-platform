@@ -36,13 +36,13 @@ final class CliEnvFile
      * Resolve the env file path for $basePath, stripping `config.env=` / `--config.env=` from argv.
      *
      * @param list<string>|null $argv Defaults to $_SERVER['argv']; mutated in place when provided or when using globals
+     * @param-out list<string> $argv
      */
     public static function resolve(string $basePath, ?array &$argv = null): string
     {
         $basePath = rtrim($basePath, '/');
         $useGlobals = $argv === null;
         if ($useGlobals) {
-            /** @var list<string> $argv */
             $argv = array_values(array_map(static fn (mixed $v): string => (string) $v, $_SERVER['argv'] ?? []));
         }
 
