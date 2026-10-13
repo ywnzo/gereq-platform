@@ -85,6 +85,7 @@ final class EntityManagerFactory
         }
 
         $connection = DriverManager::getConnection($this->params(), $setup);
+        $connection->getDatabasePlatform()->registerDoctrineTypeMapping('tsvector', 'text');
 
         return new EntityManager($connection, $setup);
     }
