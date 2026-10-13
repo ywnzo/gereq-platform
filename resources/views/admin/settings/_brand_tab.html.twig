@@ -16,9 +16,9 @@
     libraryImages: libraryImages|default([])
 } %}
 
-<div class="grq-grid grq-grid--split" x-data="settingsBrandPreview">
-    <div class="detail-stack">
-        <section class="panel">
+<div class="brand-settings" x-data="settingsBrandPreview">
+    <div class="brand-settings__fields">
+        <section class="panel brand-settings__section brand-settings__section--identity">
             <header class="panel__head">
                 <div>
                     <h2>{{ 'settings.brand.section.identity'|trans }}</h2>
@@ -32,7 +32,7 @@
                     {% endif %}
                 {% endfor %}
             </div>
-            <div class="form-grid">
+            <div class="form-grid brand-settings__assets">
                 {% for key in ['brand.logo_url', 'brand.favicon_url'] %}
                     {% if byKey[key] is defined %}
                         {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
@@ -41,7 +41,7 @@
             </div>
         </section>
 
-        <section class="panel">
+        <section class="panel brand-settings__section brand-settings__section--colors">
             <header class="panel__head panel__head--actions">
                 <div>
                     <h2>{{ 'settings.brand.section.colors'|trans }}</h2>
@@ -61,7 +61,7 @@
             <p class="field__hint">{{ 'settings.brand.generate_style.hint'|trans }}</p>
         </section>
 
-        <section class="panel">
+        <section class="panel brand-settings__section brand-settings__section--public">
             <header class="panel__head">
                 <div>
                     <h2>{{ 'settings.brand.section.public'|trans }}</h2>
@@ -80,13 +80,14 @@
             </div>
         </section>
 
-        <section class="panel">
-            <header class="panel__head">
+        <details class="panel brand-settings__section brand-settings__section--css">
+            <summary class="panel__head brand-settings__advanced">
                 <div>
-                    <h2>{{ 'settings.brand.section.css'|trans }}</h2>
+                    <span class="brand-settings__advanced-title">{{ 'settings.brand.section.css'|trans }}</span>
                     <p class="muted">{{ 'settings.brand.section.css.help'|trans }}</p>
                 </div>
-            </header>
+                <span class="material-symbols-outlined g-icon brand-settings__chevron" aria-hidden="true">keyboard_arrow_down</span>
+            </summary>
             {% if byKey['brand.custom_css'] is defined %}
                 {% set item = byKey['brand.custom_css'] %}
                 {% set key = item.key %}
@@ -94,10 +95,10 @@
                 {% set field = key|replace({'.': '__'}) %}
                 {% include 'admin/settings/_css_editor.html.twig' %}
             {% endif %}
-        </section>
+        </details>
     </div>
 
-    <aside class="grq-aside" aria-label="{{ 'settings.preview'|trans }}">
+    <aside class="brand-settings__preview" aria-label="{{ 'settings.preview'|trans }}">
         <section class="panel">
             <header class="panel__head">
                 <div>
