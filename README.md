@@ -28,7 +28,7 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 
 ## Instalace
 
-Clone (moduly jsou **git submodules** → `gereq/module-<id>`):
+Clone (moduly jsou **git submodules** → `gereq/module-<id>`; dockerless → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) v `dev/dockerless`):
 
 ```bash
 git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
@@ -73,13 +73,24 @@ php gereq serve
 
 ### Bez Dockeru (immutable OS / jen `/home`)
 
+Skripty jsou v samostatném repu [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) (v tomto checkoutu submodule `dev/dockerless`).
+
 ```bash
+git submodule update --init --recursive dev/dockerless
 ./dev/dockerless/install.sh --fresh
 ./dev/dockerless/serve.sh
 # volitelně nginx+php-fpm v $HOME:  ./dev/dockerless/serve.sh --mode=nginx
 ```
 
-Detail: [`docs/development/dockerless.md`](docs/development/dockerless.md).
+Standalone (vedle platformy):
+
+```bash
+git clone git@git.gereq.cz:gereq/dockerless.git
+export GEREQ_ROOT=/path/to/GEREQ_PLATFORM
+./dockerless/install.sh --fresh
+```
+
+Detail: [`docs/development/dockerless.md`](docs/development/dockerless.md) · [README dockerless](https://git.gereq.cz/gereq/dockerless/-/blob/main/README.md).
 
 Administrace: [http://127.0.0.1:8080/admin](http://127.0.0.1:8080/admin)
 
