@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Extra safety on push: refuse deleting protected branch refs, block force-push
-# to protected branches, then run the quality pipeline (same gate as CI).
+# to protected branches, then run quality on PHP files in the push range.
+# Analysis failures MUST block the push (GEREQ_HOOKS_SKIP_QUALITY is ignored here).
 set -euo pipefail
 
 HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -30,19 +31,19 @@ is_protected_branch() {
 
 zero="0000000000000000000000000000000000000000"
 pushing_commits=0
+changed_paths_file="$(mktemp)"
+trap 'rm -f "$changed_paths_file"' EXIT
 
 while read -r local_ref local_sha remote_ref remote_sha; do
   [[ -z "${local_ref:-}" ]] && continue
 
   remote_branch="${remote_ref#refs/heads/}"
 
-  # Deleting a protected branch on the remote.
   if [[ "$local_sha" == "$zero" ]] && is_protected_branch "$remote_branch"; then
     fail "refusing to delete protected remote branch '$remote_branch' on ${remote:-remote}"
     continue
   fi
 
-  # Non-fast-forward / force update to a protected branch.
   if [[ "$remote_sha" != "$zero" && "$local_sha" != "$zero" ]] && is_protected_branch "$remote_branch"; then
     if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
       fail "non-fast-forward update to protected branch '$remote_branch' (force-push?). Use an explicit recovery procedure."
@@ -50,9 +51,9 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     fi
   fi
 
-  # Any update that sends commit object(s) (branch or tag).
   if [[ "$local_sha" != "$zero" ]]; then
     pushing_commits=1
+    quality_append_push_paths "$changed_paths_file" "${remote:-origin}" "$local_sha" "$remote_sha"
   fi
 done
 
@@ -62,17 +63,22 @@ if [[ "$errors" -gt 0 ]]; then
   exit 1
 fi
 
-# ---------------------------------------------------------------------------
-# Quality pipeline — mirrors .gitlab-ci.yml (test + analyse) / AGENTS.md gate
-#   composer test && composer phpstan && composer phpstan:tests && composer cs
-# Override: GEREQ_HOOKS_QUALITY=analyse|cs|off  or  GEREQ_HOOKS_SKIP_QUALITY=1
-# ---------------------------------------------------------------------------
+# Default: quality on files in this push. Full CI suite: GEREQ_HOOKS_QUALITY=full
+# SKIP_QUALITY / QUALITY=off are ignored on push — only GEREQ_HOOKS_SKIP=1 bypasses.
 if [[ "$pushing_commits" -eq 1 ]]; then
-  quality_mode="$(quality_mode_requested full)"
-  if ! quality_run_pipeline "$quality_mode"; then
-    hook_info "pre-push: quality pipeline failed (mode=$quality_mode)."
-    hook_info "pre-push: fix locally, or GEREQ_HOOKS_SKIP_QUALITY=1 git push ... (repo guards still run)."
-    hook_info "pre-push: full emergency bypass: GEREQ_HOOKS_SKIP=1 git push ..."
+  quality_mode="$(quality_mode_requested changed push)"
+
+  # Empty path list (shallow clone / odd refs) must not silently skip analysis.
+  if [[ ! -s "$changed_paths_file" ]]; then
+    hook_info "pre-push: no paths resolved in push range — falling back to full analyse (phpstan + phpstan:tests)"
+    quality_mode="analyse"
+  fi
+
+  if ! quality_run_pipeline "$quality_mode" "$changed_paths_file"; then
+    hook_info "pre-push: quality FAILED (mode=$quality_mode) — push blocked."
+    hook_info "pre-push: fix locally (composer phpstan / composer phpstan:tests / composer cs)."
+    hook_info "pre-push: full suite like CI: GEREQ_HOOKS_QUALITY=full git push"
+    hook_info "pre-push: emergency bypass only: GEREQ_HOOKS_SKIP=1 git push ..."
     exit 1
   fi
 fi

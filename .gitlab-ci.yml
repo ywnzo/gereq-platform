@@ -1,6 +1,12 @@
 # GEREQ Platform — testing engine (php bin/gereq-test)
 #
-# Jobs:
+# Pipelines:
+#   branch push  — quality:changed only (phpcs → phpstan → phpstan:tests → phpunit
+#                  on PHP in range; bunx tsc + bun run build when JS/TS surface touched;
+#                  same as local hooks)
+#   merge request / tag — full suite below
+#
+# Full jobs:
 #   test:modules         — every modules/*/Tests (+ ModuleStructure)
 #   test:core            — platform unit tests (tests/Unit except Modules/)
 #   test:core-modules    — core then modules in one job
@@ -8,6 +14,7 @@
 #   analyse:phpstan        — PHPStan level 5 (src + modules + tests, baseline)
 #   analyse:phpstan-tests  — PHPStan level 6 + strict-rules (src/Testing + tests)
 #   analyse:cs             — PSR-12 + strict_types (src + modules + tests)
+#   analyse:js             — bunx tsc --noEmit + bun run build (platform frontend)
 #
 # Submodules use relative URLs (../module-*.git) so the job inherits CI_REPOSITORY_URL
 # (http://gitlab/... on the runner network). Module projects must allow inbound
@@ -26,6 +33,7 @@ stages:
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.composer-cache"
+  BUN_INSTALL: "$CI_PROJECT_DIR/.bun"
 
 default:
   image: php:8.4-cli-bookworm
@@ -34,15 +42,18 @@ default:
     key:
       files:
         - composer.lock
+        - bun.lock
     paths:
       - .composer-cache/
       - vendor/
+      - .bun/
+      - node_modules/
     policy: pull-push
 
 .composer_setup:
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq --no-install-recommends git unzip libzip-dev libsqlite3-dev $PHPIZE_DEPS
+    - apt-get install -y -qq --no-install-recommends git unzip curl ca-certificates libzip-dev libsqlite3-dev $PHPIZE_DEPS
     - docker-php-ext-install -j$(nproc) zip pdo_sqlite
     - |
       if ! command -v composer >/dev/null 2>&1; then
@@ -51,8 +62,79 @@ default:
     # Unit tests are DB-free (sqlite :memory:); redis/gd not needed for these targets.
     - composer install --no-interaction --prefer-dist --no-progress --ignore-platform-req=ext-redis --ignore-platform-req=ext-gd
 
+.bun_setup:
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends curl ca-certificates unzip
+    - |
+      export BUN_INSTALL="${CI_PROJECT_DIR}/.bun"
+      export PATH="${BUN_INSTALL}/bin:${PATH}"
+      if ! command -v bun >/dev/null 2>&1; then
+        curl -fsSL https://bun.sh/install | bash
+      fi
+    - export BUN_INSTALL="${CI_PROJECT_DIR}/.bun"
+    - export PATH="${BUN_INSTALL}/bin:${PATH}"
+    - bun --version
+    - bun install --frozen-lockfile
+
+.composer_and_bun_setup:
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends git unzip curl ca-certificates libzip-dev libsqlite3-dev $PHPIZE_DEPS
+    - docker-php-ext-install -j$(nproc) zip pdo_sqlite
+    - |
+      if ! command -v composer >/dev/null 2>&1; then
+        curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      fi
+    - composer install --no-interaction --prefer-dist --no-progress --ignore-platform-req=ext-redis --ignore-platform-req=ext-gd
+    - |
+      export BUN_INSTALL="${CI_PROJECT_DIR}/.bun"
+      export PATH="${BUN_INSTALL}/bin:${PATH}"
+      if ! command -v bun >/dev/null 2>&1; then
+        curl -fsSL https://bun.sh/install | bash
+      fi
+    - export BUN_INSTALL="${CI_PROJECT_DIR}/.bun"
+    - export PATH="${BUN_INSTALL}/bin:${PATH}"
+    - bun --version
+    - bun install --frozen-lockfile
+
+# Branch / MR / tag selectors (full suite only on MR + tags).
+.rules_branch_push:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+.rules_mr_or_tag:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_TAG
+
+# ---------------------------------------------------------------------------
+# Branch push — incremental (changed PHP + JS/TS; mirrors local git hooks)
+# ---------------------------------------------------------------------------
+quality:changed:
+  extends:
+    - .composer_and_bun_setup
+    - .rules_branch_push
+  stage: test
+  variables:
+    # Need before/merge-base commits for a reliable remote..local-style diff.
+    GIT_DEPTH: 0
+  script:
+    - export BUN_INSTALL="${CI_PROJECT_DIR}/.bun"
+    - export PATH="${BUN_INSTALL}/bin:${PATH}"
+    - bash scripts/ci-quality-changed.sh
+
+# ---------------------------------------------------------------------------
+# Merge request / tag — full CI gate
+# ---------------------------------------------------------------------------
 .test_job:
-  extends: .composer_setup
+  extends:
+    - .composer_setup
+    - .rules_mr_or_tag
   stage: test
   script:
     - php bin/gereq-test "$TEST_TARGET"
@@ -69,7 +151,9 @@ test:core:
 
 # Combined gate: core + all modules (two engine invocations, one CI job).
 test:core-modules:
-  extends: .composer_setup
+  extends:
+    - .composer_setup
+    - .rules_mr_or_tag
   stage: test
   script:
     - php bin/gereq-test core
@@ -77,26 +161,45 @@ test:core-modules:
 
 # N+1 detector + QueryAssertions (core Debug tests + ModuleStructure QueryHygiene).
 test:query-hygiene:
-  extends: .composer_setup
+  extends:
+    - .composer_setup
+    - .rules_mr_or_tag
   stage: test
   script:
     - php bin/gereq-test core --filter='NPlusOne|QueryCollector|QueryHygiene'
     - php bin/gereq-test modules --filter='QueryHygiene|NPlusOne'
 
 analyse:phpstan:
-  extends: .composer_setup
+  extends:
+    - .composer_setup
+    - .rules_mr_or_tag
   stage: analyse
   script:
     - composer phpstan
 
 analyse:phpstan-tests:
-  extends: .composer_setup
+  extends:
+    - .composer_setup
+    - .rules_mr_or_tag
   stage: analyse
   script:
     - composer phpstan:tests
 
 analyse:cs:
-  extends: .composer_setup
+  extends:
+    - .composer_setup
+    - .rules_mr_or_tag
   stage: analyse
   script:
     - composer cs
+
+analyse:js:
+  extends:
+    - .bun_setup
+    - .rules_mr_or_tag
+  stage: analyse
+  script:
+    - export BUN_INSTALL="${CI_PROJECT_DIR}/.bun"
+    - export PATH="${BUN_INSTALL}/bin:${PATH}"
+    - bunx tsc --noEmit
+    - bun run build

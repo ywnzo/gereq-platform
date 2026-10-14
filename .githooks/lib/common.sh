@@ -86,3 +86,23 @@ is_blocked_junk_path() {
 max_blob_bytes() {
   echo "${GEREQ_HOOKS_MAX_BYTES:-5242880}"
 }
+
+# Prebuilt grq CLI binaries are intentionally tracked under bin/dist/ (~12 MiB each).
+# Still capped (default 20 MiB) so accidental huge dumps stay blocked.
+# Override with GEREQ_HOOKS_MAX_BYTES_DIST.
+max_dist_blob_bytes() {
+  echo "${GEREQ_HOOKS_MAX_BYTES_DIST:-20971520}"
+}
+
+# Return 0 if path is an allowed oversized blob (known shipped tooling).
+is_allowed_large_blob_path() {
+  local path="$1"
+  case "$path" in
+    bin/dist/grq-darwin-amd64|bin/dist/grq-darwin-arm64| \
+    bin/dist/grq-linux-amd64|bin/dist/grq-linux-arm64| \
+    bin/dist/grq-windows-amd64.exe|bin/dist/grq-windows-arm64.exe)
+      return 0
+      ;;
+  esac
+  return 1
+}

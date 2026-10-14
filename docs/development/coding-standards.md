@@ -70,7 +70,7 @@ Files: `resources/translations/messages.{cs,en}.php` (core), `modules/<Dir>/Reso
 | `audit.action.<action>` | audit log labels (`audit_action` Twig function) | `audit.action.module.enabled` |
 | `errors.<status>.*` | error pages | `errors.404.title` |
 
-Keys are lowercase, dot-separated, snake_case segments; the key is the identifier, never the Czech text (a few legacy literal-text keys like `'Akce'` still exist in menu groups). Placeholders use Symfony's `%name%` syntax. Regenerate the editor index after adding keys: `php tools/gereq-i18n/index-translations.php`.
+Keys are lowercase, dot-separated, snake_case segments; the key is the identifier, never the Czech text (a few legacy literal-text keys like `'Akce'` still exist in menu groups). Placeholders use Symfony's `%name%` syntax. Regenerate the editor index after adding keys: `php $GEREQ_TOOLS/gereq-i18n/index-translations.php` ([GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).
 
 ## Commits, versions and modules
 
@@ -81,6 +81,6 @@ Sources: `.cursor/rules/module-updates.mdc`, `README.md` ("Práce se submodulem"
 - **Any change in `modules/*` requires a version bump**: `module.php` `version` == `<Id>Module::version()` == git tag `vX.Y.Z`. Semver: patch = fix, minor = new feature or migration, major = breaking. `tests/Unit/Modules/ModuleStructure/ModuleManifestConsistencyTest.php` fails when manifest and class disagree.
 - After a bump the module's admin UI is blocked by `ModuleCurrentMiddleware` until the admin runs **Update**, which applies migrations and re-syncs permissions. Do not change modules "in place" without a bump, and do not rely on `php gereq migrate` as a substitute for the admin update.
 - Platform version lives in `VERSION` (read by `Gereq\Support\AppVersion`) and is shown in the console application banner and `php gereq about`.
-- `./tools/gereq-modules/gereq-modules.sh` (`--plain` for CI) checks that every submodule's local version matches a GitLab tag before release.
+- `./bin/grq modules status --plain` checks that every submodule's local version matches a GitLab tag before release. Pull / subset workflows: `grq modules pull`, `grq modules-git` — see [Tooling](../infrastructure/tooling.md#modules-pull-and-modules-git).
 
 Related: [Creating a module](creating-a-module.md), [Testing](testing.md), [Module system](../architecture/module-system.md).

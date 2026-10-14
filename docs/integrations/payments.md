@@ -128,7 +128,7 @@ Note: unlike Comgate/Stripe, GoPay's browser `return_url` points at the notify e
 
 ## Translations
 
-Each package ships `Resources/translations/messages.cs.php` and `messages.en.php` containing the module description (`module.<id>.description`) and setting labels/help texts (`<id>.settings.<field>`, `<id>.settings.<field>.help`). Keys are indexed by `tools/gereq-i18n` together with core and module catalogs.
+Each package ships `Resources/translations/messages.cs.php` and `messages.en.php` containing the module description (`module.<id>.description`) and setting labels/help texts (`<id>.settings.<field>`, `<id>.settings.<field>.help`). Keys are indexed by GEREQ_TOOLS `gereq-i18n` together with core and module catalogs.
 
 ## Related
 

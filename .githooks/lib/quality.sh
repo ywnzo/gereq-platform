@@ -1,31 +1,63 @@
 #!/usr/bin/env bash
-# Quality pipeline shared by git hooks — mirrors AGENTS.md gate and .gitlab-ci.yml.
+# Quality pipeline for git hooks (+ CI branch push via scripts/ci-quality-changed.sh).
+# By default only on changed PHP / JS-TS surface files.
+# Use GEREQ_HOOKS_QUALITY=full to mirror the MR/tag CI / AGENTS.md gate.
 # shellcheck shell=bash
 
 # Modes (GEREQ_HOOKS_QUALITY):
-#   full     — composer test + phpstan + phpstan:tests + cs  (default pre-push)
-#   analyse  — composer analyse (= phpstan + phpstan:tests + cs)
-#   cs       — composer cs only (default pre-commit when PHP staged)
+#   changed  — PHP tools on changed PHP + bunx tsc + bun run build when JS/TS surface touched
+#   full|ci  — composer test + phpstan + phpstan:tests + cs + JS/TS gate (entire tree)
+#   analyse  — composer analyse (entire tree; PHP only)
+#   cs       — phpcs only (changed files when a path list is provided)
 #   off|0|skip — skip quality checks
 
+# $1 = default mode
+# $2 = optional "push" — on push, GEREQ_HOOKS_SKIP_QUALITY is ignored (analyse must block push).
 quality_mode_requested() {
   local default_mode="$1"
+  local context="${2:-}"
   local raw="${GEREQ_HOOKS_QUALITY:-$default_mode}"
-  # Dedicated skip flag (keeps repo-guard hooks active).
+
   if [[ -n "${GEREQ_HOOKS_SKIP_QUALITY:-}" && "${GEREQ_HOOKS_SKIP_QUALITY}" != "0" ]]; then
-    echo "off"
-    return
+    if [[ "$context" == "push" ]]; then
+      hook_info "quality: GEREQ_HOOKS_SKIP_QUALITY ignored on pre-push (analysis failures must block push)."
+      hook_info "quality: emergency full bypass only: GEREQ_HOOKS_SKIP=1 git push ..."
+    else
+      echo "off"
+      return
+    fi
   fi
+
   case "$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')" in
-    ''|full|all|ci|pipeline) echo "full" ;;
+    ''|changed|delta|diff|incremental) echo "changed" ;;
+    full|all|ci|pipeline) echo "full" ;;
     analyse|analyze|static) echo "analyse" ;;
     cs|phpcs|style) echo "cs" ;;
-    off|0|skip|no|false|none) echo "off" ;;
+    off|0|skip|no|false|none)
+      if [[ "$context" == "push" ]]; then
+        hook_info "quality: GEREQ_HOOKS_QUALITY=off ignored on pre-push; using '$default_mode'"
+        echo "$default_mode"
+      else
+        echo "off"
+      fi
+      ;;
     *)
-      hook_info "quality: unknown GEREQ_HOOKS_QUALITY='$raw' (use full|analyse|cs|off); falling back to '$default_mode'"
+      hook_info "quality: unknown GEREQ_HOOKS_QUALITY='$raw' (use changed|full|analyse|cs|off); falling back to '$default_mode'"
       echo "$default_mode"
       ;;
   esac
+}
+
+# Run a command; on failure print label and return 1 (never swallow).
+quality_exec() {
+  local label="$1"
+  shift
+  hook_info "quality: $label"
+  if ! "$@"; then
+    hook_info "quality: FAILED — $label (exit non-zero; refusing to continue)"
+    return 1
+  fi
+  return 0
 }
 
 quality_composer_ready() {
@@ -44,36 +76,239 @@ quality_composer_ready() {
   return 0
 }
 
-# Return 0 if any staged path looks like PHP quality surface.
-quality_staged_php_paths() {
-  git diff --cached --name-only --diff-filter=ACMRT \
-    | grep -E '\.php$' \
-    | grep -E '^(src|modules|tests|integrations|bin)/' \
-    || true
+quality_bun_ready() {
+  if ! command -v bun >/dev/null 2>&1; then
+    hook_info "quality: ERROR: bun not found on PATH (JS/TS gate)"
+    return 1
+  fi
+  if [[ ! -f package.json ]]; then
+    hook_info "quality: ERROR: package.json missing (run hooks from repo root)"
+    return 1
+  fi
+  if [[ ! -d node_modules ]]; then
+    hook_info "quality: ERROR: node_modules/ missing — run: bun install"
+    return 1
+  fi
+  return 0
 }
 
-# Fast path: phpcs only on staged PHP files (falls back to full cs if none listed).
-quality_run_cs_staged() {
-  local -a files=()
+# Return 0 if path list touches platform JS/TS surface (AGENTS.md frontend gate).
+quality_js_surface_touched() {
+  local list_file="$1"
   local path
+  [[ -f "$list_file" ]] || return 1
   while IFS= read -r path || [[ -n "${path:-}" ]]; do
     [[ -z "${path:-}" ]] && continue
-    [[ -f "$path" ]] || continue
-    files+=("$path")
-  done < <(quality_staged_php_paths)
+    case "$path" in
+      resources/js/*|package.json|bun.lock|tsconfig.json)
+        return 0
+        ;;
+      scripts/*.ts)
+        return 0
+        ;;
+      scripts/*/*.ts|scripts/*/*/*.ts)
+        return 0
+        ;;
+    esac
+  done < <(sort -u "$list_file")
+  return 1
+}
 
-  if [[ "${#files[@]}" -eq 0 ]]; then
-    hook_info "quality: no staged PHP under src|modules|tests|integrations|bin — skipping cs"
+# Platform JS/TS gate: bunx tsc --noEmit && bun run build (AGENTS.md).
+quality_run_js() {
+  quality_bun_ready || return 1
+  quality_exec "bunx tsc --noEmit" bunx tsc --noEmit || return 1
+  quality_exec "bun run build" bun run build || return 1
+  return 0
+}
+
+# Paths changed in a push ref update (remote_sha..local_sha).
+# Appends newline-separated paths to $1 (file). Args: outfile remote local_sha remote_sha
+quality_append_push_paths() {
+  local outfile="$1"
+  local remote_name="$2"
+  local local_sha="$3"
+  local remote_sha="$4"
+  local zero="0000000000000000000000000000000000000000"
+  local base
+
+  if [[ "$local_sha" == "$zero" ]]; then
     return 0
   fi
 
-  hook_info "quality: composer cs (${#files[@]} staged PHP file(s))"
-  composer cs -- "${files[@]}"
+  if [[ "$remote_sha" != "$zero" ]]; then
+    git diff --name-only --diff-filter=ACMRT "$remote_sha..$local_sha" >>"$outfile" 2>/dev/null || true
+    return 0
+  fi
+
+  # New remote branch: prefer merge-base with remote HEAD, else commits not on any remote.
+  base="$(git merge-base "$local_sha" "refs/remotes/${remote_name}/HEAD" 2>/dev/null || true)"
+  if [[ -n "$base" ]]; then
+    git diff --name-only --diff-filter=ACMRT "$base..$local_sha" >>"$outfile" 2>/dev/null || true
+    return 0
+  fi
+
+  git log --pretty=format: --name-only --diff-filter=ACMRT "$local_sha" --not --remotes="${remote_name}" \
+    >>"$outfile" 2>/dev/null || true
 }
 
-# Full / analyse / cs pipeline (same commands as CI analyse + test stages).
+# Filter a path list file → existing PHP under quality surfaces. Prints paths.
+quality_php_surface_from_file() {
+  local list_file="$1"
+  local path
+  [[ -f "$list_file" ]] || return 0
+  while IFS= read -r path || [[ -n "${path:-}" ]]; do
+    [[ -z "${path:-}" ]] && continue
+    case "$path" in
+      src/*|modules/*|tests/*|integrations/*|bin/*) ;;
+      *) continue ;;
+    esac
+    case "$path" in
+      *.php) ;;
+      *) continue ;;
+    esac
+    [[ -f "$path" ]] || continue
+    printf '%s\n' "$path"
+  done < <(sort -u "$list_file")
+}
+
+quality_run_cs_paths() {
+  local -a files=("$@")
+  if [[ "${#files[@]}" -eq 0 ]]; then
+    hook_info "quality: cs — no changed PHP in scope, skip"
+    return 0
+  fi
+  quality_exec "phpcs (${#files[@]} file(s))" ./vendor/bin/phpcs -- "${files[@]}" || return 1
+  return 0
+}
+
+quality_run_phpstan_paths() {
+  local -a files=("$@")
+  local -a main=()
+  local -a strict=()
+  local f
+
+  for f in "${files[@]}"; do
+    case "$f" in
+      src/Testing/*|tests/*)
+        strict+=("$f")
+        main+=("$f")
+        ;;
+      src/*|modules/*|bin/*)
+        main+=("$f")
+        ;;
+      # integrations/ are not in phpstan.neon paths — cs/tests only
+    esac
+  done
+
+  if [[ "${#main[@]}" -gt 0 ]]; then
+    quality_exec "phpstan (${#main[@]} file(s))" \
+      ./vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G --no-progress -- "${main[@]}" \
+      || return 1
+  else
+    hook_info "quality: phpstan — no matching changed files, skip"
+  fi
+
+  if [[ "${#strict[@]}" -gt 0 ]]; then
+    quality_exec "phpstan:tests (${#strict[@]} file(s))" \
+      ./vendor/bin/phpstan analyse -c phpstan-tests.neon --memory-limit=1G --no-progress -- "${strict[@]}" \
+      || return 1
+  else
+    hook_info "quality: phpstan:tests — no changed tests/Testing files, skip"
+  fi
+  return 0
+}
+
+quality_run_phpunit_paths() {
+  local -a files=("$@")
+  local -a tests=()
+  local f
+
+  for f in "${files[@]}"; do
+    case "$f" in
+      *Test.php) tests+=("$f") ;;
+    esac
+  done
+
+  if [[ "${#tests[@]}" -eq 0 ]]; then
+    hook_info "quality: phpunit — no changed *Test.php files, skip"
+    return 0
+  fi
+
+  quality_exec "phpunit (${#tests[@]} test file(s))" ./vendor/bin/phpunit -- "${tests[@]}" || return 1
+  return 0
+}
+
+# Incremental gate on a newline-separated path list file.
+quality_run_changed() {
+  local list_file="$1"
+  local tools="${2:-all}" # all | cs
+  local -a files=()
+  local path
+  local ran_any=0
+
+  while IFS= read -r path || [[ -n "${path:-}" ]]; do
+    [[ -z "${path:-}" ]] && continue
+    files+=("$path")
+  done < <(quality_php_surface_from_file "$list_file")
+
+  if [[ "${#files[@]}" -gt 0 ]]; then
+    ran_any=1
+    quality_composer_ready || return 1
+    hook_info "quality: changed mode — ${#files[@]} PHP file(s)"
+    quality_run_cs_paths "${files[@]}" || return 1
+
+    if [[ "$tools" != "cs" ]]; then
+      quality_run_phpstan_paths "${files[@]}" || return 1
+      quality_run_phpunit_paths "${files[@]}" || return 1
+    fi
+  else
+    hook_info "quality: no changed PHP under src|modules|tests|integrations|bin — skip PHP tools"
+  fi
+
+  if [[ "$tools" == "cs" ]]; then
+    [[ "$ran_any" -eq 1 ]] || hook_info "quality: nothing to check (cs mode, no PHP)"
+    return 0
+  fi
+
+  if quality_js_surface_touched "$list_file"; then
+    ran_any=1
+    hook_info "quality: JS/TS surface touched — platform frontend gate"
+    quality_run_js || return 1
+  else
+    hook_info "quality: JS/TS surface unchanged — skip bun tsc/build"
+  fi
+
+  if [[ "$ran_any" -eq 0 ]]; then
+    hook_info "quality: no PHP or JS/TS surface in path list — skip"
+  fi
+  return 0
+}
+
+# Full tree gate (CI / AGENTS.md). Each step must fail the function.
+quality_run_full() {
+  quality_composer_ready || return 1
+  quality_exec "composer test" composer test || return 1
+  quality_exec "composer phpstan" composer phpstan || return 1
+  quality_exec "composer phpstan:tests" composer phpstan:tests || return 1
+  quality_exec "composer cs" composer cs || return 1
+  hook_info "quality: JS/TS platform gate"
+  quality_run_js || return 1
+  return 0
+}
+
+# Whole-tree static analysis only (must fail push/CI when red).
+quality_run_analyse() {
+  quality_composer_ready || return 1
+  quality_exec "composer phpstan" composer phpstan || return 1
+  quality_exec "composer phpstan:tests" composer phpstan:tests || return 1
+  return 0
+}
+
+# $1 = mode, $2 = optional path-list file (required for changed/cs incremental).
 quality_run_pipeline() {
   local mode="$1"
+  local list_file="${2:-}"
 
   case "$mode" in
     off)
@@ -82,38 +317,36 @@ quality_run_pipeline() {
       ;;
   esac
 
-  if ! quality_composer_ready; then
-    return 1
-  fi
-
-  hook_info "quality: mode=$mode (mirrors AGENTS.md / .gitlab-ci.yml)"
+  hook_info "quality: mode=$mode"
 
   case "$mode" in
+    changed)
+      if [[ -z "$list_file" || ! -f "$list_file" ]]; then
+        hook_info "quality: ERROR: changed mode needs a path list file"
+        return 1
+      fi
+      quality_run_changed "$list_file" all || return 1
+      ;;
     cs)
-      if [[ "${2:-}" == "staged" ]]; then
-        quality_run_cs_staged
+      if [[ -n "$list_file" && -f "$list_file" ]]; then
+        quality_run_changed "$list_file" cs || return 1
       else
-        hook_info "quality: composer cs"
-        composer cs
+        quality_composer_ready || return 1
+        hook_info "quality: composer cs (full tree)"
+        composer cs || return 1
       fi
       ;;
     analyse)
-      hook_info "quality: composer analyse  (phpstan + phpstan:tests + cs)"
-      composer analyse
+      # Prefer explicit phpstan + phpstan:tests (composer analyse may omit tests suite).
+      quality_run_analyse || return 1
       ;;
     full)
-      hook_info "quality: composer test"
-      composer test
-      hook_info "quality: composer phpstan"
-      composer phpstan
-      hook_info "quality: composer phpstan:tests"
-      composer phpstan:tests
-      hook_info "quality: composer cs"
-      composer cs
+      quality_run_full || return 1
       ;;
     *)
       hook_info "quality: ERROR: internal unknown mode '$mode'"
       return 1
       ;;
   esac
+  return 0
 }

@@ -22,9 +22,10 @@ final class TwigTypesCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $script = $this->basePath . '/tools/gereq-twig-goto/index-templates.php';
-        if (!is_file($script)) {
-            $output->writeln('<error>Chybí tools/gereq-twig-goto/index-templates.php</error>');
+        $script = $this->resolveIndexerScript();
+        if ($script === null) {
+            $output->writeln('<error>Missing gereq-twig-goto/index-templates.php</error>');
+            $output->writeln('Clone https://git.gereq.cz/gereq/GEREQ_TOOLS and set GEREQ_TOOLS to that path (or place it as a sibling of the platform).');
 
             return Command::FAILURE;
         }
@@ -37,7 +38,7 @@ final class TwigTypesCommand extends Command
         ];
         $proc = proc_open($cmd, $descriptor, $pipes, $this->basePath);
         if (!is_resource($proc)) {
-            $output->writeln('<error>Nelze spustit indexer</error>');
+            $output->writeln('<error>Cannot start indexer</error>');
 
             return Command::FAILURE;
         }
@@ -57,5 +58,31 @@ final class TwigTypesCommand extends Command
         }
 
         return $code === 0 ? Command::SUCCESS : Command::FAILURE;
+    }
+
+    private function resolveIndexerScript(): ?string
+    {
+        $relative = 'gereq-twig-goto/index-templates.php';
+        $candidates = [];
+
+        $envTools = getenv('GEREQ_TOOLS');
+        if (is_string($envTools) && $envTools !== '') {
+            $candidates[] = rtrim($envTools, '/\\') . '/' . $relative;
+        }
+
+        $parent = dirname($this->basePath);
+        $candidates[] = $parent . '/GEREQ_TOOLS/' . $relative;
+        $candidates[] = $this->basePath . '/../GEREQ_TOOLS/' . $relative;
+        // Legacy layout (removed submodule) — keep for local overrides
+        $candidates[] = $this->basePath . '/tools/' . $relative;
+
+        foreach ($candidates as $path) {
+            $real = realpath($path);
+            if ($real !== false && is_file($real)) {
+                return $real;
+            }
+        }
+
+        return null;
     }
 }

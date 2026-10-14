@@ -25,6 +25,7 @@ warn() { hook_info "pre-commit: $*"; }
 fail() { warn "ERROR: $*"; errors=$((errors + 1)); }
 
 MAX_BYTES="$(max_blob_bytes)"
+MAX_DIST_BYTES="$(max_dist_blob_bytes)"
 
 # Load submodule paths from working-tree .gitmodules (authoritative layout).
 KNOWN_SUBMODULES_FILE="$(mktemp)"
@@ -118,9 +119,13 @@ while IFS= read -r path || [[ -n "${path:-}" ]]; do
   [[ "$mode" == "160000" ]] && continue
 
   size="$(git cat-file -s ":$path" 2>/dev/null || echo 0)"
-  if [[ "$size" -gt "$MAX_BYTES" ]]; then
+  limit="$MAX_BYTES"
+  if is_allowed_large_blob_path "$path"; then
+    limit="$MAX_DIST_BYTES"
+  fi
+  if [[ "$size" -gt "$limit" ]]; then
     human="$(awk -v s="$size" 'BEGIN { printf "%.1f MiB", s/1024/1024 }')"
-    fail "file too large (${human} > $((MAX_BYTES / 1024 / 1024)) MiB): $path"
+    fail "file too large (${human} > $((limit / 1024 / 1024)) MiB): $path"
   fi
 done <"$staged_paths_file"
 
@@ -197,22 +202,15 @@ if [[ "$errors" -gt 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 6) Fast quality — phpcs on staged PHP (default mode=cs)
-#    Full CI gate runs on pre-push. Override: GEREQ_HOOKS_QUALITY=full|analyse|off
+# 6) Quality on staged paths only (default mode=changed)
+#    Override: GEREQ_HOOKS_QUALITY=cs|full|analyse|off
 # ---------------------------------------------------------------------------
-quality_mode="$(quality_mode_requested cs)"
-if [[ "$quality_mode" != "off" ]]; then
-  if [[ "$quality_mode" == "cs" ]]; then
-    if ! quality_run_pipeline cs staged; then
-      hook_info "pre-commit: quality (cs) failed. Fix style or: GEREQ_HOOKS_SKIP_QUALITY=1 git commit ..."
-      exit 1
-    fi
-  else
-    if ! quality_run_pipeline "$quality_mode"; then
-      hook_info "pre-commit: quality ($quality_mode) failed. Bypass: GEREQ_HOOKS_SKIP_QUALITY=1 git commit ..."
-      exit 1
-    fi
-  fi
+quality_mode="$(quality_mode_requested changed)"
+if ! quality_run_pipeline "$quality_mode" "$staged_paths_file"; then
+  hook_info "pre-commit: quality FAILED (mode=$quality_mode) — commit blocked."
+  hook_info "pre-commit: bypass quality only: GEREQ_HOOKS_SKIP_QUALITY=1 git commit ..."
+  hook_info "pre-commit: note: on git push, SKIP_QUALITY is ignored — analysis must pass."
+  exit 1
 fi
 
 exit 0

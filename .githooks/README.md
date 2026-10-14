@@ -12,29 +12,46 @@ bin/grq commit --install-hooks
 
 | Hook | Purpose |
 | --- | --- |
-| `pre-commit` | Blocks secrets, vendor/build/storage dumps, oversized blobs, conflict markers, and accidental commits of files inside `modules/*` submodules. Then runs **fast quality** (`composer cs` on staged PHP under `src/`, `modules/`, `tests/`, `integrations/`, `bin/`). |
+| `pre-commit` | Blocks secrets, vendor/build/storage dumps, oversized blobs, conflict markers, and accidental commits of files inside `modules/*` submodules. Then runs **quality on staged paths** (PHP tools + JS/TS when frontend surface is staged). |
 | `commit-msg` | Strips `Co-authored-by`; self-heals Conventional Commits subjects (`chore foo` → `chore: foo`, bare text → `chore: …`); then enforces the final shape |
-| `pre-push` | Blocks deletion / non-fast-forward pushes to protected branches (`main`, `master`, `dev`, `production`, `prod`). Then runs the **full quality pipeline** (same gate as CI / `AGENTS.md`). |
+| `pre-push` | Blocks deletion / non-fast-forward pushes to protected branches (`main`, `master`, `dev`, `production`, `prod`). Then runs **quality on files in the push range** (`remote..local`). **Analysis failure always blocks the push** (`GEREQ_HOOKS_SKIP_QUALITY` / `QUALITY=off` are ignored on push). |
 
 ## Quality pipeline
 
-Shared implementation: `lib/quality.sh`. Commands match the project gate and [`.gitlab-ci.yml`](../.gitlab-ci.yml) analyse/test stages:
+Shared implementation: `lib/quality.sh`.
 
-| Mode | Commands | Default |
-| --- | --- | --- |
-| `full` | `composer test` → `composer phpstan` → `composer phpstan:tests` → `composer cs` | `pre-push` |
-| `analyse` | `composer analyse` (= phpstan + phpstan:tests + cs) | — |
-| `cs` | `composer cs` (pre-commit: only staged PHP paths) | `pre-commit` |
-| `off` | skip quality (repo guards still run) | — |
+**Default (`changed`)** — only files you commit or push:
+
+| Step | When |
+| --- | --- |
+| `phpcs` | changed `*.php` under `src/`, `modules/`, `tests/`, `integrations/`, `bin/` |
+| `phpstan` (`phpstan.neon`) | changed under `src/`, `modules/`, `tests/`, `bin/` |
+| `phpstan:tests` | changed under `tests/`, `src/Testing/` |
+| `phpunit` | changed `*Test.php` only |
+| `bunx tsc --noEmit` + `bun run build` | JS/TS surface touched: `resources/js/**`, `scripts/**/*.ts`, `package.json`, `bun.lock`, `tsconfig.json` |
+
+| Mode | Behaviour |
+| --- | --- |
+| `changed` | incremental (default for commit + push) |
+| `full` / `ci` | entire tree: `composer test` + phpstan + phpstan:tests + cs + JS/TS gate (same as MR/tag CI / `AGENTS.md`) |
+| `analyse` | `composer analyse` on the whole tree (PHP only) |
+| `cs` | phpcs only (still scoped to the path list when available) |
+| `off` | skip quality (repo guards still run) |
 
 ```bash
-# Examples
-GEREQ_HOOKS_QUALITY=analyse git push
-GEREQ_HOOKS_QUALITY=full git commit   # heavy: full gate on commit
-GEREQ_HOOKS_SKIP_QUALITY=1 git push   # skip quality only
+GEREQ_HOOKS_QUALITY=full git push          # complete CI gate locally
+GEREQ_HOOKS_QUALITY=cs git commit          # style only (commit)
+GEREQ_HOOKS_SKIP_QUALITY=1 git commit      # skip quality on commit only (NOT on push)
 ```
 
-Requires `composer` on `PATH` and an installed `vendor/` tree.
+On **push**, a failed `phpstan` / `phpstan:tests` / `phpcs` / JS gate **always aborts** the push. If the push range has no resolvable paths, pre-push falls back to full `analyse` (`composer phpstan` + `composer phpstan:tests`) instead of skipping.
+
+Requires:
+
+- PHP tools: `composer` on `PATH` and an installed `vendor/` tree (when PHP paths are in scope)
+- JS/TS gate: `bun` on `PATH` and `node_modules/` (`bun install`) when frontend surface is in scope
+
+> Incremental checks can miss cross-file regressions. GitLab CI mirrors this split: **branch push** → `quality:changed` only; **merge request / tag** → full suite (+ `analyse:js`). Locally: `GEREQ_HOOKS_QUALITY=full git push`.
 
 ## Bypass
 
@@ -48,5 +65,6 @@ GEREQ_HOOKS_SKIP=1 git push ...
 Optional knobs:
 
 - `GEREQ_HOOKS_MAX_BYTES` — max staged blob size (default `5242880` = 5 MiB)
-- `GEREQ_HOOKS_QUALITY` — `full` \| `analyse` \| `cs` \| `off`
-- `GEREQ_HOOKS_SKIP_QUALITY` — skip quality checks while keeping secret/submodule/branch guards
+- `GEREQ_HOOKS_MAX_BYTES_DIST` — max size for allowlisted `bin/dist/grq-*` prebuilts (default `20971520` = 20 MiB)
+- `GEREQ_HOOKS_QUALITY` — `changed` \| `full` \| `analyse` \| `cs` \| `off`
+- `GEREQ_HOOKS_SKIP_QUALITY` — skip quality on **commit** only (ignored on **push**; use `GEREQ_HOOKS_SKIP=1` for emergency push bypass)

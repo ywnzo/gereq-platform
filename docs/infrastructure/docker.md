@@ -167,8 +167,8 @@ The `Makefile` needs a **running** Docker daemon plus the Compose plugin on the 
 | `adminer` / `adminer-down` | start/stop Adminer (`tools` profile) on `:8086` |
 | `hot` | Bun watch via `oven/bun:1.2` rebuilding `public/build` |
 | `urls` | print access URLs |
-| `grq` / `grq-release` | rebuild host `bin/dist/grq-*` (needs Go + `tools/` submodule) |
-| `submodules` | `git submodule update --init --recursive` |
+| `grq` / `grq-release` | rebuild host `bin/dist/grq-*` (needs Go + clone of [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)) |
+| `submodules` | `git submodule update --init --recursive` (or `./bin/grq modules pull --init`) |
 
 Variables: `PORT=8080`, `HTTPS=0`, `BUILD=0`, `FORCE_ENV=0`, `SEED_FLAGS`, `DEMO_FLAGS`.
 

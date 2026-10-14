@@ -72,7 +72,7 @@ Core-defined keys: `app.name`, `app.locale`, `admin.theme` (`system|light|dark`)
 - Translator: `TranslatorFactory::create()` (`src/I18n/TranslatorFactory.php`) builds a Symfony `Translator` with the PHP array loader and loads `resources/translations/*.php` plus `modules/*/Resources/translations/*.php` and `integrations/*/Resources/translations/*.php`. File name pattern `<domain>.<locale>.php` → `messages.cs.php`, `messages.en.php`. Files return `['key' => 'text']`.
 - Usage: PHP `__('nav.viewings')` / `trans()` / injected `TranslatorInterface`; Twig `'key'|trans` or `trans('key', {'%n%': 3})`. Labels in `MenuItem`, `PaletteCommand`, permissions, settings definitions and manifests are translation keys resolved at render time.
 - Key conventions (observed): `nav.*`, `palette.*`, `perm.<module>.<action>` + `perm.group.<module>`, `module.<id>.description`, `<module>.field.*`, `<module>.status.*`, `validation.*`, `admin.*`, `settings.*`, `errors.<status>.*`. Some legacy Czech literal keys (`'Akce'`, `'Hlavní'`) exist for menu groups.
-- Tooling: `php tools/gereq-i18n/index-translations.php` writes `.cache/i18n/catalog.json`; `bash tools/gereq-i18n/install.sh` installs the VS Code/Cursor extension providing hover (cs/en side by side), completion and go-to-definition for keys in Twig and PHP (`tools/gereq-i18n/README.md`).
+- Tooling ([GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)): `php $GEREQ_TOOLS/gereq-i18n/index-translations.php` writes `.cache/i18n/catalog.json`; `bash $GEREQ_TOOLS/gereq-i18n/install.sh` installs the VS Code/Cursor extension.
 
 ## Audit log
 

@@ -190,7 +190,11 @@ final class AutoUpdateModulesMiddlewareTest extends TestCase
 
     private function removeTree(string $directory): void
     {
-        foreach (scandir($directory) ?: [] as $entry) {
+        $entries = scandir($directory);
+        if ($entries === false) {
+            return;
+        }
+        foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') {
                 continue;
             }

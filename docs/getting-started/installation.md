@@ -28,13 +28,23 @@ Docker and `make install` already ship both extensions in `docker/php/Dockerfile
 
 ## Clone
 
-Modules under `modules/` are git submodules pointing at `git.gereq.cz/gereq/module-<id>` (see `.gitmodules`). Also submodules: dockerless at `dev/dockerless` → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless), tooling at `tools/` → [gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS). Clone recursively or initialise them afterwards:
+Modules under `modules/` are git submodules pointing at `git.gereq.cz/gereq/module-<id>` (see `.gitmodules`). Also submodule: dockerless at `dev/dockerless` → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless). Prebuilt CLI is in `bin/`; tooling sources live in standalone [gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS). Clone recursively or initialise modules afterwards:
 
 ```bash
-git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
-# or, after a plain clone:
-git submodule update --init --recursive
+git clone --recurse-submodules -b dev git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
+# or, after a plain clone (preferred helper):
+❯ ./bin/grq modules pull --init
+# equivalent: git submodule update --init --recursive
 ```
+
+To keep only a subset of modules (client / test branch), prepare `.gitmodules.disabled` then activate:
+
+```bash
+❯ ./bin/grq modules-git include CMS@1.20.1 Listing
+❯ ./bin/grq modules-git use
+```
+
+See [Tooling — modules pull / modules-git](../infrastructure/tooling.md#modules-pull-and-modules-git) and the platform [README](../../README.md#stahování-modulů-z-gitlabu-grq-modules-pull).
 
 Without the module submodules `ModuleManager::discover()` (`src/Module/ModuleManager.php`) finds no `module.php` manifests and the admin has no modules to enable.
 
@@ -189,7 +199,7 @@ Entry point is `resources/js/admin.ts` (`scripts/build.ts`). `Gereq\View\RenderE
 - Log in at `/admin`, complete `/admin/setup`.
 - Enable the modules you need: `php gereq module:enable <id>` or Admin → Modules (package groups such as `realestates` can be enabled in one click; see [module system](../architecture/module-system.md)).
 - Set `GITLAB_TOKEN` in `.env` if you want to install module versions from GitLab through the admin.
-- Enable git hooks once with `bin/grq commit --install-hooks` (or `git config core.hooksPath .githooks`). Hooks live in `.githooks/` (`pre-commit` guards secrets/submodules/junk and runs staged `composer cs`, `commit-msg` strips `Co-authored-by` and self-heals Conventional Commits — e.g. bare text → `chore: …` — then enforces the shape, `pre-push` protects `main`/`dev`/… and runs the full quality pipeline matching CI: `composer test` + phpstan + phpstan:tests + cs). See [`.githooks/README.md`](../../.githooks/README.md).
+- Enable git hooks once with `bin/grq commit --install-hooks` (or `git config core.hooksPath .githooks`). Hooks live in `.githooks/` (`pre-commit` guards secrets/submodules/junk and runs quality on **staged paths** — PHP tools plus `bunx tsc` / `bun run build` when JS/TS surface changes, `commit-msg` strips `Co-authored-by` and self-heals Conventional Commits — e.g. bare text → `chore: …` — then enforces the shape, `pre-push` protects `main`/`dev`/… and runs the same quality on the **push range**; use `GEREQ_HOOKS_QUALITY=full` for the complete gate). GitLab CI: branch push → changed paths only; merge request / tag → full suite (+ `analyse:js`). See [`.githooks/README.md`](../../.githooks/README.md).
 - Commit with `bin/grq commit "..."` — it ensures hooks are installed and applies the same subject self-heal before committing.
 
 Next: [Configuration](configuration.md), [CLI reference](cli.md).

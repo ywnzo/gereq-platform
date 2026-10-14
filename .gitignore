@@ -31,8 +31,6 @@ frontend/
 /.env.new
 /.env.tmpkey
 /README-*.md
-/tools/seed_*.php/dist/
-/tools/gereq-modules/gereq-modules
 .idea/
 .idea/
 # Forum storefront

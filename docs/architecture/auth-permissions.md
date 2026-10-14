@@ -46,7 +46,7 @@ $context->permissions()->register('viewings.view', 'perm.viewings.view', 'perm.g
 
 - Persisting to the `permissions` table happens on `ModuleManager::enable()` and `ModuleUpdater::update()` (`syncPermissions()` — inserts missing rows for every registered name), and during `Seeder::seed()`. Labels/groups are translation keys resolved in the Roles UI (`/admin/roles`).
 
-`tools/gereq-permissions` indexes permission names for IDE completion.
+[GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) `gereq-permissions` indexes permission names for IDE completion.
 
 ## Session authentication
 

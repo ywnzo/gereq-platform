@@ -73,7 +73,7 @@ sequenceDiagram
 - **Enable** — Admin → Modules → Plug-ins → enable, or `php gereq module:enable <id>`. The host module must be enabled first (`requires`). Enabling runs `Migrator::migrateModule($id)`; for the current integrations there are no migration files, so this is a no-op plus schema sync.
 - **Register/boot** — every request, `ModuleManager` instantiates the `class` from the manifest and calls `register()` then `boot()` for enabled packages. All current integrations do their work in `register()`.
 - **Settings** — `ModuleContext::settings()->define($key, $type, $label, $default, $moduleId)` (`src/Setting/Settings.php`). Keys keep the *host* prefix (`payments.comgate_*`, `shop.packeta_*`) for backwards compatibility; `TYPE_ENCRYPTED` values are encrypted with `APP_KEY`. They are edited in Admin → Settings (`src/Admin/Http/SettingsController.php`). Because the grouping there is by `module` id and the switch only knows core modules, integration-owned keys land in the **"other"** tab (`settings.group.other`).
-- **Translations** — `integrations/{Name}/Resources/translations/messages.{cs,en}.php` are loaded like module catalogs (see `tools/gereq-i18n/index-translations.php` which scans `integrations/*/Resources/translations`).
+- **Translations** — `integrations/{Name}/Resources/translations/messages.{cs,en}.php` are loaded like module catalogs (see GEREQ_TOOLS `gereq-i18n/index-translations.php`, which scans `integrations/*/Resources/translations`).
 - **Disable / update** — same as modules (`ModuleController::disable`, version switching via `ModuleUpdater`). The rule `.cursor/rules/module-updates.mdc` (version bump on every change) applies to `integrations/*` as well because they are discovered as modules.
 
 ## Host capabilities

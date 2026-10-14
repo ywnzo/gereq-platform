@@ -159,7 +159,7 @@ Widgets extend `TwigDashboardWidget` in `Application/Widgets/` and are added in 
 
 ## 11. Translations
 
-Create `Resources/translations/messages.cs.php` and `messages.en.php` returning flat arrays. Every label passed to menu/palette/permissions/settings/manifest description is a key. Keep both locales complete (checklist item "i18n cs + en"); `php tools/gereq-i18n/index-translations.php` refreshes the editor index.
+Create `Resources/translations/messages.cs.php` and `messages.en.php` returning flat arrays. Every label passed to menu/palette/permissions/settings/manifest description is a key. Keep both locales complete (checklist item "i18n cs + en"); `php $GEREQ_TOOLS/gereq-i18n/index-translations.php` refreshes the editor index (clone [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).
 
 ## 12. Migrations
 
@@ -201,9 +201,20 @@ git commit -m "chore: add Warehouse submodule @ v0.1.0"
 Allow platform CI to clone the new private module (once per module project):
 
 - UI: module project → **Settings → CI/CD → Job token permissions** → authorize `gereq/GEREQ_PLATFORM`, or
-- API: `GITLAB_TOKEN=… bash tools/gitlab-allow-platform-job-token.sh` (re-runs over all `module-*`, skips already allowed).
+- API: `GITLAB_TOKEN=… bash $GEREQ_TOOLS/gitlab-allow-platform-job-token.sh` (re-runs over all `module-*`, skips already allowed).
 
-Code changes are committed in the module repo; the platform repo only moves the submodule pin. `./tools/gereq-modules/gereq-modules.sh` (TUI, `--plain` for text) compares local versions with GitLab tags. With `GITLAB_TOKEN` set, Admin → Modules → Versions can download and activate tags (`storage/modules/{id}/{version}`, see [Module system](../architecture/module-system.md#install-and-upgrade-from-gitlab)).
+Code changes are committed in the module repo; the platform repo only moves the submodule pin.
+
+```bash
+❯ ./bin/grq modules                 # TUI: local versions ↔ GitLab tags
+❯ ./bin/grq modules status --plain
+❯ ./bin/grq modules pull --init     # refresh checkouts from .gitmodules
+❯ ./bin/grq module warehouse update 0.2.0 stock-fix "Fix adjust qty"
+```
+
+To wire the new submodule into a prepared set (instead of editing `.gitmodules` by hand): `./bin/grq modules-git add Warehouse@0.1.0` then `modules-git use` when ready — see [Tooling](../infrastructure/tooling.md#modules-pull-and-modules-git).
+
+With `GITLAB_TOKEN` set, Admin → Modules → Versions can download and activate tags (`storage/modules/{id}/{version}`, see [Module system](../architecture/module-system.md#install-and-upgrade-from-gitlab)).
 
 ## 16. Releasing a change (version bump checklist)
 
@@ -213,7 +224,7 @@ Repo / version
 
 - [ ] Bump `version` in `module.php`; same value in `<Id>Module::version()`; git tag `vX.Y.Z` (semver: patch = fix, minor = feature/migration, major = breaking).
 - [ ] Private GitLab project `gereq/module-<id>`, wired as submodule under `modules/<Dir>`, `.gitmodules` URL relative (`../module-<id>.git`).
-- [ ] Module project allows inbound CI job tokens from `gereq/GEREQ_PLATFORM` (Job token permissions / `tools/gitlab-allow-platform-job-token.sh`).
+- [ ] Module project allows inbound CI job tokens from `gereq/GEREQ_PLATFORM` (Job token permissions / `$GEREQ_TOOLS/gitlab-allow-platform-job-token.sh`).
 
 Product
 
@@ -234,6 +245,6 @@ Quality
 - [ ] Schema changes only through `Database/Migrations/`.
 - [ ] Tests (unit/feature according to scope); `composer test`, `composer phpstan`, `composer cs`.
 - [ ] Translations complete in cs + en.
-- [ ] `./tools/gereq-modules/gereq-modules.sh` shows the module OK on GitLab.
+- [ ] `./bin/grq modules status` shows the module OK on GitLab.
 
 After the bump the platform blocks the module's admin UI until an admin clicks **Update** (`ModuleCurrentMiddleware`), which runs pending migrations and re-syncs permissions — do not rely on `php gereq migrate` alone in production.

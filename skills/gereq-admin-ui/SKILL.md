@@ -11,7 +11,7 @@ Přečti kořenový `AGENTS.md`, `docs/architecture/admin-ui.md` a `.cursor/rule
 - Používej resources/views/ui komponenty, ui_render a icon. Formuláře stav na FormField, FormGenerator, pojmenovaných validačních rulesetech a forms().render podle aktuálního API.
 - Zachovej page-specific layout. Detail-stack nepatří automaticky do formulářů s vlastním gridem (Customers, Fleet, Listing hub).
 - Mutující formuláře mají CSRF field, session AJAX CSRF header. Backend permissions a validace fungují i při obejití UI.
-- Nové texty patří do cs/en katalogů a používají trans; placeholders mají %name%. Je-li relevantní, aktualizuj editor index přes `php tools/gereq-i18n/index-translations.php`.
+- Nové texty patří do cs/en katalogů a používají trans; placeholders mají %name%. Je-li relevantní, aktualizuj editor index přes `php $GEREQ_TOOLS/gereq-i18n/index-translations.php` ([GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).
 - Zachovej autoescape; raw je pro důvěryhodné generované nebo sanitizované HTML.
 - Alpine používá CSP build. Interakce registruj v TS podle resources/js/ui/index.ts; neobcházej CSP inline skripty.
 - Dialogy awaituj přes window.gereq.confirm/prompt, formuláře používají data-confirm, výsledky toast. Nové native dialogs ani jejich fallbacky nepřidávej.

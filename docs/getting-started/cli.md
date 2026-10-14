@@ -74,11 +74,11 @@ Enabling from the admin UI (`/admin/modules`) goes through the same `ModuleManag
 | --- | --- | --- | --- |
 | `test [target]` | `target` = `all` (default) \| `core` \| `file` \| `modules` \| `integrations` \| `module:<id>` \| bare module id; `--list`, `--all-packages`, `--filter`, `--stop-on-failure`, `--testdox` | testing engine — runs PHPUnit for core, all modules, or one module (also `php bin/gereq-test` / `composer test` without booting the app) | `TestCommand.php`, `src/Testing/` |
 | `nn` | `-m/--minutes=20` | prints N+1 query groups recorded in `storage/logs/nplusone.log` within the window (`Gereq\Debug\NPlusOneLog`) | `NnCommand.php` |
-| `twig:types` | — | runs `tools/gereq-twig-goto/index-templates.php` to write Twig type/template indexes into `.cache/twig/` for the IDE extensions | `TwigTypesCommand.php` |
+| `twig:types` | — | runs `gereq-twig-goto/index-templates.php` from [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) (`GEREQ_TOOLS` env or sibling checkout) into `.cache/twig/` | `TwigTypesCommand.php` |
 
 See [Testing](../development/testing.md) for target layout and Docker/`make test` usage.
 
-Related non-`gereq` tools under `tools/`: `gereq-i18n/index-translations.php` (translation catalog for IDE hover), `gereq-permissions/index-permissions.php`, `gereq-modules/gereq-modules.sh` (Go TUI comparing local module versions against GitLab tags), `gereq-monitor` (VS Code extension).
+Related IDE tooling lives in [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS): `gereq-i18n/index-translations.php`, `gereq-permissions/index-permissions.php`, `gereq-monitor` (VS Code extension). Module status TUI: `./bin/grq modules`.
 
 ## Module commands
 

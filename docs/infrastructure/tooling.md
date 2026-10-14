@@ -1,15 +1,19 @@
 # Developer tooling
 
-Besides the `php gereq` console, developer tooling lives in the standalone monorepo **[gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)** (git submodule at `tools/`): the **`grq`** single binary (`bin/grq` → `bin/dist/…`) for env/install/pack/commit/pr/modules, editor extensions under `tools/gereq-*`, PDF deck generators, and Cursor guidance in `.cursor/`. Static analysis and tests are configured in `phpstan.neon`, `phpcs.xml` and `phpunit.xml`. Everything JS-related is run with **Bun** (`.cursor/rules/tech-stack.mdc`).
+Besides the `php gereq` console, the platform ships the prebuilt **`grq`** CLI under `bin/` (`bin/grq` → `bin/dist/…`). Sources, Cursor/VS Code extensions, GitLab helpers and deck generators live in the standalone monorepo **[gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)** (not a submodule — clone separately when you need to rebuild or install IDE tools). Static analysis and tests are configured in `phpstan.neon`, `phpcs.xml` and `phpunit.xml`. Everything JS-related is run with **Bun** (`.cursor/rules/tech-stack.mdc`).
 
 ```bash
-git submodule update --init --recursive tools
-# standalone: git clone git@git.gereq.cz:gereq/GEREQ_TOOLS.git
+git clone git@git.gereq.cz:gereq/GEREQ_TOOLS.git
+export GEREQ_ROOT=/path/to/GEREQ_PLATFORM
 ```
 
 ## `bin/grq`
 
-Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt binary from `bin/dist/` (no download). Rebuild: `make grq` / `make grq-release`. Sources: [`tools/gereq-cli/`](https://git.gereq.cz/gereq/GEREQ_TOOLS/-/tree/main/gereq-cli) in GEREQ_TOOLS.
+Help: `❯ ./bin/grq help [<topic>]` or `❯ ./bin/grq <topic> help` (e.g. `ai`, `modules`, `modules-git`, `gitlab`, `version`).
+
+Interactive AI (Czech/English, tool-calling): `❯ ./bin/grq ai` — e.g. *aktualizuj modul CMS na 1.22.2 s popisem YAZ*.
+
+Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt binary from `bin/dist/` (no download). Rebuild from GEREQ_TOOLS (see that repo’s README). Sources: [`gereq-cli/`](https://git.gereq.cz/gereq/GEREQ_TOOLS/-/tree/main/gereq-cli).
 
 | Command | Purpose |
 | --- | --- |
@@ -19,28 +23,72 @@ Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt b
 | `grq install` / `grq install demo` | Interactive clean install / SQLite demo |
 | `grq pack demo` | Demo zip into `dist/` |
 | `grq commit …` | Git commit stripping `Co-authored-by` |
-| `grq pr [--base] [--draft] [--dry-run] [--push] [--fast] [--no-agent]` | Draft MR via Cursor CLI `agent` (guidelines: Summary + Test plan), create on GitLab |
+| `grq pr [--base] [--draft] [--dry-run] [--push] [--fast] [--no-agent]` | Draft MR via baked-in OpenRouter agent (Summary + Test plan), create on GitLab |
 | `grq modules` | TUI comparing modules vs GitLab (replaces `gereq-modules`) |
-| `grq modules update [id…] [--yes\|--push\|--patch]` | Pull GitLab tag (`--yes`), publish local tag (`--push --yes`), or bump patch + push (`--patch --yes`) |
-| `grq modules create Name [--kind …]` | Scaffold + logo + badges; optional Cursor CLI polish when `agent` is on PATH |
+| `grq modules status [--plain]` | Text status (local version ↔ GitLab tags) |
+| `grq modules pull [--force] [--init]` | Fetch/checkout all submodules from active `.gitmodules` (clone missing) |
+| `grq module <id> pull [--force] [--init]` | Same for one module |
+| `grq modules update [id…]` | Interactive release (version, feat, desc, files → feat branch → main → tag → atomic push) |
+| `grq module <id> update <version> <feat> <desc> [files…]` | Non-interactive single-module release |
+| `grq modules-git add\|remove\|include\|exclude\|use` | Prepare `.gitmodules.disabled`, then activate with `use` (backup zip + pull) |
+| `grq modules create Name [--kind …]` | Scaffold + logo + badges; optional OpenRouter polish (`--no-agent` to skip) |
+| `grq gitlab init <token\|login>` | Open/print GitLab sign-in or PAT creation URL |
+| `grq gitlab auth <token\|env\|login> [PAT]` | Write/verify `GITLAB_TOKEN` in `.env` |
+
+### GitLab auth
+
+```bash
+❯ ./bin/grq gitlab init token          # link to create PAT (opens browser)
+❯ ./bin/grq gitlab init login          # link to sign in
+❯ ./bin/grq gitlab auth login          # open links, prompt for PAT → .env + verify
+❯ ./bin/grq gitlab auth token glpat-…
+❯ ./bin/grq gitlab auth env            # verify existing token
+```
+
+Recommended scopes: `api`, `write_repository`, `read_repository`. Use `--no-open` to print URLs only.
+
+### Modules pull and modules-git
+
+Active set = **`.gitmodules`**. Staging set = **`.gitmodules.disabled`** until `use`.
+
+```bash
+# download / refresh checkouts (preferred over raw git submodule update)
+❯ ./bin/grq modules pull --init
+❯ ./bin/grq module Cms pull --force
+
+# prepare a smaller client set, then activate
+❯ ./bin/grq modules-git include CMS@1.20.1 Listing
+❯ ./bin/grq modules-git use --force
+# → writes prepared into .gitmodules, parks previous in .gitmodules.disabled,
+#   creates modules.bak.zip, clears modules/, pulls the new set
+```
+
+| `modules-git` | Behaviour |
+| --- | --- |
+| `add Module[@tag]…` | Upsert into `.gitmodules.disabled` (latest GitLab tag if `@tag` omitted; needs `GITLAB_TOKEN`) |
+| `remove Module…` | Drop from `.gitmodules.disabled` |
+| `include Module[@tag]…` | Replace disabled file with **only** these; delete other `modules/*` dirs |
+| `exclude Module…` | Copy current `.gitmodules` minus listed names into disabled |
+| `use [--force]` | Swap disabled↔active, zip+clear `modules/`, `modules pull` |
+
+Relative submodule URLs (`../module-cms.git`) resolve via `GITLAB_URL` / `GITLAB_GROUP` when cloning. Full CLI table: [`gereq-cli/README.md`](https://git.gereq.cz/gereq/GEREQ_TOOLS/-/blob/main/gereq-cli/README.md) in GEREQ_TOOLS.
 
 RealityV3 product scripts live under `scripts/realityv3/` (not in `bin/`). `bin/twiggy-env.php` remains for the Twiggy language server.
 
-## `tools/` (submodule → [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS))
+## [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) (standalone)
 
-| Directory / file | What it is | How to run |
+Clone next to the platform (or anywhere) and set `GEREQ_ROOT` to the platform path.
+
+| Path in GEREQ_TOOLS | What it is | How to run |
 | --- | --- | --- |
-| `tools/gereq-cli/` | Source of `grq` (see above). Calls Cursor CLI `agent` when present. | `make grq` |
-| `tools/gereq-env/` | Cursor/VS Code extension `gereq.gereq-env` (v0.1.0, "GEREQ Env Schema"): autocomplete, hover and diagnostics for `.env` + `env_value()` from `config/env.schema.toml`. GitLab: [`gereq/tool-env`](https://git.gereq.cz/gereq/tool-env). | `bash tools/gereq-env/install.sh`; generate `.env`: `bin/grq env init` / `php gereq env:init`. |
-| `tools/gereq-i18n/` | Cursor/VS Code extension `gereq.i18n` (v0.2.2): hover, autocomplete and Go to Definition for translation keys in Twig (`'key'\|trans`), PHP (`->trans('key')`, `label:`/`hint:`/`title:`… named args, `'label' => '…'`). Reads a catalog generated from `resources/translations` + `modules/*/Resources/translations` + `integrations/*/Resources/translations`. GitLab: [`gereq/tool-i18n`](https://git.gereq.cz/gereq/tool-i18n). | `php tools/gereq-i18n/index-translations.php` → `.cache/i18n/catalog.json`; `bash tools/gereq-i18n/install.sh` installs into `~/.cursor-server/extensions/` (then *Developer: Reload Window*). Command palette: *GEREQ i18n: Reindex translations*. |
-| `tools/gereq-permissions/` | Extension `gereq.permissions` (v0.1.2): hover/autocomplete/F12 for permission keys (`user.can('…')` in Twig, `->can()`, `->permission()`, `permission:` in PHP). GitLab: [`gereq/tool-permissions`](https://git.gereq.cz/gereq/tool-permissions). | `php tools/gereq-permissions/index-permissions.php` → `.cache/permissions/catalog.json`; `bash tools/gereq-permissions/install.sh`. Command: *GEREQ Permissions: Reindex*. |
-| `tools/gereq-twig-goto/` | Extension `gereq.twig-goto` (v0.3.6, "GEREQ Twig IDE"): hover, `.`-completion and Go to Definition for variables in `.twig` files, based on types exported from controllers. Types are stored outside templates. GitLab: [`gereq/tool-twig-goto`](https://git.gereq.cz/gereq/tool-twig-goto). | `php gereq twig:types` (`src/Console/Command/TwigTypesCommand.php`) → `.cache/twig/types.json` + `.cache/twig/vars/**/*.types.twig`; `bash tools/gereq-twig-goto/install.sh`. Command: *GEREQ Twig: Reindex types*. Also includes `index-templates.php`. |
-| `tools/gereq-monitor/` | Extension `gereq.work-monitor` (v0.3.2, "GEREQ Pulse"): Toggl-style work tracking from the editor. GitLab: [`gereq/tool-pulse`](https://git.gereq.cz/gereq/tool-pulse). | `bash tools/gereq-monitor/install.sh` |
-| `tools/gereq-modules/` | Deprecated wrapper → `bin/grq modules`. GitLab: [`gereq/tool-modules`](https://git.gereq.cz/gereq/tool-modules). | `./tools/gereq-modules/gereq-modules.sh` → `grq modules` |
-| `tools/generate_tool_logos.py` | Generates `logo.svg` / `logo.png` / `icon.png` for each IDE tool. | `python3 tools/generate_tool_logos.py` |
-| `tools/publish-tools-to-gitlab.sh` | Push-to-create / update standalone GitLab projects under `gereq/tool-*`. | `bash tools/publish-tools-to-gitlab.sh` |
-| `tools/gitlab-set-tool-meta.sh` | Sets GitLab project description + avatar (`logo.png`) via API (`GITLAB_TOKEN`). | `bash tools/gitlab-set-tool-meta.sh` |
-| `tools/generate_gereq_platform_deck.py`, `tools/generate_gereq_platform_deck_editorial.py` | ReportLab sales deck PDFs (Windows brand paths). | `python tools/generate_gereq_platform_deck.py` |
+| `gereq-cli/` | Source of `grq` (OpenRouter agent for `pr` / module polish / `ai`) | see GEREQ_TOOLS README → build into `bin/dist` |
+| `gereq-env/` | Cursor/VS Code extension `gereq.gereq-env` (v0.1.0): autocomplete, hover and diagnostics for `.env` + `env_value()` from `config/env.schema.toml`. GitLab: [`gereq/tool-env`](https://git.gereq.cz/gereq/tool-env). | `bash gereq-env/install.sh`; generate `.env`: `bin/grq env init` / `php gereq env:init`. |
+| `gereq-i18n/` | Extension `gereq.i18n` (v0.2.2): hover, autocomplete and Go to Definition for translation keys. GitLab: [`gereq/tool-i18n`](https://git.gereq.cz/gereq/tool-i18n). | `php gereq-i18n/index-translations.php` → `.cache/i18n/catalog.json`; `bash gereq-i18n/install.sh`. |
+| `gereq-permissions/` | Extension `gereq.permissions` (v0.1.2). GitLab: [`gereq/tool-permissions`](https://git.gereq.cz/gereq/tool-permissions). | `php gereq-permissions/index-permissions.php`; `bash gereq-permissions/install.sh`. |
+| `gereq-twig-goto/` | Extension `gereq.twig-goto` (v0.3.6). GitLab: [`gereq/tool-twig-goto`](https://git.gereq.cz/gereq/tool-twig-goto). | `php gereq twig:types`; `bash gereq-twig-goto/install.sh`. |
+| `gereq-monitor/` | Extension `gereq.work-monitor` (v0.3.2, "GEREQ Pulse"). GitLab: [`gereq/tool-pulse`](https://git.gereq.cz/gereq/tool-pulse). | `bash gereq-monitor/install.sh` |
+| `gereq-modules/` | Deprecated wrapper → `bin/grq modules`. GitLab: [`gereq/tool-modules`](https://git.gereq.cz/gereq/tool-modules). | `./gereq-modules/gereq-modules.sh` → `grq modules` |
+| `gitlab-*.sh`, `publish-tools-to-gitlab.sh`, `generate_*.py` | GitLab helpers / logos / sales decks | see GEREQ_TOOLS README |
 
 Generated indexes live in `.cache/` (ignored by git; excluded from demo packages by `grq pack demo`).
 
@@ -75,7 +123,7 @@ TypeScript for the admin bundle is type-checked by the `tsconfig.json` at the ro
 | Command | Description (from `#[AsCommand]`) |
 | --- | --- |
 | `php gereq about` | Information about GEREQ Platform |
-| `php gereq twig:types` | Generate Twig types into `.cache/twig/` |
+| `php gereq twig:types` | Generate Twig types into `.cache/twig/` (needs [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) via `GEREQ_TOOLS` or sibling checkout) |
 | `php gereq nn [--minutes]` | List N+1 queries from the last N minutes (reads `storage/logs/nplusone.log`) |
 | `php gereq user:create [--name --email --password --role=superadmin\|admin\|editor\|view]` | Create a user |
 | `php gereq serve [--host=0.0.0.0] [--port=8080]` | Built-in PHP server (`public/router.php`) |

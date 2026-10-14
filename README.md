@@ -28,12 +28,13 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 
 ## Instalace
 
-Clone (moduly jsou **git submodules** → `gereq/module-<id>`; dockerless → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) v `dev/dockerless`; tooling → [gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) v `tools/`):
+Clone (moduly jsou **git submodules** → `gereq/module-<id>`; dockerless → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) v `dev/dockerless`; CLI binárky v `bin/` — zdroje toolingu v [gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)):
 
 ```bash
-git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
+git clone --recurse-submodules -b dev git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
 # nebo po klasickém clone:
-git submodule update --init --recursive
+❯ ./bin/grq modules pull --init          # doporučeno (klonuje z GitLabu dle .gitmodules)
+# případně: git submodule update --init --recursive
 ```
 
 ### Nový klient (doporučeno)
@@ -41,14 +42,14 @@ git submodule update --init --recursive
 Interaktivní TUI — Composer, `.env`, assets, **čistá DB**, admin účet:
 
 ```bash
-./bin/grq install
+❯ ./bin/grq install
 ```
 
 Nebo non-interactive po vygenerovaném `.env`:
 
 ```bash
 composer install
-./bin/grq env init          # nebo: php gereq env:init
+❯ ./bin/grq env init          # nebo: php gereq env:init
 # doplňte DB_* podle potřeby (admin účet se zadává při migrate/install, ne do .env)
 php gereq migrate --fresh --seed --no-demo --no-sample
 bun install && bun run build
@@ -60,7 +61,7 @@ bun install && bun run build
 
 ```bash
 composer install
-./bin/grq env init   # katalog klíčů: config/env.schema.toml
+❯ ./bin/grq env init   # katalog klíčů: config/env.schema.toml
 ```
 
 Do `.env` doplňte přístupové údaje (klíče `APP_KEY` / `DB_PASSWORD` se vygenerují).
@@ -109,9 +110,14 @@ Migrace:
 
 Katalog klíčů: `config/env.schema.toml`. Generování: `./bin/grq env init` / `php gereq env:init` (Docker: `--docker`). Validace: `./bin/grq env validate` / `php gereq env:validate`.
 
-IDE (Cursor/VS Code): `bash tools/gereq-env/install.sh` → autocomplete / hover / diagnostika v `.env` a `env_value('…')` (zdroje v [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).
+IDE (Cursor/VS Code): klonuj [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS), `export GEREQ_ROOT=…`, pak `bash gereq-env/install.sh` → autocomplete / hover / diagnostika v `.env` a `env_value('…')`.
 
-CLI: `./bin/grq` — doctor, install, pack, commit, pr, modules (zdroj `tools/gereq-cli/` ze submodule [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).
+CLI: `./bin/grq` — doctor, install, pack, commit, pr, ai, modules / modules-git (prebuilt v `bin/dist/`; zdroj [GEREQ_TOOLS/gereq-cli](https://git.gereq.cz/gereq/GEREQ_TOOLS/-/tree/main/gereq-cli)). Nápověda: `❯ ./bin/grq help`, `❯ ./bin/grq ai help`, `❯ ./bin/grq modules help`.
+
+```bash
+❯ ./bin/grq ai
+# v TUI např.: aktualizuj modul CMS na 1.22.2 s popisem YAZ
+```
 
 | Proměnná | Význam |
 | --- | --- |
@@ -124,7 +130,7 @@ CLI: `./bin/grq` — doctor, install, pack, commit, pr, modules (zdroj `tools/ge
 | `SESSION_DRIVER` | `file`, `redis` (Docker `serve-docker` vynutí `redis`) |
 | `FILE_DRIVER` | `local` (S3 driver lze doplnit) |
 | `GITLAB_URL` | GitLab instance (default `https://git.gereq.cz`) |
-| `GITLAB_TOKEN` | token s `read_api` / `read_repository` (+ `api` pro zakládání modulů) |
+| `GITLAB_TOKEN` | PAT (`api` …) — nastav: `./bin/grq gitlab auth login` / `gitlab init token` |
 | `GITLAB_GROUP` | skupina projektů (default `gereq`) |
 | `MODULE_REPO_PREFIX` | prefix repa (`module-` → `gereq/module-listings`) |
 
@@ -244,24 +250,58 @@ Příklad: capability `contacts` může poskytovat GEREQ CRM, HubSpot modul i vl
 
 IDE tip: po převodu na submodules Cursor/VS Code může u souborů uvnitř `modules/*` ukazovat **D** (deleted) vůči parent repu — soubory na disku jsou, jen je parent už nesleduje jako běžné soubory (sleduje gitlink). Badge **S** = submodule.
 
-### Práce se submodulem
+### Stahování modulů z GitLabu (`grq modules pull`)
+
+Aktivní sada modulů je v **`.gitmodules`**. Pull stáhne / aktualizuje checkouts (jako `git submodule update`, včetně klonu chybějících):
 
 ```bash
-# aktualizovat jeden modul na nový tag
-cd modules/CRM
-git fetch --tags
-git checkout v1.6.4
-cd ../..
-git add modules/CRM
-git commit -m "chore: pin CRM to v1.6.4"
-git push
-
-# srovnání lokálních verzí vs GitLab tagy (TUI)
-./bin/grq modules
-./bin/grq modules status --plain
+❯ ./bin/grq modules pull [--force] [--init]     # všechny z .gitmodules
+❯ ./bin/grq module Cms pull [--force] [--init]  # jeden modul
 ```
 
-Commit kódu modulu patří do **module repo** (`module-crm`). Commit v `GEREQ_PLATFORM` jen posouvá pin submodule (SHA/tag).
+Relativní URL (`../module-cms.git`) se při klonu rozliší přes `GITLAB_URL` + `GITLAB_GROUP`. Volitelný klíč `branch = v1.2.3` v `.gitmodules` pinuje tag/větev po update.
+
+### Výběr sady modulů (`grq modules-git`)
+
+Pracovní sada se připraví v **`.gitmodules.disabled`**. Až je hotová, `use` ji aktivuje:
+
+| Příkaz | Co dělá |
+| --- | --- |
+| `modules-git add Module[@tag]…` | Přidá/aktualizuje záznam (bez `@tag` → latest z GitLabu, potřebuje `GITLAB_TOKEN`) |
+| `modules-git remove Module…` | Odebere ze `.gitmodules.disabled` |
+| `modules-git include Module[@tag]…` | **Jen** uvedené moduly; ostatní smaže z `modules/` i ze disabled souboru |
+| `modules-git exclude Module…` | Vše z aktuálního `.gitmodules` **kromě** uvedených |
+| `modules-git use [--force]` | Swap: prepared → `.gitmodules`, předchozí → `.gitmodules.disabled`; `modules.bak.zip`; vyprázdní `modules/`; pull |
+
+```bash
+# příklad: jen CMS + Listings
+❯ ./bin/grq modules-git include CMS@1.20.1 Listing
+❯ ./bin/grq modules-git use
+
+# nebo postupně:
+❯ ./bin/grq modules-git add CMS Listing@1.20.1
+❯ ./bin/grq modules-git remove Coupons
+❯ ./bin/grq modules-git use --force
+```
+
+### Release / pin / status
+
+```bash
+# interaktivní release dirty modulů (verze, feat, desc, files)
+❯ ./bin/grq modules update
+# jeden modul z CLI:
+❯ ./bin/grq module cms update 2.14.0 builder-fix "Fix block reorder"
+
+# ruční pin tagu (alternativně k modules-git / pull)
+cd modules/CRM && git fetch --tags && git checkout v1.6.4 && cd ../..
+git add modules/CRM && git commit -m "chore: pin CRM to v1.6.4"
+
+# srovnání lokálních verzí vs GitLab tagy
+❯ ./bin/grq modules
+❯ ./bin/grq modules status --plain
+```
+
+Commit kódu modulu patří do **module repo** (`module-crm`). Commit v `GEREQ_PLATFORM` jen posouvá pin submodule (SHA/tag) / obsah `.gitmodules`.
 
 ### Verze a instalace z GitLabu
 
@@ -316,7 +356,7 @@ $events->dispatch(new CustomerCreated($customer->id()));
 ### 1. Kostra v platformě
 
 ```bash
-./bin/grq modules create Warehouse --kind warehouse
+❯ ./bin/grq modules create Warehouse --kind warehouse
 # or: php gereq make:module Warehouse
 ```
 
@@ -343,7 +383,7 @@ git submodule add git@git.gereq.cz:gereq/module-warehouse.git modules/Warehouse
 git add .gitmodules modules/Warehouse
 git commit -m "chore: add Warehouse submodule @ v0.1.0"
 # CI: povolit job token z GEREQ_PLATFORM (jednou na nový module projekt)
-#   GITLAB_TOKEN=… bash tools/gitlab-allow-platform-job-token.sh
+#   GITLAB_TOKEN=… bash /path/to/GEREQ_TOOLS/gitlab-allow-platform-job-token.sh
 #   nebo UI: module → Settings → CI/CD → Job token permissions → gereq/GEREQ_PLATFORM
 
 git push

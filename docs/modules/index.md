@@ -2,6 +2,8 @@
 
 GEREQ ships business functionality as self-contained modules under `modules/<Dir>/`. Each module is its own git repository (`git.gereq.cz/gereq/module-<id>`) pinned as a submodule, carries a `module.php` manifest, a `<Dir>Module.php` class with `register()`/`boot()`, and owns its Doctrine entities, admin UI, API, events, dashboard widgets and migrations. Modules never touch another module's tables; they integrate through capabilities, providers and guarded `class_exists()` lookups. See [Module system](../architecture/module-system.md) for the lifecycle and [Creating a module](../development/creating-a-module.md) for the workflow.
 
+Checkout / subset from GitLab: `./bin/grq modules pull`, `./bin/grq modules-git …` — [Tooling](../infrastructure/tooling.md#modules-pull-and-modules-git).
+
 Versions below are read from `module.php` at the time of writing; the authoritative value is always the manifest. Current workspace pins use **`1.99.0`** across modules (development alignment).
 
 ## Packages
