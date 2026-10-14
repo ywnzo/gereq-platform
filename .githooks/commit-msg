@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
-# Strip Co-authored-by trailers and enforce Conventional Commits on the subject line.
+# Strip Co-authored-by trailers, self-heal Conventional Commits subjects,
+# then enforce the final shape (feat: … / fix(shop): … / chore: …).
 set -euo pipefail
+
+HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$HOOKS_DIR/lib/common.sh"
 
 MSG_FILE="${1:-}"
 [[ -n "$MSG_FILE" && -f "$MSG_FILE" ]] || exit 0
+
+if hook_skip_requested; then
+  hook_info "commit-msg: skipped (GEREQ_HOOKS_SKIP / SKIP_REPO_GUARD set)."
+  exit 0
+fi
+
+TYPES='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+CONVENTIONAL_RE="^(${TYPES})(\\([a-zA-Z0-9/_-]+\\))?(!)?: .+"
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
@@ -16,18 +29,89 @@ awk '
     for (i = 1; i <= n; i++) print lines[i]
   }
 ' "$MSG_FILE" > "$tmp"
-
 mv "$tmp" "$MSG_FILE"
 trap - EXIT
 
 subject="$(head -n1 "$MSG_FILE" | tr -d '\r')"
-# Allow empty (amend/editor abort paths) and merge/fixup subjects.
-if [[ -z "$subject" || "$subject" =~ ^(Merge|fixup!)([[:space:]]|$) ]]; then
+# Allow empty (amend/editor abort paths) and merge/fixup/squash subjects.
+if [[ -z "$subject" || "$subject" =~ ^(Merge|fixup!|squash!)([[:space:]]|$) ]]; then
   exit 0
 fi
 
-# Same shape as GitLab pre-receive: feat: … / fix(shop): … / chore: …
-if [[ ! "$subject" =~ ^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9/_-]+\))?(!)?:\ .+ ]]; then
+original="$subject"
+healed="$subject"
+
+# Already valid — nothing to do.
+if [[ "$healed" =~ $CONVENTIONAL_RE ]]; then
+  exit 0
+fi
+
+# Self-heal common mistakes before failing hard.
+# 1) "Feat: foo" / "CHORE: foo" → lowercase type
+if [[ "$healed" =~ ^([A-Za-z]+)(\([a-zA-Z0-9/_-]+\))?(!)?:[[:space:]]*(.+)$ ]]; then
+  type_raw="${BASH_REMATCH[1]}"
+  scope="${BASH_REMATCH[2]}"
+  bang="${BASH_REMATCH[3]}"
+  rest="${BASH_REMATCH[4]}"
+  type_lc="$(printf '%s' "$type_raw" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$type_lc" =~ ^(${TYPES})$ ]]; then
+    healed="${type_lc}${scope}${bang}: ${rest}"
+  fi
+fi
+
+# 2) "chore foo" / "fix(shop) foo" / "feat! foo" (missing colon)
+if [[ ! "$healed" =~ $CONVENTIONAL_RE ]] \
+  && [[ "$healed" =~ ^([A-Za-z]+)(\([a-zA-Z0-9/_-]+\))?(!)?[[:space:]]+(.+)$ ]]; then
+  type_raw="${BASH_REMATCH[1]}"
+  scope="${BASH_REMATCH[2]}"
+  bang="${BASH_REMATCH[3]}"
+  rest="${BASH_REMATCH[4]}"
+  type_lc="$(printf '%s' "$type_raw" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$type_lc" =~ ^(${TYPES})$ ]]; then
+    healed="${type_lc}${scope}${bang}: ${rest}"
+  fi
+fi
+
+# 3) "chore:foo" (missing space after colon)
+if [[ ! "$healed" =~ $CONVENTIONAL_RE ]] \
+  && [[ "$healed" =~ ^([A-Za-z]+)(\([a-zA-Z0-9/_-]+\))?(!)?:([^[:space:]].*)$ ]]; then
+  type_raw="${BASH_REMATCH[1]}"
+  scope="${BASH_REMATCH[2]}"
+  bang="${BASH_REMATCH[3]}"
+  rest="${BASH_REMATCH[4]}"
+  type_lc="$(printf '%s' "$type_raw" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$type_lc" =~ ^(${TYPES})$ ]]; then
+    healed="${type_lc}${scope}${bang}: ${rest}"
+  fi
+fi
+
+# 4) No recognizable type — default to chore:
+if [[ ! "$healed" =~ $CONVENTIONAL_RE ]]; then
+  # Strip a leading junk prefix like "[wip]" / "WIP:" that is not a known type.
+  cleaned="$healed"
+  if [[ "$cleaned" =~ ^\[([^]]+)\][[:space:]]*(.*)$ ]]; then
+    cleaned="${BASH_REMATCH[2]}"
+  fi
+  cleaned="$(printf '%s' "$cleaned" | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//')"
+  [[ -z "$cleaned" ]] && cleaned="$healed"
+  healed="chore: ${cleaned}"
+fi
+
+if [[ "$healed" != "$original" ]]; then
+  out="$(mktemp)"
+  {
+    printf '%s\n' "$healed"
+    # Keep body (everything after the first line), if any.
+    tail -n +2 "$MSG_FILE"
+  } >"$out"
+  mv "$out" "$MSG_FILE"
+  hook_info "commit-msg: self-healed subject:"
+  hook_info "  from: ${original}"
+  hook_info "  to:   ${healed}"
+  subject="$healed"
+fi
+
+if [[ ! "$subject" =~ $CONVENTIONAL_RE ]]; then
   echo "commit-msg: subject must follow Conventional Commits, e.g. 'feat: …' / 'fix(shop): …' / 'chore: …'." >&2
   echo "commit-msg: got: ${subject}" >&2
   exit 1

@@ -142,12 +142,12 @@ php gereq serve-docker --down
 
 ## `Makefile` (Docker-only workflow)
 
-The `Makefile` needs only Docker on the host; PHP, Composer and Bun run in containers (`oven/bun:1.2` for assets). It exports `GEREQ_PORT=$(PORT)`, `APP_URL` (`https://127.0.0.1` if `HTTPS=1`, else `http://127.0.0.1:$(PORT)`) and `TRUSTED_PROXIES=*`, and adds `docker-compose.https.yml` when `HTTPS=1`.
+The `Makefile` needs a **running** Docker daemon plus the Compose plugin on the host; PHP, Composer and Bun run in containers (`oven/bun:1.2` for assets). Prebuilt `bin/grq` is used for `.env` generation (Go is only required for `make grq`). It exports `GEREQ_PORT=$(PORT)` and `TRUSTED_PROXIES=*`, and adds `docker-compose.https.yml` when `HTTPS=1`. Before `up` it creates `storage/*` and placeholder sibling dirs `../fe` / `../cms-lib` when missing (compose bind mounts).
 
 | Target | What it does |
 | --- | --- |
 | `help` (default) | prints the cheat-sheet |
-| `env` | runs `bin/grq env init --docker` if `.env` is missing; generates `APP_KEY` and `DB_PASSWORD` from `config/env.schema.toml`; sets `APP_URL`, `APP_DEBUG=true`, `DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `REDIS_HOST=redis`, `SESSION_DRIVER=redis`, `QUEUE_DRIVER=redis`, `CACHE_DRIVER=redis`; creates `storage/*` dirs |
+| `env` | ensures `bin/grq`, creates `storage/*`, runs `bin/grq env init --docker` if `.env` is missing; requires `DB_PASSWORD`; `FORCE_ENV=1` regenerates the docker profile |
 | `certs` | self-signed `dev.crt`/`dev.key` in `docker/nginx/certs/` (openssl on host or `alpine/openssl` container) |
 | `build` | `docker compose build` |
 | `up` | (`certs` if `HTTPS=1`) then `docker compose up -d` (`--build` when `BUILD=1`), prints URLs |
@@ -155,20 +155,22 @@ The `Makefile` needs only Docker on the host; PHP, Composer and Bun run in conta
 | `restart` | `down` + `up` |
 | `logs` | `docker compose logs -f --tail=200` |
 | `ps` / `status` | container status |
-| `shell` / `bash` | `docker compose exec php bash` |
-| `composer` | `docker compose run --rm --no-deps php composer install --no-interaction --prefer-dist` |
+| `shell` / `bash` | `exec` into running `php`, or one-off `run` if the stack is down |
+| `composer` | builds PHP image if missing, then `composer install` |
 | `assets` | `bun install` + `bun run build` inside `oven/bun:1.2` |
-| `migrate` | starts postgres+redis, `php gereq migrate --no-interaction` in a one-off `php` container |
+| `migrate` | waits for healthy postgres, then `php gereq migrate --no-interaction` |
 | `migrate-fresh` | `php gereq migrate --fresh --seed --no-demo --no-sample --no-interaction` (`SEED_FLAGS`) |
 | `seed` | `php gereq seed:demo --no-interaction` |
 | `install` | `env build composer assets migrate-fresh up` |
 | `demo` | like `install` but `migrate --fresh --seed --no-interaction` (`DEMO_FLAGS`), i.e. with demo data |
-| `gereq ARGS="…"` | run any `php gereq …` command in a one-off container |
+| `gereq ARGS="…"` | run any `php gereq …` command in a one-off container (after postgres is ready) |
 | `adminer` / `adminer-down` | start/stop Adminer (`tools` profile) on `:8086` |
-| `hot` | Vite HMR via `oven/bun:1.2` container publishing `5173:5173` |
+| `hot` | Bun watch via `oven/bun:1.2` rebuilding `public/build` |
 | `urls` | print access URLs |
+| `grq` / `grq-release` | rebuild host `bin/dist/grq-*` (needs Go + `tools/` submodule) |
+| `submodules` | `git submodule update --init --recursive` |
 
-Variables: `PORT=8080`, `HTTPS=0`, `BUILD=0`, `SEED_FLAGS`, `DEMO_FLAGS`.
+Variables: `PORT=8080`, `HTTPS=0`, `BUILD=0`, `FORCE_ENV=0`, `SEED_FLAGS`, `DEMO_FLAGS`.
 
 ```bash
 make install

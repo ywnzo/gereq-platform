@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+# Block commits that would damage the platform repository:
+# secrets, build/vendor dumps, oversized blobs, conflict markers,
+# and especially accidental inlining of git submodule trees under modules/.
+set -euo pipefail
+
+HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$HOOKS_DIR/lib/common.sh"
+
+if hook_skip_requested; then
+  hook_info "pre-commit: skipped (GEREQ_HOOKS_SKIP / SKIP_REPO_GUARD set)."
+  exit 0
+fi
+
+# Empty commit (e.g. --allow-empty) — nothing to guard.
+if git diff --cached --quiet; then
+  exit 0
+fi
+
+errors=0
+warn() { hook_info "pre-commit: $*"; }
+fail() { warn "ERROR: $*"; errors=$((errors + 1)); }
+
+MAX_BYTES="$(max_blob_bytes)"
+
+# Load submodule paths from working-tree .gitmodules (authoritative layout).
+KNOWN_SUBMODULES_FILE="$(mktemp)"
+trap 'rm -f "$KNOWN_SUBMODULES_FILE"' EXIT
+if [[ -f .gitmodules ]]; then
+  git config -f .gitmodules --get-regexp '^submodule\..*\.path$' 2>/dev/null \
+    | awk '{print $2}' | sort -u >"$KNOWN_SUBMODULES_FILE" || true
+fi
+
+is_known_submodule() {
+  [[ -s "$KNOWN_SUBMODULES_FILE" ]] && grep -Fxq -- "$1" "$KNOWN_SUBMODULES_FILE"
+}
+
+staged_paths_file="$(mktemp)"
+trap 'rm -f "$KNOWN_SUBMODULES_FILE" "$staged_paths_file"' EXIT
+git diff --cached --name-only --diff-filter=ACMRT >"$staged_paths_file"
+
+# ---------------------------------------------------------------------------
+# 1) Path denylist — secrets, junk, runtime dumps
+# ---------------------------------------------------------------------------
+while IFS= read -r path || [[ -n "${path:-}" ]]; do
+  [[ -z "${path:-}" ]] && continue
+
+  if is_blocked_secret_path "$path"; then
+    fail "refusing secret/credential path: $path"
+    continue
+  fi
+
+  if is_blocked_junk_path "$path"; then
+    fail "refusing generated/runtime path: $path"
+    continue
+  fi
+done <"$staged_paths_file"
+
+# ---------------------------------------------------------------------------
+# 2) Submodule integrity — modules/* must stay gitlinks (mode 160000)
+# ---------------------------------------------------------------------------
+while IFS= read -r path || [[ -n "${path:-}" ]]; do
+  [[ -z "${path:-}" ]] && continue
+
+  case "$path" in
+    .git/*|*/.git|*/.git/*)
+      fail "refusing nested git metadata: $path"
+      continue
+      ;;
+  esac
+
+  # Any file inside a submodule working tree must never be committed here.
+  if [[ "$path" == modules/*/* ]]; then
+    fail "refusing file inside submodule tree (commit in the module repo, not platform): $path"
+    continue
+  fi
+
+  if [[ "$path" == modules/* && "$path" != modules/*/* ]]; then
+    mode="$(git ls-files --stage -- "$path" | awk 'NR==1 {print $1}')"
+    if is_known_submodule "$path" && [[ "$mode" != "160000" ]]; then
+      fail "module path must remain a gitlink (mode 160000), got ${mode:-unknown}: $path"
+      continue
+    fi
+    if [[ "$mode" == "160000" ]] && ! is_known_submodule "$path"; then
+      fail "gitlink staged but missing from .gitmodules: $path"
+      continue
+    fi
+  fi
+done <"$staged_paths_file"
+
+# Deleting a tracked submodule gitlink without updating .gitmodules is suspicious.
+while IFS= read -r path || [[ -n "${path:-}" ]]; do
+  [[ -z "${path:-}" ]] && continue
+  if [[ "$path" == modules/* && "$path" != modules/*/* ]] && is_known_submodule "$path"; then
+    if git diff --cached --name-only | grep -Fxq -- '.gitmodules'; then
+      staged_gitmodules="$(mktemp)"
+      git show :.gitmodules >"$staged_gitmodules" 2>/dev/null || true
+      if git config -f "$staged_gitmodules" --get-regexp '^submodule\..*\.path$' 2>/dev/null \
+        | awk '{print $2}' | grep -Fxq -- "$path"; then
+        fail "deleting submodule gitlink while it still exists in staged .gitmodules: $path"
+      fi
+      rm -f "$staged_gitmodules"
+    else
+      fail "deleting submodule gitlink without staging .gitmodules update: $path"
+    fi
+  fi
+done < <(git diff --cached --name-only --diff-filter=D)
+
+# ---------------------------------------------------------------------------
+# 3) Oversized blobs
+# ---------------------------------------------------------------------------
+while IFS= read -r path || [[ -n "${path:-}" ]]; do
+  [[ -z "${path:-}" ]] && continue
+  mode="$(git ls-files --stage -- "$path" | awk 'NR==1 {print $1}')"
+  [[ "$mode" == "160000" ]] && continue
+
+  size="$(git cat-file -s ":$path" 2>/dev/null || echo 0)"
+  if [[ "$size" -gt "$MAX_BYTES" ]]; then
+    human="$(awk -v s="$size" 'BEGIN { printf "%.1f MiB", s/1024/1024 }')"
+    fail "file too large (${human} > $((MAX_BYTES / 1024 / 1024)) MiB): $path"
+  fi
+done <"$staged_paths_file"
+
+# ---------------------------------------------------------------------------
+# 4) Conflict markers in newly added lines
+# ---------------------------------------------------------------------------
+conflict_hits="$(
+  git diff --cached --diff-filter=ACMRT -U0 --text \
+    | grep -E '^\+(<<<<<<< |>>>>>>>)|^\+=======$' \
+    || true
+)"
+if [[ -n "$conflict_hits" ]]; then
+  fail "staged changes contain unresolved conflict markers (<<<<<<< / ======= / >>>>>>>)"
+  printf '%s\n' "$conflict_hits" | head -n 20 >&2
+fi
+
+# ---------------------------------------------------------------------------
+# 5) Lightweight secret content heuristics (added lines, text-ish files)
+# ---------------------------------------------------------------------------
+while IFS= read -r path || [[ -n "${path:-}" ]]; do
+  [[ -z "${path:-}" ]] && continue
+  mode="$(git ls-files --stage -- "$path" | awk 'NR==1 {print $1}')"
+  [[ "$mode" == "160000" ]] && continue
+
+  size="$(git cat-file -s ":$path" 2>/dev/null || echo 0)"
+  [[ "$size" -gt 1048576 ]] && continue
+
+  case "$(path_lower "$path")" in
+    *.png|*.jpg|*.jpeg|*.gif|*.webp|*.ico|*.pdf|*.zip|*.gz|*.woff|*.woff2|*.ttf|*.otf| \
+    *.mp3|*.mp4|*.webm|*.sqlite|*.sqlite3|*.db|*.exe|*.dll|*.so|*.phar|*.jar|*.wasm|*.lock)
+      continue
+      ;;
+  esac
+
+  added="$(git diff --cached -U0 -- "$path" | grep -E '^\+[^+]' || true)"
+  [[ -z "$added" ]] && continue
+
+  if printf '%s\n' "$added" | grep -E -q 'BEGIN (RSA |OPENSSH |EC |DSA |PGP )?PRIVATE KEY'; then
+    fail "possible private key in staged content: $path"
+    continue
+  fi
+  if printf '%s\n' "$added" | grep -E -q 'AKIA[0-9A-Z]{16}'; then
+    fail "possible AWS access key in staged content: $path"
+    continue
+  fi
+  if printf '%s\n' "$added" | grep -E -q 'ghp_[A-Za-z0-9]{36}'; then
+    fail "possible GitHub token in staged content: $path"
+    continue
+  fi
+  if printf '%s\n' "$added" | grep -E -q 'glpat-[A-Za-z0-9_\-]{20,}'; then
+    fail "possible GitLab token in staged content: $path"
+    continue
+  fi
+  # Soft assignment heuristic: skip docs/markdown (examples) to avoid false positives.
+  case "$path" in
+    docs/*|*.md|*.mdc|*.txt)
+      continue
+      ;;
+  esac
+  if printf '%s\n' "$added" | grep -Ei -q '(api[_-]?key|secret[_-]?key|client[_-]?secret|access[_-]?token)[[:space:]]*[:=][[:space:]]*['\''"][^'\''"]{16,}'; then
+    fail "possible hardcoded secret assignment in staged content: $path"
+    continue
+  fi
+done <"$staged_paths_file"
+
+# ---------------------------------------------------------------------------
+# Result
+# ---------------------------------------------------------------------------
+if [[ "$errors" -gt 0 ]]; then
+  hook_info ""
+  hook_info "pre-commit: blocked $errors issue(s). Fix or unstage the paths above."
+  hook_info "pre-commit: emergency bypass: GEREQ_HOOKS_SKIP=1 git commit ..."
+  exit 1
+fi
+
+exit 0

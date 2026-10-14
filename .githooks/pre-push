@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Extra safety on push: refuse deleting protected branch refs and warn on force-push.
+set -euo pipefail
+
+HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$HOOKS_DIR/lib/common.sh"
+
+if hook_skip_requested; then
+  hook_info "pre-push: skipped (GEREQ_HOOKS_SKIP / SKIP_REPO_GUARD set)."
+  exit 0
+fi
+
+remote="${1:-}"
+url="${2:-}"
+errors=0
+fail() { hook_info "pre-push: ERROR: $*"; errors=$((errors + 1)); }
+
+is_protected_branch() {
+  case "$1" in
+    main|master|dev|production|prod)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+zero="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_ref:-}" ]] && continue
+
+  remote_branch="${remote_ref#refs/heads/}"
+
+  # Deleting a protected branch on the remote.
+  if [[ "$local_sha" == "$zero" ]] && is_protected_branch "$remote_branch"; then
+    fail "refusing to delete protected remote branch '$remote_branch' on ${remote:-remote}"
+    continue
+  fi
+
+  # Non-fast-forward / force update to a protected branch.
+  if [[ "$remote_sha" != "$zero" && "$local_sha" != "$zero" ]] && is_protected_branch "$remote_branch"; then
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      fail "non-fast-forward update to protected branch '$remote_branch' (force-push?). Use an explicit recovery procedure."
+      continue
+    fi
+  fi
+done
+
+if [[ "$errors" -gt 0 ]]; then
+  hook_info "pre-push: blocked $errors issue(s). Bypass: GEREQ_HOOKS_SKIP=1 git push ..."
+  [[ -n "$url" ]] && hook_info "pre-push: remote url: $url"
+  exit 1
+fi
+
+exit 0

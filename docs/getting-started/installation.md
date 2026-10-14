@@ -89,7 +89,7 @@ Notes:
 
 ## Option C — Docker only (`Makefile`)
 
-The `Makefile` needs only Docker and `docker compose` on the host; PHP, Composer and Bun run inside containers (`oven/bun:1.2` for assets).
+The `Makefile` needs a **running** Docker daemon and the Compose plugin on the host; PHP, Composer and Bun run inside containers (`oven/bun:1.2` for assets). It also uses prebuilt `bin/grq` for `.env` and creates `storage/*` plus placeholder `../fe` / `../cms-lib` bind mounts when missing.
 
 ```bash
 make install            # .env + image build + composer + assets + migrate --fresh --seed --no-demo --no-sample + up

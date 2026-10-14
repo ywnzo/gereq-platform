@@ -1,4 +1,4 @@
-name: gereq-doprovodvohralik
+name: gereq_platform
 
 # Bind-mount the project with consistency: consistent so Docker Desktop's
 # virtualized FS (fakeowner / VirtioFS) reflects host writes immediately.
