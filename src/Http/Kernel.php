@@ -8,6 +8,7 @@ use Gereq\Auth\Authenticator;
 use Gereq\Debug\DebugBar;
 use Gereq\Http\Exception\NotFoundHttpException;
 use Gereq\Http\Middleware\AuthMiddleware;
+use Gereq\Http\Middleware\AutoUpdateModulesMiddleware;
 use Gereq\Http\Middleware\CsrfMiddleware;
 use Gereq\Http\Middleware\GuestMiddleware;
 use Gereq\Http\Middleware\ModuleCurrentMiddleware;
@@ -140,6 +141,10 @@ final class Kernel
 
         if (!$isApi && $route->getPermission() !== null) {
             $middleware[] = $this->container->get(PermissionMiddleware::class)->withPermission($route->getPermission());
+        }
+
+        if (!$isApi && AdminPath::matches($request->getPathInfo())) {
+            $middleware[] = AutoUpdateModulesMiddleware::class;
         }
 
         $moduleId = $route->getModule() ?? $this->inferModuleId($route->getName());

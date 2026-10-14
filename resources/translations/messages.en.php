@@ -1177,6 +1177,8 @@ return [
     'security.totp.setup_expired' => 'Setup expired. Start again.',
     'security.totp.title' => 'Authenticator (TOTP)',
     'settings.admin.theme' => 'Theme',
+    'settings.admin.modules.auto_update' => 'Auto update modules (development mode)',
+    'settings.admin.modules.auto_update.help' => 'In a development environment, visiting the admin as a module manager automatically runs migrations and updates enabled modules. This option is inactive in production.',
     'settings.admin.path' => 'Admin URL path',
     'settings.admin.path.help' => 'Set in .env as ADMIN_PATH (default admin → /admin; e.g. gereq-platform/admin). Recreate the PHP container / restart after changing.',
     'settings.app.locale' => 'Application language',

@@ -1194,6 +1194,8 @@ return [
     'security.totp.setup_expired' => 'Nastavení vypršelo. Spusťte ho znovu.',
     'security.totp.title' => 'Authenticator (TOTP)',
     'settings.admin.theme' => 'Motiv',
+    'settings.admin.modules.auto_update' => 'Automaticky aktualizovat moduly (vývojový režim)',
+    'settings.admin.modules.auto_update.help' => 'Ve vývojovém prostředí se při návštěvě administrace správcem modulů automaticky provedou migrace a aktualizace zapnutých modulů. V produkci je tato volba neaktivní.',
     'settings.admin.path' => 'URL cesta administrace',
     'settings.admin.path.help' => 'Nastavuje se v .env jako ADMIN_PATH (výchozí admin → /admin; např. gereq-platform/admin). Po změně recreate PHP kontejneru / restart aplikace.',
     'settings.app.locale' => 'Jazyk aplikace',

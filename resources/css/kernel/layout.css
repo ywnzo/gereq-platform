@@ -192,6 +192,11 @@ body.admin-body {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
 }
+/* Lift the menu's stacking context above workspace panels, below global overlays. */
+.topbar:has(.user-menu > .flyout.is-open) {
+    z-index: 45;
+}
+
 .topbar__left,
 .topbar__right {
     display: flex;

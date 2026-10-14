@@ -287,6 +287,8 @@ final class Application
                 ->constructorParameter('debugBar', \DI\get(DebugBar::class)),
             \Gereq\Http\StorefrontRebuild::class => autowire()
                 ->constructorParameter('basePath', $basePath),
+            \Gereq\Http\Middleware\AutoUpdateModulesMiddleware::class => autowire()
+                ->constructorParameter('basePath', $basePath),
             \Gereq\Admin\Http\SettingsController::class => autowire()
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Http\BrandAssetController::class => autowire()

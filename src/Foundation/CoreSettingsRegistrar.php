@@ -88,6 +88,12 @@ final class CoreSettingsRegistrar
             'dark' => 'settings.theme.dark',
         ]);
         $this->settings->define(
+            \Gereq\Http\Middleware\AutoUpdateModulesMiddleware::SETTING_ENABLED,
+            SettingRecord::TYPE_BOOLEAN,
+            'settings.admin.modules.auto_update',
+            false,
+        );
+        $this->settings->define(
             \Gereq\Admin\Dashboard\Dashboard::LAYOUT_SETTING,
             SettingRecord::TYPE_JSON,
             'settings.dashboard.layout',
