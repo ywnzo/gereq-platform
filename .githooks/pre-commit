@@ -206,7 +206,7 @@ fi
 #    Override: GEREQ_HOOKS_QUALITY=cs|full|analyse|off
 # ---------------------------------------------------------------------------
 quality_mode="$(quality_mode_requested changed)"
-if ! quality_run_pipeline "$quality_mode" "$staged_paths_file"; then
+if ! quality_run_pipeline "$quality_mode" "$staged_paths_file" commit; then
   hook_info "pre-commit: quality FAILED (mode=$quality_mode) — commit blocked."
   hook_info "pre-commit: bypass quality only: GEREQ_HOOKS_SKIP_QUALITY=1 git commit ..."
   hook_info "pre-commit: note: on git push, SKIP_QUALITY is ignored — analysis must pass."

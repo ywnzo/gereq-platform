@@ -14,7 +14,7 @@ bin/grq commit --install-hooks
 | --- | --- |
 | `pre-commit` | Blocks secrets, vendor/build/storage dumps, oversized blobs, conflict markers, and accidental commits of files inside `modules/*` submodules. Then runs **quality on staged paths** (PHP tools + JS/TS when frontend surface is staged). |
 | `commit-msg` | Strips `Co-authored-by`; self-heals Conventional Commits subjects (`chore foo` → `chore: foo`, bare text → `chore: …`); then enforces the final shape |
-| `pre-push` | Blocks deletion / non-fast-forward pushes to protected branches (`main`, `master`, `dev`, `production`, `prod`). Then runs **quality on files in the push range** (`remote..local`). **Analysis failure always blocks the push** (`GEREQ_HOOKS_SKIP_QUALITY` / `QUALITY=off` are ignored on push). |
+| `pre-push` | Blocks deletion / non-fast-forward pushes to protected branches (`main`, `master`, `dev`, `production`, `prod`). Then runs **quality on files in the push range** (`remote..local`), unless a matching stamp from a successful `pre-commit` already verified the same mode + file blobs (typical `commit` → `push` flow). **Analysis failure always blocks the push** (`GEREQ_HOOKS_SKIP_QUALITY` / `QUALITY=off` are ignored on push). |
 
 ## Quality pipeline
 
@@ -46,6 +46,8 @@ GEREQ_HOOKS_SKIP_QUALITY=1 git commit      # skip quality on commit only (NOT on
 
 On **push**, a failed `phpstan` / `phpstan:tests` / `phpcs` / JS gate **always aborts** the push. If the push range has no resolvable paths, pre-push falls back to full `analyse` (`composer phpstan` + `composer phpstan:tests`) instead of skipping.
 
+**Commit → push dedupe:** a successful `pre-commit` quality run writes `.git/gereq-quality.stamp` (mode + content fingerprint). `pre-push` skips re-running the same checks when the fingerprint still matches. Re-runs when you push extra commits, change files after commit, use a different `GEREQ_HOOKS_QUALITY` mode, or set `GEREQ_HOOKS_QUALITY_FORCE=1`.
+
 Requires:
 
 - PHP tools: `composer` on `PATH` and an installed `vendor/` tree (when PHP paths are in scope)
@@ -68,3 +70,4 @@ Optional knobs:
 - `GEREQ_HOOKS_MAX_BYTES_DIST` — max size for allowlisted `bin/dist/grq-*` prebuilts (default `20971520` = 20 MiB)
 - `GEREQ_HOOKS_QUALITY` — `changed` \| `full` \| `analyse` \| `cs` \| `off`
 - `GEREQ_HOOKS_SKIP_QUALITY` — skip quality on **commit** only (ignored on **push**; use `GEREQ_HOOKS_SKIP=1` for emergency push bypass)
+- `GEREQ_HOOKS_QUALITY_FORCE=1` — ignore the commit→push stamp and always re-run quality on push

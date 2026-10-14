@@ -305,10 +305,119 @@ quality_run_analyse() {
   return 0
 }
 
+# Local stamp so pre-push can skip when pre-commit already verified the same tip.
+# Stored under $GIT_DIR (never committed). Format: mode=<m>\nfingerprint=<hex>\n
+quality_stamp_path() {
+  local git_dir
+  git_dir="$(git rev-parse --git-dir 2>/dev/null)" || return 1
+  printf '%s\n' "${git_dir%/}/gereq-quality.stamp"
+}
+
+# Resolve blob OID for path: staged index (empty tip) or tip:path.
+quality_blob_oid() {
+  local path="$1"
+  local tip="${2:-}"
+  if [[ -n "$tip" ]]; then
+    git rev-parse -q --verify "${tip}:${path}" 2>/dev/null || true
+  else
+    git rev-parse -q --verify ":${path}" 2>/dev/null || true
+  fi
+}
+
+# Return 0 if path is in the incremental quality surface (PHP tools or JS/TS gate).
+quality_path_in_surface() {
+  local path="$1"
+  case "$path" in
+    resources/js/*|package.json|bun.lock|tsconfig.json)
+      return 0
+      ;;
+    scripts/*)
+      [[ "$path" == *.ts ]] && return 0
+      return 1
+      ;;
+    src/*|modules/*|tests/*|integrations/*|bin/*)
+      [[ "$path" == *.php ]] && return 0
+      return 1
+      ;;
+  esac
+  return 1
+}
+
+# Fingerprint for incremental modes: mode + sorted quality-surface path:blob lines.
+# For analyse/full: mode + tree OID (tip^{tree} or index write-tree).
+quality_fingerprint() {
+  local mode="$1"
+  local list_file="${2:-}"
+  local tip="${3:-}"
+  local path oid tree payload
+
+  case "$mode" in
+    analyse|full)
+      if [[ -n "$tip" ]]; then
+        tree="$(git rev-parse -q --verify "${tip}^{tree}" 2>/dev/null)" || return 1
+      else
+        tree="$(git write-tree 2>/dev/null)" || return 1
+      fi
+      printf '%s\n' "$mode" "$tree" | sha256sum | awk '{print $1}'
+      return 0
+      ;;
+  esac
+
+  if [[ -z "$list_file" || ! -f "$list_file" ]]; then
+    return 1
+  fi
+
+  payload="$(
+    printf '%s\n' "$mode"
+    while IFS= read -r path || [[ -n "${path:-}" ]]; do
+      [[ -z "${path:-}" ]] && continue
+      quality_path_in_surface "$path" || continue
+      oid="$(quality_blob_oid "$path" "$tip")"
+      [[ -n "$oid" ]] || continue
+      printf '%s %s\n' "$path" "$oid"
+    done < <(LC_ALL=C sort -u "$list_file")
+  )"
+  printf '%s\n' "$payload" | sha256sum | awk '{print $1}'
+}
+
+quality_stamp_save() {
+  local mode="$1"
+  local fingerprint="$2"
+  local stamp
+  stamp="$(quality_stamp_path)" || return 0
+  printf 'mode=%s\nfingerprint=%s\n' "$mode" "$fingerprint" >"$stamp"
+}
+
+# Return 0 if an existing stamp already covers this mode+fingerprint.
+quality_stamp_covers() {
+  local mode="$1"
+  local fingerprint="$2"
+  local stamp stamped_mode stamped_fp
+
+  if [[ -n "${GEREQ_HOOKS_QUALITY_FORCE:-}" && "${GEREQ_HOOKS_QUALITY_FORCE}" != "0" ]]; then
+    return 1
+  fi
+
+  stamp="$(quality_stamp_path)" || return 1
+  [[ -f "$stamp" ]] || return 1
+
+  stamped_mode="$(sed -n 's/^mode=//p' "$stamp" | head -n1)"
+  stamped_fp="$(sed -n 's/^fingerprint=//p' "$stamp" | head -n1)"
+  [[ -n "$stamped_mode" && -n "$stamped_fp" ]] || return 1
+  [[ "$stamped_mode" == "$mode" && "$stamped_fp" == "$fingerprint" ]]
+}
+
 # $1 = mode, $2 = optional path-list file (required for changed/cs incremental).
+# $3 = optional context: commit|push|ci
+#      commit — always run, then stamp (feeds pre-push dedupe)
+#      push   — skip when stamp matches; tip blobs via GEREQ_HOOKS_QUALITY_TIP
+#      ci     — always run, never stamp
 quality_run_pipeline() {
   local mode="$1"
   local list_file="${2:-}"
+  local context="${3:-}"
+  local tip="${GEREQ_HOOKS_QUALITY_TIP:-}"
+  local fingerprint=""
 
   case "$mode" in
     off)
@@ -316,6 +425,15 @@ quality_run_pipeline() {
       return 0
       ;;
   esac
+
+  if [[ "$context" == "push" ]]; then
+    if fingerprint="$(quality_fingerprint "$mode" "$list_file" "$tip" 2>/dev/null)" \
+      && [[ -n "$fingerprint" ]] \
+      && quality_stamp_covers "$mode" "$fingerprint"; then
+      hook_info "quality: mode=$mode — already verified at commit (stamp match) — skip"
+      return 0
+    fi
+  fi
 
   hook_info "quality: mode=$mode"
 
@@ -348,5 +466,14 @@ quality_run_pipeline() {
       return 1
       ;;
   esac
+
+  # Stamp successful local hook runs so the next push can skip the same work.
+  if [[ "$context" == "commit" || "$context" == "push" ]]; then
+    if fingerprint="$(quality_fingerprint "$mode" "$list_file" "$tip" 2>/dev/null)" \
+      && [[ -n "$fingerprint" ]]; then
+      quality_stamp_save "$mode" "$fingerprint"
+    fi
+  fi
+
   return 0
 }
