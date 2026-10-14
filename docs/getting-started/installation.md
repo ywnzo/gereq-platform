@@ -28,7 +28,7 @@ Docker and `make install` already ship both extensions in `docker/php/Dockerfile
 
 ## Clone
 
-Modules under `modules/` are git submodules pointing at `git.gereq.cz/gereq/module-<id>` (see `.gitmodules`). Clone recursively or initialise them afterwards:
+Modules under `modules/` are git submodules pointing at `git.gereq.cz/gereq/module-<id>` (see `.gitmodules`). The dockerless runtime is also a submodule at `dev/dockerless` → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless). Clone recursively or initialise them afterwards:
 
 ```bash
 git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
@@ -36,7 +36,7 @@ git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
 git submodule update --init --recursive
 ```
 
-Without the submodules `ModuleManager::discover()` (`src/Module/ModuleManager.php`) finds no `module.php` manifests and the admin has no modules to enable.
+Without the module submodules `ModuleManager::discover()` (`src/Module/ModuleManager.php`) finds no `module.php` manifests and the admin has no modules to enable.
 
 ## Option A — interactive installer (`./bin/grq install`)
 
@@ -112,18 +112,26 @@ make urls
 
 The compose stack (`docker-compose.yml`, project name `gereq`) contains: `nginx` (port `${GEREQ_PORT:-8080}`), `php` (PHP-FPM, image from `docker/php/Dockerfile`), `postgres` (16, not published to the host), `redis`, `queue` (`php gereq queue:work`), `scheduler` (`schedule:run` every 60 s) and the opt-in `adminer` (profile `tools`). `DB_PASSWORD` must be set in `.env` or compose fails with `Set a strong DB_PASSWORD in .env`.
 
-## Option D — Dockerless / immutable host (`dev/dockerless`)
+## Option D — Dockerless / immutable host
 
-For machines that cannot write outside `/home` (no Docker, no root package installs), use the home-only toolchain:
+For machines that cannot write outside `/home` (no Docker, no root package installs), use the home-only toolchain from the standalone repo [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) (submodule at `dev/dockerless`):
 
 ```bash
+git submodule update --init --recursive dev/dockerless
 ./dev/dockerless/install.sh --fresh
 ./dev/dockerless/serve.sh                 # php -S on :8080
 ./dev/dockerless/serve.sh --mode=nginx    # optional user-space nginx + php-fpm
 ```
 
-Uses SQLite + file/sync drivers; runtime files go to `~/.local/share/gereq-dockerless`. Full detail: [Dockerless local runtime](../development/dockerless.md).
+Standalone clone (next to the platform):
 
+```bash
+git clone git@git.gereq.cz:gereq/dockerless.git
+export GEREQ_ROOT=/path/to/GEREQ_PLATFORM
+./dockerless/install.sh --fresh
+```
+
+Uses SQLite + file/sync drivers; runtime files go to `~/.local/share/gereq-dockerless`. Full detail: [Dockerless local runtime](../development/dockerless.md).
 ## Dev servers
 
 ### Built-in PHP server
@@ -181,6 +189,7 @@ Entry point is `resources/js/admin.ts` (`scripts/build.ts`). `Gereq\View\RenderE
 - Log in at `/admin`, complete `/admin/setup`.
 - Enable the modules you need: `php gereq module:enable <id>` or Admin → Modules (package groups such as `realestates` can be enabled in one click; see [module system](../architecture/module-system.md)).
 - Set `GITLAB_TOKEN` in `.env` if you want to install module versions from GitLab through the admin.
-- Commit with `bin/grq commit "..."` — it installs `.githooks/commit-msg`, which strips `Co-authored-by` trailers.
+- Enable git hooks once with `bin/grq commit --install-hooks` (or `git config core.hooksPath .githooks`). Hooks live in `.githooks/` (`pre-commit` guards secrets/submodules/junk, `commit-msg` strips `Co-authored-by` and self-heals Conventional Commits — e.g. bare text → `chore: …` — then enforces the shape, `pre-push` protects `main`/`dev`/…). See [`.githooks/README.md`](../../.githooks/README.md).
+- Commit with `bin/grq commit "..."` — it ensures hooks are installed and applies the same subject self-heal before committing.
 
 Next: [Configuration](configuration.md), [CLI reference](cli.md).

@@ -2,7 +2,41 @@
 
 Run GEREQ **without Docker** on hosts where the OS outside `/home` is immutable / read-only (Fedora Atomic, locked-down VMs, no root package installs). All runtime state lives under `$HOME`; the app uses **SQLite** and **file/sync** drivers so Postgres and Redis are not required.
 
-Scripts: `dev/dockerless/`. Source of truth for behaviour is those scripts plus the templates in `dev/dockerless/{nginx,php}/`.
+**Source repository (standalone):** [gereq/dockerless](https://git.gereq.cz/gereq/dockerless)  
+In this platform checkout it is wired as the git submodule `dev/dockerless` (`../dockerless.git`).
+
+## Download
+
+### Already inside GEREQ_PLATFORM (submodule)
+
+```bash
+git submodule update --init --recursive dev/dockerless
+./dev/dockerless/install.sh --fresh
+./dev/dockerless/serve.sh
+```
+
+Fresh platform clone with all submodules:
+
+```bash
+git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
+cd GEREQ_PLATFORM
+./dev/dockerless/install.sh --fresh
+```
+
+### Standalone (next to the platform)
+
+```bash
+git clone git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
+git clone git@git.gereq.cz:gereq/dockerless.git
+
+export GEREQ_ROOT="$PWD/GEREQ_PLATFORM"
+./dockerless/install.sh --fresh
+./dockerless/serve.sh
+```
+
+HTTPS clone URLs: `https://git.gereq.cz/gereq/dockerless.git` and `https://git.gereq.cz/gereq/GEREQ_PLATFORM.git`.
+
+Full script reference and troubleshooting live in the [dockerless README](https://git.gereq.cz/gereq/dockerless/-/blob/main/README.md).
 
 ## What you get
 
@@ -17,7 +51,7 @@ Scripts: `dev/dockerless/`. Source of truth for behaviour is those scripts plus 
 
 Nothing is written to `/usr` or `/etc`.
 
-## Quick start
+## Quick start (submodule path)
 
 ```bash
 ./dev/dockerless/install.sh --fresh          # .env (SQLite), composer, bun build, migrate
@@ -25,7 +59,7 @@ Nothing is written to `/usr` or `/etc`.
 # or:
 ./dev/dockerless/install.sh --mode=nginx --fresh
 ./dev/dockerless/serve.sh --mode=nginx       # nginx+fpm (daemonized)
-./dev/dockerless/serve.sh --hot              # also bun run dev (Vite HMR)
+./dev/dockerless/serve.sh --hot              # also bun run dev
 ./dev/dockerless/status.sh
 ./dev/dockerless/down.sh
 ```
@@ -47,6 +81,7 @@ Admin: `http://127.0.0.1:8080/admin` (use `127.0.0.1`, not `localhost`). Credent
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
+| `GEREQ_ROOT` | auto | Platform checkout when dockerless is not at `dev/dockerless` |
 | `GEREQ_HOME` | `~/.local/share/gereq-dockerless` | nginx prefix, FPM socket, logs, pid files, rendered conf |
 | `GEREQ_BIN` | `~/.local/bin` | Composer PHAR and other user binaries |
 | `GEREQ_PORT` | `8080` | HTTP port |
@@ -65,7 +100,7 @@ Admin: `http://127.0.0.1:8080/admin` (use `127.0.0.1`, not `localhost`). Credent
   env             exported MODE/PORT/ROOT from last install
 ```
 
-Templates live in the repo (`dev/dockerless/nginx/*.template`, `dev/dockerless/php/*.template`) and are rendered with `@ROOT@`, `@GEREQ_HOME@`, `@GEREQ_PORT@`, `@USER@`.
+Templates live in the dockerless repo (`nginx/*.template`, `php/*.template`) and are rendered with `@ROOT@`, `@GEREQ_HOME@`, `@GEREQ_PORT@`, `@USER@`.
 
 ## PHP / nginx on immutable hosts
 
@@ -88,7 +123,7 @@ Alternative: layer packages once with your OS tool (`rpm-ostree install php php-
 
 | Entry | When to use |
 | --- | --- |
-| `./dev/dockerless/*` | No Docker; immutable `/home`-only |
+| `dev/dockerless` submodule / [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) | No Docker; immutable `/home`-only |
 | `php gereq serve` | Host already has PHP; one-shot built-in server |
 | `./bin/grq install` | Interactive full installer (may still offer Docker) |
 | `make install` / `php gereq serve-docker` | Full Compose stack (pgsql + redis + nginx in containers) |
@@ -105,6 +140,7 @@ Alternative: layer packages once with your OS tool (`rpm-ostree install php php-
 
 ## Troubleshooting
 
+- **Cannot find platform root**: `git submodule update --init dev/dockerless`, or set `GEREQ_ROOT`.
 - **Permission denied on `/var/log/nginx`**: you started system nginx without `-p $GEREQ_HOME`. Use `./dev/dockerless/serve.sh --mode=nginx`.
 - **Port busy**: serve probes the next 20 ports; or `./dev/dockerless/down.sh` first.
 - **SELinux denials** on the unix socket: check `ausearch` / set a permissive context on `$GEREQ_HOME/run`, or stick to `--mode=php`.

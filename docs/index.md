@@ -67,7 +67,7 @@ Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) ·
 | [Creating a module](development/creating-a-module.md) | Scaffolding, register/boot, routes, API, events, widgets, migrations, GitLab submodule, release checklist |
 | [Coding standards](development/coding-standards.md) | PHP/TS/Twig conventions, PHPStan, phpcs, comments, Bun-only, no native dialogs |
 | [Testing](development/testing.md) | PHPUnit layout, static analysis, running inside Docker |
-| [Dockerless (home-only)](development/dockerless.md) | No Docker: SQLite + `php -S` or user-space nginx/php-fpm under `$HOME` for immutable hosts |
+| [Dockerless (home-only)](development/dockerless.md) | No Docker: SQLite + `php -S` or user-space nginx/php-fpm; scripts in [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) (submodule `dev/dockerless`) |
 
 ## Reference documents
 
