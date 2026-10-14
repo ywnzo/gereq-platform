@@ -28,7 +28,7 @@ Business logika (faktury, objednávky, projekty) do Core nepatří. Patří do m
 
 ## Instalace
 
-Clone (moduly jsou **git submodules** → `gereq/module-<id>`; dockerless → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) v `dev/dockerless`):
+Clone (moduly jsou **git submodules** → `gereq/module-<id>`; dockerless → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless) v `dev/dockerless`; tooling → [gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) v `tools/`):
 
 ```bash
 git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
@@ -109,9 +109,9 @@ Migrace:
 
 Katalog klíčů: `config/env.schema.toml`. Generování: `./bin/grq env init` / `php gereq env:init` (Docker: `--docker`). Validace: `./bin/grq env validate` / `php gereq env:validate`.
 
-IDE (Cursor/VS Code): `bash tools/gereq-env/install.sh` → autocomplete / hover / diagnostika v `.env` a `env_value('…')`.
+IDE (Cursor/VS Code): `bash tools/gereq-env/install.sh` → autocomplete / hover / diagnostika v `.env` a `env_value('…')` (zdroje v [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).
 
-CLI: `./bin/grq` — doctor, install, pack, commit, pr, modules (viz `tools/gereq-cli/README.md`).
+CLI: `./bin/grq` — doctor, install, pack, commit, pr, modules (zdroj `tools/gereq-cli/` ze submodule [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).
 
 | Proměnná | Význam |
 | --- | --- |

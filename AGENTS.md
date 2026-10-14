@@ -11,7 +11,7 @@
 ## Nástroje
 
 - Pro JavaScript/TypeScript preferuj Bun: `bun install`, `bun add`, `bun remove`, `bun run <script>`, `bunx <tool>`. Kořenové skripty Bun přímo vyžadují.
-- V každém samostatném balíčku v `tools/` nejdřív ověř `package.json`, `packageManager`, `engines`, lockfile a CI. Respektuj explicitně požadovaný runtime. Nemigruj správce balíčků ani nemaž existující lockfiles jako vedlejší změnu.
+- `tools/` je git submodule → [gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS). Úpravy tooling patří do toho repa; platforma jen posouvá gitlink. V každém balíčku v `tools/` nejdřív ověř `package.json`, `packageManager`, `engines`, lockfile a CI. Respektuj explicitně požadovaný runtime. Nemigruj správce balíčků ani nemaž existující lockfiles jako vedlejší změnu.
 - PHP závislosti a kontroly spouštěj přes Composer; Go nástroje přes Go. Pokud potřebný runtime chybí, uveď to v reportu ověření.
 - Produkční frontend: `bun run build`; watch: `bun run dev`. Generované soubory v `public/build/` neupravuj ručně.
 

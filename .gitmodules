@@ -136,3 +136,6 @@
 [submodule "dev/dockerless"]
 	path = dev/dockerless
 	url = ../dockerless.git
+[submodule "tools"]
+	path = tools
+	url = ../GEREQ_TOOLS.git

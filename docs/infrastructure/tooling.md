@@ -1,10 +1,15 @@
 # Developer tooling
 
-Besides the `php gereq` console, the repository carries developer tooling: the **`grq`** single binary (`bin/grq` → `bin/dist/…`) for env/install/pack/commit/pr/modules, editor extensions under `tools/gereq-*`, PDF deck generators, and Cursor guidance in `.cursor/`. Static analysis and tests are configured in `phpstan.neon`, `phpcs.xml` and `phpunit.xml`. Everything JS-related is run with **Bun** (`.cursor/rules/tech-stack.mdc`).
+Besides the `php gereq` console, developer tooling lives in the standalone monorepo **[gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)** (git submodule at `tools/`): the **`grq`** single binary (`bin/grq` → `bin/dist/…`) for env/install/pack/commit/pr/modules, editor extensions under `tools/gereq-*`, PDF deck generators, and Cursor guidance in `.cursor/`. Static analysis and tests are configured in `phpstan.neon`, `phpcs.xml` and `phpunit.xml`. Everything JS-related is run with **Bun** (`.cursor/rules/tech-stack.mdc`).
+
+```bash
+git submodule update --init --recursive tools
+# standalone: git clone git@git.gereq.cz:gereq/GEREQ_TOOLS.git
+```
 
 ## `bin/grq`
 
-Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt binary from `bin/dist/` (no download). Rebuild: `make grq` / `make grq-release`. Sources: [`tools/gereq-cli/`](../../tools/gereq-cli/).
+Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt binary from `bin/dist/` (no download). Rebuild: `make grq` / `make grq-release`. Sources: [`tools/gereq-cli/`](https://git.gereq.cz/gereq/GEREQ_TOOLS/-/tree/main/gereq-cli) in GEREQ_TOOLS.
 
 | Command | Purpose |
 | --- | --- |
@@ -21,7 +26,7 @@ Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt b
 
 RealityV3 product scripts live under `scripts/realityv3/` (not in `bin/`). `bin/twiggy-env.php` remains for the Twiggy language server.
 
-## `tools/`
+## `tools/` (submodule → [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS))
 
 | Directory / file | What it is | How to run |
 | --- | --- | --- |

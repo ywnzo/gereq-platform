@@ -28,7 +28,7 @@ Docker and `make install` already ship both extensions in `docker/php/Dockerfile
 
 ## Clone
 
-Modules under `modules/` are git submodules pointing at `git.gereq.cz/gereq/module-<id>` (see `.gitmodules`). The dockerless runtime is also a submodule at `dev/dockerless` → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless). Clone recursively or initialise them afterwards:
+Modules under `modules/` are git submodules pointing at `git.gereq.cz/gereq/module-<id>` (see `.gitmodules`). Also submodules: dockerless at `dev/dockerless` → [gereq/dockerless](https://git.gereq.cz/gereq/dockerless), tooling at `tools/` → [gereq/GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS). Clone recursively or initialise them afterwards:
 
 ```bash
 git clone --recurse-submodules git@git.gereq.cz:gereq/GEREQ_PLATFORM.git
