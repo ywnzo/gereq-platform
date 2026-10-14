@@ -20,6 +20,7 @@
 /storage/cache/*
 /storage/sessions/*
 /storage/uploads/*
+/storage/framework/*
 /storage/tmp/*
 /storage/modules/*
 !/storage/modules/.gitignore
