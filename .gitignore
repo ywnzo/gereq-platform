@@ -16,18 +16,10 @@
 /public/dev-ca.cer
 /public/hot
 /public/brand/client/
-/storage/logs/*
-/storage/cache/*
-/storage/sessions/*
-/storage/uploads/*
-/storage/framework/*
-/storage/tmp/*
-/storage/modules/*
-!/storage/modules/.gitignore
-/storage/database.sqlite
-/storage/database.sqlite-journal
+# Runtime only — keep the directory via .gitkeep (install/entrypoint create subdirs).
+/storage/*
+!/storage/.gitkeep
 /.phpunit.cache/
-/storage/framework/phpunit/
 /.phpstan-tmp/
 .phpstan-tmp/
 /.cache/

@@ -123,7 +123,7 @@ Transport: `Symfony\Component\Mailer\Mailer` built with `Transport::fromDsn(conf
 | `storage/database.sqlite` | SQLite database (default `DB_DATABASE`) | `EntityManagerFactory` |
 | `storage/framework/phpunit` | PHPUnit cache (`phpunit.xml` `cacheDirectory`) | tests |
 
-Directory bootstrap happens in `bin/grq install`, `bin/grq install demo`, `make env` (`storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}`) and in the container entrypoint `docker/php/entrypoint.sh` (`chmod -R a+rwX storage`). `.gitignore`/`.dockerignore` exclude `storage/logs/*`, `storage/cache/*`, `storage/sessions/*`, `storage/tmp/*`, `storage/uploads/*`.
+Directory bootstrap happens in `bin/grq install`, `bin/grq install demo`, `make env` (`storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}`) and in the container entrypoint `docker/php/entrypoint.sh` (`chmod -R a+rwX storage`). Git tracks only `storage/.gitkeep`; everything else under `storage/` is gitignored (runtime). `.dockerignore` similarly excludes runtime dumps.
 
 ## Related
 
