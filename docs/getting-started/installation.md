@@ -189,7 +189,7 @@ Entry point is `resources/js/admin.ts` (`scripts/build.ts`). `Gereq\View\RenderE
 - Log in at `/admin`, complete `/admin/setup`.
 - Enable the modules you need: `php gereq module:enable <id>` or Admin → Modules (package groups such as `realestates` can be enabled in one click; see [module system](../architecture/module-system.md)).
 - Set `GITLAB_TOKEN` in `.env` if you want to install module versions from GitLab through the admin.
-- Enable git hooks once with `bin/grq commit --install-hooks` (or `git config core.hooksPath .githooks`). Hooks live in `.githooks/` (`pre-commit` guards secrets/submodules/junk, `commit-msg` strips `Co-authored-by` and self-heals Conventional Commits — e.g. bare text → `chore: …` — then enforces the shape, `pre-push` protects `main`/`dev`/…). See [`.githooks/README.md`](../../.githooks/README.md).
+- Enable git hooks once with `bin/grq commit --install-hooks` (or `git config core.hooksPath .githooks`). Hooks live in `.githooks/` (`pre-commit` guards secrets/submodules/junk and runs staged `composer cs`, `commit-msg` strips `Co-authored-by` and self-heals Conventional Commits — e.g. bare text → `chore: …` — then enforces the shape, `pre-push` protects `main`/`dev`/… and runs the full quality pipeline matching CI: `composer test` + phpstan + phpstan:tests + cs). See [`.githooks/README.md`](../../.githooks/README.md).
 - Commit with `bin/grq commit "..."` — it ensures hooks are installed and applies the same subject self-heal before committing.
 
 Next: [Configuration](configuration.md), [CLI reference](cli.md).

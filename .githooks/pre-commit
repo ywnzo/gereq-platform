@@ -7,6 +7,8 @@ set -euo pipefail
 HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$HOOKS_DIR/lib/common.sh"
+# shellcheck source=lib/quality.sh
+source "$HOOKS_DIR/lib/quality.sh"
 
 if hook_skip_requested; then
   hook_info "pre-commit: skipped (GEREQ_HOOKS_SKIP / SKIP_REPO_GUARD set)."
@@ -185,13 +187,32 @@ while IFS= read -r path || [[ -n "${path:-}" ]]; do
 done <"$staged_paths_file"
 
 # ---------------------------------------------------------------------------
-# Result
+# Result (repo guards)
 # ---------------------------------------------------------------------------
 if [[ "$errors" -gt 0 ]]; then
   hook_info ""
   hook_info "pre-commit: blocked $errors issue(s). Fix or unstage the paths above."
   hook_info "pre-commit: emergency bypass: GEREQ_HOOKS_SKIP=1 git commit ..."
   exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# 6) Fast quality — phpcs on staged PHP (default mode=cs)
+#    Full CI gate runs on pre-push. Override: GEREQ_HOOKS_QUALITY=full|analyse|off
+# ---------------------------------------------------------------------------
+quality_mode="$(quality_mode_requested cs)"
+if [[ "$quality_mode" != "off" ]]; then
+  if [[ "$quality_mode" == "cs" ]]; then
+    if ! quality_run_pipeline cs staged; then
+      hook_info "pre-commit: quality (cs) failed. Fix style or: GEREQ_HOOKS_SKIP_QUALITY=1 git commit ..."
+      exit 1
+    fi
+  else
+    if ! quality_run_pipeline "$quality_mode"; then
+      hook_info "pre-commit: quality ($quality_mode) failed. Bypass: GEREQ_HOOKS_SKIP_QUALITY=1 git commit ..."
+      exit 1
+    fi
+  fi
 fi
 
 exit 0

@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Gereq\Console;
 
-use Gereq\Foundation\Application;
 use Gereq\Schedule\ScheduleCommandResolver;
 use Gereq\Support\AppVersion;
 use Psr\Container\ContainerInterface;
-use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\Console\Command\Command;
 
 final readonly class ConsoleKernel
@@ -19,7 +17,7 @@ final readonly class ConsoleKernel
 
     public function run(): int
     {
-        $console = new ConsoleApplication('GEREQ Platform', (string) config('app.version', AppVersion::DEFAULT));
+        $console = new GereqApplication('GEREQ Platform', (string) config('app.version', AppVersion::DEFAULT));
         $console->setAutoExit(false);
 
         foreach ($this->commands() as $class) {
