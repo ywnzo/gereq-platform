@@ -11,7 +11,7 @@ GEREQ keeps its runtime state in a handful of pluggable backends, each selected 
 | `default_ttl` | `CACHE_TTL` | `3600` | seconds |
 | `doctrine_result` | `CACHE_DOCTRINE_RESULT` | `true` | Doctrine result cache uses the same pool |
 | `twig` | `CACHE_TWIG` | `true` | compiled Twig templates (ignored when `APP_DEBUG=true`) |
-| `media_ttl` | `CACHE_MEDIA_TTL` | `604800` | browser `Cache-Control` for `/media/{id}/file` (Media module) |
+| `media_ttl` | `CACHE_MEDIA_TTL` | `604800` | browser `Cache-Control` for `/media/{id}/file` (Media module) — PHP sets `public, max-age=…, immutable`; Docker nginx serves the file via `X-Accel-Redirect` (`/internal-media*`) and keeps those headers |
 | `redis.*` | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | `127.0.0.1`, `6379`, `null`; database `0` | |
 | `database.table` | `CACHE_DB_TABLE` | `cache_items` | table for the `database` driver |
 

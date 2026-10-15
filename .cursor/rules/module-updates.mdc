@@ -14,6 +14,7 @@ Při jakékoli změně kódu/migrací/UI v `modules/*` **vždy** zvyš verzi a n
 2. Stejná verze v `Modules\<Id>\<Id>Module::version()`
 3. Schema/data změny jen přes `Database/Migrations/` (ne „potichu“ přes běžný request)
 4. Semver: patch = fix, minor = nová funkce/migrace, major = breaking
+5. Žádná složka `X.Y.Z` nesmí být ≥ 100 — carry na vyšší řád (viz `semver-rollover.mdc`), např. `1.99.1` + minor → `2.0.0`, ne `1.100.0`
 
 Každá verze má **immutable footprint** (SHA-256 stromu). Cache `storage/modules/{id}/{version}` nejde přepsat jiným obsahem pod stejným číslem verze — změna = nový semver. Live drift bez bumpu se projeví jako dostupná aktualizace (footprint v DB ≠ soubory).
 

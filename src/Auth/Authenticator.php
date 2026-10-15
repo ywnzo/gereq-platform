@@ -18,7 +18,7 @@ final class Authenticator
     private const MFA_USER_KEY = 'auth.mfa_pending_user_id';
     private const MFA_REMEMBER_KEY = 'auth.mfa_remember';
     private const MFA_EXPIRES_KEY = 'auth.mfa_expires';
-    private const REMEMBER_COOKIE = 'gereq_remember';
+    public const REMEMBER_COOKIE = 'gereq_remember';
 
     private ?User $user = null;
     private bool $identityResolved = false;

@@ -7,7 +7,7 @@ namespace Gereq\Customers\Application;
 use Gereq\Config\Repository as Config;
 use Gereq\Customers\Domain\CustomerAccount;
 
-/** HMAC-signed storefront access tokens (JWT-like, no external JWT lib). */
+/** HMAC-signed storefront JWT access tokens (HS256, no external JWT lib). */
 final class StoreTokenService
 {
     public function __construct(private readonly Config $config)
@@ -18,19 +18,19 @@ final class StoreTokenService
     public function issue(CustomerAccount $account, int $ttlSeconds = 604800): array
     {
         $exp = time() + max(300, $ttlSeconds);
-        $payload = [
+        $header = $this->b64(json_encode(['typ' => 'JWT', 'alg' => 'HS256'], JSON_THROW_ON_ERROR));
+        $payload = $this->b64(json_encode([
             'sub' => $account->id(),
             'cid' => $account->customerId(),
             'email' => $account->email(),
             'ver' => $account->tokenVersion(),
             'exp' => $exp,
             'iat' => time(),
-        ];
-        $body = $this->b64(json_encode($payload, JSON_THROW_ON_ERROR));
-        $sig = hash_hmac('sha256', $body, $this->key());
+        ], JSON_THROW_ON_ERROR));
+        $sig = $this->b64(hash_hmac('sha256', $header . '.' . $payload, $this->key(), true));
 
         return [
-            'access_token' => $body . '.' . $sig,
+            'access_token' => $header . '.' . $payload . '.' . $sig,
             'token_type' => 'Bearer',
             'expires_in' => $exp - time(),
             'expires_at' => (new \DateTimeImmutable('@' . $exp))->format(\DateTimeInterface::ATOM),
@@ -40,14 +40,33 @@ final class StoreTokenService
     /** @return array{sub: string, cid: string, email: string, ver: int, exp: int}|null */
     public function parse(string $token): ?array
     {
-        $parts = explode('.', $token, 2);
-        if (count($parts) !== 2) {
-            return null;
+        $parts = explode('.', $token);
+        if (count($parts) === 3) {
+            [$header, $body, $sig] = $parts;
+            $expected = $this->b64(hash_hmac('sha256', $header . '.' . $body, $this->key(), true));
+            if (!hash_equals($expected, $sig)) {
+                return null;
+            }
+
+            return $this->claimsFromBody($body);
         }
-        [$body, $sig] = $parts;
-        if (!hash_equals(hash_hmac('sha256', $body, $this->key()), $sig)) {
-            return null;
+
+        // Legacy 2-part tokens (payload.hex-hmac) — accept until they expire.
+        if (count($parts) === 2) {
+            [$body, $sig] = $parts;
+            if (!hash_equals(hash_hmac('sha256', $body, $this->key()), $sig)) {
+                return null;
+            }
+
+            return $this->claimsFromBody($body);
         }
+
+        return null;
+    }
+
+    /** @return array{sub: string, cid: string, email: string, ver: int, exp: int}|null */
+    private function claimsFromBody(string $body): ?array
+    {
         $json = json_decode((string) $this->ub64($body), true);
         if (!is_array($json) || !isset($json['sub'], $json['exp'])) {
             return null;

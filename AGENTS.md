@@ -35,7 +35,7 @@
 ## Moduly a Git
 
 - `modules/*` jsou samostatné Git submodules. Úpravy kódu patří do jejich repozitářů; platforma sleduje gitlink. Nespoléhej jen na kořenový diff pro kontrolu změn modulu.
-- Změny kódu, migrací nebo UI modulu vyžadují bump `module.php` a shodné `Module::version()`: patch pro opravu, minor pro funkci/migraci, major pro breaking change.
+- Změny kódu, migrací nebo UI modulu vyžadují bump `module.php` a shodné `Module::version()`: patch pro opravu, minor pro funkci/migraci, major pro breaking change. Složky semver max 99 — při overflow carry (např. `1.99.x` + minor → `2.0.0`); viz `.cursor/rules/semver-rollover.mdc`.
 - Obsah vydané verze je immutable. Admin update spouští migrace a sync permissions; samotné `php gereq migrate` ho nenahrazuje.
 - Release tag `vX.Y.Z` musí odpovídat verzi. Bump není sám o sobě pokyn vytvořit tag, commit, push či publikovat release.
 - Bez výslovného zadání nespouštěj fresh migrace, produkční seed, deploy ani operace přepisující klientská data. Zachovej `.env`, `storage/`, uploady a klientské úpravy.

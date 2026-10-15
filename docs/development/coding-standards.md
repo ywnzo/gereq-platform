@@ -74,11 +74,11 @@ Keys are lowercase, dot-separated, snake_case segments; the key is the identifie
 
 ## Commits, versions and modules
 
-Sources: `.cursor/rules/module-updates.mdc`, `README.md` ("Práce se submodulem", "Verze a instalace z GitLabu", "Checklist nového modulu"), `VERSION`.
+Sources: `.cursor/rules/module-updates.mdc`, `.cursor/rules/semver-rollover.mdc`, `README.md` ("Práce se submodulem", "Verze a instalace z GitLabu", "Checklist nového modulu"), `VERSION`.
 
 - Commit messages follow Conventional-Commit style prefixes as used in the README examples: `chore: pin Customers to v1.6.4`, `chore: initial Warehouse v0.1.0`, `chore: add Warehouse submodule @ v0.1.0`; use `feat:` / `fix:` for functional changes.
 - **Module code is committed in the module repository** (`git.gereq.cz/gereq/module-<id>`); the platform repository only records the submodule pin. `.gitmodules` URLs must be relative (`../module-<id>.git`, same GitLab group) without tokens. CI uses `CI_JOB_TOKEN`; each module (or the `gereq` group) must allow inbound job tokens from `gereq/GEREQ_PLATFORM`.
-- **Any change in `modules/*` requires a version bump**: `module.php` `version` == `<Id>Module::version()` == git tag `vX.Y.Z`. Semver: patch = fix, minor = new feature or migration, major = breaking. `tests/Unit/Modules/ModuleStructure/ModuleManifestConsistencyTest.php` fails when manifest and class disagree.
+- **Any change in `modules/*` requires a version bump**: `module.php` `version` == `<Id>Module::version()` == git tag `vX.Y.Z`. Semver: patch = fix, minor = new feature or migration, major = breaking. Each of MAJOR/MINOR/PATCH stays in **0–99**; a bump that would reach 100 carries to the next component (e.g. `1.99.1` + minor → `2.0.0`, not `1.100.0`) — `.cursor/rules/semver-rollover.mdc`. `tests/Unit/Modules/ModuleStructure/ModuleManifestConsistencyTest.php` fails when manifest and class disagree.
 - After a bump the module's admin UI is blocked by `ModuleCurrentMiddleware` until the admin runs **Update**, which applies migrations and re-syncs permissions. Do not change modules "in place" without a bump, and do not rely on `php gereq migrate` as a substitute for the admin update.
 - Platform version lives in `VERSION` (read by `Gereq\Support\AppVersion`) and is shown in the console application banner and `php gereq about`.
 - `./bin/grq modules status --plain` checks that every submodule's local version matches a GitLab tag before release. Pull / subset workflows: `grq modules pull`, `grq modules-git` — see [Tooling](../infrastructure/tooling.md#modules-pull-and-modules-git).

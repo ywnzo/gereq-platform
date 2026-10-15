@@ -9,7 +9,7 @@ Related: [Media](media.md) (images in blocks), [Products](products.md) (`product
 | Item | Value |
 | --- | --- |
 | Module id | `cms` |
-| Version | `1.99.0` (`modules/Cms/module.php`, `CmsModule::version()`) |
+| Version | `2.16.0` (`modules/Cms/module.php`, `CmsModule::version()`) |
 | Directory | `modules/Cms/` |
 | Class | `Modules\Cms\CmsModule` |
 | Requires | `core ^1.0`; optional `documents`, `media`, `products` (`^1.0`) |
@@ -27,7 +27,7 @@ Entities in `modules/Cms/Domain/` (string(36) UUID ids, no Doctrine associations
 
 | Entity | Table | Key fields | Enum values | Relations |
 | --- | --- | --- | --- | --- |
-| `Page` | `cms_pages` (unique `uniq_cms_pages_slug` on `slug`; idx `status`) | `slug`: string(180); `title`: string(190); `status`: string(32) default `draft`; `template`: string(32) default `default`; `content_mode`: string(16) default `blocks`; `body`: text nullable (raw mode); `meta_description`: text; `published_at` nullable; `created_at`, `updated_at` | `STATUSES = draft, published, archived`; `TEMPLATES = default, landing`; `CONTENT_MODES = blocks, raw` | 1‑N `PageBlock`; referenced by `SiteMenuItem.page_id`, setting `cms.home_page_id` |
+| `Page` | `cms_pages` (unique `uniq_cms_pages_slug` on `slug`; idx `status`) | `slug`: string(180); `title`: string(190); `status`: string(32) default `draft`; `template`: string(32) default `default`; `content_mode`: string(16) default `blocks`; `body`: text nullable (raw mode); `meta_description`: text; `ssg`: bool default false (opt-in static HTML shell in storefront first response); `published_at` nullable; `created_at`, `updated_at` | `STATUSES = draft, published, archived`; `TEMPLATES = default, landing`; `CONTENT_MODES = blocks, raw` | 1‑N `PageBlock`; referenced by `SiteMenuItem.page_id`, setting `cms.home_page_id` |
 | `PageBlock` | `cms_page_blocks` (idx `page_id, sort_order`) | `page_id`; `type`: string(32); `sort_order` int; `payload` json (content + design tokens, see `Application\BlockDesignNormalizer`) | `TYPES = heading, text, image, html, cta, columns, divider, products, gallery, quote, video, spacer` | → `Page` |
 | `CmsPartial` | `cms_partials` (idx `name`) | `name`: string(120); `description` text nullable (≤500 chars); `blocks` json (list of normalised blocks); timestamps | — | reusable block groups for the builder |
 | `SiteMenu` | `cms_site_menus` | `name`: string(120); `location`: string(32) default `header`; timestamps | `LOCATIONS = header, footer` | 1‑N `SiteMenuItem` |
@@ -149,7 +149,7 @@ Audit log actions: `page.created`, `page.updated`, `page.published`, `page.unpub
 
 In production read context (`ReadContext::isProduction()`), `CmsProvider` serves **frozen snapshots** (`FrozenPublicReader`) instead of live rows and hides pending creates.
 
-Serializers (`CmsProvider`): page → `id`, `slug`, `title`, `status`, `template`, `content_mode`, `meta_description`, `published_at`, `updated_at`, optional `body` / `blocks[]`; block → `id`, `type`, `sort_order`, `payload` (media ids resolved to URLs when the Media module is present); menu → `id`, `name`, `location`, `items[]`; item → `id`, `label`, `url`, `page_id`, `page_slug`, `parent_id`, `sort_order`.
+Serializers (`CmsProvider`): page → `id`, `slug`, `title`, `status`, `template`, `content_mode`, `meta_description`, `ssg`, `published_at`, `updated_at`, optional `body` / `blocks[]`; block → `id`, `type`, `sort_order`, `payload` (media ids resolved to URLs when the Media module is present); menu → `id`, `name`, `location`, `items[]`; item → `id`, `label`, `url`, `page_id`, `page_slug`, `parent_id`, `sort_order`. When `ssg` is true on the **published** snapshot, `CmsSsgBodyInjector` (hook `storefront.spa_html`, LATE) injects a semantic HTML snapshot into the SPA `#app` for that path.
 
 ## Events, hooks & webhooks
 

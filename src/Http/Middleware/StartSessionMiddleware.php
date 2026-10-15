@@ -7,6 +7,7 @@ namespace Gereq\Http\Middleware;
 use Gereq\Config\Repository;
 use Gereq\Http\Session\SessionHandlerFactory;
 use Gereq\Media\Http\MediaFilePath;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -37,22 +38,34 @@ final class StartSessionMiddleware implements MiddlewareInterface
             return $next($request);
         }
 
+        $lifetime = max(1, (int) $this->config->get('session.lifetime', 120)) * 60;
+        $secure = $request->isSecure();
+        $path = (string) $this->config->get('session.path', '/');
+        $sameSite = (string) $this->config->get('session.samesite', 'lax');
+
         if (!$request->hasSession()) {
-            $lifetime = max(1, (int) $this->config->get('session.lifetime', 120)) * 60;
-            $secure = $request->isSecure();
             $storage = new NativeSessionStorage(
                 [
                     'name' => $cookieName,
+                    // EncryptCookiesMiddleware owns Set-Cookie — disable PHP auto cookies.
+                    'use_cookies' => 0,
                     'cookie_lifetime' => $lifetime,
                     'cookie_httponly' => true,
                     'cookie_secure' => $secure,
-                    'cookie_samesite' => (string) $this->config->get('session.samesite', 'lax'),
-                    'cookie_path' => (string) $this->config->get('session.path', '/'),
+                    'cookie_samesite' => $sameSite,
+                    'cookie_path' => $path,
                     'gc_maxlifetime' => $lifetime,
                     'use_strict_mode' => true,
                 ],
                 $this->handlers->create()
             );
+
+            // With use_cookies=0 PHP will not read the cookie — restore id from the
+            // (already decrypted) request cookie or every request starts a new session (419 CSRF).
+            $existingId = (string) $request->cookies->get($cookieName, '');
+            if ($existingId !== '' && preg_match('/^[a-zA-Z0-9,-]{16,128}$/', $existingId) === 1) {
+                $storage->setId($existingId);
+            }
 
             $session = new Session($storage);
             $session->start();
@@ -70,6 +83,15 @@ final class StartSessionMiddleware implements MiddlewareInterface
             // Controller may intentionally close the session before long I/O (session_write_close).
             if ($session->isStarted()) {
                 $session->save();
+                $response->headers->setCookie(
+                    Cookie::create($cookieName)
+                        ->withValue($session->getId())
+                        ->withExpires(time() + $lifetime)
+                        ->withPath($path)
+                        ->withSecure($secure)
+                        ->withHttpOnly(true)
+                        ->withSameSite($sameSite),
+                );
             }
         }
 

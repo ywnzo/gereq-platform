@@ -1,0 +1,38 @@
+---
+description: Semver — žádná složka MAJOR.MINOR.PATCH nesmí dosáhnout 100; při overflow carry na vyšší řád
+alwaysApply: true
+---
+
+# Semver rollover (max 99 per component)
+
+Platí pro **všechny** `X.Y.Z` v projektu: `modules/*/module.php` + `Module::version()`, platform `VERSION`, npm (`@gereq/cms-*`, `front-vue`, …), git tagy `vX.Y.Z`.
+
+## Pravidlo
+
+Každá složka `MAJOR`, `MINOR`, `PATCH` zůstává v rozsahu **0–99**.
+
+Po běžném semver bumpu (patch / minor / major dle typu změny) **normalizuj overflow**:
+
+1. Pokud `PATCH >= 100` → `PATCH -= 100`, `MINOR += 1` (opakuj, dokud PATCH &lt; 100).
+2. Pokud `MINOR >= 100` → `MINOR -= 100`, `MAJOR += 1`, `PATCH = 0` (opakuj, dokud MINOR &lt; 100).
+3. Výsledek nikdy nevydávej s číslem ≥ 100 v žádné složce.
+
+Praktičtěji při bumpu: když by další krok vytvořil `*.100.*` nebo `*.*.100`, rovnou emitovat carry (ne publikovat `1.100.0`).
+
+## Příklady
+
+| Aktuální | Záměr bumpu | Špatně | Správně |
+| --- | --- | --- | --- |
+| `1.2.99` | patch (fix) | `1.2.100` | `1.3.0` |
+| `1.99.5` | minor (feat/migrace) | `1.100.0` | `2.0.0` |
+| `1.99.1` | minor | `1.100.1` / `1.100.0` | `2.0.0` |
+| `1.99.99` | patch | `1.99.100` / `1.100.0` | `2.0.0` |
+| `0.99.0` | minor | `0.100.0` | `1.0.0` |
+| `2.14.1` | patch | — | `2.14.2` (bez carry) |
+
+Carry **nenahrazuje** význam majoru: breaking change pořád = major bump i pod 99 (např. `1.40.0` → `2.0.0`). Rollover jen brání trojciferným složkám.
+
+## Kde držet shodu
+
+- Moduly: `module.php` `version` == `::version()` == tag `vX.Y.Z` (viz `module-updates.mdc`).
+- Po carry majoru u modulu počítej s běžným admin **Aktualizovat** (immutable footprint).

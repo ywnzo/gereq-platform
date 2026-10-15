@@ -42,13 +42,11 @@ final class PublicAresController extends Controller
 
         $q = trim((string) $request->query->get('q', ''));
         $city = trim((string) $request->query->get('city', ''));
-        $limit = (int) $request->query->get('limit', 8);
+        $limit = max(1, min(20, (int) $request->query->get('limit', 8)));
+        $district = $city !== '' ? $city : null;
 
         try {
-            return $this->cors(ApiResponse::collection(
-                $this->ares->searchAddresses($q, $limit, $city !== '' ? $city : null),
-                ['q' => $q, 'city' => $city !== '' ? $city : null],
-            ));
+            $data = $this->ares->searchAddresses($q, $limit, $district);
         } catch (AresException $e) {
             $status = $e->status();
             if ($status < 400 || $status > 499) {
@@ -57,6 +55,27 @@ final class PublicAresController extends Controller
 
             return $this->cors(ApiResponse::error('ares_error', $e->getMessage(), [], $status));
         }
+
+        $districtFallback = false;
+        if ($data === [] && $district !== null) {
+            $districtFallback = true;
+            try {
+                $data = $this->ares->searchAddresses($q, $limit, null);
+            } catch (AresException $e) {
+                $status = $e->status();
+                if ($status < 400 || $status > 499) {
+                    $status = 422;
+                }
+
+                return $this->cors(ApiResponse::error('ares_error', $e->getMessage(), [], $status));
+            }
+        }
+
+        return $this->cors(ApiResponse::collection($data, [
+            'q' => $q,
+            'city' => $district,
+            'district_fallback' => $districtFallback,
+        ]));
     }
 
     /**

@@ -7,7 +7,7 @@ Web+ is the SEO / GEO / Open Graph layer for headless GEREQ frontends. Editors m
 | Item | Value |
 | --- | --- |
 | Module id | `webplus` |
-| Version | `1.99.0` (`modules/WebPlus/module.php`, `WebPlusModule::version()`) |
+| Version | `2.0.0` (`modules/WebPlus/module.php`, `WebPlusModule::version()`) |
 | Directory | `modules/WebPlus/` |
 | Requires | `core ^1.0` |
 | Optional | `cms ^1.0`, `products ^1.0`, `listings ^1.0`, `media ^1.0` |
@@ -189,7 +189,7 @@ See `../architecture/dashboard-widgets.md`.
 | `Application\RouteMappingCatalog` | Route-shape catalogue, coverage lookup, `ensureTemplates()`, `autoMapFromUrls()`, `discoveredFromUrls()`. |
 | `Application\UrlTemplateDiscoverer` | Clusters concrete paths by depth into `{page}/{x}/{y}/{z}` templates (`minHits`). |
 | `Application\MetaHtmlRenderer` | `head(pkg)` — tag list to HTML; `document(pkg)` — standalone share HTML page. |
-| `Application\Health\WebHealthChecker` / `HealthReport` / `HealthCheck` | Weighted checks: settings (`settings.site_name`, `settings.frontend_url`, `settings.og_image`, `settings.llms`), metas (`metas.count`, `metas.home`, `metas.cms_link`), resolved sample paths `/`, `/nabidky`, `/o-nas`, `/kontakt` (`package.seo|og|geo`), discovery (`discovery.sitemap|robots|google_feed`) and, in full mode, frontend probes (`fe.reach`, `fe.head` — `<title>`, `og:title`, `og:image` present in first HTML, `fe.routes`) via cURL; localhost frontend URLs are rewritten to `host.docker.internal` / docker bridge gateway when running in Docker. Results memoised per request. |
+| `Application\Health\WebHealthChecker` / `HealthReport` / `HealthCheck` | Weighted checks: settings, metas, sample packages, discovery; CMS media contract (`cms.media_srcset`, `cms.media_dimensions`); full-mode FE probes (`fe.reach`, `fe.head` incl. SPA Web+ inject, `fe.lcp_preload`, `fe.eager_fonts`, `fe.routes`). See [PageSpeed](../frontend/pagespeed.md). |
 | `Application\GoogleFeed\BuiltInGoogleFeedCollectors` / `GoogleFeedContext` | Sources `products` (Products + `ProductPrice` by currency) and `listings`; enabled-source filter, per-source URL templates, limit, media absolutising. |
 | `Application\Drivers\GoogleProductsFeedDriver` | Renders RSS 2.0 with `g:` namespace: `g:id, g:title, g:description, g:link, g:image_link, g:condition, g:availability, g:price, g:brand` (+ `g:gtin`, `g:mpn`). |
 

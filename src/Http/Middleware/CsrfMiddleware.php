@@ -28,8 +28,8 @@ final class CsrfMiddleware implements MiddlewareInterface
 
         $path = $request->getPathInfo();
 
-        // Store cookie sessions: browsers auto-send gereq_store_token. Require
-        // allowlisted Origin/Referer unless the client sent an explicit Bearer
+        // Store cookie sessions: browsers auto-send the HttpOnly store JWT cookie.
+        // Require allowlisted Origin/Referer unless the client sent an explicit Bearer
         // (API clients / FE Authorization header) — CSRF cannot forge that.
         if (str_starts_with($path, '/api/v1/store/')) {
             $blocked = $this->storeCookieCsrfBlock($request);

@@ -59,6 +59,7 @@ Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) ·
 |---|---|
 | [Admin assets](frontend/admin-assets.md) | Vite pipeline, `resources/js`, `resources/css`, module-owned assets, charts |
 | [Public frontends](frontend/public-frontends.md) | React apps `FE2/` and `frontend/` consuming `/api/public/*` |
+| [PageSpeed](frontend/pagespeed.md) | Media srcset, lazy icons, Web+ SPA head inject, health checks |
 
 ## Development
 

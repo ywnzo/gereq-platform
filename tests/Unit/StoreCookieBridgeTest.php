@@ -27,7 +27,7 @@ final class StoreCookieBridgeTest extends TestCase
         self::assertSame('cookie-token', $bridge->tokenFromRequest($cookieReq));
     }
 
-    public function testAttachSetsHttpOnlyCookie(): void
+    public function testAttachSetsHttpOnlyJwtAndReadableHint(): void
     {
         $config = new Config(['app' => ['url' => 'https://shop.example', 'key' => 'test-key-32-chars-minimum!!!!!!']]);
         $tokens = new StoreTokenService($config);
@@ -37,14 +37,23 @@ final class StoreCookieBridgeTest extends TestCase
         $response = $bridge->attach(new Response('ok'), $account);
         $cookies = $response->headers->getCookies();
         self::assertNotEmpty($cookies);
-        $found = false;
+        $jwt = null;
+        $hint = null;
         foreach ($cookies as $c) {
             if ($c->getName() === StoreCookieBridge::COOKIE) {
-                $found = true;
-                self::assertTrue($c->isHttpOnly());
-                self::assertSame('lax', strtolower((string) $c->getSameSite()));
+                $jwt = $c;
+            }
+            if ($c->getName() === StoreCookieBridge::HINT_COOKIE) {
+                $hint = $c;
             }
         }
-        self::assertTrue($found);
+        self::assertNotNull($jwt);
+        self::assertTrue($jwt->isHttpOnly());
+        self::assertSame('lax', strtolower((string) $jwt->getSameSite()));
+        self::assertCount(3, explode('.', (string) $jwt->getValue()));
+
+        self::assertNotNull($hint);
+        self::assertFalse($hint->isHttpOnly());
+        self::assertSame('1', $hint->getValue());
     }
 }

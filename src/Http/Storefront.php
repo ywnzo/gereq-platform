@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Gereq\Http;
 
+use Gereq\Foundation\Gereq;
+use Gereq\Hook\HookManager;
 use Gereq\Security\ContentSecurityPolicy;
 use Gereq\Support\AdminPath;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -66,6 +68,13 @@ final class Storefront
         }
 
         $html = (string) file_get_contents(self::root() . '/index.html');
+        // Modules (Web+) may inject SEO/OG + LCP preload into the first HTML byte.
+        if (Gereq::has()) {
+            $filtered = Gereq::app()->make(HookManager::class)->filter('storefront.spa_html', $html, $request);
+            if (is_string($filtered) && $filtered !== '') {
+                $html = $filtered;
+            }
+        }
         // CMS builder embeds the storefront in a same-origin iframe (?edit=1).
         $response = new Response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',

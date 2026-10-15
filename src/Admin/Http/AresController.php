@@ -43,15 +43,32 @@ final class AresController extends Controller
     {
         $q = trim((string) $request->query->get('q', ''));
         $city = trim((string) $request->query->get('city', ''));
-        $limit = (int) $request->query->get('limit', 10);
+        $limit = max(1, min(30, (int) $request->query->get('limit', 10)));
+        $district = $city !== '' ? $city : null;
 
         try {
-            return $this->json([
-                'data' => $this->ares->searchAddresses($q, $limit, $city !== '' ? $city : null),
-                'meta' => ['q' => $q, 'city' => $city !== '' ? $city : null],
-            ]);
+            $data = $this->ares->searchAddresses($q, $limit, $district);
         } catch (AresException $e) {
             return $this->jsonError('ares_error', $e->getMessage(), [], $e->status());
         }
+
+        $districtFallback = false;
+        if ($data === [] && $district !== null) {
+            $districtFallback = true;
+            try {
+                $data = $this->ares->searchAddresses($q, $limit, null);
+            } catch (AresException $e) {
+                return $this->jsonError('ares_error', $e->getMessage(), [], $e->status());
+            }
+        }
+
+        return $this->json([
+            'data' => $data,
+            'meta' => [
+                'q' => $q,
+                'city' => $district,
+                'district_fallback' => $districtFallback,
+            ],
+        ]);
     }
 }

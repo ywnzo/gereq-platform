@@ -10,6 +10,7 @@ use Gereq\Http\Exception\NotFoundHttpException;
 use Gereq\Http\Middleware\AuthMiddleware;
 use Gereq\Http\Middleware\AutoUpdateModulesMiddleware;
 use Gereq\Http\Middleware\CsrfMiddleware;
+use Gereq\Http\Middleware\EncryptCookiesMiddleware;
 use Gereq\Http\Middleware\GuestMiddleware;
 use Gereq\Http\Middleware\ModuleCurrentMiddleware;
 use Gereq\Http\Middleware\PermissionMiddleware;
@@ -84,6 +85,8 @@ final class Kernel
         }
 
         $this->auth->applyCookies($response);
+        // Remember cookies are attached after the pipeline — encrypt allowlisted Set-Cookie values.
+        $response = $this->container->get(EncryptCookiesMiddleware::class)->encryptResponseCookies($response);
         // Keep binary/stream responses eligible for Content-Length + Range (HTML5 video/audio).
         if (!$response instanceof BinaryFileResponse && !$response instanceof StreamedResponse) {
             $response->headers->set('Connection', 'close');
@@ -113,6 +116,7 @@ final class Kernel
         ];
 
         $middleware = [
+            EncryptCookiesMiddleware::class,
             StartSessionMiddleware::class,
             SetLocaleMiddleware::class,
             SecurityHeadersMiddleware::class,

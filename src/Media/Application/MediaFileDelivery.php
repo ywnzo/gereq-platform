@@ -15,9 +15,6 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 /** Serves media binaries (X-Accel, ETag, optional width resize). */
 final class MediaFileDelivery
 {
-    /** @var list<int> */
-    private const WIDTH_STEPS = [160, 320, 480, 640, 800, 960, 1200, 1600, 1920, 2400];
-
     public function __construct(
         private readonly FileManager $files,
         private readonly Repository $config,
@@ -147,8 +144,8 @@ final class MediaFileDelivery
             return null;
         }
 
-        $target = self::WIDTH_STEPS[0];
-        foreach (self::WIDTH_STEPS as $step) {
+        $target = MediaUrlBuilder::WIDTH_STEPS[0];
+        foreach (MediaUrlBuilder::WIDTH_STEPS as $step) {
             $target = $step;
             if ($w <= $step) {
                 break;

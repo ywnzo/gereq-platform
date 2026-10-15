@@ -8,13 +8,17 @@ use Gereq\Api\HealthController;
 use Gereq\Api\OpenApiController;
 use Gereq\Api\PublicAresController;
 use Gereq\Api\PublicBrandingController;
+use Gereq\Api\PublicGereqSecurityStubController;
 use Gereq\Http\BrandAssetController;
 use Gereq\Http\Router;
+use Gereq\Module\ModuleManager;
 
 final class PublicApiRegistrar
 {
-    public function __construct(private readonly Router $router)
-    {
+    public function __construct(
+        private readonly Router $router,
+        private readonly ModuleManager $modules,
+    ) {
     }
 
     public function register(): void
@@ -31,6 +35,16 @@ final class PublicApiRegistrar
             ->name('api.public.branding.options');
         $this->router->get('/api/public/branding', [PublicBrandingController::class, 'show'])
             ->name('api.public.branding');
+
+        // When Gereq is off, still answer the storefront probe with 200 + enabled:false
+        // so the browser console does not log a 404 (Lighthouse errors-in-console).
+        if (!$this->modules->isEnabled('gereq')) {
+            $stub = PublicGereqSecurityStubController::class;
+            $this->router->add('/api/public/gereq/security', ['OPTIONS'], [$stub, 'options'])
+                ->name('api.public.gereq.security.options');
+            $this->router->get('/api/public/gereq/security', [$stub, 'security'])
+                ->name('api.public.gereq.security');
+        }
 
         $this->router->get('/brand/asset/{name}', [BrandAssetController::class, 'show'])
             ->name('brand.asset');

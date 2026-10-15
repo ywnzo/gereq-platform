@@ -114,7 +114,15 @@ final class AresService
         $cityHint = $this->cityHintForDistrict($district);
         $fetch = min(30, max($limit * 3, $limit));
 
-        // Prefer the typed text (may already include a town like "náměstí, Kdyně"),
+        // City-only query — try municipality search first so it is not drowned by street hits.
+        if ($this->looksLikeCityOnly($query)) {
+            $cities = $this->filterByDistrict($this->searchCity($query, $fetch), $district, $limit);
+            if ($cities !== []) {
+                return $cities;
+            }
+        }
+
+        // Prefer the typed text (may already include a town),
         // then bias with the district seat so vague streets stay inside the okres.
         $textQueries = [$query];
         if (!$this->queryMentions($query, $cityHint)) {
@@ -141,10 +149,6 @@ final class AresService
             if ($rows !== []) {
                 return $rows;
             }
-        }
-
-        if ($this->looksLikeCityOnly($query)) {
-            return $this->filterByDistrict($this->searchCity($query, $fetch), $district, $limit);
         }
 
         return [];
@@ -427,15 +431,12 @@ final class AresService
         }
 
         $words = preg_split('/\s+/u', $query) ?: [];
+        $words = array_values(array_filter($words, static fn (string $w): bool => $w !== ''));
+        $count = count($words);
 
-        // One word = municipality. Two words (e.g. "Nový Jičín") only when starting with an adjective.
-        if (count($words) === 1) {
+        // Municipality: 1–3 words without a house number.
+        if ($count >= 1 && $count <= 3) {
             return true;
-        }
-
-        if (count($words) === 2) {
-            $first = mb_strtolower($words[0]);
-            return in_array($first, ['nový', 'nová', 'nové', 'starý', 'stará', 'staré', 'horní', 'dolní', 'velký', 'velká', 'malý', 'malá'], true);
         }
 
         return false;
