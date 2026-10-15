@@ -7,6 +7,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import StarterKit from '@tiptap/starter-kit';
+import { TableKit } from '@tiptap/extension-table';
+import 'prosemirror-tables/style/tables.css';
 import { ChatVideo } from './chatVideo';
 import { FontWeight } from './fontWeight';
 
@@ -42,16 +44,20 @@ export function registerEditor(alpine: typeof Alpine): void {
             alignCenterClass: 'g-editor__btn',
             alignRightClass: 'g-editor__btn',
             alignJustifyClass: 'g-editor__btn',
+            tableActive: false,
 
             init() {
                 const root = this.$el as HTMLElement;
                 const textarea = this.$refs.input as HTMLTextAreaElement;
                 const mount = this.$refs.mount as HTMLElement;
                 const placeholder = root.dataset.placeholder || 'Pište…';
-                const seedHost = root.closest('[data-editor-seed]') as HTMLElement | null;
+                const seedHost = root.closest(
+                    '[data-editor-seed]',
+                ) as HTMLElement | null;
                 const seeded = seedHost?.getAttribute('data-editor-seed');
                 const initial = seeded != null ? seeded : textarea.value || '';
                 const chatMode = root.dataset.chat === '1';
+                const tablesMode = root.dataset.tables === '1';
                 const self = this;
                 const extensions: Extensions = [
                     StarterKit.configure({
@@ -64,14 +70,19 @@ export function registerEditor(alpine: typeof Alpine): void {
                     FontFamily,
                     FontWeight,
                     TextAlign.configure({
-                        types: chatMode ? ['paragraph'] : ['heading', 'paragraph'],
+                        types: chatMode
+                            ? ['paragraph']
+                            : ['heading', 'paragraph'],
                         alignments: ['left', 'center', 'right', 'justify'],
                     }),
                     Link.configure({
                         openOnClick: false,
                         autolink: true,
                         protocols: ['http', 'https', 'mailto'],
-                        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+                        HTMLAttributes: {
+                            rel: 'noopener noreferrer',
+                            target: '_blank',
+                        },
                     }),
                     Placeholder.configure({ placeholder }),
                 ];
@@ -83,6 +94,11 @@ export function registerEditor(alpine: typeof Alpine): void {
                             HTMLAttributes: { class: 'ai-chat__embed-img' },
                         }),
                         ChatVideo,
+                    );
+                }
+                if (tablesMode) {
+                    extensions.push(
+                        TableKit.configure({ table: { resizable: true } }),
                     );
                 }
                 if (root.dataset.highlightVars === '1') {
@@ -97,17 +113,24 @@ export function registerEditor(alpine: typeof Alpine): void {
                     extensions,
                     editorProps: {
                         attributes: {
-                            class: 'g-editor__content' + (chatMode ? ' g-editor__content--chat' : ''),
+                            class:
+                                'g-editor__content' +
+                                (chatMode ? ' g-editor__content--chat' : ''),
                         },
                         handlePaste: chatMode
                             ? (_view, event) => {
                                   const files = event.clipboardData?.files;
                                   if (files && files.length > 0) {
                                       root.dispatchEvent(
-                                          new CustomEvent('gereq-editor-files', {
-                                              detail: { files: Array.from(files) },
-                                              bubbles: true,
-                                          }),
+                                          new CustomEvent(
+                                              'gereq-editor-files',
+                                              {
+                                                  detail: {
+                                                      files: Array.from(files),
+                                                  },
+                                                  bubbles: true,
+                                              },
+                                          ),
                                       );
                                       return true;
                                   }
@@ -120,10 +143,15 @@ export function registerEditor(alpine: typeof Alpine): void {
                                   if (files && files.length > 0) {
                                       event.preventDefault();
                                       root.dispatchEvent(
-                                          new CustomEvent('gereq-editor-files', {
-                                              detail: { files: Array.from(files) },
-                                              bubbles: true,
-                                          }),
+                                          new CustomEvent(
+                                              'gereq-editor-files',
+                                              {
+                                                  detail: {
+                                                      files: Array.from(files),
+                                                  },
+                                                  bubbles: true,
+                                              },
+                                          ),
                                       );
                                       return true;
                                   }
@@ -143,7 +171,9 @@ export function registerEditor(alpine: typeof Alpine): void {
                 });
 
                 insertHandler = (event: Event) => {
-                    const detail = (event as CustomEvent<{ text?: string; html?: string }>).detail;
+                    const detail = (
+                        event as CustomEvent<{ text?: string; html?: string }>
+                    ).detail;
                     if (!editor || !detail) {
                         return;
                     }
@@ -156,7 +186,10 @@ export function registerEditor(alpine: typeof Alpine): void {
                     }
                 };
                 setHandler = (event: Event) => {
-                    const html = String((event as CustomEvent<{ html?: string }>).detail?.html ?? '');
+                    const html = String(
+                        (event as CustomEvent<{ html?: string }>).detail
+                            ?.html ?? '',
+                    );
                     self.applyHtmlToEditor(html);
                 };
                 root.addEventListener('gereq-editor-insert', insertHandler);
@@ -169,7 +202,10 @@ export function registerEditor(alpine: typeof Alpine): void {
             destroy() {
                 const root = this.$el as HTMLElement;
                 if (insertHandler) {
-                    root.removeEventListener('gereq-editor-insert', insertHandler);
+                    root.removeEventListener(
+                        'gereq-editor-insert',
+                        insertHandler,
+                    );
                 }
                 if (setHandler) {
                     root.removeEventListener('gereq-editor-set', setHandler);
@@ -181,8 +217,14 @@ export function registerEditor(alpine: typeof Alpine): void {
             refreshModeClasses() {
                 this.editorVisible = this.mode === 'editor';
                 this.htmlVisible = this.mode === 'html';
-                this.tabEditorClass = this.mode === 'editor' ? 'g-editor__mode-btn is-active' : 'g-editor__mode-btn';
-                this.tabHtmlClass = this.mode === 'html' ? 'g-editor__mode-btn is-active' : 'g-editor__mode-btn';
+                this.tabEditorClass =
+                    this.mode === 'editor'
+                        ? 'g-editor__mode-btn is-active'
+                        : 'g-editor__mode-btn';
+                this.tabHtmlClass =
+                    this.mode === 'html'
+                        ? 'g-editor__mode-btn is-active'
+                        : 'g-editor__mode-btn';
             },
 
             showEditor() {
@@ -209,7 +251,8 @@ export function registerEditor(alpine: typeof Alpine): void {
                 this.refreshModeClasses();
 
                 this.$nextTick(() => {
-                    const htmlBox = this.$refs.html as HTMLTextAreaElement | undefined;
+                    const htmlBox = this.$refs.html as
+                        HTMLTextAreaElement | undefined;
                     if (htmlBox) {
                         htmlBox.value = html;
                         htmlBox.focus();
@@ -218,7 +261,8 @@ export function registerEditor(alpine: typeof Alpine): void {
             },
 
             readHtmlSource(): string {
-                const htmlBox = this.$refs.html as HTMLTextAreaElement | undefined;
+                const htmlBox = this.$refs.html as
+                    HTMLTextAreaElement | undefined;
                 if (htmlBox && this.mode === 'html') {
                     return htmlBox.value;
                 }
@@ -236,7 +280,9 @@ export function registerEditor(alpine: typeof Alpine): void {
                 } catch {
                     try {
                         editor.commands.setContent(
-                            content === '' ? '' : `<p>${escapeHtml(content)}</p>`,
+                            content === ''
+                                ? ''
+                                : `<p>${escapeHtml(content)}</p>`,
                             { emitUpdate: false },
                         );
                     } catch {
@@ -310,7 +356,8 @@ export function registerEditor(alpine: typeof Alpine): void {
             },
 
             writeTextarea(html: string) {
-                const textarea = this.$refs.input as HTMLTextAreaElement | undefined;
+                const textarea = this.$refs.input as
+                    HTMLTextAreaElement | undefined;
                 if (!textarea) {
                     return;
                 }
@@ -332,6 +379,7 @@ export function registerEditor(alpine: typeof Alpine): void {
                 this.strikeClass = this.btnClass(ed.isActive('strike'));
                 this.bulletClass = this.btnClass(ed.isActive('bulletList'));
                 this.orderedClass = this.btnClass(ed.isActive('orderedList'));
+                this.tableActive = ed.isActive('table');
 
                 if (ed.isActive('heading', { level: 1 })) {
                     this.heading = 'h1';
@@ -343,7 +391,10 @@ export function registerEditor(alpine: typeof Alpine): void {
                     this.heading = 'paragraph';
                 }
 
-                const attrs = ed.getAttributes('textStyle') as { fontFamily?: string; fontWeight?: string };
+                const attrs = ed.getAttributes('textStyle') as {
+                    fontFamily?: string;
+                    fontWeight?: string;
+                };
                 this.fontFamily = attrs.fontFamily || '';
                 this.fontWeight = attrs.fontWeight || '';
 
@@ -410,16 +461,57 @@ export function registerEditor(alpine: typeof Alpine): void {
                 if (!editor) {
                     return;
                 }
-                const previous = editor.getAttributes('link').href as string | undefined;
-                const next = window.prompt('URL odkazu', previous || 'https://');
+                const previous = editor.getAttributes('link').href as
+                    string | undefined;
+                const next = window.prompt(
+                    'URL odkazu',
+                    previous || 'https://',
+                );
                 if (next === null) {
                     return;
                 }
                 if (next.trim() === '') {
-                    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+                    editor
+                        .chain()
+                        .focus()
+                        .extendMarkRange('link')
+                        .unsetLink()
+                        .run();
                     return;
                 }
-                editor.chain().focus().extendMarkRange('link').setLink({ href: next.trim() }).run();
+                editor
+                    .chain()
+                    .focus()
+                    .extendMarkRange('link')
+                    .setLink({ href: next.trim() })
+                    .run();
+            },
+            addRowBefore() {
+                editor?.chain().focus().addRowBefore().run();
+            },
+            addRowAfter() {
+                editor?.chain().focus().addRowAfter().run();
+            },
+            deleteRow() {
+                editor?.chain().focus().deleteRow().run();
+            },
+            addColumnBefore() {
+                editor?.chain().focus().addColumnBefore().run();
+            },
+            addColumnAfter() {
+                editor?.chain().focus().addColumnAfter().run();
+            },
+            deleteColumn() {
+                editor?.chain().focus().deleteColumn().run();
+            },
+            mergeCells() {
+                editor?.chain().focus().mergeCells().run();
+            },
+            splitCell() {
+                editor?.chain().focus().splitCell().run();
+            },
+            toggleHeaderRow() {
+                editor?.chain().focus().toggleHeaderRow().run();
             },
         };
     });

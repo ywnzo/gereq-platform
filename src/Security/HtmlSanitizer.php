@@ -16,7 +16,7 @@ final class HtmlSanitizer
         'ul', 'ol', 'li', 'blockquote', 'hr',
         'h1', 'h2', 'h3', 'h4',
         'a', 'span', 'div',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td', 'colgroup', 'col', 'caption',
     ];
 
     /** @var array<string, list<string>> */
@@ -31,8 +31,10 @@ final class HtmlSanitizer
         'span' => ['style'],
         'li' => ['style'],
         'table' => ['style'],
-        'th' => ['style'],
-        'td' => ['style'],
+        'tr' => ['style'],
+        'th' => ['style', 'rowspan', 'colspan'],
+        'td' => ['style', 'rowspan', 'colspan'],
+        'col' => ['style']
     ];
 
     /**
@@ -48,6 +50,12 @@ final class HtmlSanitizer
         'font-size',
         'color',
         'background-color',
+        'width',
+        'height',
+        'table-layout',
+        'border',
+        '--tbl-border',
+        '--tbl-pad',
     ];
 
     public function sanitize(?string $html): string
@@ -219,6 +227,9 @@ final class HtmlSanitizer
                     continue;
                 }
                 $parts[] = $prop . ': ' . $cleanColor;
+                continue;
+            }
+            if (preg_match('/[<>"\'{}]|expression|javascript:|url\(/i', $val)) {
                 continue;
             }
             $parts[] = $prop . ': ' . strtolower($val);
