@@ -64,6 +64,7 @@ final class ModuleController extends Controller
                 : '9999_99_99_999999';
             $items[] = [
                 'manifest' => $manifest,
+                'installed' => $this->modules->installed($manifest->id) !== null,
                 'enabled' => $report['overview']['enabled'],
                 'missing' => $report['overview']['enabled'] ? $report['overview']['missing'] : [],
                 'counts' => $report['counts'],
@@ -98,6 +99,20 @@ final class ModuleController extends Controller
             $items,
             static fn (array $row): bool => !$row['manifest']->isIntegration(),
         ));
+        // Keep children directly below their parent while preserving root ordering.
+        $ordered = [];
+        foreach ($moduleItems as $row) {
+            if ($row['manifest']->parentId !== null) {
+                continue;
+            }
+            $ordered[] = $row;
+            foreach ($moduleItems as $child) {
+                if ($child['manifest']->parentId === $row['manifest']->id) {
+                    $ordered[] = $child;
+                }
+            }
+        }
+        $moduleItems = $ordered;
         $pluginGroups = $this->groups->forIndex($byId, 'plugins');
         $pluginEnabled = 0;
         $pluginTotal = 0;
@@ -142,9 +157,9 @@ final class ModuleController extends Controller
         }
         $versionRows = [];
         $versionsError = null;
-        $gitlabConfigured = $this->gitlab->configured();
+        $gitlabConfigured = $manifest->parentId === null && $this->gitlab->configured();
         try {
-            $versionRows = $this->versions->listVersions($id, true);
+            $versionRows = $manifest->parentId === null ? $this->versions->listVersions($id, true) : [];
         } catch (\Throwable $e) {
             $versionsError = $e->getMessage();
         }

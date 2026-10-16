@@ -44,18 +44,10 @@ final class EntityManagerFactory
         if ($paths === []) {
             $paths[] = $srcDir;
         }
-        $modulesDir = $this->basePath . '/modules';
-
-        // Only Domain/ — avoids loading modules/*/Tests (PHPUnit) under --no-dev.
-        if (is_dir($modulesDir)) {
-            foreach (scandir($modulesDir) ?: [] as $entry) {
-                if ($entry === '.' || $entry === '..') {
-                    continue;
-                }
-                $path = $modulesDir . '/' . $entry . '/Domain';
-                if (is_dir($path)) {
-                    $paths[] = $path;
-                }
+        foreach (\Gereq\Module\ModuleDiscovery::discover($this->basePath) as $manifest) {
+            $path = $manifest->path . '/Domain';
+            if (is_dir($path)) {
+                $paths[] = $path;
             }
         }
 

@@ -95,10 +95,24 @@ final class DatabaseBootstrap
             $this->modules->rediscover();
             $this->setup->markIncomplete();
 
+            $this->seeder->seedBare([
+                'name' => 'GEREQ development',
+                'email' => 'dev@dev.local',
+                'password' => 'dev',
+                'role' => AdminBootstrap::DEFAULT_ROLE,
+                'generated' => true,
+            ]);
+
             $this->log('Bare install complete.');
             $this->log('Initial admin (not stored in .env):');
             $this->log('  email:    ' . $admin['email']);
             $this->log('  password: ' . $admin['password']);
+            $this->log('  role:     ' . $admin['role']);
+
+            $this->log(' ');
+            $this->log('  generated: Development account created');
+            $this->log('  email: dev@dev.local');
+            $this->log('  password: dev');
             $this->log('  role:     ' . $admin['role']);
 
             return $admin;

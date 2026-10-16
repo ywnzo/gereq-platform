@@ -331,12 +331,27 @@ final class Migrator
             if ($real === false) {
                 continue;
             }
-            if (str_starts_with($real, $root . DIRECTORY_SEPARATOR) || $real === $root) {
+            if ($this->ownerOfFile($real)?->id === $moduleId) {
                 $out[] = $meta;
             }
         }
 
         return $out;
+    }
+
+    private function ownerOfFile(string $file): ?\Gereq\Module\ModuleManifest
+    {
+        $owner = null;
+        foreach ($this->modules->discover() as $manifest) {
+            $root = realpath($manifest->path);
+            if ($root !== false && str_starts_with($file, $root . DIRECTORY_SEPARATOR)) {
+                if ($owner === null || strlen($manifest->path) > strlen($owner->path)) {
+                    $owner = $manifest;
+                }
+            }
+        }
+
+        return $owner;
     }
 
     /**
@@ -350,17 +365,6 @@ final class Migrator
     {
         $all = $this->em->getMetadataFactory()->getAllMetadata();
         $enabled = array_fill_keys($this->modules->enabledIds(), true);
-        $allowedRoots = [];
-        foreach ($this->modules->discover() as $manifest) {
-            if (!isset($enabled[$manifest->id])) {
-                continue;
-            }
-            $real = realpath($manifest->path);
-            if ($real !== false) {
-                $allowedRoots[] = $real;
-            }
-        }
-
         // Core entities live under src/
         $coreHint = DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
 
@@ -384,11 +388,9 @@ final class Migrator
                 continue;
             }
 
-            foreach ($allowedRoots as $root) {
-                if (str_starts_with($real, $root . DIRECTORY_SEPARATOR) || $real === $root) {
-                    $out[] = $meta;
-                    continue 2;
-                }
+            $owner = $this->ownerOfFile($real);
+            if ($owner !== null && isset($enabled[$owner->id])) {
+                $out[] = $meta;
             }
         }
 

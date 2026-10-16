@@ -43,29 +43,22 @@ async function exists(p: string): Promise<boolean> {
 }
 
 async function discoverModuleStyles(): Promise<ModuleStyle[]> {
-  const modulesDir = path.join(root, 'modules');
-  let names: string[] = [];
-  try {
-    names = await readdir(modulesDir);
-  } catch {
-    return [];
+  const proc = Bun.spawn(['php', path.join(root, 'scripts/module-assets.php')], {
+    cwd: root,
+    stdout: 'pipe',
+    stderr: 'inherit',
+  });
+  const body = await new Response(proc.stdout).text();
+  if (await proc.exited !== 0) {
+    throw new Error('Module asset discovery failed');
   }
-
+  const packages: { id: string; path: string }[] = JSON.parse(body);
   const out: ModuleStyle[] = [];
-  for (const name of names.sort()) {
-    const dir = path.join(modulesDir, name);
-    const cssPath = path.join(dir, 'Resources/assets/css/admin.css');
-    const modulePhp = path.join(dir, 'module.php');
-    if (!(await exists(cssPath)) || !(await exists(modulePhp))) {
-      continue;
+  for (const mod of packages) {
+    const cssPath = path.join(mod.path, 'Resources/assets/css/admin.css');
+    if (await exists(cssPath)) {
+      out.push({ id: mod.id, cssPath });
     }
-    const php = await readFile(modulePhp, 'utf8');
-    const match = php.match(/['"]id['"]\s*=>\s*['"]([^'"]+)['"]/);
-    if (!match) {
-      console.warn(`Skip module CSS (no id in module.php): ${name}`);
-      continue;
-    }
-    out.push({ id: match[1], cssPath });
   }
   return out;
 }

@@ -22,7 +22,7 @@ Seeded roles (`Gereq\Database\Seeder::seedRoles()`, `src/Database/Seeder.php`):
 | --- | --- | --- |
 | `superadmin` | full access | implicit (privileged) |
 | `admin` | full access (developer) | implicit (privileged); seeder also assigns all permissions |
-| `admin-client` | client system owner (realityV3) | everything except `modules.*` (can manage roles/users; cannot enable/disable modules) |
+| `admin-client` | client system owner | everything except `modules.*` and `gereq.*` (can manage roles/users; cannot enable/disable modules) |
 | `editor` | content edits | `*.view`, `*.edit`, `*.create` except `users.*`, `modules.*`, `roles.*`, `settings.*` |
 | `view` | read-only | `*.view` |
 | `broker` | Makléř — vlastní kalendář, prohlídky, nabídky, klienti, dokumenty (scoped) a média; bez CRM/automatizace | `calendar.view|manage`, `viewings.view|manage`, `listings.view|manage`, `customers.view`, `documents.view|manage`, `media.view|manage` |

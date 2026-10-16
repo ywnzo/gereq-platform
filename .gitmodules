@@ -133,6 +133,3 @@
 [submodule "modules/SiteInquiries"]
 	path = modules/SiteInquiries
 	url = ../module-site_inquiries.git
-[submodule "dev/dockerless"]
-	path = dev/dockerless
-	url = ../dockerless.git

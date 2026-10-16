@@ -154,6 +154,10 @@ final class ModuleVersionInstaller
             throw new \RuntimeException($this->translator->trans('modules.error.not_found', ['%id%' => $moduleId]));
         }
 
+        if ($manifest->parentId !== null) {
+            throw new \RuntimeException($this->translator->trans('modules.error.submodule_versions'));
+        }
+
         return $manifest;
     }
 }

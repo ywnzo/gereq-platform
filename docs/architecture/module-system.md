@@ -52,6 +52,98 @@ return [
 
 `ModuleManifest` also exposes `isIntegration()` and `phpNamespace()` (`Modules\<Dir>\` or `Integrations\<Dir>\`, derived from the directory name — PSR-4 roots are in `composer.json`).
 
+## Bundled submodules
+
+A module can bundle independently managed features in its own repository. These are
+application submodules, not Git submodules: they have no separate repository or
+release archive. Declare the same relative directory list in the parent's class
+and `module.php`:
+
+```php
+final class WarehouseModule implements ModuleInterface
+{
+    public const SUBMODULES = ['Submodules/Reservations'];
+    // id(), version(), register(), boot() use the normal module contract.
+}
+```
+
+```php
+// modules/Warehouse/module.php
+return [
+    'id' => 'warehouse',
+    'class' => Modules\Warehouse\WarehouseModule::class,
+    'version' => '1.1.0',
+    'submodules' => ['Submodules/Reservations'],
+];
+```
+
+`ModuleInterface::SUBMODULES` defaults to `[]`, so existing modules need no changes.
+Discovery checks that the class and manifest declarations agree. Only explicitly
+listed directories are discovered; paths must remain inside the parent. A bundled
+submodule cannot declare further children or its own repository.
+
+```text
+modules/Warehouse/
+  module.php
+  WarehouseModule.php
+  Submodules/Reservations/
+    module.php
+    ReservationsModule.php
+    Domain/
+    Database/Migrations/
+    Resources/views/
+    Resources/translations/
+    Resources/assets/css/admin.css
+    Tests/
+```
+
+```php
+// modules/Warehouse/Submodules/Reservations/module.php
+return [
+    'id' => 'warehouse_reservations',
+    'class' => Modules\Warehouse\Submodules\Reservations\ReservationsModule::class,
+    'name' => 'Reservations',
+    'version' => '0.1.0',
+    'requires' => ['core' => '^1.0'],
+    'permissions' => [
+        ['name' => 'warehouse_reservations.manage', 'label' => 'perm.reservations.manage', 'group' => 'perm.group.warehouse'],
+    ],
+];
+```
+
+The child class implements the same `ModuleInterface`. Its namespace follows its
+location inside the parent's PSR-4 tree. IDs are globally unique. Discovery sets
+`parentId` and automatically adds the parent to `requires`; clients cannot omit or
+remove this dependency. Children retain their own version, installation row,
+permissions, migrations, routes, APIs, capabilities, hooks, settings and menu items.
+Public content still follows the normal publishing rules.
+
+- Enable the parent first, then enable a child separately. Enabling the parent
+  does not automatically install its children. Boot registers dependencies first,
+  then calls every enabled module's `boot()` after all registrations finish.
+- A stored enabled child whose parent is absent or paused is never treated as
+  active and never boots. Pausing a parent cascades through enabled dependents;
+  pausing a child leaves its parent running.
+- Uninstall rolls children back before the parent, including paused children that
+  retain data. Entity ownership follows the deepest package directory: a parent's
+  schema sync and rollback exclude its children's entities.
+- Admin lists child rows immediately below their parent with the same lifecycle
+  actions. Paused modules can also be uninstalled. Uninstall has the existing
+  module meaning: rollback schema/data; bundled source files remain in the parent.
+- Twig uses the child's ID as namespace (`@warehouse_reservations/...`);
+  translations load from the child's own catalogs. The Bun build discovers its
+  CSS as `module:warehouse_reservations`, loaded only while the child is enabled.
+- The testing engine supports `php bin/gereq-test module:warehouse_reservations`
+  and includes child `Tests/` directories in the aggregate module target.
+- Code releases and GitLab activation belong to the parent bundle. Activating the
+  parent updates installed children as well, including child migration rollback
+  on downgrade. Separate child downloads/activation are rejected. A target bundle
+  that omits an installed child is refused before rollback or file replacement,
+  to preserve retained child data.
+- Bump the child's manifest/class version when its code changes, and bump the
+  parent bundle's manifest/class version before releasing the changed repository.
+  For local deployments, run the normal admin Update for each changed module.
+
 ## Directory layout
 
 `php gereq make:module <Name>` creates (`src/Console/Command/MakeModuleCommand.php`):

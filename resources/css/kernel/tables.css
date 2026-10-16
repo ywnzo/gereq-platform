@@ -599,3 +599,7 @@ form > .table,
     text-align: center;
 }
 .table-footer a:hover { color: var(--text); }
+
+.grq-module-child {
+    padding-inline-start: var(--grq-space-6, 1.5rem);
+}

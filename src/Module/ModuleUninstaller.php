@@ -29,6 +29,8 @@ final class ModuleUninstaller
      */
     public function uninstall(string $id, bool $purgeMedia = false, array $alsoDisabling = []): array
     {
+        // Check dependents before deleting media or schema.
+        $this->modules->disable($id, $alsoDisabling);
         $messages = [];
 
         if ($purgeMedia) {
@@ -38,8 +40,7 @@ final class ModuleUninstaller
             }
         }
 
-        // Disable first (syncSchema then skips the module), then drop tables.
-        $this->modules->disable($id, $alsoDisabling);
+        // Disabled modules stay out of schema synchronization during rollback.
         $messages = array_merge($messages, $this->migrator->rollbackModule($id));
 
         return $messages;
@@ -51,19 +52,26 @@ final class ModuleUninstaller
      */
     public function uninstallMany(array $ids, bool $purgeMedia = false): array
     {
-        $ids = $this->modules->expandWithDependents($ids);
+        $ids = $this->modules->expandWithDependents($ids, true);
         $ordered = $this->modules->sortForDisable($ids);
         $ok = 0;
         $errors = [];
+        $failed = [];
 
         foreach ($ordered as $id) {
             try {
-                if (!$this->modules->isEnabled($id)) {
+                foreach ($failed as $failedId) {
+                    if (isset($this->modules->manifest($failedId)?->requires[$id])) {
+                        throw new \RuntimeException('Dependency retained after failed uninstall: ' . $failedId);
+                    }
+                }
+                if ($this->modules->installed($id) === null) {
                     continue;
                 }
-                $this->uninstall($id, $purgeMedia, $ids);
+                $this->uninstall($id, $purgeMedia);
                 ++$ok;
             } catch (\Throwable $e) {
+                $failed[] = $id;
                 $errors[] = $id . ': ' . $e->getMessage();
             }
         }

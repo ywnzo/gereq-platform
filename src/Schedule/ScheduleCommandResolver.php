@@ -25,7 +25,6 @@ use Gereq\Console\Command\QueueWorkCommand;
 use Gereq\Console\Command\ScheduleListCommand;
 use Gereq\Console\Command\ScheduleRunCommand;
 use Gereq\Console\Command\SeedDemoCommand;
-use Gereq\Console\Command\SeedRealityV3Command;
 use Gereq\Console\Command\ServeCommand;
 use Gereq\Console\Command\ServeDockerCommand;
 use Gereq\Console\Command\StorefrontRebuildCommand;
@@ -68,7 +67,6 @@ final class ScheduleCommandResolver
             ScheduleListCommand::class,
             UserCreateCommand::class,
             SeedDemoCommand::class,
-            SeedRealityV3Command::class,
             ServeCommand::class,
             ServeDockerCommand::class,
             StorefrontRebuildCommand::class,

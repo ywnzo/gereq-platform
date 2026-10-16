@@ -209,12 +209,17 @@
                                     </label>
                                 </td>
                                 <td>
-                                    <div class="table__title table__title--with-icon">
+                                    <div class="table__title table__title--with-icon{% if manifest.parentId %} grq-module-child{% endif %}">
                                         <span class="module-row__icon" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
                                         <div class="table__title-text">
+                                            {% if manifest.parentId %}<span class="muted" aria-hidden="true">↳</span>{% endif %}
                                             <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
                                             <span class="table__meta">
                                                 <code>{{ manifest.id }}</code> · v{{ manifest.version }}
+                                                {% if manifest.parentId %}
+                                                    · {{ 'admin.modules.submodule'|trans }}
+                                                    <a href="{{ url('admin.modules.show', {id: manifest.parentId}) }}">{{ manifest.parentId }}</a>
+                                                {% endif %}
                                                 {% if manifest.kind == 'integration' %}
                                                     · <span class="badge badge--info">{{ 'admin.modules.kind.integration'|trans }}</span>
                                                 {% endif %}
@@ -282,8 +287,8 @@
                                                 >{{ icon('play') }}</button>
                                             </form>
                                         {% endif %}
-                                        {# Stop only while running (keeps column aligned when off). #}
-                                        {% if row.enabled %}
+                                        {# Paused modules still own data and can be uninstalled. #}
+                                        {% if row.installed %}
                                             <form
                                                 method="post"
                                                 action="{{ url('admin.modules.disable', {id: manifest.id}) }}"

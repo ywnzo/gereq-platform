@@ -50,16 +50,11 @@ final class TwigFactory
     public function create(): Environment
     {
         $loader = new FilesystemLoader($this->basePath . '/resources/views');
-        foreach (['modules', 'integrations'] as $dirName) {
-            $root = $this->basePath . '/' . $dirName;
-            if (!is_dir($root)) {
-                continue;
-            }
-            foreach (scandir($root) ?: [] as $entry) {
-                $views = $root . '/' . $entry . '/Resources/views';
-                if (is_dir($views)) {
-                    $loader->addPath($views, strtolower($entry));
-                }
+        foreach (\Gereq\Module\ModuleDiscovery::discover($this->basePath) as $manifest) {
+            $views = $manifest->path . '/Resources/views';
+            if (is_dir($views)) {
+                $namespace = $manifest->parentId !== null ? $manifest->id : strtolower(basename($manifest->path));
+                $loader->addPath($views, $namespace);
             }
         }
 

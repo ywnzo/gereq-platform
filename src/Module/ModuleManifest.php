@@ -12,6 +12,7 @@ final class ModuleManifest
      * @param list<string> $provides
      * @param list<string> $capabilities
      * @param list<array{name: string, label: string, group: string}> $permissions
+     * @param list<string> $submodules
      * @param list<string> $groups
      */
     public function __construct(
@@ -36,6 +37,8 @@ final class ModuleManifest
         public readonly string $icon = 'modules',
         /** GitLab project path override (e.g. gereq/module-listings). Empty = derived from config. */
         public readonly ?string $repository = null,
+        public readonly array $submodules = [],
+        public readonly ?string $parentId = null,
     ) {
     }
 
@@ -47,13 +50,17 @@ final class ModuleManifest
     /** PSR-4 root for this package (Modules\Foo\ or Integrations\Foo\). */
     public function phpNamespace(): string
     {
+        if ($this->parentId !== null) {
+            return substr($this->moduleClass, 0, (int) strrpos($this->moduleClass, '\\') + 1);
+        }
+
         $folder = basename($this->path);
 
         return ($this->isIntegration() ? 'Integrations\\' : 'Modules\\') . $folder . '\\';
     }
 
     /** @param array<string, mixed> $data */
-    public static function fromArray(array $data, string $path): self
+    public static function fromArray(array $data, string $path, ?string $parentId = null): self
     {
         $id = (string) ($data['id'] ?? '');
         $class = (string) ($data['class'] ?? '');
@@ -88,6 +95,26 @@ final class ModuleManifest
 
         $repository = trim((string) ($data['repository'] ?? ''));
 
+        $submodules = $data['submodules'] ?? [];
+        if (!is_array($submodules) || !array_is_list($submodules)) {
+            throw new \InvalidArgumentException('Submodules must be a list of relative directory paths.');
+        }
+        foreach ($submodules as $relative) {
+            if (!is_string($relative) || !preg_match('#^[A-Za-z][A-Za-z0-9_]*(/[A-Za-z][A-Za-z0-9_]*)*$#D', $relative)) {
+                throw new \InvalidArgumentException('Invalid submodule directory path.');
+            }
+        }
+        if (count(array_unique($submodules)) !== count($submodules)) {
+            throw new \InvalidArgumentException('Duplicate submodule directory path.');
+        }
+        if ($parentId !== null && $submodules !== []) {
+            throw new \InvalidArgumentException('Submodules cannot declare further submodules.');
+        }
+        $requires = is_array($data['requires'] ?? null) ? $data['requires'] : [];
+        if ($parentId !== null) {
+            $requires[$parentId] = '*';
+        }
+
         return new self(
             id: $id,
             name: (string) ($data['name'] ?? $id),
@@ -95,7 +122,7 @@ final class ModuleManifest
             description: (string) ($data['description'] ?? ''),
             path: $path,
             moduleClass: $class,
-            requires: is_array($data['requires'] ?? null) ? $data['requires'] : [],
+            requires: $requires,
             optional: is_array($data['optional'] ?? null) ? $data['optional'] : [],
             provides: array_values($data['provides'] ?? []),
             capabilities: array_values($data['capabilities'] ?? []),
@@ -106,6 +133,8 @@ final class ModuleManifest
             kind: $kind,
             icon: $icon,
             repository: $repository !== '' ? $repository : null,
+            submodules: $submodules,
+            parentId: $parentId,
         );
     }
 }

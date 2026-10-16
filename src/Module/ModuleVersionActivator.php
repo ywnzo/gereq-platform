@@ -39,6 +39,9 @@ final class ModuleVersionActivator
             throw new \RuntimeException($this->translator->trans('modules.error.not_found', ['%id%' => $moduleId]));
         }
 
+        if ($manifest->parentId !== null) {
+            throw new \RuntimeException($this->translator->trans('modules.error.submodule_versions'));
+        }
         $version = GitLabModuleClient::normalizeVersion($version);
         if (!GitLabModuleClient::isSemver($version)) {
             throw new \InvalidArgumentException($this->translator->trans('admin.modules.versions.error.bad_version'));
@@ -58,6 +61,52 @@ final class ModuleVersionActivator
         $fromVersion = GitLabModuleClient::normalizeVersion($manifest->version);
         $cmp = version_compare($version, $fromVersion);
 
+        // Validate the target bundle before any rollback or file replacement.
+        $targetData = require $targetPath . '/module.php';
+        if (!is_array($targetData)) {
+            throw new \InvalidArgumentException('Target module manifest must return an array.');
+        }
+        $target = ModuleManifest::fromArray($targetData, $manifest->path);
+        if ($target->id !== $moduleId || GitLabModuleClient::normalizeVersion($target->version) !== $version) {
+            throw new \InvalidArgumentException('Target bundle id or version does not match the requested module.');
+        }
+        $targetChildren = [];
+        $targetChildPaths = [];
+        foreach ($target->submodules as $relative) {
+            $childPath = realpath($targetPath . '/' . $relative);
+            $targetRoot = realpath($targetPath);
+            if ($childPath === false || $targetRoot === false || !str_starts_with($childPath, $targetRoot . '/')) {
+                throw new \InvalidArgumentException('Target submodule must live inside its bundle.');
+            }
+            $childFile = $childPath . '/module.php';
+            $childData = is_file($childFile) ? require $childFile : null;
+            if (!is_array($childData)) {
+                throw new \InvalidArgumentException('Missing target submodule manifest: ' . $relative);
+            }
+            $child = ModuleManifest::fromArray($childData, $manifest->path . '/' . $relative, $moduleId);
+            $existing = $this->modules->manifest($child->id);
+            if (
+                isset($targetChildren[$child->id]) || $child->id === $moduleId
+                || ($existing !== null && $existing->parentId !== $moduleId)
+                || $child->repository !== null || file_exists($childPath . '/.git')
+                || !str_starts_with($child->moduleClass, $manifest->phpNamespace())
+                || $child->isIntegration() !== $manifest->isIntegration()
+                || in_array($child->id, ['core', 'notifications', 'webhooks', 'media', 'currency', 'customers'], true)
+            ) {
+                throw new \InvalidArgumentException('Invalid target submodule: ' . $child->id);
+            }
+            $targetChildren[$child->id] = $child;
+            $targetChildPaths[$child->id] = $childPath;
+        }
+        foreach ($this->modules->discover() as $child) {
+            if ($child->parentId !== $moduleId || $this->modules->installed($child->id) === null) {
+                continue;
+            }
+            if (!isset($targetChildren[$child->id])) {
+                throw new \RuntimeException($this->translator->trans('modules.error.submodule_bundle_update'));
+            }
+        }
+
         $messages = [];
 
         // Snapshot current live tree into cache before replacing.
@@ -65,6 +114,24 @@ final class ModuleVersionActivator
             $this->store->snapshotLive($manifest);
         } catch (\Throwable) {
             // Non-fatal — continue with activation.
+        }
+
+        $installedChildren = [];
+        foreach ($this->modules->discover() as $child) {
+            if ($child->parentId === $moduleId && $this->modules->installed($child->id) !== null) {
+                $installedChildren[$child->id] = $child;
+            }
+        }
+        foreach ($this->modules->sortForDisable(array_keys($installedChildren)) as $childId) {
+            $child = $installedChildren[$childId];
+            $targetChild = $targetChildren[$childId];
+            if ($cmp < 0 || version_compare($targetChild->version, $child->version, '<')) {
+                $messages = array_merge($messages, $this->migrator->rollbackMigrationsMissingFrom(
+                    $childId,
+                    $child->path,
+                    $targetChildPaths[$childId],
+                ));
+            }
         }
 
         if ($cmp < 0) {
@@ -75,7 +142,9 @@ final class ModuleVersionActivator
         }
 
         $this->swapLiveTree($livePath, $targetPath);
-        $this->modules->rediscover();
+        // PHP cannot reload an already loaded class in this request. Validate new
+        // declaration constants on the next request, against the newly loaded code.
+        $this->modules->rediscover(validateDeclarations: false);
 
         $fresh = $this->modules->manifest($moduleId);
         if ($fresh === null) {
@@ -108,6 +177,12 @@ final class ModuleVersionActivator
                 $row->setFootprint($fp !== '' ? $fp : null);
             }
             $this->em->flush();
+        }
+
+        foreach ($this->modules->sortForEnable(array_keys($targetChildren)) as $childId) {
+            if ($this->modules->installed($childId) !== null) {
+                $messages = array_merge($messages, $this->updater->update($childId));
+            }
         }
 
         $cachedFp = $this->store->footprint($moduleId, $version);

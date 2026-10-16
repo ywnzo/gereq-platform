@@ -25,7 +25,6 @@ final class Seeder
         private readonly ModuleManager $modules,
         private readonly Migrator $migrator,
         private readonly DemoSeeder $demoSeeder,
-        private readonly RealityV3Seeder $realityV3Seeder,
     ) {
     }
 
@@ -86,9 +85,6 @@ final class Seeder
                 throw new \RuntimeException('Demo seed is disabled when APP_ENV=production.');
             }
             $this->demoSeeder->seed();
-        }
-        if (RealityV3Seeder::isActive()) {
-            $this->realityV3Seeder->seed();
         }
         $this->seedForumDemo();
     }
@@ -280,9 +276,6 @@ final class Seeder
         );
 
         $roleName = strtolower(trim((string) ($admin['role'] ?? 'superadmin'))) ?: 'superadmin';
-        if (RealityV3Seeder::isActive()) {
-            $roleName = 'admin-client';
-        }
         $adminRole = $this->em->getRepository(Role::class)->findOneBy(['name' => $roleName])
             ?? $this->em->getRepository(Role::class)->findOneBy(['name' => 'superadmin']);
         if ($adminRole instanceof Role) {
@@ -310,10 +303,6 @@ final class Seeder
                 'forum',
                 'newsletter',
             ];
-        }
-        if (RealityV3Seeder::isActive()) {
-            $defaultEnabled = array_values(array_unique(array_merge($defaultEnabled, RealityV3Seeder::MODULES)));
-            $defaultEnabled = array_values(array_diff($defaultEnabled, RealityV3Seeder::MODULES_OFF));
         }
 
         foreach ($this->modules->discover() as $manifest) {

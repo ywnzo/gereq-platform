@@ -3,6 +3,12 @@
 declare(strict_types=1);
 
 return [
+    'modules.error.submodule_bundle_update' => 'Cílová verze balíku neobsahuje některý nainstalovaný podmodul. Jeho data nejprve vyřešte před změnou verze balíku.',
+    'admin.modules.submodule' => 'Podmodul',
+    'admin.modules.submodule_of' => 'Podmodul modulu',
+    'admin.modules.submodule_versions' => 'Kód a verze se distribuují společně s rodičovským modulem.',
+    'modules.error.submodule_versions' => 'Verze podmodulu se spravují přes rodičovský modul.',
+
     'Akce' => 'Akce',
     'Developer' => 'Developer',
     'Hlavní' => 'Hlavní',

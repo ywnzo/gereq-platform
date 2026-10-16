@@ -28,19 +28,10 @@ final class TranslatorFactory
 
         $this->loadDirectory($translator, $this->basePath . '/resources/translations');
 
-        foreach (['modules', 'integrations'] as $dirName) {
-            $root = $this->basePath . '/' . $dirName;
-            if (!is_dir($root)) {
-                continue;
-            }
-            foreach (scandir($root) ?: [] as $entry) {
-                if ($entry === '.' || $entry === '..') {
-                    continue;
-                }
-                $dir = $root . '/' . $entry . '/Resources/translations';
-                if (is_dir($dir)) {
-                    $this->loadDirectory($translator, $dir);
-                }
+        foreach (\Gereq\Module\ModuleDiscovery::discover($this->basePath) as $manifest) {
+            $dir = $manifest->path . '/Resources/translations';
+            if (is_dir($dir)) {
+                $this->loadDirectory($translator, $dir);
             }
         }
 

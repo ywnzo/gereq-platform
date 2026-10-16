@@ -9,6 +9,10 @@
 {% endblock %}
 
 {% block content %}
+{% if manifest.parentId %}
+    <p class="muted">{{ 'admin.modules.submodule_of'|trans }} <a href="{{ url('admin.modules.show', {id: manifest.parentId}) }}">{{ manifest.parentId }}</a>. {{ 'admin.modules.submodule_versions'|trans }}</p>
+{% endif %}
+
     {% set overview = report.overview %}
     {% set counts = report.counts %}
 
@@ -56,6 +60,15 @@
                         {{ icon('pause') }} {{ 'common.pause'|trans }}
                     </button>
                 </form>
+            {% else %}
+                <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
+                    {{ csrf_field()|raw }}
+                    <button class="btn btn--success" type="submit">
+                        {{ icon('play') }} {{ 'common.activate'|trans }}
+                    </button>
+                </form>
+            {% endif %}
+            {% if overview.installed_version %}
                 <form
                     method="post"
                     action="{{ url('admin.modules.disable', {id: manifest.id}) }}"
@@ -77,13 +90,6 @@
                         title="{{ 'admin.modules.uninstall_hint'|trans }}"
                     >
                         {{ icon('stop') }} {{ 'common.stop'|trans }}
-                    </button>
-                </form>
-            {% else %}
-                <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
-                    {{ csrf_field()|raw }}
-                    <button class="btn btn--success" type="submit">
-                        {{ icon('play') }} {{ 'common.activate'|trans }}
                     </button>
                 </form>
             {% endif %}

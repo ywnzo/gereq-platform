@@ -57,11 +57,20 @@ final class ModuleUpdater
 
         $liveFootprint = ModuleFootprint::ofDirectory($manifest->path);
         $installedFootprint = $row->footprint();
-        if ($liveFootprint !== '' && $installedFootprint !== null && $installedFootprint !== $liveFootprint) {
-            return $this->updateAvailableCache[$id] = true;
+        if ($liveFootprint === '' || $installedFootprint === null || $installedFootprint === $liveFootprint) {
+            return $this->updateAvailableCache[$id] = false;
         }
 
-        return $this->updateAvailableCache[$id] = false;
+        // Fingerprints stored before VCS gitfiles were excluded still describe the same tree.
+        $legacyFootprint = ModuleFootprint::ofDirectory($manifest->path, legacy: true);
+        if ($installedFootprint === $legacyFootprint) {
+            $row->setFootprint($liveFootprint);
+            $this->em->flush();
+
+            return $this->updateAvailableCache[$id] = false;
+        }
+
+        return $this->updateAvailableCache[$id] = true;
     }
 
     /**

@@ -52,6 +52,23 @@ final class ModuleFootprintTest extends TestCase
         self::assertSame($without, ModuleFootprint::ofDirectory($base));
     }
 
+    public function testSubmoduleGitFileDoesNotChangeFootprint(): void
+    {
+        $dir = $this->scratch('gitfile');
+        $this->writeTree($dir, ['module.php' => "ok\n"]);
+        $without = ModuleFootprint::ofDirectory($dir);
+
+        file_put_contents($dir . '/.git', "gitdir: ../../.git/modules/modules/WebPlus\n");
+        self::assertSame($without, ModuleFootprint::ofDirectory($dir));
+
+        file_put_contents($dir . '/.git', "gitdir: /var/lib/git/modules/WebPlus\n");
+        self::assertSame($without, ModuleFootprint::ofDirectory($dir));
+
+        $legacy = ModuleFootprint::ofDirectory($dir, legacy: true);
+        self::assertNotSame($without, $legacy);
+        self::assertSame(64, strlen($legacy));
+    }
+
     public function testImmutableVersionRefuseDifferentContent(): void
     {
         // Behaviour contract documented here; store tests cover installFromZip.

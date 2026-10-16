@@ -3,6 +3,12 @@
 declare(strict_types=1);
 
 return [
+    'modules.error.submodule_bundle_update' => 'The target bundle version omits an installed submodule. Resolve its retained data before switching bundle versions.',
+    'admin.modules.submodule' => 'Submodule',
+    'admin.modules.submodule_of' => 'Submodule of',
+    'admin.modules.submodule_versions' => 'Code and versions are distributed with the parent module.',
+    'modules.error.submodule_versions' => 'Submodule versions are managed through the parent module.',
+
     'Akce' => 'Actions',
     'Developer' => 'Developer',
     'Hlavní' => 'Main',

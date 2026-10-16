@@ -304,23 +304,10 @@ final class TestCatalog
      */
     private function packageDirs(string $rootName): array
     {
-        $root = $this->basePath . '/' . $rootName;
-        if (!is_dir($root)) {
-            return [];
-        }
-
         $dirs = [];
-        $entries = scandir($root);
-        if ($entries === false) {
-            return [];
-        }
-        foreach ($entries as $entry) {
-            if ($entry === '.' || $entry === '..') {
-                continue;
-            }
-            $path = $root . '/' . $entry;
-            if (is_dir($path) && is_file($path . '/module.php')) {
-                $dirs[] = $path;
+        foreach (\Gereq\Module\ModuleDiscovery::discover($this->basePath) as $manifest) {
+            if (($rootName === 'integrations') === $manifest->isIntegration()) {
+                $dirs[] = $manifest->path;
             }
         }
 

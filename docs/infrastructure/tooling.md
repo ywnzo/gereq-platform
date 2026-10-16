@@ -73,7 +73,7 @@ Active set = **`.gitmodules`**. Staging set = **`.gitmodules.disabled`** until `
 
 Relative submodule URLs (`../module-cms.git`) resolve via `GITLAB_URL` / `GITLAB_GROUP` when cloning. Full CLI table: [`gereq-cli/README.md`](https://git.gereq.cz/gereq/GEREQ_TOOLS/-/blob/main/gereq-cli/README.md) in GEREQ_TOOLS.
 
-RealityV3 product scripts live under `scripts/realityv3/` (not in `bin/`). `bin/twiggy-env.php` remains for the Twiggy language server.
+`bin/twiggy-env.php` remains for the Twiggy language server.
 
 ## [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) (standalone)
 
@@ -94,7 +94,7 @@ Generated indexes live in `.cache/` (ignored by git; excluded from demo packages
 
 ## `bin/` (legacy note)
 
-`INSTALACE.sh` delegates to `bin/grq install demo`. RealityV3: `scripts/realityv3/install` and `scripts/realityv3/pack`.
+`INSTALACE.sh` delegates to `bin/grq install demo`.
 
 ## `.cursor/` rules and skills
 

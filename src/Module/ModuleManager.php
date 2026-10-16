@@ -16,6 +16,8 @@ final class ModuleManager implements EnabledModulesProvider
     /** @var array<string, ModuleManifest>|null */
     private ?array $discovered = null;
 
+    private bool $validateDeclarations = true;
+
     /** @var list<ModuleInterface> */
     private array $booted = [];
 
@@ -47,47 +49,15 @@ final class ModuleManager implements EnabledModulesProvider
             return $this->discovered;
         }
 
-        $this->discovered = [];
-        foreach (['modules', 'integrations'] as $dirName) {
-            $root = $this->basePath . '/' . $dirName;
-            if (!is_dir($root)) {
-                continue;
-            }
-
-            foreach (scandir($root) ?: [] as $entry) {
-                if ($entry === '.' || $entry === '..') {
-                    continue;
-                }
-
-                $manifestFile = $root . '/' . $entry . '/module.php';
-                if (!is_file($manifestFile)) {
-                    continue;
-                }
-
-                $data = require $manifestFile;
-                if (!is_array($data)) {
-                    continue;
-                }
-
-                $manifest = ModuleManifest::fromArray($data, $root . '/' . $entry);
-                if (isset($this->discovered[$manifest->id])) {
-                    throw new \RuntimeException(sprintf(
-                        'Duplicitní package id "%s" (%s vs %s).',
-                        $manifest->id,
-                        $this->discovered[$manifest->id]->path,
-                        $manifest->path,
-                    ));
-                }
-                $this->discovered[$manifest->id] = $manifest;
-            }
-        }
+        $this->discovered = ModuleDiscovery::discover($this->basePath, $this->validateDeclarations);
 
         return $this->discovered;
     }
 
     /** Forget discovery / installed caches after live tree swap. */
-    public function rediscover(): void
+    public function rediscover(bool $validateDeclarations = true): void
     {
+        $this->validateDeclarations = $validateDeclarations;
         $this->discovered = null;
         $this->enabledIds = null;
         $this->installedById = null;
@@ -153,12 +123,20 @@ final class ModuleManager implements EnabledModulesProvider
             return $this->enabledIds;
         }
 
-        $this->enabledIds = [];
+        $enabled = [];
+        $manifests = $this->discover();
         foreach ($this->installedById() as $row) {
-            if ($row->enabled()) {
-                $this->enabledIds[] = $row->id();
+            if ($row->enabled() && isset($manifests[$row->id()])) {
+                $enabled[$row->id()] = true;
             }
         }
+        foreach ($enabled as $id => $_) {
+            $parent = $manifests[$id]->parentId;
+            if ($parent !== null && !isset($enabled[$parent])) {
+                unset($enabled[$id]);
+            }
+        }
+        $this->enabledIds = array_keys($enabled);
 
         return $this->enabledIds;
     }
@@ -274,7 +252,7 @@ final class ModuleManager implements EnabledModulesProvider
                 if (!$this->isEnabled($id)) {
                     continue;
                 }
-                $this->disable($id, $ids);
+                $this->disable($id);
                 ++$ok;
             } catch (\Throwable $e) {
                 $errors[] = $id . ': ' . $e->getMessage();
@@ -290,7 +268,7 @@ final class ModuleManager implements EnabledModulesProvider
      * @param list<string> $ids
      * @return list<string>
      */
-    public function expandWithDependents(array $ids): array
+    public function expandWithDependents(array $ids, bool $includePausedChildren = false): array
     {
         $set = [];
         foreach ($ids as $id) {
@@ -303,7 +281,9 @@ final class ModuleManager implements EnabledModulesProvider
         while ($changed) {
             $changed = false;
             foreach ($this->discover() as $other) {
-                if (!$this->isEnabled($other->id) || isset($set[$other->id])) {
+                $ownedChild = $includePausedChildren && $other->parentId !== null
+                    && isset($set[$other->parentId]) && $this->installed($other->id) !== null;
+                if ((!$this->isEnabled($other->id) && !$ownedChild) || isset($set[$other->id])) {
                     continue;
                 }
                 foreach (array_keys($other->requires) as $dep) {
@@ -328,13 +308,17 @@ final class ModuleManager implements EnabledModulesProvider
     {
         $set = array_fill_keys($ids, true);
         $visited = [];
+        $visiting = [];
         $stack = [];
 
-        $visit = function (string $id) use (&$visit, &$visited, &$stack, $set): void {
+        $visit = function (string $id) use (&$visit, &$visited, &$visiting, &$stack, $set): void {
             if (isset($visited[$id])) {
                 return;
             }
-            $visited[$id] = true;
+            if (isset($visiting[$id])) {
+                throw new \RuntimeException('Cyclic module dependency: ' . $id);
+            }
+            $visiting[$id] = true;
             $manifest = $this->manifest($id);
             if ($manifest !== null) {
                 foreach (array_keys($manifest->requires) as $dep) {
@@ -344,6 +328,8 @@ final class ModuleManager implements EnabledModulesProvider
                     $visit($dep);
                 }
             }
+            unset($visiting[$id]);
+            $visited[$id] = true;
             $stack[] = $id;
         };
 
@@ -357,7 +343,7 @@ final class ModuleManager implements EnabledModulesProvider
     public function boot(ModuleContext $context): void
     {
         $enabled = [];
-        foreach ($this->enabledIds() as $id) {
+        foreach ($this->sortForEnable($this->enabledIds()) as $id) {
             $manifest = $this->manifest($id);
             if ($manifest === null) {
                 continue;
@@ -431,12 +417,7 @@ final class ModuleManager implements EnabledModulesProvider
         }
         $this->installedById[$row->id()] = $row;
 
-        $this->enabledIds = [];
-        foreach ($this->installedById as $installed) {
-            if ($installed->enabled()) {
-                $this->enabledIds[] = $installed->id();
-            }
-        }
+        $this->enabledIds = null;
     }
 
     private function assertDependencies(ModuleManifest $manifest): void

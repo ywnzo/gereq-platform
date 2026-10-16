@@ -6,6 +6,9 @@ namespace Gereq\Module;
 
 interface ModuleInterface
 {
+    /** @var list<string> Relative paths to bundled submodules; must match module.php. */
+    public const SUBMODULES = [];
+
     public function id(): string;
 
     public function version(): string;
