@@ -165,15 +165,15 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             return this.$el.querySelector<HTMLElement>('.media-box__grid');
         },
 
-        get hasPreview(this: GereqMediaBoxCtx): boolean {
+        get hasPreview(): boolean {
             return !this.clearing && this.preview !== '';
         },
 
-        get triggerLabel(this: GereqMediaBoxCtx): string {
+        get triggerLabel(): string {
             return this.hasPreview ? this.labelChange : this.labelChoose;
         },
 
-        get hasActiveFilters(this: GereqMediaBoxCtx): boolean {
+        get hasActiveFilters(): boolean {
             return this.query.trim() !== ''
                 || this.typeFilter !== ''
                 || this.orientFilter !== ''

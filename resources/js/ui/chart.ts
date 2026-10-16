@@ -80,8 +80,8 @@ export function registerChart(alpine: typeof Alpine): void {
                     ];
 
                     return {
-                        label: ds.label,
-                        data: ds.data,
+                        label: String(ds.label ?? ''),
+                        data: (Array.isArray(ds.data) ? ds.data : []) as number[],
                         backgroundColor: palette,
                         borderColor: surface,
                         borderWidth: 2,
@@ -90,8 +90,8 @@ export function registerChart(alpine: typeof Alpine): void {
                 }
 
                 return {
-                    label: ds.label,
-                    data: ds.data,
+                    label: String(ds.label ?? ''),
+                    data: (Array.isArray(ds.data) ? ds.data : []) as number[],
                     borderColor: color,
                     backgroundColor: kind === 'bar' ? color : `${color}33`,
                     borderWidth: 2,
@@ -145,7 +145,7 @@ export function registerChart(alpine: typeof Alpine): void {
                         },
                     },
                 },
-            } satisfies ChartConfiguration;
+            } satisfies ChartConfiguration<ChartType, number[], string>;
 
             this.chart = new Chart(canvas, chartConfig);
 

@@ -25,9 +25,6 @@ type CssEditorState = {
     view: EditorView | null;
     themeComp: Compartment | null;
     themeObserver: MutationObserver | null;
-    $el: HTMLElement;
-    $refs: { host?: HTMLElement; input?: HTMLTextAreaElement };
-    $nextTick: (fn: () => void) => void;
 };
 
 /** CodeMirror injects <style> tags; CSP requires the page nonce. */
@@ -37,7 +34,10 @@ function pageCspNonce(): string {
         return fromData;
     }
     const script = document.querySelector('script[nonce]');
-    return script?.nonce || script?.getAttribute('nonce') || '';
+    if (script instanceof HTMLScriptElement) {
+        return script.nonce || script.getAttribute('nonce') || '';
+    }
+    return script?.getAttribute('nonce') || '';
 }
 
 function adminIsDark(): boolean {
@@ -116,7 +116,7 @@ function isColorValue(value: string): boolean {
 }
 
 export function registerCssEditor(alpine: typeof Alpine): void {
-    alpine.data('gereqCssEditor', (): CssEditorState => ({
+    alpine.data('gereqCssEditor', (): Alpine.AlpineComponent<CssEditorState> => ({
         vars: [],
         filter: '',
         filteredVars: [],
@@ -133,8 +133,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                 this.vars = [];
             }
             this.applyFilter();
-            // @ts-expect-error Alpine magic
-            this.$watch?.('filter', () => this.applyFilter());
+            this.$watch('filter', () => this.applyFilter());
 
             // Refs are ready after the first tick (also when dialog was display:none).
             this.$nextTick(() => this.mountEditor());
@@ -157,7 +156,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                 return;
             }
 
-            const input = this.$refs.input;
+            const input = this.$refs.input as HTMLTextAreaElement | undefined;
             const host = this.$refs.host;
             if (!input || !host) {
                 return;
@@ -173,7 +172,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
             this.themeComp = new Compartment();
             const dark = adminIsDark();
 
-            this.view = new EditorView({
+            const view = new EditorView({
                 parent: host,
                 state: EditorState.create({
                     doc: input.value || '',
@@ -195,8 +194,9 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                     ],
                 }),
             });
+            this.view = view;
 
-            sync(this.view);
+            sync(view);
 
             this.themeObserver = new MutationObserver(() => {
                 if (!this.view || !this.themeComp) {
@@ -272,7 +272,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                 selection: { anchor: from + snippet.length },
             });
             editor.focus();
-            const input = this.$refs.input;
+            const input = this.$refs.input as HTMLTextAreaElement | undefined;
             if (input) {
                 input.value = editor.state.doc.toString();
             }
@@ -283,9 +283,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
         open: false,
         openSettings() {
             this.open = true;
-            // @ts-expect-error Alpine magics
             this.$nextTick(() => {
-                // @ts-expect-error Alpine magics
                 const root = (this.$el as HTMLElement).querySelector<HTMLElement>('.css-editor');
                 root?.dispatchEvent(new CustomEvent('cms-css-refresh', { bubbles: false }));
             });

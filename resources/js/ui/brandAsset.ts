@@ -5,11 +5,10 @@ type BrandAssetState = {
     preview: string;
     init(): void;
     onFile(event: Event): void;
-    $el: HTMLElement;
 };
 
 export function registerBrandAsset(alpine: typeof Alpine): void {
-    alpine.data('gereqBrandAsset', (): BrandAssetState => ({
+    alpine.data('gereqBrandAsset', (): Alpine.AlpineComponent<BrandAssetState> => ({
         fileName: '',
         preview: '',
 

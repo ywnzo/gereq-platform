@@ -111,33 +111,33 @@ export function registerFile(alpine: typeof Alpine): void {
             });
         },
 
-        get boxClass(this: GereqFileCtx): string {
+        get boxClass(): string {
             return [
                 this.dragging ? 'is-dragging' : '',
                 this.hasFile ? 'is-filled' : '',
             ].filter(Boolean).join(' ');
         },
 
-        get titleText(this: GereqFileCtx): string {
+        get titleText(): string {
             return this.hasFile ? this.fileName : this.dropTitle;
         },
 
-        get metaText(this: GereqFileCtx): string {
+        get metaText(): string {
             if (this.compact) {
                 return '';
             }
             return this.hasFile ? this.fileMeta : this.dropHint;
         },
 
-        get showMeta(this: GereqFileCtx): boolean {
+        get showMeta(): boolean {
             return !this.compact && this.metaText !== '';
         },
 
-        get showBrowse(this: GereqFileCtx): boolean {
+        get showBrowse(): boolean {
             return !this.hasFile;
         },
 
-        get shellTitle(this: GereqFileCtx): string {
+        get shellTitle(): string {
             if (!this.hasFile) {
                 return '';
             }

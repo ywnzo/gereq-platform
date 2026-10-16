@@ -76,12 +76,10 @@ type ColorFieldState = {
     isPreset(hex: string): boolean;
     presetStyle(hex: string): string;
     checkOn(hex: string): string;
-    $dispatch: (name: string, detail?: unknown) => void;
-    $el: HTMLElement;
 };
 
 export function registerColorField(alpine: typeof Alpine): void {
-    alpine.data('gereqColorField', (): ColorFieldState => ({
+    alpine.data('gereqColorField', (): Alpine.AlpineComponent<ColorFieldState> => ({
         open: false,
         hex: '#000000',
         draft: '000000',

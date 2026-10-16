@@ -6,12 +6,6 @@ type DrawerApi = {
     loadDrawer: (opts: { title?: string; html?: string; footer?: string; id?: string }) => void;
 };
 
-declare global {
-    interface Window {
-        gereq?: DrawerApi & Record<string, unknown>;
-    }
-}
-
 function drawerEl(id: string): HTMLElement | null {
     return document.getElementById(id);
 }

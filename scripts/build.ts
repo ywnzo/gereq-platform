@@ -199,7 +199,9 @@ async function cleanAssetsDir(): Promise<void> {
   );
 }
 
-function buildOptions(extraNaming?: Record<string, string>): Parameters<typeof Bun.build>[0] {
+function buildOptions(
+  extraNaming?: Record<string, string>,
+): Omit<Parameters<typeof Bun.build>[0], 'entrypoints'> {
   const naming = watch
     ? {
         entry: '[name].[ext]',

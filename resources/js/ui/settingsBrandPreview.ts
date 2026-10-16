@@ -53,7 +53,6 @@ type BrandPreviewState = {
     generateStyle(): void;
     applyPalette(palette: BrandPalette): void;
     setPickerColor(fieldName: string, hex: string): void;
-    $el: HTMLElement;
 };
 
 function val(root: HTMLElement, name: string, fallback = ''): string {
@@ -137,7 +136,7 @@ function applyLiveBrand(signal: string, onSignal: string, ink: string, cream: st
 }
 
 export function registerSettingsBrandPreview(alpine: typeof Alpine): void {
-    alpine.data('settingsBrandPreview', (): BrandPreviewState => ({
+    alpine.data('settingsBrandPreview', (): Alpine.AlpineComponent<BrandPreviewState> => ({
         name: 'GEREQ',
         subtitle: 'Platform',
         logoUrl: '/brand/icons/favicon.svg',

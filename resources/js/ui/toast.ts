@@ -1,14 +1,13 @@
 type ToastTone = 'success' | 'error' | 'info' | 'warning';
 
 type ToastApi = {
-    toast: (message: string, tone?: ToastTone) => void;
+    toast: (message: string, tone?: string) => void;
 };
 
 type FlashItem = { message?: string; tone?: string };
 
 declare global {
     interface Window {
-        gereq?: ToastApi & Record<string, unknown>;
         __GEREQ_FLASHES__?: FlashItem[];
     }
 }

@@ -15,7 +15,7 @@ type CustomerContactFormState = {
 };
 
 export function registerCustomerContactForm(alpine: typeof Alpine): void {
-    alpine.data('customerContactForm', (): CustomerContactFormState => ({
+    alpine.data('customerContactForm', (): Alpine.AlpineComponent<CustomerContactFormState> => ({
         kind: 'person',
 
         init() {

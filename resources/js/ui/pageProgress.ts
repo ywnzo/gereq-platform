@@ -6,14 +6,6 @@ type PageProgressApi = {
     done: () => void;
 };
 
-declare global {
-    interface Window {
-        gereq?: { toast?: (message: string, tone?: string) => void } & Record<string, unknown> & {
-            pageProgress?: PageProgressApi;
-        };
-    }
-}
-
 const BAR_ID = 'g-page-progress';
 
 function ensureBar(): HTMLElement {

@@ -19,12 +19,6 @@ type ConfirmApi = {
     prompt: (opts: ConfirmOptions | string) => Promise<string | null>;
 };
 
-declare global {
-    interface Window {
-        gereq?: ConfirmApi & Record<string, unknown>;
-    }
-}
-
 const defaults = {
     title: 'Potvrzení',
     body: 'Opravdu chcete pokračovat?',
@@ -256,6 +250,9 @@ export function registerConfirm(alpine: typeof Alpine): void {
                         hidden.name = promptName;
                         form.appendChild(hidden);
                         field = hidden;
+                    }
+                    if (!(field instanceof HTMLInputElement) && !(field instanceof HTMLTextAreaElement)) {
+                        return;
                     }
                     field.value = value;
                     form.dataset.confirmAccepted = '1';

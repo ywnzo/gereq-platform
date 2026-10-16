@@ -697,6 +697,20 @@ type FlyoutHost = {
     flyoutMaybeToggle(event: Event): void;
 };
 
+type NavFlyoutData = FlyoutHost & {
+    init(): void | (() => void);
+};
+
+type NavTreeData = FlyoutHost & {
+    open: boolean;
+    init(): void | (() => void);
+    storageKey(): string;
+    get treeClass(): string;
+    get chevronClass(): string;
+    get expandedAttr(): string;
+    toggle(): void;
+};
+
 /** Only one collapsed flyout open at a time — avoids overlapping panels. */
 const navFlyoutBus = {
     seq: 0,
@@ -791,14 +805,14 @@ function createFlyoutHost(): FlyoutHost {
     };
 }
 
-Alpine.data('navFlyout', () => ({
+Alpine.data('navFlyout', (): Alpine.AlpineComponent<NavFlyoutData> => ({
     ...createFlyoutHost(),
     init() {
         return this.bindFlyoutExclusive();
     },
 }));
 
-Alpine.data('navTree', () => ({
+Alpine.data('navTree', (): Alpine.AlpineComponent<NavTreeData> => ({
     open: false,
     ...createFlyoutHost(),
     init() {

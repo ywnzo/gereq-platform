@@ -11,7 +11,7 @@ type CustomerEditState = {
 };
 
 export function registerCustomerEdit(alpine: typeof Alpine): void {
-    alpine.data('customerEdit', (): CustomerEditState => ({
+    alpine.data('customerEdit', (): Alpine.AlpineComponent<CustomerEditState> => ({
         displayName: '',
         emptyLabel: '',
         emptyInitials: '?',

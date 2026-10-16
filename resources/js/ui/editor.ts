@@ -63,8 +63,8 @@ export function registerEditor(alpine: typeof Alpine): void {
                     StarterKit.configure({
                         heading: chatMode ? false : { levels: [1, 2, 3] },
                         link: false,
-                        horizontalRule: !chatMode,
-                        blockquote: !chatMode,
+                        horizontalRule: chatMode ? false : {},
+                        blockquote: chatMode ? false : {},
                     }),
                     TextStyle,
                     FontFamily,
