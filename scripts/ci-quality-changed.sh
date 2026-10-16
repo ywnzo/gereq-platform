@@ -34,9 +34,14 @@ ensure_ref() {
     || git rev-parse --verify "$ref" >/dev/null 2>&1
 }
 
+range_from=""
+range_to=""
+
 if [[ "$before" != "$zero" ]] && git cat-file -e "${before}^{commit}" 2>/dev/null; then
   hook_info "ci-quality: diff ${before:0:8}..${sha:0:8}"
   append_diff "$before" "$sha"
+  range_from="$before"
+  range_to="$sha"
 else
   # New branch / missing before SHA: range against merge-base with default branch.
   ensure_ref "$default_branch" || true
@@ -48,10 +53,18 @@ else
   if [[ -n "${base:-}" ]]; then
     hook_info "ci-quality: new tip — diff merge-base(${default_branch}) ${base:0:8}..${sha:0:8}"
     append_diff "$base" "$sha"
+    range_from="$base"
+    range_to="$sha"
   else
     hook_info "ci-quality: fallback — files in tip commit ${sha:0:8}"
     git diff-tree --no-commit-id --name-only --diff-filter=ACMRT -r "$sha" >>"$list_file" || true
+    range_to="$sha"
+    range_from="$(git rev-parse -q --verify "${sha}^" 2>/dev/null || true)"
   fi
+fi
+
+if [[ -n "$range_from" && -n "$range_to" ]]; then
+  quality_append_gitlink_paths "$list_file" "$range_from" "$range_to"
 fi
 
 quality_run_pipeline changed "$list_file"

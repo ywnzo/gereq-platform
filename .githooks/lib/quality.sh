@@ -122,6 +122,84 @@ quality_run_js() {
   return 0
 }
 
+# Ensure a submodule checkout can resolve $sha (no-op for the all-zero add/delete SHA).
+quality_ensure_submodule_commit() {
+  local path="$1"
+  local sha="$2"
+  local zero="0000000000000000000000000000000000000000"
+
+  [[ "$sha" == "$zero" ]] && return 0
+  if git -C "$path" cat-file -e "${sha}^{commit}" 2>/dev/null; then
+    return 0
+  fi
+  hook_info "quality: fetching $sha in $path"
+  git -C "$path" fetch --no-tags origin "$sha"
+}
+
+# Append files changed inside a submodule pin (gitlink) onto an existing path list.
+# Parent diffs only name the gitlink (modules/Cms); quality tools need the inner paths.
+# $1 outfile  $2 from-rev  $3 to-rev
+# Empty $3 means the staged index (pre-commit): diff is `git diff --cached`.
+quality_append_gitlink_paths() {
+  local outfile="$1"
+  local from_rev="${2:-}"
+  local to_rev="${3:-}"
+  local line meta rest path old_mode new_mode old_sha new_sha _status
+  local rel count inner
+  local zero="0000000000000000000000000000000000000000"
+
+  while IFS= read -r line || [[ -n "${line:-}" ]]; do
+    [[ -z "${line:-}" ]] && continue
+    meta="${line%%$'\t'*}"
+    rest="${line#*$'\t'}"
+    [[ "$meta" == :* ]] || continue
+    meta="${meta#:}"
+    # old-mode new-mode old-sha new-sha status
+    read -r old_mode new_mode old_sha new_sha _status <<<"$meta"
+    [[ "$new_mode" == "160000" || "$old_mode" == "160000" ]] || continue
+    if [[ "$rest" == *$'\t'* ]]; then
+      path="${rest#*$'\t'}"
+    else
+      path="$rest"
+    fi
+    case "$path" in
+      modules/*|integrations/*) ;;
+      *) continue ;;
+    esac
+
+    if [[ "$new_mode" != "160000" || "$new_sha" == "$zero" ]]; then
+      hook_info "quality: submodule $path removed — no inner files to check"
+      continue
+    fi
+
+    if [[ ! -e "$path/.git" ]]; then
+      hook_info "quality: init submodule $path to read pin diff"
+      git submodule update --init -- "$path" || return 1
+    fi
+    quality_ensure_submodule_commit "$path" "$old_sha" || return 1
+    quality_ensure_submodule_commit "$path" "$new_sha" || return 1
+
+    count=0
+    if [[ "$old_sha" == "$zero" ]]; then
+      inner="$(git -C "$path" ls-tree -r --name-only "$new_sha")" || return 1
+    else
+      inner="$(git -C "$path" diff --name-only --diff-filter=ACMRT "$old_sha" "$new_sha")" || return 1
+    fi
+    while IFS= read -r rel || [[ -n "${rel:-}" ]]; do
+      [[ -z "${rel:-}" ]] && continue
+      printf '%s\n' "$path/$rel" >>"$outfile"
+      count=$((count + 1))
+    done <<<"$inner"
+    hook_info "quality: submodule $path — $count file(s) in pin diff"
+  done < <(
+    if [[ -z "$to_rev" ]]; then
+      git diff --cached --raw --abbrev=40 --diff-filter=ACMRT
+    else
+      git diff --raw --abbrev=40 --diff-filter=ACMRT "$from_rev" "$to_rev"
+    fi
+  )
+}
+
 # Paths changed in a push ref update (remote_sha..local_sha).
 # Appends newline-separated paths to $1 (file). Args: outfile remote local_sha remote_sha
 quality_append_push_paths() {
@@ -130,7 +208,7 @@ quality_append_push_paths() {
   local local_sha="$3"
   local remote_sha="$4"
   local zero="0000000000000000000000000000000000000000"
-  local base
+  local base sha parent
 
   if [[ "$local_sha" == "$zero" ]]; then
     return 0
@@ -138,6 +216,7 @@ quality_append_push_paths() {
 
   if [[ "$remote_sha" != "$zero" ]]; then
     git diff --name-only --diff-filter=ACMRT "$remote_sha..$local_sha" >>"$outfile" 2>/dev/null || true
+    quality_append_gitlink_paths "$outfile" "$remote_sha" "$local_sha" || return 1
     return 0
   fi
 
@@ -145,11 +224,20 @@ quality_append_push_paths() {
   base="$(git merge-base "$local_sha" "refs/remotes/${remote_name}/HEAD" 2>/dev/null || true)"
   if [[ -n "$base" ]]; then
     git diff --name-only --diff-filter=ACMRT "$base..$local_sha" >>"$outfile" 2>/dev/null || true
+    quality_append_gitlink_paths "$outfile" "$base" "$local_sha" || return 1
     return 0
   fi
 
   git log --pretty=format: --name-only --diff-filter=ACMRT "$local_sha" --not --remotes="${remote_name}" \
     >>"$outfile" 2>/dev/null || true
+  # No single base: expand each commit still missing on the remote.
+  while IFS= read -r sha; do
+    [[ -z "${sha:-}" ]] && continue
+    parent="$(git rev-parse -q --verify "${sha}^" 2>/dev/null || true)"
+    if [[ -n "$parent" ]]; then
+      quality_append_gitlink_paths "$outfile" "$parent" "$sha" || return 1
+    fi
+  done < <(git rev-list "$local_sha" --not --remotes="${remote_name}" 2>/dev/null || true)
 }
 
 # Filter a path list file → existing PHP under quality surfaces. Prints paths.
@@ -337,6 +425,9 @@ quality_path_in_surface() {
       ;;
     src/*|modules/*|tests/*|integrations/*|bin/*)
       [[ "$path" == *.php ]] && return 0
+      # Submodule pin (modules/Cms). Its blob OID is the submodule commit.
+      [[ "$path" == modules/* && "$path" != modules/*/* ]] && return 0
+      [[ "$path" == integrations/* && "$path" != integrations/*/* ]] && return 0
       return 1
       ;;
   esac

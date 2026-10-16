@@ -24,7 +24,7 @@ Shared implementation: `lib/quality.sh`.
 
 | Step | When |
 | --- | --- |
-| `phpcs` | changed `*.php` under `src/`, `modules/`, `tests/`, `integrations/`, `bin/` |
+| `phpcs` | changed `*.php` under `src/`, `modules/`, `tests/`, `integrations/`, `bin/`. A submodule pin (`modules/Cms`) is expanded to the files changed inside that pin. |
 | `phpstan` (`phpstan.neon`) | changed under `src/`, `modules/`, `tests/`, `bin/` |
 | `phpstan:tests` | changed under `tests/`, `src/Testing/` |
 | `phpunit` | changed `*Test.php` only |
