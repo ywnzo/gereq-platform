@@ -31,7 +31,7 @@ final class Renderer
 
     private function asset(string $name): string
     {
-        $path = $this->basePath . '/resources/debug/' . $name;
+        $path = $this->basePath . '/resources/icons/debug/' . $name;
         $contents = is_file($path) ? file_get_contents($path) : false;
 
         return $contents === false ? '' : $contents;
