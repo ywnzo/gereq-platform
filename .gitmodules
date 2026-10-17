@@ -1,21 +1,12 @@
 [submodule "modules/BikeService"]
 	path = modules/BikeService
 	url = ../module-bikeservice.git
-[submodule "modules/Bundles"]
-	path = modules/Bundles
-	url = ../module-bundles.git
 [submodule "modules/CarService"]
 	path = modules/CarService
 	url = ../module-carservice.git
-[submodule "modules/Coupons"]
-	path = modules/Coupons
-	url = ../module-coupons.git
 [submodule "modules/CRM"]
 	path = modules/CRM
 	url = ../module-crm.git
-[submodule "modules/CustomerUploads"]
-	path = modules/CustomerUploads
-	url = ../module-customer_uploads.git
 [submodule "modules/Documents"]
 	path = modules/Documents
 	url = ../module-documents.git
@@ -31,18 +22,12 @@
 [submodule "modules/iDoklad"]
 	path = modules/iDoklad
 	url = ../module-idoklad.git
-[submodule "modules/Loyalty"]
-	path = modules/Loyalty
-	url = ../module-loyalty.git
 [submodule "modules/MoneyS3"]
 	path = modules/MoneyS3
 	url = ../module-moneys3.git
 [submodule "modules/Newsletter"]
 	path = modules/Newsletter
 	url = ../module-newsletter.git
-[submodule "modules/Orders"]
-	path = modules/Orders
-	url = ../module-orders.git
 [submodule "modules/PartsCatalog"]
 	path = modules/PartsCatalog
 	url = ../module-partscatalog.git
@@ -52,12 +37,6 @@
 [submodule "modules/ProductDiscounts"]
 	path = modules/ProductDiscounts
 	url = ../module-product_discounts.git
-[submodule "modules/Products"]
-	path = modules/Products
-	url = ../module-products.git
-[submodule "modules/Returns"]
-	path = modules/Returns
-	url = ../module-returns.git
 [submodule "modules/Reviews"]
 	path = modules/Reviews
 	url = ../module-reviews.git
@@ -76,9 +55,6 @@
 [submodule "modules/Vitality"]
 	path = modules/Vitality
 	url = ../module-vitality.git
-[submodule "modules/Warehouse"]
-	path = modules/Warehouse
-	url = ../module-warehouse.git
 [submodule "modules/Ai"]
 	path = modules/Ai
 	url = ../module-ai.git
@@ -94,9 +70,6 @@
 [submodule "modules/Listings"]
 	path = modules/Listings
 	url = ../module-listings.git
-[submodule "modules/Payments"]
-	path = modules/Payments
-	url = ../module-payments.git
 [submodule "modules/Projects"]
 	path = modules/Projects
 	url = ../module-projects.git
@@ -121,9 +94,6 @@
 [submodule "modules/Messenger"]
 	path = modules/Messenger
 	url = ../module-messenger.git
-[submodule "modules/WebPlusAi"]
-	path = modules/WebPlusAi
-	url = ../module-webplus-ai.git
 [submodule "modules/Events"]
 	path = modules/Events
 	url = ../module-events.git
