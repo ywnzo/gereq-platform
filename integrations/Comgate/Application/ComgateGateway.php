@@ -6,9 +6,9 @@ namespace Integrations\Comgate\Application;
 
 use Gereq\Config\Repository as Config;
 use Gereq\Setting\Settings;
-use Modules\Payments\Application\PaymentGatewayInterface;
-use Modules\Payments\Domain\PaymentIntent;
-use Modules\Payments\Domain\PaymentMethod;
+use Modules\Shop\Submodules\Payments\Application\PaymentGatewayInterface;
+use Modules\Shop\Submodules\Payments\Domain\PaymentIntent;
+use Modules\Shop\Submodules\Payments\Domain\PaymentMethod;
 
 /**
  * Comgate payment gateway (CZ/SK).

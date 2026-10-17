@@ -29,7 +29,7 @@ This documentation is generated from the code base and organised by concern. Whe
 
 [Module index](modules/index.md) — all **47** modules grouped by domain with versions, dependencies and purpose. Each module has its own page (`modules/<id>.md`) covering domain model, admin UI, API, events, widgets, services, settings and migrations.
 
-Quick links for the RealEstates package: [Listings](modules/listings.md) · [Viewings](modules/viewings.md) · [Portals](modules/portals.md) · [WebPlus](modules/webplus.md) · [WebPlusAi](modules/webplus_ai.md) · [Cms](modules/cms.md) · [CRM](modules/crm.md) · [Customers](modules/customers.md) · [Calendar](modules/calendar.md) · [Documents](modules/documents.md) · [Media](modules/media.md) · [Reviews](modules/reviews.md) · [Emailing](modules/emailing.md) · [Currency](modules/currency.md)
+Quick links for the RealEstates package: [Listings](modules/listings.md) · [Viewings](modules/viewings.md) · [Portals](modules/portals.md) · [WebPlus](modules/webplus.md) · [AI (Web+)](modules/webplus_ai.md) · [Cms](modules/cms.md) · [CRM](modules/crm.md) · [Customers](modules/customers.md) · [Calendar](modules/calendar.md) · [Documents](modules/documents.md) · [Media](modules/media.md) · [Reviews](modules/reviews.md) · [Emailing](modules/emailing.md) · [Currency](modules/currency.md)
 
 Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) · [Achievements](modules/achievements.md) · [Messenger](modules/messenger.md)
 

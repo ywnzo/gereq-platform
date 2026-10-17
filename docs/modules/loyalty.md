@@ -7,9 +7,9 @@ Loyalty implements a simple customer loyalty program: administrators define **ti
 | Item | Value |
 | --- | --- |
 | Module id | `loyalty` |
-| Version | `1.99.0` (`modules/Loyalty/module.php`, `LoyaltyModule::version()`; `README.md` still says v1.0.3) |
-| Directory | `modules/Loyalty/` |
-| Class | `Modules\Loyalty\LoyaltyModule` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Loyalty/module.php`, `LoyaltyModule::version()`; `README.md` still says v1.0.3) |
+| Directory | `modules/Shop/Submodules/Loyalty/` |
+| Class | `Modules\Shop\Submodules\Loyalty\LoyaltyModule` |
 | Requires | `core ^1.0` |
 | Optional | none declared (Customer names are resolved via guarded `class_exists(Gereq\Customers\Domain\Customer::class)`) |
 | Capabilities provided | `loyalty` → `Application/LoyaltyProvider` instance |

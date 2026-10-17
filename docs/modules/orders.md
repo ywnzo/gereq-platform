@@ -7,8 +7,8 @@ Order and invoice management for the commerce stack. An **order** belongs to a [
 | | |
 |---|---|
 | Module id | `orders` |
-| Version | `1.99.0` (`modules/Orders/module.php`, `OrdersModule::version()`) |
-| Directory | `modules/Orders/` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Orders/module.php`, `OrdersModule::version()`) |
+| Directory | `modules/Shop/Submodules/Orders/` |
 | Requires | `core ^1.0`, `customers ^1.0`, `products ^1.0`, `currency ^1.1`; optional: `documents ^1.0`, `notifications ^1.0` |
 | Capabilities | provides `orders` (payload `Application/OrdersProvider`); consumed by [Shop](shop.md) (`CheckoutService`, requires `orders ^1.0`) and [Payments](payments.md) (`PaymentService`, `ImapBankMatcher` import `Order`) |
 | Groups / packages | none in `module.php`; not in `config/module_groups.php` |
@@ -71,7 +71,7 @@ stateDiagram-v2
 ### Invoices & PDF (`Application/InvoiceIssuingService`, `NumberSequencer`, `SimpleInvoicePdf`)
 
 * Numbering: `NumberSequencer::nextOrderNumber()` / `nextInvoiceNumber()` = `sprintf('%s%s-%04d', prefix, year, count(existing with prefix+year) + 1)`; prefixes from settings `orders.number_prefix` (`ORD-`), `invoices.number_prefix` (`INV-`). Count-based, not lock-protected.
-* `issueForOrder(Order, sendEmail = true)`: reuses an existing invoice for the order (issues it if still `draft`), otherwise creates one; `fillFromOrder()` copies currency/total, sets `payment_reference = order.number`, seller snapshot from `invoices.seller_*` + `payments.bank_*` settings, buyer from `billing_address_json` (fallback customer name/e-mail), builds SPAYD via `Modules\Payments\Application\SpaydBuilder` (VS = digits of invoice number); due date = +14 days; emits `invoice.issued` (only for newly created invoices); e-mails the customer with the PDF attached.
+* `issueForOrder(Order, sendEmail = true)`: reuses an existing invoice for the order (issues it if still `draft`), otherwise creates one; `fillFromOrder()` copies currency/total, sets `payment_reference = order.number`, seller snapshot from `invoices.seller_*` + `payments.bank_*` settings, buyer from `billing_address_json` (fallback customer name/e-mail), builds SPAYD via `Modules\Shop\Submodules\Payments\Application\SpaydBuilder` (VS = digits of invoice number); due date = +14 days; emits `invoice.issued` (only for newly created invoices); e-mails the customer with the PDF attached.
 * `renderAndStore()`: renders `@orders/invoice_pdf.html.twig` (fallback inline HTML) to `storage/invoices/<number>.html`, then PDF via **Dompdf** when installed, else the dependency-free `SimpleInvoicePdf` (Helvetica, ASCII-transliterated, max ~55 lines). `pathFor()` returns PDF, else HTML.
 * Manual flow: `createFromOrder` (draft) → `issue` (due date from form, default +14 d) → `recordPayment` (sums `invoice_payments`; when `Σ ≥ total − 0.001` → `markPaid()` + `invoice.paid`).
 

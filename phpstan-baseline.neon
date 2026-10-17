@@ -124,7 +124,7 @@ parameters:
 			message: '#^Right side of && is always true\.$#'
 			identifier: booleanAnd.rightAlwaysTrue
 			count: 1
-			path: modules/Products/Application/ProductPersonalizationService.php
+			path: modules/Shop/Submodules/Products/Application/ProductPersonalizationService.php
 
 		-
 			message: '#^Method Modules\\Shop\\Application\\CartService\:\:resolvePrice\(\) is unused\.$#'

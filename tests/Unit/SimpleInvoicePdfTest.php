@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Tests\Unit;
 
-use Modules\Orders\Application\SimpleInvoicePdf;
+use Modules\Shop\Submodules\Orders\Application\SimpleInvoicePdf;
 use PHPUnit\Framework\TestCase;
 
 final class SimpleInvoicePdfTest extends TestCase

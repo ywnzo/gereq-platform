@@ -10,7 +10,7 @@ use Gereq\Setting\SettingRecord;
 use Integrations\Stripe\Application\StripeGateway;
 use Integrations\Stripe\Application\StripeInboundProvider;
 use Integrations\Stripe\Http\StripeNotifyController;
-use Modules\Payments\Application\PaymentGatewayRegistry;
+use Modules\Shop\Submodules\Payments\Application\PaymentGatewayRegistry;
 use Gereq\Webhooks\Application\InboundWebhookRegistry;
 
 final class StripeModule implements ModuleInterface
@@ -22,7 +22,7 @@ final class StripeModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.0.2';
     }
 
     public function register(ModuleContext $context): void

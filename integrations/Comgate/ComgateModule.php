@@ -10,7 +10,7 @@ use Gereq\Setting\SettingRecord;
 use Integrations\Comgate\Application\ComgateGateway;
 use Integrations\Comgate\Application\ComgateInboundProvider;
 use Integrations\Comgate\Http\ComgateNotifyController;
-use Modules\Payments\Application\PaymentGatewayRegistry;
+use Modules\Shop\Submodules\Payments\Application\PaymentGatewayRegistry;
 use Gereq\Webhooks\Application\InboundWebhookRegistry;
 
 /**
@@ -25,7 +25,7 @@ final class ComgateModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.0.1';
     }
 
     public function register(ModuleContext $context): void

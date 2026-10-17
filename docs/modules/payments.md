@@ -7,10 +7,10 @@ Payment infrastructure for the commerce stack: **payment methods** (bank transfe
 | | |
 |---|---|
 | Module id | `payments` |
-| Version | `1.99.0` (`modules/Payments/module.php`, `PaymentsModule::version()`) |
-| Directory | `modules/Payments/` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Payments/module.php`, `PaymentsModule::version()`) |
+| Directory | `modules/Shop/Submodules/Payments/` |
 | Requires | `core ^1.0`, `currency ^1.1`; optional: `comgate ^1.0`, `stripe ^1.0`, `gopay ^1.0`, `webhooks ^1.0` |
-| Capabilities | provides `payments` (payload `Application/PaymentsProvider`) and `payment_gateways` (payload `Application/PaymentGatewayRegistry`); consumed by `modules/Shop/Application/CheckoutService.php` (`PaymentService`, `PaymentsProvider`), `modules/Orders/Application/InvoiceIssuingService.php` (`SpaydBuilder`), `integrations/Comgate|Stripe|GoPay` (registry) |
+| Capabilities | provides `payments` (payload `Application/PaymentsProvider`) and `payment_gateways` (payload `Application/PaymentGatewayRegistry`); consumed by `modules/Shop/Application/CheckoutService.php` (`PaymentService`, `PaymentsProvider`), `modules/Shop/Submodules/Orders/Application/InvoiceIssuingService.php` (`SpaydBuilder`), `integrations/Comgate|Stripe|GoPay` (registry) |
 | Groups / packages | none in `module.php`; not in `config/module_groups.php`. The gateway integrations form plugin group `plugin.payments` ("Platby": `comgate`, `stripe`, `gopay`) in `config/module_groups.php`. |
 | Permissions | `payments.view` (View payment methods), `payments.manage` (Manage payment methods) — group `perm.group.payments` |
 | Menu group | `Obchod` |
@@ -128,7 +128,7 @@ Platform events (`registerPlatformEvents()`, all `webhookEnabled(true)`, Czech l
 | `payment.method_updated` | admin `update`, API `update` |
 | `payment.method_deleted` | admin `destroy`, API `destroy` |
 | `payment.intent_created` | `PaymentService::createForOrder()` |
-| `payment.intent_paid` | `PaymentService::markPaid()` — consumed by `modules/Orders/OrdersModule.php` (hook on `platform.event.dispatched`, marks the order paid / issues invoice; see [Orders](orders.md)) |
+| `payment.intent_paid` | `PaymentService::markPaid()` — consumed by `modules/Shop/Submodules/Orders/OrdersModule.php` (hook on `platform.event.dispatched`, marks the order paid / issues invoice; see [Orders](orders.md)) |
 
 Additionally `ImapBankMatcher::run()` emits `payment.imap_scan` (`{matched, scanned}`) which is **not** registered as an `EventDefinition`.
 
@@ -187,7 +187,7 @@ Translations: `Resources/translations/messages.cs.php`, `messages.en.php`. Prefi
 * `README.md` states `v1.3.2` while the manifest is `1.4.0`.
 * `Resources/views/methods/Untitled` is an empty stray file.
 * `ManualBankGateway::createPayment()` contains a no-op ternary (`$method->type() === 'cod' ? 'pending' : 'pending'`).
-* `PaymentService` hard-imports `Modules\Orders\Domain\Order` although `orders` is not declared in `requires`/`optional` of `module.php`; the module cannot function for intents without Orders installed.
+* `PaymentService` hard-imports `Modules\Shop\Submodules\Orders\Domain\Order` although `orders` is not declared in `requires`/`optional` of `module.php`; the module cannot function for intents without Orders installed.
 * `payment.imap_scan` is emitted without a registered `EventDefinition`, so it cannot be webhook-enabled via the platform registry.
 * `ImapBankMatcher::matchMessage()` takes the **first** 4–16 digit token in subject+body as the VS — bank e-mails containing account numbers or dates before the VS may mismatch; only the first match is attempted per message.
 * Refund status exists on the intent but no service or endpoint transitions to `refunded`.

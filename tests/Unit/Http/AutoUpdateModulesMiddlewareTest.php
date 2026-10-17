@@ -16,6 +16,7 @@ use Gereq\Config\Repository;
 use Gereq\Database\Migrator;
 use Gereq\Http\Middleware\AutoUpdateModulesMiddleware;
 use Gereq\Module\InstalledModule;
+use Gereq\Module\ModuleInstalledSnapshot;
 use Gereq\Module\ModuleManager;
 use Gereq\Module\ModuleUpdater;
 use Gereq\Publish\ContentReadContext;
@@ -173,7 +174,14 @@ final class AutoUpdateModulesMiddlewareTest extends TestCase
         $auditor = new Auditor($em, $stack);
         $translator = new PassthroughTranslator();
         $modules = new ModuleManager($this->tmp, $em, new PermissionRegistry(), $auditor, $translator);
-        $updater = new ModuleUpdater($modules, new Migrator($em, $modules), $em, $auditor, $translator);
+        $updater = new ModuleUpdater(
+            $modules,
+            new Migrator($em, $modules),
+            $em,
+            $auditor,
+            $translator,
+            new ModuleInstalledSnapshot($this->tmp),
+        );
         $config = new Repository(['app' => ['env' => $environment]]);
         $publishables = new PublishableRegistry();
         $settings = new Settings(

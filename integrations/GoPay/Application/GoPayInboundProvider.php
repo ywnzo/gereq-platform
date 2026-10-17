@@ -7,9 +7,9 @@ namespace Integrations\GoPay\Application;
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Api\ApiResponse;
 use Gereq\Api\InboundWebhookProviderInterface;
-use Modules\Orders\Domain\Order;
-use Modules\Payments\Application\PaymentService;
-use Modules\Payments\Domain\PaymentIntent;
+use Modules\Shop\Submodules\Orders\Domain\Order;
+use Modules\Shop\Submodules\Payments\Application\PaymentService;
+use Modules\Shop\Submodules\Payments\Domain\PaymentIntent;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 

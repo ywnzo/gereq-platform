@@ -7,8 +7,8 @@ The Returns module handles RMA / return requests (Czech: *reklamace*) raised aga
 | Item | Value |
 | --- | --- |
 | Module id | `returns` |
-| Version | `1.99.0` (`modules/Returns/module.php`, `ReturnsModule::version()`) |
-| Directory | `modules/Returns/` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Returns/module.php`, `ReturnsModule::version()`) |
+| Directory | `modules/Shop/Submodules/Returns/` |
 | Requires | `core ^1.0`, `currency ^1.1` |
 | Optional | `orders ^1.0`, `shop ^1.0`, `warehouse ^1.0` (declared in manifest; no hard code dependency on them) |
 | Capabilities provided | `returns` (registered with `ReturnsProvider` as the capability object) |
@@ -22,7 +22,7 @@ Manifest icon: `undo`. Description key: `module.returns.description`.
 
 ## Domain model
 
-Both entities live in `modules/Returns/Domain/` and use UUID v7 string primary keys (36 chars). There are no Doctrine associations; relations are by id columns.
+Both entities live in `modules/Shop/Submodules/Returns/Domain/` and use UUID v7 string primary keys (36 chars). There are no Doctrine associations; relations are by id columns.
 
 ### `ReturnRequest` → table `return_requests`
 
@@ -111,7 +111,7 @@ Command palette entry: `returns.index` (`palette.returns.index`, URL `/admin/ret
 | POST | `/admin/returns/{id}/status` | `admin.returns.status` | `ReturnController::updateStatus` | `returns.manage` |
 | POST | `/admin/returns/{id}/delete` | `admin.returns.destroy` | `ReturnController::destroy` | `returns.manage` |
 
-Controller: `modules/Returns/Http/ReturnController.php`.
+Controller: `modules/Shop/Submodules/Returns/Http/ReturnController.php`.
 
 ### Screens
 
@@ -127,7 +127,7 @@ None. The module reads no settings keys.
 
 ## Public / REST API
 
-Registered via `$context->api()->module('returns', ...)`, base path `/api/v1/returns` (see `../architecture/api.md`). Controller `modules/Returns/Http/Api/ReturnApiController.php`.
+Registered via `$context->api()->module('returns', ...)`, base path `/api/v1/returns` (see `../architecture/api.md`). Controller `modules/Shop/Submodules/Returns/Http/Api/ReturnApiController.php`.
 
 | Method | Path | Scope | Action |
 | --- | --- | --- | --- |
@@ -182,9 +182,9 @@ Templates used: `admin/dashboard/widgets/shortcut.html.twig`, `metric.html.twig`
 
 | Class | Responsibility |
 | --- | --- |
-| `Modules\Returns\Application\ReturnsProvider` | Capability object for `returns`: `find(id)`, `forOrder(orderId, limit = 50)` (newest first), `nextNumber()` (`RMA-YYYY-NNNN`, count-based per year). Other modules (e.g. [Orders](orders.md)) can resolve it via the capability registry to list returns for an order. |
-| `Modules\Returns\Http\ReturnController` | Admin CRUD-ish controller; depends on `CurrencyBuilder` from [Currency](currency.md) for currency code normalisation. |
-| `Modules\Returns\Http\Api\ReturnApiController` | REST controller. |
+| `Modules\Shop\Submodules\Returns\Application\ReturnsProvider` | Capability object for `returns`: `find(id)`, `forOrder(orderId, limit = 50)` (newest first), `nextNumber()` (`RMA-YYYY-NNNN`, count-based per year). Other modules (e.g. [Orders](orders.md)) can resolve it via the capability registry to list returns for an order. |
+| `Modules\Shop\Submodules\Returns\Http\ReturnController` | Admin CRUD-ish controller; depends on `CurrencyBuilder` from [Currency](currency.md) for currency code normalisation. |
+| `Modules\Shop\Submodules\Returns\Http\Api\ReturnApiController` | REST controller. |
 
 Integration guards: `OpenReturnsWidget::customerNames()` checks `class_exists(Gereq\Customers\Domain\Customer::class)` and wraps the query in `try/catch`. No integration code exists for the optional `orders`, `shop` or `warehouse` dependencies (no stock return-to-warehouse or order status linkage).
 
@@ -196,7 +196,7 @@ None.
 
 - Settings keys: none.
 - Environment variables: none.
-- Translations: `modules/Returns/Resources/translations/messages.cs.php`, `messages.en.php`. Prefixes: `module.returns.*`, `nav.returns*`, `palette.returns.*`, `perm.returns.*`, `perm.group.returns`, `returns.*` (`returns.status.*`, `returns.resolution.*`, `returns.field.*`, `returns.flash.*`, `returns.error.*`, `returns.widget.*`). The shortcut hint `admin.dashboard.hint.returns` lives in core `resources/translations/messages.*.php`.
+- Translations: `modules/Shop/Submodules/Returns/Resources/translations/messages.cs.php`, `messages.en.php`. Prefixes: `module.returns.*`, `nav.returns*`, `palette.returns.*`, `perm.returns.*`, `perm.group.returns`, `returns.*` (`returns.status.*`, `returns.resolution.*`, `returns.field.*`, `returns.flash.*`, `returns.error.*`, `returns.widget.*`). The shortcut hint `admin.dashboard.hint.returns` lives in core `resources/translations/messages.*.php`.
 
 ## Database migrations
 

@@ -32,12 +32,12 @@ use Gereq\Console\Command\TestCommand;
 use Gereq\Console\Command\TwigTypesCommand;
 use Gereq\Console\Command\UserCreateCommand;
 use Gereq\Currency\Console\SyncRatesCommand;
-use Modules\CustomerUploads\Console\PurgeUploadsCommand;
+use Modules\Shop\Submodules\CustomerUploads\Console\PurgeUploadsCommand;
 use Modules\Events\Console\ImportEventsCommand;
 use Modules\PartsCatalog\Console\SyncJamaCatalogCommand;
-use Modules\Payments\Console\ImapMatchCommand;
+use Modules\Shop\Submodules\Payments\Console\ImapMatchCommand;
 use Modules\Portals\Console\SeedDemoPortalsCommand;
-use Modules\Products\Console\ImportProductsCsvCommand;
+use Modules\Shop\Submodules\Products\Console\ImportProductsCsvCommand;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 

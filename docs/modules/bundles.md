@@ -9,11 +9,11 @@ See also: [Coupons](coupons.md), [Products](products.md), [Shop](shop.md), [modu
 | Item | Value |
 | --- | --- |
 | Module id | `bundles` |
-| Version | `1.99.0` (`modules/Bundles/module.php`, `BundlesModule::version()`) |
-| Directory | `modules/Bundles/` |
-| Class | `Modules\Bundles\BundlesModule` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Bundles/module.php`, `BundlesModule::version()`) |
+| Directory | `modules/Shop/Submodules/Bundles/` |
+| Class | `Modules\Shop\Submodules\Bundles\BundlesModule` |
 | Requires | `core ^1.0` (no optional deps) |
-| Capabilities provided | `bundles` → `Modules\Bundles\Application\BundlesProvider` |
+| Capabilities provided | `bundles` → `Modules\Shop\Submodules\Bundles\Application\BundlesProvider` |
 | Capabilities consumed | None |
 | Groups / packages | Not listed in any `groups` entry of `config/module_groups.php`; `module.php` has no `groups` key (standalone module) |
 | Permissions | `bundles.view` (`perm.bundles.view`), `bundles.manage` (`perm.bundles.manage`) — group `perm.group.bundles` |
@@ -22,7 +22,7 @@ See also: [Coupons](coupons.md), [Products](products.md), [Shop](shop.md), [modu
 
 ## Domain model
 
-Two anemic-ish entities in `modules/Bundles/Domain/`. There is no Doctrine association between them; the link is the plain `bundle_id` column.
+Two anemic-ish entities in `modules/Shop/Submodules/Bundles/Domain/`. There is no Doctrine association between them; the link is the plain `bundle_id` column.
 
 | Entity | Table | Key fields | Enum / status values | Relations |
 | --- | --- | --- | --- | --- |
@@ -59,7 +59,7 @@ Command palette: `bundles.index` (`palette.bundles.index`, url `/admin/bundles`,
 | POST | `/admin/bundles/{id}` | `admin.bundles.update` | `BundleController::update` | `bundles.manage` |
 | POST | `/admin/bundles/{id}/delete` | `admin.bundles.destroy` | `BundleController::destroy` | `bundles.manage` |
 
-Controller: `modules/Bundles/Http/BundleController.php`.
+Controller: `modules/Shop/Submodules/Bundles/Http/BundleController.php`.
 
 ### Screens
 
@@ -71,7 +71,7 @@ Validation ruleset `bundles.save` (from `registerValidation()`): `code required|
 
 ## Public / REST API
 
-Registered via `$context->api()->module('bundles', …)` → base path `/api/v1/bundles`. Controller `modules/Bundles/Http/Api/BundleApiController.php`.
+Registered via `$context->api()->module('bundles', …)` → base path `/api/v1/bundles`. Controller `modules/Shop/Submodules/Bundles/Http/Api/BundleApiController.php`.
 
 | Method | Path | Scope | Action |
 | --- | --- | --- | --- |
@@ -102,7 +102,7 @@ Hooks (actions/filters): none. Queue jobs: none. Scheduled tasks: none. Publisha
 
 ## Dashboard widgets
 
-Registered in `boot()` (`modules/Bundles/Application/Widgets/`):
+Registered in `boot()` (`modules/Shop/Submodules/Bundles/Application/Widgets/`):
 
 | Widget id | Type | Class | Shows | Permission | Order |
 | --- | --- | --- | --- | --- | --- |
@@ -115,7 +115,7 @@ Templates: `admin/dashboard/widgets/shortcut.html.twig`, `admin/dashboard/widget
 
 | Class | Responsibility |
 | --- | --- |
-| `Modules\Bundles\Application\BundlesProvider` | Capability implementation for `bundles`: `find(id)`, `findByCode(code)` (upper-cased), `activeBundles()`, `resolve(id)` → array (id, code, name, description, discount_*, currency, min/max constraints, ordered `items[]`) or `null` when missing/inactive. |
+| `Modules\Shop\Submodules\Bundles\Application\BundlesProvider` | Capability implementation for `bundles`: `find(id)`, `findByCode(code)` (upper-cased), `activeBundles()`, `resolve(id)` → array (id, code, name, description, discount_*, currency, min/max constraints, ordered `items[]`) or `null` when missing/inactive. |
 
 Extension points:
 
@@ -130,7 +130,7 @@ None.
 
 - Settings keys: none defined or read.
 - Environment variables: none.
-- Translations: `modules/Bundles/Resources/translations/messages.cs.php`, `messages.en.php`. Key prefixes: `module.bundles.*`, `nav.bundles*`, `palette.bundles.*`, `perm.bundles.*`, `perm.group.bundles`, `bundles.*` (titles, `bundles.field.*`, `bundles.discount.*`, `bundles.error.*`, `bundles.flash.*`, `bundles.widget.stats.*`). The widget hint key `admin.dashboard.hint.bundles` is expected from core translations.
+- Translations: `modules/Shop/Submodules/Bundles/Resources/translations/messages.cs.php`, `messages.en.php`. Key prefixes: `module.bundles.*`, `nav.bundles*`, `palette.bundles.*`, `perm.bundles.*`, `perm.group.bundles`, `bundles.*` (titles, `bundles.field.*`, `bundles.discount.*`, `bundles.error.*`, `bundles.flash.*`, `bundles.widget.stats.*`). The widget hint key `admin.dashboard.hint.bundles` is expected from core translations.
 
 ## Database migrations
 

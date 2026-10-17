@@ -10,7 +10,7 @@ Feeds generates product feeds for price comparison and advertising platforms. Ad
 | Version | `1.99.0` (`modules/Feeds/module.php`, `FeedsModule::version()`; `README.md` says v1.0.2) |
 | Directory | `modules/Feeds/` |
 | Class | `Modules\Feeds\FeedsModule` |
-| Requires | `core ^1.0` (Products entities `Modules\Products\Domain\Product`, `ProductPrice` are imported unguarded by `FeedsProvider`) |
+| Requires | `core ^1.0` (Products entities `Modules\Shop\Submodules\Products\Domain\Product`, `ProductPrice` are imported unguarded by `FeedsProvider`) |
 | Optional | none |
 | Capabilities provided | `feeds` → `Application/FeedsProvider` |
 | Capabilities consumed | none |

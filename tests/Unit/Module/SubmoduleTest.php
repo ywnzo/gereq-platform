@@ -19,6 +19,7 @@ use Gereq\Module\ModuleManager;
 use Gereq\Module\ModuleUninstaller;
 use Gereq\File\FileManager;
 use Gereq\Module\ModuleManifest;
+use Gereq\Module\ModuleInstalledSnapshot;
 use Gereq\Module\ModuleUpdater;
 use Gereq\Module\ModuleVersionActivator;
 use Gereq\Module\ModuleVersionInstaller;
@@ -315,7 +316,7 @@ PHP);
         $store = new ModuleVersionStore($this->root, $config, $translator);
         $installer = new ModuleVersionInstaller(new GitLabModuleClient($config, $translator), $store, $manager, $config, $translator);
         $migrator = new Migrator($this->em, $manager);
-        $updater = new ModuleUpdater($manager, $migrator, $this->em, $auditor, $translator);
+        $updater = new ModuleUpdater($manager, $migrator, $this->em, $auditor, $translator, new ModuleInstalledSnapshot($this->root));
 
         return [new ModuleVersionActivator($this->root, $manager, $store, $installer, $migrator, $updater, $this->em, $auditor, $translator), $installer];
     }

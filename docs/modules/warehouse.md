@@ -7,12 +7,12 @@ Warehouse manages physical stock: a list of warehouses, per-warehouse stock leve
 | Item | Value |
 | --- | --- |
 | Module id | `warehouse` |
-| Version | `1.99.0` (`modules/Warehouse/module.php`, `WarehouseModule::version()`) |
-| Directory | `modules/Warehouse/` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Warehouse/module.php`, `WarehouseModule::version()`) |
+| Directory | `modules/Shop/Submodules/Warehouse/` |
 | Requires | `core ^1.0`, `products ^1.0` |
 | Optional | none |
 | Capabilities provided | `inventory` → `Application\InventoryProvider` (`provides: ['inventory']`) |
-| Capabilities consumed | none (hard dependency on `Modules\Products\Domain\Product`) |
+| Capabilities consumed | none (hard dependency on `Modules\Shop\Submodules\Products\Domain\Product`) |
 | Groups / packages | none in `module.php`; not listed in `config/module_groups.php` |
 | Permissions | `warehouse.view` (`perm.warehouse.view`), `warehouse.manage` (`perm.warehouse.manage`), `warehouse.stock.manage` (`perm.warehouse.stock.manage`) — group `perm.group.warehouse` |
 | API scopes | `warehouse.read`, `warehouse.write` |
@@ -20,7 +20,7 @@ Warehouse manages physical stock: a list of warehouses, per-warehouse stock leve
 
 ## Domain model
 
-All entities live in `modules/Warehouse/Domain/`; relations are by id strings without Doctrine associations or foreign keys.
+All entities live in `modules/Shop/Submodules/Warehouse/Domain/`; relations are by id strings without Doctrine associations or foreign keys.
 
 ```mermaid
 erDiagram
@@ -104,7 +104,7 @@ Command palette: `warehouse.index` (`palette.warehouse.index`, `/admin/warehouse
 | POST | `/admin/warehouse/{id}` | `admin.warehouse.update` | `WarehouseController::update` | `warehouse.manage` |
 | POST | `/admin/warehouse/{id}/delete` | `admin.warehouse.destroy` | `WarehouseController::destroy` | `warehouse.manage` |
 
-Controllers: `modules/Warehouse/Http/WarehouseController.php`, `modules/Warehouse/Http/StockController.php`.
+Controllers: `modules/Shop/Submodules/Warehouse/Http/WarehouseController.php`, `modules/Shop/Submodules/Warehouse/Http/StockController.php`.
 
 ### Screens
 
@@ -205,5 +205,5 @@ None.
 - Low-stock events fire on every movement while an item stays below the threshold (no de-duplication), and there is no notification besides the event.
 - Product option lists in the admin forms are capped at the first 100 products by name; larger catalogues cannot pick other products from the movement form.
 - Event descriptions and the `StockMovement` constructor exception message are Czech literals rather than translation keys.
-- The module has `products` as a hard requirement (`use Modules\Products\Domain\Product`); the `class_exists(Product::class)` guard in `StockController::productOptions()` is redundant.
+- The module has `products` as a hard requirement (`use Modules\Shop\Submodules\Products\Domain\Product`); the `class_exists(Product::class)` guard in `StockController::productOptions()` is redundant.
 - `README.md` says v1.0.3 while the manifest is 1.1.0.

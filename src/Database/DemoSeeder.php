@@ -100,11 +100,11 @@ final class DemoSeeder
 
     private function alreadySeeded(): bool
     {
-        if (!class_exists(\Modules\Products\Domain\Product::class)) {
+        if (!class_exists(\Modules\Shop\Submodules\Products\Domain\Product::class)) {
             return false;
         }
 
-        return $this->em->getRepository(\Modules\Products\Domain\Product::class)
+        return $this->em->getRepository(\Modules\Shop\Submodules\Products\Domain\Product::class)
             ->findOneBy(['sku' => self::MARKER_SKU]) !== null;
     }
 
@@ -234,11 +234,11 @@ final class DemoSeeder
 
     /**
      * @param list<string> $log
-     * @return list<\Modules\Products\Domain\Product>
+     * @return list<\Modules\Shop\Submodules\Products\Domain\Product>
      */
     private function seedCatalog(array &$log): array
     {
-        if (!class_exists(\Modules\Products\Domain\Product::class)) {
+        if (!class_exists(\Modules\Shop\Submodules\Products\Domain\Product::class)) {
             return [];
         }
 
@@ -249,9 +249,9 @@ final class DemoSeeder
         ];
         $categories = [];
         foreach ($catDefs as [$name, $slug]) {
-            $cat = $this->em->getRepository(\Modules\Products\Domain\ProductCategory::class)->findOneBy(['slug' => $slug]);
+            $cat = $this->em->getRepository(\Modules\Shop\Submodules\Products\Domain\ProductCategory::class)->findOneBy(['slug' => $slug]);
             if ($cat === null) {
-                $cat = new \Modules\Products\Domain\ProductCategory($name, $slug);
+                $cat = new \Modules\Shop\Submodules\Products\Domain\ProductCategory($name, $slug);
                 $this->em->persist($cat);
             }
             $categories[$slug] = $cat;
@@ -271,22 +271,22 @@ final class DemoSeeder
 
         $products = [];
         foreach ($defs as [$sku, $name, $desc, $unit, $price, $catSlug]) {
-            $product = new \Modules\Products\Domain\Product($sku, $name);
+            $product = new \Modules\Shop\Submodules\Products\Domain\Product($sku, $name);
             $product->setDescription($desc);
             $product->setUnit($unit);
             $product->setStatus('active');
             $product->addCategory($categories[$catSlug]);
             $this->em->persist($product);
             $this->em->flush();
-            $this->em->persist(new \Modules\Products\Domain\ProductPrice($product->id(), 'CZK', $price));
+            $this->em->persist(new \Modules\Shop\Submodules\Products\Domain\ProductPrice($product->id(), 'CZK', $price));
             if (in_array($sku, ['GRQ-LIC-PRO', 'GRQ-SHOP-ADD'], true)) {
-                $this->em->persist(new \Modules\Products\Domain\ProductPrice($product->id(), 'EUR', $sku === 'GRQ-LIC-PRO' ? '1450' : '480'));
+                $this->em->persist(new \Modules\Shop\Submodules\Products\Domain\ProductPrice($product->id(), 'EUR', $sku === 'GRQ-LIC-PRO' ? '1450' : '480'));
             }
             $products[] = $product;
         }
 
         // One draft product for UI states
-        $draft = new \Modules\Products\Domain\Product('GRQ-DRAFT-AI', 'AI asistent (připravujeme)');
+        $draft = new \Modules\Shop\Submodules\Products\Domain\Product('GRQ-DRAFT-AI', 'AI asistent (připravujeme)');
         $draft->setDescription('Interní draft — ještě neprodávat.');
         $draft->setStatus('draft');
         $this->em->persist($draft);
@@ -298,21 +298,21 @@ final class DemoSeeder
     }
 
     /**
-     * @param list<\Modules\Products\Domain\Product> $products
+     * @param list<\Modules\Shop\Submodules\Products\Domain\Product> $products
      * @param list<string> $log
-     * @return \Modules\Warehouse\Domain\Warehouse|null
+     * @return \Modules\Shop\Submodules\Warehouse\Domain\Warehouse|null
      */
     private function seedWarehouse(array $products, User $demo, array &$log): mixed
     {
-        if (!class_exists(\Modules\Warehouse\Domain\Warehouse::class) || $products === []) {
+        if (!class_exists(\Modules\Shop\Submodules\Warehouse\Domain\Warehouse::class) || $products === []) {
             return null;
         }
 
-        $main = new \Modules\Warehouse\Domain\Warehouse('PRG-MAIN', 'Sklad Praha – hlavní');
+        $main = new \Modules\Shop\Submodules\Warehouse\Domain\Warehouse('PRG-MAIN', 'Sklad Praha – hlavní');
         $main->setActive(true);
         $this->em->persist($main);
 
-        $brno = new \Modules\Warehouse\Domain\Warehouse('BRN-BUF', 'Sklad Brno – buffer');
+        $brno = new \Modules\Shop\Submodules\Warehouse\Domain\Warehouse('BRN-BUF', 'Sklad Brno – buffer');
         $brno->setActive(true);
         $this->em->persist($brno);
         $this->em->flush();
@@ -333,11 +333,11 @@ final class DemoSeeder
             if ($qty === null) {
                 continue;
             }
-            $this->em->persist(new \Modules\Warehouse\Domain\StockItem($main->id(), $product->id(), $qty[0]));
+            $this->em->persist(new \Modules\Shop\Submodules\Warehouse\Domain\StockItem($main->id(), $product->id(), $qty[0]));
             if ((float) $qty[1] > 0) {
-                $this->em->persist(new \Modules\Warehouse\Domain\StockItem($brno->id(), $product->id(), $qty[1]));
+                $this->em->persist(new \Modules\Shop\Submodules\Warehouse\Domain\StockItem($brno->id(), $product->id(), $qty[1]));
             }
-            $mov = new \Modules\Warehouse\Domain\StockMovement($main->id(), $product->id(), 'in', $qty[0], $demo->id());
+            $mov = new \Modules\Shop\Submodules\Warehouse\Domain\StockMovement($main->id(), $product->id(), 'in', $qty[0], $demo->id());
             $mov->setNote('Počáteční naskladnění demo');
             $this->em->persist($mov);
         }
@@ -351,10 +351,10 @@ final class DemoSeeder
             }
         }
         if ($low !== null) {
-            $out = new \Modules\Warehouse\Domain\StockMovement($main->id(), $low->id(), 'out', '10', $demo->id());
+            $out = new \Modules\Shop\Submodules\Warehouse\Domain\StockMovement($main->id(), $low->id(), 'out', '10', $demo->id());
             $out->setNote('Výdej na demo stanice');
             $this->em->persist($out);
-            $item = $this->em->getRepository(\Modules\Warehouse\Domain\StockItem::class)
+            $item = $this->em->getRepository(\Modules\Shop\Submodules\Warehouse\Domain\StockItem::class)
                 ->findOneBy(['warehouseId' => $main->id(), 'productId' => $low->id()]);
             if ($item !== null) {
                 $item->setQty('2'); // pod LOW_THRESHOLD
@@ -487,11 +487,11 @@ final class DemoSeeder
     /** @param list<string> $log */
     private function seedPayments(array &$log): void
     {
-        if (!class_exists(\Modules\Payments\Domain\PaymentMethod::class)) {
+        if (!class_exists(\Modules\Shop\Submodules\Payments\Domain\PaymentMethod::class)) {
             return;
         }
 
-        $repo = $this->em->getRepository(\Modules\Payments\Domain\PaymentMethod::class);
+        $repo = $this->em->getRepository(\Modules\Shop\Submodules\Payments\Domain\PaymentMethod::class);
         $defs = [
             // code, name, type, provider, fee_fixed, fee_percent, instructions, sort
             ['CARD_GOPAY', 'Platební karta (GoPay)', 'card', 'gopay', '0', '1.9', 'Okamžitá platba kartou přes GoPay.', 30],
@@ -508,7 +508,7 @@ final class DemoSeeder
         // Keep legacy demo methods without a gateway inactive so they do not confuse.
         foreach (['TWISTO', 'SKIPPAY', 'PAYPAL'] as $dead) {
             $old = $repo->findOneBy(['code' => $dead]);
-            if ($old instanceof \Modules\Payments\Domain\PaymentMethod) {
+            if ($old instanceof \Modules\Shop\Submodules\Payments\Domain\PaymentMethod) {
                 $old->setActive(false);
             }
         }
@@ -518,7 +518,7 @@ final class DemoSeeder
         foreach ($defs as [$code, $name, $type, $provider, $feeFixed, $feePercent, $instructions, $sort]) {
             $m = $repo->findOneBy(['code' => $code]);
             if ($m === null) {
-                $m = new \Modules\Payments\Domain\PaymentMethod($code, $name, $type);
+                $m = new \Modules\Shop\Submodules\Payments\Domain\PaymentMethod($code, $name, $type);
                 $this->em->persist($m);
                 ++$created;
             } else {
@@ -541,11 +541,11 @@ final class DemoSeeder
     /** @param list<string> $log */
     private function seedCoupons(array &$log): void
     {
-        if (!class_exists(\Modules\Coupons\Domain\Coupon::class)) {
+        if (!class_exists(\Modules\Shop\Submodules\Coupons\Domain\Coupon::class)) {
             return;
         }
 
-        $repo = $this->em->getRepository(\Modules\Coupons\Domain\Coupon::class);
+        $repo = $this->em->getRepository(\Modules\Shop\Submodules\Coupons\Domain\Coupon::class);
         $defs = [
             ['WELCOME10', 'Sleva pro nové zákazníky', 'percent', '10', null, '500', 100],
             ['GEREQ500', 'Sleva 500 Kč', 'fixed', '500', 'CZK', '2000', 50],
@@ -557,7 +557,7 @@ final class DemoSeeder
             if ($repo->findOneBy(['code' => $code]) !== null) {
                 continue;
             }
-            $c = new \Modules\Coupons\Domain\Coupon($code, $name, $type, $value);
+            $c = new \Modules\Shop\Submodules\Coupons\Domain\Coupon($code, $name, $type, $value);
             if ($currency !== null) {
                 $c->setCurrency($currency);
             }
@@ -631,8 +631,8 @@ final class DemoSeeder
     /** @param list<string> $log */
     private function seedLoyaltyFeedsBundles(array &$log): void
     {
-        if (class_exists(\Modules\Loyalty\Domain\LoyaltyTier::class)) {
-            $repo = $this->em->getRepository(\Modules\Loyalty\Domain\LoyaltyTier::class);
+        if (class_exists(\Modules\Shop\Submodules\Loyalty\Domain\LoyaltyTier::class)) {
+            $repo = $this->em->getRepository(\Modules\Shop\Submodules\Loyalty\Domain\LoyaltyTier::class);
             foreach ([
                 ['BRONZE', 'Bronz', '0', '0', 10],
                 ['SILVER', 'Stříbro', '5000', '3', 20],
@@ -641,7 +641,7 @@ final class DemoSeeder
                 if ($repo->findOneBy(['code' => $code]) !== null) {
                     continue;
                 }
-                $t = new \Modules\Loyalty\Domain\LoyaltyTier($code, $name);
+                $t = new \Modules\Shop\Submodules\Loyalty\Domain\LoyaltyTier($code, $name);
                 $t->setMinSpend($min);
                 $t->setDiscountPercent($pct);
                 $t->setSortOrder($sort);
@@ -664,10 +664,10 @@ final class DemoSeeder
             }
         }
 
-        if (class_exists(\Modules\Bundles\Domain\ProductBundle::class)) {
-            $repo = $this->em->getRepository(\Modules\Bundles\Domain\ProductBundle::class);
+        if (class_exists(\Modules\Shop\Submodules\Bundles\Domain\ProductBundle::class)) {
+            $repo = $this->em->getRepository(\Modules\Shop\Submodules\Bundles\Domain\ProductBundle::class);
             if ($repo->findOneBy(['code' => 'STARTER']) === null) {
-                $b = new \Modules\Bundles\Domain\ProductBundle('STARTER', 'Startovací sestava');
+                $b = new \Modules\Shop\Submodules\Bundles\Domain\ProductBundle('STARTER', 'Startovací sestava');
                 $b->setDiscountType('percent');
                 $b->setDiscountValue('10');
                 $this->em->persist($b);
@@ -681,23 +681,23 @@ final class DemoSeeder
     /** @param list<string> $log */
     private function seedProductVariantsFromExisting(array &$log): void
     {
-        if (!class_exists(\Modules\Products\Domain\ProductVariant::class) || !class_exists(\Modules\Products\Domain\Product::class)) {
+        if (!class_exists(\Modules\Shop\Submodules\Products\Domain\ProductVariant::class) || !class_exists(\Modules\Shop\Submodules\Products\Domain\Product::class)) {
             return;
         }
         $existing = (int) $this->em->createQueryBuilder()
             ->select('COUNT(v.id)')
-            ->from(\Modules\Products\Domain\ProductVariant::class, 'v')
+            ->from(\Modules\Shop\Submodules\Products\Domain\ProductVariant::class, 'v')
             ->getQuery()
             ->getSingleScalarResult();
         if ($existing > 0) {
             return;
         }
-        $product = $this->em->getRepository(\Modules\Products\Domain\Product::class)->findOneBy([], ['createdAt' => 'ASC']);
+        $product = $this->em->getRepository(\Modules\Shop\Submodules\Products\Domain\Product::class)->findOneBy([], ['createdAt' => 'ASC']);
         if ($product === null) {
             return;
         }
-        $group = new \Modules\Products\Domain\ProductOptionGroup(
-            \Modules\Products\Domain\ProductOptionGroup::SCOPE_PRODUCT,
+        $group = new \Modules\Shop\Submodules\Products\Domain\ProductOptionGroup(
+            \Modules\Shop\Submodules\Products\Domain\ProductOptionGroup::SCOPE_PRODUCT,
             $product->id(),
             'size',
             'Velikost',
@@ -705,16 +705,16 @@ final class DemoSeeder
         $this->em->persist($group);
         $this->em->flush();
         foreach ([['s', 'S'], ['m', 'M'], ['l', 'L']] as $i => [$code, $name]) {
-            $val = new \Modules\Products\Domain\ProductOptionValue($group->id(), $code, $name);
+            $val = new \Modules\Shop\Submodules\Products\Domain\ProductOptionValue($group->id(), $code, $name);
             $val->setSortOrder($i);
             $this->em->persist($val);
-            $variant = new \Modules\Products\Domain\ProductVariant($product->id(), $product->sku() . '-' . strtoupper($code));
+            $variant = new \Modules\Shop\Submodules\Products\Domain\ProductVariant($product->id(), $product->sku() . '-' . strtoupper($code));
             $variant->setName($product->name() . ' / ' . $name);
             $variant->setAttributes(['size' => $code]);
             $variant->setStockQty(25);
             $this->em->persist($variant);
         }
-        $tier = new \Modules\Products\Domain\QuantityPriceTier('product', $product->id(), 10, '890.00');
+        $tier = new \Modules\Shop\Submodules\Products\Domain\QuantityPriceTier('product', $product->id(), 10, '890.00');
         $this->em->persist($tier);
         $this->em->flush();
         $log[] = 'Varianty: ukázková option group + 3 SKU + quantity tier.';
@@ -722,7 +722,7 @@ final class DemoSeeder
 
     /**
      * @param list<\Gereq\Customers\Domain\Customer> $customers
-     * @param list<\Modules\Products\Domain\Product> $products
+     * @param list<\Modules\Shop\Submodules\Products\Domain\Product> $products
      * @param list<string> $log
      */
     private function seedReviews(array $customers, array $products, array &$log): void
@@ -777,18 +777,18 @@ final class DemoSeeder
 
     /**
      * @param list<\Gereq\Customers\Domain\Customer> $customers
-     * @param list<\Modules\Products\Domain\Product> $products
+     * @param list<\Modules\Shop\Submodules\Products\Domain\Product> $products
      * @param list<string> $log
      */
     private function seedReturns(array $customers, array $products, array &$log): void
     {
-        if (!class_exists(\Modules\Returns\Domain\ReturnRequest::class)) {
+        if (!class_exists(\Modules\Shop\Submodules\Returns\Domain\ReturnRequest::class)) {
             return;
         }
 
         $existing = (int) $this->em->createQueryBuilder()
             ->select('COUNT(r.id)')
-            ->from(\Modules\Returns\Domain\ReturnRequest::class, 'r')
+            ->from(\Modules\Shop\Submodules\Returns\Domain\ReturnRequest::class, 'r')
             ->getQuery()
             ->getSingleScalarResult();
         if ($existing > 0) {
@@ -796,16 +796,16 @@ final class DemoSeeder
         }
 
         $order = null;
-        if (class_exists(\Modules\Orders\Domain\Order::class)) {
-            $order = $this->em->getRepository(\Modules\Orders\Domain\Order::class)->findOneBy([], ['createdAt' => 'DESC']);
+        if (class_exists(\Modules\Shop\Submodules\Orders\Domain\Order::class)) {
+            $order = $this->em->getRepository(\Modules\Shop\Submodules\Orders\Domain\Order::class)->findOneBy([], ['createdAt' => 'DESC']);
         }
         if ($order === null) {
             return;
         }
 
-        /** @var \Modules\Returns\Application\ReturnsProvider $provider */
-        $provider = new \Modules\Returns\Application\ReturnsProvider($this->em);
-        $ret = new \Modules\Returns\Domain\ReturnRequest(
+        /** @var \Modules\Shop\Submodules\Returns\Application\ReturnsProvider $provider */
+        $provider = new \Modules\Shop\Submodules\Returns\Application\ReturnsProvider($this->em);
+        $ret = new \Modules\Shop\Submodules\Returns\Domain\ReturnRequest(
             $provider->nextNumber(),
             $order->id(),
             'Zboží neodpovídá popisu — požadavek na výměnu / refundaci.',
@@ -817,7 +817,7 @@ final class DemoSeeder
         $this->em->persist($ret);
 
         $product = $products[0] ?? null;
-        $item = new \Modules\Returns\Domain\ReturnItem(
+        $item = new \Modules\Shop\Submodules\Returns\Domain\ReturnItem(
             $ret->id(),
             $product?->name() ?? 'Položka objednávky',
             1,
@@ -829,7 +829,7 @@ final class DemoSeeder
         $this->em->persist($item);
         $this->em->flush();
 
-        $ret2 = new \Modules\Returns\Domain\ReturnRequest(
+        $ret2 = new \Modules\Shop\Submodules\Returns\Domain\ReturnRequest(
             $provider->nextNumber(),
             $order->id(),
             'Zákazník odstoupil od smlouvy do 14 dnů.',
@@ -847,8 +847,8 @@ final class DemoSeeder
     private function seedReviewsAndReturnsFromExisting(array &$log): void
     {
         $products = [];
-        if (class_exists(\Modules\Products\Domain\Product::class)) {
-            $products = $this->em->getRepository(\Modules\Products\Domain\Product::class)->findBy([], null, 20);
+        if (class_exists(\Modules\Shop\Submodules\Products\Domain\Product::class)) {
+            $products = $this->em->getRepository(\Modules\Shop\Submodules\Products\Domain\Product::class)->findBy([], null, 20);
         }
         $customers = [];
         if (class_exists(\Gereq\Customers\Domain\Customer::class)) {
@@ -860,12 +860,12 @@ final class DemoSeeder
 
     /**
      * @param list<\Gereq\Customers\Domain\Customer> $customers
-     * @param list<\Modules\Products\Domain\Product> $products
+     * @param list<\Modules\Shop\Submodules\Products\Domain\Product> $products
      * @param list<string> $log
      */
     private function seedOrders(array $customers, array $products, array &$log): void
     {
-        if (!class_exists(\Modules\Orders\Domain\Order::class) || $customers === [] || $products === []) {
+        if (!class_exists(\Modules\Shop\Submodules\Orders\Domain\Order::class) || $customers === [] || $products === []) {
             return;
         }
 
@@ -882,69 +882,69 @@ final class DemoSeeder
 
         // 1) paid order
         $c1 = $byEmail['helena.richter@logistik-cz.eu'] ?? $customers[0];
-        $o1 = new \Modules\Orders\Domain\Order($c1->id(), "ORD-{$year}-0001", 'CZK');
+        $o1 = new \Modules\Shop\Submodules\Orders\Domain\Order($c1->id(), "ORD-{$year}-0001", 'CZK');
         $o1->setStatus('fulfilled');
         $o1->setNote('Obnovení licence 2026.');
         $this->em->persist($o1);
         $this->em->flush();
         $lines1 = [];
-        $l1 = new \Modules\Orders\Domain\OrderLine($o1->id(), $bySku['GRQ-LIC-PRO']->name(), '1', '36000', '21');
+        $l1 = new \Modules\Shop\Submodules\Orders\Domain\OrderLine($o1->id(), $bySku['GRQ-LIC-PRO']->name(), '1', '36000', '21');
         $l1->setProductId($bySku['GRQ-LIC-PRO']->id());
         $this->em->persist($l1);
         $lines1[] = $l1;
-        \Modules\Orders\Application\OrderTotals::recalculate($o1, $lines1);
-        $inv1 = new \Modules\Orders\Domain\Invoice($o1->id(), "INV-{$year}-0001", $o1->total());
+        \Modules\Shop\Submodules\Orders\Application\OrderTotals::recalculate($o1, $lines1);
+        $inv1 = new \Modules\Shop\Submodules\Orders\Domain\Invoice($o1->id(), "INV-{$year}-0001", $o1->total());
         $inv1->issue(new \DateTimeImmutable('-20 days'), new \DateTimeImmutable('-6 days'));
         $this->em->persist($inv1);
         $this->em->flush();
-        $this->em->persist(new \Modules\Orders\Domain\InvoicePayment($inv1->id(), $inv1->total(), 'bank_transfer', new \DateTimeImmutable('-12 days')));
+        $this->em->persist(new \Modules\Shop\Submodules\Orders\Domain\InvoicePayment($inv1->id(), $inv1->total(), 'bank_transfer', new \DateTimeImmutable('-12 days')));
         $inv1->markPaid();
 
         // 2) confirmed order, issued invoice unpaid
         $c2 = $byEmail['petra.dvorakova@moravia.cz'] ?? $customers[0];
-        $o2 = new \Modules\Orders\Domain\Order($c2->id(), "ORD-{$year}-0002", 'CZK');
+        $o2 = new \Modules\Shop\Submodules\Orders\Domain\Order($c2->id(), "ORD-{$year}-0002", 'CZK');
         $o2->setStatus('confirmed');
         $o2->setNote('Částečná dodávka modulů.');
         $this->em->persist($o2);
         $this->em->flush();
         $lines2 = [];
         foreach ([['GRQ-SHOP-ADD', '1', '12000'], ['GRQ-Cms-ADD', '1', '8500'], ['GRQ-SUP-M', '3', '4900']] as [$sku, $qty, $price]) {
-            $line = new \Modules\Orders\Domain\OrderLine($o2->id(), $bySku[$sku]->name(), $qty, $price, '21');
+            $line = new \Modules\Shop\Submodules\Orders\Domain\OrderLine($o2->id(), $bySku[$sku]->name(), $qty, $price, '21');
             $line->setProductId($bySku[$sku]->id());
             $this->em->persist($line);
             $lines2[] = $line;
         }
-        \Modules\Orders\Application\OrderTotals::recalculate($o2, $lines2);
-        $inv2 = new \Modules\Orders\Domain\Invoice($o2->id(), "INV-{$year}-0002", $o2->total());
+        \Modules\Shop\Submodules\Orders\Application\OrderTotals::recalculate($o2, $lines2);
+        $inv2 = new \Modules\Shop\Submodules\Orders\Domain\Invoice($o2->id(), "INV-{$year}-0002", $o2->total());
         $inv2->issue(new \DateTimeImmutable('-3 days'), new \DateTimeImmutable('+11 days'));
         $this->em->persist($inv2);
 
         // 3) draft
         $c3 = $byEmail['klara.benesova@nordsoft.cz'] ?? $customers[0];
-        $o3 = new \Modules\Orders\Domain\Order($c3->id(), "ORD-{$year}-0003", 'CZK');
+        $o3 = new \Modules\Shop\Submodules\Orders\Domain\Order($c3->id(), "ORD-{$year}-0003", 'CZK');
         $o3->setStatus('draft');
         $o3->setNote('Návrh implementace — čeká na schválení.');
         $this->em->persist($o3);
         $this->em->flush();
         $lines3 = [];
         foreach ([[self::MARKER_SKU, '1', '89000'], ['GRQ-TRAIN-1D', '2', '18000']] as [$sku, $qty, $price]) {
-            $line = new \Modules\Orders\Domain\OrderLine($o3->id(), $bySku[$sku]->name(), $qty, $price, '21');
+            $line = new \Modules\Shop\Submodules\Orders\Domain\OrderLine($o3->id(), $bySku[$sku]->name(), $qty, $price, '21');
             $line->setProductId($bySku[$sku]->id());
             $this->em->persist($line);
             $lines3[] = $line;
         }
-        \Modules\Orders\Application\OrderTotals::recalculate($o3, $lines3);
+        \Modules\Shop\Submodules\Orders\Application\OrderTotals::recalculate($o3, $lines3);
 
         // 4) cancelled
-        $o4 = new \Modules\Orders\Domain\Order(($byEmail['jakub.nemec@seznam.cz'] ?? $customers[0])->id(), "ORD-{$year}-0004", 'CZK');
+        $o4 = new \Modules\Shop\Submodules\Orders\Domain\Order(($byEmail['jakub.nemec@seznam.cz'] ?? $customers[0])->id(), "ORD-{$year}-0004", 'CZK');
         $o4->setStatus('cancelled');
         $o4->setNote('Zrušeno zákazníkem.');
         $this->em->persist($o4);
         $this->em->flush();
-        $l4 = new \Modules\Orders\Domain\OrderLine($o4->id(), $bySku['GRQ-NB-14']->name(), '1', '24990', '21');
+        $l4 = new \Modules\Shop\Submodules\Orders\Domain\OrderLine($o4->id(), $bySku['GRQ-NB-14']->name(), '1', '24990', '21');
         $l4->setProductId($bySku['GRQ-NB-14']->id());
         $this->em->persist($l4);
-        \Modules\Orders\Application\OrderTotals::recalculate($o4, [$l4]);
+        \Modules\Shop\Submodules\Orders\Application\OrderTotals::recalculate($o4, [$l4]);
 
         $this->em->flush();
         $log[] = 'Objednávky: 4 (fulfilled/confirmed/draft/cancelled) + faktury a platba.';
@@ -952,7 +952,7 @@ final class DemoSeeder
 
     /**
      * @param list<\Gereq\Customers\Domain\Customer> $customers
-     * @param list<\Modules\Products\Domain\Product> $products
+     * @param list<\Modules\Shop\Submodules\Products\Domain\Product> $products
      * @param list<string> $log
      */
     private function seedCarts(array $customers, array $products, array &$log): void
@@ -1122,7 +1122,7 @@ final class DemoSeeder
 
     /**
      * @param list<\Gereq\Customers\Domain\Customer> $customers
-     * @param list<\Modules\Products\Domain\Product> $products
+     * @param list<\Modules\Shop\Submodules\Products\Domain\Product> $products
      * @param list<string> $log
      */
     private function seedDocumentsAndMedia(User $demo, array $customers, array $products, array &$log): void
@@ -1292,7 +1292,7 @@ SVG;
     }
 
     /**
-     * @param list<\Modules\Products\Domain\Product> $products
+     * @param list<\Modules\Shop\Submodules\Products\Domain\Product> $products
      * @param list<string> $log
      */
     private function seedCms(array $products, array &$log): void

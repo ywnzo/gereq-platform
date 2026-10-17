@@ -17,17 +17,9 @@ final class ModuleManifestConsistencyTest extends TestCase
     {
         $root = dirname(__DIR__, 4) . '/modules';
         $out = [];
-        $entries = scandir($root);
-        if ($entries === false) {
-            return [];
-        }
-        foreach ($entries as $name) {
-            if ($name === '.' || $name === '..') {
-                continue;
-            }
-            $dir = $root . '/' . $name;
-            if (is_dir($dir) && is_file($dir . '/module.php')) {
-                $out[] = [$name];
+        foreach (\Gereq\Module\ModuleDiscovery::discover(dirname($root)) as $manifest) {
+            if (!$manifest->isIntegration()) {
+                $out[] = [substr($manifest->path, strlen($root) + 1)];
             }
         }
         sort($out);

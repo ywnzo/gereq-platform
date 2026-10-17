@@ -9,11 +9,11 @@ See also: [Bundles](bundles.md), [Shop](shop.md), [Orders](orders.md), [module s
 | Item | Value |
 | --- | --- |
 | Module id | `coupons` |
-| Version | `1.99.0` (`modules/Coupons/module.php`, `CouponsModule::version()`) |
-| Directory | `modules/Coupons/` |
-| Class | `Modules\Coupons\CouponsModule` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Coupons/module.php`, `CouponsModule::version()`) |
+| Directory | `modules/Shop/Submodules/Coupons/` |
+| Class | `Modules\Shop\Submodules\Coupons\CouponsModule` |
 | Requires | `core ^1.0` (no optional deps) |
-| Capabilities provided | `coupons` → `Modules\Coupons\Application\CouponsProvider` |
+| Capabilities provided | `coupons` → `Modules\Shop\Submodules\Coupons\Application\CouponsProvider` |
 | Capabilities consumed | None |
 | Groups / packages | Not listed in `config/module_groups.php`; `module.php` has no `groups` key (standalone module) |
 | Permissions | `coupons.view` (`perm.coupons.view`), `coupons.manage` (`perm.coupons.manage`) — group `perm.group.coupons` |
@@ -22,7 +22,7 @@ See also: [Bundles](bundles.md), [Shop](shop.md), [Orders](orders.md), [module s
 
 ## Domain model
 
-Single entity in `modules/Coupons/Domain/Coupon.php`.
+Single entity in `modules/Shop/Submodules/Coupons/Domain/Coupon.php`.
 
 | Entity | Table | Key fields | Enum / status values | Relations |
 | --- | --- | --- | --- | --- |
@@ -52,7 +52,7 @@ Command palette: `coupons.index` (`palette.coupons.index`, url `/admin/coupons`,
 | POST | `/admin/coupons/{id}` | `admin.coupons.update` | `CouponController::update` | `coupons.manage` |
 | POST | `/admin/coupons/{id}/delete` | `admin.coupons.destroy` | `CouponController::destroy` | `coupons.manage` |
 
-Controller: `modules/Coupons/Http/CouponController.php`.
+Controller: `modules/Shop/Submodules/Coupons/Http/CouponController.php`.
 
 ### Screens
 
@@ -64,7 +64,7 @@ Validation ruleset `coupons.save`: `code required|min:1|max:64`, `name required|
 
 ## Public / REST API
 
-Registered via `$context->api()->module('coupons', …)` → `/api/v1/coupons`. Controller `modules/Coupons/Http/Api/CouponApiController.php`.
+Registered via `$context->api()->module('coupons', …)` → `/api/v1/coupons`. Controller `modules/Shop/Submodules/Coupons/Http/Api/CouponApiController.php`.
 
 | Method | Path | Scope | Action |
 | --- | --- | --- | --- |
@@ -95,7 +95,7 @@ Hooks, queue jobs, scheduled tasks, publishables: none. Audit log: `coupons.crea
 
 ## Dashboard widgets
 
-Registered in `boot()` (`modules/Coupons/Application/Widgets/`):
+Registered in `boot()` (`modules/Shop/Submodules/Coupons/Application/Widgets/`):
 
 | Widget id | Type | Class | Shows | Permission | Order |
 | --- | --- | --- | --- | --- | --- |
@@ -109,7 +109,7 @@ Templates: `shortcut.html.twig`, `metric.html.twig`, `list_panel.html.twig` unde
 
 | Class | Responsibility |
 | --- | --- |
-| `Modules\Coupons\Application\CouponsProvider` | Capability `coupons`. `find(id)`, `findByCode(code)` (upper-cased), `validateForCart(code, subtotal)` → `{ok, discount, message}`. Checks in order: existence, `active`, `starts_at`/`ends_at` window, `max_uses` vs `used_count`, `min_order`; discount = `subtotal * value/100` (percent) or `value` (fixed), capped at the subtotal, formatted to 2 decimals. Messages are hard-coded English strings. |
+| `Modules\Shop\Submodules\Coupons\Application\CouponsProvider` | Capability `coupons`. `find(id)`, `findByCode(code)` (upper-cased), `validateForCart(code, subtotal)` → `{ok, discount, message}`. Checks in order: existence, `active`, `starts_at`/`ends_at` window, `max_uses` vs `used_count`, `min_order`; discount = `subtotal * value/100` (percent) or `value` (fixed), capped at the subtotal, formatted to 2 decimals. Messages are hard-coded English strings. |
 
 Integration:
 
@@ -124,7 +124,7 @@ None.
 ## Configuration & translations
 
 - Settings keys: none. Environment variables: none.
-- Translations: `modules/Coupons/Resources/translations/messages.cs.php`, `messages.en.php`. Prefixes: `module.coupons.*`, `nav.coupons*`, `palette.coupons.*`, `perm.coupons.*`, `perm.group.coupons`, `coupons.*` (`coupons.field.*`, `coupons.type.*`, `coupons.error.*`, `coupons.flash.*`, `coupons.widget.stats.*`, `coupons.widget.expiring.*`).
+- Translations: `modules/Shop/Submodules/Coupons/Resources/translations/messages.cs.php`, `messages.en.php`. Prefixes: `module.coupons.*`, `nav.coupons*`, `palette.coupons.*`, `perm.coupons.*`, `perm.group.coupons`, `coupons.*` (`coupons.field.*`, `coupons.type.*`, `coupons.error.*`, `coupons.flash.*`, `coupons.widget.stats.*`, `coupons.widget.expiring.*`).
 
 ## Database migrations
 

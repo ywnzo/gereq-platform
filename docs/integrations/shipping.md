@@ -11,7 +11,7 @@
 | Shipping method | `modules/Shop/Domain/ShippingMethod.php` | admin-defined method with `carrier` (must equal a carrier key, e.g. `packeta`), `type`, price; managed at `/admin/shop/…` (`ShippingMethodController`) and `/api/v1/shop/shipping-methods` (`ShippingMethodApiController`, filterable by `carrier`) |
 | Shipment entity | `modules/Shop/Domain/Shipment.php` | `orderId`, `carrier`, `shippingMethodCode`, `parcelPointId`, `status`, `trackingNumber`, `externalId`, `labelUrl`, `meta` |
 | Checkout | `modules/Shop/Application/CheckoutService::createShipmentDraft()` | after order creation: `new Shipment(orderId, carrier)` with `parcel_point_id` from checkout data, then `registry->getOrManual(carrier)->createShipment($shipment, $shipping)`; result copied to the shipment and the order's tracking number |
-| Orders admin | `modules/Orders/Http/OrderShipmentController.php` | `POST /admin/orders/{id}/shipment/create` (re-create via carrier, stores tracking number + label URL), `POST /admin/orders/{id}/shipment/sync` (`syncStatus`) |
+| Orders admin | `modules/Shop/Submodules/Orders/Http/OrderShipmentController.php` | `POST /admin/orders/{id}/shipment/create` (re-create via carrier, stores tracking number + label URL), `POST /admin/orders/{id}/shipment/sync` (`syncStatus`) |
 | Checkout input | `modules/Shop/Http/Api/CheckoutApiController.php` (`POST /api/v1/shop/checkout`, scope `shop.write`) | accepts `shipping_method`, `parcel_point_id`, `parcel_point_label` and passes them to `CheckoutService::checkout()`. The public store endpoint `POST /api/public/store/checkout` (`modules/Shop/Http/Public/PublicStoreCartController.php`) does not read `parcel_point_*` |
 
 ## Package files

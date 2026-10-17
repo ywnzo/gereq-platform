@@ -7,8 +7,8 @@ Product catalogue for the commerce stack: products with SKU/unit/status, many-to
 | | |
 |---|---|
 | Module id | `products` |
-| Version | `1.99.0` (`modules/Products/module.php`, `ProductsModule::version()`) |
-| Directory | `modules/Products/` |
+| Version | `2.0.0` (`modules/Shop/Submodules/Products/module.php`, `ProductsModule::version()`) |
+| Directory | `modules/Shop/Submodules/Products/` |
 | Requires | `core ^1.0`, `currency ^1.1`; optional `media ^1.0` |
 | Capabilities | provides `products` (payload `Application/ProductsProvider`); consumes `media` and `product_discounts` when present (guarded via `CapabilityRegistry::has()` + `class_exists`) |
 | Groups / packages | none in `module.php`; not listed in `config/module_groups.php` |
@@ -178,7 +178,7 @@ See [Dashboard widgets](../architecture/dashboard-widgets.md).
 | `Domain/Events/*` | Typed platform events. |
 | `src/Publish/Adapter/ProductPublishAdapter`, `ProductCategoryPublishAdapter` (core) | Snapshot capture/apply for staging → production. |
 
-Consumers of `Modules\Products\Domain\Product` / the `products` capability (hard or guarded imports): `modules/Shop/Application/CartService.php`, `CheckoutService.php`; `modules/Orders/Http/OrderController.php`; `modules/Warehouse/**` (`StockService`, `StockController`, `LowStockItemsWidget`); `modules/ProductDiscounts/**`; `modules/Feeds/Application/FeedsProvider.php`; `modules/WebPlus/Application/GoogleFeed/BuiltInGoogleFeedCollectors.php`; `modules/BikeService/Application/Catalog/PartsSearchService.php`; `src/Database/DemoSeeder.php`; `src/Console/Command/ImportLaravelCommand.php`.
+Consumers of `Modules\Shop\Submodules\Products\Domain\Product` / the `products` capability (hard or guarded imports): `modules/Shop/Application/CartService.php`, `CheckoutService.php`; `modules/Shop/Submodules/Orders/Http/OrderController.php`; `modules/Shop/Submodules/Warehouse/**` (`StockService`, `StockController`, `LowStockItemsWidget`); `modules/ProductDiscounts/**`; `modules/Feeds/Application/FeedsProvider.php`; `modules/WebPlus/Application/GoogleFeed/BuiltInGoogleFeedCollectors.php`; `modules/BikeService/Application/Catalog/PartsSearchService.php`; `src/Database/DemoSeeder.php`; `src/Console/Command/ImportLaravelCommand.php`.
 
 Optional integrations inside the module: [Media](media.md) (`capabilities->has('media')` + `class_exists(MediaAsset)` for uploads/attach/thumbnails; `/media/{asset}/file` URLs), [ProductDiscounts](product_discounts.md) (`product_discounts` capability for admin panels and public pricing).
 

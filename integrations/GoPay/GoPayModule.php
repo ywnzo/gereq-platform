@@ -10,7 +10,7 @@ use Gereq\Setting\SettingRecord;
 use Integrations\GoPay\Application\GoPayGateway;
 use Integrations\GoPay\Application\GoPayInboundProvider;
 use Integrations\GoPay\Http\GoPayNotifyController;
-use Modules\Payments\Application\PaymentGatewayRegistry;
+use Modules\Shop\Submodules\Payments\Application\PaymentGatewayRegistry;
 use Gereq\Webhooks\Application\InboundWebhookRegistry;
 
 final class GoPayModule implements ModuleInterface
@@ -22,7 +22,7 @@ final class GoPayModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.0';
+        return '1.0.1';
     }
 
     public function register(ModuleContext $context): void

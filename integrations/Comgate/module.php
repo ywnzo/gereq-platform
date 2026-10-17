@@ -6,14 +6,14 @@ return [
     'id' => 'comgate',
     'name' => 'Comgate',
     'icon' => 'credit-card',
-    'version' => '1.0.0',
+    'version' => '1.0.1',
     'description' => 'module.comgate.description',
     'class' => Integrations\Comgate\ComgateModule::class,
     'author' => 'GEREQ',
     'kind' => 'integration',
     'requires' => [
         'core' => '^1.0',
-        'payments' => '^1.1',
+        'payments' => '^2.0',
     ],
     'optional' => [
         'webhooks' => '^1.0',

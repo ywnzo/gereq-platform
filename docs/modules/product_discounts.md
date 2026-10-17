@@ -49,7 +49,7 @@ No menu item or palette command. Routes are registered in `ProductDiscountsModul
 | POST | `/admin/products/{productId}/discount/delete` | `admin.products.discount.destroy` | `ProductDiscountController::destroyForProduct` (deletes **all** product-scoped discounts) | `product_discounts.manage` |
 | POST | `/admin/products/categories/{categoryId}/discounts` | `admin.products.categories.discounts.store` | `ProductDiscountController::storeForCategory` | `product_discounts.manage` |
 
-Screens: the module ships `Resources/views/_panel.html.twig` (embedded as the *Discounts* tab in `modules/Products/Resources/views/products/show.html.twig` and `categories/form.html.twig`), plus legacy `index.html.twig` / `form.html.twig` (no longer routed — the standalone controller actions redirect). Validation ruleset `product_discounts.save` (`kind` required ≤16, `value` required, `description` ≤190, `condition_type` ≤32, `scope_type` ≤16, `scope_id`/`product_id` ≤36). Form binding: `$context->forms()->entity('product_discounts.save', ProductDiscount::class)`.
+Screens: the module ships `Resources/views/_panel.html.twig` (embedded as the *Discounts* tab in `modules/Shop/Submodules/Products/Resources/views/products/show.html.twig` and `categories/form.html.twig`), plus legacy `index.html.twig` / `form.html.twig` (no longer routed — the standalone controller actions redirect). Validation ruleset `product_discounts.save` (`kind` required ≤16, `value` required, `description` ≤190, `condition_type` ≤32, `scope_type` ≤16, `scope_id`/`product_id` ≤36). Form binding: `$context->forms()->entity('product_discounts.save', ProductDiscount::class)`.
 
 Settings pages / setting keys: none.
 
@@ -92,9 +92,9 @@ Emitted by `ProductDiscountController` via `EventBus::emit(name, ['type' => 'pro
 
 Consumers (all guarded by `$capabilities->has('product_discounts') && class_exists(ProductDiscountsProvider::class)`):
 
-* `modules/Products/Http/ProductController.php` — passes `productDiscount`, `productDiscounts`, `hasProductDiscounts` to the product detail view.
-* `modules/Products/Http/CategoryController.php` — `categoryDiscounts` for the category form.
-* `modules/Products/Http/Public/PublicStoreCatalogController.php` — applies `pricesForProducts()` / `priceForProduct()` to public listing and detail payloads.
+* `modules/Shop/Submodules/Products/Http/ProductController.php` — passes `productDiscount`, `productDiscounts`, `hasProductDiscounts` to the product detail view.
+* `modules/Shop/Submodules/Products/Http/CategoryController.php` — `categoryDiscounts` for the category form.
+* `modules/Shop/Submodules/Products/Http/Public/PublicStoreCatalogController.php` — applies `pricesForProducts()` / `priceForProduct()` to public listing and detail payloads.
 * `modules/Shop/Application/CartService.php` — applies the resolved discount to cart lines.
 
 ## CLI commands

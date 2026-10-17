@@ -34,7 +34,7 @@ Third-party adapters (payments, shipping, AI providers) live in `integrations/` 
 | [Viewings](viewings.md) | 1.99.0 | listings | Property viewing requests and scheduling |
 | [Portals](portals.md) | 1.99.0 | listings | Export of listings to real-estate portals |
 | [WebPlus](webplus.md) | 1.99.0 | — | SEO/OG/GEO meta, sitemap, health checks, Google Products feed |
-| [WebPlusAi](webplus_ai.md) | 1.99.0 | webplus | WebMCP agent-tool registry + public discovery (`tools.json`, `llms-full.txt`) |
+| [AI (Web+)](webplus_ai.md) | 2.0.0 | webplus (parent) | WebMCP agent-tool registry + public discovery (`tools.json`, `llms-full.txt`) |
 | [Cms](cms.md) | 1.99.0 | — | Page builder and content for small public sites |
 | [Reviews](reviews.md) | 1.99.0 | — | Reviews with moderation and replies |
 
@@ -57,23 +57,25 @@ Third-party adapters (payments, shipping, AI providers) live in `integrations/` 
 | [Projects](projects.md) | 1.99.0 | customers | Projects and tasks |
 | [Documents](documents.md) | 1.99.0 | — | Documents attached to any entity |
 | [Media](media.md) | 1.99.0 | — | Media asset library |
-| [CustomerUploads](customer_uploads.md) | 1.99.0 | — | Session-based public uploads with retention |
 | [ESign](esign.md) | 1.99.0 | — | Simple electronic signatures (eIDAS SES) |
 
 ## Commerce
 
+Parent [E-Shop](shop.md) (`shop` 2.1.0) bundles storefront checkout with children under `modules/Shop/Submodules/`. Enable the parent first, then each child separately.
+
 | Module | Version | Requires | Purpose |
 |---|---|---|---|
-| [Products](products.md) | 1.99.0 | currency | Catalog, categories, prices, public catalog API |
+| [E-Shop](shop.md) | 2.1.0 | currency | Carts, shipping, checkout (parent) |
+| [Products](products.md) | 2.0.0 | shop, currency | Catalog, categories, prices, public catalog API |
+| [Orders](orders.md) | 2.0.0 | shop, customers, products, currency | Orders and invoices |
+| [Payments](payments.md) | 2.0.0 | shop, currency | Payment methods, intents, gateway registry, bank matching |
+| [Returns](returns.md) | 2.0.0 | shop, currency | Returns / RMA |
+| [Coupons](coupons.md) | 2.0.0 | shop | Discount coupons |
+| [Warehouse](warehouse.md) | 2.0.0 | shop, products | Stock levels and movements |
+| [Bundles](bundles.md) | 2.0.0 | shop | Product bundles / sets (Sestavy) |
+| [Loyalty](loyalty.md) | 2.0.0 | shop | Loyalty tiers and points |
+| [Customer Uploads](customer_uploads.md) | 2.0.0 | shop | Session-based public uploads with retention |
 | [ProductDiscounts](product_discounts.md) | 1.99.0 | products, currency | Percentage/amount discounts on catalog items |
-| [Bundles](bundles.md) | 1.99.0 | — | Product bundles / sets |
-| [Coupons](coupons.md) | 1.99.0 | — | Discount coupons |
-| [Loyalty](loyalty.md) | 1.99.0 | — | Loyalty tiers and points |
-| [Shop](shop.md) | 1.99.0 | products, currency | Carts, shipping methods, checkout |
-| [Orders](orders.md) | 1.99.0 | customers, products, currency | Orders and invoices |
-| [Payments](payments.md) | 1.99.0 | currency | Payment methods, intents, gateway registry, bank matching |
-| [Returns](returns.md) | 1.99.0 | currency | Returns / RMA |
-| [Warehouse](warehouse.md) | 1.99.0 | products | Stock levels and movements |
 | [Feeds](feeds.md) | 1.99.0 | — | Product feeds (Google Merchant, Heureka, …) |
 | [SearchEngines](searchengines.md) | 1.99.0 | currency | Price comparator drivers (Heureka, Zboží, …) |
 | [Currency](currency.md) | 1.99.0 | — | Currencies, exchange rates, conversion |

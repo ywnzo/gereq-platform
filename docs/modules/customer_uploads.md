@@ -7,9 +7,9 @@ Customer Uploads lets anonymous storefront visitors (the Vue/React shop frontend
 | Item | Value |
 | --- | --- |
 | Module id | `customer_uploads` |
-| Version | `1.99.0` (`modules/CustomerUploads/module.php`, `CustomerUploadsModule::version()`) |
-| Directory | `modules/CustomerUploads/` |
-| Class | `Modules\CustomerUploads\CustomerUploadsModule` |
+| Version | `2.0.0` (`modules/Shop/Submodules/CustomerUploads/module.php`, `CustomerUploadsModule::version()`) |
+| Directory | `modules/Shop/Submodules/CustomerUploads/` |
+| Class | `Modules\Shop\Submodules\CustomerUploads\CustomerUploadsModule` |
 | Requires | `core ^1.0` |
 | Optional | none |
 | Capabilities provided | `customer_uploads` (registered in `register()` with `CustomerUploadService` as the capability service) |
@@ -21,7 +21,7 @@ See `../architecture/module-system.md` for the manifest/`register()`/`boot()` li
 
 ## Domain model
 
-Single entity, `modules/CustomerUploads/Domain/CustomerUpload.php`.
+Single entity, `modules/Shop/Submodules/CustomerUploads/Domain/CustomerUpload.php`.
 
 | Entity | Table | Key fields | Relations |
 | --- | --- | --- | --- |

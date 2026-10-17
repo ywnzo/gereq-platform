@@ -1,16 +1,16 @@
 # Payment integrations: Comgate, Stripe, GoPay
 
-Three packages in `integrations/` implement `Modules\Payments\Application\PaymentGatewayInterface` and register themselves in `PaymentGatewayRegistry`: Comgate (`integrations/Comgate`), Stripe Checkout (`integrations/Stripe`) and GoPay (`integrations/GoPay`). The host module `modules/Payments` owns the `PaymentIntent`/`PaymentMethod` entities and the `PaymentService` that picks a gateway by the payment method's `provider` field; the storefront checkout (`modules/Shop/Application/CheckoutService.php`) creates the intent, redirects the customer to the gateway URL, and the final status is applied only from the provider's server-to-server notification handled by each package's `*InboundProvider`. General integration mechanics are in [index.md](index.md).
+Three packages in `integrations/` implement `Modules\Shop\Submodules\Payments\Application\PaymentGatewayInterface` and register themselves in `PaymentGatewayRegistry`: Comgate (`integrations/Comgate`), Stripe Checkout (`integrations/Stripe`) and GoPay (`integrations/GoPay`). The host module `modules/Shop/Submodules/Payments` owns the `PaymentIntent`/`PaymentMethod` entities and the `PaymentService` that picks a gateway by the payment method's `provider` field; the storefront checkout (`modules/Shop/Application/CheckoutService.php`) creates the intent, redirects the customer to the gateway URL, and the final status is applied only from the provider's server-to-server notification handled by each package's `*InboundProvider`. General integration mechanics are in [index.md](index.md).
 
-## Host contract (`modules/Payments`)
+## Host contract (`modules/Shop/Submodules/Payments`)
 
 | Piece | File | Notes |
 | --- | --- | --- |
-| Driver interface | `modules/Payments/Application/PaymentGatewayInterface.php` | `key()`, `createPayment(PaymentIntent $intent, PaymentMethod $method, array $context): array{status, redirect_url, external_id, payment_reference, spayd_payload, meta}`, `handleNotify(array $payload): array{ok, status, external_id, message}` |
-| Registry | `modules/Payments/Application/PaymentGatewayRegistry.php` | `register()`, `get(key)`, `getOrManual(key)`, `all()`; Payments registers `ManualBankGateway` (`modules/Payments/Application/Gateways/`) itself |
-| Orchestration | `modules/Payments/Application/PaymentService.php` | `createForOrder(Order, methodCode, context)`: resolves `PaymentMethod` by code, gateway by `strtolower($method->provider() ?: 'manual')`, creates `PaymentIntent`, calls `createPayment()`, stores `status` (`redirect`/`pending`/`failed`), `redirect_url`, `external_id`, `payment_reference`, `spayd_payload`, `meta`, emits event `payment.intent_created`. `markPaid(intent, externalId)` finalises. |
-| Payment methods admin | `/admin/payments/methods` (`modules/Payments/Http/PaymentMethodController.php`) | the **provider** field of a method must equal the gateway key (`comgate`, `stripe`, `gopay`, or empty → manual) |
-| REST | `/api/v1/payments/methods`, `/api/v1/payments/intents/{id}`, `/api/v1/payments/intents/{id}/mark-paid`, `/api/v1/payments/orders/{orderId}/intents` (scopes `payments.read` / `payments.write`) | `modules/Payments/Http/Api/*` |
+| Driver interface | `modules/Shop/Submodules/Payments/Application/PaymentGatewayInterface.php` | `key()`, `createPayment(PaymentIntent $intent, PaymentMethod $method, array $context): array{status, redirect_url, external_id, payment_reference, spayd_payload, meta}`, `handleNotify(array $payload): array{ok, status, external_id, message}` |
+| Registry | `modules/Shop/Submodules/Payments/Application/PaymentGatewayRegistry.php` | `register()`, `get(key)`, `getOrManual(key)`, `all()`; Payments registers `ManualBankGateway` (`modules/Shop/Submodules/Payments/Application/Gateways/`) itself |
+| Orchestration | `modules/Shop/Submodules/Payments/Application/PaymentService.php` | `createForOrder(Order, methodCode, context)`: resolves `PaymentMethod` by code, gateway by `strtolower($method->provider() ?: 'manual')`, creates `PaymentIntent`, calls `createPayment()`, stores `status` (`redirect`/`pending`/`failed`), `redirect_url`, `external_id`, `payment_reference`, `spayd_payload`, `meta`, emits event `payment.intent_created`. `markPaid(intent, externalId)` finalises. |
+| Payment methods admin | `/admin/payments/methods` (`modules/Shop/Submodules/Payments/Http/PaymentMethodController.php`) | the **provider** field of a method must equal the gateway key (`comgate`, `stripe`, `gopay`, or empty → manual) |
+| REST | `/api/v1/payments/methods`, `/api/v1/payments/intents/{id}`, `/api/v1/payments/intents/{id}/mark-paid`, `/api/v1/payments/orders/{orderId}/intents` (scopes `payments.read` / `payments.write`) | `modules/Shop/Submodules/Payments/Http/Api/*` |
 | Inbound webhooks (optional) | `src/Webhooks` — `InboundWebhookRegistry`, `POST /api/v1/webhooks/inbound/{provider}` | each package registers a `Gereq\Api\InboundWebhookProviderInterface` implementation when the Webhooks module class exists |
 
 ## Gateway flow
@@ -124,7 +124,7 @@ Note: unlike Comgate/Stripe, GoPay's browser `return_url` points at the notify e
 - Gateway credentials: Admin → Settings (`/admin/settings`, `src/Admin/Http/SettingsController.php`). Definitions are grouped by the owning module id; since `comgate`/`stripe`/`gopay` are not in the controller's known list, their keys appear in the **"other"** tab (`settings.group.other`), not under "payments". Encrypted keys are masked (`isSecretKey`).
 - Payment methods: Admin → Payments → Methods (`/admin/payments/methods`) — set `provider` to the gateway key, fees, instructions, active flag.
 - Enable/disable the plug-in: Admin → Modules → Plug-ins → Platby, or `php gereq module:enable comgate|stripe|gopay` (requires `payments` enabled).
-- Payment intents are visible through the Orders module and the REST API; there is no dedicated intent admin page in `modules/Payments`.
+- Payment intents are visible through the Orders module and the REST API; there is no dedicated intent admin page in `modules/Shop/Submodules/Payments`.
 
 ## Translations
 
