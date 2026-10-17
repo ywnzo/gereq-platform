@@ -26,7 +26,9 @@ form > .table,
     font-weight: var(--grq-weight-bold);
     letter-spacing: var(--grq-tracking-label);
     text-transform: uppercase;
-    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
+    backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
     position: sticky;
     top: 0;
     z-index: 2;
@@ -50,6 +52,8 @@ form > .table,
 .table th.is-sorted .table-sort__icon { opacity: 0.9; }
 .table td.is-num,
 .table th.is-num { text-align: right; font-variant-numeric: tabular-nums; }
+.table td.is-center,
+.table th.is-center { text-align: center; }
 .table td.is-mute { color: var(--text-muted); }
 .table tbody tr {
     transition: background 0.12s ease;
@@ -497,6 +501,9 @@ form > .table,
     gap: 6px;
     flex-shrink: 0;
 }
+.toolbar__toggles:empty {
+    display: none;
+}
 .toolbar__toggle {
     display: inline-flex;
     align-items: center;
@@ -600,6 +607,123 @@ form > .table,
 }
 .table-footer a:hover { color: var(--text); }
 
-.grq-module-child {
-    padding-inline-start: var(--grq-space-6, 1.5rem);
+/* Nested submodule rows: whole left edge reads as a sub-list under the parent. */
+.table:has(tr.grq-module-child-row) .table__check {
+    width: 3.75rem;
 }
+/* Collapsed by default (CSS), even before Alpine boots.
+   Visibility uses data-expanded (not .is-open) so Alpine :class on <tr> cannot wipe it. */
+.table tbody tr.grq-module-child-row,
+.table tbody tr.grq-module-child-row[hidden],
+.table tbody tr.grq-module-child-row.is-row-hidden {
+    display: none !important;
+}
+.table tbody tr.grq-module-child-row[data-expanded="1"]:not(.is-row-hidden):not([hidden]) {
+    display: table-row !important;
+}
+.table tbody tr:has(+ .grq-module-child-row[data-expanded="1"]:not(.is-row-hidden)) > td {
+    border-bottom-color: transparent;
+}
+.table tbody tr.grq-module-child-row > td {
+    padding-block: 0.5rem;
+    border-bottom-color: color-mix(in srgb, var(--border-soft) 55%, transparent);
+}
+.table tbody tr.grq-module-child-row:not(:has(+ .grq-module-child-row[data-expanded="1"]:not(.is-row-hidden))) > td {
+    border-bottom-color: var(--border-soft);
+}
+/* Keep module logo; small chevron badge overlays the corner. */
+button.module-row__icon.grq-module-children-toggle {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+.grq-module-children-toggle .module-row__icon-face {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+}
+.grq-module-children-toggle__badge {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 15px;
+    height: 15px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 0 0 2px var(--surface);
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.grq-module-children-toggle:hover .grq-module-children-toggle__badge {
+    border-color: color-mix(in srgb, var(--border) 60%, var(--text));
+}
+.grq-module-children-toggle.is-open .grq-module-children-toggle__badge {
+    transform: rotate(90deg);
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--surface);
+}
+.grq-module-children-toggle__badge .g-icon {
+    font-size: 12px;
+    line-height: 1;
+}
+.table tbody tr.grq-module-child-row:not(:hover):not(.is-selected) > td {
+    background: color-mix(in srgb, var(--text) 3.5%, var(--surface));
+}
+.table tbody tr.grq-module-child-row > td.table__check {
+    position: relative;
+    overflow: visible;
+    padding-inline-start: 2.35rem !important;
+}
+/* L-branch from under the parent into the indented child checkbox. */
+.table tbody tr.grq-module-child-row > td.table__check::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 1.15rem;
+    top: -0.85rem;
+    width: 0.85rem;
+    height: calc(50% + 0.85rem);
+    border-inline-start: 1.5px solid color-mix(in srgb, var(--border) 55%, var(--text));
+    border-bottom: 1.5px solid color-mix(in srgb, var(--border) 55%, var(--text));
+    border-end-start-radius: 4px;
+    pointer-events: none;
+}
+/* Continue the rail when more siblings follow. */
+.table tbody tr.grq-module-child-row:has(+ .grq-module-child-row) > td.table__check::after {
+    content: '';
+    position: absolute;
+    inset-inline-start: 1.15rem;
+    top: 50%;
+    bottom: 0;
+    border-inline-start: 1.5px solid color-mix(in srgb, var(--border) 55%, var(--text));
+    pointer-events: none;
+}
+.grq-module-child {
+    gap: 8px;
+}
+.grq-module-child .module-row__icon {
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    color: var(--gereq-muted);
+}
+.grq-module-child .module-row__icon .g-icon {
+    font-size: 16px;
+}
+.grq-module-child .table__title-text > a {
+    font-weight: 600;
+    font-size: var(--grq-text-sm);
+}
+.grq-module-child .table__meta {
+    font-size: var(--grq-text-xs);
+}
+
+.grq-module-children { margin-bottom: 20px; }

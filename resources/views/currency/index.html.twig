@@ -11,7 +11,7 @@
 
 {% block content %}
 <div class="list-shell detail-stack">
-    {% include 'currency/partials/manage.html.twig' with { items: items, rates: rates, embedded: false } %}
+    {% include 'currency/partials/manage.html.twig' with { items: items, rates: rates, tableHtml: tableHtml, embedded: false } %}
 </div>
 {% include 'currency/partials/manage_forms.html.twig' with { items: items } %}
 {% endblock %}

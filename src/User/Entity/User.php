@@ -78,6 +78,14 @@ class User
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $locale = null;
 
+    /**
+     * Per-account admin UI state (nav sections, module expansions, …).
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(name: 'ui_preferences', type: 'json', nullable: true)]
+    private ?array $uiPreferences = null;
+
     #[ORM\Column(name: 'totp_secret', length: 255, nullable: true)]
     private ?string $totpSecret = null;
 
@@ -373,6 +381,55 @@ class User
     {
         $this->locale = $locale !== null && $locale !== '' ? $locale : null;
         $this->touch();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function uiPreferences(): array
+    {
+        return is_array($this->uiPreferences) ? $this->uiPreferences : [];
+    }
+
+    /**
+     * Deep-merge allowed UI preference keys into the stored document.
+     *
+     * @param array<string, mixed> $patch
+     * @return array<string, mixed>
+     */
+    public function mergeUiPreferences(array $patch): array
+    {
+        $current = $this->uiPreferences();
+        foreach (['nav_groups', 'nav_trees'] as $mapKey) {
+            if (!isset($patch[$mapKey]) || !is_array($patch[$mapKey])) {
+                continue;
+            }
+            $base = isset($current[$mapKey]) && is_array($current[$mapKey]) ? $current[$mapKey] : [];
+            $changed = false;
+            foreach ($patch[$mapKey] as $id => $open) {
+                if (!is_string($id) || $id === '' || !is_bool($open)) {
+                    continue;
+                }
+                $base[$id] = $open;
+                $changed = true;
+            }
+            if ($changed) {
+                $current[$mapKey] = $base;
+            }
+        }
+        if (isset($patch['modules_expanded']) && is_array($patch['modules_expanded'])) {
+            $ids = [];
+            foreach ($patch['modules_expanded'] as $id) {
+                if (is_string($id) && $id !== '') {
+                    $ids[$id] = true;
+                }
+            }
+            $current['modules_expanded'] = array_keys($ids);
+        }
+        $this->uiPreferences = $current;
+        $this->touch();
+
+        return $current;
     }
 
     public function markLoggedIn(): void

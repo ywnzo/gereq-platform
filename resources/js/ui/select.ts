@@ -6,13 +6,24 @@ type GereqSelectCtx = {
     tone: string;
     query: string;
     searchable: boolean;
+    multiple: boolean;
+    clearable: boolean;
+    activeIndex: number;
     $el: HTMLElement;
     $refs: { value?: HTMLInputElement; search?: HTMLInputElement };
     applyFilter: () => void;
     close: () => void;
     applyOption: (option: HTMLElement) => void;
+    syncMultiUi: () => void;
+    syncValidateInput: () => void;
+    clearValue: () => void;
+    removeValue: (value: string) => void;
+    moveActive: (delta: number) => void;
+    activateOption: () => void;
+    visibleOptions: () => HTMLElement[];
     _onPointer: ((event: PointerEvent) => void) | null;
     _onRootClick: ((event: MouseEvent) => void) | null;
+    _onRootKeydown: ((event: KeyboardEvent) => void) | null;
     _onSearchInput: ((event: Event) => void) | null;
     _onSearchKeydown: ((event: KeyboardEvent) => void) | null;
 };
@@ -24,23 +35,50 @@ export function registerSelect(alpine: typeof Alpine): void {
         tone: '',
         query: '',
         searchable: false,
+        multiple: false,
+        clearable: false,
+        activeIndex: -1,
         _onPointer: null as ((event: PointerEvent) => void) | null,
         _onRootClick: null as ((event: MouseEvent) => void) | null,
+        _onRootKeydown: null as ((event: KeyboardEvent) => void) | null,
         _onSearchInput: null as ((event: Event) => void) | null,
         _onSearchKeydown: null as ((event: KeyboardEvent) => void) | null,
 
         init(this: GereqSelectCtx) {
             const root = this.$el;
             this.searchable = root.dataset.searchable === '1' || root.dataset.searchable === 'true';
-            const selected = root.querySelector('[data-selected="1"]') as HTMLElement | null;
-            this.label = selected?.dataset.label || root.dataset.placeholder || 'Vyberte';
-            this.tone = selected?.dataset.tone || '';
-            syncSelectIcon(root, selected);
+            this.multiple = root.dataset.multiple === '1' || root.dataset.multiple === 'true';
+            this.clearable = root.dataset.clearable === '1' || root.dataset.clearable === 'true';
 
-            // Native click — Alpine CSP @click on option/trigger is unreliable.
+            if (this.multiple) {
+                this.syncMultiUi();
+            } else {
+                const selected = root.querySelector('[data-selected="1"]') as HTMLElement | null;
+                this.label = selected?.dataset.label || root.dataset.placeholder || 'Vyberte';
+                this.tone = selected?.dataset.tone || '';
+                syncSelectIcon(root, selected);
+                syncClearVisibility(root, !!selected?.dataset.value);
+            }
+
             const onRootClick = (event: MouseEvent) => {
                 const target = event.target as HTMLElement | null;
                 if (!target) {
+                    return;
+                }
+
+                const clearBtn = target.closest('[data-select-clear]');
+                if (clearBtn && root.contains(clearBtn)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.clearValue();
+                    return;
+                }
+
+                const chipRemove = target.closest('[data-chip-remove]') as HTMLElement | null;
+                if (chipRemove && root.contains(chipRemove)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.removeValue(chipRemove.getAttribute('data-chip-remove') || '');
                     return;
                 }
 
@@ -48,6 +86,7 @@ export function registerSelect(alpine: typeof Alpine): void {
                 if (trigger && root.contains(trigger)) {
                     event.preventDefault();
                     this.open = !this.open;
+                    this.activeIndex = -1;
                     if (this.open && this.searchable) {
                         queueMicrotask(() => {
                             const input = root.querySelector<HTMLInputElement>('.g-select__search-input');
@@ -71,17 +110,70 @@ export function registerSelect(alpine: typeof Alpine): void {
             root.addEventListener('click', onRootClick);
             this._onRootClick = onRootClick;
 
+            const onRootKeydown = (event: KeyboardEvent) => {
+                const target = event.target as HTMLElement | null;
+                if (target?.closest('[data-chip-remove]') && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    this.removeValue(target.closest('[data-chip-remove]')?.getAttribute('data-chip-remove') || '');
+                    return;
+                }
+                if (target?.closest('[data-select-clear]') && (event.key === 'Enter' || event.key === ' ')) {
+                    event.preventDefault();
+                    this.clearValue();
+                    return;
+                }
+
+                if (!this.open) {
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === ' ') {
+                        const inTrigger = target?.closest('.g-select__trigger');
+                        if (inTrigger && root.contains(inTrigger)) {
+                            event.preventDefault();
+                            this.open = true;
+                            this.activeIndex = -1;
+                            this.moveActive(1);
+                        }
+                    }
+                    return;
+                }
+
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    this.close();
+                    return;
+                }
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    this.moveActive(1);
+                    return;
+                }
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    this.moveActive(-1);
+                    return;
+                }
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.activateOption();
+                }
+            };
+            root.addEventListener('keydown', onRootKeydown);
+            this._onRootKeydown = onRootKeydown;
+
             const search = root.querySelector<HTMLInputElement>('.g-select__search-input');
             if (search) {
                 const onSearchInput = (event: Event) => {
                     const t = event.target as HTMLInputElement;
                     this.query = t.value;
                     this.applyFilter();
+                    this.activeIndex = -1;
                 };
                 const onSearchKeydown = (event: KeyboardEvent) => {
                     if (event.key === 'Escape') {
                         event.preventDefault();
                         this.close();
+                    }
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+                        onRootKeydown(event);
                     }
                 };
                 search.addEventListener('input', onSearchInput);
@@ -93,6 +185,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             }
 
             this.applyFilter();
+            this.syncValidateInput();
 
             const onPointer = (event: PointerEvent) => {
                 if (!root.contains(event.target as Node)) {
@@ -110,6 +203,9 @@ export function registerSelect(alpine: typeof Alpine): void {
             if (this._onRootClick) {
                 this.$el.removeEventListener('click', this._onRootClick);
             }
+            if (this._onRootKeydown) {
+                this.$el.removeEventListener('keydown', this._onRootKeydown);
+            }
             if (this._onSearchInput || this._onSearchKeydown) {
                 const search = this.$el.querySelector<HTMLInputElement>('.g-select__search-input');
                 if (this._onSearchInput) {
@@ -123,12 +219,23 @@ export function registerSelect(alpine: typeof Alpine): void {
             }
         },
 
+        get rootClass(): string {
+            return this.open ? 'is-open' : '';
+        },
+
         get listClass(): string {
             return this.open ? 'is-open' : '';
         },
 
         get triggerClass(): string {
-            return this.open ? 'is-open' : '';
+            const classes = [];
+            if (this.open) {
+                classes.push('is-open');
+            }
+            if (this.multiple && this.$el.querySelectorAll('[data-select-values] input[name]').length > 0) {
+                classes.push('has-value');
+            }
+            return classes.join(' ');
         },
 
         get expandedAttr(): string {
@@ -153,11 +260,48 @@ export function registerSelect(alpine: typeof Alpine): void {
         close(this: GereqSelectCtx) {
             this.open = false;
             this.query = '';
+            this.activeIndex = -1;
             const input = this.$el.querySelector<HTMLInputElement>('.g-select__search-input');
             if (input) {
                 input.value = '';
             }
+            this.$el.querySelectorAll('.g-select__option.is-active').forEach((el) => el.classList.remove('is-active'));
             this.applyFilter();
+        },
+
+        visibleOptions(this: GereqSelectCtx): HTMLElement[] {
+            return Array.from(
+                this.$el.querySelectorAll<HTMLElement>('.g-select__option:not([data-empty="1"]):not(.is-filtered-out)'),
+            ).filter((opt) => !opt.hidden);
+        },
+
+        moveActive(this: GereqSelectCtx, delta: number) {
+            const options = this.visibleOptions();
+            if (options.length === 0) {
+                this.activeIndex = -1;
+                return;
+            }
+            let next = this.activeIndex + delta;
+            if (this.activeIndex < 0) {
+                next = delta > 0 ? 0 : options.length - 1;
+            }
+            if (next < 0) {
+                next = options.length - 1;
+            }
+            if (next >= options.length) {
+                next = 0;
+            }
+            this.activeIndex = next;
+            options.forEach((opt, i) => opt.classList.toggle('is-active', i === next));
+            options[next]?.scrollIntoView({ block: 'nearest' });
+        },
+
+        activateOption(this: GereqSelectCtx) {
+            const options = this.visibleOptions();
+            const opt = options[this.activeIndex];
+            if (opt) {
+                this.applyOption(opt);
+            }
         },
 
         applyFilter(this: GereqSelectCtx) {
@@ -174,7 +318,7 @@ export function registerSelect(alpine: typeof Alpine): void {
                 if (opt.dataset.empty === '1') {
                     return;
                 }
-                if ((opt.dataset.value || '') === '' && q !== '') {
+                if ((opt.dataset.value || '') === '' && q !== '' && !this.multiple) {
                     opt.hidden = true;
                     opt.classList.add('is-filtered-out');
                     return;
@@ -212,9 +356,154 @@ export function registerSelect(alpine: typeof Alpine): void {
             return true;
         },
 
-        applyOption(option: HTMLElement) {
+        clearValue(this: GereqSelectCtx) {
+            const root = this.$el;
+            if (this.multiple) {
+                const box = root.querySelector('[data-select-values]');
+                box?.querySelectorAll('input[name]').forEach((el) => el.remove());
+                rootUnselect(root);
+                this.syncMultiUi();
+                this.syncValidateInput();
+                dispatchNativeChange(root);
+                maybeAutosubmit(root, true);
+                return;
+            }
+            const input = root.querySelector<HTMLInputElement>('input.g-select__native:not(.g-select__native--validate)');
+            if (!input) {
+                return;
+            }
+            const changed = input.value !== '';
+            input.value = '';
+            input.setCustomValidity('');
+            this.label = root.dataset.placeholder || 'Vyberte';
+            this.tone = '';
+            syncSelectIcon(root, null);
+            rootUnselect(root);
+            syncClearVisibility(root, false);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            maybeAutosubmit(root, changed);
+        },
+
+        removeValue(this: GereqSelectCtx, value: string) {
+            if (!this.multiple || value === '') {
+                return;
+            }
+            const root = this.$el;
+            const opt = root.querySelector(`.g-select__option[data-value="${CSS.escape(value)}"]`) as HTMLElement | null;
+            if (opt?.classList.contains('is-selected')) {
+                this.applyOption(opt);
+                return;
+            }
+            root.querySelector(`[data-select-values] input[name][value="${CSS.escape(value)}"]`)?.remove();
+            this.syncMultiUi();
+            this.syncValidateInput();
+            dispatchNativeChange(root);
+            maybeAutosubmit(root, true);
+        },
+
+        syncValidateInput(this: GereqSelectCtx) {
+            const root = this.$el;
+            const validate = root.querySelector<HTMLInputElement>('.g-select__native--validate');
+            if (!validate) {
+                return;
+            }
+            const count = root.querySelectorAll('[data-select-values] input[name]').length;
+            validate.value = count > 0 ? '1' : '';
+            validate.setCustomValidity('');
+        },
+
+        syncMultiUi(this: GereqSelectCtx) {
+            const root = this.$el;
+            const chips = root.querySelector<HTMLElement>('[data-select-chips]');
+            const placeholder = root.querySelector<HTMLElement>('[data-select-placeholder]');
+            if (!chips) {
+                return;
+            }
+
+            const selected = Array.from(
+                root.querySelectorAll<HTMLInputElement>('[data-select-values] input[name]'),
+            ).map((input) => input.value);
+
+            chips.innerHTML = '';
+            selected.forEach((value) => {
+                const opt = root.querySelector(`.g-select__option[data-value="${CSS.escape(value)}"]`) as HTMLElement | null;
+                const label = opt?.dataset.label || value;
+                const chip = document.createElement('span');
+                chip.className = 'g-select__chip';
+                chip.dataset.value = value;
+
+                const text = document.createElement('span');
+                text.className = 'g-select__chip-label';
+                text.textContent = label;
+
+                const remove = document.createElement('span');
+                remove.className = 'g-select__chip-remove';
+                remove.setAttribute('data-chip-remove', value);
+                remove.setAttribute('role', 'button');
+                remove.setAttribute('tabindex', '0');
+                remove.setAttribute('aria-label', root.dataset.removeLabel || 'Remove');
+                const closeTpl =
+                    root.querySelector('[data-close-icon]') ||
+                    root.querySelector('[data-select-clear]');
+                if (closeTpl) {
+                    remove.innerHTML = closeTpl.innerHTML;
+                } else {
+                    remove.textContent = '×';
+                }
+
+                chip.appendChild(text);
+                chip.appendChild(remove);
+                chips.appendChild(chip);
+            });
+
+            placeholder?.classList.toggle('is-hidden', selected.length > 0);
+            syncClearVisibility(root, selected.length > 0);
+
+            root.querySelectorAll<HTMLElement>('.g-select__option:not([data-empty="1"])').forEach((opt) => {
+                const on = selected.includes(opt.dataset.value || '');
+                opt.classList.toggle('is-selected', on);
+                opt.dataset.selected = on ? '1' : '';
+                opt.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+        },
+
+        applyOption(this: GereqSelectCtx, option: HTMLElement) {
             const root = this.$el as HTMLElement;
-            const input = root.querySelector<HTMLInputElement>('input.g-select__native, input[type="hidden"]');
+
+            if (this.multiple) {
+                const value = option.dataset.value || '';
+                const box = root.querySelector('[data-select-values]');
+                if (!box) {
+                    return;
+                }
+                const existing = box.querySelector<HTMLInputElement>(`input[name][value="${CSS.escape(value)}"]`);
+                const changed = true;
+                if (existing) {
+                    existing.remove();
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.className = 'g-select__native';
+                    input.name = root.dataset.inputName || '';
+                    input.value = value;
+                    input.autocomplete = 'off';
+                    const validate = box.querySelector('.g-select__native--validate');
+                    if (validate) {
+                        box.insertBefore(input, validate);
+                    } else {
+                        box.appendChild(input);
+                    }
+                }
+                this.syncMultiUi();
+                this.syncValidateInput();
+                dispatchNativeChange(root);
+                // Keep the menu open for multi-select.
+                maybeAutosubmit(root, changed);
+                return;
+            }
+
+            const input = root.querySelector<HTMLInputElement>('input.g-select__native:not(.g-select__native--validate), input[type="hidden"]');
             if (!input) {
                 return;
             }
@@ -227,6 +516,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             syncSelectIcon(root, option);
             this.open = false;
             this.query = '';
+            this.activeIndex = -1;
             const search = root.querySelector<HTMLInputElement>('.g-select__search-input');
             if (search) {
                 search.value = '';
@@ -234,31 +524,24 @@ export function registerSelect(alpine: typeof Alpine): void {
             this.applyFilter();
             rootUnselect(root);
             option.classList.add('is-selected');
+            option.dataset.selected = '1';
+            option.setAttribute('aria-selected', 'true');
+            syncClearVisibility(root, next !== '');
             input.dispatchEvent(new Event('input', { bubbles: true }));
             input.dispatchEvent(new Event('change', { bubbles: true }));
-
-            if (root.dataset.autosubmit === '1' && changed) {
-                const form = root.closest('form');
-                if (form) {
-                    // After microtask — let Alpine update the label before navigation.
-                    // requestSubmit() fires submit event (native submit() does not) → loading bar.
-                    // Empty value (e.g. "All branches") must submit too.
-                    queueMicrotask(() => {
-                        window.gereq?.pageProgress?.start?.();
-                        if (typeof form.requestSubmit === 'function') {
-                            form.requestSubmit();
-                        } else {
-                            form.submit();
-                        }
-                    });
-                }
-            }
+            maybeAutosubmit(root, changed);
         },
     }));
 }
 
 function rootUnselect(root: HTMLElement): void {
-    root.querySelectorAll('.is-selected').forEach((node) => node.classList.remove('is-selected'));
+    root.querySelectorAll('.g-select__option.is-selected').forEach((node) => {
+        node.classList.remove('is-selected');
+        if (node instanceof HTMLElement) {
+            delete node.dataset.selected;
+            node.setAttribute('aria-selected', 'false');
+        }
+    });
 }
 
 function syncSelectIcon(root: HTMLElement, option: HTMLElement | null): void {
@@ -281,6 +564,38 @@ function syncSelectIcon(root: HTMLElement, option: HTMLElement | null): void {
     if (dot) {
         dot.hidden = false;
     }
+}
+
+function syncClearVisibility(root: HTMLElement, hasValue: boolean): void {
+    root.querySelectorAll('[data-select-clear]').forEach((el) => {
+        el.classList.toggle('is-hidden', !hasValue);
+    });
+}
+
+function dispatchNativeChange(root: HTMLElement): void {
+    const probe =
+        root.querySelector<HTMLInputElement>('.g-select__native--validate') ||
+        root.querySelector<HTMLInputElement>('input.g-select__native');
+    probe?.dispatchEvent(new Event('input', { bubbles: true }));
+    probe?.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function maybeAutosubmit(root: HTMLElement, changed: boolean): void {
+    if (root.dataset.autosubmit !== '1' || !changed) {
+        return;
+    }
+    const form = root.closest('form');
+    if (!form) {
+        return;
+    }
+    queueMicrotask(() => {
+        window.gereq?.pageProgress?.start?.();
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
+    });
 }
 
 /** "66KW" ≈ "66 kW"; keep dots in 1.6 */

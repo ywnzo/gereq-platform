@@ -89,7 +89,7 @@ Paths that hold user-visible files:
 | `storage/uploads/` | `FileManager` uploads (`src/File/FileManager.php`), Media module imports (`src/Media/Application/MediaImporter.php` also writes here) | Media module `GET /media/{id}/file` (`src/Media/MediaRegistrar.php`) |
 | `storage/uploads/brand/` | white-label logo/favicon uploaded in Admin → Settings (`src/Admin/Http/SettingsController.php`) | `GET /brand/asset/{name}` (`src/Http/BrandAssetController.php`) |
 | `public/brand/icons/`, `public/brand/logos/` | static default brand assets (default logo `/brand/icons/favicon.svg`, `src/Brand/Branding.php`) | nginx / PHP built-in server directly |
-| `storage/invoices/` | rendered invoices (`modules/Orders/Application/InvoiceIssuingService.php`) | Orders module |
+| `storage/invoices/` | rendered invoices (`modules/Shop/Submodules/Orders/Application/InvoiceIssuingService.php`) | Orders module |
 
 ## Mail (`config/mail.php`)
 
@@ -105,10 +105,12 @@ Transport: `Symfony\Component\Mailer\Mailer` built with `Transport::fromDsn(conf
 
 | Directory | What lives there | Created by |
 | --- | --- | --- |
-| `storage/cache/data` | app cache (`file` driver) | `CacheFactory` |
-| `storage/cache/doctrine` | Doctrine metadata/query cache (non-debug) | `EntityManagerFactory` |
-| `storage/cache/twig` | compiled Twig templates | `TwigFactory` |
-| `storage/cache/rate` | login rate-limit counters | `RateLimiter` |
+| `storage/cache/data` | app cache (`file` driver) | `StorageLayout` (boot) / `CacheFactory` |
+| `storage/cache/storefront` | storefront HTML/JSON pool | `StorageLayout` (boot) / `CacheFactory` |
+| `storage/cache/doctrine` | Doctrine metadata/query cache (non-debug) | `StorageLayout` (boot) / `EntityManagerFactory` |
+| `storage/cache/twig` | compiled Twig templates | `StorageLayout` (boot) / `TwigFactory` |
+| `storage/cache/rate` | login rate-limit counters | `StorageLayout` (boot) / `RateLimiter` |
+| `storage/cache/media` | resized media derivatives | `StorageLayout` (boot) / `MediaFileDelivery` |
 | `storage/logs/gereq.log` | application errors (`src/Http/ExceptionHandler.php`) | runtime |
 | `storage/logs/nplusone.log` | N+1 query report (debug, `serve-docker` TUI / `php gereq nn`) | runtime |
 | `storage/logs/bun-assets.log` | `bun run dev` output when started by `serve-docker --hot` | `AssetWatchProcess` |
@@ -123,7 +125,7 @@ Transport: `Symfony\Component\Mailer\Mailer` built with `Transport::fromDsn(conf
 | `storage/database.sqlite` | SQLite database (default `DB_DATABASE`) | `EntityManagerFactory` |
 | `storage/framework/phpunit` | PHPUnit cache (`phpunit.xml` `cacheDirectory`) | tests |
 
-Directory bootstrap happens in `bin/grq install`, `bin/grq install demo`, `make env` (`storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}`) and in the container entrypoint `docker/php/entrypoint.sh` (`chmod -R a+rwX storage`). Git tracks only `storage/.gitkeep`; everything else under `storage/` is gitignored (runtime). `.dockerignore` similarly excludes runtime dumps.
+Directory bootstrap: `Gereq\Foundation\StorageLayout::ensure()` runs on every `Application::create()`; `cache:clear` calls `ensureCache()` after wiping `storage/cache`; Docker `docker/php/entrypoint.sh` also `mkdir -p` the same tree and `chmod -R a+rwX storage`. Git tracks only `storage/.gitkeep`; everything else under `storage/` is gitignored (runtime). `.dockerignore` similarly excludes runtime dumps.
 
 ## Related
 

@@ -28,7 +28,7 @@ final class SetupMiddleware implements MiddlewareInterface
         }
 
         $name = (string) $request->attributes->get('_route', '');
-        if ($name === '' || str_starts_with($name, 'admin.setup') || $name === 'admin.logout') {
+        if ($name === '' || str_starts_with($name, 'admin.setup') || $name === 'admin.logout' || str_starts_with($name, 'admin.ares.')) {
             return $next($request);
         }
 

@@ -3,14 +3,15 @@
     --sidebar-w: 264px;
 }
 .sidebar {
-    background: var(--sidebar);
-    box-shadow: inset -1px 0 0 color-mix(in srgb, var(--border-soft) 85%, transparent);
+    background: var(--glass-sidebar, var(--sidebar));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 1.12));
+    backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 1.12));
+    box-shadow: inset -1px 0 0 color-mix(in srgb, var(--border-soft) 70%, transparent);
 }
 html.dark .sidebar,
 html[data-theme="gereq-dark"] .sidebar {
-    background:
-        linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 88%, #101012) 0%, var(--sidebar) 100%);
-    box-shadow: inset -1px 0 0 color-mix(in srgb, var(--border) 50%, transparent);
+    background: var(--glass-sidebar, var(--sidebar));
+    box-shadow: inset -1px 0 0 color-mix(in srgb, var(--border) 45%, transparent);
 }
 
 .sidebar__brand {
@@ -54,6 +55,9 @@ html[data-theme="gereq-dark"] .sidebar {
     color: var(--sidebar-muted);
     box-shadow: var(--shadow);
     flex-shrink: 0;
+    /* Collapse control stays opaque over glass rail. */
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }
 .sidebar .icon-btn.sidebar__collapse:hover,
 .sidebar .icon-btn.sidebar__collapse:focus-visible {
@@ -727,8 +731,9 @@ a.nav-flyout__title.is-active {
 }
 
 .topbar {
-    backdrop-filter: blur(10px);
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 1.12));
+    backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 1.12));
+    background: var(--glass-topbar, color-mix(in srgb, var(--surface) 84%, transparent));
 }
 
 /* Mobile drawer */

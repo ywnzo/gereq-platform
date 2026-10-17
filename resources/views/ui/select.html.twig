@@ -1,60 +1,139 @@
 {% set name = name|default('') %}
-{% set id = id|default('f-' ~ name) %}
+{% set base_name = name|replace({'[]': ''}) %}
+{% set id = id|default('f-' ~ base_name) %}
 {% set label = label|default('') %}
 {% set hint = hint|default('') %}
 {% set form = form|default(null) %}
-{% set value = old(name, value|default(''), form) %}
-{% set err = error(name, form) %}
-{% set required = field_required(name, form, required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
+{% set multiple = multiple|default(false) %}
+{% set searchable = searchable|default(false) %}
+{% set clearable = clearable|default(false) %}
+{% set autosubmit = autosubmit|default(false) %}
 {% set optional = optional|default(false) %}
 {% set extra = extra|default('') %}
-{% set placeholder = placeholder|default('ui.select.placeholder'|trans) %}
-{% set options = options|default([]) %}
-{% set searchable = searchable|default(false) %}
-{% set autosubmit = autosubmit|default(false) %}
+{% set placeholder = placeholder|default(multiple ? 'ui.select.placeholder_multi'|trans : 'ui.select.placeholder'|trans) %}
 {% set empty_label = empty_label|default('ui.select.empty'|trans) %}
+{% set options = options|default([]) %}
+{% set input_name = multiple ? (base_name ~ '[]') : base_name %}
+{% set raw_value = old(base_name, value|default(multiple ? [] : ''), form) %}
+{% if multiple %}
+    {% set selected_values = raw_value is iterable ? raw_value : (raw_value is same as(false) or raw_value is same as(null) or raw_value == '' ? [] : [raw_value]) %}
+    {% set selected_values = selected_values|map(v => v|trim)|filter(v => v != '') %}
+{% else %}
+    {% set value = raw_value is iterable ? (raw_value|first|default('')) : raw_value %}
+    {% set selected_values = value != '' and value is not null ? [value] : [] %}
+{% endif %}
+{% set err = error(base_name, form) %}
+{% set required = field_required(base_name, form, required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
 {% set described = [] %}
 {% if hint and not err %}{% set described = described|merge([id ~ '-hint']) %}{% endif %}
 {% if err %}{% set described = described|merge([id ~ '-error']) %}{% endif %}
+{% set selected_count = selected_values|length %}
 
-<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ name }}">
+<div class="g-field{% if err %} is-invalid{% endif %} {{ extra }}" data-field="{{ base_name }}">
     {% if label %}
         <span class="g-label" id="{{ id }}-label">
             <span>{{ label }}{% if optional %} <span class="g-optional">({{ 'common.optional'|trans }})</span>{% endif %}{% if required %} <span class="g-req" aria-hidden="true">*</span>{% endif %}</span>
         </span>
     {% endif %}
     <div
-        class="g-select{% if searchable %} g-select--search{% endif %}"
+        class="g-select{% if searchable %} g-select--search{% endif %}{% if multiple %} g-select--multi{% endif %}{% if clearable %} g-select--clearable{% endif %}"
         x-data="gereqSelect"
+        :class="rootClass"
         data-placeholder="{{ placeholder }}"
         {% if searchable %}data-searchable="1"{% endif %}
+        {% if multiple %}data-multiple="1"{% endif %}
+        {% if clearable %}data-clearable="1"{% endif %}
         {% if autosubmit %}data-autosubmit="1"{% endif %}
+        {% if required %}data-required="1"{% endif %}
+        data-input-name="{{ input_name }}"
+        data-remove-label="{{ 'ui.select.remove'|trans|e('html_attr') }}"
     >
-        <input type="text" class="g-select__native" name="{{ name }}" id="{{ id }}" value="{{ value }}" {% if required %}required{% endif %} x-ref="value" tabindex="-1" aria-hidden="true" autocomplete="off">
+        <span class="g-select__icon-tpl" data-close-icon hidden aria-hidden="true">{{ icon('close') }}</span>
+        <div class="g-select__values" data-select-values>
+            {% if multiple %}
+                {% for selected in selected_values %}
+                    <input type="hidden" class="g-select__native" name="{{ input_name }}" value="{{ selected }}" autocomplete="off">
+                {% endfor %}
+                {# Constraint target when empty (type=hidden is barred from HTML5 required). #}
+                <input
+                    type="text"
+                    class="g-select__native g-select__native--validate"
+                    id="{{ id }}"
+                    value="{{ selected_count > 0 ? '1' : '' }}"
+                    {% if required %}required{% endif %}
+                    tabindex="-1"
+                    aria-hidden="true"
+                    autocomplete="off"
+                >
+            {% else %}
+                <input
+                    type="text"
+                    class="g-select__native"
+                    name="{{ input_name }}"
+                    id="{{ id }}"
+                    value="{{ selected_values|first|default('') }}"
+                    {% if required %}required{% endif %}
+                    x-ref="value"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    autocomplete="off"
+                >
+            {% endif %}
+        </div>
         <button
             type="button"
             class="g-control g-select__trigger"
             :class="triggerClass"
             aria-haspopup="listbox"
             :aria-expanded="expandedAttr"
+            {% if multiple %}aria-multiselectable="true"{% endif %}
             {% if label %}aria-labelledby="{{ id }}-label"{% else %}aria-label="{{ placeholder }}"{% endif %}
             {% if err %}aria-invalid="true"{% endif %}
             {% if described %}aria-describedby="{{ described|join(' ') }}"{% endif %}
         >
-            <span class="g-select__icon-slot" x-ref="iconSlot" aria-hidden="true"></span>
-            <span class="g-select__dot" :class="dotClass" aria-hidden="true"></span>
-            <span class="g-select__label" x-text="label"></span>
-            <span class="g-select__chevron" aria-hidden="true"></span>
+            {% if multiple %}
+                <span class="g-select__chips" data-select-chips>
+                    {% for option in options %}
+                        {% set optValue = option.value is defined ? option.value : option %}
+                        {% set optLabelRaw = option.label is defined ? option.label : option %}
+                        {% set optLabel = optLabelRaw|trans %}
+                        {% if optValue in selected_values %}
+                            <span class="g-select__chip" data-value="{{ optValue }}">
+                                <span class="g-select__chip-label">{{ optLabel }}</span>
+                                <span class="g-select__chip-remove" data-chip-remove="{{ optValue }}" role="button" tabindex="0" aria-label="{{ 'ui.select.remove'|trans }}">{{ icon('close') }}</span>
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+                <span class="g-select__label g-select__label--placeholder{% if selected_count > 0 %} is-hidden{% endif %}" data-select-placeholder>{{ placeholder }}</span>
+            {% else %}
+                <span class="g-select__icon-slot" x-ref="iconSlot" aria-hidden="true"></span>
+                <span class="g-select__dot" :class="dotClass" aria-hidden="true"></span>
+                <span class="g-select__label" x-text="label"></span>
+            {% endif %}
+            {% if clearable %}
+                <span
+                    class="g-select__clear{% if selected_count == 0 %} is-hidden{% endif %}"
+                    data-select-clear
+                    role="button"
+                    tabindex="0"
+                    aria-label="{{ 'ui.select.clear'|trans }}"
+                >{{ icon('close') }}</span>
+            {% endif %}
+            <span class="g-select__chevron" aria-hidden="true">{{ icon('chevron-down') }}</span>
         </button>
-        <div class="g-select__list" :class="listClass" role="listbox" tabindex="-1">
+        <div class="g-select__list" :class="listClass" role="listbox" tabindex="-1"{% if multiple %} aria-multiselectable="true"{% endif %}>
             {% if searchable %}
                 <div class="g-select__search">
-                    <input
-                        type="search"
-                        class="g-select__search-input"
-                        placeholder="{{ 'ui.select.search'|trans }}"
-                        autocomplete="off"
-                    >
+                    <label class="g-select__search-field">
+                        <span class="g-select__search-icon" aria-hidden="true">{{ icon('search') }}</span>
+                        <input
+                            type="search"
+                            class="g-select__search-input"
+                            placeholder="{{ 'ui.select.search'|trans }}"
+                            autocomplete="off"
+                        >
+                    </label>
                 </div>
             {% endif %}
             <ul class="g-select__options">
@@ -67,15 +146,17 @@
                     {% set optTone = option.tone|default('') %}
                     {% set optIcon = option.icon|default('') %}
                     {% set optSearch = option.search|default(optLabel ~ ' ' ~ optDescLabel) %}
+                    {% set isSelected = optValue in selected_values %}
                     <li
-                        class="g-select__option{% if optValue == value %} is-selected{% endif %}"
+                        class="g-select__option{% if isSelected %} is-selected{% endif %}"
                         role="option"
                         data-value="{{ optValue }}"
                         data-label="{{ optLabel }}"
                         data-search="{{ optSearch }}"
+                        aria-selected="{{ isSelected ? 'true' : 'false' }}"
                         {% if optTone %}data-tone="{{ optTone }}"{% endif %}
                         {% if optIcon %}data-icon="1"{% endif %}
-                        {% if optValue == value %}data-selected="1"{% endif %}
+                        {% if isSelected %}data-selected="1"{% endif %}
                     >
                         {% if optIcon %}
                             <span class="g-select__icon" aria-hidden="true">{{ icon(optIcon) }}</span>
@@ -86,6 +167,7 @@
                             <span>{{ optLabel }}</span>
                             {% if optDescLabel %}<span class="g-select__option-desc">{{ optDescLabel }}</span>{% endif %}
                         </span>
+                        <span class="g-select__check" aria-hidden="true">{{ icon('check') }}</span>
                     </li>
                 {% endfor %}
                 {% if searchable %}

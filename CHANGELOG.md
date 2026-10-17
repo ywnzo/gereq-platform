@@ -10,6 +10,32 @@ Při releasu: bump `VERSION` (+ `composer.json` / `package.json`), zápis do té
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-17
+
+Commerce children žijí pod Shop / WebPlus, setup wizard umí profil provozovatele a výběr modulů, admin umí drift footprintu s volitelným patch bumpem a sjednocený select / UI preferences.
+
+### Added
+
+- Nested submodules: commerce děti (Orders, Products, Payments, Returns, Coupons, Warehouse, Bundles, Loyalty, CustomerUploads) pod `modules/Shop/Submodules/`; WebPlus Ai pod `modules/WebPlus/Submodules/Ai`.
+- Setup flow s profilem provozovatele (firma / osoba), katalogem modulů podle kategorií a krokem dashboard widgetů.
+- Detekce změn oproti nainstalovanému footprintu (`ModuleChangeDetector`), semver helper a `ModuleVersionBumper` — v adminu update s volitelným patch bumpem při driftu.
+- UI preferences uživatele (sidebar / hustota) a rozšířený select (searchable / multi / clearable).
+- `StorageLayout` — runtime adresáře pod `storage/` se zakládají při startu, po `cache:clear` a v Docker entrypointu.
+- Admin tabulka měn jako sdílená komponenta; vylepšené module table (submodules, children).
+
+### Changed
+
+- Odstraněny top-level git submodules Bundles, Coupons, CustomerUploads, Loyalty, Orders, Payments, Products, Returns, Warehouse a WebPlusAi z platform `.gitmodules`.
+- Integrace Comgate / GoPay / Stripe / Packeta a core odkazy míří na `Modules\Shop\Submodules\…`; vyžadují payments/orders/products `^2.0` dle manifestů.
+- Kernel CSS (forms, tables, layout, panels, auth) a setup/modules/settings Twig.
+- Piny modulů: Shop `2.2.5`, WebPlus `2.1.1`, Cms `2.16.6` a navazující patch bump dependent modulů.
+
+### Upgrade notes
+
+- Platforma **0.5.5 → 0.6.0**. Po pulli aktualizovat submodules (`./bin/grq modules pull`) a v adminu spustit update u Shop, WebPlus a dependent modulů (migrace + permissions).
+- Starší top-level cesty `modules/Products` atd. už platforma nepinuje — zdroj je `modules/Shop/Submodules/…`.
+- Docker / fresh install: entrypoint zakládá rozšířený strom `storage/cache/*` a související runtime adresáře.
+
 ## [0.5.5] — 2026-10-13
 
 Souhrn změn od platformy **0.5.0** do **0.5.5**, včetně aktuálních úprav CMS editoru a navazující Vue knihovny. Dílčí verze 0.5.1–0.5.4 nejsou v tomto changelogu samostatně rozepisované.

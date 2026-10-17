@@ -7,12 +7,157 @@ body.admin-body {
 }
 
 .app-shell {
+    position: relative;
     display: flex;
+    width: 100%;
     min-height: 100dvh;
     height: 100%;
     max-height: 100dvh;
     overflow: hidden;
     background: var(--background);
+}
+
+/*
+ * Geometric ambient as real SVG (not ::mask).
+ * Blur on the painted SVG layer — CSS filter+mask is sharp in Chromium.
+ */
+.app-ambient {
+    --ambient-px: 0;
+    --ambient-py: 0;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    color: var(--primary);
+}
+/* Pointer parallax wrappers — opposite directions for depth. */
+.app-ambient__parallax {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    will-change: transform;
+}
+.app-ambient__parallax--a {
+    transform: translate3d(
+        calc(var(--ambient-px) * 28px),
+        calc(var(--ambient-py) * 20px),
+        0
+    );
+}
+.app-ambient__parallax--b {
+    transform: translate3d(
+        calc(var(--ambient-px) * -40px),
+        calc(var(--ambient-py) * -30px),
+        0
+    );
+}
+.app-ambient__layer {
+    position: absolute;
+    inset: -16%;
+    width: 132%;
+    height: 132%;
+    display: block;
+    fill: currentColor;
+    stroke: currentColor;
+    opacity: 0.42;
+    /* Stronger blur keeps ribbons soft instead of solid color patches. */
+    filter: blur(78px);
+    -webkit-filter: blur(78px);
+    will-change: transform;
+    transform-origin: center;
+}
+.app-ambient__layer--a {
+    opacity: 0.44;
+    animation: ambient-geo-a 18s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+.app-ambient__layer--b {
+    opacity: 0.33;
+    filter: blur(96px);
+    -webkit-filter: blur(96px);
+    animation: ambient-geo-b 24s cubic-bezier(0.4, 0.1, 0.5, 0.9) infinite;
+    animation-delay: -6s;
+}
+html.dark .app-ambient__layer--a,
+html[data-theme="gereq-dark"] .app-ambient__layer--a {
+    opacity: 0.48;
+}
+html.dark .app-ambient__layer--b,
+html[data-theme="gereq-dark"] .app-ambient__layer--b {
+    opacity: 0.37;
+}
+
+/* Wilder counter-drift — uneven path, bigger swings, skew for organic feel. */
+@keyframes ambient-geo-a {
+    0% {
+        transform: translate3d(-6%, -5%, 0) rotate(-6deg) scale(0.96) skewX(-2deg);
+        opacity: 0.38;
+    }
+    18% {
+        transform: translate3d(5%, -4%, 0) rotate(4deg) scale(1.08) skewX(3deg);
+        opacity: 0.48;
+    }
+    36% {
+        transform: translate3d(7%, 3%, 0) rotate(8deg) scale(1.02) skewY(2deg);
+        opacity: 0.4;
+    }
+    55% {
+        transform: translate3d(-2%, 7%, 0) rotate(-3deg) scale(1.12) skewX(-4deg);
+        opacity: 0.5;
+    }
+    72% {
+        transform: translate3d(-8%, 2%, 0) rotate(-7deg) scale(0.94) skewY(-3deg);
+        opacity: 0.42;
+    }
+    88% {
+        transform: translate3d(3%, -6%, 0) rotate(5deg) scale(1.06) skewX(2deg);
+        opacity: 0.46;
+    }
+    100% {
+        transform: translate3d(-6%, -5%, 0) rotate(-6deg) scale(0.96) skewX(-2deg);
+        opacity: 0.38;
+    }
+}
+@keyframes ambient-geo-b {
+    0% {
+        transform: translate3d(7%, 5%, 0) rotate(5deg) scale(1.1) skewY(3deg);
+        opacity: 0.28;
+    }
+    20% {
+        transform: translate3d(-6%, 4%, 0) rotate(-8deg) scale(0.92) skewX(-3deg);
+        opacity: 0.38;
+    }
+    40% {
+        transform: translate3d(-4%, -7%, 0) rotate(3deg) scale(1.14) skewY(-2deg);
+        opacity: 0.32;
+    }
+    60% {
+        transform: translate3d(8%, -3%, 0) rotate(9deg) scale(0.95) skewX(4deg);
+        opacity: 0.4;
+    }
+    80% {
+        transform: translate3d(2%, 8%, 0) rotate(-4deg) scale(1.08) skewY(2deg);
+        opacity: 0.3;
+    }
+    100% {
+        transform: translate3d(7%, 5%, 0) rotate(5deg) scale(1.1) skewY(3deg);
+        opacity: 0.28;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .app-ambient__layer {
+        animation: none;
+        will-change: auto;
+    }
+    .app-ambient__parallax {
+        transform: none;
+        will-change: auto;
+    }
+}
+@media (prefers-reduced-transparency: reduce) {
+    .app-ambient {
+        display: none;
+    }
 }
 
 .sidebar {
@@ -169,12 +314,15 @@ body.admin-body {
 .nav-item--child { padding-left: 34px; font-size: var(--grq-text-md); color: var(--sidebar-muted); }
 
 .app-main {
-    flex: 1;
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    width: 100%;
     min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    background: var(--background);
+    background: transparent;
     overflow: hidden;
 }
 
@@ -189,8 +337,8 @@ body.admin-body {
     top: 0;
     z-index: 20;
     flex-shrink: 0;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    background: var(--glass-topbar, var(--surface));
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
 }
 /* Lift the menu's stacking context above workspace panels, below global overlays. */
 .topbar:has(.user-menu > .flyout.is-open) {

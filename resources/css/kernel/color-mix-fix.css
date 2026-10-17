@@ -79,27 +79,30 @@ html[data-theme="gereq-dark"] .publish-badge__chip.badge--warn .publish-badge__c
     background: color-mix(in srgb, #6366f1 10%, var(--surface));
 }
 
-.table .badge--ok,
-.table .badge--warn,
-.table .badge--danger,
-.table .badge--info,
-.table .badge--muted {
-    color: color-mix(in srgb, var(--primary) 40%, var(--text));
-    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-    background: color-mix(in srgb, var(--primary) 16%, var(--surface));
-}
-
 .table .badge--ok {
-    border-color: color-mix(in srgb, var(--success) 42%, var(--border));
-    background: color-mix(in srgb, var(--success) 12%, var(--surface));
+    color: color-mix(in srgb, var(--success, #4ade80) 78%, var(--text));
+    border-color: color-mix(in srgb, var(--success, #4ade80) 42%, var(--border));
+    background: color-mix(in srgb, var(--success, #4ade80) 14%, var(--surface));
 }
 .table .badge--warn {
-    border-color: color-mix(in srgb, var(--warning) 42%, var(--border));
-    background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+    color: color-mix(in srgb, var(--warning, #fbbf24) 78%, var(--text));
+    border-color: color-mix(in srgb, var(--warning, #fbbf24) 42%, var(--border));
+    background: color-mix(in srgb, var(--warning, #fbbf24) 14%, var(--surface));
 }
 .table .badge--danger {
-    border-color: color-mix(in srgb, var(--danger) 38%, var(--border));
-    background: var(--danger-bg, color-mix(in srgb, var(--danger) 10%, var(--surface)));
+    color: color-mix(in srgb, var(--danger, #f87171) 78%, var(--text));
+    border-color: color-mix(in srgb, var(--danger, #f87171) 38%, var(--border));
+    background: var(--danger-bg, color-mix(in srgb, var(--danger, #f87171) 12%, var(--surface)));
+}
+.table .badge--info {
+    color: color-mix(in srgb, #38bdf8 72%, var(--text));
+    border-color: color-mix(in srgb, #38bdf8 38%, var(--border));
+    background: color-mix(in srgb, #38bdf8 14%, var(--surface));
+}
+.table .badge--muted {
+    color: var(--text-muted);
+    border-color: var(--border);
+    background: color-mix(in srgb, var(--text-muted) 10%, var(--surface));
 }
 
 .bulk-bar {

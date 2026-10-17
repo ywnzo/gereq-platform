@@ -355,8 +355,10 @@
     margin-bottom: 14px;
 }
 .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--glass-surface, var(--surface));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
+    backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
+    border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
     border-radius: var(--radius);
     padding: 12px 14px;
 }
@@ -371,8 +373,10 @@
     margin-bottom: 14px;
 }
 .system-strip > div {
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: var(--glass-surface, var(--surface));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
+    backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
+    border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
     border-radius: var(--radius);
     padding: 12px 14px;
     display: flex;

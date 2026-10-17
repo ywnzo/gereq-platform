@@ -1,0 +1,30 @@
+{#
+  Modern ui()->select for settings booleans / option maps.
+  Expects: field, value
+  Optional: options (assoc map), label, hint, bare (no label/hint on the control)
+#}
+{% set bare = bare|default(false) %}
+{% set optionMap = options|default(null) %}
+{% if optionMap is null or optionMap is empty %}
+    {% set selectOptions = [
+        { value: '1', label: 'common.yes'|trans },
+        { value: '0', label: 'common.no'|trans },
+    ] %}
+    {% set selectValue = value ? '1' : '0' %}
+{% else %}
+    {% set selectOptions = [] %}
+    {% for optionValue, optionLabel in optionMap %}
+        {% set selectOptions = selectOptions|merge([{ value: (optionValue ~ ''), label: optionLabel|trans }]) %}
+    {% endfor %}
+    {% set selectValue = value is same as(null) ? '' : (value ~ '') %}
+{% endif %}
+{{ ui().select({
+    name: field,
+    label: bare ? '' : (label|default('')),
+    hint: bare ? '' : (hint|default('')),
+    value: selectValue,
+    options: selectOptions,
+    searchable: selectOptions|length > 8,
+    form: null,
+    extra: extra|default(''),
+})|raw }}

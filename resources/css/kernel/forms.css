@@ -325,20 +325,45 @@ input.g-control[type="search"]::-webkit-search-results-decoration {
 .textarea-shell__action:hover { border-color: var(--gereq-ink); }
 
 .g-select { position: relative; }
+/* Open menu must paint above following panels (backdrop-filter creates stacking contexts). */
+.g-select.is-open {
+    z-index: 80;
+}
+.panel:has(.g-select.is-open),
+.hook-section:has(.g-select.is-open),
+.design-panel:has(.g-select.is-open),
+.g-drawer__body:has(.g-select.is-open),
+.detail-stack:has(.g-select.is-open) > .panel:has(.g-select.is-open) {
+    position: relative;
+    z-index: 8;
+}
+.g-select__icon-tpl { display: none !important; }
 .g-select__trigger {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 0.5rem;
     text-align: left;
     cursor: pointer;
-    /* button reset — keep size tokens from .g-control */
     font-family: inherit;
     font-size: var(--control-font);
     font-weight: 500;
     line-height: var(--control-line);
+    background: var(--glass-surface, var(--surface-2));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 1.2));
+    backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 1.2));
 }
-.g-select__label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-select__label {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.g-select__label--placeholder {
+    color: var(--text-soft);
+    font-weight: 450;
+}
+.g-select__label--placeholder.is-hidden { display: none; }
 .g-select__icon-slot,
 .g-select__icon {
     display: inline-flex;
@@ -376,56 +401,131 @@ input.g-control[type="search"]::-webkit-search-results-decoration {
 .g-select__dot--out_of_service { background: var(--danger, #ef4444); }
 .g-select__dot--returned_to_client { background: #6366f1; }
 .g-select__chevron {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-right: 1.6px solid currentColor;
-    border-bottom: 1.6px solid currentColor;
-    transform: rotate(45deg) translateY(-2px);
-    opacity: 0.6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    margin-left: auto;
+    color: var(--text-muted);
+    opacity: 0.75;
+    transition: transform 0.16s ease, color 0.12s ease;
 }
-.g-select__trigger.is-open .g-select__chevron { transform: rotate(225deg) translateY(-2px); }
+.g-select__chevron .g-icon,
+.g-select__chevron .material-symbols-outlined {
+    font-size: 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+.g-select__trigger.is-open .g-select__chevron {
+    transform: rotate(180deg);
+    color: var(--text);
+    opacity: 1;
+}
+.g-select__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.35rem;
+    height: 1.35rem;
+    margin-left: 0.15rem;
+    border-radius: 999px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.g-select__clear:hover {
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+    color: var(--text);
+}
+.g-select__clear.is-hidden { display: none; }
+.g-select__clear .g-icon,
+.g-select__clear .material-symbols-outlined {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+}
 .g-select__list {
     display: none;
     position: absolute;
-    z-index: 40;
+    z-index: 90;
     inset-inline: 0;
     top: calc(100% + 6px);
     max-height: 18rem;
     overflow: hidden;
     margin: 0;
-    padding: 0;
+    padding: 0.3rem;
     list-style: none;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 12px 40px rgb(10 11 10 / 0.08);
+    background: var(--glass-surface, var(--surface));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturate, 1.28));
+    backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturate, 1.28));
+    border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+    border-radius: calc(var(--radius) + 2px);
+    box-shadow:
+        0 4px 6px rgb(10 11 10 / 0.04),
+        0 16px 40px rgb(10 11 10 / 0.12);
 }
 .g-select__list.is-open { display: flex; flex-direction: column; }
 .g-select__search {
     flex-shrink: 0;
-    padding: 0.5rem 0.65rem 0.35rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    padding: 0.35rem 0.35rem 0.45rem;
+}
+.g-select__search-field {
+    position: relative;
+    display: block;
+}
+.g-select__search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+.g-select__search-icon .g-icon,
+.g-select__search-icon .material-symbols-outlined {
+    font-size: 1.1rem;
+    width: 1.1rem;
+    height: 1.1rem;
 }
 .g-select__search-input {
     width: 100%;
     box-sizing: border-box;
     border: 1px solid var(--border);
-    border-radius: calc(var(--radius) - 2px);
+    border-radius: var(--control-radius);
     background: var(--surface-2, var(--surface));
     color: inherit;
     font: inherit;
-    font-size: 0.9rem;
-    padding: 0.45rem 0.65rem;
+    font-size: var(--grq-text-sm);
+    /* Longhands — WebKit search often ignores shorthand padding-left. */
+    padding-block: 0.5rem;
+    padding-inline-end: 0.7rem;
+    padding-inline-start: 2.55rem;
+    -webkit-appearance: none;
+    appearance: textfield;
+}
+.g-select__search-input::-webkit-search-decoration,
+.g-select__search-input::-webkit-search-cancel-button,
+.g-select__search-input::-webkit-search-results-button,
+.g-select__search-input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
 }
 .g-select__search-input:focus {
-    outline: 2px solid color-mix(in srgb, var(--gereq-signal) 55%, transparent);
-    outline-offset: 1px;
+    outline: none;
+    border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 .g-select__options {
     margin: 0;
-    padding: 4px 0;
+    padding: 0;
     list-style: none;
     overflow: auto;
     max-height: 14rem;
@@ -433,19 +533,116 @@ input.g-control[type="search"]::-webkit-search-results-decoration {
 .g-select__option {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 0.65rem 0.9rem;
+    gap: 0.65rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: calc(var(--control-radius) - 1px);
     cursor: pointer;
+    transition: background 0.1s ease;
 }
 .g-select__option[hidden],
 .g-select__option.is-filtered-out { display: none !important; }
 .g-select__option:hover,
-.g-select__option.is-selected { background: var(--surface-2); }
-.g-select__option.is-selected { background: color-mix(in srgb, var(--gereq-signal) 32%, var(--gereq-white, #fff)); }
+.g-select__option.is-active {
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface-2, var(--surface)));
+}
+.g-select__option.is-selected {
+    background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+}
+.g-select__option.is-selected:hover,
+.g-select__option.is-selected.is-active {
+    background: color-mix(in srgb, var(--primary) 22%, var(--surface));
+}
 .g-select__option--empty { cursor: default; }
 .g-select__option--empty:hover { background: transparent; }
-.g-select__option-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.g-select__option-desc { font-size: var(--grq-text-sm); color: var(--gereq-muted); }
+.g-select__option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+.g-select__option-desc { font-size: var(--grq-text-sm); color: var(--gereq-muted, var(--text-muted)); }
+.g-select__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--primary);
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.g-select__option.is-selected .g-select__check {
+    opacity: 1;
+    transform: scale(1);
+}
+.g-select__check .g-icon,
+.g-select__check .material-symbols-outlined {
+    font-size: 1.1rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+}
+
+/* Multi-select chips */
+.g-select--multi .g-select__trigger {
+    height: auto;
+    min-height: var(--control-h);
+    flex-wrap: wrap;
+    align-items: center;
+    padding-block: 0.35rem;
+    row-gap: 0.35rem;
+}
+.g-select__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    min-width: 0;
+    flex: 1;
+}
+.g-select__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    max-width: 100%;
+    padding: 0.15rem 0.2rem 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+    color: var(--text);
+    font-size: var(--grq-text-sm);
+    font-weight: 550;
+    line-height: 1.3;
+}
+.g-select__chip-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.g-select__chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 999px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.g-select__chip-remove:hover {
+    background: color-mix(in srgb, var(--text) 12%, transparent);
+    color: var(--text);
+}
+.g-select__chip-remove .g-icon,
+.g-select__chip-remove .material-symbols-outlined {
+    font-size: 0.95rem;
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
 /* Participates in HTML5 constraint validation (type=hidden is barred). */
 .g-select__native {
     position: absolute;
@@ -459,6 +656,7 @@ input.g-control[type="search"]::-webkit-search-results-decoration {
     opacity: 0;
     pointer-events: none;
 }
+.g-select__values { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 .g-check, .g-radio, .g-switch { display: block; }
 .g-check__row, .g-radio, .g-switch {

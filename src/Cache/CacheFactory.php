@@ -30,7 +30,7 @@ final class CacheFactory
             'array' => new ArrayAdapter(),
             'redis' => $this->redisOrFile($namespace),
             'database', 'db' => $this->database($namespace),
-            default => new FilesystemAdapter($namespace, 0, $this->basePath . '/storage/cache/data'),
+            default => new FilesystemAdapter($namespace, 0, $this->ensureDir('storage/cache/data')),
         };
     }
 
@@ -50,12 +50,7 @@ final class CacheFactory
             }
         }
 
-        $dir = $this->basePath . '/storage/cache/storefront';
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
-        return new FilesystemAdapter($namespace, 0, $dir);
+        return new FilesystemAdapter($namespace, 0, $this->ensureDir('storage/cache/storefront'));
     }
 
     private function redisOrFile(string $namespace): CacheItemPoolInterface
@@ -63,8 +58,18 @@ final class CacheFactory
         try {
             return $this->redis($namespace);
         } catch (\Throwable) {
-            return new FilesystemAdapter($namespace, 0, $this->basePath . '/storage/cache/data');
+            return new FilesystemAdapter($namespace, 0, $this->ensureDir('storage/cache/data'));
         }
+    }
+
+    private function ensureDir(string $relative): string
+    {
+        $dir = $this->basePath . '/' . ltrim($relative, '/');
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new \RuntimeException('Unable to create cache directory: ' . $dir);
+        }
+
+        return $dir;
     }
 
     private function redis(string $namespace): CacheItemPoolInterface

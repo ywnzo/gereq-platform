@@ -146,14 +146,28 @@
     /* Ghost = bordered transparent (secondary chrome). Text stays chrome-less. */
     .btn--ghost,
     .btn-ghost {
-        --btn-bg: transparent;
+        /* Light: ink-tinted border so the outline reads on soft paper / glass. */
+        --btn-bg: color-mix(in srgb, var(--surface) 42%, transparent);
         --btn-fg: var(--text);
-        --btn-border: var(--border);
-        --btn-hover-bg: var(--hover-strong);
+        --btn-border: color-mix(in srgb, var(--text) 26%, var(--border));
+        --btn-hover-bg: color-mix(in srgb, var(--hover-strong) 80%, var(--surface));
         --btn-hover-fg: var(--text);
-        --btn-hover-border: color-mix(in srgb, var(--text) 28%, var(--border));
+        --btn-hover-border: color-mix(in srgb, var(--text) 40%, var(--border));
         --btn-active-bg: color-mix(in srgb, var(--text) 8%, transparent);
-        box-shadow: none;
+        -webkit-backdrop-filter: blur(8px) saturate(1.08);
+        backdrop-filter: blur(8px) saturate(1.08);
+        box-shadow: 0 1px 0 color-mix(in srgb, #fff 55%, transparent) inset;
+    }
+    html.dark .btn--ghost,
+    html.dark .btn-ghost,
+    html[data-theme="gereq-dark"] .btn--ghost,
+    html[data-theme="gereq-dark"] .btn-ghost {
+        /* Dark: soft frosted edge (the look that already reads well). */
+        --btn-bg: color-mix(in srgb, #fff 5%, transparent);
+        --btn-border: color-mix(in srgb, #fff 26%, transparent);
+        --btn-hover-bg: color-mix(in srgb, #fff 9%, transparent);
+        --btn-hover-border: color-mix(in srgb, #fff 40%, transparent);
+        box-shadow: 0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset;
     }
 
     .btn--link,

@@ -8,6 +8,7 @@ use Gereq\Admin\CommandPalette\CommandPalette;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Router;
+use Gereq\Module\ModuleChangeDetector;
 use Gereq\Module\ModuleManager;
 use Gereq\Module\ModuleUpdater;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,6 +26,7 @@ final class ModuleCurrentMiddleware implements MiddlewareInterface
     public function __construct(
         private readonly ModuleUpdater $updater,
         private readonly ModuleManager $modules,
+        private readonly ModuleChangeDetector $changes,
         private readonly Environment $twig,
         private readonly Router $router,
         private readonly Authenticator $auth,
@@ -40,6 +42,7 @@ final class ModuleCurrentMiddleware implements MiddlewareInterface
         return new self(
             $this->updater,
             $this->modules,
+            $this->changes,
             $this->twig,
             $this->router,
             $this->auth,
@@ -90,11 +93,19 @@ final class ModuleCurrentMiddleware implements MiddlewareInterface
             $installed = null;
         }
 
+        $changeSet = null;
+        try {
+            $changeSet = $this->changes->detect($this->moduleId);
+        } catch (\Throwable) {
+            $changeSet = null;
+        }
+
         $html = $this->twig->render('admin/modules/update_required.html.twig', [
             'pageTitle' => $this->translator->trans('admin.modules.gate.title'),
             'manifest' => $manifest,
             'installedVersion' => $installed,
             'returnUrl' => $request->getRequestUri(),
+            'changeSet' => $changeSet,
             'menu' => $this->menu->tree($user, $this->router, $request),
             'commands' => $this->palette->all($user),
             'user' => $user,

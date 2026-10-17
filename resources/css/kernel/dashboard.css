@@ -67,10 +67,13 @@
     margin: 0 0 18px;
     padding: 18px 18px 16px;
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    border: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
     background:
-        radial-gradient(900px 180px at 0% 0%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 55%),
-        var(--surface);
+        radial-gradient(900px 180px at 0% 0%, rgb(255 255 255 / 0.06), transparent 55%),
+        var(--glass-surface, var(--surface));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.1));
+    backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.1));
+    box-shadow: 0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset;
 }
 .dash-hero h1 { margin: 0; font-size: clamp(1.45rem, 2.2vw, 1.9rem); }
 .dash-hero .eyebrow { margin-bottom: 8px; }
@@ -88,13 +91,17 @@
     position: relative;
     overflow: hidden;
     border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+    background: var(--glass-surface, var(--surface));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.1));
+    backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.1));
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent);
+    box-shadow:
+        0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
+        0 1px 0 color-mix(in srgb, var(--text) 3%, transparent);
     min-width: 0;
 }
 .metrics > div:not(:first-child) {

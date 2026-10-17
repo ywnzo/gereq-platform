@@ -202,7 +202,26 @@ final class Ui
         return $this->partial('ui/input', $data);
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * Custom select (single / searchable / multi / clearable).
+     *
+     * @param array{
+     *     name?: string,
+     *     label?: string,
+     *     value?: string|list<string>|null,
+     *     options?: list<array{value?: string, label?: string, description?: string, tone?: string, icon?: string, search?: string}|string>,
+     *     searchable?: bool,
+     *     multiple?: bool,
+     *     clearable?: bool,
+     *     autosubmit?: bool,
+     *     placeholder?: string,
+     *     form?: string|null,
+     *     required?: bool|null,
+     *     optional?: bool,
+     *     hint?: string,
+     *     extra?: string
+     * } $data
+     */
     public function select(array $data): string
     {
         return $this->partial('ui/select', $data);

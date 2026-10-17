@@ -84,44 +84,52 @@
                                         {% set definition = item.definition %}
                                         {% set field = key|replace({'.': '__'}) %}
                                         {% set helpKey = definition.label ~ '.help' %}
+                                        {% set helpText = helpKey|trans != helpKey and key != 'admin.dashboard.layout' ? helpKey|trans : '' %}
                                         {% set isColor = 'color_' in key or key ends with '_primary' %}
                                         {% set isWide = key in wideKeys %}
                                         {% set isWidget = isColor or isWide %}
-                                        {% if isWidget %}
-                                            <div class="settings-row{% if isWide %} field--full{% endif %}">
-                                            <span class="settings-row__label">{{ definition.label|trans }}</span>
+                                        {% set isChoice = definition.type == 'boolean' or (definition.options is defined and definition.options is not empty) %}
+                                        {% if isChoice and not isWidget %}
+                                            {% include 'admin/settings/_choice_select.html.twig' with {
+                                                field: field,
+                                                value: values[key],
+                                                options: definition.type == 'boolean' ? null : definition.options,
+                                                label: definition.label|trans,
+                                                hint: helpText,
+                                            } %}
                                         {% else %}
-                                            <label class="field">
-                                            <span>{{ definition.label|trans }}</span>
-                                        {% endif %}
-                                            {% if definition.type == 'boolean' %}
-                                                <select class="input" name="{{ field }}">
-                                                    <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
-                                                    <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
-                                                </select>
-                                            {% elseif definition.options is defined and definition.options is not empty %}
-                                                <select class="input" name="{{ field }}">
-                                                    {% for optionValue, optionLabel in definition.options %}
-                                                        <option value="{{ optionValue }}" {{ values[key] == optionValue ? 'selected' : '' }}>{{ optionLabel|trans }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                            {% elseif item.secret %}
-                                                <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
-                                            {% elseif isColor %}
-                                                {% include 'admin/settings/_color_picker.html.twig' %}
-                                            {% elseif key == 'brand.custom_css' %}
-                                                {% include 'admin/settings/_css_editor.html.twig' %}
-                                            {% elseif key == 'admin.dashboard.layout' %}
-                                                {% include 'admin/settings/_dashboard_widgets.html.twig' %}
-                                            {% elseif definition.type == 'json' %}
-                                                <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ values[key]|json_encode }}</textarea>
+                                            {% if isWidget %}
+                                                <div class="settings-row{% if isWide %} field--full{% endif %}">
+                                                <span class="settings-row__label">{{ definition.label|trans }}</span>
                                             {% else %}
-                                                <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}">
+                                                <label class="field">
+                                                <span>{{ definition.label|trans }}</span>
                                             {% endif %}
-                                            {% if helpKey|trans != helpKey and key != 'admin.dashboard.layout' %}
-                                                <small class="field__hint">{{ helpKey|trans }}</small>
-                                            {% endif %}
-                                        {% if isWidget %}</div>{% else %}</label>{% endif %}
+                                                {% if isChoice %}
+                                                    {% include 'admin/settings/_choice_select.html.twig' with {
+                                                        field: field,
+                                                        value: values[key],
+                                                        options: definition.type == 'boolean' ? null : definition.options,
+                                                        bare: true,
+                                                    } %}
+                                                {% elseif item.secret %}
+                                                    <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
+                                                {% elseif isColor %}
+                                                    {% include 'admin/settings/_color_picker.html.twig' %}
+                                                {% elseif key == 'brand.custom_css' %}
+                                                    {% include 'admin/settings/_css_editor.html.twig' %}
+                                                {% elseif key == 'admin.dashboard.layout' %}
+                                                    {% include 'admin/settings/_dashboard_widgets.html.twig' %}
+                                                {% elseif definition.type == 'json' %}
+                                                    <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ values[key]|json_encode }}</textarea>
+                                                {% else %}
+                                                    <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}">
+                                                {% endif %}
+                                                {% if helpText %}
+                                                    <small class="field__hint">{{ helpText }}</small>
+                                                {% endif %}
+                                            {% if isWidget %}</div>{% else %}</label>{% endif %}
+                                        {% endif %}
                                     {% endfor %}
                                 </div>
                             {% if groupId == 'storefront' %}

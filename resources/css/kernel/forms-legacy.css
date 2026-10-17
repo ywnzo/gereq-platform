@@ -199,9 +199,11 @@ textarea { resize: vertical; }
 }
 
 .table-wrap {
-    border: 1px solid var(--border);
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
     border-radius: var(--radius);
-    background: var(--surface);
+    background: var(--glass-surface, var(--surface));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
+    backdrop-filter: blur(var(--glass-blur, 16px)) saturate(var(--glass-saturate, 1.28));
     overflow: auto;
     width: 100%;
     max-height: min(90dvh, 64rem);

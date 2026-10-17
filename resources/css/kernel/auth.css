@@ -340,3 +340,85 @@ code { font-size: var(--grq-text-sm); color: var(--gereq-muted); font-family: va
     .metrics, .system-strip { grid-template-columns: 1fr; }
     .module-list { min-width: 0; }
 }
+
+.auth-shell:has(.setup-wizard--wide) { width: min(960px, calc(100% - 40px)); }
+.setup-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.grq-setup-modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.grq-setup-module { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid var(--gereq-border); border-radius: 8px; cursor: pointer; }
+.grq-setup-module:has(input:checked) { border-color: var(--gereq-ink); background: var(--gereq-paper); }
+.grq-setup-module:focus-within { outline: 2px solid var(--gereq-ink); outline-offset: 2px; }
+.grq-setup-module--child { margin-inline-start: 16px; }
+.grq-setup-module__icon { flex-shrink: 0; }
+.grq-setup-module__body { display: grid; gap: 6px; min-width: 0; }
+.grq-setup-module__body .muted { font-size: var(--grq-text-sm); }
+
+.grq-setup-module-filters { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+@media (max-width: 600px) {
+    .grq-setup-module-filters { grid-template-columns: 1fr; }
+}
+
+/* Keep onboarding controls fixed while the module catalog scrolls. */
+.auth-body:has(.setup-wizard--modules) {
+    height: 100dvh;
+    min-height: 0;
+    padding: 16px;
+    overflow: hidden;
+}
+.auth-shell:has(.setup-wizard--modules) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 900px;
+    min-height: 0;
+    width: min(960px, 100%);
+}
+.auth-shell:has(.setup-wizard--modules) .auth-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 18px;
+}
+.auth-shell:has(.setup-wizard--modules) .brand--auth { flex-shrink: 0; margin-bottom: 10px; }
+.auth-shell:has(.setup-wizard--modules) .auth-footnote { flex-shrink: 0; margin-top: 10px; }
+.setup-wizard--modules { display: flex; flex-direction: column; flex: 1; min-height: 0; margin-top: 0; }
+.setup-wizard--modules > * { flex-shrink: 0; }
+.setup-wizard--modules > .muted { margin-bottom: 10px; }
+.setup-wizard--modules .setup-steps { margin-bottom: 12px; }
+.setup-wizard--modules .setup-form { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 8px; }
+.setup-wizard--modules .setup-form > * { flex-shrink: 0; }
+.setup-wizard--modules .setup-form > .grq-setup-module-scroll {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: 3px;
+}
+.setup-wizard--modules .grq-setup-modules { grid-template-columns: minmax(0, 1fr); gap: 4px; align-content: start; }
+.setup-wizard--modules .grq-setup-module { align-items: center; padding: 8px 10px; gap: 10px; border-radius: 4px; }
+.setup-wizard--modules .grq-setup-module__body {
+    flex: 1;
+    grid-template-columns: minmax(120px, 1fr) minmax(110px, 1fr) minmax(0, 2fr);
+    align-items: center;
+    gap: 4px 12px;
+}
+.setup-wizard--modules .grq-setup-module__description {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+@media (max-width: 600px) {
+    .setup-wizard--modules .grq-setup-module__body { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
+.grq-setup-module__description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.setup-wizard--modules .setup-nav { margin-top: 4px; }
+@media (max-height: 600px) {
+    .auth-body:has(.setup-wizard--modules) { padding: 8px; }
+    .auth-shell:has(.setup-wizard--modules) .auth-panel { padding: 12px; }
+    .auth-shell:has(.setup-wizard--modules) .brand--auth,
+    .auth-shell:has(.setup-wizard--modules) .auth-footnote { display: none; }
+    .setup-wizard--modules .setup-steps { margin-bottom: 8px; }
+}
+
+.grq-setup-module__categories { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -26,6 +26,7 @@ use Gereq\Admin\Http\RoleController;
 use Gereq\Admin\Http\SearchController;
 use Gereq\Admin\Http\SettingsController;
 use Gereq\Admin\Http\SetupController;
+use Gereq\Admin\Http\UiPreferencesController;
 use Gereq\Admin\Http\UserController;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Admin\Menu\MenuItem;
@@ -118,7 +119,8 @@ final class AdminRoutesRegistrar
             $router->post('/setup/welcome', [SetupController::class, 'saveWelcome'])->name('admin.setup.welcome')->middleware('auth');
             $router->post('/setup/account', [SetupController::class, 'saveAccount'])->name('admin.setup.account')->middleware('auth');
             $router->post('/setup/company', [SetupController::class, 'saveCompany'])->name('admin.setup.company')->middleware('auth');
-            $router->post('/setup/shop', [SetupController::class, 'saveShop'])->name('admin.setup.shop')->middleware('auth');
+            $router->post('/setup/modules', [SetupController::class, 'saveModules'])->name('admin.setup.modules')->middleware('auth');
+            $router->post('/setup/dashboard', [SetupController::class, 'saveDashboard'])->name('admin.setup.dashboard')->middleware('auth');
             $router->post('/setup/finish', [SetupController::class, 'finish'])->name('admin.setup.finish')->middleware('auth');
 
             $router->get('/forgot-password', [AuthController::class, 'forgot'])->name('admin.password.forgot')->middleware('guest');
@@ -175,6 +177,8 @@ final class AdminRoutesRegistrar
             $router->get('/audit', [AuditController::class, 'index'])->middleware('auth')->permission('audit.view');
             $router->get('/profile', [ProfileController::class, 'edit'])->name('admin.profile')->middleware('auth');
             $router->post('/profile', [ProfileController::class, 'update'])->name('admin.profile.update')->middleware('auth');
+            $router->get('/ui/preferences', [UiPreferencesController::class, 'show'])->name('admin.ui.preferences')->middleware('auth');
+            $router->post('/ui/preferences', [UiPreferencesController::class, 'save'])->name('admin.ui.preferences.save')->middleware('auth');
             $router->post('/profile/mfa/totp/start', [SecurityController::class, 'totpStart'])->name('admin.profile.mfa.totp.start')->middleware('auth');
             $router->post('/profile/mfa/totp/confirm', [SecurityController::class, 'totpConfirm'])->name('admin.profile.mfa.totp.confirm')->middleware('auth');
             $router->post('/profile/mfa/totp/disable', [SecurityController::class, 'totpDisable'])->name('admin.profile.mfa.totp.disable')->middleware('auth');

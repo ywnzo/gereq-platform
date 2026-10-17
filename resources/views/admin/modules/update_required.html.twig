@@ -9,7 +9,9 @@
 {% endblock %}
 
 {% block content %}
-<section class="panel stack" style="max-width:36rem;margin:2rem auto;padding:1.5rem">
+{% set canBump = changeSet is defined and changeSet and changeSet.canBump %}
+{% set hasFiles = changeSet is defined and changeSet and changeSet.hasFiles %}
+<section class="panel stack module-gate" style="max-width:40rem;margin:2rem auto;padding:1.5rem">
     <header>
         <p class="eyebrow">{{ 'admin.modules.update_available'|trans }}</p>
         <h1>{{ 'admin.modules.gate.title'|trans }}</h1>
@@ -24,14 +26,49 @@
         '%installed%': installedVersion|default('—'),
         '%pending%': '—'
     }) }}</p>
+
+    {% if hasFiles %}
+        <div class="module-gate__changes">
+            <div class="module-gate__summary">
+                <span class="module-gate__stat module-gate__stat--add">+{{ changeSet.additions }}</span>
+                <span class="module-gate__stat module-gate__stat--del">−{{ changeSet.deletions }}</span>
+                <span class="muted">{{ 'admin.modules.gate.files_changed'|trans({'%count%': changeSet.files|length}) }}</span>
+            </div>
+            <ul class="module-gate__files">
+                {% for file in changeSet.files %}
+                    <li class="module-gate__file module-gate__file--{{ file.status }}">
+                        <span class="module-gate__path" title="{{ file.path }}">{{ file.path }}</span>
+                        <span class="module-gate__diff">
+                            {% if file.additions > 0 %}<span class="module-gate__stat--add">+{{ file.additions }}</span>{% endif %}
+                            {% if file.deletions > 0 %}<span class="module-gate__stat--del">−{{ file.deletions }}</span>{% endif %}
+                            {% if file.additions == 0 and file.deletions == 0 %}<span class="muted">·</span>{% endif %}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% elseif canBump %}
+        <p class="muted">{{ 'admin.modules.gate.drift_no_files'|trans }}</p>
+    {% endif %}
+
     <div class="form-actions" style="display:flex;gap:0.5rem;flex-wrap:wrap">
         {% if user and user.can('modules.manage') %}
+            {% if canBump %}
+                <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="bump" value="1">
+                    {% if returnUrl|default('') %}
+                        <input type="hidden" name="return" value="{{ returnUrl }}">
+                    {% endif %}
+                    <button class="btn btn--primary" type="submit">{{ 'admin.modules.gate.update_bump'|trans }}</button>
+                </form>
+            {% endif %}
             <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
                 {{ csrf_field()|raw }}
                 {% if returnUrl|default('') %}
                     <input type="hidden" name="return" value="{{ returnUrl }}">
                 {% endif %}
-                <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
+                <button class="btn {{ canBump ? 'btn--ghost' : 'btn--primary' }}" type="submit">{{ 'admin.modules.update'|trans }}</button>
             </form>
         {% endif %}
         <a class="btn btn--ghost" href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ 'admin.modules.gate.detail'|trans }}</a>

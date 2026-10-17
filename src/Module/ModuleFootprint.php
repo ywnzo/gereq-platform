@@ -23,9 +23,59 @@ final class ModuleFootprint
      */
     public static function ofDirectory(string $root, bool $legacy = false): string
     {
+        $entries = self::collect($root, $legacy);
+        if ($entries === null) {
+            return '';
+        }
+        if ($entries === []) {
+            return hash('sha256', '');
+        }
+
+        ksort($entries, SORT_STRING);
+        $lines = [];
+        foreach ($entries as $path => $digest) {
+            $lines[] = $digest . '  ' . $path;
+        }
+
+        return hash('sha256', implode("\n", $lines) . "\n");
+    }
+
+    /**
+     * Relative path → sha256 digest for every hashed file in the module tree.
+     *
+     * @return array<string, string>
+     */
+    public static function inventory(string $root, bool $legacy = false): array
+    {
+        $entries = self::collect($root, $legacy);
+        if ($entries === null || $entries === []) {
+            return [];
+        }
+        ksort($entries, SORT_STRING);
+
+        return $entries;
+    }
+
+    /**
+     * Short display form (first 12 hex chars).
+     */
+    public static function short(string $footprint): string
+    {
+        if ($footprint === '') {
+            return '—';
+        }
+
+        return substr($footprint, 0, 12);
+    }
+
+    /**
+     * @return array<string, string>|null null when root is missing
+     */
+    private static function collect(string $root, bool $legacy): ?array
+    {
         $real = realpath($root);
         if ($real === false || !is_dir($real)) {
-            return '';
+            return null;
         }
 
         $entries = [];
@@ -71,28 +121,6 @@ final class ModuleFootprint
             $entries[$relative] = $digest;
         }
 
-        if ($entries === []) {
-            return hash('sha256', '');
-        }
-
-        ksort($entries, SORT_STRING);
-        $lines = [];
-        foreach ($entries as $path => $digest) {
-            $lines[] = $digest . '  ' . $path;
-        }
-
-        return hash('sha256', implode("\n", $lines) . "\n");
-    }
-
-    /**
-     * Short display form (first 12 hex chars).
-     */
-    public static function short(string $footprint): string
-    {
-        if ($footprint === '') {
-            return '—';
-        }
-
-        return substr($footprint, 0, 12);
+        return $entries;
     }
 }

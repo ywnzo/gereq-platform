@@ -6,8 +6,8 @@ namespace Gereq\Console\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Customers\Domain\Customer;
-use Modules\Products\Domain\Product;
-use Modules\Products\Domain\ProductPrice;
+use Modules\Shop\Submodules\Products\Domain\Product;
+use Modules\Shop\Submodules\Products\Domain\ProductPrice;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;

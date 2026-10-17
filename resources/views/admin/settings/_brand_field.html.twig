@@ -7,10 +7,12 @@
 {% set definition = item.definition %}
 {% set field = key|replace({'.': '__'}) %}
 {% set helpKey = definition.label ~ '.help' %}
+{% set helpText = helpKey|trans != helpKey ? helpKey|trans : '' %}
 {% set isColor = 'color_' in key or key ends with '_primary' %}
 {% set isAsset = key in ['brand.logo_url', 'brand.favicon_url'] %}
 {% set isWide = key in wideKeys or forceFull|default(false) %}
 {% set isWidget = isColor or isWide %}
+{% set isChoice = definition.type == 'boolean' or (definition.options is defined and definition.options is not empty) %}
 {% if isAsset %}
     {% include 'ui/media_box.html.twig' with {
         name: field,
@@ -21,19 +23,29 @@
         label: definition.label|trans,
         optional: true,
         value: values[key]|default(''),
-        hint: helpKey|trans != helpKey ? helpKey|trans : '',
+        hint: helpText,
         has_media: true,
         full: false,
         library: libraryImages|default([])
     } %}
+{% elseif isChoice and not isWidget %}
+    {% include 'admin/settings/_choice_select.html.twig' with {
+        field: field,
+        value: values[key],
+        options: definition.type == 'boolean' ? null : definition.options,
+        label: definition.label|trans,
+        hint: helpText,
+    } %}
 {% elseif isWidget %}
     <div class="settings-row{% if isWide %} field--full{% endif %}{% if isColor %} settings-row--color{% endif %}">
         <span class="settings-row__label">{{ definition.label|trans }}</span>
-        {% if definition.type == 'boolean' %}
-            <select class="input" name="{{ field }}">
-                <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
-                <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
-            </select>
+        {% if isChoice %}
+            {% include 'admin/settings/_choice_select.html.twig' with {
+                field: field,
+                value: values[key],
+                options: definition.type == 'boolean' ? null : definition.options,
+                bare: true,
+            } %}
         {% elseif item.secret %}
             <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
         {% elseif isColor %}
@@ -43,25 +55,20 @@
         {% else %}
             <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}" @input="touch">
         {% endif %}
-        {% if helpKey|trans != helpKey %}
-            <small class="field__hint">{{ helpKey|trans }}</small>
+        {% if helpText %}
+            <small class="field__hint">{{ helpText }}</small>
         {% endif %}
     </div>
 {% else %}
     <label class="field{% if isWide %} field--full{% endif %}">
         <span>{{ definition.label|trans }}</span>
-        {% if definition.type == 'boolean' %}
-            <select class="input" name="{{ field }}">
-                <option value="1" {{ values[key] ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
-                <option value="0" {{ not values[key] ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
-            </select>
-        {% elseif item.secret %}
+        {% if item.secret %}
             <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
         {% else %}
             <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}" @input="touch">
         {% endif %}
-        {% if helpKey|trans != helpKey %}
-            <small class="field__hint">{{ helpKey|trans }}</small>
+        {% if helpText %}
+            <small class="field__hint">{{ helpText }}</small>
         {% endif %}
     </label>
 {% endif %}

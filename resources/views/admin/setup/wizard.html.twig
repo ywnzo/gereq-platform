@@ -1,7 +1,7 @@
 {% extends 'auth/layout.html.twig' %}
 
 {% block content %}
-    <div class="setup-wizard">
+    <div class="setup-wizard{% if step == 'modules' %} setup-wizard--modules{% endif %}{% if step in ['modules', 'dashboard'] %} setup-wizard--wide{% endif %}">
         <p class="eyebrow">{{ 'setup.eyebrow'|trans }}</p>
         <h1>{{ ('setup.step.' ~ step ~ '.title')|trans }}</h1>
         <p class="muted">{{ ('setup.step.' ~ step ~ '.lead')|trans }}</p>
@@ -69,100 +69,131 @@
             </form>
 
         {% elseif step == 'company' %}
-            <form method="post" action="{{ url('admin.setup.company') }}" class="stack setup-form" x-data="gereqAresSubject">
+            <form method="post" action="{{ url('admin.setup.company') }}" class="stack setup-form" x-data="setupOperator" data-type="{{ values.operator.type }}">
                 {{ csrf_field()|raw }}
                 <label class="field">
-                    <span>{{ 'orders.settings.seller_name'|trans }}</span>
-                    <input class="input" type="text" name="seller_name" data-ares-fill="name" value="{{ values.seller_name }}">
+                    <span>{{ 'setup.operator.type'|trans }}</span>
+                    <select class="input" name="operator_type" x-model="type">
+                        <option value="business" {{ values.operator.type == 'business' ? 'selected' : '' }}>{{ 'setup.operator.business'|trans }}</option>
+                        <option value="person" {{ values.operator.type == 'person' ? 'selected' : '' }}>{{ 'setup.operator.person'|trans }}</option>
+                    </select>
                 </label>
-                <div class="setup-grid">
-                    <div class="field ares-field">
-                        <span>{{ 'orders.settings.seller_ico'|trans }}</span>
-                        <div class="ares-field__row">
-                            <input
-                                class="input"
-                                type="text"
-                                name="seller_ico"
-                                data-ares-ico
-                                data-ares-fill="ico"
-                                data-ares-query
-                                autocomplete="off"
-                                value="{{ values.seller_ico }}"
-                                @input="onInput"
-                                @keydown="onKeydown"
-                                x-ref="query"
-                            >
-                            <button type="button" class="btn btn--ghost" @click="lookupIco">ARES</button>
+                <fieldset class="setup-fieldset stack" x-show="business" :disabled="!business" {{ values.operator.type != 'business' ? 'disabled' : '' }} x-data="gereqAresSubject">
+                    <legend class="sr-only">{{ 'setup.operator.business'|trans }}</legend>
+                    <label class="field">
+                        <span>{{ 'setup.operator.company_name'|trans }}</span>
+                        <input class="input" name="company_name" data-ares-fill="name" value="{{ values.operator.company_name }}" maxlength="180" required>
+                    </label>
+                    <div class="setup-grid">
+                        <div class="field ares-field">
+                            <label for="setup-ico">{{ 'setup.operator.ico'|trans }}</label>
+                            <div class="ares-field__row">
+                                <input id="setup-ico" class="input" name="ico" data-ares-ico data-ares-fill="ico" data-ares-query autocomplete="off" value="{{ values.operator.ico }}" @input="onInput" @keydown="onKeydown" x-ref="query" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required>
+                                <button type="button" class="btn btn--ghost" @click="lookupIco">ARES</button>
+                            </div>
+                            {% include 'ui/ares_subject_suggest.html.twig' %}
                         </div>
-                        {% include 'ui/ares_subject_suggest.html.twig' %}
+                        <label class="field">
+                            <span>{{ 'setup.operator.dic'|trans }}</span>
+                            <input class="input" name="dic" data-ares-fill="dic" value="{{ values.operator.dic }}" maxlength="32">
+                        </label>
                     </div>
                     <label class="field">
-                        <span>{{ 'orders.settings.seller_dic'|trans }}</span>
-                        <input class="input" type="text" name="seller_dic" data-ares-fill="dic" value="{{ values.seller_dic }}">
-                    </label>
-                </div>
-                <label class="field">
-                    <span>{{ 'orders.settings.seller_address'|trans }}</span>
-                    <input class="input" type="text" name="seller_address" data-ares-fill="address" value="{{ values.seller_address }}">
-                </label>
-                <label class="field">
-                    <span>{{ 'orders.settings.seller_email'|trans }}</span>
-                    <input class="input" type="email" name="seller_email" value="{{ values.seller_email }}">
-                </label>
-                <div class="setup-grid">
-                    <label class="field">
-                        <span>{{ 'orders.settings.number_prefix'|trans }}</span>
-                        <input class="input" type="text" name="order_prefix" value="{{ values.order_prefix }}">
+                        <span>{{ 'setup.operator.address'|trans }}</span>
+                        <input class="input" name="address" data-ares-fill="address" value="{{ values.operator.address }}" maxlength="500" required>
                     </label>
                     <label class="field">
-                        <span>{{ 'orders.settings.invoice_prefix'|trans }}</span>
-                        <input class="input" type="text" name="invoice_prefix" value="{{ values.invoice_prefix }}">
+                        <span>{{ 'common.email'|trans }}</span>
+                        <input class="input" type="email" name="email" value="{{ values.operator.email }}" maxlength="180" required>
                     </label>
-                </div>
+                </fieldset>
+                <fieldset class="setup-fieldset stack" x-show="person" :disabled="!person" {{ values.operator.type != 'person' ? 'disabled' : '' }} x-cloak>
+                    <legend class="sr-only">{{ 'setup.operator.person'|trans }}</legend>
+                    <div class="setup-grid">
+                        <label class="field">
+                            <span>{{ 'setup.operator.first_name'|trans }}</span>
+                            <input class="input" name="first_name" value="{{ values.operator.first_name }}" maxlength="100" required>
+                        </label>
+                        <label class="field">
+                            <span>{{ 'setup.operator.last_name'|trans }}</span>
+                            <input class="input" name="last_name" value="{{ values.operator.last_name }}" maxlength="100" required>
+                        </label>
+                    </div>
+                    <label class="field">
+                        <span>{{ 'setup.operator.address'|trans }}</span>
+                        <input class="input" name="address" value="{{ values.operator.address }}" maxlength="500" required>
+                    </label>
+                    <label class="field">
+                        <span>{{ 'setup.operator.birth_date'|trans }}</span>
+                        <input class="input" type="date" name="birth_date" value="{{ values.operator.birth_date }}" max="{{ 'now'|date('Y-m-d') }}" required>
+                    </label>
+                </fieldset>
                 <div class="setup-nav">
                     <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'account'}) }}">{{ 'setup.back'|trans }}</a>
                     <button type="submit" class="btn btn--primary">{{ 'setup.next'|trans }}</button>
                 </div>
             </form>
 
-        {% elseif step == 'shop' %}
-            <form method="post" action="{{ url('admin.setup.shop') }}" class="stack setup-form">
+        {% elseif step == 'modules' %}
+            <form method="post" action="{{ url('admin.setup.modules') }}" class="stack setup-form" x-data="setupModulePicker">
                 {{ csrf_field()|raw }}
-                <label class="field">
-                    <span>{{ 'shop.settings.store_name'|trans }}</span>
-                    <input class="input" type="text" name="store_name" value="{{ values.store_name ?: values.app_name }}">
-                </label>
-                <label class="field">
-                    <span>{{ 'shop.settings.default_currency'|trans }}</span>
-                    <input class="input" type="text" name="currency" value="{{ values.currency }}" maxlength="3">
-                </label>
-                <label class="field">
-                    <span>{{ 'shop.settings.checkout_enabled'|trans }}</span>
-                    <select class="input" name="checkout_enabled">
-                        <option value="1" {{ values.checkout_enabled ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
-                        <option value="0" {{ not values.checkout_enabled ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
-                    </select>
-                </label>
+                <p class="muted">{{ 'setup.modules.hint'|trans }}</p>
+                <div class="grq-setup-module-filters">
+                    <label class="field">
+                        <span>{{ 'setup.modules.search'|trans }}</span>
+                        <input class="input" type="search" x-model="query" placeholder="{{ 'setup.modules.search_hint'|trans }}" autocomplete="off">
+                    </label>
+                    <label class="field">
+                        <span>{{ 'setup.modules.category'|trans }}</span>
+                        <select class="input" x-model="category">
+                            <option value="">{{ 'setup.modules.all_categories'|trans }}</option>
+                            {% for id, label in moduleCategories %}
+                                <option value="{{ id }}">{{ label|trans }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <p class="muted" role="status" aria-live="polite">{{ 'setup.modules.showing'|trans }} <strong x-text="visibleCount">{{ moduleChoices|length }}</strong> / {{ moduleChoices|length }}</p>
+                <div class="grq-setup-module-scroll" tabindex="0" role="region" aria-label="{{ 'setup.step.modules.title'|trans }}">
+                <div class="grq-setup-modules">
+                    {% for choice in moduleChoices %}
+                        {% set module = choice.manifest %}
+                        <label class="grq-setup-module{% if module.parentId %} grq-setup-module--child{% endif %}"
+                            data-module-choice
+                            data-search="{{ (module.name ~ ' ' ~ module.id ~ ' ' ~ (module.description|trans))|e('html_attr') }}"
+                            data-categories="{{ choice.categories|json_encode|e('html_attr') }}"
+                            x-show="matches($el.dataset.search, $el.dataset.categories)"
+                        >
+                            <input type="checkbox" name="modules[]" value="{{ module.id }}" {{ module.id in selectedModules ? 'checked' : '' }}>
+                            <span class="grq-setup-module__icon" aria-hidden="true">{{ icon(module.icon) }}</span>
+                            <span class="grq-setup-module__body">
+                                <strong>{{ module.name }}</strong>
+                                <small class="muted grq-setup-module__categories" title="{% for category in choice.categories %}{{ moduleCategories[category]|trans }}{{ not loop.last ? ' · ' : '' }}{% endfor %}">{% for category in choice.categories %}{{ moduleCategories[category]|trans }}{{ not loop.last ? ' · ' : '' }}{% endfor %}</small>
+                                <span class="muted grq-setup-module__description" title="{{ module.description ? module.description|trans : module.id }}">{{ module.description ? module.description|trans : module.id }}</span>
+                                {% if module.parentId %}<small>{{ 'setup.modules.parent'|trans({'%parent%': module.parentId}) }}</small>{% endif %}
+                            </span>
+                        </label>
+                    {% else %}
+                        <p class="muted">{{ 'setup.modules.empty'|trans }}</p>
+                    {% endfor %}
+                </div>
+                <p class="muted" x-show="visibleCount === 0" x-cloak>{{ 'setup.modules.no_results'|trans }}</p>
+                </div>
                 <div class="setup-nav">
                     <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'company'}) }}">{{ 'setup.back'|trans }}</a>
-                    <button type="submit" class="btn btn--primary">{{ 'setup.next'|trans }}</button>
+                    <button type="submit" class="btn btn--primary">{{ 'setup.modules.continue'|trans }}</button>
                 </div>
             </form>
 
-        {% elseif step == 'done' %}
-            <div class="setup-done stack">
-                <p>{{ 'setup.step.done.body'|trans }}</p>
-                <ul class="setup-checklist muted">
-                    <li>{{ 'setup.step.done.check_app'|trans({'%name%': values.app_name}) }}</li>
-                    <li>{{ 'setup.step.done.check_account'|trans({'%email%': values.email}) }}</li>
-                    <li>{{ 'setup.step.done.check_shop'|trans({'%store%': values.store_name ?: values.app_name}) }}</li>
-                </ul>
-                <form method="post" action="{{ url('admin.setup.finish') }}">
-                    {{ csrf_field()|raw }}
-                    <button type="submit" class="btn btn--primary btn--block">{{ 'setup.finish'|trans }}</button>
-                </form>
-                <a class="text-link" href="{{ url('admin.setup.step', {step: 'shop'}) }}">{{ 'setup.back'|trans }}</a>
-            </div>
+        {% elseif step == 'dashboard' %}
+            <form method="post" action="{{ url('admin.setup.dashboard') }}" class="stack setup-form">
+                {{ csrf_field()|raw }}
+                {% include 'admin/settings/_dashboard_widgets.html.twig' with { field: 'dashboard_layout', dashboardCatalog: widgets } %}
+                <div class="setup-nav">
+                    <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'modules'}) }}">{{ 'setup.back'|trans }}</a>
+                    <button type="submit" class="btn btn--primary">{{ 'setup.finish'|trans }}</button>
+                </div>
+            </form>
         {% endif %}
     </div>
 {% endblock %}

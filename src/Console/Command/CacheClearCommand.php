@@ -6,6 +6,7 @@ namespace Gereq\Console\Command;
 
 use Gereq\Cache\AppCache;
 use Gereq\Cache\StoreFrontCache;
+use Gereq\Foundation\StorageLayout;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -27,14 +28,11 @@ final class CacheClearCommand extends Command
         $this->cache->flush();
         $this->storeFrontCache->flush();
         $this->wipe($this->basePath . '/storage/cache');
-        // Keep directory structure for next writes
-        foreach (['data', 'storefront', 'twig', 'doctrine', 'rate'] as $subdir) {
-            $path = $this->basePath . '/storage/cache/' . $subdir;
-            if (!is_dir($path)) {
-                mkdir($path, 0777, true);
-            }
-            @chmod($path, 0777);
-        }
+        $this->wipe($this->basePath . '/storage/framework');
+        $this->wipe($this->basePath . '/storage/sessions');
+        $this->wipe($this->basePath . '/storage/tmp');
+
+        StorageLayout::ensureCache($this->basePath);
         $output->writeln('Cache vymazána (app + storefront + twig + doctrine + filesystem).');
 
         return Command::SUCCESS;

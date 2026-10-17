@@ -69,6 +69,10 @@
             data-confirm-disable-media="{{ 'admin.modules.bulk.confirm_disable_media'|trans|e('html_attr') }}"
             data-confirm-disable-media-title="{{ 'admin.modules.confirm.disable_media_title'|trans|e('html_attr') }}"
             data-confirm-disable-media-label="{{ 'admin.modules.confirm.disable_media_yes'|trans|e('html_attr') }}"
+            data-label-enabled="{{ 'common.enabled'|trans|e('html_attr') }}"
+            data-label-disabled="{{ 'common.disabled'|trans|e('html_attr') }}"
+            data-label-update="{{ 'admin.modules.update_available'|trans|e('html_attr') }}"
+            data-toast-error="{{ 'admin.modules.action_failed'|trans|e('html_attr') }}"
         >
             <div class="toolbar--table">
                 <div class="toolbar">
@@ -175,7 +179,8 @@
                             </th>
                             <th>{{ 'admin.modules.col.name'|trans }}</th>
                             <th>{{ 'admin.modules.col.description'|trans }}</th>
-                            <th>{{ 'admin.modules.col.status'|trans }}</th>
+                            <th class="is-center">{{ 'admin.modules.col.submodules'|trans }}</th>
+                            <th class="is-center">{{ 'admin.modules.col.status'|trans }}</th>
                             <th class="is-num">API</th>
                             <th class="is-num">{{ 'admin.modules.meta.routes'|trans }}</th>
                             <th class="is-num">{{ 'admin.modules.meta.migrations'|trans }}</th>
@@ -187,9 +192,12 @@
                         {% for row in items %}
                             {% set manifest = row.manifest %}
                             {% set counts = row.counts %}
-                            {% set searchBlob = (manifest.name ~ ' ' ~ manifest.id ~ ' ' ~ manifest.kind ~ ' ' ~ (manifest.description|trans))|lower %}
+                            {% set childCount = row.child_count|default(0) %}
+                            {% set searchBlob = (manifest.name ~ ' ' ~ manifest.id ~ ' ' ~ manifest.kind ~ ' ' ~ (row.parent_name|default('')) ~ ' ' ~ (manifest.description|trans))|lower %}
                             <tr
+                                class="{{ manifest.parentId ? 'grq-module-child-row' : (childCount > 0 ? 'grq-module-parent-row' : '') }}"
                                 data-id="{{ manifest.id }}"
+                                {% if manifest.parentId %}data-parent-id="{{ manifest.parentId }}"{% endif %}
                                 data-enabled="{{ row.enabled ? '1' : '0' }}"
                                 data-kind="{{ manifest.kind }}"
                                 data-warn="{{ (row.enabled and (row.health_issues or row.missing is not empty) or row.update_available) ? '1' : '0' }}"
@@ -210,9 +218,23 @@
                                 </td>
                                 <td>
                                     <div class="table__title table__title--with-icon{% if manifest.parentId %} grq-module-child{% endif %}">
-                                        <span class="module-row__icon" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
+                                        {% if childCount > 0 %}
+                                            <button
+                                                type="button"
+                                                class="module-row__icon grq-module-children-toggle"
+                                                data-module-children-toggle
+                                                data-parent-id="{{ manifest.id }}"
+                                                aria-expanded="false"
+                                                aria-label="{{ 'admin.modules.submodules_toggle'|trans({'%count%': childCount}) }}"
+                                                title="{{ 'admin.modules.submodules'|trans }}"
+                                            >
+                                                <span class="module-row__icon-face" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
+                                                <span class="grq-module-children-toggle__badge" aria-hidden="true">{{ icon('chevron-right') }}</span>
+                                            </button>
+                                        {% else %}
+                                            <span class="module-row__icon" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
+                                        {% endif %}
                                         <div class="table__title-text">
-                                            {% if manifest.parentId %}<span class="muted" aria-hidden="true">↳</span>{% endif %}
                                             <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
                                             <span class="table__meta">
                                                 <code>{{ manifest.id }}</code> · v{{ manifest.version }}
@@ -228,13 +250,16 @@
                                     </div>
                                 </td>
                                 <td class="is-mute">{{ (manifest.description ?: 'common.no_description')|trans }}</td>
-                                <td>
+                                <td class="is-center is-mute">
+                                    {% if childCount > 0 %}{{ childCount }}{% else %}<span class="muted">—</span>{% endif %}
+                                </td>
+                                <td class="is-center" data-module-status>
                                     {% if row.update_available %}
-                                        <span class="badge badge--warn">{{ 'admin.modules.update_available'|trans }}</span>
+                                        <span class="badge badge--warn" data-module-status-badge="update">{{ 'admin.modules.update_available'|trans }}</span>
                                     {% elseif row.enabled %}
-                                        <span class="badge badge--ok">{{ 'common.enabled'|trans }}</span>
+                                        <span class="badge badge--ok" data-module-status-badge="on">{{ 'common.enabled'|trans }}</span>
                                     {% else %}
-                                        <span class="badge badge--muted">{{ 'common.disabled'|trans }}</span>
+                                        <span class="badge badge--danger" data-module-status-badge="off">{{ 'common.disabled'|trans }}</span>
                                     {% endif %}
                                 </td>
                                 <td class="is-num is-mute">{{ counts.api }}</td>
@@ -254,74 +279,88 @@
                                         <span class="muted">—</span>
                                     {% endif %}
                                 </td>
+                                {% set parentEnabled = row.parent_enabled is defined ? row.parent_enabled : true %}
                                 {% embed 'ui/row_actions.html.twig' %}
                                     {% block items %}
-                                        {# Single Start/Pause toggle: play when off, pause when on. #}
-                                        {% if row.enabled %}
-                                            <form
-                                                method="post"
-                                                action="{{ url('admin.modules.pause', {id: manifest.id}) }}"
-                                                data-confirm="{{ 'admin.modules.confirm.pause'|trans|e('html_attr') }}"
-                                                data-confirm-title="{{ 'admin.modules.confirm.pause_title'|trans|e('html_attr') }}"
-                                                data-confirm-label="{{ 'common.pause'|trans|e('html_attr') }}"
-                                                data-confirm-danger="0"
-                                            >
-                                                {{ csrf_field()|raw }}
-                                                <input type="hidden" name="return" value="index">
-                                                <button
-                                                    type="submit"
-                                                    class="table__action-btn table__action-btn--warn"
-                                                    title="{{ 'admin.modules.pause_hint'|trans }}"
-                                                    aria-label="{{ 'common.pause'|trans }}"
-                                                >{{ icon('pause') }}</button>
-                                            </form>
-                                        {% else %}
-                                            <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
-                                                {{ csrf_field()|raw }}
-                                                <input type="hidden" name="return" value="index">
-                                                <button
-                                                    type="submit"
-                                                    class="table__action-btn table__action-btn--success"
-                                                    title="{{ 'common.activate'|trans }}"
-                                                    aria-label="{{ 'common.activate'|trans }}"
-                                                >{{ icon('play') }}</button>
-                                            </form>
-                                        {% endif %}
-                                        {# Paused modules still own data and can be uninstalled. #}
-                                        {% if row.installed %}
-                                            <form
-                                                method="post"
-                                                action="{{ url('admin.modules.disable', {id: manifest.id}) }}"
-                                                data-confirm="{{ 'admin.modules.confirm.disable'|trans|e('html_attr') }}"
-                                                data-confirm-title="{{ 'admin.modules.confirm.disable_title'|trans|e('html_attr') }}"
-                                                data-confirm-label="{{ 'common.stop'|trans|e('html_attr') }}"
-                                                data-confirm-danger="1"
-                                                data-confirm-followup="{{ 'admin.modules.confirm.disable_media'|trans|e('html_attr') }}"
-                                                data-confirm-followup-title="{{ 'admin.modules.confirm.disable_media_title'|trans|e('html_attr') }}"
-                                                data-confirm-followup-label="{{ 'admin.modules.confirm.disable_media_yes'|trans|e('html_attr') }}"
-                                                data-confirm-followup-cancel="{{ 'admin.modules.confirm.disable_media_no'|trans|e('html_attr') }}"
-                                                data-confirm-followup-input="purge_media"
-                                            >
-                                                {{ csrf_field()|raw }}
-                                                <input type="hidden" name="return" value="index">
-                                                <input type="hidden" name="purge_media" value="0">
-                                                <button
-                                                    type="submit"
-                                                    class="table__action-btn table__action-btn--danger"
-                                                    title="{{ 'admin.modules.uninstall_hint'|trans }}"
-                                                    aria-label="{{ 'common.stop'|trans }}"
-                                                >{{ icon('stop') }}</button>
-                                            </form>
-                                        {% else %}
-                                            {% include 'ui/row_action.html.twig' with { placeholder: true } %}
-                                        {% endif %}
+                                        {# Always in DOM — AJAX toggles visibility without a full page reload. #}
+                                        <form
+                                            method="post"
+                                            action="{{ url('admin.modules.pause', {id: manifest.id}) }}"
+                                            data-module-action="pause"
+                                            data-confirm="{{ 'admin.modules.confirm.pause'|trans|e('html_attr') }}"
+                                            data-confirm-title="{{ 'admin.modules.confirm.pause_title'|trans|e('html_attr') }}"
+                                            data-confirm-label="{{ 'common.pause'|trans|e('html_attr') }}"
+                                            data-confirm-danger="0"
+                                            {% if not row.enabled %}hidden{% endif %}
+                                        >
+                                            {{ csrf_field()|raw }}
+                                            <input type="hidden" name="return" value="index">
+                                            <button
+                                                type="submit"
+                                                class="table__action-btn table__action-btn--warn"
+                                                title="{{ 'admin.modules.pause_hint'|trans }}"
+                                                aria-label="{{ 'common.pause'|trans }}"
+                                            >{{ icon('pause') }}</button>
+                                        </form>
+                                        <span
+                                            class="table__action-btn table__action-btn--spacer"
+                                            data-module-action="enable-blocked"
+                                            aria-hidden="true"
+                                            {% if row.enabled or parentEnabled or not manifest.parentId %}hidden{% endif %}
+                                        ></span>
+                                        <form
+                                            method="post"
+                                            action="{{ url('admin.modules.enable', {id: manifest.id}) }}"
+                                            data-module-action="enable"
+                                            {% if row.enabled or (manifest.parentId and not parentEnabled) %}hidden{% endif %}
+                                        >
+                                            {{ csrf_field()|raw }}
+                                            <input type="hidden" name="return" value="index">
+                                            <button
+                                                type="submit"
+                                                class="table__action-btn table__action-btn--success"
+                                                title="{{ 'common.activate'|trans }}"
+                                                aria-label="{{ 'common.activate'|trans }}"
+                                            >{{ icon('play') }}</button>
+                                        </form>
+                                        <form
+                                            method="post"
+                                            action="{{ url('admin.modules.disable', {id: manifest.id}) }}"
+                                            data-module-action="disable"
+                                            data-confirm="{{ 'admin.modules.confirm.disable'|trans|e('html_attr') }}"
+                                            data-confirm-title="{{ 'admin.modules.confirm.disable_title'|trans|e('html_attr') }}"
+                                            data-confirm-label="{{ 'common.stop'|trans|e('html_attr') }}"
+                                            data-confirm-danger="1"
+                                            data-confirm-followup="{{ 'admin.modules.confirm.disable_media'|trans|e('html_attr') }}"
+                                            data-confirm-followup-title="{{ 'admin.modules.confirm.disable_media_title'|trans|e('html_attr') }}"
+                                            data-confirm-followup-label="{{ 'admin.modules.confirm.disable_media_yes'|trans|e('html_attr') }}"
+                                            data-confirm-followup-cancel="{{ 'admin.modules.confirm.disable_media_no'|trans|e('html_attr') }}"
+                                            data-confirm-followup-input="purge_media"
+                                            {% if not row.installed %}hidden{% endif %}
+                                        >
+                                            {{ csrf_field()|raw }}
+                                            <input type="hidden" name="return" value="index">
+                                            <input type="hidden" name="purge_media" value="0">
+                                            <button
+                                                type="submit"
+                                                class="table__action-btn table__action-btn--danger"
+                                                title="{{ 'admin.modules.uninstall_hint'|trans }}"
+                                                aria-label="{{ 'common.stop'|trans }}"
+                                            >{{ icon('stop') }}</button>
+                                        </form>
+                                        <span
+                                            class="table__action-btn table__action-btn--spacer"
+                                            data-module-action="disable-spacer"
+                                            aria-hidden="true"
+                                            {% if row.installed %}hidden{% endif %}
+                                        ></span>
                                         {% if row.settings_route %}
                                             {% include 'ui/row_action.html.twig' with { href: url(row.settings_route), label: 'common.settings'|trans, icon: 'settings' } %}
                                         {% else %}
                                             {% include 'ui/row_action.html.twig' with { placeholder: true } %}
                                         {% endif %}
                                         {% if row.update_available %}
-                                            <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
+                                            <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}" data-module-action="update">
                                                 {{ csrf_field()|raw }}
                                                 <input type="hidden" name="return" value="index">
                                                 <button
@@ -339,7 +378,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="9">
+                                <td colspan="10">
                                     <div class="empty">
                                         <h2>{{ 'empty.modules'|trans }}</h2>
                                         <p>{{ 'empty.modules_hint'|trans }}</p>
@@ -348,7 +387,7 @@
                             </tr>
                         {% endfor %}
                         <tr x-show="empty" x-cloak>
-                            <td colspan="9">
+                            <td colspan="10">
                                 <div class="empty">
                                     <h2>{{ 'admin.modules.filter.empty'|trans }}</h2>
                                 </div>

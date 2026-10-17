@@ -13,7 +13,7 @@ use Attribute;
 final class FormField
 {
     /**
-     * @param array<string, mixed> $options Extra UI options (placeholder, maxlength, step, class→extra, searchable, …)
+     * @param array<string, mixed> $options Extra UI options (placeholder, maxlength, step, class→extra, searchable, multiple, clearable, …)
      * @param list<array{value?: string, label?: string}|string> $choices Static select options (prefer choicesFrom)
      */
     public function __construct(

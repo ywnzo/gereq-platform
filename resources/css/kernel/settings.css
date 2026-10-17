@@ -31,17 +31,30 @@
     font-weight: 500;
 }
 .form-grid > .field,
+.form-grid > .g-field,
 .form-grid > .settings-row {
     align-self: stretch;
 }
 .form-grid > .field > .input,
 .form-grid > .field > select,
+.form-grid > .field > .g-select,
+.form-grid > .settings-row > .g-select,
 .form-grid > .settings-row > .color-picker {
     width: 100%;
 }
+.form-grid > .g-field > .g-select {
+    width: 100%;
+}
 .form-grid > .field > .field__hint,
+.form-grid > .g-field > .g-hint,
 .form-grid > .settings-row > .field__hint {
     min-height: 1.35em;
+}
+.settings-row > .g-field {
+    margin: 0;
+}
+.settings-row > .g-field > .g-select {
+    width: 100%;
 }
 
 .dash-settings {

@@ -14,6 +14,7 @@ use Gereq\Admin\Menu\MenuItem;
 use Gereq\Api\ApiModule;
 use Gereq\Api\ApiRegistry;
 use Gereq\Auth\Authenticator;
+use Gereq\Currency\Application\CurrencyAdminTable;
 use Gereq\Currency\Application\CurrencyBuilder;
 use Gereq\Currency\Application\CurrencyConverter;
 use Gereq\Currency\Application\UserCurrencyPreferenceStore;
@@ -67,6 +68,7 @@ final class CurrencyRegistrar
         private readonly CurrencyBuilder $money,
         private readonly CurrencyConverter $converter,
         private readonly UserCurrencyPreferenceStore $prefs,
+        private readonly CurrencyAdminTable $currencyTable,
     ) {
     }
 
@@ -336,8 +338,11 @@ final class CurrencyRegistrar
                 return $html;
             }
 
+            $items = $loadItems();
+
             return $html . $twig->render('currency/partials/manage.html.twig', [
-                'items' => $loadItems(),
+                'items' => $items,
+                'tableHtml' => $this->currencyTable->render($items, $user),
                 'rates' => $this->latestCnbRatesForSettings(),
                 'embedded' => true,
                 'user' => $user,

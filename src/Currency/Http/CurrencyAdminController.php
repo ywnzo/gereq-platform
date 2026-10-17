@@ -12,9 +12,11 @@ use Gereq\Auth\Authenticator;
 use Gereq\Event\EventBus;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
+use Gereq\Currency\Application\CurrencyAdminTable;
+use Gereq\Currency\Application\SyncExchangeRates;
 use Gereq\Currency\Domain\Currency;
 use Gereq\Currency\Domain\ExchangeRate;
-use Gereq\Currency\Application\SyncExchangeRates;
+use Gereq\User\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,6 +37,7 @@ final class CurrencyAdminController extends Controller
         private readonly EventBus $events,
         private readonly SyncExchangeRates $rateSync,
         private readonly TranslatorInterface $translator,
+        private readonly CurrencyAdminTable $currencyTable,
     ) {
         parent::__construct($twig, $router, $requestStack);
     }
@@ -50,10 +53,12 @@ final class CurrencyAdminController extends Controller
 
         /** @var list<Currency> $items */
         $items = $qb->getQuery()->getResult();
+        $user = $this->auth->user();
 
         return $this->page('currency/index.html.twig', [
             'pageTitle' => $this->translator->trans('currency.title'),
             'items' => $items,
+            'tableHtml' => $this->currencyTable->render($items, $user instanceof User ? $user : null, $request),
             'search' => $search,
             'rates' => $this->latestCnbRates(),
         ]);

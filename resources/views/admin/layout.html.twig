@@ -18,6 +18,54 @@
         data-theme-label-light="{{ 'settings.theme.light'|trans|e('html_attr') }}"
         data-theme-label-system="{{ 'settings.theme.system'|trans|e('html_attr') }}"
     >
+        <div class="app-ambient" aria-hidden="true" style="--ambient-px:0;--ambient-py:0">
+            {# Irregular shards / ribbons — avoid large solid flats after blur. #}
+            <div class="app-ambient__parallax app-ambient__parallax--a">
+            <svg class="app-ambient__layer app-ambient__layer--a" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M-40 180 C120 40, 260 -20, 420 90 S680 40, 820 -30" stroke-width="16" opacity="0.7"/>
+                    <path d="M-20 280 C160 120, 340 60, 500 200 S780 140, 980 40" stroke-width="22" opacity="0.8"/>
+                    <path d="M40 420 C220 260, 400 300, 560 180 S860 220, 1100 80" stroke-width="14" opacity="0.65"/>
+                    <path d="M120 860 C320 620, 480 700, 640 480 S920 520, 1180 260" stroke-width="20" opacity="0.75"/>
+                    <path d="M200 820 C380 640, 560 560, 740 620 S980 400, 1220 480" stroke-width="12" opacity="0.6"/>
+                    <path d="M-60 520 C180 680, 360 440, 540 600 S860 500, 1080 720" stroke-width="18" opacity="0.7"/>
+                </g>
+                <g fill="currentColor">
+                    <polygon points="140,80 210,55 245,120 190,165 115,140" opacity="0.8"/>
+                    <polygon points="320,40 370,90 340,150 275,130 280,70" opacity="0.65"/>
+                    <polygon points="980,70 1045,95 1020,160 955,145 940,90" opacity="0.75"/>
+                    <polygon points="500,280 565,255 600,320 555,370 475,340" opacity="0.7"/>
+                    <polygon points="680,300 730,270 775,330 720,385 655,350" opacity="0.65"/>
+                    <polygon points="420,450 470,420 510,480 455,520 395,490" opacity="0.6"/>
+                    <polygon points="760,430 820,410 850,475 790,510 740,470" opacity="0.7"/>
+                    <polygon points="200,520 255,490 290,555 230,590 175,560" opacity="0.55"/>
+                </g>
+            </svg>
+            </div>
+            <div class="app-ambient__parallax app-ambient__parallax--b">
+            <svg class="app-ambient__layer app-ambient__layer--b" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1280 40 C980 120, 860 -40, 640 100 S320 20, -40 160" stroke-width="15" opacity="0.65"/>
+                    <path d="M1240 220 C1000 80, 780 260, 560 120 S260 200, 20 80" stroke-width="19" opacity="0.75"/>
+                    <path d="M1260 700 C980 520, 820 780, 580 560 S300 720, -20 540" stroke-width="17" opacity="0.7"/>
+                    <path d="M1100 860 C860 640, 700 820, 480 640 S220 780, 40 620" stroke-width="13" opacity="0.6"/>
+                    <path d="M60 40 C240 220, 420 -20, 620 180 S900 40, 1140 260" stroke-width="21" opacity="0.7"/>
+                </g>
+                <g fill="currentColor">
+                    <polygon points="860,480 925,450 970,520 910,575 840,540" opacity="0.75"/>
+                    <polygon points="120,500 175,465 215,535 155,580 95,545" opacity="0.65"/>
+                    <polygon points="640,220 700,190 745,260 680,305 615,270" opacity="0.7"/>
+                    <polygon points="380,260 430,230 475,300 410,340 350,305" opacity="0.6"/>
+                    <polygon points="540,400 600,365 645,440 575,485 510,450" opacity="0.7"/>
+                    <polygon points="280,340 330,305 365,380 300,415 245,375" opacity="0.55"/>
+                    <polygon points="800,180 850,150 890,215 830,255 775,220" opacity="0.65"/>
+                    <polygon points="1000,320 1055,290 1090,360 1030,400 975,360" opacity="0.6"/>
+                    <path d="M560 300 C590 270, 630 290, 620 340 C610 385, 560 390, 540 350 C525 320, 540 310, 560 300 Z" opacity="0.5"/>
+                </g>
+            </svg>
+            </div>
+        </div>
+
         <div class="sidebar-backdrop" @click="closeSidebar" :class="backdropClass"></div>
 
         {% include 'admin/partials/sidebar.html.twig' %}
@@ -205,6 +253,8 @@
             {%- endfor -%}
         ];
         window.__GEREQ_CSRF__ = {{ csrf_token()|json_encode|raw }};
+        window.__GEREQ_UI_PREFS__ = {{ (user ? user.uiPreferences() : {})|json_encode|raw }};
+        window.__GEREQ_UI_PREFS_URL__ = {{ url('admin.ui.preferences.save')|json_encode|raw }};
         window.__GEREQ_FORM_CLEARED__ = {{ flash('form_cleared')|json_encode|raw }};
         window.__GEREQ_FORM_FP_CLEARED__ = {{ flash('form_fp_cleared')|json_encode|raw }};
         window.__GEREQ_SEARCH_URL__ = {{ url('admin.search')|json_encode|raw }};

@@ -212,6 +212,36 @@ final class UiKitCatalog
             'form' => null,
         ]);
 
+        $selectMulti = $ui->select([
+            'name' => 'demo_tags',
+            'label' => $t->trans('design.ui.demo_multi'),
+            'value' => ['sale', 'new'],
+            'multiple' => true,
+            'searchable' => true,
+            'clearable' => true,
+            'options' => [
+                ['value' => 'sale', 'label' => 'Sale', 'icon' => 'tag'],
+                ['value' => 'new', 'label' => 'New', 'icon' => 'plus'],
+                ['value' => 'featured', 'label' => 'Featured', 'icon' => 'star'],
+                ['value' => 'b2b', 'label' => 'B2B'],
+                ['value' => 'export', 'label' => 'Export'],
+            ],
+            'form' => null,
+        ]);
+
+        $selectClearable = $ui->select([
+            'name' => 'demo_status_clear',
+            'label' => $t->trans('design.ui.demo_clearable'),
+            'value' => 'active',
+            'clearable' => true,
+            'options' => [
+                ['value' => 'active', 'label' => $t->trans('common.active'), 'tone' => 'available'],
+                ['value' => 'inactive', 'label' => $t->trans('common.inactive'), 'tone' => 'out_of_service'],
+                ['value' => 'pending', 'label' => $t->trans('common.pending'), 'tone' => 'in_service'],
+            ],
+            'form' => null,
+        ]);
+
         $editor = $ui->editor([
             'name' => 'demo_body',
             'label' => $t->trans('design.ui.demo_editor'),
@@ -555,6 +585,40 @@ ui()->select([
 ]);
 PHP,
                         '<form class="grq-stack" onsubmit="return false" style="max-width:22rem">' . $selectSearch . '</form>',
+                    ),
+                    $this->uiDemo(
+                        'select-multi',
+                        'ui()->select() — multi + search',
+                        'ui()->select(array $data): string',
+                        <<<'PHP'
+ui()->select([
+    'name' => 'tags',
+    'label' => 'Tags',
+    'multiple' => true,
+    'searchable' => true,
+    'clearable' => true,
+    'value' => ['sale', 'new'],
+    'options' => [/* … */],
+    'form' => null,
+]);
+PHP,
+                        '<form class="grq-stack" onsubmit="return false" style="max-width:22rem">' . $selectMulti . '</form>',
+                    ),
+                    $this->uiDemo(
+                        'select-clearable',
+                        'ui()->select() — clearable',
+                        'ui()->select(array $data): string',
+                        <<<'PHP'
+ui()->select([
+    'name' => 'status',
+    'label' => 'Status',
+    'clearable' => true,
+    'value' => 'active',
+    'options' => [/* … */],
+    'form' => null,
+]);
+PHP,
+                        '<form class="grq-stack" onsubmit="return false" style="max-width:22rem">' . $selectClearable . '</form>',
                     ),
                     $this->uiDemo(
                         'check-switch',

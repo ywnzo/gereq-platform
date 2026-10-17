@@ -68,6 +68,7 @@ final class Application
     public static function create(string $basePath): self
     {
         $basePath = rtrim($basePath, '/');
+        StorageLayout::ensure($basePath);
         self::loadEnv($basePath);
         $config = self::loadConfig($basePath);
 
@@ -269,6 +270,8 @@ final class Application
             }),
             \Gereq\Module\ModuleVersionStore::class => autowire()
                 ->constructorParameter('basePath', $basePath),
+            \Gereq\Module\ModuleInstalledSnapshot::class => autowire()
+                ->constructorParameter('basePath', $basePath),
             \Gereq\Module\ModuleVersionActivator::class => autowire()
                 ->constructorParameter('basePath', $basePath),
             DatabaseBootstrap::class => autowire()
@@ -315,9 +318,9 @@ final class Application
             \Gereq\Console\Command\EnvValidateCommand::class => autowire()->constructorParameter('basePath', $basePath),
             \Modules\Fleet\Application\VehicleCatalogClient::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Modules\Orders\Application\InvoiceIssuingService::class => autowire()
+            \Modules\Shop\Submodules\Orders\Application\InvoiceIssuingService::class => autowire()
                 ->constructorParameter('basePath', $basePath),
-            \Modules\CustomerUploads\Application\CustomerUploadService::class => autowire()
+            \Modules\Shop\Submodules\CustomerUploads\Application\CustomerUploadService::class => autowire()
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Media\Http\MediaController::class => autowire()->constructorParameter('basePath', $basePath),
             \Modules\Ai\Application\AiIntegrationGate::class => \DI\get(\Modules\Ai\Application\ModuleAiIntegrationGate::class),

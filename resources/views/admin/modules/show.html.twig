@@ -60,7 +60,7 @@
                         {{ icon('pause') }} {{ 'common.pause'|trans }}
                     </button>
                 </form>
-            {% else %}
+            {% elseif parent_enabled is not defined or parent_enabled %}
                 <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
                     {{ csrf_field()|raw }}
                     <button class="btn btn--success" type="submit">
@@ -95,6 +95,10 @@
             {% endif %}
         </div>
     </header>
+
+    {% if children is not empty %}
+        {% include 'admin/modules/_children.html.twig' with { children: children, parent: manifest, parent_enabled: enabled } %}
+    {% endif %}
 
     {% if overview.update_available %}
         <div class="alert alert--warn">
@@ -517,22 +521,29 @@
                                 {% set field = key|replace({'.': '__'}) %}
                                 {% set value = settingValues[key]|default(setting.default) %}
                                 {% set secret = setting.type == 'encrypted' or 'secret' in key|lower or 'password' in key|lower or 'token' in key|lower or 'api_key' in key|lower %}
-                                <label class="field">
-                                    <span>{{ setting.label|trans }}</span>
-                                    {% if setting.type == 'boolean' %}
-                                        <select class="input" name="{{ field }}">
-                                            <option value="1" {{ value ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
-                                            <option value="0" {{ not value ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
-                                        </select>
-                                    {% elseif setting.type == 'json' %}
-                                        <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ value|json_encode }}</textarea>
-                                    {% elseif secret %}
-                                        <input class="input" type="password" name="{{ field }}" value="{{ value }}" autocomplete="new-password" placeholder="{{ value ? ('settings.secret.placeholder'|trans) : '' }}">
-                                    {% else %}
-                                        <input class="input" type="text" name="{{ field }}" value="{{ value }}">
-                                    {% endif %}
-                                    <small class="field__hint"><code>{{ key }}</code></small>
-                                </label>
+                                {% if setting.type == 'boolean' %}
+                                    <div class="settings-row">
+                                        {% include 'admin/settings/_choice_select.html.twig' with {
+                                            field: field,
+                                            value: value,
+                                            options: null,
+                                            label: setting.label|trans,
+                                        } %}
+                                        <small class="field__hint"><code>{{ key }}</code></small>
+                                    </div>
+                                {% else %}
+                                    <label class="field">
+                                        <span>{{ setting.label|trans }}</span>
+                                        {% if setting.type == 'json' %}
+                                            <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ value|json_encode }}</textarea>
+                                        {% elseif secret %}
+                                            <input class="input" type="password" name="{{ field }}" value="{{ value }}" autocomplete="new-password" placeholder="{{ value ? ('settings.secret.placeholder'|trans) : '' }}">
+                                        {% else %}
+                                            <input class="input" type="text" name="{{ field }}" value="{{ value }}">
+                                        {% endif %}
+                                        <small class="field__hint"><code>{{ key }}</code></small>
+                                    </label>
+                                {% endif %}
                             {% endfor %}
                         </div>
                         <div class="actions" style="margin-top:1rem">

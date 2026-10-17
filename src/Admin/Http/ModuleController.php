@@ -17,6 +17,7 @@ use Gereq\Module\ModuleManager;
 use Gereq\Module\ModuleUninstaller;
 use Gereq\Module\ModuleUpdater;
 use Gereq\Module\ModuleVersionActivator;
+use Gereq\Module\ModuleVersionBumper;
 use Gereq\Module\ModuleVersionInstaller;
 use Gereq\Database\Migrator;
 use Gereq\Setting\SettingRecord;
@@ -41,6 +42,7 @@ final class ModuleController extends Controller
         private readonly ModuleInspector $inspector,
         private readonly ModuleUpdater $updater,
         private readonly ModuleUninstaller $uninstaller,
+        private readonly ModuleVersionBumper $bumper,
         private readonly Migrator $migrator,
         private readonly ModuleGroupCatalog $groups,
         private readonly ModuleVersionInstaller $versions,
@@ -55,6 +57,7 @@ final class ModuleController extends Controller
 
     public function index(): Response
     {
+        $this->twig->setCache(false);
         $items = [];
         foreach ($this->modules->discover() as $manifest) {
             $report = $this->inspector->inspect($manifest);
@@ -64,6 +67,7 @@ final class ModuleController extends Controller
                 : '9999_99_99_999999';
             $items[] = [
                 'manifest' => $manifest,
+                'parent_name' => $manifest->parentId !== null ? $this->modules->manifest($manifest->parentId)?->name : null,
                 'installed' => $this->modules->installed($manifest->id) !== null,
                 'enabled' => $report['overview']['enabled'],
                 'missing' => $report['overview']['enabled'] ? $report['overview']['missing'] : [],
@@ -100,16 +104,33 @@ final class ModuleController extends Controller
             static fn (array $row): bool => !$row['manifest']->isIntegration(),
         ));
         // Keep children directly below their parent while preserving root ordering.
+        $childCounts = [];
+        foreach ($moduleItems as $row) {
+            $parentId = $row['manifest']->parentId;
+            if ($parentId !== null) {
+                $childCounts[$parentId] = ($childCounts[$parentId] ?? 0) + 1;
+            }
+        }
         $ordered = [];
         foreach ($moduleItems as $row) {
             if ($row['manifest']->parentId !== null) {
                 continue;
             }
+            $row['child_count'] = $childCounts[$row['manifest']->id] ?? 0;
+            $row['parent_enabled'] = true;
             $ordered[] = $row;
+            $children = [];
             foreach ($moduleItems as $child) {
                 if ($child['manifest']->parentId === $row['manifest']->id) {
-                    $ordered[] = $child;
+                    $child['child_count'] = 0;
+                    // Submodules cannot be activated while the parent module is off.
+                    $child['parent_enabled'] = $row['enabled'];
+                    $children[] = $child;
                 }
+            }
+            usort($children, static fn (array $a, array $b): int => $a['manifest']->name <=> $b['manifest']->name);
+            foreach ($children as $child) {
+                $ordered[] = $child;
             }
         }
         $moduleItems = $ordered;
@@ -145,9 +166,24 @@ final class ModuleController extends Controller
 
     public function show(string $id): Response
     {
+        $this->twig->setCache(false);
         $manifest = $this->modules->manifest($id);
         if ($manifest === null) {
             $this->abort(404, $this->translator->trans('admin.modules.not_found'));
+        }
+
+        $children = [];
+        foreach ($this->modules->discover() as $child) {
+            if ($child->parentId !== $id) {
+                continue;
+            }
+            $children[] = [
+                'manifest' => $child,
+                'enabled' => $this->modules->isEnabled($child->id),
+                'installed' => $this->modules->installed($child->id) !== null,
+                'missing' => $this->modules->missingDependencies($child),
+                'update_available' => $this->updater->isUpdateAvailable($child->id),
+            ];
         }
 
         $report = $this->inspector->inspect($manifest);
@@ -179,10 +215,15 @@ final class ModuleController extends Controller
             }
         }
 
+        $parentEnabled = $manifest->parentId === null
+            || $this->modules->isEnabled($manifest->parentId);
+
         return $this->page('admin/modules/show.html.twig', [
             'pageTitle' => $manifest->name,
             'manifest' => $manifest,
+            'children' => $children,
             'enabled' => $report['overview']['enabled'],
+            'parent_enabled' => $parentEnabled,
             'missing' => $report['overview']['missing'],
             'report' => $report,
             'settingsRoute' => $report['overview']['settings_route'],
@@ -261,52 +302,94 @@ final class ModuleController extends Controller
         try {
             $this->modules->enable($id);
             $this->migrator->migrateModule($id);
-            $this->flash('success', $this->translator->trans('admin.modules.activated'));
-        } catch (\Throwable $e) {
-            $this->flash('error', $e->getMessage());
-        }
+            $message = $this->translator->trans('admin.modules.activated');
+            if (!$this->wantsJson()) {
+                $this->flash('success', $message);
+            }
 
-        return $this->modulesReturnRedirect($id);
+            return $this->modulesActionResponse(
+                action: 'enable',
+                id: $id,
+                message: $message,
+                modules: $this->moduleStates([$id]),
+            );
+        } catch (\Throwable $e) {
+            return $this->modulesActionError($id, $e->getMessage());
+        }
     }
 
     public function pause(string $id): Response
     {
         try {
+            $affected = $this->modules->expandWithDependents([$id]);
             $result = $this->modules->pauseMany([$id]);
+            $message = null;
             if ($result['ok'] > 0) {
-                $this->flash('success', $this->translator->trans('admin.modules.paused', [
+                $message = $this->translator->trans('admin.modules.paused', [
                     '%count%' => $result['ok'],
-                ]));
+                ]);
+                if (!$this->wantsJson()) {
+                    $this->flash('success', $message);
+                }
             }
-            if ($result['errors'] !== []) {
-                $this->flash('error', implode(' · ', array_slice($result['errors'], 0, 5)));
+            $error = $result['errors'] !== []
+                ? implode(' · ', array_slice($result['errors'], 0, 5))
+                : null;
+            if ($error !== null && !$this->wantsJson()) {
+                $this->flash('error', $error);
             }
-        } catch (\Throwable $e) {
-            $this->flash('error', $e->getMessage());
-        }
+            if ($this->wantsJson() && $result['ok'] === 0 && $error !== null) {
+                return $this->jsonError('module_pause_failed', $error, [], 422);
+            }
 
-        return $this->modulesReturnRedirect($id);
+            return $this->modulesActionResponse(
+                action: 'pause',
+                id: $id,
+                message: $message ?? '',
+                modules: $this->moduleStates($affected),
+                error: $error,
+            );
+        } catch (\Throwable $e) {
+            return $this->modulesActionError($id, $e->getMessage());
+        }
     }
 
     public function disable(Request $request, string $id): Response
     {
         $purgeMedia = $request->request->getBoolean('purge_media');
         try {
+            $affected = $this->modules->expandWithDependents([$id], true);
             $result = $this->uninstaller->uninstallMany([$id], $purgeMedia);
+            $message = null;
             if ($result['ok'] > 0) {
-                $this->flash('success', $this->translator->trans(
+                $message = $this->translator->trans(
                     $purgeMedia ? 'admin.modules.deactivated_purged_media' : 'admin.modules.deactivated_purged',
                     ['%count%' => $result['ok']]
-                ));
+                );
+                if (!$this->wantsJson()) {
+                    $this->flash('success', $message);
+                }
             }
-            if ($result['errors'] !== []) {
-                $this->flash('error', implode(' · ', array_slice($result['errors'], 0, 5)));
+            $error = $result['errors'] !== []
+                ? implode(' · ', array_slice($result['errors'], 0, 5))
+                : null;
+            if ($error !== null && !$this->wantsJson()) {
+                $this->flash('error', $error);
             }
-        } catch (\Throwable $e) {
-            $this->flash('error', $e->getMessage());
-        }
+            if ($this->wantsJson() && $result['ok'] === 0 && $error !== null) {
+                return $this->jsonError('module_disable_failed', $error, [], 422);
+            }
 
-        return $this->modulesReturnRedirect($id);
+            return $this->modulesActionResponse(
+                action: 'disable',
+                id: $id,
+                message: $message ?? '',
+                modules: $this->moduleStates($affected),
+                error: $error,
+            );
+        } catch (\Throwable $e) {
+            return $this->modulesActionError($id, $e->getMessage());
+        }
     }
 
     public function saveSettings(Request $request, string $id): Response
@@ -357,12 +440,30 @@ final class ModuleController extends Controller
     public function update(string $id): Response
     {
         try {
+            $bump = (string) ($this->request()?->request->get('bump') ?? '') === '1';
+            $bumpedTo = null;
+            if ($bump) {
+                $manifest = $this->modules->manifest($id);
+                $installed = $this->modules->installed($id);
+                if ($manifest === null || $installed === null || $manifest->version !== $installed->version()) {
+                    throw new \RuntimeException($this->translator->trans('admin.modules.gate.bump_same_version_only'));
+                }
+                $bumpedTo = $this->bumper->bumpPatch($id);
+            }
+
             $messages = $this->updater->update($id);
             $count = count($messages);
-            $this->flash('success', $this->translator->trans(
-                $count > 0 ? 'admin.modules.updated_with_migrations' : 'admin.modules.updated',
-                ['%count%' => $count]
-            ));
+            if ($bumpedTo !== null) {
+                $this->flash('success', $this->translator->trans('admin.modules.updated_with_bump', [
+                    '%version%' => $bumpedTo,
+                    '%count%' => $count,
+                ]));
+            } else {
+                $this->flash('success', $this->translator->trans(
+                    $count > 0 ? 'admin.modules.updated_with_migrations' : 'admin.modules.updated',
+                    ['%count%' => $count]
+                ));
+            }
         } catch (\Throwable $e) {
             $this->flash('error', $e->getMessage());
         }
@@ -529,6 +630,68 @@ final class ModuleController extends Controller
         }
 
         return $this->redirect('admin.modules.show', ['id' => $id]);
+    }
+
+    /**
+     * @param list<string> $ids
+     * @return list<array{id: string, enabled: bool, installed: bool, parent_id: ?string, parent_enabled: bool}>
+     */
+    private function moduleStates(array $ids): array
+    {
+        $out = [];
+        foreach (array_values(array_unique($ids)) as $moduleId) {
+            if ($moduleId === '') {
+                continue;
+            }
+            $manifest = $this->modules->manifest($moduleId);
+            if ($manifest === null) {
+                continue;
+            }
+            $parentId = $manifest->parentId;
+            $out[] = [
+                'id' => $moduleId,
+                'enabled' => $this->modules->isEnabled($moduleId),
+                'installed' => $this->modules->installed($moduleId) !== null,
+                'parent_id' => $parentId,
+                'parent_enabled' => $parentId === null || $this->modules->isEnabled($parentId),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param list<array{id: string, enabled: bool, installed: bool, parent_id: ?string, parent_enabled: bool}> $modules
+     */
+    private function modulesActionResponse(
+        string $action,
+        string $id,
+        string $message,
+        array $modules,
+        ?string $error = null,
+    ): Response {
+        if ($this->wantsJson()) {
+            return $this->json([
+                'ok' => $error === null || $modules !== [],
+                'action' => $action,
+                'id' => $id,
+                'message' => $message,
+                'error' => $error,
+                'modules' => $modules,
+            ]);
+        }
+
+        return $this->modulesReturnRedirect($id);
+    }
+
+    private function modulesActionError(string $id, string $message): Response
+    {
+        if ($this->wantsJson()) {
+            return $this->jsonError('module_action_failed', $message, [], 422);
+        }
+        $this->flash('error', $message);
+
+        return $this->modulesReturnRedirect($id);
     }
 
     /**

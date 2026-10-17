@@ -20,6 +20,7 @@ final class ModuleUpdater
         private readonly EntityManagerInterface $em,
         private readonly Auditor $auditor,
         private readonly TranslatorInterface $translator,
+        private readonly ModuleInstalledSnapshot $snapshots,
     ) {
     }
 
@@ -58,6 +59,10 @@ final class ModuleUpdater
         $liveFootprint = ModuleFootprint::ofDirectory($manifest->path);
         $installedFootprint = $row->footprint();
         if ($liveFootprint === '' || $installedFootprint === null || $installedFootprint === $liveFootprint) {
+            if ($liveFootprint !== '' && ($installedFootprint === null || $installedFootprint === $liveFootprint)) {
+                $this->ensureInstalledSnapshot($id, $manifest, $liveFootprint);
+            }
+
             return $this->updateAvailableCache[$id] = false;
         }
 
@@ -66,11 +71,31 @@ final class ModuleUpdater
         if ($installedFootprint === $legacyFootprint) {
             $row->setFootprint($liveFootprint);
             $this->em->flush();
+            $this->ensureInstalledSnapshot($id, $manifest, $liveFootprint);
 
             return $this->updateAvailableCache[$id] = false;
         }
 
         return $this->updateAvailableCache[$id] = true;
+    }
+
+    /** Persist file inventory for the installed footprint so the gate can list real diffs later. */
+    private function ensureInstalledSnapshot(string $id, ModuleManifest $manifest, string $footprint): void
+    {
+        $existing = $this->snapshots->read($id);
+        if (
+            $existing !== null
+            && $existing['footprint'] === $footprint
+            && $existing['files'] !== []
+        ) {
+            return;
+        }
+        $this->snapshots->write(
+            $id,
+            $manifest->version,
+            $footprint,
+            ModuleFootprint::inventory($manifest->path),
+        );
     }
 
     /**
@@ -118,6 +143,15 @@ final class ModuleUpdater
             'footprint' => $row->footprint(),
             'migrations' => count($messages),
         ]);
+
+        if ($liveFootprint !== '') {
+            $this->snapshots->write(
+                $id,
+                $manifest->version,
+                $liveFootprint,
+                ModuleFootprint::inventory($manifest->path),
+            );
+        }
 
         unset($this->updateAvailableCache[$id]);
 

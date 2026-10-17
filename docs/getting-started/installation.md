@@ -65,6 +65,27 @@ When Docker mode is chosen the script sets `QUEUE_DRIVER=redis`, `SESSION_DRIVER
 
 After it finishes: admin at `<APP_URL>/admin`, first-run wizard at `<APP_URL>/admin/setup` (enforced by `src/Http/Middleware/SetupMiddleware.php` until completed).
 
+The first-run wizard is available to administrators and has four required steps:
+application name/language/theme, administrator account, platform operator, and module selection.
+The operator can be a business (name, eight-digit company ID, optional VAT ID, address,
+email) or a private individual (first/last name, address, date of birth). These values
+are core settings under `operator.*`; invoice numbering, seller settings and shop
+configuration belong to their modules and are not part of first-run setup.
+
+The module gallery contains every locally discovered module, bundled submodule and
+integration, without a display limit. Search matches names, descriptions and IDs
+without requiring diacritics; it combines with categories derived from package
+configuration and manifest groups. Filtering preserves checkbox selections.
+
+Selecting modules also enables their required dependencies, including parents of
+bundled submodules, and applies their migrations. Deselecting a module pauses it
+without deleting its data. With no modules selected, confirming step four completes
+setup immediately. Otherwise step five offers the existing dashboard widget editor
+with widget visibility, ordering and panel widths. Setup finishes when that layout
+is confirmed. Completed steps are tracked in `setup.completed_steps`; direct requests
+cannot skip required steps or alter setup after completion.
+
+
 ## Option B — manual, non-interactive
 
 ```bash

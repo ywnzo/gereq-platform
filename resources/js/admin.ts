@@ -1,5 +1,11 @@
 import Alpine from '@alpinejs/csp';
 import { registerUi } from './ui';
+import {
+    navGroupOpen,
+    navTreeOpen,
+    patchUiPreferences,
+    readUiPreferences,
+} from './ui/uiPreferences';
 import '../css/kernel.css';
 import '../css/customers.css';
 import '../css/media.css';
@@ -658,16 +664,17 @@ Alpine.data('gereqAdmin', () => ({
 Alpine.data('navGroup', () => ({
     open: true,
     init() {
-        const key = this.storageKey();
-        const stored = localStorage.getItem(key);
-        if (stored === '0') {
-            this.open = false;
-        } else if (stored === '1') {
-            this.open = true;
+        const group = (this.$el as HTMLElement).dataset.group || '';
+        const fromAccount = navGroupOpen(group, true);
+        const legacyKey = 'gereq-nav-group:' + group;
+        const legacy = localStorage.getItem(legacyKey);
+        if (readUiPreferences().nav_groups?.[group] === undefined && (legacy === '0' || legacy === '1')) {
+            this.open = legacy === '1';
+            patchUiPreferences({ nav_groups: { [group]: this.open } });
+            localStorage.removeItem(legacyKey);
+        } else {
+            this.open = fromAccount;
         }
-    },
-    storageKey(): string {
-        return 'gereq-nav-group:' + ((this.$el as HTMLElement).dataset.group || '');
     },
     get groupClass(): string {
         return this.open ? 'is-open' : 'is-closed';
@@ -680,7 +687,10 @@ Alpine.data('navGroup', () => ({
     },
     toggle() {
         this.open = !this.open;
-        localStorage.setItem(this.storageKey(), this.open ? '1' : '0');
+        const group = (this.$el as HTMLElement).dataset.group || '';
+        if (group !== '') {
+            patchUiPreferences({ nav_groups: { [group]: this.open } });
+        }
     },
 }));
 
@@ -817,17 +827,23 @@ Alpine.data('navTree', (): Alpine.AlpineComponent<NavTreeData> => ({
     ...createFlyoutHost(),
     init() {
         const el = this.$el as HTMLElement;
-        const key = this.storageKey();
-        const stored = localStorage.getItem(key);
+        const treeId = el.dataset.treeId || '';
         const routeOpen = (el.dataset.defaultOpen || '0') === '1';
+        const legacyKey = 'gereq-nav-tree:' + treeId;
+        const legacy = localStorage.getItem(legacyKey);
+        const accountValue = readUiPreferences().nav_trees?.[treeId];
         if (routeOpen) {
             this.open = true;
-        } else if (stored === '1') {
-            this.open = true;
-        } else if (stored === '0') {
-            this.open = false;
+        } else if (typeof accountValue === 'boolean') {
+            this.open = accountValue;
+        } else if (legacy === '1' || legacy === '0') {
+            this.open = legacy === '1';
+            if (treeId !== '') {
+                patchUiPreferences({ nav_trees: { [treeId]: this.open } });
+                localStorage.removeItem(legacyKey);
+            }
         } else {
-            this.open = false;
+            this.open = navTreeOpen(treeId, false);
         }
         return this.bindFlyoutExclusive();
     },
@@ -845,7 +861,10 @@ Alpine.data('navTree', (): Alpine.AlpineComponent<NavTreeData> => ({
     },
     toggle() {
         this.open = !this.open;
-        localStorage.setItem(this.storageKey(), this.open ? '1' : '0');
+        const treeId = (this.$el as HTMLElement).dataset.treeId || '';
+        if (treeId !== '') {
+            patchUiPreferences({ nav_trees: { [treeId]: this.open } });
+        }
     },
 }));
 

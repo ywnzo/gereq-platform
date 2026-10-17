@@ -1,4 +1,5 @@
 import type Alpine from '@alpinejs/csp';
+import { registerSetup } from './setup';
 import { registerAres } from './ares';
 import { registerCmsBlockForm } from '../../../modules/Cms/Resources/assets/js/cmsBlockForm';
 import { registerCmsBuilder } from '../../../modules/Cms/Resources/assets/js/cmsBuilder';
@@ -19,6 +20,7 @@ import { registerIconPicker } from './iconPicker';
 import { registerTabs } from './tabs';
 import { registerStickyChrome } from './stickyChrome';
 import { registerDashboardGrid } from './dashboardGrid';
+import { registerAmbientPointer } from './ambientPointer';
 import { registerSettingsBrandPreview } from './settingsBrandPreview';
 import { registerColorField } from './colorField';
 import { registerBrandAsset } from './brandAsset';
@@ -29,6 +31,7 @@ import { registerPageProgress } from './pageProgress';
 import { registerFile } from './file';
 import { registerMediaBox } from './mediaBox';
 import { registerToolbarAutosubmit } from './toolbarAutosubmit';
+import { registerPageHeaderFilters } from './pageHeaderFilters';
 import { registerCustomerEdit } from '../customers/customerEdit';
 import { registerCustomerNotes } from '../customers/customerNotes';
 import { registerCustomerContactForm } from '../customers/customerContactForm';
@@ -39,8 +42,10 @@ import { registerApiTester } from './apiTester';
 import { registerWebplusOgPreview } from '../../../modules/WebPlus/Resources/assets/js/ogPreview';
 
 export function registerUi(alpine: typeof Alpine): void {
+    registerSetup(alpine);
     registerPageProgress();
     registerToolbarAutosubmit();
+    registerPageHeaderFilters();
     registerSelect(alpine);
     registerIconPicker(alpine);
     registerModal(alpine);
@@ -58,6 +63,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerTabs(alpine);
     registerStickyChrome();
     registerDashboardGrid();
+    registerAmbientPointer();
     registerWebauthn(alpine);
     registerSettingsBrandPreview(alpine);
     registerColorField(alpine);

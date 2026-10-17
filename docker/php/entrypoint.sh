@@ -11,11 +11,23 @@ fi
 
 for dir in \
     storage/cache \
+    storage/cache/data \
+    storage/cache/storefront \
+    storage/cache/twig \
+    storage/cache/doctrine \
+    storage/cache/rate \
+    storage/cache/media \
     storage/logs \
     storage/sessions \
     storage/tmp \
     storage/tmp/queue \
-    storage/uploads
+    storage/tmp/queue-delayed \
+    storage/tmp/schedule-locks \
+    storage/uploads \
+    storage/uploads/brand \
+    storage/framework \
+    storage/invoices \
+    storage/modules
 do
     mkdir -p "$dir" 2>/dev/null || true
 done
