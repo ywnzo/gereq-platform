@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun ./scripts/build.ts --watch",
-    "build": "bun ./scripts/build.ts"
+    "build": "bun ./scripts/build.ts",
+    "build:module": "bun ./scripts/build-module.ts",
+    "build:full": "bun ./scripts/build.ts && php gereq assets:ensure"
   },
   "dependencies": {
     "@alpinejs/csp": "^3.14.9",

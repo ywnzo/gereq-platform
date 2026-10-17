@@ -71,6 +71,51 @@ final class RenderEngineTest extends TestCase
         self::assertStringNotContainsString('module-fleet.css', $tags);
     }
 
+    public function testScriptTagsBootstrapOnlyEnabledModuleJs(): void
+    {
+        $dir = $this->scratch();
+        $this->writeManifest($dir, [
+            'resources/js/admin.ts' => [
+                'file' => 'assets/admin.js',
+                'css' => ['assets/admin.css'],
+            ],
+            'module:cms' => [
+                'file' => 'assets/module-cms.js',
+                'css' => ['assets/module-cms.css'],
+                'moduleId' => 'cms',
+            ],
+            'module:fleet' => [
+                'file' => 'assets/module-fleet.js',
+                'css' => ['assets/module-fleet.css'],
+                'moduleId' => 'fleet',
+            ],
+            'module:vitality' => [
+                'file' => 'assets/module-vitality.css',
+                'css' => ['assets/module-vitality.css'],
+                'moduleId' => 'vitality',
+            ],
+        ]);
+
+        $modules = new class (['cms', 'vitality']) implements \Gereq\Module\EnabledModulesProvider {
+            /** @param list<string> $ids */
+            public function __construct(private readonly array $ids)
+            {
+            }
+
+            public function enabledIds(): array
+            {
+                return $this->ids;
+            }
+        };
+
+        $engine = new RenderEngine($dir, $this->config(), $modules);
+        self::assertSame(['/build/assets/module-cms.js'], $engine->enabledModuleJsUrls());
+        $tags = $engine->scriptTags('admin', 'n1');
+        self::assertStringContainsString('window.__GEREQ_MODULE_ASSETS__=["/build/assets/module-cms.js"]', $tags);
+        self::assertStringNotContainsString('module-fleet.js', $tags);
+        self::assertStringContainsString('src="/build/assets/admin.js"', $tags);
+    }
+
     public function testAssetOriginAndPrefixAndCsp(): void
     {
         $dir = $this->scratch();
@@ -140,8 +185,10 @@ final class RenderEngineTest extends TestCase
         self::assertMatchesRegularExpression('#/build/assets/admin\.js\?v=\d+#', $engine->url('admin'));
         $reload = $engine->reloadTags('abc');
         self::assertStringContainsString('nonce="abc"', $reload);
-        self::assertStringContainsString('/build/manifest.json', $reload);
-        self::assertStringContainsString('setInterval(tick, 500)', $reload);
+        self::assertStringContainsString('/build/watch.json', $reload);
+        self::assertStringContainsString('rehydrateCss', $reload);
+        self::assertStringContainsString('viewsAt', $reload);
+        self::assertStringContainsString('asset watch connected', $reload);
     }
 
     /**
@@ -157,7 +204,8 @@ final class RenderEngineTest extends TestCase
                 'public_path' => '/build',
                 'manifest' => 'public/build/manifest.json',
                 'dev_marker' => 'public/build/.dev',
-                'watch' => ['reload' => true, 'poll_ms' => 1200],
+                'watch_state' => 'public/build/watch.json',
+                'watch' => ['reload' => true, 'poll_ms' => 1200, 'probe_when_debug' => true],
                 'entries' => [
                     'admin' => 'resources/js/admin.ts',
                     'css' => 'resources/css/kernel.css',
@@ -165,6 +213,35 @@ final class RenderEngineTest extends TestCase
                 'csp_origins' => [],
             ], $render),
         ]);
+    }
+
+    public function testDebugProbeInjectsReloadWithoutWatchMarker(): void
+    {
+        $dir = $this->scratch();
+        mkdir($dir . '/public/build', 0775, true);
+
+        $engine = new RenderEngine($dir, new Repository([
+            'app' => ['url_prefix' => '', 'debug' => true],
+            'render' => [
+                'asset_origin' => '',
+                'url_prefix' => '',
+                'public_path' => '/build',
+                'manifest' => 'public/build/manifest.json',
+                'dev_marker' => 'public/build/.dev',
+                'watch_state' => 'public/build/watch.json',
+                'watch' => ['reload' => true, 'poll_ms' => 1200, 'probe_when_debug' => true],
+                'entries' => [
+                    'admin' => 'resources/js/admin.ts',
+                    'css' => 'resources/css/kernel.css',
+                ],
+                'csp_origins' => [],
+            ],
+        ]));
+
+        self::assertFalse($engine->isWatch());
+        $reload = $engine->reloadTags();
+        self::assertStringContainsString('/build/watch.json', $reload);
+        self::assertStringContainsString('probeMs', $reload);
     }
 
     /** @param array<string, mixed> $manifest */

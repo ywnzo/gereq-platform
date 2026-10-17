@@ -181,6 +181,7 @@ final class AutoUpdateModulesMiddlewareTest extends TestCase
             $auditor,
             $translator,
             new ModuleInstalledSnapshot($this->tmp),
+            new \Gereq\Module\ModuleFootprintCache($this->tmp),
         );
         $config = new Repository(['app' => ['env' => $environment]]);
         $publishables = new PublishableRegistry();

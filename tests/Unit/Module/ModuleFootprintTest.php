@@ -39,6 +39,27 @@ final class ModuleFootprintTest extends TestCase
         self::assertNotSame($first, ModuleFootprint::ofDirectory($dir));
     }
 
+    public function testQuickSignatureStableForUnchangedMtimes(): void
+    {
+        $dir = $this->scratch('quick');
+        $this->writeTree($dir, ['module.php' => "ok\n", 'A.php' => "<?php\n"]);
+        $first = ModuleFootprint::quickSignature($dir);
+        self::assertSame(64, strlen($first));
+        self::assertSame($first, ModuleFootprint::quickSignature($dir));
+        self::assertNotSame($first, ModuleFootprint::ofDirectory($dir));
+    }
+
+    public function testQuickSignatureChangesWhenFileTouched(): void
+    {
+        $dir = $this->scratch('quick-touch');
+        $this->writeTree($dir, ['module.php' => "ok\n"]);
+        $before = ModuleFootprint::quickSignature($dir);
+        clearstatcache(true, $dir . '/module.php');
+        touch($dir . '/module.php', time() + 5);
+        clearstatcache(true, $dir . '/module.php');
+        self::assertNotSame($before, ModuleFootprint::quickSignature($dir));
+    }
+
     public function testMetaFileAndGitAreExcluded(): void
     {
         $base = $this->scratch('d');

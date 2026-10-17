@@ -21,10 +21,14 @@ return [
     'public_path' => '/build',
     'manifest' => 'public/build/manifest.json',
     'dev_marker' => 'public/build/.dev',
+    /** Browser poll target while `bun run dev` (non-dot twin of `.dev`). */
+    'watch_state' => 'public/build/watch.json',
 
     'watch' => [
         'reload' => true,
         'poll_ms' => 1200,
+        /** When true (default: APP_DEBUG), inject probe even before watch starts. */
+        'probe_when_debug' => true,
     ],
 
     'entries' => [

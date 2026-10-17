@@ -28,9 +28,12 @@ final class AutoUpdateModulesMiddleware implements MiddlewareInterface
 
     public function process(Request $request, callable $next): Response
     {
+        // Env first — short-circuit before Settings::getLive (avoids warming settings in prod).
         $environment = strtolower(trim((string) $this->config->get('app.env', 'production')));
-        if (!in_array($environment, ['local', 'dev', 'development', 'testing'], true)
-            || !$this->settings->getLive(self::SETTING_ENABLED, false)
+        if (!in_array($environment, ['local', 'dev', 'development', 'testing'], true)) {
+            return $next($request);
+        }
+        if (!$this->settings->getLive(self::SETTING_ENABLED, false)
             || !$this->auth->user()?->can('modules.manage')
         ) {
             return $next($request);

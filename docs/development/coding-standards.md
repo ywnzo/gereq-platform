@@ -39,8 +39,11 @@ composer test && composer analyse
 | `tsconfig.json` has `"strict": true`; TS sources live in `resources/js/**` and `modules/*/Resources/assets/js/**` | `tsconfig.json` |
 | Alpine components are registered through `register*` functions exported from `resources/js/ui/*.ts` and wired in `resources/js/ui/index.ts` (CSP build of Alpine — no inline JS expressions) | `resources/js/ui/index.ts`, `package.json` (`@alpinejs/csp`) |
 | **No native dialogs**: never `window.alert` / `window.confirm` / `window.prompt`; use `window.gereq.confirm(...)`, `window.gereq.prompt(...)` (`resources/js/ui/confirm.ts`) or `data-confirm` on forms | `.cursor/skills/no-native-dialogs/SKILL.md` |
-| Bun entry `resources/js/admin.ts` (kernel); module CSS built as `module:{id}` and linked only when enabled; tags via `render_css()` / `render_js()` | `scripts/build.ts`, `config/render.php`, `src/View/RenderEngine.php` |
-| Scripts: `bun run dev` (watch → `public/build` + `.dev`), `bun run build` (hashed production assets) | `package.json` |
+| Bun kernel entry `resources/js/admin.ts` only; module CSS/JS live in `modules/*/Resources/assets` (`js/admin.ts` barrel + optional `css/admin.css`) | `scripts/build.ts`, `scripts/build-module.ts` |
+| Module assets are **lazy**: built on enable / module update / `migrateModule` / `php gereq assets:ensure` as `module:{id}` in the manifest; runtime loads only enabled modules | `ModuleAssetBuilder`, `RenderEngine` |
+| Kernel Alpine via `registerUi`; module `register*` via dynamic import of `__GEREQ_MODULE_ASSETS__` before `Alpine.start()` | `resources/js/ui/index.ts`, `resources/js/admin.ts` |
+| Tags: `render_css()` / `render_js()` (JS bootstrap injects module URLs) | `config/render.php`, `src/View/RenderEngine.php` |
+| Scripts: `bun run build` (kernel), `bun run build:full` (kernel + `assets:ensure`), `bun run build:module -- <id>`, `bun run dev` (kernel + rebuild modules already in manifest) | `package.json` |
 
 There is no ESLint/Prettier configuration in the repository; rely on `tsc` strictness and the Bun build.
 

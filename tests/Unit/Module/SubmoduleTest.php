@@ -316,7 +316,15 @@ PHP);
         $store = new ModuleVersionStore($this->root, $config, $translator);
         $installer = new ModuleVersionInstaller(new GitLabModuleClient($config, $translator), $store, $manager, $config, $translator);
         $migrator = new Migrator($this->em, $manager);
-        $updater = new ModuleUpdater($manager, $migrator, $this->em, $auditor, $translator, new ModuleInstalledSnapshot($this->root));
+        $updater = new ModuleUpdater(
+            $manager,
+            $migrator,
+            $this->em,
+            $auditor,
+            $translator,
+            new ModuleInstalledSnapshot($this->root),
+            new \Gereq\Module\ModuleFootprintCache($this->root),
+        );
 
         return [new ModuleVersionActivator($this->root, $manager, $store, $installer, $migrator, $updater, $this->em, $auditor, $translator), $installer];
     }

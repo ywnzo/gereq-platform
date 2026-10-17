@@ -1,249 +1,72 @@
 /**
- * Production (and watch) frontend build via Bun's native bundler.
- * Writes public/build/manifest.json for Gereq\View\RenderEngine.
+ * Kernel frontend build via Bun's native bundler.
+ * Writes/merges public/build/manifest.json for Gereq\View\RenderEngine.
  *
- * - resources/js/admin.ts → kernel JS + kernel CSS
- * - modules/<Name>/Resources/assets/css/admin.css → per-module CSS (only when enabled)
+ * - resources/js/admin.ts → kernel JS + kernel CSS only
+ * - Module assets: `bun run build:module -- <id>` (lazy on enable/update/migrate)
  *
- * `bun run build`  → hashed files (immutable cache)
- * `bun run dev`    → stable names + public/build/.dev marker
+ * `bun run build`  → hashed kernel files
+ * `bun run dev`    → stable names + .dev marker; rebuilds kernel + modules already in manifest
  */
-import { rm, mkdir, writeFile, readdir, readFile, access } from 'node:fs/promises';
+import { rm, mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import tailwind from 'bun-plugin-tailwind';
+import {
+  assetsDir,
+  buildOptions,
+  clearDevMarker,
+  clearDevMarkerSync,
+  clearLegacyViteMarkers,
+  cleanKernelAssets,
+  discoverModuleAssets,
+  entryKey,
+  kernelEntry,
+  moduleIdsInManifest,
+  outdir,
+  pickCss,
+  pickJs,
+  readManifest,
+  relOut,
+  repairColorMixCss,
+  root,
+  writeDevMarker,
+  writeManifestFile,
+  type ManifestRecord,
+} from './build-lib';
 
-const root = path.resolve(import.meta.dir, '..');
-const outdir = path.join(root, 'public/build');
-const assetsDir = path.join(outdir, 'assets');
-const entry = path.join(root, 'resources/js/admin.ts');
-const entryKey = 'resources/js/admin.ts';
 const watch = process.argv.includes('--watch');
-const devMarker = path.join(outdir, '.dev');
 
-type ManifestRecord = {
-  file: string;
-  css: string[];
-  isEntry?: boolean;
-  src?: string;
-  moduleId?: string;
-};
-
-type ModuleStyle = {
-  id: string;
-  cssPath: string;
-};
-
-async function exists(p: string): Promise<boolean> {
-  try {
-    await access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function discoverModuleStyles(): Promise<ModuleStyle[]> {
-  const proc = Bun.spawn(['php', path.join(root, 'scripts/module-assets.php')], {
-    cwd: root,
-    stdout: 'pipe',
-    stderr: 'inherit',
-  });
-  const body = await new Response(proc.stdout).text();
-  if (await proc.exited !== 0) {
-    throw new Error('Module asset discovery failed');
-  }
-  const packages: { id: string; path: string }[] = JSON.parse(body);
-  const out: ModuleStyle[] = [];
-  for (const mod of packages) {
-    const cssPath = path.join(mod.path, 'Resources/assets/css/admin.css');
-    if (await exists(cssPath)) {
-      out.push({ id: mod.id, cssPath });
-    }
-  }
-  return out;
-}
-
-async function clearLegacyViteMarkers(): Promise<void> {
-  try {
-    await rm(path.join(root, 'public/hot'), { force: true });
-  } catch {
-    /* ignore */
-  }
-  try {
-    await rm(path.join(outdir, '.vite'), { recursive: true, force: true });
-  } catch {
-    /* ignore */
-  }
-}
-
-function relOut(filePath: string): string {
-  return path.relative(outdir, filePath).split(path.sep).join('/');
-}
-
-/**
- * LightningCSS (via Tailwind optimize) breaks `color-mix(..., var(--x) N%, var(--y))`:
- * it emits a solid `var(--x)` fallback and only restores some properties inside
- * `@supports (color: color-mix(in lab, red, red))`. Result: badges / action
- * buttons / bulk-bar look fully solid-colored.
- *
- * Unwrap the incomplete @supports blocks, then append a raw soft-tint patch
- * that never goes through LightningCSS again.
- */
-async function repairColorMixCss(cssRelPaths: string[]): Promise<void> {
-  const patchPath = path.join(root, 'resources/css/kernel/color-mix-fix.css');
-  const patch = await readFile(patchPath, 'utf8');
-  const supportsRe =
-    /@supports\s*\(\s*color:\s*color-mix\(\s*in\s+lab\s*,\s*red\s*,\s*red\s*\)\s*\)\s*\{/g;
-
-  for (const rel of cssRelPaths) {
-    const abs = path.join(outdir, rel);
-    let css = await readFile(abs, 'utf8');
-    css = unwrapAtSupportsBlocks(css, supportsRe);
-    if (!css.includes('/* color-mix-fix */')) {
-      css += `\n/* color-mix-fix */\n${patch}\n`;
-    }
-    await writeFile(abs, css);
-  }
-}
-
-/** Expand `@supports (…){ … }` matched by `startRe` — keep inner rules, drop the wrapper. */
-function unwrapAtSupportsBlocks(css: string, startRe: RegExp): string {
-  let out = '';
-  let last = 0;
-  startRe.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = startRe.exec(css)) !== null) {
-    out += css.slice(last, match.index);
-    const bodyStart = match.index + match[0].length;
-    let depth = 1;
-    let i = bodyStart;
-    for (; i < css.length; i++) {
-      const ch = css[i];
-      if (ch === '{') depth++;
-      else if (ch === '}') {
-        depth--;
-        if (depth === 0) break;
-      }
-    }
-    out += css.slice(bodyStart, i);
-    last = i + 1;
-    startRe.lastIndex = last;
-  }
-  out += css.slice(last);
-  return out;
-}
-
-function pickCss(outputs: Bun.BuildArtifact[]): string | null {
-  const css = outputs.filter((o) => o.path.endsWith('.css') && !o.path.endsWith('.css.map'));
-  if (css.length === 0) {
-    return null;
-  }
-  // Prefer entry-point CSS when present.
-  const entryCss = css.find((o) => o.kind === 'entry-point');
-  return relOut((entryCss ?? css[0]).path);
-}
-
-function pickJs(outputs: Bun.BuildArtifact[]): string | null {
-  const js = outputs.filter((o) => o.path.endsWith('.js') && !o.path.endsWith('.js.map'));
-  if (js.length === 0) {
-    return null;
-  }
-  const entryJs = js.find((o) => o.kind === 'entry-point');
-  return relOut((entryJs ?? js[0]).path);
-}
-
-async function writeManifestFile(manifest: Record<string, ManifestRecord>): Promise<void> {
-  const body = JSON.stringify(manifest, null, 2) + '\n';
-  await writeFile(path.join(outdir, 'manifest.json'), body);
-}
-
-async function writeDevMarker(): Promise<void> {
-  await writeFile(
-    devMarker,
-    JSON.stringify({ at: Date.now(), mode: 'watch' }, null, 2) + '\n',
-  );
-}
-
-async function clearDevMarker(): Promise<void> {
-  try {
-    await rm(devMarker, { force: true });
-  } catch {
-    /* ignore */
-  }
-}
-
-/** Remove previous watch/prod artefacts without deleting outdir (avoids brief 404s). */
-async function cleanAssetsDir(): Promise<void> {
-  await mkdir(assetsDir, { recursive: true });
-  let names: string[] = [];
-  try {
-    names = await readdir(assetsDir);
-  } catch {
-    return;
-  }
-  await Promise.all(
-    names.map(async (name) => {
-      try {
-        await rm(path.join(assetsDir, name), { force: true, recursive: true });
-      } catch {
-        /* ignore */
-      }
-    }),
-  );
-}
-
-function buildOptions(
-  extraNaming?: Record<string, string>,
-): Omit<Parameters<typeof Bun.build>[0], 'entrypoints'> {
-  const naming = watch
-    ? {
-        entry: '[name].[ext]',
-        chunk: '[name].[ext]',
-        asset: '[name].[ext]',
-        ...extraNaming,
-      }
-    : {
-        entry: '[name]-[hash].[ext]',
-        chunk: '[name]-[hash].[ext]',
-        asset: '[name]-[hash].[ext]',
-        ...extraNaming,
-      };
-
-  return {
-    outdir: assetsDir,
-    target: 'browser',
-    format: 'esm',
-    splitting: false,
-    minify: !watch,
-    sourcemap: watch ? 'linked' : 'none',
-    naming,
-    plugins: [tailwind],
-    define: {
-      'process.env.NODE_ENV': JSON.stringify(watch ? 'development' : 'production'),
-    },
-    throw: true,
-  };
-}
-
-async function runBuild(): Promise<void> {
+async function buildKernel(preserveModules: boolean): Promise<{
+  manifest: Record<string, ManifestRecord>;
+  sizeLines: string[];
+}> {
   await clearLegacyViteMarkers();
+  await mkdir(assetsDir, { recursive: true });
 
-  if (watch) {
-    await mkdir(outdir, { recursive: true });
-    await cleanAssetsDir();
-  } else {
+  const previous = preserveModules ? await readManifest() : {};
+  const preserved: Record<string, ManifestRecord> = {};
+  if (preserveModules) {
+    for (const [key, rec] of Object.entries(previous)) {
+      if (key.startsWith('module:')) {
+        preserved[key] = rec;
+      }
+    }
+  }
+
+  if (!preserveModules) {
     await rm(outdir, { recursive: true, force: true });
     await mkdir(assetsDir, { recursive: true });
     await clearDevMarker();
+  } else {
+    await cleanKernelAssets();
+    if (!watch) {
+      await clearDevMarker();
+    }
   }
 
-  const moduleStyles = await discoverModuleStyles();
-  const manifest: Record<string, ManifestRecord> = {};
   const sizeLines: string[] = [];
-
   const adminResult = await Bun.build({
-    ...buildOptions(),
-    entrypoints: [entry],
+    ...buildOptions(watch),
+    entrypoints: [kernelEntry],
   });
 
   const adminJs = pickJs(adminResult.outputs);
@@ -251,45 +74,26 @@ async function runBuild(): Promise<void> {
   if (adminJs === null) {
     throw new Error('Bun build produced no admin JS entry');
   }
-  manifest[entryKey] = {
-    file: adminJs,
-    css: adminCss ? [adminCss] : [],
-    isEntry: true,
-    src: entryKey,
+
+  const manifest: Record<string, ManifestRecord> = {
+    ...preserved,
+    [entryKey]: {
+      file: adminJs,
+      css: adminCss ? [adminCss] : [],
+      isEntry: true,
+      src: entryKey,
+    },
   };
+
   for (const o of adminResult.outputs) {
     sizeLines.push(`  ${relOut(o.path)}  ${(o.size / 1024).toFixed(1)} kB`);
-  }
-
-  for (const mod of moduleStyles) {
-    const result = await Bun.build({
-      ...buildOptions({
-        entry: watch ? `module-${mod.id}.[ext]` : `module-${mod.id}-[hash].[ext]`,
-        asset: watch ? `module-${mod.id}.[ext]` : `module-${mod.id}-[hash].[ext]`,
-      }),
-      entrypoints: [mod.cssPath],
-    });
-    const css = pickCss(result.outputs);
-    if (css === null) {
-      throw new Error(`Module CSS build produced no CSS for ${mod.id}`);
-    }
-    manifest[`module:${mod.id}`] = {
-      file: css,
-      css: [css],
-      moduleId: mod.id,
-      src: path.relative(root, mod.cssPath).split(path.sep).join('/'),
-    };
-    for (const o of result.outputs) {
-      sizeLines.push(`  ${relOut(o.path)}  ${(o.size / 1024).toFixed(1)} kB`);
-    }
   }
 
   await writeManifestFile(manifest);
 
   const cssToRepair = new Set<string>();
-  for (const rec of Object.values(manifest)) {
-    for (const c of rec.css) cssToRepair.add(c);
-    if (rec.file.endsWith('.css')) cssToRepair.add(rec.file);
+  for (const c of manifest[entryKey].css) {
+    cssToRepair.add(c);
   }
   await repairColorMixCss([...cssToRepair]);
 
@@ -297,43 +101,146 @@ async function runBuild(): Promise<void> {
     await writeDevMarker();
   }
 
+  return { manifest, sizeLines };
+}
+
+async function rebuildModule(id: string): Promise<void> {
+  const proc = Bun.spawn(['bun', path.join(root, 'scripts/build-module.ts'), id], {
+    cwd: root,
+    stdout: 'inherit',
+    stderr: 'inherit',
+  });
+  if ((await proc.exited) !== 0) {
+    throw new Error(`Module rebuild failed for ${id}`);
+  }
+}
+
+async function runBuild(): Promise<void> {
+  // Always preserve lazy module:* entries; only kernel artefacts are replaced.
+  // Full clean: `rm -rf public/build && bun run build`.
+  const { manifest, sizeLines } = await buildKernel(true);
   const mode = watch ? 'watch' : 'prod';
-  console.log(`✓ bun build [${mode}] → public/build (${sizeLines.length} files, ${moduleStyles.length} module CSS)`);
+  const moduleCount = moduleIdsInManifest(manifest).length;
+  console.log(
+    `✓ bun build [${mode}] → public/build (${sizeLines.length} kernel files, ${moduleCount} module entries preserved)`,
+  );
   for (const line of sizeLines) {
     console.log(line);
   }
   if (watch) {
-    console.log('  (Docker: volume mount picks this up; refresh or auto-reload)');
+    console.log('  (module assets rebuild only when already in manifest; enable builds new ones)');
   }
 }
 
 await runBuild();
 
 if (watch) {
-  console.log('Watching resources/ + modules/*/Resources/assets …');
+  console.log('Watching resources/ + modules (assets + .twig) …');
+  console.log('Open/refresh admin once — poll uses /build/watch.json (CSS rehydrate, JS/Twig reload).');
   const { watch: fsWatch } = await import('node:fs');
-  const dirs = [path.join(root, 'resources'), path.join(root, 'modules')];
+  const watchReadyAt = Date.now() + 1500;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let pendingKernel = false;
+  let pendingViews = false;
+  const pendingModules = new Set<string>();
+
+  const flush = async () => {
+    timer = null;
+    try {
+      if (pendingKernel) {
+        pendingKernel = false;
+        await buildKernel(true);
+      }
+      const ids = [...pendingModules];
+      pendingModules.clear();
+      for (const id of ids) {
+        await rebuildModule(id);
+      }
+      if (pendingViews) {
+        pendingViews = false;
+        // Twig is server-rendered — bump viewsAt so the browser reloads HTML.
+        await writeDevMarker({ viewsAt: Date.now() });
+        console.log('✓ twig change → watch.json viewsAt bumped (browser reload)');
+      }
+    } catch (err) {
+      console.error('Rebuild failed:', err);
+    }
+  };
+
   const schedule = () => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(async () => {
-      try {
-        await runBuild();
-      } catch (err) {
-        console.error('Rebuild failed:', err);
-      }
-    }, 120);
+    timer = setTimeout(() => void flush(), 120);
   };
-  for (const dir of dirs) {
+
+  const onFile = async (filename: string) => {
+    // fs.watch often emits a burst when the watcher is attached — ignore startup noise.
+    if (Date.now() < watchReadyAt) {
+      return;
+    }
+    const norm = filename.split(path.sep).join('/');
+    if (/\.twig$/i.test(norm)) {
+      pendingViews = true;
+      schedule();
+      return;
+    }
+    if (!/\.(ts|js|css|tsx|jsx)$/i.test(norm)) {
+      return;
+    }
+    if (norm.startsWith('resources/')) {
+      pendingKernel = true;
+      schedule();
+      return;
+    }
+    // modules/<Dir>/... or modules/<Dir>/Submodules/<Sub>/...
+    const m = norm.match(/^modules\/([^/]+)\//);
+    if (!m) {
+      return;
+    }
+    const manifest = await readManifest();
+    const known = new Set(moduleIdsInManifest(manifest));
+    // Resolve disk id via discovery (folder name ≠ module id).
+    const all = await discoverModuleAssets();
+    for (const mod of all) {
+      if (!known.has(mod.id)) {
+        continue;
+      }
+      const rel = path.relative(root, mod.path).split(path.sep).join('/');
+      if (norm.startsWith(rel + '/') || norm.startsWith(rel + '/Resources/')) {
+        pendingModules.add(mod.id);
+        schedule();
+        return;
+      }
+    }
+  };
+
+  for (const dir of [path.join(root, 'resources'), path.join(root, 'modules')]) {
     try {
       fsWatch(dir, { recursive: true }, (_event, filename) => {
         if (!filename) return;
-        if (!/\.(ts|js|css|tsx|jsx)$/i.test(String(filename))) return;
-        schedule();
+        const base = path.relative(root, dir);
+        void onFile(path.join(base, String(filename)).split(path.sep).join('/'));
       });
     } catch (err) {
       console.warn(`Cannot watch ${dir}:`, err);
     }
   }
+
+  let shuttingDown = false;
+  const shutdown = (signal: string) => {
+    if (shuttingDown) {
+      return;
+    }
+    shuttingDown = true;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    clearDevMarkerSync();
+    console.log(`Stopped watch (${signal}) — removed public/build/.dev`);
+    process.exit(0);
+  };
+  process.once('SIGINT', () => shutdown('SIGINT'));
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+
   await new Promise(() => {});
 }

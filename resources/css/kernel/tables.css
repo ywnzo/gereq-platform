@@ -399,6 +399,31 @@ form > .table,
     accent-color: var(--primary);
     cursor: pointer;
 }
+/* Parent "check" (self only): explicit checkmark — native accent fill can look like a solid cube. */
+.table tbody tr.grq-module-parent-row .table-check input:checked:not(:indeterminate):not(.is-checked-all) {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1.5px solid var(--primary);
+    border-radius: 2px;
+    background-color: var(--primary);
+    /* Dark stroke on lime --primary (#d7ff45); keep high contrast in both themes. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%230a0b0a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 0.8rem 0.8rem;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent);
+}
+/* Parent "checked-all": filled cube (not a dash) — native indeterminate varies by engine. */
+.table-check input:indeterminate,
+.table-check input.is-checked-all {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1.5px solid var(--primary);
+    border-radius: 2px;
+    background:
+        linear-gradient(var(--primary), var(--primary)) center / 0.45rem 0.45rem no-repeat,
+        var(--surface);
+}
 .table tbody tr.is-selected td {
     background: color-mix(in srgb, var(--primary) 10%, var(--surface));
 }

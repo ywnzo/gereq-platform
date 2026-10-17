@@ -40,6 +40,7 @@ final class StorageLayout
         'storage/uploads',
         'storage/uploads/brand',
         'storage/framework',
+        'storage/framework/module-footprints',
         'storage/invoices',
         'storage/modules',
     ];

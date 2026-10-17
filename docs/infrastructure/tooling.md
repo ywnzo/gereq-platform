@@ -20,7 +20,12 @@ Cross-platform CLI (Go). Launchers `bin/grq` / `bin/grq.cmd` select a prebuilt b
 | `grq doctor` | Check php ≥ 8.4, required extensions (`gd`, `zip`, …), composer, bun\|npm, docker, git |
 | `grq env init [--docker]` | Write `.env` from `config/env.schema.toml` |
 | `grq env validate` | Validate `.env` |
-| `grq install` / `grq install demo` | Interactive clean install / SQLite demo |
+| `grq install` / `grq install demo` | Interactive clean install / SQLite demo (native Go) |
+| `grq serve` / `grq server` | Proxy → `php gereq serve` (`--hot`, `--queue`, …) |
+| `grq serve-docker` | Proxy → `php gereq serve-docker` |
+| `grq migrate` | Proxy → `php gereq migrate` |
+| `grq cache:clear` | Proxy → `php gereq cache:clear` |
+| `grq <php-command> …` | Passthrough for any other `php gereq` command (e.g. `grq about`, `grq module:list`) |
 | `grq pack demo` | Demo zip into `dist/` |
 | `grq commit …` | Git commit stripping `Co-authored-by` |
 | `grq pr [--base] [--draft] [--dry-run] [--push] [--fast] [--no-agent]` | Draft MR via baked-in OpenRouter agent (Summary + Test plan), create on GitLab |
@@ -106,7 +111,7 @@ Generated indexes live in `.cache/` (ignored by git; excluded from demo packages
 | `.cursor/skills/english-code-comments/SKILL.md` | skill | All code comments, docblocks, TODO/FIXME, Makefile `##` help and CLI description strings must be English. Translation catalogs, UI copy, CMS/demo seed content and end-user docs are out of scope. |
 | `.cursor/skills/no-native-dialogs/SKILL.md` | skill | Never use `window.alert/confirm/prompt` in the admin UI; use `window.gereq.confirm(...)` / `window.gereq.prompt(...)` from `resources/js/ui/confirm.ts` (async), `data-confirm` / `data-confirm-title` / `data-confirm-danger` attributes on forms, and `window.gereq.toast` for results. A fallback to native dialogs is allowed only inside `askConfirm`/`askPrompt` helpers. |
 
-Note: `resources/js/admin.ts` still contains `window.confirm` calls (`gereqConfirmModuleDisable`, `gereqConfirmModuleVersion`, `dataTable.confirmBulk`) that predate the `no-native-dialogs` skill.
+Admin confirms (`gereqConfirmModuleVersion`, `dataTable.confirmBulk`, module table disable) use `window.gereq.confirm`; native `window.confirm` remains only as a fallback in `resources/js/ui/confirm.ts` when the dialog host is missing.
 
 ## Static analysis and tests
 
@@ -126,5 +131,5 @@ TypeScript for the admin bundle is type-checked by the `tsconfig.json` at the ro
 | `php gereq twig:types` | Generate Twig types into `.cache/twig/` (needs [GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS) via `GEREQ_TOOLS` or sibling checkout) |
 | `php gereq nn [--minutes]` | List N+1 queries from the last N minutes (reads `storage/logs/nplusone.log`) |
 | `php gereq user:create [--name --email --password --role=superadmin\|admin\|editor\|view]` | Create a user |
-| `php gereq serve [--host=0.0.0.0] [--port=8080]` | Built-in PHP server (`public/router.php`) |
+| `php gereq serve` / `./bin/grq serve` `[--host] [--port] [--hot] [--queue]` | Built-in PHP server (`public/router.php`); alias `server` |
 | `php gereq serve-docker …` | Docker stack — see [docker.md](docker.md) |

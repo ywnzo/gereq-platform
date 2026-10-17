@@ -6,6 +6,7 @@ namespace Gereq\Http\Middleware;
 
 use Gereq\Publish\StagingSignal;
 use Gereq\Publish\StagingStore;
+use Gereq\Support\AdminPath;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -28,7 +29,7 @@ final class StagingCountMiddleware implements MiddlewareInterface
         $response = $next($request);
 
         $path = $request->getPathInfo();
-        if (!str_starts_with($path, '/admin') && !str_starts_with($path, '/publish')) {
+        if (!AdminPath::matches($path) && !str_starts_with($path, '/publish')) {
             return $response;
         }
 

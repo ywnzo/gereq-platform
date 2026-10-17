@@ -27,7 +27,7 @@ Conventions that are not created for you but are discovered automatically when p
 | --- | --- |
 | `Resources/views/*.twig` | `src/View/TwigFactory.php` — registered as Twig namespace `@warehouse` (lowercased directory name) |
 | `Resources/translations/messages.{cs,en}.php` | `src/I18n/TranslatorFactory.php` |
-| `Resources/assets/{js,css}/*` | only when imported from `resources/js/admin.ts` (single Vite entry; see [Admin UI](../architecture/admin-ui.md#vite)) |
+| `Resources/assets/js/admin.ts` + `css/admin.css` | lazy Bun build as `module:{id}` on enable / update / `migrateModule` / `php gereq assets:ensure` (see [Admin UI](../architecture/admin-ui.md#frontend-assets-bun)) |
 | `Database/Migrations/*.php` | `src/Database/Migrator.php` |
 | `Console/*Command.php` | **not** auto-discovered — module commands are listed by class name in `src/Console/ConsoleKernel.php::commands()` (core file), e.g. `Gereq\Currency\Console\SyncRatesCommand` |
 

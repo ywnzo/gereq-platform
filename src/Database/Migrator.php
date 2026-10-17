@@ -8,6 +8,7 @@ use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
+use Gereq\Module\ModuleAssetBuilder;
 use Gereq\Module\ModuleManager;
 
 final class Migrator
@@ -20,6 +21,7 @@ final class Migrator
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ModuleManager $modules,
+        private readonly ?ModuleAssetBuilder $assets = null,
     ) {
     }
 
@@ -460,6 +462,17 @@ final class Migrator
 
         if ($syncSchema) {
             $messages = array_merge($messages, $this->syncSchema());
+        }
+
+        // Lazy module frontend assets (CSS/JS). Soft-fail so schema migrate still succeeds without Bun.
+        // Enable / update / assets:ensure use hard ensure(); migrate must not block on missing Bun.
+        if ($this->assets !== null && $this->assets->hasSources($moduleId)) {
+            $error = $this->assets->tryEnsure($moduleId);
+            if ($error === null) {
+                $messages[] = 'Module assets ensured for ' . $moduleId;
+            } else {
+                $messages[] = 'Module assets skipped for ' . $moduleId . ': ' . $error;
+            }
         }
 
         return $messages;

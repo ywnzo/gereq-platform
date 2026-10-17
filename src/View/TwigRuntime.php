@@ -96,12 +96,17 @@ final class TwigRuntime
         return $this->render->scriptTags($entry, $this->cspNonce());
     }
 
+    public function renderModuleAssets(): string
+    {
+        return $this->render->moduleAssetsBootstrap($this->cspNonce());
+    }
+
     public function renderTags(string $entry = 'admin'): string
     {
         return $this->render->tags($entry, $this->cspNonce());
     }
 
-    /** Auto-reload while `bun run dev` writes public/build/.dev. */
+    /** Dev watch probe / CSS rehydrate / JS+Twig reload (`public/build/watch.json`). */
     public function renderReload(): string
     {
         return $this->render->reloadTags($this->cspNonce());

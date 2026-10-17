@@ -16,6 +16,7 @@ use Gereq\Console\Command\MakeResourceCommand;
 use Gereq\Console\Command\MigrateCommand;
 use Gereq\Console\Command\MigrateStatusCommand;
 use Gereq\Console\Command\ModuleDisableCommand;
+use Gereq\Console\Command\AssetsEnsureCommand;
 use Gereq\Console\Command\ModuleEnableCommand;
 use Gereq\Console\Command\ModuleListCommand;
 use Gereq\Console\Command\ModulePauseCommand;
@@ -56,6 +57,7 @@ final class ScheduleCommandResolver
             ModuleEnableCommand::class,
             ModulePauseCommand::class,
             ModuleDisableCommand::class,
+            AssetsEnsureCommand::class,
             MakeModuleCommand::class,
             MakeResourceCommand::class,
             MigrateCommand::class,

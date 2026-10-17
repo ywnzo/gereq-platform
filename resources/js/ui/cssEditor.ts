@@ -278,23 +278,4 @@ export function registerCssEditor(alpine: typeof Alpine): void {
             }
         },
     }));
-
-    alpine.data('gereqCmsCssSettings', () => ({
-        open: false,
-        openSettings() {
-            this.open = true;
-            this.$nextTick(() => {
-                const root = (this.$el as HTMLElement).querySelector<HTMLElement>('.css-editor');
-                root?.dispatchEvent(new CustomEvent('cms-css-refresh', { bubbles: false }));
-            });
-        },
-        closeSettings() {
-            this.open = false;
-        },
-        onEscape() {
-            if (this.open) {
-                this.closeSettings();
-            }
-        },
-    }));
 }

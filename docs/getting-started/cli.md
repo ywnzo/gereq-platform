@@ -22,8 +22,8 @@ Relative paths are resolved from the project root. An explicit path that does no
 | --- | --- | --- | --- |
 | `about` | — | prints platform name, version (`AppVersion::current()`), PHP version, environment | `src/Console/Command/AboutCommand.php` |
 | `install` | `--fresh`, `--bare`, `--no-demo`, `--no-sample`, `-y/--yes`, `--admin-email`, `--admin-password`, … | interactive clean install; admin credentials via CLI/prompt (never `.env`) | `src/Console/Command/InstallCommand.php` |
-| `serve` | `--host=0.0.0.0`, `--port=8080` | built-in PHP server (`php -S … -t public public/router.php`), probes the next 20 ports if busy | `src/Console/Command/ServeCommand.php` |
-| `serve-docker` | `--port=8080`, `--https`, `--hot`, `--build`, `-d/--detach`, `--down`, `--reuse`, `--raw`, `--dashboard`, `--keep`, `--queue` (legacy no-op) | manage the Docker compose stack, optional Vite HMR process and a formatted log TUI | `src/Console/Command/ServeDockerCommand.php`, `src/Console/Docker/*` |
+| `serve` (alias `server`) | `--host=0.0.0.0`, `--port=8080`, `--hot`, `--queue` | built-in PHP server; full-TTY dashboard app/db/queue/bun (db = Enter table, CRUD, SQL+highlight/autocomplete); `--hot` / `--queue` | `ServeCommand.php`, `ServeDevTui`, `ServeDbPane`, `ServeDbBrowser`, `AssetWatchProcess`, `QueueWorkProcess`, `ScheduleLoopProcess` |
+| `serve-docker` | `--port=8080`, `--https`, `--hot`, `--build`, `-d/--detach`, `--down`, `--reuse`, `--raw`, `--dashboard`, `--keep`, `--queue` (legacy no-op) | manage the Docker compose stack, optional Bun watch and a formatted log TUI | `src/Console/Command/ServeDockerCommand.php`, `src/Console/Docker/*` |
 
 See [installation](installation.md#dev-servers) for the `serve-docker` option details.
 
@@ -31,6 +31,7 @@ See [installation](installation.md#dev-servers) for the `serve-docker` option de
 
 | Command | Arguments / options | What it does | Source |
 | --- | --- | --- | --- |
+| `assets:ensure` | `--force/-f`, `--module/-m=<id>` | build lazy admin assets for enabled modules (`ModuleAssetBuilder` / `bun run build:module`) | `AssetsEnsureCommand.php` |
 | `module:list` | — | table of discovered manifests with installed version and enabled state (`ModuleManager::all()`) | `ModuleListCommand.php` |
 | `module:enable <module>` | `module` id (lower-cased) | `ModuleManager::enable()` (dependency check, `installed_modules` row) then `Migrator::migrateModule($id)` — runs the module's `Database/Migrations` and syncs its Doctrine schema | `ModuleEnableCommand.php` |
 | `module:pause <module>` | `module` | `ModuleManager::pauseMany()` — disables the module but keeps its tables and data | `ModulePauseCommand.php` |

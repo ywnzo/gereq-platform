@@ -130,6 +130,17 @@ final class Application
     {
         $this->container->get(ExceptionHandler::class)->register();
         $request = Request::createFromGlobals();
+        // public/router.php may have consumed php://input for serve access logs.
+        if (
+            \PHP_SAPI === 'cli-server'
+            && isset($GLOBALS['GEREQ_SERVE_BODY'])
+            && \is_string($GLOBALS['GEREQ_SERVE_BODY'])
+            && $GLOBALS['GEREQ_SERVE_BODY'] !== ''
+            && $request->getContent() === ''
+        ) {
+            $content = new \ReflectionProperty(Request::class, 'content');
+            $content->setValue($request, $GLOBALS['GEREQ_SERVE_BODY']);
+        }
         $response = $this->container->get(Kernel::class)->handle($request);
         $response->send();
     }
@@ -259,18 +270,23 @@ final class Application
             ) use ($basePath): FileManager {
                 return new FileManager($em, $config, $basePath, $translator);
             }),
+            \Gereq\Module\ModuleAssetBuilder::class => autowire()
+                ->constructorParameter('basePath', $basePath),
             ModuleManager::class => factory(static function (
                 EntityManagerInterface $em,
                 PermissionRegistry $permissions,
                 Auditor $auditor,
                 TranslatorInterface $translator,
                 HookManager $hooks,
+                \Gereq\Module\ModuleAssetBuilder $assets,
             ) use ($basePath): ModuleManager {
-                return new ModuleManager($basePath, $em, $permissions, $auditor, $translator, $hooks);
+                return new ModuleManager($basePath, $em, $permissions, $auditor, $translator, $hooks, $assets);
             }),
             \Gereq\Module\ModuleVersionStore::class => autowire()
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Module\ModuleInstalledSnapshot::class => autowire()
+                ->constructorParameter('basePath', $basePath),
+            \Gereq\Module\ModuleFootprintCache::class => autowire()
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Module\ModuleVersionActivator::class => autowire()
                 ->constructorParameter('basePath', $basePath),

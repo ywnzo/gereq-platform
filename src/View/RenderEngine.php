@@ -16,6 +16,11 @@ use Gereq\Module\EnabledModulesProvider;
  */
 final class RenderEngine
 {
+    /** @var array<string, mixed>|null */
+    private ?array $manifestCache = null;
+
+    private bool $manifestLoaded = false;
+
     public function __construct(
         private readonly string $basePath,
         private readonly Repository $config,
@@ -25,7 +30,8 @@ final class RenderEngine
 
     public function isWatch(): bool
     {
-        return is_file($this->absolute($this->string('dev_marker', 'public/build/.dev')));
+        return is_file($this->absolute($this->string('dev_marker', 'public/build/.dev')))
+            || is_file($this->absolute($this->string('watch_state', 'public/build/watch.json')));
     }
 
     public function url(string $entry): string
@@ -71,7 +77,48 @@ final class RenderEngine
         $nonceAttr = $nonce !== '' ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"' : '';
         $js = htmlspecialchars($this->url($entry), ENT_QUOTES, 'UTF-8');
 
-        return "<script type=\"module\"{$nonceAttr} src=\"{$js}\"></script>";
+        return $this->moduleAssetsBootstrap($nonce)
+            . "<script type=\"module\"{$nonceAttr} src=\"{$js}\"></script>";
+    }
+
+    /**
+     * Inject enabled module JS URLs for kernel dynamic import before Alpine.start().
+     *
+     * @return list<string>
+     */
+    public function enabledModuleJsUrls(): array
+    {
+        if ($this->modules === null) {
+            return [];
+        }
+
+        $urls = [];
+        foreach ($this->modules->enabledIds() as $id) {
+            $record = $this->manifestRecord('module:' . $id);
+            if ($record === null) {
+                continue;
+            }
+            $file = $record['file'];
+            if ($file === '' || !str_ends_with($file, '.js')) {
+                continue;
+            }
+            $urls[] = $this->buildUrl($file);
+        }
+
+        return $urls;
+    }
+
+    public function moduleAssetsBootstrap(string $nonce = ''): string
+    {
+        $urls = $this->enabledModuleJsUrls();
+        try {
+            $json = json_encode($urls, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        } catch (\JsonException) {
+            $json = '[]';
+        }
+        $nonceAttr = $nonce !== '' ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"' : '';
+
+        return "<script{$nonceAttr}>window.__GEREQ_MODULE_ASSETS__={$json};</script>\n";
     }
 
     /** CSS + JS tags for pages that load the bundle in one place. */
@@ -80,33 +127,131 @@ final class RenderEngine
         return $this->cssTags($entry, $nonce) . $this->scriptTags($entry, $nonce);
     }
 
+    /**
+     * Dev watch: poll public/build/watch.json.
+     * CSS-only → hot-swap stylesheets; JS or Twig (`viewsAt`) → full reload.
+     * With APP_DEBUG, a probe runs even before `bun run dev` so an already-open
+     * tab can attach when watch starts (no manual refresh required).
+     */
     public function reloadTags(string $nonce = ''): string
     {
-        if (!$this->isWatch() || !$this->watchReloadEnabled()) {
+        if (!$this->watchReloadEnabled()) {
+            return '';
+        }
+        if (!$this->isWatch() && !$this->watchProbeWhenDebug()) {
             return '';
         }
 
         $nonceAttr = $nonce !== '' ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"' : '';
         $interval = (string) $this->watchPollMs();
+        $probeInterval = (string) max($this->watchPollMs(), 2500);
+        $buildPrefix = $this->jsString($this->urlPrefix() . $this->publicPath() . '/');
 
         $script = <<<JS
           (function () {
             var last = null;
-            var url = {$this->jsString($this->manifestPublicUrl())};
+            var connected = false;
+            var url = {$this->jsString($this->watchStatePublicUrl())};
+            var buildPrefix = {$buildPrefix};
+            var pollMs = {$interval};
+            var probeMs = {$probeInterval};
+            function fpMap(files, ext) {
+              var out = {};
+              if (!files || typeof files !== 'object') return out;
+              Object.keys(files).forEach(function (name) {
+                if (name.slice(-ext.length).toLowerCase() === ext) {
+                  out[name] = String(files[name]);
+                }
+              });
+              return out;
+            }
+            function sameFp(a, b) {
+              var ak = Object.keys(a).sort();
+              var bk = Object.keys(b).sort();
+              if (ak.length !== bk.length) return false;
+              for (var i = 0; i < ak.length; i++) {
+                if (ak[i] !== bk[i] || a[ak[i]] !== b[bk[i]]) return false;
+              }
+              return true;
+            }
+            function rehydrateCss() {
+              var stamp = String(Date.now());
+              var links = document.querySelectorAll('link[rel="stylesheet"][href]');
+              for (var i = 0; i < links.length; i++) {
+                var link = links[i];
+                var href = link.getAttribute('href') || '';
+                if (href.indexOf(buildPrefix) === -1 && href.indexOf('/build/') === -1) continue;
+                try {
+                  var abs = new URL(href, window.location.href);
+                  abs.searchParams.set('v', stamp);
+                  var next = link.cloneNode(false);
+                  next.setAttribute('href', abs.pathname + abs.search + abs.hash);
+                  next.onload = (function (old) {
+                    return function () { if (old.parentNode) old.parentNode.removeChild(old); };
+                  })(link);
+                  if (link.parentNode) {
+                    link.parentNode.insertBefore(next, link.nextSibling);
+                  }
+                } catch (e) {}
+              }
+              if (typeof console !== 'undefined' && console.info) {
+                console.info('[gereq] css rehydrated');
+              }
+            }
             function tick() {
-              fetch(url + (url.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now(), { cache: 'no-store' })
-                .then(function (r) { return r.text(); })
-                .then(function (t) {
-                  if (last !== null && t !== last) {
+              return fetch(url + (url.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now(), { cache: 'no-store' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                  if (!data || typeof data !== 'object' || data.mode !== 'watch') {
+                    if (connected && typeof console !== 'undefined' && console.info) {
+                      console.info('[gereq] asset watch stopped');
+                    }
+                    connected = false;
+                    last = null;
+                    return;
+                  }
+                  var files = data.files && typeof data.files === 'object' ? data.files : {};
+                  var css = fpMap(files, '.css');
+                  var js = fpMap(files, '.js');
+                  var viewsAt = typeof data.viewsAt === 'number' ? data.viewsAt : 0;
+                  if (!connected) {
+                    connected = true;
+                    last = { css: css, js: js, viewsAt: viewsAt };
+                    if (typeof console !== 'undefined' && console.info) {
+                      console.info('[gereq] asset watch connected');
+                    }
+                    return;
+                  }
+                  if (last === null) {
+                    last = { css: css, js: js, viewsAt: viewsAt };
+                    return;
+                  }
+                  var viewsChanged = viewsAt !== last.viewsAt;
+                  var jsChanged = !sameFp(last.js, js);
+                  var cssChanged = !sameFp(last.css, css);
+                  last = { css: css, js: js, viewsAt: viewsAt };
+                  if (viewsChanged || jsChanged) {
+                    if (typeof console !== 'undefined' && console.info) {
+                      console.info('[gereq] reload (' + (viewsChanged ? 'twig' : 'js') + ')');
+                    }
                     location.reload();
                     return;
                   }
-                  last = t;
+                  if (cssChanged) {
+                    rehydrateCss();
+                  }
                 })
-                .catch(function () {});
+                .catch(function () {
+                  connected = false;
+                  last = null;
+                });
             }
-            setInterval(tick, {$interval});
-            tick();
+            function loop() {
+              var p = tick();
+              var wait = function () { setTimeout(loop, connected ? pollMs : probeMs); };
+              if (p && typeof p.finally === 'function') p.finally(wait); else wait();
+            }
+            loop();
           })();
         JS;
 
@@ -221,13 +366,17 @@ final class RenderEngine
     /** @return array<string, mixed> */
     private function manifest(): array
     {
+        if ($this->manifestLoaded) {
+            return $this->manifestCache ?? [];
+        }
+        $this->manifestLoaded = true;
         $file = $this->absolute($this->string('manifest', 'public/build/manifest.json'));
         if (!is_file($file)) {
-            return [];
+            return $this->manifestCache = [];
         }
         $decoded = json_decode((string) file_get_contents($file), true);
 
-        return is_array($decoded) ? $decoded : [];
+        return $this->manifestCache = is_array($decoded) ? $decoded : [];
     }
 
     private function buildUrl(string $relative): string
@@ -247,13 +396,17 @@ final class RenderEngine
         if (is_file($dev)) {
             $mtime = max($mtime, (int) filemtime($dev));
         }
+        $watchState = $this->absolute($this->string('watch_state', 'public/build/watch.json'));
+        if (is_file($watchState)) {
+            $mtime = max($mtime, (int) filemtime($watchState));
+        }
 
         return $url . '?v=' . max(1, $mtime);
     }
 
-    private function manifestPublicUrl(): string
+    private function watchStatePublicUrl(): string
     {
-        return $this->assetOrigin() . $this->urlPrefix() . $this->publicPath() . '/manifest.json';
+        return $this->assetOrigin() . $this->urlPrefix() . $this->publicPath() . '/watch.json';
     }
 
     private function resolveEntry(string $entry): string
@@ -311,6 +464,15 @@ final class RenderEngine
     private function watchPollMs(): int
     {
         return max(250, (int) $this->config->get('render.watch.poll_ms', 1200));
+    }
+
+    private function watchProbeWhenDebug(): bool
+    {
+        if (!(bool) $this->config->get('render.watch.probe_when_debug', true)) {
+            return false;
+        }
+
+        return (bool) $this->config->get('app.debug', false);
     }
 
     /** @return list<string> */

@@ -1,10 +1,6 @@
 import type Alpine from '@alpinejs/csp';
 import { registerSetup } from './setup';
 import { registerAres } from './ares';
-import { registerCmsBlockForm } from '../../../modules/Cms/Resources/assets/js/cmsBlockForm';
-import { registerCmsBuilder } from '../../../modules/Cms/Resources/assets/js/cmsBuilder';
-import { registerCmsPageForm } from '../../../modules/Cms/Resources/assets/js/cmsPageForm';
-import { registerCmsPagePreview } from '../../../modules/Cms/Resources/assets/js/cmsPagePreview';
 import { registerPassword, registerSwitch, registerTableToggle, registerTextarea } from './controls';
 import { registerDrawer } from './drawer';
 import { registerEditor } from './editor';
@@ -39,8 +35,8 @@ import { registerMediaDrive } from '../media/mediaDrive';
 import { registerWebauthn } from './webauthn';
 import { registerPublishBadge } from './publishBadge';
 import { registerApiTester } from './apiTester';
-import { registerWebplusOgPreview } from '../../../modules/WebPlus/Resources/assets/js/ogPreview';
 
+/** Kernel Alpine UI only. Module register* loads via __GEREQ_MODULE_ASSETS__ before Alpine.start(). */
 export function registerUi(alpine: typeof Alpine): void {
     registerSetup(alpine);
     registerPageProgress();
@@ -73,10 +69,6 @@ export function registerUi(alpine: typeof Alpine): void {
     registerCssEditor(alpine);
     registerDashboardSettings(alpine);
     registerAres(alpine);
-    registerCmsBlockForm(alpine);
-    registerCmsPageForm(alpine);
-    registerCmsBuilder(alpine);
-    registerCmsPagePreview(alpine);
     registerModuleTable(alpine);
     registerPackageModuleToggle();
     registerChart(alpine);
@@ -86,5 +78,4 @@ export function registerUi(alpine: typeof Alpine): void {
     registerMediaDrive(alpine);
     registerPublishBadge(alpine);
     registerApiTester(alpine);
-    registerWebplusOgPreview(alpine);
 }

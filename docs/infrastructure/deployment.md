@@ -33,10 +33,12 @@ When updating an existing install from a **platform ZIP**, also follow [UPDATE-G
 ```bash
 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 bun install
-bun run build            # → public/build (hashed assets + manifest.json)
+bun run build            # → public/build (kernel hashed assets + manifest.json)
+php gereq assets:ensure  # lazy module:{id} assets for enabled modules
+# or: bun run build:full
 ```
 
-- `scripts/build.ts` writes `public/build/manifest.json`; `Gereq\View\RenderEngine` emits `<link>`/`<script>` tags. Asset origin/prefix: `config/render.php`.
+- `scripts/build.ts` writes the kernel entry into `public/build/manifest.json` (preserves `module:*`); `php gereq assets:ensure` / `ModuleAssetBuilder` fills module bundles. `Gereq\View\RenderEngine` emits `<link>`/`<script>` tags. Asset origin/prefix: `config/render.php`.
 - Web root must be `public/` (nginx `root /var/www/html/public` in `docker/nginx/default.conf`; `public/index.php` front controller, `public/router.php` for the PHP built-in server).
 - PHP 8.4 with extensions used by the Docker image: `pdo_sqlite`/`pdo_mysql`/`pdo_pgsql`, `gd` (webp/avif), `zip`, `opcache`, `redis`, plus `mbstring`, `json` (checked by `bin/grq install demo`).
 - Upload limits: `docker/php/php.ini` uses `upload_max_filesize=64M`, `post_max_size=64M`, nginx `client_max_body_size 64M`; `config/files.php` caps a single upload at 10 MiB.
@@ -148,7 +150,7 @@ Not implemented in code. Back up: the database (PostgreSQL volume `gereq-postgre
 ```bash
 git pull && git submodule update --init --recursive
 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-bun install && bun run build
+bun install && bun run build:full
 php gereq migrate
 php gereq cache:clear
 # restart php-fpm and the queue worker

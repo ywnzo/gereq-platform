@@ -23,7 +23,24 @@ final class ModuleFootprint
      */
     public static function ofDirectory(string $root, bool $legacy = false): string
     {
-        $entries = self::collect($root, $legacy);
+        return self::digestTree(self::collect($root, $legacy, hashContents: true));
+    }
+
+    /**
+     * Cheap tree signature (path + mtime + size) for request hot paths.
+     * Same walk/skip rules as {@see ofDirectory}, but does not hash file bytes.
+     * Empty / missing tree → empty string.
+     */
+    public static function quickSignature(string $root, bool $legacy = false): string
+    {
+        return self::digestTree(self::collect($root, $legacy, hashContents: false));
+    }
+
+    /**
+     * @param array<string, string>|null $entries
+     */
+    private static function digestTree(?array $entries): string
+    {
         if ($entries === null) {
             return '';
         }
@@ -47,7 +64,7 @@ final class ModuleFootprint
      */
     public static function inventory(string $root, bool $legacy = false): array
     {
-        $entries = self::collect($root, $legacy);
+        $entries = self::collect($root, $legacy, hashContents: true);
         if ($entries === null || $entries === []) {
             return [];
         }
@@ -71,7 +88,7 @@ final class ModuleFootprint
     /**
      * @return array<string, string>|null null when root is missing
      */
-    private static function collect(string $root, bool $legacy): ?array
+    private static function collect(string $root, bool $legacy, bool $hashContents): ?array
     {
         $real = realpath($root);
         if ($real === false || !is_dir($real)) {
@@ -114,9 +131,15 @@ final class ModuleFootprint
                 continue;
             }
             $relative = str_replace('\\', '/', $relative);
-            $digest = hash_file('sha256', $absolute);
-            if (!is_string($digest) || $digest === '') {
-                continue;
+            if ($hashContents) {
+                $digest = hash_file('sha256', $absolute);
+                if (!is_string($digest) || $digest === '') {
+                    continue;
+                }
+            } else {
+                $mtime = (int) $file->getMTime();
+                $size = (int) $file->getSize();
+                $digest = $mtime . ':' . $size;
             }
             $entries[$relative] = $digest;
         }

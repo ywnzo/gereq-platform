@@ -1,6 +1,6 @@
 # Admin UI
 
-The admin is server-rendered Twig inside one shell (`resources/views/admin/layout.html.twig`) with a sidebar menu, a topbar that modules can extend through filters, a command palette that doubles as global search, and a small set of Alpine.js (CSP build) components compiled by Vite from `resources/js/admin.ts`. Reusable markup lives in the `Ui` service and `resources/views/ui/*`; forms are generated from `#[FormField]` attributes (documented separately in `docs/FORMS.md`). This page maps those pieces to their source files.
+The admin is server-rendered Twig inside one shell (`resources/views/admin/layout.html.twig`) with a sidebar menu, a topbar that modules can extend through filters, a command palette that doubles as global search, and a small set of Alpine.js (CSP build) components compiled by Bun from `resources/js/admin.ts`. Reusable markup lives in the `Ui` service and `resources/views/ui/*`; forms are generated from `#[FormField]` attributes (documented separately in `docs/FORMS.md`). This page maps those pieces to their source files.
 
 ## Shell and layout
 
@@ -250,9 +250,9 @@ Globals and loader: `resources/views` root plus a namespace per module/integrati
 | `registerChart` | `chart.ts` | chart panel widgets |
 | `registerPublishBadge` | `publishBadge.ts` | live pending-changes badge |
 | `registerApiTester` | `apiTester.ts` | Developer → API request tester |
-| module components | `modules/*/Resources/assets/js/*.ts` | BikeService market, SearchEngines, PartsCatalog, CarService finish wizard, ESign signature pad, Calendar board, CRM board/workflow canvas/e-mail editor, Emailing mailbox, Documents entity link, CMS block/page forms + builder, Fleet brand catalog, Customers edit/notes/contact form, Portals form, AI chat/float |
+| module components | `modules/*/Resources/assets/js/admin.ts` (+ siblings) | Per-module Alpine `register*` barrel; CSS via `Resources/assets/css/admin.css` when present |
 
-Module JS is bundled into the single admin entry; a module therefore needs a line in `resources/js/ui/index.ts` (and CSS in `resources/js/admin.ts`) — this is one of the places where core knows about modules.
+Module JS/CSS is **not** part of the kernel bundle. Each module exposes `Resources/assets/js/admin.ts` (default export `register(alpine)`). Bun builds it lazily (`bun run build:module -- <id>`) on enable, admin update, `migrateModule`, or `php gereq assets:ensure`. `RenderEngine` injects enabled module JS URLs as `window.__GEREQ_MODULE_ASSETS__`; the kernel dynamic-imports them before `Alpine.start()`. CSS for enabled modules is linked as `module:{id}` (unchanged gate).
 
 ## No native dialogs
 
@@ -265,7 +265,7 @@ const name = await window.gereq.prompt({ title: 'Uložit šablonu', inputLabel: 
 
 Or declaratively on forms/buttons: `data-confirm="…"`, `data-confirm-title`, `data-confirm-label` (see `resources/views/ui/row_action_destroy.html.twig`). Default labels come from `#gereq-confirm` data attributes (translated in the layout).
 
-Known exception in the current code: `resources/js/admin.ts` defines `window.gereqConfirmModuleDisable` and `window.gereqConfirmModuleVersion` using native `window.confirm` for the modules page.
+Module version activate/downgrade and bulk delete use `window.gereq.confirm` (async); native `window.confirm` remains only as a fallback inside `confirm.ts` when the dialog host is not mounted.
 
 ## Forms
 
@@ -281,7 +281,7 @@ Unknown names fall back to the `circle` glyph — check `Icons.php` before inven
 
 ## CSS
 
-`resources/css/admin.css` → `resources/css/kernel.css`, which imports brand tokens (`resources/brand/tokens.css`, `font.css`), Tailwind 4 (`@import "tailwindcss"`, plugin `@tailwindcss/vite`) and the kernel layers in `resources/css/kernel/`:
+`resources/css/admin.css` → `resources/css/kernel.css`, which imports brand tokens (`resources/brand/tokens.css`, `font.css`), Tailwind 4 (`@import "tailwindcss"`, via `bun-plugin-tailwind`) and the kernel layers in `resources/css/kernel/`:
 
 | File | Scope |
 | --- | --- |
@@ -295,10 +295,10 @@ Unknown names fall back to the `circle` glyph — check `Icons.php` before inven
 | `auth.css`, `finish.css`, `docs.css` | login pages, finish wizards, in-app docs |
 | `ai-chat.css`, `ai-chat-frontend.css`, `ai-float.css` | AI assistant UI |
 
-Modules ship their own `Resources/assets/css/admin.css`, imported explicitly in `resources/js/admin.ts`.
+Modules ship their own `Resources/assets/css/admin.css` (and optional `js/admin.ts`); they are **not** imported from the kernel. Bun builds them lazily as `module:{id}` in the manifest.
 
 ## Frontend assets (Bun)
 
-`scripts/build.ts` bundles `resources/js/admin.ts` (Tailwind via `bun-plugin-tailwind`) into `public/build` and writes `manifest.json`. Origins and prefixes live in `config/render.php` (`RENDER_ASSET_ORIGIN`, `RENDER_URL_PREFIX`). Commands: `bun run dev` (watch + `.dev` marker + `render_reload()`), `bun run build` (hashed files). Twig: `render_css()` / `render_js()` / `render_reload()`.
+`scripts/build.ts` bundles the kernel entry `resources/js/admin.ts` (Tailwind via `bun-plugin-tailwind`) into `public/build` and writes `manifest.json` (preserving existing `module:*` keys). Module assets: `bun run build:module -- <id>` or `php gereq assets:ensure` (also after `php gereq install` / `bun run build:full`). Origins and prefixes live in `config/render.php` (`RENDER_ASSET_ORIGIN`, `RENDER_URL_PREFIX`). Commands: `bun run dev` (watch + `.dev` marker + `render_reload()`), `bun run build` (kernel hashed files), `bun run build:full` (kernel + enabled module assets). Twig: `render_css()` / `render_js()` / `render_module_assets()` / `render_reload()`.
 
 Related: [dashboard widgets](dashboard-widgets.md), [auth & permissions](auth-permissions.md#csrf), `docs/FORMS.md`.

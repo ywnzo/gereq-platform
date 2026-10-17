@@ -157,7 +157,7 @@ The `Makefile` needs a **running** Docker daemon plus the Compose plugin on the 
 | `ps` / `status` | container status |
 | `shell` / `bash` | `exec` into running `php`, or one-off `run` if the stack is down |
 | `composer` | builds PHP image if missing, then `composer install` |
-| `assets` | `bun install` + `bun run build` inside `oven/bun:1.2` |
+| `assets` | `bun install` + `bun run build` inside `oven/bun:1.2`; follow with `php gereq assets:ensure` (or `bun run build:full`) for module assets |
 | `migrate` | waits for healthy postgres, then `php gereq migrate --no-interaction` |
 | `migrate-fresh` | `php gereq migrate --fresh --seed --no-demo --no-sample --no-interaction` (`SEED_FLAGS`) |
 | `seed` | `php gereq seed:demo --no-interaction` |

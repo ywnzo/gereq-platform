@@ -37,6 +37,7 @@ final class ModuleManager implements EnabledModulesProvider
         private readonly Auditor $auditor,
         private readonly TranslatorInterface $translator,
         private readonly ?HookManager $hooks = null,
+        private readonly ?ModuleAssetBuilder $assets = null,
     ) {
     }
 
@@ -61,6 +62,7 @@ final class ModuleManager implements EnabledModulesProvider
         $this->discovered = null;
         $this->enabledIds = null;
         $this->installedById = null;
+        ModuleDiscovery::clearMemo();
     }
 
     public function manifest(string $id): ?ModuleManifest
@@ -160,6 +162,7 @@ final class ModuleManager implements EnabledModulesProvider
         $this->syncPermissions($manifest);
         $this->em->flush();
         $this->rememberInstalled($row);
+        $this->assets?->ensure($id);
         $this->auditor->log('module.enabled', 'module', $id);
         $this->hooks?->doAction('module.enabled', $id);
     }
@@ -209,6 +212,7 @@ final class ModuleManager implements EnabledModulesProvider
             $this->enabledIds = null;
         }
 
+        $this->assets?->remove($id);
         $this->auditor->log('module.disabled', 'module', $id);
     }
 

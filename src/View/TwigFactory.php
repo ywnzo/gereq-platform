@@ -95,6 +95,7 @@ final class TwigFactory
         $twig->addFunction(new TwigFunction('asset', [$runtime, 'asset']));
         $twig->addFunction(new TwigFunction('render_css', [$runtime, 'renderCss'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('render_js', [$runtime, 'renderJs'], ['is_safe' => ['html']]));
+        $twig->addFunction(new TwigFunction('render_module_assets', [$runtime, 'renderModuleAssets'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('render_tags', [$runtime, 'renderTags'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('render_reload', [$runtime, 'renderReload'], ['is_safe' => ['html']]));
         $twig->addFunction(new TwigFunction('icon', [$runtime, 'icon'], ['is_safe' => ['html']]));

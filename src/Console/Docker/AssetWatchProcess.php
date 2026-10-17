@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gereq\Console\Docker;
 
+use Gereq\Console\Serve\ProcessKiller;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -75,8 +76,8 @@ final class AssetWatchProcess
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$1"
-# nohup + background; script exits so PHP never blocks on the watch process
-nohup bun run dev >>"$2" 2>&1 </dev/null &
+# setsid: own process group so Ctrl+C on `serve` does not SIGINT bun
+setsid nohup bun run dev >>"$2" 2>&1 </dev/null &
 echo $! > "$3"
 SH;
         file_put_contents($launcher, $script);
@@ -128,9 +129,9 @@ SH;
         }
 
         $pid = $this->pid ?? $this->readPidFile();
-        if ($pid !== null && $this->processAlive($pid)) {
+        if ($pid !== null && ProcessKiller::alive($pid)) {
             $output->writeln(sprintf('<fg=gray>Zastavuji Bun watch (pid %d)…</>', $pid));
-            $this->killTree($pid);
+            ProcessKiller::force($pid);
         }
 
         $this->clearPidFile();
@@ -161,22 +162,6 @@ SH;
         $this->stop($output);
     }
 
-    private function killTree(int $pid): void
-    {
-        exec('pkill -TERM -P ' . $pid . ' 2>/dev/null');
-        $this->signal($pid, 'TERM');
-
-        $deadline = microtime(true) + 4.0;
-        while (microtime(true) < $deadline && $this->processAlive($pid)) {
-            usleep(100_000);
-        }
-
-        if ($this->processAlive($pid)) {
-            exec('pkill -KILL -P ' . $pid . ' 2>/dev/null');
-            $this->signal($pid, 'KILL');
-        }
-    }
-
     private function waitUntilReady(float $seconds): bool
     {
         $deadline = microtime(true) + $seconds;
@@ -184,7 +169,7 @@ SH;
             if ($this->manifestReady()) {
                 return true;
             }
-            if ($this->pid !== null && !$this->processAlive($this->pid)) {
+            if ($this->pid !== null && !ProcessKiller::alive($this->pid)) {
                 return false;
             }
             usleep(150_000);
@@ -197,7 +182,7 @@ SH;
     {
         $pid = $this->readPidFile();
 
-        return $pid !== null && $this->processAlive($pid) && $this->manifestReady();
+        return $pid !== null && ProcessKiller::alive($pid) && $this->manifestReady();
     }
 
     private function manifestReady(): bool
@@ -248,29 +233,5 @@ SH;
         if (is_file($file)) {
             @unlink($file);
         }
-    }
-
-    private function processAlive(int $pid): bool
-    {
-        if ($pid <= 0) {
-            return false;
-        }
-        if (\function_exists('posix_kill')) {
-            return @\posix_kill($pid, 0);
-        }
-        exec('kill -0 ' . $pid . ' 2>/dev/null', $out, $code);
-
-        return $code === 0;
-    }
-
-    private function signal(int $pid, string $sig): void
-    {
-        if (\function_exists('posix_kill')) {
-            $no = $sig === 'KILL' ? 9 : 15;
-            @\posix_kill($pid, $no);
-
-            return;
-        }
-        exec('kill -' . $sig . ' ' . $pid . ' 2>/dev/null');
     }
 }

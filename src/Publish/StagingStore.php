@@ -17,6 +17,10 @@ final class StagingStore
 
     private bool $allLoaded = false;
 
+    private ?int $countCache = null;
+
+    private int $countCacheRevision = -1;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly StagingSignal $signal = new StagingSignal(),
@@ -109,15 +113,25 @@ final class StagingStore
 
     public function count(): int
     {
+        $revision = $this->signal->revision();
+        if ($this->countCache !== null && $this->countCacheRevision === $revision) {
+            return $this->countCache;
+        }
+
         try {
-            return (int) $this->em->createQueryBuilder()
+            $count = (int) $this->em->createQueryBuilder()
                 ->select('COUNT(e.id)')
                 ->from(ContentStagingEntry::class, 'e')
                 ->getQuery()
                 ->getSingleScalarResult();
         } catch (\Throwable) {
-            return 0;
+            $count = 0;
         }
+
+        $this->countCache = $count;
+        $this->countCacheRevision = $revision;
+
+        return $count;
     }
 
     /** @return list<ContentStagingEntry> */

@@ -23,6 +23,11 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         /** Parent module ids whose submodule rows are expanded (default: collapsed). */
         expanded: [] as string[],
         collapsedFiltered: [] as string[],
+        /**
+         * Parents on the “turning off” half of the cycle (checked-all → check → none).
+         * Distinguishes check→all (on) from check→none (off) when only the parent is selected.
+         */
+        parentDescending: [] as string[],
         bulkAction: '',
         busy: false,
 
@@ -44,40 +49,65 @@ export function registerModuleTable(alpine: typeof Alpine): void {
                 this.expanded = modulesExpanded();
             }
 
-            // Native delegation — Alpine CSP @click on the icon toggle was unreliable.
-            el.addEventListener('click', (event: Event) => {
-                const target = event.target;
-                if (!(target instanceof Element)) {
-                    return;
-                }
-                const btn = target.closest('[data-module-children-toggle]') as HTMLElement | null;
-                if (!btn || !el.contains(btn)) {
-                    return;
-                }
-                event.preventDefault();
-                const id = btn.dataset.parentId || '';
-                if (id === '') {
-                    return;
-                }
-                if (this.isFiltering) {
-                    this.collapsedFiltered = this.isExpanded(id)
-                        ? [...this.collapsedFiltered, id]
-                        : this.collapsedFiltered.filter((item: string) => item !== id);
-                    this.apply();
-                    return;
-                }
-                this.expanded = this.isExpanded(id)
-                    ? this.expanded.filter((item: string) => item !== id)
-                    : [...this.expanded, id];
-                patchUiPreferences({ modules_expanded: [...this.expanded] });
-            });
+            // Native delegation — Alpine CSP @click/@change is unreliable in this table.
+            el.addEventListener(
+                'click',
+                (event: Event) => {
+                    const target = event.target;
+                    if (!(target instanceof Element)) {
+                        return;
+                    }
+
+                    // Row checkboxes (parent tri-state or leaf toggle) — not header select-all.
+                    const rowCheck = this.resolveRowCheckbox(target);
+                    if (rowCheck && el.contains(rowCheck) && rowCheck.closest('tbody')) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (rowCheck.dataset.hasChildren === '1') {
+                            this.cycleParentSelection(rowCheck.value);
+                        } else {
+                            this.toggleId(rowCheck.value);
+                        }
+                        return;
+                    }
+
+                    const btn = target.closest('[data-module-children-toggle]') as HTMLElement | null;
+                    if (!btn || !el.contains(btn)) {
+                        return;
+                    }
+                    event.preventDefault();
+                    const id = btn.dataset.parentId || '';
+                    if (id === '') {
+                        return;
+                    }
+                    if (this.isFiltering) {
+                        this.collapsedFiltered = this.isExpanded(id)
+                            ? [...this.collapsedFiltered, id]
+                            : this.collapsedFiltered.filter((item: string) => item !== id);
+                        this.apply();
+                        return;
+                    }
+                    this.expanded = this.isExpanded(id)
+                        ? this.expanded.filter((item: string) => item !== id)
+                        : [...this.expanded, id];
+                    patchUiPreferences({ modules_expanded: [...this.expanded] });
+                },
+                true,
+            );
 
             this.apply();
             this.$watch('query', () => this.resetFilteredExpansion());
             this.$watch('status', () => this.resetFilteredExpansion());
             this.$watch('expanded', () => this.apply());
-            this.$watch('selected', () => this.syncSelectAll());
-            this.$nextTick(() => this.syncSelectAll());
+            this.$watch('selected', () => {
+                this.syncSelectAll();
+                // Imperative checked/indeterminate — Alpine CSP :checked is unreliable here.
+                this.$nextTick(() => this.syncRowChecks());
+            });
+            this.$nextTick(() => {
+                this.syncSelectAll();
+                this.syncRowChecks();
+            });
 
             el.addEventListener('submit', (event: Event) => {
                 const form = event.target;
@@ -328,8 +358,66 @@ export function registerModuleTable(alpine: typeof Alpine): void {
         syncSelectAll() {
             const el = this.$refs.selectAll as HTMLInputElement | undefined;
             if (el) {
+                el.checked = this.allSelected;
                 el.indeterminate = this.someSelected;
             }
+        },
+
+        /**
+         * Sync native checkbox .checked / indeterminate from `selected`.
+         * Do not rely on Alpine CSP :checked — it often leaves the box visually empty
+         * while the bulk bar still shows “N selected”.
+         */
+        syncRowChecks() {
+            const root = this.$el as HTMLElement;
+            root.querySelectorAll<HTMLInputElement>('tbody tr[data-id] input[type="checkbox"]').forEach((input) => {
+                const id = input.value;
+                if (id === '') {
+                    return;
+                }
+                const on = this.isSelected(id);
+                const isParent = input.dataset.hasChildren === '1';
+                const all = isParent && this.parentSelectionState(id) === 'all';
+                // Set checked before indeterminate — some engines clear indeterminate on checked write.
+                input.checked = on;
+                input.indeterminate = all;
+                input.classList.toggle('is-checked-all', all);
+                input.setAttribute('aria-checked', all ? 'mixed' : on ? 'true' : 'false');
+            });
+        },
+
+        childIds(parentId: string): string[] {
+            if (parentId === '') {
+                return [];
+            }
+            const root = this.$el as HTMLElement;
+            const ids: string[] = [];
+            root.querySelectorAll<HTMLElement>(`tbody tr[data-parent-id="${CSS.escape(parentId)}"]`).forEach(
+                (row) => {
+                    if (row.dataset.id) {
+                        ids.push(row.dataset.id);
+                    }
+                },
+            );
+            return ids;
+        },
+
+        /**
+         * Tri-state for a parent module checkbox:
+         * - none: parent not selected
+         * - self: parent selected, not every child
+         * - all: parent + every child selected (filled-cube / indeterminate)
+         */
+        parentSelectionState(parentId: string): 'none' | 'self' | 'all' {
+            if (parentId === '' || !this.isSelected(parentId)) {
+                return 'none';
+            }
+            const children = this.childIds(parentId);
+            if (children.length === 0) {
+                return 'self';
+            }
+            const allChildren = children.every((id: string) => this.isSelected(id));
+            return allChildren ? 'all' : 'self';
         },
 
         isSelected(id: string): boolean {
@@ -368,6 +456,16 @@ export function registerModuleTable(alpine: typeof Alpine): void {
             return ids;
         },
 
+        /** Resolve tbody row checkbox from the click target (input or its label). */
+        resolveRowCheckbox(target: Element): HTMLInputElement | null {
+            if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+                return target;
+            }
+            const label = target.closest('label.table-check');
+            const nested = label?.querySelector('input[type="checkbox"]');
+            return nested instanceof HTMLInputElement ? nested : null;
+        },
+
         toggleId(id: string) {
             if (id === '') {
                 return;
@@ -377,22 +475,72 @@ export function registerModuleTable(alpine: typeof Alpine): void {
                 : [...this.selected, id];
         },
 
-        /** Sync selection from the checkbox that actually changed (avoids off-by-one). */
-        toggleFromEvent(event: Event) {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'checkbox') {
-                return;
-            }
-            const id = input.value;
+        clearParentDescending(id: string) {
+            this.parentDescending = this.parentDescending.filter((item: string) => item !== id);
+        },
+
+        /**
+         * Parent cycle (on: parent then children; off: children then parent):
+         * none → check → checked-all → check → none
+         */
+        cycleParentSelection(id: string) {
             if (id === '') {
                 return;
             }
-            if (input.checked) {
+            const children = this.childIds(id);
+            if (children.length === 0) {
+                this.selected = this.isSelected(id)
+                    ? this.selected.filter((item: string) => item !== id)
+                    : [...this.selected, id];
+                return;
+            }
+
+            const state = this.parentSelectionState(id);
+            const selectedChildren = children.filter((childId: string) => this.isSelected(childId));
+            const descending = this.parentDescending.includes(id);
+
+            if (state === 'none') {
+                // → check (parent only)
+                this.clearParentDescending(id);
+                this.selected = [...this.selected, id];
+                return;
+            }
+
+            if (state === 'all') {
+                // → check (keep parent, clear children) — start turning off
+                if (!descending) {
+                    this.parentDescending = [...this.parentDescending, id];
+                }
+                const drop = new Set(children);
+                this.selected = this.selected.filter((item: string) => !drop.has(item));
                 if (!this.isSelected(id)) {
                     this.selected = [...this.selected, id];
                 }
-            } else if (this.isSelected(id)) {
+                return;
+            }
+
+            // state === 'self'
+            if (descending && selectedChildren.length === 0) {
+                // check (after checked-all) → none
+                this.clearParentDescending(id);
                 this.selected = this.selected.filter((item: string) => item !== id);
+                return;
+            }
+
+            // check → checked-all (or self with some children → fill remaining)
+            this.clearParentDescending(id);
+            const next = new Set(this.selected);
+            next.add(id);
+            children.forEach((childId: string) => next.add(childId));
+            this.selected = [...next];
+            if (!this.isExpanded(id)) {
+                if (this.isFiltering) {
+                    this.collapsedFiltered = this.collapsedFiltered.filter((item: string) => item !== id);
+                } else {
+                    this.expanded = [...this.expanded, id];
+                    patchUiPreferences({ modules_expanded: [...this.expanded] });
+                }
+                this.apply();
             }
         },
 
@@ -408,6 +556,7 @@ export function registerModuleTable(alpine: typeof Alpine): void {
 
         clearSelection() {
             this.selected = [];
+            this.parentDescending = [];
             this.bulkAction = '';
         },
 
@@ -441,11 +590,10 @@ export function registerModuleTable(alpine: typeof Alpine): void {
             const msg = tpl.replace('%count%', String(this.selected.length));
 
             void (async () => {
-                const ask =
-                    window.gereq?.confirm ??
-                    ((opts: { body?: string; title?: string }) =>
-                        Promise.resolve(window.confirm(opts.body || opts.title || '')));
-
+                const ask = window.gereq?.confirm;
+                if (!ask) {
+                    return;
+                }
                 const ok = await ask({
                     title: root.dataset.confirmDisableTitle || undefined,
                     body: msg,
@@ -563,6 +711,7 @@ export function registerModuleTable(alpine: typeof Alpine): void {
 
             this.empty = rows.length > 0 && visible === 0;
             this.syncSelectAll();
+            this.syncRowChecks();
         },
     }));
 }

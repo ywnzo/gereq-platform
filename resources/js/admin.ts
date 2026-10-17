@@ -155,16 +155,29 @@ declare global {
     }
 }
 
-/** Sync fallback for version activate/downgrade forms that still use onclick. */
+/** Async confirm for version activate/downgrade forms (onsubmit must return false). */
 window.gereqConfirmModuleVersion = (form, isDowngrade, activateMsg, downgradeMsg) => {
-    if (!window.confirm(isDowngrade ? downgradeMsg : activateMsg)) {
-        return false;
-    }
-    const input = form.querySelector<HTMLInputElement>('input[name="confirm_downgrade"]');
-    if (input) {
-        input.value = isDowngrade ? '1' : '0';
-    }
-    return true;
+    void (async () => {
+        const ask = window.gereq?.confirm;
+        if (!ask) {
+            return;
+        }
+        const ok = await ask({
+            title: isDowngrade ? 'Downgrade' : 'Activate',
+            body: isDowngrade ? downgradeMsg : activateMsg,
+            danger: isDowngrade,
+            confirmLabel: isDowngrade ? 'Downgrade' : 'Activate',
+        });
+        if (!ok) {
+            return;
+        }
+        const input = form.querySelector<HTMLInputElement>('input[name="confirm_downgrade"]');
+        if (input) {
+            input.value = isDowngrade ? '1' : '0';
+        }
+        form.submit();
+    })();
+    return false;
 };
 
 const SIDEBAR_NARROW_MQ = '(max-width: 860px)';
@@ -246,13 +259,6 @@ Alpine.data('gereqAdmin', () => ({
             }
         };
         document.addEventListener('keydown', this._onKeydown);
-
-        document.addEventListener('wheel', (e) => {
-          const el = (e.target as HTMLElement | null)?.closest('.cms-builder__create-body');
-          if (!el) return;
-          el.scrollTop += e.deltaY;
-          e.preventDefault();
-        }, { passive: false });
 
         return () => {
             if (this._narrowMq && this._onNarrowChange) {
@@ -1034,17 +1040,69 @@ Alpine.data('dataTable', () => ({
             event.preventDefault();
             return;
         }
-        if (this.bulkAction === 'delete') {
-            const message = (this.$el as HTMLElement).dataset.bulkDeleteConfirm
-                || 'Delete selected items?';
-            if (!window.confirm(message)) {
-                event.preventDefault();
-            }
+        if (this.bulkAction !== 'delete') {
+            return;
         }
+        const form = (event.target as HTMLElement).closest('form');
+        if (!(form instanceof HTMLFormElement)) {
+            event.preventDefault();
+            return;
+        }
+        if (form.dataset.confirmAccepted === '1') {
+            delete form.dataset.confirmAccepted;
+            return;
+        }
+        event.preventDefault();
+        const message = (this.$el as HTMLElement).dataset.bulkDeleteConfirm
+            || 'Delete selected items?';
+        void (async () => {
+            const ask = window.gereq?.confirm;
+            if (!ask) {
+                return;
+            }
+            const ok = await ask({
+                title: 'Delete',
+                body: message,
+                danger: true,
+                confirmLabel: 'Delete',
+            });
+            if (!ok) {
+                return;
+            }
+            form.dataset.confirmAccepted = '1';
+            form.requestSubmit();
+        })();
     },
 }));
 
 registerUi(Alpine);
 
 window.Alpine = Alpine;
-Alpine.start();
+
+type ModuleRegister = (alpine: typeof Alpine) => void;
+
+async function bootModuleAssets(): Promise<void> {
+    const urls = (window as Window & { __GEREQ_MODULE_ASSETS__?: unknown }).__GEREQ_MODULE_ASSETS__;
+    if (!Array.isArray(urls) || urls.length === 0) {
+        return;
+    }
+    await Promise.all(
+        urls.map(async (url) => {
+            if (typeof url !== 'string' || url === '') {
+                return;
+            }
+            const mod = (await import(/* @vite-ignore */ url)) as { default?: ModuleRegister };
+            if (typeof mod.default === 'function') {
+                mod.default(Alpine);
+            }
+        }),
+    );
+}
+
+void bootModuleAssets()
+    .catch((err: unknown) => {
+        console.error('GEREQ module assets failed to load', err);
+    })
+    .finally(() => {
+        Alpine.start();
+    });

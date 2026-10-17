@@ -7,9 +7,18 @@ namespace Gereq\Module;
 /** Reads bundled packages without requiring a database or container. */
 final class ModuleDiscovery
 {
+    /** @var array<string, array<string, ModuleManifest>> */
+    private static array $memo = [];
+
     /** @return array<string, ModuleManifest> */
     public static function discover(string $basePath, bool $validateDeclarations = true): array
     {
+        $basePath = rtrim($basePath, '/');
+        $key = $basePath . "\0" . ($validateDeclarations ? '1' : '0');
+        if (isset(self::$memo[$key])) {
+            return self::$memo[$key];
+        }
+
         $manifests = [];
         foreach (['modules', 'integrations'] as $directory) {
             foreach (glob($basePath . '/' . $directory . '/*/module.php') ?: [] as $file) {
@@ -50,7 +59,13 @@ final class ModuleDiscovery
             }
         }
 
-        return $manifests;
+        return self::$memo[$key] = $manifests;
+    }
+
+    /** Drop process-local discovery memo (after tree swap / enable tests). */
+    public static function clearMemo(): void
+    {
+        self::$memo = [];
     }
 
     private static function read(string $file, ?string $parentId = null): ModuleManifest

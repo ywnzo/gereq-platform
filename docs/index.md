@@ -1,6 +1,6 @@
 # GEREQ / RealEstates — Documentation
 
-GEREQ is a modular backend platform for internal systems (admin, CRM, ERP, portals) built on PHP 8.4, Doctrine ORM, Symfony components, Twig and Alpine.js, with Vite/Bun for assets. The core (`src/`) provides authentication, permissions, the module system, hooks and events, publishing, API, audit, settings, files, queue and the admin shell; business logic lives in modules (`modules/`) and third-party adapters in `integrations/`. Product packages (`config/module_groups.php`) include **RealEstates** (listings, viewings, portals, CRM, CMS, Web+/Web+AI), **ECS** / **EBS** (car / bike workshop), **Forum** (Q&A, community, achievements, messenger) and **GEREQ** (ticketing desk), plus commerce modules.
+GEREQ is a modular backend platform for internal systems (admin, CRM, ERP, portals) built on PHP 8.4, Doctrine ORM, Symfony components, Twig and Alpine.js, with Bun for admin assets (storefronts may still use Vite). The core (`src/`) provides authentication, permissions, the module system, hooks and events, publishing, API, audit, settings, files, queue and the admin shell; business logic lives in modules (`modules/`) and third-party adapters in `integrations/`. Product packages (`config/module_groups.php`) include **RealEstates** (listings, viewings, portals, CRM, CMS, Web+/Web+AI), **ECS** / **EBS** (car / bike workshop), **Forum** (Q&A, community, achievements, messenger) and **GEREQ** (ticketing desk), plus commerce modules.
 
 This documentation is generated from the code base and organised by concern. When code and docs disagree, the code wins — every page cites the source files it was derived from.
 
@@ -46,7 +46,7 @@ Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) ·
 
 | Page | Contents |
 |---|---|
-| [Docker](infrastructure/docker.md) | Compose stack, nginx/PHP-FPM/Redis/Postgres, `php gereq serve-docker`, HTTPS, Vite HMR, `Makefile` |
+| [Docker](infrastructure/docker.md) | Compose stack, nginx/PHP-FPM/Redis/Postgres, `php gereq serve-docker`, HTTPS, Bun watch (`--hot`), `Makefile` |
 | [Database](infrastructure/database.md) | Drivers, Doctrine mapping, migrations, seeders, demo data |
 | [Cache, queue, session & files](infrastructure/cache-queue-session-files.md) | Drivers and `storage/` layout |
 | [Deployment](infrastructure/deployment.md) | Production checklist, logging, monitoring, security headers |
@@ -57,7 +57,7 @@ Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) ·
 
 | Page | Contents |
 |---|---|
-| [Admin assets](frontend/admin-assets.md) | Vite pipeline, `resources/js`, `resources/css`, module-owned assets, charts |
+| [Admin UI assets](architecture/admin-ui.md#frontend-assets-bun) | Bun kernel + lazy `module:{id}` assets, `resources/js`, `resources/css` |
 | [Public frontends](frontend/public-frontends.md) | React apps `FE2/` and `frontend/` consuming `/api/public/*` |
 | [PageSpeed](frontend/pagespeed.md) | Media srcset, lazy icons, Web+ SPA head inject, health checks |
 

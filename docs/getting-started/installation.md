@@ -8,7 +8,7 @@ GEREQ is a PHP 8.4 platform with a Doctrine/Symfony-components core, Twig admin 
 | --- | --- | --- |
 | PHP `^8.4` | extensions `gd`, `zip`, `json`, `mbstring`, `pdo` in `composer.json`; `ext-redis` is optional (`suggest`) and only needed when `CACHE_DRIVER` / `SESSION_DRIVER` / `QUEUE_DRIVER` is `redis` | `composer.json` |
 | Composer | | `bin/grq install` checks for it |
-| Bun (preferred) or npm | frontend build (`vite build`, Tailwind 4). Workspace rule: always `bun run …` / `bun x …` | `package.json`, `.cursor/rules/tech-stack.mdc` |
+| Bun | frontend build (`bun run build` / `bun run build:full`, Tailwind 4). Workspace rule: always `bun run …` / `bun x …` | `package.json`, `.cursor/rules/tech-stack.mdc` |
 | Database | SQLite (default in `config/database.php`), MySQL/MariaDB or PostgreSQL 16 (Docker default) | `config/database.php`, `docker-compose.yml` |
 | Redis | optional; required for `CACHE_DRIVER=redis`, `QUEUE_DRIVER=redis`, `SESSION_DRIVER=redis` (Docker stack forces the last two) | `docker-compose.yml` |
 | Docker + `docker compose` | optional; used by `php gereq serve-docker` and the `Makefile` | `Makefile`, `src/Console/Command/ServeDockerCommand.php` |
@@ -57,7 +57,7 @@ Without the module submodules `ModuleManager::discover()` (`src/Module/ModuleMan
 3. Runs `composer install --no-interaction --prefer-dist`.
 4. Generates `APP_KEY` (`bin2hex(random_bytes(32))`), backs up an existing `.env` to `.env.bak.<timestamp>` and writes a new `.env`.
 5. Creates `storage/{cache,logs,sessions,tmp/queue,uploads,invoices,database}` and, for SQLite, an empty database file.
-6. Runs `bun install && bun run build` (or the npm equivalents).
+6. Runs `bun install && bun run build` (kernel). After DB seed / module enable, run `php gereq assets:ensure` (or `bun run build:full`) for lazy module assets.
 7. Runs `php gereq migrate --fresh --seed --no-interaction` plus `--no-demo` / `--no-sample` unless you opted in.
 8. Either `docker compose up -d --build` (Docker mode) or offers to start `php gereq serve`.
 
@@ -96,6 +96,7 @@ php gereq env:init              # from config/env.schema.toml (or: bin/grq env i
 # nebo nechte vygenerovat (vypíše se jednou do konzole).
 php gereq migrate --fresh --seed --no-demo --no-sample
 bun install && bun run build
+php gereq assets:ensure         # or: bun run build:full
 php gereq serve                 # http://127.0.0.1:8080/admin
 ```
 
@@ -133,7 +134,7 @@ make logs | make ps
 make migrate            # php gereq migrate --no-interaction
 make migrate-fresh      # SEED_FLAGS (default: --fresh --seed --no-demo --no-sample --no-interaction)
 make seed               # php gereq seed:demo
-make assets             # bun install + bun run build via oven/bun
+make assets             # bun install + bun run build via oven/bun; then php gereq assets:ensure
 make adminer            # Adminer on :8086 (compose profile "tools")
 make hot                # Vite HMR on :5173 via Docker bun
 make urls
@@ -169,10 +170,14 @@ Uses SQLite + file/sync drivers; runtime files go to `~/.local/share/gereq-docke
 
 ```bash
 php gereq serve --port=8080 --host=0.0.0.0
-bun run dev                      # watch rebuild of public/build
+php gereq serve --hot            # also bun run dev (asset watch)
+php gereq serve --hot --queue    # + queue:work and schedule:run loop (non-Docker)
+# same via grq:
+./bin/grq serve --hot --queue
+./bin/grq server --port=8090     # alias
 ```
 
-`ServeCommand` (`src/Console/Command/ServeCommand.php`) probes up to 20 following ports if the requested one is taken and runs `php -S <host>:<port> -t public public/router.php`. Use `127.0.0.1`, not `localhost`, in the browser (session cookie behaviour).
+`ServeCommand` (`src/Console/Command/ServeCommand.php`, alias `server`) probes up to 20 following ports if the requested one is taken, runs `php -S <host>:<port> -t public public/router.php`, colourises request method/status, and collapses consecutive identical access lines to a live `Nx` counter. In an interactive TTY it opens a full-terminal dashboard — **Tab** (or `1`/`2`/…) switches panes **app** / **db** / **queue** / **bun**. The **db** pane is a mouse-capable Adminer-like client: **Enter** opens a table, **Esc** goes back; row select + `x` delete, `i` insert, `/` SQL editor (syntax highlight, Tab autocomplete, Enter run). With `--queue` it also starts `queue:work` and a 60s `schedule:run` loop (workers run in their own process group so Ctrl+C stops serve cleanly). Use `127.0.0.1`, not `localhost`, in the browser (session cookie behaviour).
 
 ### Docker stack (`php gereq serve-docker`)
 
@@ -198,7 +203,8 @@ Log stream keys: `q` `a` `p` `n` `space` (see README).
 
 ```bash
 bun install
-bun run build        # hashed files → public/build/manifest.json
+bun run build        # kernel hashed files → public/build/manifest.json
+bun run build:full   # kernel + php gereq assets:ensure for enabled modules
 bun run dev          # watch; RenderEngine reads .dev + cache-busts URLs
 ```
 

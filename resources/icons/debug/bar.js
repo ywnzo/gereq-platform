@@ -18,6 +18,7 @@
     { id: "vscode", label: "VS Code" },
     { id: "phpstorm", label: "PhpStorm" },
     { id: "idea", label: "IntelliJ IDEA" },
+    { id: "zed", label: "Zed" },
   ];
   const nPlusOneCount = data.nPlusOneCount || 0;
   const staging = data.staging || { count: 0, version: "—", entries: [] };

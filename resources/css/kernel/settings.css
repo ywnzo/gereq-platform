@@ -393,15 +393,6 @@
 .css-editor__main {
     min-width: 0;
 }
-.cms-css-settings__editor {
-    margin: 0 0 1.1rem;
-    min-width: 0;
-}
-.cms-css-settings .css-editor {
-    display: flex;
-    flex-direction: column;
-    gap: var(--grq-space-3, 0.75rem);
-}
 /* Color swatches from @uiw/codemirror-extensions-color */
 .cm-color-picker-wrapper {
     outline: none !important;

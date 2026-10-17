@@ -21,6 +21,8 @@ final class ModuleUpdater
         private readonly Auditor $auditor,
         private readonly TranslatorInterface $translator,
         private readonly ModuleInstalledSnapshot $snapshots,
+        private readonly ModuleFootprintCache $footprintCache,
+        private readonly ?ModuleAssetBuilder $assets = null,
     ) {
     }
 
@@ -56,7 +58,7 @@ final class ModuleUpdater
             }
         }
 
-        $liveFootprint = ModuleFootprint::ofDirectory($manifest->path);
+        $liveFootprint = $this->liveFootprint($id, $manifest->path);
         $installedFootprint = $row->footprint();
         if ($liveFootprint === '' || $installedFootprint === null || $installedFootprint === $liveFootprint) {
             if ($liveFootprint !== '' && ($installedFootprint === null || $installedFootprint === $liveFootprint)) {
@@ -77,6 +79,27 @@ final class ModuleUpdater
         }
 
         return $this->updateAvailableCache[$id] = true;
+    }
+
+    /**
+     * Full content footprint, skipped when the cheap mtime/size signature matches a cache entry.
+     */
+    private function liveFootprint(string $id, string $path): string
+    {
+        $quick = ModuleFootprint::quickSignature($path);
+        if ($quick !== '') {
+            $cached = $this->footprintCache->read($id);
+            if ($cached !== null && $cached['quick'] === $quick) {
+                return $cached['footprint'];
+            }
+        }
+
+        $live = ModuleFootprint::ofDirectory($path);
+        if ($live !== '' && $quick !== '') {
+            $this->footprintCache->write($id, $quick, $live);
+        }
+
+        return $live;
     }
 
     /** Persist file inventory for the installed footprint so the gate can list real diffs later. */
@@ -124,6 +147,11 @@ final class ModuleUpdater
         $from = $row->version();
         $fromFootprint = $row->footprint();
         $liveFootprint = ModuleFootprint::ofDirectory($manifest->path);
+        if ($liveFootprint !== '') {
+            $this->footprintCache->write($id, ModuleFootprint::quickSignature($manifest->path), $liveFootprint);
+        } else {
+            $this->footprintCache->forget($id);
+        }
         $row->setVersion($manifest->version);
         $row->setFootprint($liveFootprint !== '' ? $liveFootprint : null);
         if ($this->modules->isEnabled($id)) {
@@ -151,6 +179,10 @@ final class ModuleUpdater
                 $liveFootprint,
                 ModuleFootprint::inventory($manifest->path),
             );
+        }
+
+        if ($this->modules->isEnabled($id)) {
+            $this->assets?->ensure($id, force: true);
         }
 
         unset($this->updateAvailableCache[$id]);

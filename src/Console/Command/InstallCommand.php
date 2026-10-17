@@ -7,6 +7,8 @@ namespace Gereq\Console\Command;
 use Gereq\Console\AdminBootstrap;
 use Gereq\Database\Migrator;
 use Gereq\Database\Seeder;
+use Gereq\Module\ModuleAssetBuilder;
+use Gereq\Module\ModuleManager;
 use Gereq\Setup\SetupState;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -25,6 +27,8 @@ final class InstallCommand extends Command
         private readonly Migrator $migrator,
         private readonly Seeder $seeder,
         private readonly SetupState $setup,
+        private readonly ModuleManager $modules,
+        private readonly ModuleAssetBuilder $assets,
         private readonly string $basePath,
     ) {
         parent::__construct();
@@ -103,6 +107,21 @@ final class InstallCommand extends Command
                 ? 'Heslo (vygenerováno — uložte si ho): ' . $admin['password']
                 : 'Heslo: (zadané při instalaci)',
         ]);
+
+        $io->section('Module assets');
+        try {
+            $done = $this->assets->ensureMany($this->modules->enabledIds());
+            if ($done === []) {
+                $io->writeln('  <comment>Žádné module asset zdroje mezi enabled moduly.</comment>');
+            } else {
+                foreach ($done as $id) {
+                    $io->writeln('  <info>assets ok</info> ' . $id);
+                }
+            }
+        } catch (\Throwable $e) {
+            $io->warning('Module assets: ' . $e->getMessage()
+                . ' (spusťte později: php gereq assets:ensure)');
+        }
 
         $io->success($bare
             ? 'Čistý bare klient (core + admin).'
