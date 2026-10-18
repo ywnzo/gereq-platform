@@ -26,7 +26,7 @@
         </div>
         {% if canManage %}
             <div class="actions">
-                <a class="btn btn--primary" href="{{ url('admin.roles.create') }}">{{ icon('plus') }} {{ 'admin.roles.new'|trans }}</a>
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.roles.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'admin.roles.new'|trans }}{% endblock %}{% endembed %}
             </div>
         {% endif %}
     </header>
@@ -34,20 +34,20 @@
     {% include 'admin/users/_hub_tabs.html.twig' with { active: 'roles' } %}
 
     <div class="toolbar--table">
-        <form class="toolbar" method="get" action="{{ url('admin.users.roles') }}">
-            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.roles.search'|trans }}">
-        </form>
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get" action="{{ url('admin.users.roles') }}"{% endblock %}{% block content %}
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.roles.search'|trans }}"{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
     </div>
 
     {% if canManage and roles is not empty %}
-        <form
+        {% embed 'ui/bulk_bar.html.twig' with { bulk_options: { preserve: true, tag: 'form' } } %}{% block component_attributes %}
             class="bulk-bar"
             method="post"
             action="{{ url('admin.roles.bulk') }}"
             x-show="selectedCount > 0"
             x-cloak
             @submit="confirmBulk"
-        >
+        {% endblock %}{% block content %}
             {{ csrf_field()|raw }}
             <input type="hidden" name="confirmed" value="1">
             <template x-for="id in selected" :key="id">
@@ -56,16 +56,27 @@
             <div class="bulk-bar__meta">
                 <strong x-text="selectedCount"></strong>
                 <span>{{ 'admin.roles.bulk.selected'|trans }}</span>
-                <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'admin.roles.bulk.clear'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'admin.roles.bulk.clear'|trans,
+                    type: 'button',
+                    variant: 'link',
+                    class: 'btn-sm',
+                    attrs: { '@click': 'clearSelection' }
+                } only %}
             </div>
             <div class="bulk-bar__actions">
-                <select class="input" name="action" x-model="bulkAction" required>
-                    <option value="">{{ 'admin.roles.bulk.choose'|trans }}</option>
-                    <option value="delete">{{ 'admin.roles.bulk.action.delete'|trans }}</option>
-                </select>
-                <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'admin.roles.bulk.apply'|trans }}</button>
+                {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="bulkAction" {% endblock %}{% block native_attributes %} class="input" name="action" x-model="bulkAction" required{% endblock %}{% block native_options %}
+                    {% include 'ui/option.html.twig' with { value: '', label: 'admin.roles.bulk.choose'|trans } only %}
+                    {% include 'ui/option.html.twig' with { value: 'delete', label: 'admin.roles.bulk.action.delete'|trans } only %}
+                {% endblock %}{% endembed %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'admin.roles.bulk.apply'|trans,
+                    type: 'submit',
+                    variant: 'primary',
+                    attrs: { ':disabled': '!bulkAction' }
+                } only %}
             </div>
-        </form>
+        {% endblock %}{% endembed %}
     {% endif %}
 
     <div class="table-wrap" data-table>
@@ -75,7 +86,7 @@
                     {% if canManage %}
                         <th class="table__check">
                             <label class="table-check">
-                                <input type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected"{% endblock %}{% endembed %}
                                 <span class="sr-only">{{ 'admin.roles.bulk.select_all'|trans }}</span>
                             </label>
                         </th>
@@ -93,12 +104,12 @@
                             <td class="table__check">
                                 {% if not role.isPrivileged() %}
                                     <label class="table-check">
-                                        <input
+                                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                             type="checkbox"
                                             value="{{ role.id() }}"
                                             @change="toggleId('{{ role.id() }}')"
                                             :checked="isSelected('{{ role.id() }}')"
-                                        >
+                                        {% endblock %}{% endembed %}
                                         <span class="sr-only">{{ role.label() }}</span>
                                     </label>
                                 {% endif %}

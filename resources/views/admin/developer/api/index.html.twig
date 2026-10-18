@@ -13,20 +13,20 @@
             <h1>{{ 'admin.api.title'|trans }}</h1>
             <p class="muted">{{ 'admin.api.auth_hint'|trans }}</p>
         </div>
-        <a class="btn btn--ghost" href="{% if route_exists('api.openapi') %}{{ url('api.openapi') }}{% else %}/realityV3/api/openapi.json{% endif %}" target="_blank" rel="noopener">{{ 'admin.api.openapi'|trans }}</a>
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{% if route_exists('api.openapi') %}{{ url('api.openapi') }}{% else %}/realityV3/api/openapi.json{% endif %}" target="_blank" rel="noopener"{% endblock %}{% block content %}{{ 'admin.api.openapi'|trans }}{% endblock %}{% endembed %}
     </header>
 
-    <div class="detail-hub" x-data="gereqTabs" data-initial="private" data-breadcrumbs="0">
-        <div class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.api.title'|trans }}">
-            <button type="button" class="design-tab" role="tab" data-tab="private">
+    {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="detail-hub" x-data="gereqTabs" data-initial="private" data-breadcrumbs="0"{% endblock %}{% block content %}
+        {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.api.title'|trans }}"{% endblock %}{% block content %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="private"{% endblock %}{% block content %}
                 {{ 'admin.api.tab.private'|trans }}
                 <span class="module-tab-count">{{ privateCount }}</span>
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="public">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="public"{% endblock %}{% block content %}
                 {{ 'admin.api.tab.public'|trans }}
                 <span class="module-tab-count">{{ publicCount }}</span>
-            </button>
-        </div>
+            {% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
 
         <section class="design-panel" data-panel="private" role="tabpanel">
             <p class="muted developer-tab-hint">{{ 'admin.api.tab.private.hint'|trans }}</p>
@@ -42,7 +42,7 @@
             {% endif %}
             {% include 'admin/developer/api/_routes.html.twig' with { modules: publicModules, empty_hint: 'empty.api_public_routes_hint'|trans } %}
         </section>
-    </div>
+    {% endblock %}{% endembed %}
 
     {% include 'admin/developer/api/_tester_dialog.html.twig' %}
 </div>

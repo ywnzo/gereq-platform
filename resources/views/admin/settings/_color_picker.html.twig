@@ -10,17 +10,17 @@
     <input type="hidden" name="{{ field }}" value="{{ colorValue }}" data-color-value>
     <div class="color-picker__row">
         <label class="color-picker__chip">
-            <input
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                 type="color"
                 class="color-picker__native"
                 value="{{ colorValue }}"
                 aria-label="{{ definition.label|trans }}"
-            >
+            {% endblock %}{% endembed %}
             <span class="color-picker__chip-face" style="background: {{ colorValue }}"></span>
         </label>
         <div class="color-picker__hex-field">
             <span class="color-picker__hash">#</span>
-            <input
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                 class="color-picker__hex-input"
                 type="text"
                 maxlength="6"
@@ -29,11 +29,11 @@
                 spellcheck="false"
                 autocomplete="off"
                 aria-label="HEX"
-            >
+            {% endblock %}{% endembed %}
         </div>
-        <button type="button" class="color-picker__more" @click="toggle" :aria-expanded="open ? 'true' : 'false'" title="{{ 'settings.color.presets'|trans }}">
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="color-picker__more" @click="toggle" :aria-expanded="open ? 'true' : 'false'" title="{{ 'settings.color.presets'|trans }}"{% endblock %}{% block content %}
             {{ icon('palette') }}
-        </button>
+        {% endblock %}{% endembed %}
     </div>
     <div
         class="color-picker__panel"
@@ -45,7 +45,7 @@
         <p class="color-picker__panel-label">{{ 'settings.color.presets'|trans }}</p>
         <div class="color-picker__presets">
             <template x-for="preset in presets" :key="preset">
-                <button
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                     type="button"
                     class="color-picker__preset"
                     role="option"
@@ -54,9 +54,9 @@
                     :aria-selected="isPreset(preset) ? 'true' : 'false'"
                     :title="preset"
                     @click="pick(preset)"
-                >
+                {% endblock %}{% block content %}
                     <span class="color-picker__preset-check" :style="checkOn(preset)" aria-hidden="true">{{ icon('check') }}</span>
-                </button>
+                {% endblock %}{% endembed %}
             </template>
         </div>
     </div>

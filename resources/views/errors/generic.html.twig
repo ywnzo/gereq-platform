@@ -5,7 +5,13 @@
     <h1>{{ heading }}</h1>
     <p class="muted">{{ message }}</p>
     <p class="error-actions">
-        <a class="btn btn-primary btn--primary" href="{{ homeUrl }}">{{ 'errors.back'|trans }}</a>
+        {% include 'ui/button.html.twig' with {
+            label: 'errors.back'|trans,
+            href: (homeUrl),
+            button_options: { tag: 'a' },
+            variant: 'primary',
+            class: 'btn-primary'
+        } only %}
     </p>
     {% if debug %}
         <pre class="error-trace">{{ exception.message }}

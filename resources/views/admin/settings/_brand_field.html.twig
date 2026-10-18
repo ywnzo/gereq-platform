@@ -47,13 +47,13 @@
                 bare: true,
             } %}
         {% elseif item.secret %}
-            <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}"{% endblock %}{% endembed %}
         {% elseif isColor %}
             {% include 'admin/settings/_color_picker.html.twig' %}
         {% elseif key == 'brand.custom_css' %}
             {% include 'admin/settings/_css_editor.html.twig' %}
         {% else %}
-            <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}" @input="touch">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="{{ field }}" value="{{ values[key] }}" @input="touch"{% endblock %}{% endembed %}
         {% endif %}
         {% if helpText %}
             <small class="field__hint">{{ helpText }}</small>
@@ -63,9 +63,9 @@
     <label class="field{% if isWide %} field--full{% endif %}">
         <span>{{ definition.label|trans }}</span>
         {% if item.secret %}
-            <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}"{% endblock %}{% endembed %}
         {% else %}
-            <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}" @input="touch">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="{{ field }}" value="{{ values[key] }}" @input="touch"{% endblock %}{% endembed %}
         {% endif %}
         {% if helpText %}
             <small class="field__hint">{{ helpText }}</small>

@@ -4,26 +4,36 @@
 <div class="list-shell" x-data="dataTable" data-table-id="webhook-deliveries" data-actions-default="1">
     <header class="page-header">
         <h1>{{ 'webhooks.delivery.title'|trans }}</h1>
-        <a class="btn btn--ghost" href="{{ url('admin.developer.webhooks.index') }}">{{ 'webhooks.delivery.back'|trans }}</a>
+        {% include 'ui/button.html.twig' with {
+            label: 'webhooks.delivery.back'|trans,
+            href: (url('admin.developer.webhooks.index')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
     </header>
 
     <div class="toolbar--table">
-        <form class="toolbar" method="get">
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
             {% if webhookId %}
                 <input type="hidden" name="webhook" value="{{ webhookId }}">
             {% endif %}
             {% if filterWebhook %}
                 <span class="badge">{{ 'webhooks.delivery.filter_webhook'|trans({'%name%': filterWebhook.name()}) }}</span>
-                <a class="btn btn--ghost" href="{{ url('admin.developer.webhook-deliveries.index') }}">{{ 'webhooks.delivery.cancel_filter'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'webhooks.delivery.cancel_filter'|trans,
+                    href: (url('admin.developer.webhook-deliveries.index')),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
             {% endif %}
-            <select name="status" class="input" onchange="this.form.submit()">
-                <option value="">{{ 'common.all_statuses'|trans }}</option>
-                <option value="pending" {{ status == 'pending' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.pending'|trans }}</option>
-                <option value="delivered" {{ status == 'delivered' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.delivered'|trans }}</option>
-                <option value="failed" {{ status == 'failed' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.failed'|trans }}</option>
-                <option value="retrying" {{ status == 'retrying' ? 'selected' : '' }}>{{ 'webhooks.delivery.status.retrying'|trans }}</option>
-            </select>
-        </form>
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="status" class="input" onchange="this.form.submit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'common.all_statuses'|trans } only %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="pending" {{ status == 'pending' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webhooks.delivery.status.pending'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="delivered" {{ status == 'delivered' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webhooks.delivery.status.delivered'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="failed" {{ status == 'failed' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webhooks.delivery.status.failed'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="retrying" {{ status == 'retrying' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webhooks.delivery.status.retrying'|trans }}{% endblock %}{% endembed %}
+            {% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
     </div>
 
     <div class="table-wrap" data-table>

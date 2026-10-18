@@ -32,18 +32,18 @@
                 <p class="muted">{{ 'settings.intro'|trans }}</p>
             </div>
             <div class="actions">
-                <button class="btn btn--primary" type="submit">{{ 'settings.save'|trans }}</button>
+                {% include 'ui/button.html.twig' with { label: 'settings.save'|trans, type: 'submit', variant: 'primary' } only %}
             </div>
         </header>
 
         <div class="detail-hub">
-            <div class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'settings.title'|trans }}">
+            {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'settings.title'|trans }}"{% endblock %}{% block content %}
                 {% for groupId, group in groups %}
-                    <button type="button" class="design-tab" role="tab" data-tab="{{ groupId }}">
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="{{ groupId }}"{% endblock %}{% block content %}
                         {{ group.label|trans }}<span class="module-tab-count">{{ group.items|length }}</span>
-                    </button>
+                    {% endblock %}{% endembed %}
                 {% endfor %}
-            </div>
+            {% endblock %}{% endembed %}
 
             {% for groupId, group in groups %}
                 {% set groupHelp = 'settings.group.' ~ groupId ~ '.help' %}
@@ -62,7 +62,9 @@
                         } %}
                     {% else %}
                         <div class="detail-stack">
-                            <section class="panel">
+                            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                                {% block attributes %} class="panel"{% endblock %}
+                                {% block content %}
                                 <header class="panel__head">
                                     <div>
                                         <h2>{{ group.label|trans }}</h2>
@@ -75,7 +77,7 @@
                                     {% if groupId == 'core' %}
                                         <label class="field">
                                             <span>{{ 'settings.admin.path'|trans }}</span>
-                                            <input class="input" type="text" value="{{ adminPath }}" readonly disabled>
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" value="{{ adminPath }}" readonly disabled{% endblock %}{% endembed %}
                                             <small class="field__hint">{{ 'settings.admin.path.help'|trans }}</small>
                                         </label>
                                     {% endif %}
@@ -113,7 +115,7 @@
                                                         bare: true,
                                                     } %}
                                                 {% elseif item.secret %}
-                                                    <input class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}">
+                                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}"{% endblock %}{% endembed %}
                                                 {% elseif isColor %}
                                                     {% include 'admin/settings/_color_picker.html.twig' %}
                                                 {% elseif key == 'brand.custom_css' %}
@@ -121,9 +123,9 @@
                                                 {% elseif key == 'admin.dashboard.layout' %}
                                                     {% include 'admin/settings/_dashboard_widgets.html.twig' %}
                                                 {% elseif definition.type == 'json' %}
-                                                    <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ values[key]|json_encode }}</textarea>
+                                                    {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="{{ field }}" rows="6" spellcheck="false"{% endblock %}{% block content %}{{ values[key]|json_encode }}{% endblock %}{% endembed %}
                                                 {% else %}
-                                                    <input class="input" type="text" name="{{ field }}" value="{{ values[key] }}">
+                                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="{{ field }}" value="{{ values[key] }}"{% endblock %}{% endembed %}
                                                 {% endif %}
                                                 {% if helpText %}
                                                     <small class="field__hint">{{ helpText }}</small>
@@ -137,20 +139,17 @@
                                     <div class="field field--full">
                                         <span class="settings-row__label">{{ 'settings.storefront.rebuild'|trans }}</span>
                                         <p class="muted" style="margin:.35rem 0 .75rem">{{ 'settings.storefront.rebuild.help'|trans }}</p>
-                                        <button
-                                            type="submit"
-                                            class="btn btn--primary"
-                                            formaction="{{ url('admin.settings.storefront.rebuild') }}"
-                                            formmethod="post"
-                                            data-confirm="{{ 'settings.storefront.rebuild.confirm'|trans|e('html_attr') }}"
-                                            data-confirm-title="{{ 'settings.storefront.rebuild'|trans|e('html_attr') }}"
-                                            data-confirm-label="{{ 'settings.storefront.rebuild'|trans|e('html_attr') }}"
-                                            data-confirm-danger="0"
-                                        >{{ 'settings.storefront.rebuild'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'settings.storefront.rebuild'|trans,
+                                            type: 'submit',
+                                            variant: 'primary',
+                                            attrs: { 'formaction': (url('admin.settings.storefront.rebuild')), 'formmethod': 'post', 'data-confirm': ('settings.storefront.rebuild.confirm'|trans|e('html_attr')), 'data-confirm-title': ('settings.storefront.rebuild'|trans|e('html_attr')), 'data-confirm-label': ('settings.storefront.rebuild'|trans|e('html_attr')), 'data-confirm-danger': '0' }
+                                        } only %}
                                     </div>
                                 </div>
                             {% endif %}
-                            </section>
+                                {% endblock %}
+                            {% endembed %}
 
                             {% if groupId == 'core' %}
                                 {{ apply_filters('admin.settings.panel.core', '')|raw }}

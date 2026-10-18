@@ -10,7 +10,7 @@
 {% block content %}
 {% set pageIds = items|map(r => r.manifest.id) %}
 {% set updateIds = items|filter(r => r.update_available)|map(r => r.manifest.id) %}
-<div class="list-shell list-shell--tabs" x-data="gereqTabs" data-initial="modules">
+{% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="list-shell list-shell--tabs" x-data="gereqTabs" data-initial="modules"{% endblock %}{% block content %}
     <header class="page-header">
         <div>
             <h1>{{ 'admin.modules.title'|trans }}</h1>
@@ -37,23 +37,23 @@
         </div>
     </div>
 
-    <div class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.modules.title'|trans }}">
-        <button type="button" class="design-tab" role="tab" data-tab="modules">{{ 'admin.modules.tab.modules'|trans }}</button>
+    {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.modules.title'|trans }}"{% endblock %}{% block content %}
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="modules"{% endblock %}{% block content %}{{ 'admin.modules.tab.modules'|trans }}{% endblock %}{% endembed %}
         {% if groups is defined and groups is not empty %}
-            <button type="button" class="design-tab" role="tab" data-tab="packages">
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="packages"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.packages'|trans }}
                 <span class="module-tab-count">{{ groups|length }}</span>
-            </button>
+            {% endblock %}{% endembed %}
         {% endif %}
-        <button type="button" class="design-tab" role="tab" data-tab="plugins">
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="plugins"{% endblock %}{% block content %}
             {{ 'admin.modules.tab.plugins'|trans }}
             {% if pluginStats.total is defined and pluginStats.total %}
                 <span class="module-tab-count">{{ pluginStats.enabled }}/{{ pluginStats.total }}</span>
             {% elseif pluginGroups is defined and pluginGroups is not empty %}
                 <span class="module-tab-count">{{ pluginGroups|length }}</span>
             {% endif %}
-        </button>
-    </div>
+        {% endblock %}{% endembed %}
+    {% endblock %}{% endembed %}
 
     <section class="design-panel" data-panel="modules" role="tabpanel">
         <div
@@ -75,22 +75,22 @@
             data-toast-error="{{ 'admin.modules.action_failed'|trans|e('html_attr') }}"
         >
             <div class="toolbar--table">
-                <div class="toolbar">
-                    <input
+                {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'div' } } %}{% block component_attributes %} class="toolbar"{% endblock %}{% block content %}
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                         class="input"
                         type="search"
                         name="q"
                         x-model="query"
                         placeholder="{{ 'admin.modules.search'|trans }}"
                         autocomplete="off"
-                    >
-                    <select class="input" x-model="status">
-                        <option value="">{{ 'admin.modules.filter.all'|trans }}</option>
-                        <option value="on">{{ 'common.enabled'|trans }}</option>
-                        <option value="off">{{ 'common.disabled'|trans }}</option>
-                        <option value="update">{{ 'admin.modules.update_available'|trans }}</option>
-                        <option value="warn">{{ 'common.warnings'|trans }}</option>
-                    </select>
+                    {% endblock %}{% endembed %}
+                    {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="status" {% endblock %}{% block native_attributes %} class="input" x-model="status"{% endblock %}{% block native_options %}
+                        {% include 'ui/option.html.twig' with { value: '', label: 'admin.modules.filter.all'|trans } only %}
+                        {% include 'ui/option.html.twig' with { value: 'on', label: 'common.enabled'|trans } only %}
+                        {% include 'ui/option.html.twig' with { value: 'off', label: 'common.disabled'|trans } only %}
+                        {% include 'ui/option.html.twig' with { value: 'update', label: 'admin.modules.update_available'|trans } only %}
+                        {% include 'ui/option.html.twig' with { value: 'warn', label: 'common.warnings'|trans } only %}
+                    {% endblock %}{% endembed %}
                     {% if stats.updates > 0 %}
                         <form
                             method="post"
@@ -103,35 +103,35 @@
                         >
                             {{ csrf_field()|raw }}
                             <input type="hidden" name="action" value="update_outdated">
-                            <button
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                 type="submit"
                                 class="icon-btn"
                                 :class="refreshBtnClass"
                                 :aria-busy="busyAttr"
                                 :disabled="busy"
                                 aria-label="{{ 'admin.modules.update_all'|trans }}"
-                            >{{ icon('refresh') }}</button>
+                            {% endblock %}{% block content %}{{ icon('refresh') }}{% endblock %}{% endembed %}
                         </form>
                     {% else %}
-                        <button
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                             type="button"
                             class="icon-btn"
                             disabled
                             aria-label="{{ 'admin.modules.update_all_none'|trans }}"
                             title="{{ 'admin.modules.update_all_none'|trans }}"
-                        >{{ icon('refresh') }}</button>
+                        {% endblock %}{% block content %}{{ icon('refresh') }}{% endblock %}{% endembed %}
                     {% endif %}
-                </div>
+                {% endblock %}{% endembed %}
             </div>
 
-            <form
+            {% embed 'ui/bulk_bar.html.twig' with { bulk_options: { preserve: true, tag: 'form' } } %}{% block component_attributes %}
                 class="bulk-bar"
                 method="post"
                 action="{{ url('admin.modules.bulk') }}"
                 x-show="selectedCount > 0"
                 x-cloak
                 @submit="confirmBulk"
-            >
+            {% endblock %}{% block content %}
                 {{ csrf_field()|raw }}
                 <input type="hidden" name="purge_media" value="0" x-ref="purgeMedia">
                 <template x-for="id in selected" :key="id">
@@ -140,7 +140,13 @@
                 <div class="bulk-bar__meta">
                     <strong x-text="selectedCount"></strong>
                     <span>{{ 'admin.modules.bulk.selected'|trans }}</span>
-                    <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'admin.modules.bulk.clear'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'admin.modules.bulk.clear'|trans,
+                        type: 'button',
+                        variant: 'link',
+                        class: 'btn-sm',
+                        attrs: { '@click': 'clearSelection' }
+                    } only %}
                 </div>
                 <div class="bulk-bar__actions" @change="syncBulkAction($event)">
                     {% include 'ui/select.html.twig' with {
@@ -158,9 +164,14 @@
                             { value: 'disable', label: 'admin.modules.bulk.action.disable'|trans },
                         ]
                     } %}
-                    <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'admin.modules.bulk.apply'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'admin.modules.bulk.apply'|trans,
+                        type: 'submit',
+                        variant: 'primary',
+                        attrs: { ':disabled': '!bulkAction' }
+                    } only %}
                 </div>
-            </form>
+            {% endblock %}{% endembed %}
 
             <div class="table-wrap" data-table>
                 <table class="table">
@@ -168,12 +179,12 @@
                         <tr>
                             <th class="table__check">
                                 <label class="table-check">
-                                    <input
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                         type="checkbox"
                                         x-ref="selectAll"
                                         @change="toggleAll"
                                         :checked="allSelected"
-                                    >
+                                    {% endblock %}{% endembed %}
                                     <span class="sr-only">{{ 'admin.modules.bulk.select_all'|trans }}</span>
                                 </label>
                             </th>
@@ -207,19 +218,19 @@
                             >
                                 <td class="table__check">
                                     <label class="table-check">
-                                        <input
+                                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                             type="checkbox"
                                             value="{{ manifest.id }}"
                                             {% if childCount > 0 %}data-has-children="1"{% endif %}
                                             :checked="isSelected($el.value)"
-                                        >
+                                        {% endblock %}{% endembed %}
                                         <span class="sr-only">{{ manifest.name }}</span>
                                     </label>
                                 </td>
                                 <td>
                                     <div class="table__title table__title--with-icon{% if manifest.parentId %} grq-module-child{% endif %}">
                                         {% if childCount > 0 %}
-                                            <button
+                                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                                 type="button"
                                                 class="module-row__icon grq-module-children-toggle"
                                                 data-module-children-toggle
@@ -227,10 +238,10 @@
                                                 aria-expanded="false"
                                                 aria-label="{{ 'admin.modules.submodules_toggle'|trans({'%count%': childCount}) }}"
                                                 title="{{ 'admin.modules.submodules'|trans }}"
-                                            >
+                                            {% endblock %}{% block content %}
                                                 <span class="module-row__icon-face" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
                                                 <span class="grq-module-children-toggle__badge" aria-hidden="true">{{ icon('chevron-right') }}</span>
-                                            </button>
+                                            {% endblock %}{% endembed %}
                                         {% else %}
                                             <span class="module-row__icon" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
                                         {% endif %}
@@ -295,12 +306,12 @@
                                         >
                                             {{ csrf_field()|raw }}
                                             <input type="hidden" name="return" value="index">
-                                            <button
+                                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                                 type="submit"
                                                 class="table__action-btn table__action-btn--warn"
                                                 title="{{ 'admin.modules.pause_hint'|trans }}"
                                                 aria-label="{{ 'common.pause'|trans }}"
-                                            >{{ icon('pause') }}</button>
+                                            {% endblock %}{% block content %}{{ icon('pause') }}{% endblock %}{% endembed %}
                                         </form>
                                         <span
                                             class="table__action-btn table__action-btn--spacer"
@@ -316,12 +327,12 @@
                                         >
                                             {{ csrf_field()|raw }}
                                             <input type="hidden" name="return" value="index">
-                                            <button
+                                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                                 type="submit"
                                                 class="table__action-btn table__action-btn--success"
                                                 title="{{ 'common.activate'|trans }}"
                                                 aria-label="{{ 'common.activate'|trans }}"
-                                            >{{ icon('play') }}</button>
+                                            {% endblock %}{% block content %}{{ icon('play') }}{% endblock %}{% endembed %}
                                         </form>
                                         <form
                                             method="post"
@@ -341,12 +352,12 @@
                                             {{ csrf_field()|raw }}
                                             <input type="hidden" name="return" value="index">
                                             <input type="hidden" name="purge_media" value="0">
-                                            <button
+                                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                                 type="submit"
                                                 class="table__action-btn table__action-btn--danger"
                                                 title="{{ 'admin.modules.uninstall_hint'|trans }}"
                                                 aria-label="{{ 'common.stop'|trans }}"
-                                            >{{ icon('stop') }}</button>
+                                            {% endblock %}{% block content %}{{ icon('stop') }}{% endblock %}{% endembed %}
                                         </form>
                                         <span
                                             class="table__action-btn table__action-btn--spacer"
@@ -363,12 +374,12 @@
                                             <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}" data-module-action="update">
                                                 {{ csrf_field()|raw }}
                                                 <input type="hidden" name="return" value="index">
-                                                <button
+                                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                                     type="submit"
                                                     class="table__action-btn table__action-btn--primary"
                                                     title="{{ 'admin.modules.update'|trans }}"
                                                     aria-label="{{ 'admin.modules.update'|trans }}"
-                                                >{{ icon('refresh') }}</button>
+                                                {% endblock %}{% block content %}{{ icon('refresh') }}{% endblock %}{% endembed %}
                                             </form>
                                         {% else %}
                                             {% include 'ui/row_action.html.twig' with { placeholder: true } %}
@@ -434,5 +445,5 @@
             } %}
         </div>
     </section>
-</div>
+{% endblock %}{% endembed %}
 {% endblock %}

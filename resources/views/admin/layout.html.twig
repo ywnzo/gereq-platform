@@ -73,9 +73,9 @@
         <div class="app-main">
             <header class="topbar">
                 <div class="topbar__left">
-                    <button type="button" class="icon-btn topbar__menu" @click="toggleMenu" aria-label="{{ 'ui.menu'|trans }}">
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="icon-btn topbar__menu" @click="toggleMenu" aria-label="{{ 'ui.menu'|trans }}"{% endblock %}{% block content %}
                         {{ icon('panel') }}
-                    </button>
+                    {% endblock %}{% endembed %}
                     <nav class="breadcrumbs" aria-label="{{ 'ui.breadcrumbs'|trans }}">
                         {% block breadcrumb %}
                             {% if breadcrumbs is defined and breadcrumbs %}
@@ -92,26 +92,26 @@
                 <div class="topbar__right">
                     {{ apply_filters('admin.topbar.context', '')|raw }}
                     <div class="topbar__tools">
-                        <button type="button" class="search-trigger" @click="openPalette">
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="search-trigger" @click="openPalette"{% endblock %}{% block content %}
                             {{ icon('search') }}
                             <span class="search-trigger__label">{{ 'common.search'|trans }}</span>
                             <kbd>Ctrl K</kbd>
-                        </button>
+                        {% endblock %}{% endembed %}
                         <div class="topbar__icons">
-                            <button type="button" class="icon-btn" @click="cycleTheme" :aria-label="themeLabel" :title="themeLabel">
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="icon-btn" @click="cycleTheme" :aria-label="themeLabel" :title="themeLabel"{% endblock %}{% block content %}
                                 <span class="material-symbols-outlined g-icon" aria-hidden="true" x-text="themeIcon">dark_mode</span>
-                            </button>
+                            {% endblock %}{% endembed %}
                             {{ apply_filters('admin.topbar.actions', '')|raw }}
                         </div>
                         <div class="user-menu" @click.outside="closeUserMenu">
-                            <button type="button" class="avatar-btn" @click="toggleUserMenu" aria-label="{{ user ? user.name() : 'admin.profile'|trans }}" :aria-expanded="userMenuExpanded">
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="avatar-btn" @click="toggleUserMenu" aria-label="{{ user ? user.name() : 'admin.profile'|trans }}" :aria-expanded="userMenuExpanded"{% endblock %}{% block content %}
                                 {{ ui().avatar({
                                     email: user ? user.email() : null,
                                     initials: user ? user.initials() : 'G',
                                     src: user and user.avatarFileId() ? url('admin.users.avatar', {id: user.id()}) : null,
                                     alt: '',
                                 })|raw }}
-                            </button>
+                            {% endblock %}{% endembed %}
                             <div class="flyout" :class="userMenuClass">
                                 <div class="flyout__meta">
                                     <strong>{{ user ? user.name() : '' }}</strong>
@@ -121,7 +121,7 @@
                                 <a href="{{ url('admin.settings.index') }}">{{ 'nav.settings'|trans }}</a>
                                 <form method="post" action="{{ url('admin.logout') }}" id="logout-form">
                                     {{ csrf_field()|raw }}
-                                    <button type="submit">{{ 'admin.logout'|trans }}</button>
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit"{% endblock %}{% block content %}{{ 'admin.logout'|trans }}{% endblock %}{% endembed %}
                                 </form>
                             </div>
                         </div>
@@ -139,7 +139,7 @@
             <div class="palette__panel">
                 <div class="palette__header">
                     <span class="material-symbols-outlined g-icon palette__search-icon" aria-hidden="true">search</span>
-                    <input
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                         type="search"
                         class="palette__input"
                         :placeholder="placeholder"
@@ -149,7 +149,7 @@
                         autocomplete="off"
                         aria-autocomplete="list"
                         aria-controls="palette-results"
-                    >
+                    {% endblock %}{% endembed %}
                     <span class="palette__kbd">esc</span>
                 </div>
                 <div class="palette__meta" x-show="!query.trim() && sourceChips.length > 0" x-cloak>

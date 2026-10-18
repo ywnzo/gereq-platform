@@ -22,31 +22,31 @@
                 <span class="method-pill" :class="methodPillClass()" x-text="method" x-show="method"></span>
             </strong>
             <div class="api-tester-dock__actions" @pointerdown.stop>
-                <button type="button" class="btn btn--ghost btn-sm api-tester-dock__iconbtn" @click="minimize()" title="{{ 'admin.api.tester.minimize'|trans }}" aria-label="{{ 'admin.api.tester.minimize'|trans }}">
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm api-tester-dock__iconbtn" @click="minimize()" title="{{ 'admin.api.tester.minimize'|trans }}" aria-label="{{ 'admin.api.tester.minimize'|trans }}"{% endblock %}{% block content %}
                     {{ icon('minimize') }}
-                </button>
-                <button type="button" class="btn btn--ghost btn-sm api-tester-dock__iconbtn" @click="close()" title="{{ 'admin.api.tester.close'|trans }}" aria-label="{{ 'admin.api.tester.close'|trans }}">
+                {% endblock %}{% endembed %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm api-tester-dock__iconbtn" @click="close()" title="{{ 'admin.api.tester.close'|trans }}" aria-label="{{ 'admin.api.tester.close'|trans }}"{% endblock %}{% block content %}
                     {{ icon('close') }}
-                </button>
+                {% endblock %}{% endembed %}
             </div>
         </header>
 
         <div class="api-tester">
             <div class="api-tester__urlrow">
                 <label class="sr-only" for="api-tester-method">{{ 'admin.api.col.method'|trans }}</label>
-                <select id="api-tester-method" class="input api-tester__method" x-model="method">
-                    <option>GET</option>
-                    <option>POST</option>
-                    <option>PUT</option>
-                    <option>PATCH</option>
-                    <option>DELETE</option>
-                </select>
+                {% embed 'ui/select.html.twig' with { native: true, native_class: 'api-tester__method' } %}{% block root_attributes %}:data-native-value="method" {% endblock %}{% block native_attributes %} id="api-tester-method" class="input api-tester__method" x-model="method"{% endblock %}{% block native_options %}
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}GET{% endblock %}{% endembed %}
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}POST{% endblock %}{% endembed %}
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}PUT{% endblock %}{% endembed %}
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}PATCH{% endblock %}{% endembed %}
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}DELETE{% endblock %}{% endembed %}
+                {% endblock %}{% endembed %}
                 <label class="sr-only" for="api-tester-path">{{ 'admin.api.col.path'|trans }}</label>
-                <input id="api-tester-path" class="input api-tester__path" type="text" x-model="path" spellcheck="false" autocomplete="off" placeholder="/api/v1/…">
-                <button type="button" class="btn btn--primary" @click="send()" :disabled="sending">
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} id="api-tester-path" class="input api-tester__path" type="text" x-model="path" spellcheck="false" autocomplete="off" placeholder="/api/v1/…"{% endblock %}{% endembed %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--primary" @click="send()" :disabled="sending"{% endblock %}{% block content %}
                     <span x-show="!sending">{{ icon('send') }} {{ 'admin.api.tester.send'|trans }}</span>
                     <span x-show="sending" x-cloak>{{ 'admin.api.tester.sending'|trans }}</span>
-                </button>
+                {% endblock %}{% endembed %}
             </div>
 
             <div class="api-tester__split">
@@ -58,19 +58,19 @@
                         <div class="api-tester__block-head">
                             <h3>{{ 'admin.api.tester.variables'|trans }}</h3>
                             <div class="api-tester__block-actions">
-                                <button type="button" class="btn btn--ghost btn-sm" @click="useMyToken()" :disabled="ensuringToken">
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="useMyToken()" :disabled="ensuringToken"{% endblock %}{% block content %}
                                     <span x-show="!ensuringToken">{{ icon('key') }} {{ 'admin.api.tester.use_token'|trans }}</span>
                                     <span x-show="ensuringToken" x-cloak>{{ 'admin.api.tester.token_loading'|trans }}</span>
-                                </button>
-                                <button type="button" class="btn btn--ghost btn-sm" @click="addVariableRow()">{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}</button>
+                                {% endblock %}{% endembed %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="addVariableRow()"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}{% endblock %}{% endembed %}
                             </div>
                         </div>
                         <p class="muted api-tester__auth-hint">{{ 'admin.api.tester.variables_hint'|trans }}</p>
                         <div class="api-tester__kv">
                             <template x-for="(row, idx) in variables" :key="idx">
                                 <div class="api-tester__kv-row">
-                                    <input class="input" type="text" x-model="row.key" placeholder="name" spellcheck="false" @change="persistVariables()" :readonly="isBuiltInVar(row.key)">
-                                    <input
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" x-model="row.key" placeholder="name" spellcheck="false" @change="persistVariables()" :readonly="isBuiltInVar(row.key)"{% endblock %}{% endembed %}
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                         class="input"
                                         :type="varInputType(row.key)"
                                         x-model="row.value"
@@ -78,12 +78,12 @@
                                         spellcheck="false"
                                         @change="persistVariables()"
                                         :readonly="isTokenVar(row.key)"
-                                    >
-                                    <button type="button" class="btn btn--ghost btn-sm" x-show="isTokenVar(row.key)" @click="toggleShowToken()">
+                                    {% endblock %}{% endembed %}
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" x-show="isTokenVar(row.key)" @click="toggleShowToken()"{% endblock %}{% block content %}
                                         <span x-show="!showToken">{{ icon('eye') }}</span>
                                         <span x-show="showToken" x-cloak>{{ icon('close') }}</span>
-                                    </button>
-                                    <button type="button" class="btn btn--ghost btn-sm" x-show="!isBuiltInVar(row.key)" @click="removeVariableRow(idx)">{{ icon('close') }}</button>
+                                    {% endblock %}{% endembed %}
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" x-show="!isBuiltInVar(row.key)" @click="removeVariableRow(idx)"{% endblock %}{% block content %}{{ icon('close') }}{% endblock %}{% endembed %}
                                 </div>
                             </template>
                         </div>
@@ -96,7 +96,7 @@
                                 <template x-for="param in pathParams" :key="param.name">
                                     <label class="api-tester__field">
                                         <span x-text="param.name"></span>
-                                        <input class="input" type="text" x-model="param.value" :placeholder="param.name" spellcheck="false">
+                                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" x-model="param.value" :placeholder="param.name" spellcheck="false"{% endblock %}{% endembed %}
                                     </label>
                                 </template>
                             </div>
@@ -106,14 +106,14 @@
                     <div class="api-tester__block">
                         <div class="api-tester__block-head">
                             <h3>{{ 'admin.api.tester.query'|trans }}</h3>
-                            <button type="button" class="btn btn--ghost btn-sm" @click="addQueryRow()">{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}</button>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="addQueryRow()"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}{% endblock %}{% endembed %}
                         </div>
                         <div class="api-tester__kv">
                             <template x-for="(row, idx) in query" :key="idx">
                                 <div class="api-tester__kv-row">
-                                    <input class="input" type="text" x-model="row.key" placeholder="key" spellcheck="false">
-                                    <input class="input" type="text" x-model="row.value" placeholder="value" spellcheck="false">
-                                    <button type="button" class="btn btn--ghost btn-sm" @click="removeQueryRow(idx)">{{ icon('close') }}</button>
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" x-model="row.key" placeholder="key" spellcheck="false"{% endblock %}{% endembed %}
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" x-model="row.value" placeholder="value" spellcheck="false"{% endblock %}{% endembed %}
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="removeQueryRow(idx)"{% endblock %}{% block content %}{{ icon('close') }}{% endblock %}{% endembed %}
                                 </div>
                             </template>
                         </div>
@@ -122,14 +122,14 @@
                     <div class="api-tester__block">
                         <div class="api-tester__block-head">
                             <h3>{{ 'admin.api.tester.headers'|trans }}</h3>
-                            <button type="button" class="btn btn--ghost btn-sm" @click="addHeaderRow()">{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}</button>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="addHeaderRow()"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'admin.api.tester.add'|trans }}{% endblock %}{% endembed %}
                         </div>
                         <div class="api-tester__kv">
                             <template x-for="(row, idx) in headers" :key="idx">
                                 <div class="api-tester__kv-row">
-                                    <input class="input" type="text" x-model="row.key" placeholder="Header" spellcheck="false">
-                                    <input class="input" type="text" x-model="row.value" placeholder="Bearer {{ '{{token}}' }}" spellcheck="false">
-                                    <button type="button" class="btn btn--ghost btn-sm" @click="removeHeaderRow(idx)">{{ icon('close') }}</button>
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" x-model="row.key" placeholder="Header" spellcheck="false"{% endblock %}{% endembed %}
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" x-model="row.value" placeholder="Bearer {{ '{{token}}' }}" spellcheck="false"{% endblock %}{% endembed %}
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="removeHeaderRow(idx)"{% endblock %}{% block content %}{{ icon('close') }}{% endblock %}{% endembed %}
                                 </div>
                             </template>
                         </div>
@@ -138,7 +138,7 @@
 
                     <div class="api-tester__block" x-show="needsBody">
                         <h3>{{ 'admin.api.tester.body'|trans }}</h3>
-                        <textarea class="input api-tester__body" x-model="body" rows="10" spellcheck="false" placeholder='{ "key": "value" }'></textarea>
+                        {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input api-tester__body" x-model="body" rows="10" spellcheck="false" placeholder='{ "key": "value" }'{% endblock %}{% block content %}{% endblock %}{% endembed %}
                     </div>
                 </div>
 
@@ -148,7 +148,7 @@
                         <div class="api-tester__meta">
                             <span class="api-tester__chip" :class="statusClass" x-text="statusLabel"></span>
                             <span class="api-tester__chip api-tester__chip--mute" x-text="timingLabel"></span>
-                            <button type="button" class="btn btn--ghost btn-sm" @click="copyResponse()" x-text="copyButtonLabel()"></button>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="copyResponse()" x-text="copyButtonLabel()"{% endblock %}{% block content %}{% endblock %}{% endembed %}
                         </div>
                     </div>
                     <div class="api-tester__dump" x-ref="responseTree"></div>
@@ -164,13 +164,13 @@
     </div>
 </div>
 
-<button
+{% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
     type="button"
     class="api-tester-pill"
     x-show="open && minimized"
     x-cloak
     @click="restore()"
->
+{% endblock %}{% block content %}
     {{ icon('play') }}
     <span x-text="pillLabel"></span>
-</button>
+{% endblock %}{% endembed %}

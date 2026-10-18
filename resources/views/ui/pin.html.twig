@@ -1,0 +1,19 @@
+{#
+  Single numeric text field for PIN/OTP codes; preserves leading zeroes and paste.
+  digits defaults to 6 (1-32). Uses shared input form state and field validation.
+  attrs, when provided, is trusted attribute markup as in ui/input.html.twig.
+#}
+{% set pin_digits = digits|default(6) %}
+{% set pin_digits = max(1, min(32, pin_digits)) %}
+{% if pin_options.control_only|default(false) %}
+    <input{% block input_attributes %} class="g-control" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="{{ pin_digits }}" pattern="{{ '[0-9]{' ~ pin_digits ~ '}' }}"{% endblock %}>
+{% else %}
+{% include 'ui/input.html.twig' with {
+    type: 'text',
+    inputmode: 'numeric',
+    autocomplete: autocomplete|default('one-time-code'),
+    maxlength: pin_digits,
+    pattern: '[0-9]{' ~ pin_digits ~ '}',
+    attrs: (attrs|default('')) ~ ' size="' ~ pin_digits ~ '"'
+} %}
+{% endif %}

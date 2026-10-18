@@ -1,0 +1,20 @@
+{#
+  Local modal using gereqModal. Supply title, trigger_label, and trusted body HTML,
+  or embed and override trigger/body/actions. id must be unique when provided.
+#}
+<div{% block component_attributes %}{% if id|default(null) %} id="{{ id }}"{% endif %} class="{{ class|default('') }}" x-data="gereqModal" {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
+    {% block trigger %}
+        {% include 'ui/button.html.twig' with { label: trigger_label|default(title|default('')), variant: trigger_variant|default('primary'), attrs: { '@click': 'show', 'aria-haspopup': 'dialog', ':aria-expanded': 'open' } } only %}
+    {% endblock %}
+    <div class="g-modal__backdrop" :class="backdropClass" @click="close" aria-hidden="true"></div>
+    <div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-label="{{ title|default('') }}" :aria-hidden="!open">
+        <div class="g-modal__panel{{ panel_class|default('') ? ' ' ~ panel_class : '' }}">
+            {% if title|default('') %}<h3 class="g-modal__title">{{ title }}</h3>{% endif %}
+            <div class="g-modal__body">{% block body %}{{ body|default('')|raw }}{% endblock %}</div>
+            <div class="g-modal__actions">
+                {% block actions %}
+                    {% include 'ui/button.html.twig' with { label: 'common.close'|trans, variant: 'ghost', attrs: { '@click': 'close', 'x-ref': 'close' } } only %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>{% endblock %}</div>

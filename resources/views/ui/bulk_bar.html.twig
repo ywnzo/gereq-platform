@@ -1,0 +1,23 @@
+{#
+  Inside an existing dataTable scope, selectedCount controls visibility/count.
+  Pass selected_label and optional clear_label (already translated).
+  Set reactive: false and count for server-rendered use. Actions are trusted HTML
+  or an embed block. The component does not create its own selection state.
+#}
+{% set bulk_reactive = reactive is not defined or reactive %}
+{% set bulk_tag = bulk_options.tag|default('div') %}
+{% set bulk_tag = bulk_tag in ['div', 'form'] ? bulk_tag : 'div' %}
+{% if bulk_options.preserve|default(false) or bulk_reactive or count|default(0) > 0 %}
+<{{ bulk_tag }}{% block component_attributes %} class="bulk-bar{{ class|default('') ? ' ' ~ class : '' }}"{% if bulk_reactive %} x-show="selectedCount > 0" x-cloak{% endif %} {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
+    <div class="bulk-bar__meta">
+        {% block meta %}
+            <strong{% if bulk_reactive %} x-text="selectedCount"{% endif %}>{{ count|default(0) }}</strong>
+            {% if selected_label|default('') %}<span>{{ selected_label }}</span>{% endif %}
+            {% if bulk_reactive and clear_label|default('') %}
+                {% include 'ui/button.html.twig' with { label: clear_label, variant: 'link', size: 'sm', attrs: { '@click': 'clearSelection' } } only %}
+            {% endif %}
+        {% endblock %}
+    </div>
+    <div class="bulk-bar__actions">{% block actions %}{{ actions|default('')|raw }}{% endblock %}</div>
+{% endblock %}</{{ bulk_tag }}>
+{% endif %}

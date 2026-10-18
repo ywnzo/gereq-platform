@@ -325,6 +325,9 @@ input.g-control[type="search"]::-webkit-search-results-decoration {
 .textarea-shell__action:hover { border-color: var(--gereq-ink); }
 
 .g-select { position: relative; }
+.grq-select-bound { min-width: 0; }
+.grq-select-bound [data-native-error][hidden] { display: none; }
+.toolbar > .grq-select-bound { max-width: 280px; }
 /* Open menu must paint above following panels (backdrop-filter creates stacking contexts). */
 .g-select.is-open {
     z-index: 80;

@@ -5,20 +5,20 @@
     <header class="page-header">
         <h1>{{ 'webhooks.title'|trans }}</h1>
         {% if user.can('webhooks.manage') %}
-            <a class="btn btn--primary" href="{{ url('admin.developer.webhooks.create') }}">{{ icon('plus') }} {{ 'webhooks.new'|trans }}</a>
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.developer.webhooks.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'webhooks.new'|trans }}{% endblock %}{% endembed %}
         {% endif %}
     </header>
 
     <div class="toolbar--table">
-        <form class="toolbar" method="get">
-            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'webhooks.search'|trans }}">
-            <select name="status" class="input" onchange="this.form.submit()">
-                <option value="">{{ 'common.all_statuses'|trans }}</option>
-                <option value="active" {{ status == 'active' ? 'selected' : '' }}>{{ 'webhooks.status.active'|trans }}</option>
-                <option value="paused" {{ status == 'paused' ? 'selected' : '' }}>{{ 'webhooks.status.paused'|trans }}</option>
-                <option value="failing" {{ status == 'failing' ? 'selected' : '' }}>{{ 'webhooks.status.failing'|trans }}</option>
-            </select>
-        </form>
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'webhooks.search'|trans }}"{% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="status" class="input" onchange="this.form.submit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'common.all_statuses'|trans } only %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="active" {{ status == 'active' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webhooks.status.active'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="paused" {{ status == 'paused' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webhooks.status.paused'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="failing" {{ status == 'failing' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webhooks.status.failing'|trans }}{% endblock %}{% endembed %}
+            {% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
     </div>
 
     <div class="table-wrap" data-table>

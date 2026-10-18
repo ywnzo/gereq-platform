@@ -26,15 +26,32 @@
             data-workspace-url="{{ url('admin.content.staging')|e('html_attr') }}"
         >
             {% if entry.href %}
-                <a class="btn btn--ghost" href="{{ entry.href }}">{{ 'publish.workspace.open_resource'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'publish.workspace.open_resource'|trans,
+                    href: (entry.href),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
             {% endif %}
-            <button type="button" class="btn btn--ghost" @click="discard" :disabled="busy">{{ 'publish.workspace.discard'|trans }}</button>
-            <button type="button" class="btn btn--primary" @click="publish" :disabled="busy">{{ 'publish.modal.submit'|trans }}</button>
+            {% include 'ui/button.html.twig' with {
+                label: 'publish.workspace.discard'|trans,
+                type: 'button',
+                variant: 'ghost',
+                attrs: { '@click': 'discard', ':disabled': 'busy' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'publish.modal.submit'|trans,
+                type: 'button',
+                variant: 'primary',
+                attrs: { '@click': 'publish', ':disabled': 'busy' }
+            } only %}
         </div>
     </header>
 
     <div class="grq-grid" style="grid-template-columns: 1fr 1fr; gap: var(--grq-space-4);">
-        <section class="panel">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
             <div class="panel__header">
                 <h2 class="panel__title">{{ 'publish.workspace.production_snapshot'|trans }}</h2>
             </div>
@@ -45,14 +62,18 @@
                     <p class="muted">{{ 'publish.workspace.no_snapshot'|trans }}</p>
                 {% endif %}
             </div>
-        </section>
-        <section class="panel">
+            {% endblock %}
+        {% endembed %}
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
             <div class="panel__header">
                 <h2 class="panel__title">{{ 'publish.workspace.payload'|trans }}</h2>
             </div>
             <div class="panel__body">
                 <pre class="code-block">{{ entry.payload|json_encode }}</pre>
             </div>
-        </section>
+            {% endblock %}
+        {% endembed %}
     </div>
 {% endblock %}

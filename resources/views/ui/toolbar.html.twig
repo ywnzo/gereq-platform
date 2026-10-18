@@ -1,0 +1,9 @@
+{# Embed body/actions, or supply trusted HTML. table adds table toolbar chrome. #}
+{% if table|default(false) %}<div class="toolbar--table">{% endif %}
+{% set toolbar_tag = toolbar_options.tag|default('div') %}
+{% set toolbar_tag = toolbar_tag in ['div', 'form', 'nav', 'section'] ? toolbar_tag : 'div' %}
+<{{ toolbar_tag }}{% block component_attributes %}{% if id|default(null) %} id="{{ id }}"{% endif %} class="toolbar{{ class|default('') ? ' ' ~ class : '' }}"{% if label|default('') %} role="group" aria-label="{{ label }}"{% endif %} {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
+    {% block body %}{{ body|default('')|raw }}{% endblock %}
+    {% block actions %}{{ actions|default('')|raw }}{% endblock %}
+{% endblock %}</{{ toolbar_tag }}>
+{% if table|default(false) %}</div>{% endif %}

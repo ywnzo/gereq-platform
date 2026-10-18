@@ -1,3 +1,7 @@
+{# Bare mode retains existing field chrome and reactive attributes. #}
+{% if input_options.control_only|default(false) %}
+<input{% block input_attributes %} class="g-control" type="{{ type|default('text') }}"{% endblock %}>
+{% else %}
 {% set name = name|default('') %}
 {% set id = id|default('f-' ~ name) %}
 {% set label = label|default('') %}
@@ -80,3 +84,4 @@
         <p class="g-error" id="{{ id }}-error">{{ err }}</p>
     {% endif %}
 </div>
+{% endif %}

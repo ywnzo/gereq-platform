@@ -10,7 +10,7 @@
 
 {% block content %}
 <div class="customer-profile">
-    <div class="detail-hub" x-data="gereqTabs" data-initial="overview" data-breadcrumbs="0">
+    {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="detail-hub" x-data="gereqTabs" data-initial="overview" data-breadcrumbs="0"{% endblock %}{% block content %}
         <div class="detail-sticky customer-profile__chrome">
             <header class="customer-profile__header">
                 <div class="customer-profile__identity">
@@ -48,37 +48,46 @@
                     </div>
                 </div>
                 <div class="actions">
-                    <a class="btn btn--ghost" href="mailto:{{ item.email() }}">{{ icon('mail') }} E-mail</a>
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="mailto:{{ item.email() }}"{% endblock %}{% block content %}{{ icon('mail') }} E-mail{% endblock %}{% endembed %}
                     {% if item.phone() %}
-                        <a class="btn btn--ghost" href="tel:{{ item.phone() }}">{{ icon('phone') }} {{ item.phone() }}</a>
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="tel:{{ item.phone() }}"{% endblock %}{% block content %}{{ icon('phone') }} {{ item.phone() }}{% endblock %}{% endembed %}
                     {% endif %}
                     {% for action in hookActions|default([]) %}
-                        <a class="btn {{ action.class|default('btn--ghost') }}" href="{{ action.url }}">{{ action.label|trans }}</a>
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn {{ action.class|default('btn--ghost') }}" href="{{ action.url }}"{% endblock %}{% block content %}{{ action.label|trans }}{% endblock %}{% endembed %}
                     {% endfor %}
                     {% if user.can('customers.edit') %}
-                        <a class="btn btn--primary" href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'common.edit'|trans,
+                            href: (url('admin.customers.edit', {id: item.id()})),
+                            button_options: { tag: 'a' },
+                            variant: 'primary'
+                        } only %}
                     {% endif %}
                     {% if user.can('customers.delete') %}
                         <form method="post" action="{{ url('admin.customers.destroy', {id: item.id()}) }}" data-confirm="{{ 'customers.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                             {{ csrf_field()|raw }}
-                            <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'common.delete'|trans,
+                                type: 'submit',
+                                variant: 'danger'
+                            } only %}
                         </form>
                     {% endif %}
                 </div>
             </header>
 
-            <div class="design-tabs detail-tabs" role="tablist">
-                <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'common.overview'|trans }}</button>
-                <button type="button" class="design-tab" role="tab" data-tab="contacts">
+            {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist"{% endblock %}{% block content %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="overview"{% endblock %}{% block content %}{{ 'common.overview'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="contacts"{% endblock %}{% block content %}
                     {{ 'customers.section.contacts'|trans }}<span class="module-tab-count">{{ contacts|length }}</span>
-                </button>
-                <button type="button" class="design-tab" role="tab" data-tab="addresses">
+                {% endblock %}{% endembed %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="addresses"{% endblock %}{% block content %}
                     {{ 'customers.section.addresses'|trans }}<span class="module-tab-count">{{ addresses|length }}</span>
-                </button>
+                {% endblock %}{% endembed %}
                 {% for section in hookSections|default([]) %}
-                    <button type="button" class="design-tab" role="tab" data-tab="{{ section.id|default(loop.index) }}">{{ section.label|trans }}</button>
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="{{ section.id|default(loop.index) }}"{% endblock %}{% block content %}{{ section.label|trans }}{% endblock %}{% endembed %}
                 {% endfor %}
-            </div>
+            {% endblock %}{% endembed %}
         </div>
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
@@ -88,7 +97,13 @@
                         <header class="customer-section__head">
                             <h2>{{ 'customers.section.profile'|trans }}</h2>
                             {% if user.can('customers.edit') %}
-                                <a class="btn btn--ghost btn-sm" href="{{ url('admin.customers.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'common.edit'|trans,
+                                    href: (url('admin.customers.edit', {id: item.id()})),
+                                    button_options: { tag: 'a' },
+                                    variant: 'ghost',
+                                    class: 'btn-sm'
+                                } only %}
                             {% endif %}
                         </header>
                         <dl class="customer-section__facts">
@@ -155,7 +170,13 @@
                     <section class="customer-section">
                         <header class="customer-section__head">
                             <h2>{{ 'customers.section.addresses'|trans }}</h2>
-                            <a class="btn btn--ghost btn-sm" href="#addresses">{{ 'customers.preview.manage'|trans }}</a>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'customers.preview.manage'|trans,
+                                href: '#addresses',
+                                button_options: { tag: 'a' },
+                                variant: 'ghost',
+                                class: 'btn-sm'
+                            } only %}
                         </header>
                         {% if addresses is empty %}
                             <p class="muted customer-section__empty">{{ 'customers.addresses.empty'|trans }}</p>
@@ -185,7 +206,13 @@
                     <section class="customer-section">
                         <header class="customer-section__head">
                             <h2>{{ 'customers.section.contacts'|trans }}</h2>
-                            <a class="btn btn--ghost btn-sm" href="#contacts">{{ 'customers.preview.manage'|trans }}</a>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'customers.preview.manage'|trans,
+                                href: '#contacts',
+                                button_options: { tag: 'a' },
+                                variant: 'ghost',
+                                class: 'btn-sm'
+                            } only %}
                         </header>
                         {% if contacts is empty %}
                             <p class="muted customer-section__empty">{{ 'customers.contacts.empty'|trans }}</p>
@@ -219,14 +246,14 @@
                     <header class="customer-section__head">
                         <h2>{{ 'customers.section.notes'|trans }}</h2>
                         {% if user.can('customers.edit') %}
-                            <button
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                 type="button"
                                 class="icon-btn"
                                 @click="toggle"
                                 :aria-expanded="composing"
                                 title="{{ 'customers.notes.save'|trans }}"
                                 aria-label="{{ 'customers.notes.save'|trans }}"
-                            >{{ icon('plus') }}</button>
+                            {% endblock %}{% block content %}{{ icon('plus') }}{% endblock %}{% endembed %}
                         {% endif %}
                     </header>
 
@@ -245,7 +272,7 @@
                                         {% if user.can('customers.edit') %}
                                             <form method="post" action="{{ url('admin.customers.notes.destroy', {id: item.id(), noteId: row.note.id()}) }}" data-confirm="{{ 'customers.notes.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                                                 {{ csrf_field()|raw }}
-                                                <button type="submit" class="btn btn--ghost btn-sm" title="{{ 'common.delete'|trans }}">{{ icon('trash') }}</button>
+                                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit" class="btn btn--ghost btn-sm" title="{{ 'common.delete'|trans }}"{% endblock %}{% block content %}{{ icon('trash') }}{% endblock %}{% endembed %}
                                             </form>
                                         {% endif %}
                                     </li>
@@ -267,8 +294,19 @@
                                     extra: 'customer-note-form__editor'
                                 } %}
                                 <div class="customer-note-form__actions">
-                                    <button class="btn btn--ghost btn-sm" type="button" @click="close">{{ 'common.cancel'|trans }}</button>
-                                    <button class="btn btn--primary btn-sm" type="submit">{{ 'customers.notes.save'|trans }}</button>
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'common.cancel'|trans,
+                                        type: 'button',
+                                        variant: 'ghost',
+                                        class: 'btn-sm',
+                                        attrs: { '@click': 'close' }
+                                    } only %}
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'customers.notes.save'|trans,
+                                        type: 'submit',
+                                        variant: 'primary',
+                                        class: 'btn-sm'
+                                    } only %}
                                 </div>
                             </form>
                         </div>
@@ -304,7 +342,12 @@
                                 {% if user.can('customers.edit') %}
                                     <form method="post" action="{{ url('admin.customers.contacts.destroy', {id: item.id(), contactId: contact.id()}) }}" data-confirm="{{ 'customers.contacts.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                                         {{ csrf_field()|raw }}
-                                        <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.delete'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'common.delete'|trans,
+                                            type: 'submit',
+                                            variant: 'ghost',
+                                            class: 'btn-sm'
+                                        } only %}
                                     </form>
                                 {% endif %}
                             </li>
@@ -316,8 +359,8 @@
                         <div class="customer-crud__head">
                             <h3 class="customer-crud__title">{{ 'customers.contacts.add'|trans }}</h3>
                             <div class="customer-kind" role="group" aria-label="{{ 'customers.contacts.kind'|trans }}">
-                                <button type="button" class="customer-kind__btn" :class="personBtnClass" @click="setPerson">{{ 'customers.contacts.kind.person'|trans }}</button>
-                                <button type="button" class="customer-kind__btn" :class="companyBtnClass" @click="setCompany">{{ 'customers.contacts.kind.company'|trans }}</button>
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="customer-kind__btn" :class="personBtnClass" @click="setPerson"{% endblock %}{% block content %}{{ 'customers.contacts.kind.person'|trans }}{% endblock %}{% endembed %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="customer-kind__btn" :class="companyBtnClass" @click="setCompany"{% endblock %}{% block content %}{{ 'customers.contacts.kind.company'|trans }}{% endblock %}{% endembed %}
                             </div>
                         </div>
                         <form method="post" class="customer-crud__grid" action="{{ url('admin.customers.contacts.store', {id: item.id()}) }}">
@@ -328,7 +371,7 @@
                                     <label class="g-label" for="customer-contact-person">
                                         <span>{{ 'customers.field.name'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
                                     </label>
-                                    <input
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                         class="g-control"
                                         type="text"
                                         id="customer-contact-person"
@@ -336,7 +379,7 @@
                                         data-contact-name="person"
                                         autocomplete="name"
                                         value=""
-                                    >
+                                    {% endblock %}{% endembed %}
                                 </div>
                             </div>
 
@@ -346,7 +389,7 @@
                                         <span>{{ 'customers.field.company'|trans }} · ARES <span class="g-req" aria-hidden="true">*</span></span>
                                     </label>
                                     <div class="ares-field__control">
-                                        <input
+                                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                             class="g-control"
                                             type="text"
                                             id="customer-contact-company"
@@ -360,7 +403,7 @@
                                             @input="onInput"
                                             @keydown="onKeydown"
                                             x-ref="query"
-                                        >
+                                        {% endblock %}{% endembed %}
                                         {% include 'ui/ares_subject_suggest.html.twig' %}
                                     </div>
                                     <p class="ares-hint">{{ 'customers.contacts.company.hint'|trans }}</p>
@@ -371,11 +414,16 @@
                             {% include 'ui/input.html.twig' with { name: 'email', type: 'email', label: 'customers.field.email'|trans, optional: true, value: '' } %}
                             {% include 'ui/input.html.twig' with { name: 'phone', type: 'tel', label: 'customers.field.phone'|trans, optional: true, value: '' } %}
                             <label class="check customer-crud__check">
-                                <input type="checkbox" name="is_primary" value="1">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="is_primary" value="1"{% endblock %}{% endembed %}
                                 <span>{{ 'customers.primary'|trans }}</span>
                             </label>
                             <div class="customer-crud__actions">
-                                <button class="btn btn--primary btn-sm" type="submit">{{ 'common.save'|trans }}</button>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'common.save'|trans,
+                                    type: 'submit',
+                                    variant: 'primary',
+                                    class: 'btn-sm'
+                                } only %}
                             </div>
                         </form>
                     </div>
@@ -408,7 +456,12 @@
                                 {% if user.can('customers.edit') %}
                                     <form method="post" action="{{ url('admin.customers.addresses.destroy', {id: item.id(), addressId: address.id()}) }}" data-confirm="{{ 'customers.addresses.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                                         {{ csrf_field()|raw }}
-                                        <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.delete'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'common.delete'|trans,
+                                            type: 'submit',
+                                            variant: 'ghost',
+                                            class: 'btn-sm'
+                                        } only %}
                                     </form>
                                 {% endif %}
                             </li>
@@ -433,7 +486,7 @@
                                     <span>{{ 'customers.field.line1'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
                                 </label>
                                 <div class="ares-field__control">
-                                    <input
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                         class="g-control"
                                         type="text"
                                         id="customer-address-line1"
@@ -447,7 +500,7 @@
                                         @input="onInput"
                                         @keydown="onKeydown"
                                         x-ref="query"
-                                    >
+                                    {% endblock %}{% endembed %}
                                     {% include 'ui/ares_address_suggest.html.twig' %}
                                 </div>
                                 <p class="ares-hint">{{ 'customers.addresses.street.hint'|trans }}</p>
@@ -458,26 +511,31 @@
                                 <label class="g-label" for="customer-address-city">
                                     <span>{{ 'customers.field.city'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
                                 </label>
-                                <input class="g-control" type="text" id="customer-address-city" name="city" data-ares-fill="city" required value="">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="g-control" type="text" id="customer-address-city" name="city" data-ares-fill="city" required value=""{% endblock %}{% endembed %}
                             </div>
                             <div class="g-field">
                                 <label class="g-label" for="customer-address-zip">
                                     <span>{{ 'customers.field.zip'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
                                 </label>
-                                <input class="g-control" type="text" id="customer-address-zip" name="zip" data-ares-fill="zip" required value="">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="g-control" type="text" id="customer-address-zip" name="zip" data-ares-fill="zip" required value=""{% endblock %}{% endembed %}
                             </div>
                             <div class="g-field">
                                 <label class="g-label" for="customer-address-country">
                                     <span>{{ 'customers.field.country'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
                                 </label>
-                                <input class="g-control" type="text" id="customer-address-country" name="country" data-ares-fill="country" maxlength="2" required value="CZ">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="g-control" type="text" id="customer-address-country" name="country" data-ares-fill="country" maxlength="2" required value="CZ"{% endblock %}{% endembed %}
                             </div>
                             <label class="check customer-crud__check">
-                                <input type="checkbox" name="is_primary" value="1">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="is_primary" value="1"{% endblock %}{% endembed %}
                                 <span>{{ 'customers.primary'|trans }}</span>
                             </label>
                             <div class="customer-crud__actions">
-                                <button class="btn btn--primary btn-sm" type="submit">{{ 'common.save'|trans }}</button>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'common.save'|trans,
+                                    type: 'submit',
+                                    variant: 'primary',
+                                    class: 'btn-sm'
+                                } only %}
                             </div>
                         </form>
                     </div>
@@ -487,16 +545,19 @@
 
         {% for section in hookSections|default([]) %}
             <section class="design-panel" data-panel="{{ section.id|default(loop.index) }}" role="tabpanel">
-                <section class="panel" id="{{ section.id|default('') }}">
+                {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                    {% block attributes %} class="panel" id="{{ section.id|default('') }}"{% endblock %}
+                    {% block content %}
                     {% if section.label is defined and section.label %}
                         <header class="panel__head">
                             <h2>{{ section.label|trans }}</h2>
                         </header>
                     {% endif %}
                     {{ section.html|raw }}
-                </section>
+                    {% endblock %}
+                {% endembed %}
             </section>
         {% endfor %}
-    </div>
+    {% endblock %}{% endembed %}
 </div>
 {% endblock %}

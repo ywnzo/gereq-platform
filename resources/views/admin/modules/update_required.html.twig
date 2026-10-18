@@ -11,7 +11,9 @@
 {% block content %}
 {% set canBump = changeSet is defined and changeSet and changeSet.canBump %}
 {% set hasFiles = changeSet is defined and changeSet and changeSet.hasFiles %}
-<section class="panel stack module-gate" style="max-width:40rem;margin:2rem auto;padding:1.5rem">
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel stack module-gate" style="max-width:40rem;margin:2rem auto;padding:1.5rem"{% endblock %}
+    {% block content %}
     <header>
         <p class="eyebrow">{{ 'admin.modules.update_available'|trans }}</p>
         <h1>{{ 'admin.modules.gate.title'|trans }}</h1>
@@ -60,7 +62,11 @@
                     {% if returnUrl|default('') %}
                         <input type="hidden" name="return" value="{{ returnUrl }}">
                     {% endif %}
-                    <button class="btn btn--primary" type="submit">{{ 'admin.modules.gate.update_bump'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'admin.modules.gate.update_bump'|trans,
+                        type: 'submit',
+                        variant: 'primary'
+                    } only %}
                 </form>
             {% endif %}
             <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
@@ -68,11 +74,22 @@
                 {% if returnUrl|default('') %}
                     <input type="hidden" name="return" value="{{ returnUrl }}">
                 {% endif %}
-                <button class="btn {{ canBump ? 'btn--ghost' : 'btn--primary' }}" type="submit">{{ 'admin.modules.update'|trans }}</button>
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn {{ canBump ? 'btn--ghost' : 'btn--primary' }}" type="submit"{% endblock %}{% block content %}{{ 'admin.modules.update'|trans }}{% endblock %}{% endembed %}
             </form>
         {% endif %}
-        <a class="btn btn--ghost" href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ 'admin.modules.gate.detail'|trans }}</a>
-        <a class="btn btn--ghost" href="{{ url('admin.dashboard') }}">{{ 'common.back'|trans }}</a>
+        {% include 'ui/button.html.twig' with {
+            label: 'admin.modules.gate.detail'|trans,
+            href: (url('admin.modules.show', {id: manifest.id})),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+        {% include 'ui/button.html.twig' with {
+            label: 'common.back'|trans,
+            href: (url('admin.dashboard')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
     </div>
-</section>
+    {% endblock %}
+{% endembed %}
 {% endblock %}

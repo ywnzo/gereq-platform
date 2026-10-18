@@ -29,7 +29,9 @@
             {% for item in gridItems %}
                 <div class="dash-cell dash-cell--{{ item.width }}">
                     {% if item.id == 'core.shortcuts' %}
-                        <section class="panel">
+                        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                            {% block attributes %} class="panel"{% endblock %}
+                            {% block content %}
                             <header class="panel__head">
                                 <h2>{{ 'admin.dashboard.shortcuts'|trans }}</h2>
                             </header>
@@ -38,7 +40,8 @@
                                     {{ widget.render()|raw }}
                                 {% endfor %}
                             </div>
-                        </section>
+                            {% endblock %}
+                        {% endembed %}
                     {% else %}
                         {{ item.html|raw }}
                     {% endif %}

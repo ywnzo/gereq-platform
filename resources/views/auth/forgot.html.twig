@@ -7,9 +7,14 @@
         {{ csrf_field()|raw }}
         <label class="field">
             <span>{{ 'common.email'|trans }}</span>
-            <input type="email" name="email" required>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="email" name="email" required{% endblock %}{% endembed %}
         </label>
-        <button type="submit" class="btn btn--primary btn--block">{{ 'auth.forgot.submit'|trans }}</button>
+        {% include 'ui/button.html.twig' with {
+            label: 'auth.forgot.submit'|trans,
+            type: 'submit',
+            variant: 'primary',
+            block: true
+        } only %}
         <a class="text-link" href="{{ url('admin.login') }}">{{ 'auth.forgot.back'|trans }}</a>
     </form>
 {% endblock %}

@@ -4,15 +4,20 @@
 <div class="list-shell" x-data="dataTable" data-table-id="admin-resource-{{ definition.name }}" data-actions-default="1">
     <header class="page-header">
         <h1>{{ definition.label }}</h1>
-        <a class="btn btn--primary" href="{{ url('admin.' ~ definition.name ~ '.create') }}">{{ 'admin.resource.add'|trans }}</a>
+        {% include 'ui/button.html.twig' with {
+            label: 'admin.resource.add'|trans,
+            href: (url('admin.' ~ definition.name ~ '.create')),
+            button_options: { tag: 'a' },
+            variant: 'primary'
+        } only %}
     </header>
 
     <div class="toolbar--table">
-        <form class="toolbar" method="get">
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
             <input type="hidden" name="sort" value="{{ sort }}">
             <input type="hidden" name="dir" value="{{ dir }}">
-            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.resource.search'|trans }}">
-        </form>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.resource.search'|trans }}"{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
     </div>
 
     <div class="table-wrap" data-table>

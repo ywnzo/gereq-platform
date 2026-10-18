@@ -1,4 +1,6 @@
-<section class="panel grq-module-children" aria-labelledby="module-children-title">
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel grq-module-children" aria-labelledby="module-children-title"{% endblock %}
+    {% block content %}
     <header class="panel__head">
         <h2 id="module-children-title">{{ 'admin.modules.submodules'|trans }} <span class="badge badge--muted">{{ children|length }}</span></h2>
     </header>
@@ -32,27 +34,42 @@
                                     <form method="post" action="{{ url('admin.modules.pause', {id: child.manifest.id}) }}" data-confirm="{{ 'admin.modules.confirm.pause'|trans }}" data-confirm-danger="0">
                                         {{ csrf_field()|raw }}
                                         <input type="hidden" name="return" value="{{ url('admin.modules.show', {id: parent.id}) }}">
-                                        <button type="submit" class="btn btn--ghost btn-sm">{{ 'common.pause'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'common.pause'|trans,
+                                            type: 'submit',
+                                            variant: 'ghost',
+                                            class: 'btn-sm'
+                                        } only %}
                                     </form>
                                 {% elseif parent_enabled is not defined or parent_enabled %}
                                     <form method="post" action="{{ url('admin.modules.enable', {id: child.manifest.id}) }}">
                                         {{ csrf_field()|raw }}
                                         <input type="hidden" name="return" value="{{ url('admin.modules.show', {id: parent.id}) }}">
-                                        <button type="submit" class="btn btn--success btn-sm" {{ child.missing is not empty ? 'disabled' : '' }}>{{ 'common.activate'|trans }}</button>
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit" class="btn btn--success btn-sm" {{ child.missing is not empty ? 'disabled' : '' }}{% endblock %}{% block content %}{{ 'common.activate'|trans }}{% endblock %}{% endembed %}
                                     </form>
                                 {% endif %}
                                 {% if child.installed %}
                                     <form method="post" action="{{ url('admin.modules.disable', {id: child.manifest.id}) }}" data-confirm="{{ 'admin.modules.confirm.disable'|trans }}" data-confirm-danger="1">
                                         {{ csrf_field()|raw }}
                                         <input type="hidden" name="return" value="{{ url('admin.modules.show', {id: parent.id}) }}">
-                                        <button type="submit" class="btn btn--danger btn-sm">{{ 'admin.modules.uninstall'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'admin.modules.uninstall'|trans,
+                                            type: 'submit',
+                                            variant: 'danger',
+                                            class: 'btn-sm'
+                                        } only %}
                                     </form>
                                 {% endif %}
                                 {% if child.update_available %}
                                     <form method="post" action="{{ url('admin.modules.update', {id: child.manifest.id}) }}">
                                         {{ csrf_field()|raw }}
                                         <input type="hidden" name="return" value="{{ url('admin.modules.show', {id: parent.id}) }}">
-                                        <button type="submit" class="btn btn--primary btn-sm">{{ 'admin.modules.update'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'admin.modules.update'|trans,
+                                            type: 'submit',
+                                            variant: 'primary',
+                                            class: 'btn-sm'
+                                        } only %}
                                     </form>
                                 {% endif %}
                             </div>
@@ -62,4 +79,5 @@
             </tbody>
         </table>
     </div>
-</section>
+    {% endblock %}
+{% endembed %}

@@ -6,12 +6,12 @@
         {{ csrf_field()|raw }}
         <label class="field">
             <span>{{ 'auth.reset.password'|trans }}</span>
-            <input type="password" name="password" minlength="10" required>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="password" name="password" minlength="10" required{% endblock %}{% endembed %}
         </label>
         <label class="field">
             <span>{{ 'auth.reset.confirm'|trans }}</span>
-            <input type="password" name="password_confirmation" minlength="10" required>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="password" name="password_confirmation" minlength="10" required{% endblock %}{% endembed %}
         </label>
-        <button type="submit" class="btn btn--primary btn--block">{{ 'auth.reset.submit'|trans }}</button>
+        {% include 'ui/button.html.twig' with { label: 'auth.reset.submit'|trans, type: 'submit', variant: 'primary', block: true } only %}
     </form>
 {% endblock %}

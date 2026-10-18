@@ -38,9 +38,19 @@
         </div>
         <div class="customer-edit__header-actions">
             {% if item %}
-                <a class="btn btn--ghost" href="{{ url('admin.customers.show', {id: item.id()}) }}">{{ 'common.detail'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'common.detail'|trans,
+                    href: (url('admin.customers.show', {id: item.id()})),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
             {% endif %}
-            <button class="btn btn--primary" type="submit" form="customer-form">{{ 'common.save'|trans }}</button>
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'customer-form' }
+            } only %}
         </div>
     </header>
 
@@ -88,7 +98,7 @@
                             } %}
                             {% if item and item.avatarFileId() %}
                                 <label class="check">
-                                    <input type="checkbox" name="remove_avatar" value="1">
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="remove_avatar" value="1"{% endblock %}{% endembed %}
                                     <span>{{ 'customers.field.photo_remove'|trans }}</span>
                                 </label>
                             {% endif %}
@@ -108,7 +118,7 @@
                         x-data="{ isCompany: {{ isCompany ? 'true' : 'false' }} }"
                     >
                         <label class="g-switch customer-edit__company-toggle">
-                            <input type="checkbox" name="is_company" value="1" x-model="isCompany" {{ isCompany ? 'checked' : '' }}>
+                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="is_company" value="1" x-model="isCompany" {{ isCompany ? 'checked' : '' }}{% endblock %}{% endembed %}
                             <span>{{ 'customers.field.is_company'|trans }}</span>
                         </label>
                         <p class="muted customer-edit__section-hint">{{ 'customers.form.is_company.hint'|trans }}</p>
@@ -119,7 +129,7 @@
                                     <div class="g-field ares-field" x-data="gereqAresSubject">
                                         <span class="g-label">{{ 'customers.field.ico'|trans }} <span class="g-req" aria-hidden="true">*</span></span>
                                         <div class="g-control-wrap ares-field__row">
-                                            <input
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                                 class="g-control"
                                                 name="ico"
                                                 data-ares-query
@@ -132,8 +142,8 @@
                                                 @input="onInput"
                                                 @keydown="onKeydown"
                                                 x-ref="query"
-                                            >
-                                            <button type="button" class="btn btn--ghost" @click="lookupIco">ARES</button>
+                                            {% endblock %}{% endembed %}
+                                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost" @click="lookupIco"{% endblock %}{% block content %}ARES{% endblock %}{% endembed %}
                                         </div>
                                         {% include 'ui/ares_subject_suggest.html.twig' %}
                                         {% if error('ico', 'customers.save') %}
@@ -144,14 +154,14 @@
                                     <div class="g-field">
                                         <span class="g-label">{{ 'customers.field.dic'|trans }}</span>
                                         <div class="g-control-wrap">
-                                            <input
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                                 class="g-control"
                                                 name="dic"
                                                 data-ares-fill="dic"
                                                 autocomplete="off"
                                                 placeholder="{{ 'customers.form.dic.placeholder'|trans }}"
                                                 value="{{ old('dic', item ? item.dic() : '', 'customers.save') }}"
-                                            >
+                                            {% endblock %}{% endembed %}
                                         </div>
                                         {% if error('dic', 'customers.save') %}
                                             <p class="g-error">{{ error('dic', 'customers.save') }}</p>
@@ -160,27 +170,27 @@
                                     <div class="g-field field--full">
                                         <span class="g-label">{{ 'customers.field.company'|trans }}</span>
                                         <div class="g-control-wrap">
-                                            <input
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                                 class="g-control"
                                                 name="company"
                                                 data-ares-fill="company"
                                                 autocomplete="organization"
                                                 placeholder="{{ 'customers.form.company.name.placeholder'|trans }}"
                                                 value="{{ old('company', item ? item.company() : '', 'customers.save') }}"
-                                            >
+                                            {% endblock %}{% endembed %}
                                         </div>
                                     </div>
                                     <div class="g-field field--full">
                                         <span class="g-label">{{ 'customers.field.company_address'|trans }}</span>
                                         <div class="g-control-wrap">
-                                            <input
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                                 class="g-control"
                                                 name="company_address"
                                                 data-ares-fill="address"
                                                 autocomplete="street-address"
                                                 placeholder="{{ 'customers.form.company_address.placeholder'|trans }}"
                                                 value="{{ old('company_address', item ? item.companyAddress() : '', 'customers.save') }}"
-                                            >
+                                            {% endblock %}{% endembed %}
                                         </div>
                                         <p class="g-hint">{{ 'customers.form.company_address.hint'|trans }}</p>
                                     </div>
@@ -193,13 +203,13 @@
                                 <div class="g-field field--full">
                                     <span class="g-label">{{ 'customers.field.company'|trans }} <span class="g-optional">({{ 'common.optional'|trans }})</span></span>
                                     <div class="g-control-wrap">
-                                        <input
+                                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                             class="g-control"
                                             name="company"
                                             autocomplete="organization"
                                             placeholder="{{ 'customers.form.company.employer.placeholder'|trans }}"
                                             value="{{ old('company', item and not item.isCompany() ? item.company() : '', 'customers.save') }}"
-                                        >
+                                        {% endblock %}{% endembed %}
                                     </div>
                                 </div>
                             </div>
@@ -234,7 +244,7 @@
                     <div class="customer-status-picks" role="radiogroup" aria-label="{{ 'customers.field.status'|trans }}">
                         {% for s in statuses %}
                             <label class="customer-status-pick customer-status-pick--{{ s.tone }}">
-                                <input type="radio" name="status" value="{{ s.value }}" {{ currentStatus == s.value ? 'checked' : '' }} required>
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="radio" name="status" value="{{ s.value }}" {{ currentStatus == s.value ? 'checked' : '' }} required{% endblock %}{% endembed %}
                                 <span class="customer-status-pick__dot" aria-hidden="true"></span>
                                 <span class="customer-status-pick__body">
                                     <strong>{{ s.label }}</strong>
@@ -267,8 +277,13 @@
                 {% endif %}
 
                 <div class="customer-edit__aside-actions">
-                    <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-                    <a class="btn btn--ghost" href="{{ item ? url('admin.customers.show', {id: item.id()}) : url('admin.customers.index') }}">{{ 'common.cancel'|trans }}</a>
+                    {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'common.cancel'|trans,
+                        href: (item ? url('admin.customers.show', {id: item.id()}) : url('admin.customers.index')),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
                 </div>
             </aside>
         </div>

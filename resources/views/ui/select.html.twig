@@ -1,3 +1,21 @@
+{# Native-backed mode keeps reactive Alpine value/change bindings on the source select. #}
+{% if native|default(false) %}
+<div class="g-select grq-select-bound{{ native_class|default('') ? ' ' ~ native_class : '' }}" x-data="gereqSelect" x-effect="syncNativeRoot()" data-placeholder="{{ 'ui.select.placeholder'|trans }}" {% block root_attributes %}{% endblock %}>
+    <div class="g-select__values">
+        <select data-select-native tabindex="-1" aria-hidden="true" {% block native_attributes %}{% endblock %}>
+            {% block native_options %}{% endblock %}
+        </select>
+    </div>
+    <button type="button" class="g-control g-select__trigger" :class="triggerClass" aria-haspopup="listbox" :aria-expanded="expandedAttr" aria-label="{{ 'ui.select.placeholder'|trans }}">
+        <span class="g-select__label" x-text="label"></span>
+        <span class="g-select__chevron" aria-hidden="true">{{ icon('chevron-down') }}</span>
+    </button>
+    <div class="g-select__list" :class="listClass" role="listbox" tabindex="-1">
+        <ul class="g-select__options"></ul>
+    </div>
+    <p class="g-error" data-native-error role="alert" hidden></p>
+</div>
+{% else %}
 {% set name = name|default('') %}
 {% set base_name = name|replace({'[]': ''}) %}
 {% set id = id|default('f-' ~ base_name) %}
@@ -185,3 +203,4 @@
         <p class="g-error" id="{{ id }}-error">{{ err }}</p>
     {% endif %}
 </div>
+{% endif %}

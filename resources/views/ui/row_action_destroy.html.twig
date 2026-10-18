@@ -19,8 +19,8 @@
     data-confirm-danger="1"
 >
     {{ csrf_field()|raw }}
-    <button type="submit" class="table__action-btn table__action-btn--danger" title="{{ label }}" aria-label="{{ label }}">
+    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit" class="table__action-btn table__action-btn--danger" title="{{ label }}" aria-label="{{ label }}"{% endblock %}{% block content %}
         {{ icon('trash') }}
         <span class="table__action-btn__label">{{ label }}</span>
-    </button>
+    {% endblock %}{% endembed %}
 </form>

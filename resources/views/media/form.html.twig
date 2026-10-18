@@ -7,7 +7,9 @@
 
     <form method="post" class="detail-stack" action="{{ url('admin.media.store') }}" enctype="multipart/form-data" data-form="media.upload" x-data="gereqForm"{% if form_errors('media.upload') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        <section class="panel">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
             <header class="panel__head">
                 <h2>{{ 'common.details'|trans }}</h2>
             </header>
@@ -26,10 +28,16 @@
                     extra: 'field--full'
                 })|raw }}
             </div>
-        </section>
+            {% endblock %}
+        {% endembed %}
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'media.upload'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.media.index', folder ? {folder: folder} : {}) }}">{{ 'common.cancel'|trans }}</a>
+            {% include 'ui/button.html.twig' with { label: 'media.upload'|trans, type: 'submit', variant: 'primary' } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (url('admin.media.index', folder ? {folder: folder} : {})),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
         </div>
     </form>
 {% endblock %}

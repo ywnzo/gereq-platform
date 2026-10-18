@@ -83,10 +83,10 @@
                                 >
                                     {{ csrf_field()|raw }}
                                     <input type="hidden" name="return" value="{{ returnUrl|e('html_attr') }}">
-                                    <button type="submit">{{ 'admin.modules.group.enable_all'|trans }}</button>
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit"{% endblock %}{% block content %}{{ 'admin.modules.group.enable_all'|trans }}{% endblock %}{% endembed %}
                                 </form>
                             {% else %}
-                                <button type="button" disabled>{{ 'admin.modules.group.all_on'|trans }}</button>
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" disabled{% endblock %}{% block content %}{{ 'admin.modules.group.all_on'|trans }}{% endblock %}{% endembed %}
                             {% endif %}
                         {% endblock %}
                     {% endembed %}

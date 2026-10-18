@@ -22,25 +22,30 @@
                 {{ csrf_field()|raw }}
                 <label class="field">
                     <span>{{ 'setup.field.app_name'|trans }}</span>
-                    <input class="input" type="text" name="app_name" value="{{ values.app_name }}" required>
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="app_name" value="{{ values.app_name }}" required{% endblock %}{% endembed %}
                 </label>
                 <label class="field">
                     <span>{{ 'setup.field.locale'|trans }}</span>
-                    <select class="input" name="locale">
+                    {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="locale"{% endblock %}{% block native_options %}
                         {% for code, label in locales %}
-                            <option value="{{ code }}" {{ values.locale == code ? 'selected' : '' }}>{{ label }}</option>
+                            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ code }}" {{ values.locale == code ? 'selected' : '' }}{% endblock %}{% block content %}{{ label }}{% endblock %}{% endembed %}
                         {% endfor %}
-                    </select>
+                    {% endblock %}{% endembed %}
                 </label>
                 <label class="field">
                     <span>{{ 'setup.field.theme'|trans }}</span>
-                    <select class="input" name="theme">
-                        <option value="system" {{ values.theme == 'system' ? 'selected' : '' }}>{{ 'settings.theme.system'|trans }}</option>
-                        <option value="light" {{ values.theme == 'light' ? 'selected' : '' }}>{{ 'settings.theme.light'|trans }}</option>
-                        <option value="dark" {{ values.theme == 'dark' ? 'selected' : '' }}>{{ 'settings.theme.dark'|trans }}</option>
-                    </select>
+                    {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="theme"{% endblock %}{% block native_options %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="system" {{ values.theme == 'system' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'settings.theme.system'|trans }}{% endblock %}{% endembed %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="light" {{ values.theme == 'light' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'settings.theme.light'|trans }}{% endblock %}{% endembed %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="dark" {{ values.theme == 'dark' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'settings.theme.dark'|trans }}{% endblock %}{% endembed %}
+                    {% endblock %}{% endembed %}
                 </label>
-                <button type="submit" class="btn btn--primary btn--block">{{ 'setup.next'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'setup.next'|trans,
+                    type: 'submit',
+                    variant: 'primary',
+                    block: true
+                } only %}
             </form>
 
         {% elseif step == 'account' %}
@@ -48,23 +53,28 @@
                 {{ csrf_field()|raw }}
                 <label class="field">
                     <span>{{ 'setup.field.name'|trans }}</span>
-                    <input class="input" type="text" name="name" value="{{ values.name }}" required>
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="name" value="{{ values.name }}" required{% endblock %}{% endembed %}
                 </label>
                 <label class="field">
                     <span>{{ 'common.email'|trans }}</span>
-                    <input class="input" type="email" name="email" value="{{ values.email }}" required>
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="email" name="email" value="{{ values.email }}" required{% endblock %}{% endembed %}
                 </label>
                 <label class="field">
                     <span>{{ 'setup.field.password'|trans }}</span>
-                    <input class="input" type="password" name="password" autocomplete="new-password" placeholder="{{ 'setup.field.password_hint'|trans }}">
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="password" autocomplete="new-password" placeholder="{{ 'setup.field.password_hint'|trans }}"{% endblock %}{% endembed %}
                 </label>
                 <label class="field">
                     <span>{{ 'setup.field.password_confirm'|trans }}</span>
-                    <input class="input" type="password" name="password_confirmation" autocomplete="new-password">
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="password_confirmation" autocomplete="new-password"{% endblock %}{% endembed %}
                 </label>
                 <div class="setup-nav">
-                    <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'welcome'}) }}">{{ 'setup.back'|trans }}</a>
-                    <button type="submit" class="btn btn--primary">{{ 'setup.next'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'setup.back'|trans,
+                        href: (url('admin.setup.step', {step: 'welcome'})),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
+                    {% include 'ui/button.html.twig' with { label: 'setup.next'|trans, type: 'submit', variant: 'primary' } only %}
                 </div>
             </form>
 
@@ -73,38 +83,38 @@
                 {{ csrf_field()|raw }}
                 <label class="field">
                     <span>{{ 'setup.operator.type'|trans }}</span>
-                    <select class="input" name="operator_type" x-model="type">
-                        <option value="business" {{ values.operator.type == 'business' ? 'selected' : '' }}>{{ 'setup.operator.business'|trans }}</option>
-                        <option value="person" {{ values.operator.type == 'person' ? 'selected' : '' }}>{{ 'setup.operator.person'|trans }}</option>
-                    </select>
+                    {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="type" {% endblock %}{% block native_attributes %} class="input" name="operator_type" x-model="type"{% endblock %}{% block native_options %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="business" {{ values.operator.type == 'business' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'setup.operator.business'|trans }}{% endblock %}{% endembed %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="person" {{ values.operator.type == 'person' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'setup.operator.person'|trans }}{% endblock %}{% endembed %}
+                    {% endblock %}{% endembed %}
                 </label>
                 <fieldset class="setup-fieldset stack" x-show="business" :disabled="!business" {{ values.operator.type != 'business' ? 'disabled' : '' }} x-data="gereqAresSubject">
                     <legend class="sr-only">{{ 'setup.operator.business'|trans }}</legend>
                     <label class="field">
                         <span>{{ 'setup.operator.company_name'|trans }}</span>
-                        <input class="input" name="company_name" data-ares-fill="name" value="{{ values.operator.company_name }}" maxlength="180" required>
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="company_name" data-ares-fill="name" value="{{ values.operator.company_name }}" maxlength="180" required{% endblock %}{% endembed %}
                     </label>
                     <div class="setup-grid">
                         <div class="field ares-field">
                             <label for="setup-ico">{{ 'setup.operator.ico'|trans }}</label>
                             <div class="ares-field__row">
-                                <input id="setup-ico" class="input" name="ico" data-ares-ico data-ares-fill="ico" data-ares-query autocomplete="off" value="{{ values.operator.ico }}" @input="onInput" @keydown="onKeydown" x-ref="query" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required>
-                                <button type="button" class="btn btn--ghost" @click="lookupIco">ARES</button>
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} id="setup-ico" class="input" name="ico" data-ares-ico data-ares-fill="ico" data-ares-query autocomplete="off" value="{{ values.operator.ico }}" @input="onInput" @keydown="onKeydown" x-ref="query" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required{% endblock %}{% endembed %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost" @click="lookupIco"{% endblock %}{% block content %}ARES{% endblock %}{% endembed %}
                             </div>
                             {% include 'ui/ares_subject_suggest.html.twig' %}
                         </div>
                         <label class="field">
                             <span>{{ 'setup.operator.dic'|trans }}</span>
-                            <input class="input" name="dic" data-ares-fill="dic" value="{{ values.operator.dic }}" maxlength="32">
+                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="dic" data-ares-fill="dic" value="{{ values.operator.dic }}" maxlength="32"{% endblock %}{% endembed %}
                         </label>
                     </div>
                     <label class="field">
                         <span>{{ 'setup.operator.address'|trans }}</span>
-                        <input class="input" name="address" data-ares-fill="address" value="{{ values.operator.address }}" maxlength="500" required>
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="address" data-ares-fill="address" value="{{ values.operator.address }}" maxlength="500" required{% endblock %}{% endembed %}
                     </label>
                     <label class="field">
                         <span>{{ 'common.email'|trans }}</span>
-                        <input class="input" type="email" name="email" value="{{ values.operator.email }}" maxlength="180" required>
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="email" name="email" value="{{ values.operator.email }}" maxlength="180" required{% endblock %}{% endembed %}
                     </label>
                 </fieldset>
                 <fieldset class="setup-fieldset stack" x-show="person" :disabled="!person" {{ values.operator.type != 'person' ? 'disabled' : '' }} x-cloak>
@@ -112,25 +122,30 @@
                     <div class="setup-grid">
                         <label class="field">
                             <span>{{ 'setup.operator.first_name'|trans }}</span>
-                            <input class="input" name="first_name" value="{{ values.operator.first_name }}" maxlength="100" required>
+                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="first_name" value="{{ values.operator.first_name }}" maxlength="100" required{% endblock %}{% endembed %}
                         </label>
                         <label class="field">
                             <span>{{ 'setup.operator.last_name'|trans }}</span>
-                            <input class="input" name="last_name" value="{{ values.operator.last_name }}" maxlength="100" required>
+                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="last_name" value="{{ values.operator.last_name }}" maxlength="100" required{% endblock %}{% endembed %}
                         </label>
                     </div>
                     <label class="field">
                         <span>{{ 'setup.operator.address'|trans }}</span>
-                        <input class="input" name="address" value="{{ values.operator.address }}" maxlength="500" required>
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="address" value="{{ values.operator.address }}" maxlength="500" required{% endblock %}{% endembed %}
                     </label>
                     <label class="field">
                         <span>{{ 'setup.operator.birth_date'|trans }}</span>
-                        <input class="input" type="date" name="birth_date" value="{{ values.operator.birth_date }}" max="{{ 'now'|date('Y-m-d') }}" required>
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="date" name="birth_date" value="{{ values.operator.birth_date }}" max="{{ 'now'|date('Y-m-d') }}" required{% endblock %}{% endembed %}
                     </label>
                 </fieldset>
                 <div class="setup-nav">
-                    <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'account'}) }}">{{ 'setup.back'|trans }}</a>
-                    <button type="submit" class="btn btn--primary">{{ 'setup.next'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'setup.back'|trans,
+                        href: (url('admin.setup.step', {step: 'account'})),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
+                    {% include 'ui/button.html.twig' with { label: 'setup.next'|trans, type: 'submit', variant: 'primary' } only %}
                 </div>
             </form>
 
@@ -141,16 +156,16 @@
                 <div class="grq-setup-module-filters">
                     <label class="field">
                         <span>{{ 'setup.modules.search'|trans }}</span>
-                        <input class="input" type="search" x-model="query" placeholder="{{ 'setup.modules.search_hint'|trans }}" autocomplete="off">
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" x-model="query" placeholder="{{ 'setup.modules.search_hint'|trans }}" autocomplete="off"{% endblock %}{% endembed %}
                     </label>
                     <label class="field">
                         <span>{{ 'setup.modules.category'|trans }}</span>
-                        <select class="input" x-model="category">
-                            <option value="">{{ 'setup.modules.all_categories'|trans }}</option>
+                        {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="category" {% endblock %}{% block native_attributes %} class="input" x-model="category"{% endblock %}{% block native_options %}
+                            {% include 'ui/option.html.twig' with { value: '', label: 'setup.modules.all_categories'|trans } only %}
                             {% for id, label in moduleCategories %}
-                                <option value="{{ id }}">{{ label|trans }}</option>
+                                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ id }}"{% endblock %}{% block content %}{{ label|trans }}{% endblock %}{% endembed %}
                             {% endfor %}
-                        </select>
+                        {% endblock %}{% endembed %}
                     </label>
                 </div>
                 <p class="muted" role="status" aria-live="polite">{{ 'setup.modules.showing'|trans }} <strong x-text="visibleCount">{{ moduleChoices|length }}</strong> / {{ moduleChoices|length }}</p>
@@ -164,7 +179,7 @@
                             data-categories="{{ choice.categories|json_encode|e('html_attr') }}"
                             x-show="matches($el.dataset.search, $el.dataset.categories)"
                         >
-                            <input type="checkbox" name="modules[]" value="{{ module.id }}" {{ module.id in selectedModules ? 'checked' : '' }}>
+                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="modules[]" value="{{ module.id }}" {{ module.id in selectedModules ? 'checked' : '' }}{% endblock %}{% endembed %}
                             <span class="grq-setup-module__icon" aria-hidden="true">{{ icon(module.icon) }}</span>
                             <span class="grq-setup-module__body">
                                 <strong>{{ module.name }}</strong>
@@ -180,8 +195,17 @@
                 <p class="muted" x-show="visibleCount === 0" x-cloak>{{ 'setup.modules.no_results'|trans }}</p>
                 </div>
                 <div class="setup-nav">
-                    <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'company'}) }}">{{ 'setup.back'|trans }}</a>
-                    <button type="submit" class="btn btn--primary">{{ 'setup.modules.continue'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'setup.back'|trans,
+                        href: (url('admin.setup.step', {step: 'company'})),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'setup.modules.continue'|trans,
+                        type: 'submit',
+                        variant: 'primary'
+                    } only %}
                 </div>
             </form>
 
@@ -190,8 +214,13 @@
                 {{ csrf_field()|raw }}
                 {% include 'admin/settings/_dashboard_widgets.html.twig' with { field: 'dashboard_layout', dashboardCatalog: widgets } %}
                 <div class="setup-nav">
-                    <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'modules'}) }}">{{ 'setup.back'|trans }}</a>
-                    <button type="submit" class="btn btn--primary">{{ 'setup.finish'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'setup.back'|trans,
+                        href: (url('admin.setup.step', {step: 'modules'})),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
+                    {% include 'ui/button.html.twig' with { label: 'setup.finish'|trans, type: 'submit', variant: 'primary' } only %}
                 </div>
             </form>
         {% endif %}

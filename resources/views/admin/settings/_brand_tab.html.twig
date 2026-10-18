@@ -18,7 +18,9 @@
 
 <div class="brand-settings" x-data="settingsBrandPreview">
     <div class="brand-settings__fields">
-        <section class="panel brand-settings__section brand-settings__section--identity">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel brand-settings__section brand-settings__section--identity"{% endblock %}
+            {% block content %}
             <header class="panel__head">
                 <div>
                     <h2>{{ 'settings.brand.section.identity'|trans }}</h2>
@@ -39,17 +41,20 @@
                     {% endif %}
                 {% endfor %}
             </div>
-        </section>
+            {% endblock %}
+        {% endembed %}
 
-        <section class="panel brand-settings__section brand-settings__section--colors">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel brand-settings__section brand-settings__section--colors"{% endblock %}
+            {% block content %}
             <header class="panel__head panel__head--actions">
                 <div>
                     <h2>{{ 'settings.brand.section.colors'|trans }}</h2>
                     <p class="muted">{{ 'settings.brand.section.colors.help'|trans }}</p>
                 </div>
-                <button type="button" class="btn btn--ghost btn--sm" @click="generateStyle">
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn--sm" @click="generateStyle"{% endblock %}{% block content %}
                     {{ icon('palette') }} {{ 'settings.brand.generate_style'|trans }}
-                </button>
+                {% endblock %}{% endembed %}
             </header>
             <div class="form-grid form-grid--cols-3">
                 {% for key in ['brand.color_signal', 'brand.color_ink', 'brand.color_cream'] %}
@@ -59,9 +64,12 @@
                 {% endfor %}
             </div>
             <p class="field__hint">{{ 'settings.brand.generate_style.hint'|trans }}</p>
-        </section>
+            {% endblock %}
+        {% endembed %}
 
-        <section class="panel brand-settings__section brand-settings__section--public">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel brand-settings__section brand-settings__section--public"{% endblock %}
+            {% block content %}
             <header class="panel__head">
                 <div>
                     <h2>{{ 'settings.brand.section.public'|trans }}</h2>
@@ -78,9 +86,10 @@
                     {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey['brand.footnote'], forceFull: true }) %}
                 {% endif %}
             </div>
-        </section>
+            {% endblock %}
+        {% endembed %}
 
-        <details class="panel brand-settings__section brand-settings__section--css">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'details' } } %}{% block attributes %} class="panel brand-settings__section brand-settings__section--css"{% endblock %}{% block content %}
             <summary class="panel__head brand-settings__advanced">
                 <div>
                     <span class="brand-settings__advanced-title">{{ 'settings.brand.section.css'|trans }}</span>
@@ -95,11 +104,13 @@
                 {% set field = key|replace({'.': '__'}) %}
                 {% include 'admin/settings/_css_editor.html.twig' %}
             {% endif %}
-        </details>
+        {% endblock %}{% endembed %}
     </div>
 
     <aside class="brand-settings__preview" aria-label="{{ 'settings.preview'|trans }}">
-        <section class="panel">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
             <header class="panel__head">
                 <div>
                     <h2>{{ 'settings.preview'|trans }}</h2>
@@ -164,6 +175,7 @@
                     </div>
                 </div>
             </div>
-        </section>
+            {% endblock %}
+        {% endembed %}
     </aside>
 </div>

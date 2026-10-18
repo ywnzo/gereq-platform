@@ -30,7 +30,7 @@
                                 <td class="table__wrap-cell muted">{{ route.scopes|join(', ') ?: 'common.none'|trans }}</td>
                                 <td class="table__wrap-cell">{{ route.summary ?: '—' }}</td>
                                 <td class="table__actions">
-                                    <button
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                         type="button"
                                         class="btn btn--ghost btn-sm"
                                         data-api-test
@@ -38,7 +38,7 @@
                                         data-path="{{ route.path|e('html_attr') }}"
                                         data-summary="{{ route.summary|e('html_attr') }}"
                                         data-scopes="{{ route.scopes|json_encode|e('html_attr') }}"
-                                    >{{ icon('play') }} {{ 'admin.api.test'|trans }}</button>
+                                    {% endblock %}{% block content %}{{ icon('play') }} {{ 'admin.api.test'|trans }}{% endblock %}{% endembed %}
                                 </td>
                             </tr>
                         {% endfor %}

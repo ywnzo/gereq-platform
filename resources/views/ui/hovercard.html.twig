@@ -1,0 +1,9 @@
+{# CSS hover/focus card. The default button trigger is keyboard focusable. #}
+<div{% block component_attributes %}{% if id|default(null) %} id="{{ id }}"{% endif %} class="g-hovercard{{ class|default('') ? ' ' ~ class : '' }}" {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
+    {% block trigger %}
+        {% include 'ui/button.html.twig' with { label: label|default(''), variant: variant|default('ghost'), attrs: { 'aria-describedby': id|default(null) ? id ~ '-content' : null } } only %}
+    {% endblock %}
+    <div{% if id|default(null) %} id="{{ id }}-content"{% endif %} class="g-hovercard__panel{{ panel_class|default('') ? ' ' ~ panel_class : '' }}">
+        {% block body %}{{ body|default('')|raw }}{% endblock %}
+    </div>
+{% endblock %}</div>

@@ -24,35 +24,41 @@
     </header>
 
     <div class="toolbar--table">
-        <form class="toolbar toolbar--audit" method="get" action="{{ url('admin.audit.index') }}">
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar toolbar--audit" method="get" action="{{ url('admin.audit.index') }}"{% endblock %}{% block content %}
             <input type="hidden" name="sort" value="{{ sort }}">
             <input type="hidden" name="dir" value="{{ dir }}">
-            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.audit.search'|trans }}">
-            <select name="kind" class="input" onchange="this.form.requestSubmit()">
-                <option value="">{{ 'admin.audit.filter.kind_all'|trans }}</option>
-                <option value="created" {{ kind == 'created' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.created'|trans }}</option>
-                <option value="updated" {{ kind == 'updated' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.updated'|trans }}</option>
-                <option value="deleted" {{ kind == 'deleted' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.deleted'|trans }}</option>
-                <option value="auth" {{ kind == 'auth' ? 'selected' : '' }}>{{ 'admin.audit.filter.kind.auth'|trans }}</option>
-            </select>
-            <select name="resource" class="input" onchange="this.form.requestSubmit()">
-                <option value="">{{ 'admin.audit.filter.resource_all'|trans }}</option>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.audit.search'|trans }}"{% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="kind" class="input" onchange="this.form.requestSubmit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'admin.audit.filter.kind_all'|trans } only %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="created" {{ kind == 'created' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'admin.audit.filter.kind.created'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="updated" {{ kind == 'updated' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'admin.audit.filter.kind.updated'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="deleted" {{ kind == 'deleted' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'admin.audit.filter.kind.deleted'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="auth" {{ kind == 'auth' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'admin.audit.filter.kind.auth'|trans }}{% endblock %}{% endembed %}
+            {% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="resource" class="input" onchange="this.form.requestSubmit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'admin.audit.filter.resource_all'|trans } only %}
                 {% for res in resources %}
-                    <option value="{{ res }}" {{ resource == res ? 'selected' : '' }}>{{ res }}</option>
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ res }}" {{ resource == res ? 'selected' : '' }}{% endblock %}{% block content %}{{ res }}{% endblock %}{% endembed %}
                 {% endfor %}
-            </select>
+            {% endblock %}{% endembed %}
             <label class="toolbar__date">
                 <span class="sr-only">{{ 'admin.audit.filter.from'|trans }}</span>
-                <input class="input" type="date" name="from" value="{{ from }}" title="{{ 'admin.audit.filter.from'|trans }}" onchange="this.form.requestSubmit()">
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="date" name="from" value="{{ from }}" title="{{ 'admin.audit.filter.from'|trans }}" onchange="this.form.requestSubmit()"{% endblock %}{% endembed %}
             </label>
             <label class="toolbar__date">
                 <span class="sr-only">{{ 'admin.audit.filter.to'|trans }}</span>
-                <input class="input" type="date" name="to" value="{{ to }}" title="{{ 'admin.audit.filter.to'|trans }}" onchange="this.form.requestSubmit()">
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="date" name="to" value="{{ to }}" title="{{ 'admin.audit.filter.to'|trans }}" onchange="this.form.requestSubmit()"{% endblock %}{% endembed %}
             </label>
             {% if hasFilters %}
-                <a class="btn btn--ghost btn-sm" href="{{ url('admin.audit.index') }}">{{ 'admin.audit.filter.reset'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'admin.audit.filter.reset'|trans,
+                    href: (url('admin.audit.index')),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost',
+                    class: 'btn-sm'
+                } only %}
             {% endif %}
-        </form>
+        {% endblock %}{% endembed %}
     </div>
 
     {% if logs is empty %}
@@ -60,7 +66,12 @@
             <h2>{{ 'empty.audit'|trans }}</h2>
             <p>{{ hasFilters ? 'admin.audit.empty.filtered'|trans : 'admin.audit.empty.hint'|trans }}</p>
             {% if hasFilters %}
-                <a class="btn btn--ghost" href="{{ url('admin.audit.index') }}">{{ 'admin.audit.filter.reset'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'admin.audit.filter.reset'|trans,
+                    href: (url('admin.audit.index')),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
             {% endif %}
         </div>
     {% else %}

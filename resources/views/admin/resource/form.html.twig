@@ -10,14 +10,14 @@
             <label class="field {{ field.type == 'textarea' ? 'field--full' : '' }}">
                 <span>{{ field.label }}</span>
                 {% if field.type == 'textarea' %}
-                    <textarea name="{{ field.name }}" rows="4">{{ item ? attribute(item, field.name) : '' }}</textarea>
+                    {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} name="{{ field.name }}" rows="4"{% endblock %}{% block content %}{{ item ? attribute(item, field.name) : '' }}{% endblock %}{% endembed %}
                 {% else %}
-                    <input type="{{ field.type == 'email' ? 'email' : 'text' }}" name="{{ field.name }}" value="{{ item ? attribute(item, field.name) : '' }}" {{ field.required ? 'required' : '' }}>
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="{{ field.type == 'email' ? 'email' : 'text' }}" name="{{ field.name }}" value="{{ item ? attribute(item, field.name) : '' }}" {{ field.required ? 'required' : '' }}{% endblock %}{% endembed %}
                 {% endif %}
             </label>
         {% endfor %}
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
         </div>
     </form>
 {% endblock %}

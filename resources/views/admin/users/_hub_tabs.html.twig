@@ -3,7 +3,7 @@
   {% include 'admin/users/_hub_tabs.html.twig' with { active: 'users' } %}
 #}
 {% set active = active|default('users') %}
-<nav class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.users.hub'|trans }}">
+{% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'nav' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'admin.users.hub'|trans }}"{% endblock %}{% block content %}
     {% if user.can('users.view') %}
         <a
             class="design-tab{{ active == 'users' ? ' is-active' : '' }}"
@@ -22,4 +22,4 @@
             style="text-decoration:none"
         >{{ 'nav.roles'|trans }}</a>
     {% endif %}
-</nav>
+{% endblock %}{% endembed %}

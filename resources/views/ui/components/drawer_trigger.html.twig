@@ -4,10 +4,10 @@
 {% set variant = variant|default('ghost') %}
 {% set icon_name = icon|default(null) %}
 {% set extra = class|default('') %}
-<button
+{% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
     type="button"
     class="btn btn--{{ variant }}{{ extra ? ' ' ~ extra : '' }}"
     data-drawer-open="{{ drawer_id }}"
->
+{% endblock %}{% block content %}
     {% if icon_name %}{{ icon(icon_name) }} {% endif %}{{ label }}
-</button>
+{% endblock %}{% endembed %}

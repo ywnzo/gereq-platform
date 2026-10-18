@@ -6,12 +6,14 @@
        {% endblock %}
      {% endembed %}
 #}
-{% set title = title|default(null) %}
-<section class="panel">
-    {% if title %}
+{% extends 'ui/panel.html.twig' %}
+
+{% block attributes %} class="panel"{% endblock %}
+{% block content %}
+    {% if title|default(null) %}
         <header class="panel__head">
             <h2>{{ title }}</h2>
         </header>
     {% endif %}
     {% block body %}{% endblock %}
-</section>
+{% endblock %}

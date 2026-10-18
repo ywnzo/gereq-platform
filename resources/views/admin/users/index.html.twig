@@ -16,7 +16,7 @@
         </div>
         {% if user.can('users.create') %}
             <div class="actions">
-                <a class="btn btn--primary" href="{{ url('admin.users.create') }}">{{ icon('plus') }} {{ 'admin.users.new'|trans }}</a>
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.users.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'admin.users.new'|trans }}{% endblock %}{% endembed %}
             </div>
         {% endif %}
     </header>
@@ -24,9 +24,9 @@
     {% include 'admin/users/_hub_tabs.html.twig' with { active: 'users' } %}
 
     <div class="toolbar--table">
-        <form class="toolbar" method="get">
-            <input type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.users.search'|trans }}" class="input">
-        </form>
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="search" name="q" value="{{ search }}" placeholder="{{ 'admin.users.search'|trans }}" class="input"{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
     </div>
 
     <div class="table-wrap" data-table>

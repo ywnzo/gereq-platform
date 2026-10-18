@@ -1,0 +1,13 @@
+{# Range field using shared field chrome, form state, and validation rules. #}
+{% extends range_options.control_only|default(false) ? 'ui/_control.html.twig' : 'ui/field.html.twig' %}
+{% set range_value = old(name|default(''), value is defined ? value : 0, form|default(null)) %}
+{% set required = field_required(name|default(''), form|default(null), required is defined ? required : null, requiredFields|default(null), entity|default(null)) %}
+{% block control %}
+    <input{% block input_attributes %} class="g-range" type="range" name="{{ name }}" id="{{ id }}" value="{{ range_value }}"
+        min="{{ min is defined ? min : 0 }}" max="{{ max is defined ? max : 100 }}" step="{{ step is defined ? step : 1 }}"
+        {% if required %}required{% endif %}{% if disabled|default(false) %} disabled{% endif %}
+        {% if err %}aria-invalid="true" aria-describedby="{{ id }}-error"{% elseif hint %}aria-describedby="{{ id }}-hint"{% endif %}
+        {% block attributes %}{% endblock %}
+        {% endblock %}
+    >
+{% endblock %}

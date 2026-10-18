@@ -11,11 +11,21 @@
         </div>
         <div class="actions">
             {% if user.can('media.manage') %}
-                <a class="btn btn--ghost" href="{{ url('admin.media.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
-                <a class="btn btn--ghost" href="{{ url('admin.media.move', {id: item.id()}) }}">{{ 'media.move'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'common.edit'|trans,
+                    href: (url('admin.media.edit', {id: item.id()})),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'media.move'|trans,
+                    href: (url('admin.media.move', {id: item.id()})),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
                 <form method="post" action="{{ url('admin.media.destroy', {id: item.id()}) }}" data-confirm="{{ 'media.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
                     {{ csrf_field()|raw }}
-                    <button class="btn btn--danger" type="submit">{{ 'common.delete'|trans }}</button>
+                    {% include 'ui/button.html.twig' with { label: 'common.delete'|trans, type: 'submit', variant: 'danger' } only %}
                 </form>
             {% endif %}
         </div>
@@ -23,7 +33,9 @@
 
     <div class="detail-layout">
         <div class="detail-layout__main">
-            <section class="detail-hero panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="detail-hero panel"{% endblock %}
+                {% block content %}
                 {% if item.isImage() %}
                     <a class="detail-hero__media" href="{{ url('media.public.file', {id: item.id()}) }}" target="_blank" rel="noopener">
                         <img src="{{ url('media.public.file', {id: item.id()}) }}" alt="{{ item.alt()|default(item.title()) }}">
@@ -53,9 +65,12 @@
                         </div>
                     </dl>
                 </div>
-            </section>
+                {% endblock %}
+            {% endembed %}
 
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'media.links.title'|trans }}</h2></header>
                 {% if links is empty %}
                     <div class="empty">
@@ -85,11 +100,14 @@
                         </table>
                     </div>
                 {% endif %}
-            </section>
+                {% endblock %}
+            {% endembed %}
         </div>
 
         <aside class="detail-layout__aside">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
                 <dl class="meta-list meta-list--flush detail-layout__specs">
                     <div>
@@ -123,7 +141,8 @@
                         </div>
                     {% endif %}
                 </dl>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </aside>
     </div>
 {% endblock %}

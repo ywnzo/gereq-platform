@@ -21,14 +21,14 @@
         :class="open ? 'is-open' : ''"
         @click="cancel"
     ></div>
-    <div
+    {% embed 'ui/modal.html.twig' %}{% block component_attributes %}
         class="g-modal"
         :class="open ? 'is-open' : ''"
         role="dialog"
         aria-modal="true"
         :aria-hidden="open ? 'false' : 'true'"
         aria-labelledby="gereq-confirm-title"
-    >
+    {% endblock %}{% block content %}
         <div class="g-modal__panel g-confirm__panel" :class="inputType === 'editor' ? 'g-modal__panel--editor' : ''" @click.stop>
             <h3 class="g-modal__title" id="gereq-confirm-title" x-text="title"></h3>
             <p class="g-modal__body" x-show="body" x-text="body"></p>
@@ -69,19 +69,19 @@
                 </div>
             </div>
             <div class="g-modal__actions">
-                <button type="button" class="btn btn--ghost" @click="cancel" x-ref="cancelBtn">
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost" @click="cancel" x-ref="cancelBtn"{% endblock %}{% block content %}
                     <span x-text="cancelLabel"></span>
-                </button>
-                <button
+                {% endblock %}{% endembed %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                     type="button"
                     class="btn"
                     :class="danger ? 'btn--danger' : 'btn--primary'"
                     @click="accept"
                     x-ref="confirmBtn"
-                >
+                {% endblock %}{% block content %}
                     <span x-text="confirmLabel"></span>
-                </button>
+                {% endblock %}{% endembed %}
             </div>
         </div>
-    </div>
+    {% endblock %}{% endembed %}
 </div>

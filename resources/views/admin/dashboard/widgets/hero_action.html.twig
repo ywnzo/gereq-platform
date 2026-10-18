@@ -1,3 +1,3 @@
-<a class="btn {{ variant|default('btn--ghost') }}" href="{{ href }}">
+{% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn {{ variant|default('btn--ghost') }}" href="{{ href }}"{% endblock %}{% block content %}
     {% if icon|default('') != '' %}{{ icon(icon) }} {% endif %}{{ label }}
-</a>
+{% endblock %}{% endembed %}

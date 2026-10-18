@@ -8,10 +8,10 @@
             <p class="muted">{{ 'queues.schedule.subtitle'|trans }}</p>
         </div>
         <div class="actions queues-head">
-            <span class="status-chip queues-status queues-status--{{ health.tone() }}">
+            {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip queues-status queues-status--{{ health.tone() }}"{% endblock %}{% block chip_content %}
                 <span class="status-chip__dot"></span>
                 {{ ('queues.status.' ~ health.status)|trans }}
-            </span>
+            {% endblock %}{% endembed %}
 
             <dl class="queues-figures" aria-label="{{ 'queues.schedule.figures'|trans }}">
                 <div>
@@ -34,7 +34,12 @@
                 {% endif %}
             </dl>
 
-            <a href="{{ url('admin.queues.index') }}" class="btn btn--ghost">{{ 'queues.action.failed'|trans }}</a>
+            {% include 'ui/button.html.twig' with {
+                label: 'queues.action.failed'|trans,
+                href: (url('admin.queues.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
         </div>
     </header>
 
@@ -65,22 +70,22 @@
                         <td>{{ event.async ? 'queues.schedule.mode.async'|trans : 'queues.schedule.mode.inline'|trans }}</td>
                         <td>
                             {% if event.paused %}
-                                <span class="status-chip queues-status queues-status--warn">
+                                {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip queues-status queues-status--warn"{% endblock %}{% block chip_content %}
                                     <span class="status-chip__dot"></span>
                                     {{ 'queues.schedule.status.paused'|trans }}
-                                </span>
+                                {% endblock %}{% endembed %}
                             {% else %}
-                                <span class="status-chip queues-status queues-status--ok">
+                                {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip queues-status queues-status--ok"{% endblock %}{% block chip_content %}
                                     <span class="status-chip__dot"></span>
                                     {{ 'queues.schedule.status.active'|trans }}
-                                </span>
+                                {% endblock %}{% endembed %}
                             {% endif %}
                         </td>
                         <td>
                             {% if event.paused %}
                                 <span class="muted">{{ 'queues.schedule.next.paused'|trans }}</span>
                             {% elseif event.due %}
-                                <span class="status-chip queues-status queues-status--warn">{{ 'queues.schedule.due_now'|trans }}</span>
+                                {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip queues-status queues-status--warn"{% endblock %}{% block chip_content %}{{ 'queues.schedule.due_now'|trans }}{% endblock %}{% endembed %}
                             {% else %}
                                 {{ event.next|default('—') }}
                             {% endif %}
@@ -91,34 +96,34 @@
                                 <div class="table__action-btns">
                                     <form method="post" action="{{ url('admin.queues.schedule.run', { name: event.id }) }}">
                                         {{ csrf_field()|raw }}
-                                        <button
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                             type="submit"
                                             class="table__action-btn table__action-btn--success"
                                             title="{{ 'queues.schedule.action.run'|trans }}"
                                             aria-label="{{ 'queues.schedule.action.run'|trans }}"
                                             data-confirm="{{ 'queues.schedule.run.confirm'|trans({ '%name%': event.name })|e('html_attr') }}"
-                                        >{{ icon('play') }}</button>
+                                        {% endblock %}{% block content %}{{ icon('play') }}{% endblock %}{% endembed %}
                                     </form>
                                     {% if event.paused %}
                                         <form method="post" action="{{ url('admin.queues.schedule.resume', { name: event.id }) }}">
                                             {{ csrf_field()|raw }}
-                                            <button
+                                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                                 type="submit"
                                                 class="table__action-btn table__action-btn--primary"
                                                 title="{{ 'queues.schedule.action.resume'|trans }}"
                                                 aria-label="{{ 'queues.schedule.action.resume'|trans }}"
-                                            >{{ icon('refresh') }}</button>
+                                            {% endblock %}{% block content %}{{ icon('refresh') }}{% endblock %}{% endembed %}
                                         </form>
                                     {% else %}
                                         <form method="post" action="{{ url('admin.queues.schedule.pause', { name: event.id }) }}">
                                             {{ csrf_field()|raw }}
-                                            <button
+                                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                                 type="submit"
                                                 class="table__action-btn table__action-btn--warn"
                                                 title="{{ 'queues.schedule.action.pause'|trans }}"
                                                 aria-label="{{ 'queues.schedule.action.pause'|trans }}"
                                                 data-confirm="{{ 'queues.schedule.pause.confirm'|trans({ '%name%': event.name })|e('html_attr') }}"
-                                            >{{ icon('pause') }}</button>
+                                            {% endblock %}{% block content %}{{ icon('pause') }}{% endblock %}{% endembed %}
                                         </form>
                                     {% endif %}
                                 </div>

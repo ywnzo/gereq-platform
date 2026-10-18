@@ -1,0 +1,25 @@
+{#
+  Pass a unique id and items: [{id, label, body}], where body is trusted HTML.
+  initial defaults to the first item. Embed navigation/panels for custom layouts.
+  Uses the existing gereqTabs hash navigation and breadcrumb behavior.
+#}
+{% set tabs_items = items|default([]) %}
+{% set tabs_initial = initial|default(tabs_items|first.id|default('')) %}
+{% set tabs_tag = tabs_options.tag|default('div') %}
+{% set tabs_tag = tabs_tag in ['div', 'nav', 'section'] ? tabs_tag : 'div' %}
+<{{ tabs_tag }}{% block component_attributes %}{% if id|default(null) %} id="{{ id }}"{% endif %} class="{{ class|default('') }}" x-data="gereqTabs" data-initial="{{ tabs_initial }}"{% if breadcrumbs is defined and not breadcrumbs %} data-breadcrumbs="0"{% endif %} {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
+    <nav class="design-tabs{{ nav_class|default('') ? ' ' ~ nav_class : '' }}" role="tablist"{% if label|default('') %} aria-label="{{ label }}"{% endif %}>
+        {% block navigation %}
+            {% for item in tabs_items %}
+                <button type="button" class="design-tab{{ item.id == tabs_initial ? ' is-active' : '' }}" role="tab" data-tab="{{ item.id }}" aria-selected="{{ item.id == tabs_initial ? 'true' : 'false' }}"{% if id|default(null) %} id="{{ id }}-tab-{{ item.id }}" aria-controls="{{ id }}-panel-{{ item.id }}"{% endif %}>{{ item.label }}</button>
+            {% endfor %}
+        {% endblock %}
+    </nav>
+    {% block panels %}
+        {% for item in tabs_items %}
+            <section class="design-panel{{ item.id == tabs_initial ? ' is-active' : '' }}" data-panel="{{ item.id }}" role="tabpanel"{% if id|default(null) %} id="{{ id }}-panel-{{ item.id }}" aria-labelledby="{{ id }}-tab-{{ item.id }}"{% endif %}>
+                {{ item.body|default('')|raw }}
+            </section>
+        {% endfor %}
+    {% endblock %}
+{% endblock %}</{{ tabs_tag }}>

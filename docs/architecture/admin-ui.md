@@ -97,6 +97,14 @@ Pass a data array. Common keys:
 | `size` | `textarea`: `'mini'` = plain textarea; default = rich `editor` |
 | `compact` | `file` only |
 
+For an existing Alpine-bound single select, embed `ui/select.html.twig` with
+`native: true`. Put the original select attributes and options in the
+`native_attributes` and `native_options` blocks, and mirror its `:value`
+expression as `:data-native-value` in `root_attributes`. The original select
+remains the value/change event target; `gereqSelect` supplies the visible control
+and synchronizes labels, options and external value changes. This mode does not
+add field chrome, so callers can retain the builder's property layout.
+
 Example:
 
 ```php
@@ -176,6 +184,46 @@ Anything under `resources/views` without a dedicated method, e.g.:
 - `ui()` — the service (`{{ ui().badge('OK', 'ok') }}`)
 - `ui_render('badge', {label: 'OK', tone: 'ok'})` — component only, HTML-safe
 - Macros in `resources/views/ui/macros.html.twig`: `badge`, `drawer_trigger`, `empty`, `grid`, `cell`
+
+### Shared component templates
+
+These components work through `ui_render(name, data)` or by including/embedding
+`ui/<name>.html.twig`. Labels, titles, messages and hints are escaped plain text;
+HTML supplied as `body`, `actions`, or a tab item's `body` must be trusted rendered
+markup. Use embed blocks for custom markup and Alpine CSP bindings.
+
+| Component | Main options / blocks |
+| --- | --- |
+| `button` | `label`, `variant`, `size`, `type`, `href`, `icon`, `disabled`, `busy`, `attrs`; `content`, `attributes` blocks |
+| `option` | Escaped `value`, `label`, `selected`, `disabled`; `option_attributes`, `content` blocks for reactive option lists |
+| `panel` | `title`, `hint`, `id`, `class`, `body_class`; `body`, `actions`, `content`, `attributes` blocks |
+| `alert` | `message`, optional `title`, `tone` (`success`, `warn`, `danger`, `info`), `icon`; `body` block |
+| `status_chip` | `label`, `tone`, `dot` (default true); `content` block |
+| `tabs` | Unique `id`, `items: [{id, label, body}]`, `initial`, `label`, `breadcrumbs`; `navigation`, `panels` blocks |
+| `modal` | `title`, `trigger_label`, `trigger_variant`, `body`; `trigger`, `body`, `actions` blocks; uses `gereqModal` |
+| `popover` | `id`, `label`, `variant`, `body`; `trigger`, `body` blocks; uses `gereqPopover` |
+| `hovercard` | `id`, `label`, `variant`, `body`; `trigger`, `body` blocks; opens on hover or focus |
+| `toolbar` | `table` adds table chrome; `body`, `actions` blocks |
+| `bulk_bar` | Inside `dataTable`, uses `selectedCount` and `clearSelection`; translated `selected_label`, optional `clear_label`, `actions` block. For static use, set `reactive: false` and `count` |
+| `range` | `name`, `id`, `label`, `hint`, `form`, `value`, `min`, `max`, `step`, `required`, `disabled`; `attributes` block |
+| `pin` | Shared input options plus `digits` (default 6, maximum 32); single numeric text input with paste and leading-zero support |
+
+Range and PIN fields reuse the existing form-state and validation helpers. These
+templates do not replace backend validation or authorization. Modal, popover and
+tabs use the existing Alpine behavior without adding new client components.
+
+Existing layouts can override `component_attributes` and `content` (or
+`chip_content` for a status chip) to retain their complete markup. Wrapper tag
+options preserve form toolbars and bulk action forms. Range and PIN embeds can
+set `range_options.control_only` / `pin_options.control_only` and override
+`input_attributes` when the caller already supplies field chrome. Keep macro
+imports inside the embedded block that invokes them; parent imports are not
+available automatically inside embeds.
+
+Input and plain textarea templates also support `input_options.control_only` /
+`textarea_options.control_only` with an `input_attributes` block. This keeps
+existing reactive inspector layouts while routing their controls through the
+shared templates. In bare mode, textarea content is supplied through `content`.
 
 ### Related JS / CSS patterns (not `ui()` methods)
 

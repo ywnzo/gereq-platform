@@ -1,4 +1,6 @@
-<section class="panel panel--chart">
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel panel--chart"{% endblock %}
+    {% block content %}
     <header class="panel__head">
         <div>
             <h2>{{ title }}</h2>
@@ -7,7 +9,13 @@
             {% endif %}
         </div>
         {% if href|default(null) %}
-            <a class="btn btn--ghost btn-sm" href="{{ href }}">{{ link_label|default('common.open'|trans) }}</a>
+            {% include 'ui/button.html.twig' with {
+                label: link_label|default('common.open'|trans),
+                href: (href),
+                button_options: { tag: 'a' },
+                variant: 'ghost',
+                class: 'btn-sm'
+            } only %}
         {% endif %}
     </header>
     {% if empty|default(false) %}
@@ -31,4 +39,5 @@
             </div>
         {% endif %}
     {% endif %}
-</section>
+    {% endblock %}
+{% endembed %}

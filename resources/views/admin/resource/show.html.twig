@@ -5,11 +5,18 @@
     {% set first = fields|first %}
     <header class="page-header">
         <h1>{{ definition.singular }}</h1>
-        <a class="btn btn--primary" href="{{ url('admin.' ~ definition.name ~ '.edit', {id: item.id()}) }}">{{ 'common.edit'|trans }}</a>
+        {% include 'ui/button.html.twig' with {
+            label: 'common.edit'|trans,
+            href: (url('admin.' ~ definition.name ~ '.edit', {id: item.id()})),
+            button_options: { tag: 'a' },
+            variant: 'primary'
+        } only %}
     </header>
     <div class="detail-layout">
         <div class="detail-layout__main">
-            <section class="detail-hero panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="detail-hero panel"{% endblock %}
+                {% block content %}
                 <div class="detail-hero__body{% if fields|length < 2 %} detail-hero__body--solo{% endif %}">
                     {% if first %}
                         <div class="detail-hero__highlight">
@@ -28,10 +35,13 @@
                         </dl>
                     {% endif %}
                 </div>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </div>
         <aside class="detail-layout__aside">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
                 <dl class="meta-list meta-list--flush detail-layout__specs">
                     {% for field in fields %}
@@ -41,7 +51,8 @@
                         </div>
                     {% endfor %}
                 </dl>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </aside>
     </div>
 {% endblock %}

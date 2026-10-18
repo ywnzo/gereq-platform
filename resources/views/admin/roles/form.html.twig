@@ -13,8 +13,18 @@
     <header class="page-header">
         <h1>{{ 'admin.roles.new'|trans }}</h1>
         <div class="actions">
-            <button class="btn btn--primary" type="submit" form="role-create-form">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.users.roles') }}">{{ 'common.cancel'|trans }}</a>
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'role-create-form' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (url('admin.users.roles')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
         </div>
     </header>
 
@@ -22,16 +32,16 @@
         {{ csrf_field()|raw }}
         <label class="field">
             <span>{{ 'admin.roles.key'|trans }}</span>
-            <input type="text" name="name" value="{{ old('name', '') }}" required pattern="[a-zA-Z0-9_-]{2,80}" maxlength="80" autocomplete="off">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="text" name="name" value="{{ old('name', '') }}" required pattern="[a-zA-Z0-9_-]{2,80}" maxlength="80" autocomplete="off"{% endblock %}{% endembed %}
             <small class="muted">{{ 'admin.roles.key.hint'|trans }}</small>
         </label>
         <label class="field">
             <span>{{ 'admin.roles.name'|trans }}</span>
-            <input type="text" name="label" value="{{ old('label', '') }}" required maxlength="180">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="text" name="label" value="{{ old('label', '') }}" required maxlength="180"{% endblock %}{% endembed %}
         </label>
         <label class="field">
             <span>{{ 'common.description'|trans }}</span>
-            <textarea name="description" rows="3" maxlength="2000">{{ old('description', '') }}</textarea>
+            {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} name="description" rows="3" maxlength="2000"{% endblock %}{% block content %}{{ old('description', '') }}{% endblock %}{% endembed %}
         </label>
     </form>
 {% endblock %}

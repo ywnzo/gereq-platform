@@ -24,8 +24,8 @@
                                 {% set key = channel ~ ':' ~ type %}
                                 {% set field = channel ~ '__' ~ type|replace({'.': '_'}) %}
                                 <td>
-                                    <input type="checkbox" name="pref[{{ field }}]" value="1"
-                                        {{ map[key] is defined ? (map[key] ? 'checked' : '') : (channel == 'in_app' ? 'checked' : '') }}>
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="pref[{{ field }}]" value="1"
+                                        {{ map[key] is defined ? (map[key] ? 'checked' : '') : (channel == 'in_app' ? 'checked' : '') }}{% endblock %}{% endembed %}
                                 </td>
                             {% endfor %}
                         </tr>
@@ -33,6 +33,6 @@
                 </tbody>
             </table>
         </div>
-        <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+        {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
     </form>
 {% endblock %}

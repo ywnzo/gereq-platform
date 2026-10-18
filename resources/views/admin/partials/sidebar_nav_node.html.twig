@@ -26,15 +26,15 @@
                     <span class="nav-item__badge">{{ menuItem.badge|raw }}</span>
                 {% endif %}
             </a>
-            <button
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                 type="button"
                 class="nav-tree__expand"
                 @click.stop="toggle"
                 :aria-expanded="expandedAttr"
                 aria-label="{{ 'ui.toggle_submenu'|trans({ '%label%': itemLabel }) }}"
-            >
+            {% endblock %}{% block content %}
                 <span class="nav-tree__chevron" :class="chevronClass" aria-hidden="true">{{ icon('chevron-down') }}</span>
-            </button>
+            {% endblock %}{% endembed %}
         </div>
         <div class="nav-tree__panel" @mouseenter="flyoutEnter" @mouseleave="flyoutLeave">
             <div class="nav-tree__panel-inner">

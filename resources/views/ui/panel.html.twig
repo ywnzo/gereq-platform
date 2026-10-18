@@ -1,0 +1,42 @@
+{#
+  Shared admin panel. Title and hint are plain text; body and actions accept
+  trusted, rendered HTML, following the other UI components.
+
+  {% embed 'ui/panel.html.twig' with { title: '…'|trans, hint: '…'|trans } %}
+      {% block actions %}<button type="button" class="btn">…</button>{% endblock %}
+      {% block body %}…{% endblock %}
+  {% endembed %}
+
+  Also available through ui_render('panel', { title: '…', body: renderedHtml }).
+  Optional: id, class, body_class. Existing custom layouts can override content
+  and attributes; panel_options.tag preserves semantic wrappers, including forms
+  and expandable details panels.
+#}
+{% set title = title|default('') %}
+{% set hint = hint|default('') %}
+{% set id = id|default(null) %}
+{% set class = class|default('') %}
+{% set body_class = body_class|default('') %}
+{% set panel_tag = panel_options.tag|default('section') %}
+{% set panel_tag = panel_tag in ['section', 'div', 'article', 'form', 'details', 'main'] ? panel_tag : 'section' %}
+<{{ panel_tag }}{% block attributes %}{% if id %} id="{{ id }}"{% endif %} class="panel{{ class ? ' ' ~ class : '' }}"{% endblock %}>
+    {% block content %}
+    {% set panel_actions %}{% block actions %}{{ actions|default('')|raw }}{% endblock %}{% endset %}
+    {% if title or hint or panel_actions|trim %}
+        <header class="panel__head{{ panel_actions|trim ? ' panel__head--actions' : '' }}">
+            {% if title or hint %}
+                <div>
+                    {% if title %}<h2>{{ title }}</h2>{% endif %}
+                    {% if hint %}<p class="muted">{{ hint }}</p>{% endif %}
+                </div>
+            {% endif %}
+            {% if panel_actions|trim %}
+                <div class="panel__actions">{{ panel_actions }}</div>
+            {% endif %}
+        </header>
+    {% endif %}
+    <div class="panel__body{{ body_class ? ' ' ~ body_class : '' }}">
+        {% block body %}{{ body|default('')|raw }}{% endblock %}
+    </div>
+    {% endblock %}
+</{{ panel_tag }}>

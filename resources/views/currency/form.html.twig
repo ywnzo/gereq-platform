@@ -18,7 +18,9 @@
 
     <form method="post" class="detail-stack" action="{{ item ? url('admin.currencies.update', {code: item.code()}) : url('admin.currencies.store') }}" data-form="currency.save" x-data="gereqForm"{% if form_errors('currency.save') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        <section class="panel">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
             <header class="panel__head">
                 <h2>{{ 'common.details'|trans }}</h2>
             </header>
@@ -28,10 +30,16 @@
                 fieldOptions: item ? { code: { readonly: true } } : {},
                 values: item ? {} : { decimal_places: 2, is_active: true, is_default: false }
             }) }}
-        </section>
+            {% endblock %}
+        {% endembed %}
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.settings.index', {tab: 'core'}) }}#settings-currencies">{{ 'common.cancel'|trans }}</a>
+            {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (url('admin.settings.index', {tab: 'core'})) ~ '#settings-currencies',
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
         </div>
     </form>
 {% endblock %}

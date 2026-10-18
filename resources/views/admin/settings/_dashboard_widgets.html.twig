@@ -19,17 +19,29 @@
             <label class="dash-settings__search">
                 <span class="sr-only">{{ 'settings.dashboard.search'|trans }}</span>
                 {{ icon('search') }}
-                <input
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                     class="input"
                     type="search"
                     x-model="query"
                     placeholder="{{ 'settings.dashboard.search'|trans|e('html_attr') }}"
                     autocomplete="off"
-                >
+                {% endblock %}{% endembed %}
             </label>
             <div class="dash-settings__actions">
-                <button type="button" class="btn btn--ghost btn-sm" @click="enableAll">{{ 'settings.dashboard.enable_all'|trans }}</button>
-                <button type="button" class="btn btn--ghost btn-sm" @click="disableAll">{{ 'settings.dashboard.disable_all'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'settings.dashboard.enable_all'|trans,
+                    type: 'button',
+                    variant: 'ghost',
+                    class: 'btn-sm',
+                    attrs: { '@click': 'enableAll' }
+                } only %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'settings.dashboard.disable_all'|trans,
+                    type: 'button',
+                    variant: 'ghost',
+                    class: 'btn-sm',
+                    attrs: { '@click': 'disableAll' }
+                } only %}
             </div>
         </div>
     </div>
@@ -47,8 +59,20 @@
                     </p>
                 </div>
                 <div class="dash-settings__section-actions">
-                    <button type="button" class="btn btn--ghost btn-sm" @click="enableSection(section.type)">{{ 'settings.dashboard.enable_section'|trans }}</button>
-                    <button type="button" class="btn btn--ghost btn-sm" @click="disableSection(section.type)">{{ 'settings.dashboard.disable_section'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'settings.dashboard.enable_section'|trans,
+                        type: 'button',
+                        variant: 'ghost',
+                        class: 'btn-sm',
+                        attrs: { '@click': 'enableSection(section.type)' }
+                    } only %}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'settings.dashboard.disable_section'|trans,
+                        type: 'button',
+                        variant: 'ghost',
+                        class: 'btn-sm',
+                        attrs: { '@click': 'disableSection(section.type)' }
+                    } only %}
                 </div>
             </header>
 
@@ -67,30 +91,30 @@
                             <strong class="dash-settings__title" x-text="item.title"></strong>
                             <div class="dash-settings__widths" x-show="showWidth(section.type)" x-cloak>
                                 <template x-for="w in widths" :key="w">
-                                    <button
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                         type="button"
                                         :class="widthClass(item, w)"
                                         :aria-pressed="isWidth(item, w)"
                                         :title="widthLabels[w]"
                                         @click="setWidth(item.id, w)"
-                                    >
+                                    {% endblock %}{% block content %}
                                         <span :class="widthBarClass(w)"></span>
                                         <span class="dash-settings__width-label" x-text="widthLabels[w]"></span>
-                                    </button>
+                                    {% endblock %}{% endembed %}
                                 </template>
                             </div>
                         </div>
                         <div class="dash-settings__card-tools">
                             <div class="dash-settings__move">
-                                <button type="button" class="icon-btn" @click="move(item.id, -1)" :disabled="!canMoveUp(item.id)" aria-label="{{ 'settings.dashboard.move_up'|trans }}">{{ icon('chevron-up') }}</button>
-                                <button type="button" class="icon-btn" @click="move(item.id, 1)" :disabled="!canMoveDown(item.id)" aria-label="{{ 'settings.dashboard.move_down'|trans }}">{{ icon('chevron-down') }}</button>
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="icon-btn" @click="move(item.id, -1)" :disabled="!canMoveUp(item.id)" aria-label="{{ 'settings.dashboard.move_up'|trans }}"{% endblock %}{% block content %}{{ icon('chevron-up') }}{% endblock %}{% endembed %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="icon-btn" @click="move(item.id, 1)" :disabled="!canMoveDown(item.id)" aria-label="{{ 'settings.dashboard.move_down'|trans }}"{% endblock %}{% block content %}{{ icon('chevron-down') }}{% endblock %}{% endembed %}
                             </div>
-                            <button
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                 type="button"
                                 class="icon-btn"
                                 @click="setEnabled(item.id, false)"
                                 aria-label="{{ 'settings.dashboard.hide'|trans }}"
-                            >{{ icon('x') }}</button>
+                            {% endblock %}{% block content %}{{ icon('x') }}{% endblock %}{% endembed %}
                         </div>
                     </article>
                 </template>
@@ -103,14 +127,14 @@
                 <p class="dash-settings__pool-label">{{ 'settings.dashboard.pool'|trans }}</p>
                 <div class="dash-settings__chips">
                     <template x-for="item in poolItems(section.type)" :key="item.id">
-                        <button
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                             type="button"
                             class="dash-settings__chip"
                             @click="setEnabled(item.id, true)"
-                        >
+                        {% endblock %}{% block content %}
                             {{ icon('plus') }}
                             <span x-text="item.title"></span>
-                        </button>
+                        {% endblock %}{% endembed %}
                     </template>
                 </div>
             </div>

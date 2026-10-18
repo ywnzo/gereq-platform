@@ -48,6 +48,7 @@ final class ModuleChildrenViewTest extends TestCase
             return '/admin/modules/' . $action . $params['id'];
         }));
         $twig->addFunction(new TwigFunction('csrf_field', static fn (): string => '<input name="_token" value="test">'));
+        $twig->addFunction(new TwigFunction('icon', static fn (string $name): string => '', ['is_safe' => ['html']]));
         $parent = ModuleManifest::fromArray(['id' => 'webplus', 'class' => 'ParentModule'], '/tmp/WebPlus');
         $child = ModuleManifest::fromArray(['id' => 'webplus_ai', 'name' => 'AI', 'class' => 'AiModule'], '/tmp/WebPlus/Submodules/Ai', 'webplus');
 

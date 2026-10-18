@@ -1,0 +1,46 @@
+{#
+  Shared admin button or button-styled link.
+  {{ ui_render('button', { label: 'common.save'|trans, variant: 'primary', type: 'submit' }) }}
+  {% include 'ui/button.html.twig' with { label: 'common.cancel'|trans, href: url('admin.profile') } only %}
+
+  Options: variant, size (xs/sm/lg), block, disabled, busy, icon, icon_after,
+  class, and attrs (HTML attributes such as id, name, value, form, data-*).
+  Labels are plain text. Embed callers can override content and attributes
+  for custom markup and Alpine CSP bindings. The button_attributes block
+  preserves a complete custom attribute list; button_options.tag preserves
+  an explicit a/button tag. Icons without visible text must
+  provide an accessible name through attrs['aria-label'].
+#}
+{% set button_href = href is defined ? href : null %}
+{% set button_variant = variant|default('default') %}
+{% set button_size = size|default('') %}
+{% set button_disabled = disabled|default(false) %}
+{% set button_busy = busy|default(false) %}
+{% set button_inactive = button_disabled or button_busy %}
+{% set button_tag = button_options.tag|default(button_href is not null ? 'a' : 'button') %}
+{% set button_tag = button_tag in ['a', 'button'] ? button_tag : 'button' %}
+{% set button_type = type|default('button') %}
+{% set button_type = button_type in ['button', 'submit', 'reset'] ? button_type : 'button' %}
+<{{ button_tag }}
+    {% block button_attributes %}
+    class="btn{{ button_variant != 'default' ? ' btn--' ~ button_variant : '' }}{{ button_size in ['xs', 'sm', 'lg'] ? ' btn--' ~ button_size : '' }}{{ block|default(false) ? ' btn--block' : '' }}{{ button_tag == 'a' and button_inactive ? ' is-disabled' : '' }}{{ class|default('') ? ' ' ~ class : '' }}"
+    {% if button_tag == 'a' %}
+        {% if button_inactive %}role="link" aria-disabled="true" tabindex="-1"{% else %}href="{{ button_href }}"{% endif %}
+    {% else %}
+        type="{{ button_type }}"{% if button_inactive %} disabled{% endif %}
+    {% endif %}
+    {% if button_busy %}aria-busy="true"{% endif %}
+    {% block attributes %}
+        {% for name, value in attrs|default({}) %}
+            {% if name matches '/^[@a-zA-Z_:][a-zA-Z0-9_:.-]*$/' and name|lower not in ['class', 'href', 'type', 'disabled', 'aria-busy'] and not (button_inactive and button_tag == 'a' and name|lower in ['role', 'aria-disabled', 'tabindex']) %}
+                {# Validated names stay literal so Alpine recognizes @click and :disabled. #}
+                {% if value is same as(true) and name|lower in ['autofocus', 'formnovalidate', 'hidden', 'inert', 'itemscope'] %}{{ name|raw }}{% elseif value is not same as(false) and value is not null %}{{ name|raw }}="{{ value is same as(true) ? 'true' : value }}"{% endif %}
+            {% endif %}
+        {% endfor %}
+    {% endblock %}
+    {% endblock %}
+>{% block content %}
+        {% if icon|default(null) %}{{ icon(icon) }}{% endif %}
+        {{ label|default('') }}
+        {% if icon_after|default(null) %}{{ icon(icon_after) }}{% endif %}
+{% endblock %}</{{ button_tag }}>

@@ -34,14 +34,14 @@
     <div class="g-drawer__panel" @click.stop>
         <header class="g-drawer__head">
             <h2 class="g-drawer__title" data-drawer-title>{{ title }}</h2>
-            <button
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                 type="button"
                 class="icon-btn g-drawer__close"
                 @click="close"
                 data-drawer-close
                 aria-label="{{ 'ui.drawer.close'|trans }}"
                 x-ref="close"
-            >{{ icon('close') }}</button>
+            {% endblock %}{% block content %}{{ icon('close') }}{% endblock %}{% endembed %}
         </header>
         <div class="g-drawer__body" data-drawer-body>
             {% block body %}

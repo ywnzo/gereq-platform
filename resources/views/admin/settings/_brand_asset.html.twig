@@ -7,14 +7,14 @@
     </div>
     <div class="brand-asset__fields">
         <div class="g-file g-file--compact brand-asset__drop">
-            <input
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                 type="file"
                 name="{{ fileInput }}"
                 accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,.ico"
                 class="g-file__input"
                 id="{{ fileInput }}"
                 @change="onFile($event)"
-            >
+            {% endblock %}{% endembed %}
             <div class="g-file__shell" :class="fileName ? 'is-filled' : ''">
                 <label class="g-file__box" for="{{ fileInput }}">
                     <span class="g-file__icon" aria-hidden="true">{{ icon('upload') }}</span>
@@ -25,14 +25,14 @@
                 </label>
             </div>
         </div>
-        <input
+        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
             class="input"
             type="text"
             name="{{ field }}"
             value="{{ assetUrl }}"
             placeholder="/brand/asset/logo.png"
             {% if groupId == 'brand' %}@input="touch"{% endif %}
-        >
+        {% endblock %}{% endembed %}
         <small class="field__hint">{{ 'settings.brand.upload_or_url'|trans }} · {{ 'settings.brand.upload_hint'|trans }}</small>
     </div>
 </div>

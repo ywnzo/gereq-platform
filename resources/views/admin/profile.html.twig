@@ -8,14 +8,14 @@
         </div>
     </header>
 
-    <div class="profile-hub detail-hub" x-data="gereqTabs" data-initial="account">
-        <nav class="design-tabs" role="tablist">
-            <button type="button" class="design-tab is-active" role="tab" data-tab="account" aria-selected="true">{{ 'profile.tab.account'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="security" aria-selected="false">{{ 'profile.tab.security'|trans }}</button>
-        </nav>
+    {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="profile-hub detail-hub" x-data="gereqTabs" data-initial="account"{% endblock %}{% block content %}
+        {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'nav' } } %}{% block component_attributes %} class="design-tabs" role="tablist"{% endblock %}{% block content %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab is-active" role="tab" data-tab="account" aria-selected="true"{% endblock %}{% block content %}{{ 'profile.tab.account'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="security" aria-selected="false"{% endblock %}{% block content %}{{ 'profile.tab.security'|trans }}{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
 
         <section class="design-panel is-active" data-panel="account" role="tabpanel">
-            <form method="post" action="{{ url('admin.profile.update') }}" class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'form' } } %}{% block attributes %} method="post" action="{{ url('admin.profile.update') }}" class="panel"{% endblock %}{% block content %}
                 {{ csrf_field()|raw }}
                 <header class="panel__head">
                     <div>
@@ -26,35 +26,39 @@
                 <div class="form-grid">
                     <label class="field">
                         <span>{{ 'profile.name'|trans }}</span>
-                        <input class="input" type="text" name="name" value="{{ user.name() }}" required>
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="name" value="{{ user.name() }}" required{% endblock %}{% endembed %}
                     </label>
                     <label class="field">
                         <span>{{ 'profile.email'|trans }}</span>
-                        <input class="input" type="email" value="{{ user.email() }}" disabled>
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="email" value="{{ user.email() }}" disabled{% endblock %}{% endembed %}
                     </label>
                     <label class="field">
                         <span>{{ 'profile.locale'|trans }}</span>
-                        <select class="input" name="locale">
-                            <option value="_default" {{ user.locale() is null ? 'selected' : '' }}>{{ 'profile.locale.default'|trans }}</option>
+                        {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="locale"{% endblock %}{% block native_options %}
+                            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="_default" {{ user.locale() is null ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'profile.locale.default'|trans }}{% endblock %}{% endembed %}
                             {% for code, label in locales %}
-                                <option value="{{ code }}" {{ user.locale() == code ? 'selected' : '' }}>{{ label }}</option>
+                                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ code }}" {{ user.locale() == code ? 'selected' : '' }}{% endblock %}{% block content %}{{ label }}{% endblock %}{% endembed %}
                             {% endfor %}
-                        </select>
+                        {% endblock %}{% endembed %}
                     </label>
                     {{ apply_filters('admin.profile.form_fields', '')|raw }}
                     <label class="field field--full">
                         <span>{{ 'profile.password.current'|trans }}</span>
-                        <input class="input" type="password" name="current_password" autocomplete="current-password" placeholder="{{ 'profile.password.current.hint'|trans }}">
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="current_password" autocomplete="current-password" placeholder="{{ 'profile.password.current.hint'|trans }}"{% endblock %}{% endembed %}
                     </label>
                     <label class="field field--full">
                         <span>{{ 'profile.password'|trans }}</span>
-                        <input class="input" type="password" name="password" minlength="10" autocomplete="new-password" placeholder="{{ 'profile.password.hint'|trans }}">
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="password" minlength="10" autocomplete="new-password" placeholder="{{ 'profile.password.hint'|trans }}"{% endblock %}{% endembed %}
                     </label>
                 </div>
                 <div class="form-actions">
-                    <button class="btn btn--primary" type="submit">{{ 'profile.save'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'profile.save'|trans,
+                        variant: 'primary',
+                        type: 'submit'
+                    } only %}
                 </div>
-            </form>
+            {% endblock %}{% endembed %}
         </section>
 
         <section class="design-panel" data-panel="security" role="tabpanel">
@@ -80,7 +84,9 @@
                     }
                 }|json_encode|e('html_attr') }}"
             >
-                <section class="panel security-card">
+                {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                    {% block attributes %} class="panel security-card"{% endblock %}
+                    {% block content %}
                     <header class="panel__head">
                         <div>
                             <h2>{{ 'security.totp.title'|trans }}</h2>
@@ -90,7 +96,12 @@
                     </header>
 
                     <div x-show="showEnableTotp()" class="security-card__body">
-                        <button type="button" class="btn btn--primary" @click="startTotp()" :disabled="busy">{{ 'security.totp.enable'|trans }}</button>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'security.totp.enable'|trans,
+                            type: 'button',
+                            variant: 'primary',
+                            attrs: { '@click': 'startTotp()', ':disabled': 'busy' }
+                        } only %}
                     </div>
 
                     <div x-show="setupOpen" x-cloak class="security-card__body stack">
@@ -99,18 +110,38 @@
                         <code class="security-secret" x-text="secret"></code>
                         <label class="field">
                             <span>{{ 'auth.mfa.code'|trans }}</span>
-                            <input class="input" type="text" x-model="setupCode" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+                            {% embed 'ui/pin.html.twig' with { pin_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" x-model="setupCode" inputmode="numeric" autocomplete="one-time-code" placeholder="000000"{% endblock %}{% endembed %}
                         </label>
                         <div class="form-actions">
-                            <button type="button" class="btn btn--primary" @click="confirmTotp()" :disabled="busy">{{ 'security.totp.confirm'|trans }}</button>
-                            <button type="button" class="btn btn--ghost" @click="cancelSetup()" :disabled="busy">{{ 'common.cancel'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'security.totp.confirm'|trans,
+                                type: 'button',
+                                variant: 'primary',
+                                attrs: { '@click': 'confirmTotp()', ':disabled': 'busy' }
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'common.cancel'|trans,
+                                type: 'button',
+                                variant: 'ghost',
+                                attrs: { '@click': 'cancelSetup()', ':disabled': 'busy' }
+                            } only %}
                         </div>
                     </div>
 
                     <div x-show="showManageTotp()" x-cloak class="security-card__body stack">
                         <div class="form-actions">
-                            <button type="button" class="btn btn--ghost" @click="regenerateRecovery()" :disabled="busy">{{ 'security.recovery.regenerate'|trans }}</button>
-                            <button type="button" class="btn btn--danger" @click="disableTotp()" :disabled="busy">{{ 'security.totp.disable'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'security.recovery.regenerate'|trans,
+                                type: 'button',
+                                variant: 'ghost',
+                                attrs: { '@click': 'regenerateRecovery()', ':disabled': 'busy' }
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'security.totp.disable'|trans,
+                                type: 'button',
+                                variant: 'danger',
+                                attrs: { '@click': 'disableTotp()', ':disabled': 'busy' }
+                            } only %}
                         </div>
                     </div>
 
@@ -122,11 +153,19 @@
                                 <li><code x-text="code"></code></li>
                             </template>
                         </ul>
-                        <button type="button" class="btn btn--ghost" @click="copyRecovery()">{{ 'security.recovery.copy'|trans }}</button>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'security.recovery.copy'|trans,
+                            type: 'button',
+                            variant: 'ghost',
+                            attrs: { '@click': 'copyRecovery()' }
+                        } only %}
                     </div>
-                </section>
+                    {% endblock %}
+                {% endembed %}
 
-                <section class="panel security-card">
+                {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                    {% block attributes %} class="panel security-card"{% endblock %}
+                    {% block content %}
                     <header class="panel__head">
                         <div>
                             <h2>{{ 'security.passkey.title'|trans }}</h2>
@@ -142,19 +181,25 @@
                                         <strong x-text="item.name"></strong>
                                         <small class="muted" x-text="item.created_at"></small>
                                     </div>
-                                    <button type="button" class="btn btn--ghost" @click="removePasskey(item.id)" :disabled="busy">{{ 'common.delete'|trans }}</button>
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'common.delete'|trans,
+                                        type: 'button',
+                                        variant: 'ghost',
+                                        attrs: { '@click': 'removePasskey(item.id)', ':disabled': 'busy' }
+                                    } only %}
                                 </li>
                             </template>
                         </ul>
-                        <button type="button" class="btn btn--primary" @click="addPasskey()" :disabled="busy">
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--primary" @click="addPasskey()" :disabled="busy"{% endblock %}{% block content %}
                             <span class="material-symbols-outlined" aria-hidden="true">fingerprint</span>
                             <span x-text="passkeyAddLabel()"></span>
-                        </button>
+                        {% endblock %}{% endembed %}
                     </div>
-                </section>
+                    {% endblock %}
+                {% endembed %}
 
                 <p class="muted security-grid__error" x-show="error" x-text="error" x-cloak></p>
             </div>
         </section>
-    </div>
+    {% endblock %}{% endembed %}
 {% endblock %}

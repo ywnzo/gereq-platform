@@ -18,39 +18,39 @@
         </div>
         <div class="actions">
             {% if user.can('customers.create') %}
-                <a class="btn btn--primary" href="{{ url('admin.customers.create') }}">{{ icon('plus') }} {{ 'customers.add'|trans }}</a>
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.customers.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'customers.add'|trans }}{% endblock %}{% endembed %}
             {% endif %}
         </div>
     </header>
 
     <div class="toolbar--table">
-        <form class="toolbar" method="get">
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
             <input type="hidden" name="sort" value="{{ sort }}">
             <input type="hidden" name="dir" value="{{ dir }}">
-            <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'customers.search'|trans }}">
-            <select name="status" class="input" onchange="this.form.submit()">
-                <option value="">{{ 'common.all_statuses'|trans }}</option>
-                <option value="active" {{ status == 'active' ? 'selected' : '' }}>{{ 'customers.status.active'|trans }}</option>
-                <option value="lead" {{ status == 'lead' ? 'selected' : '' }}>{{ 'customers.status.lead'|trans }}</option>
-                <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>{{ 'customers.status.inactive'|trans }}</option>
-                <option value="archived" {{ status == 'archived' ? 'selected' : '' }}>{{ 'customers.status.archived'|trans }}</option>
-            </select>
-            <select name="erasure" class="input" onchange="this.form.submit()">
-                <option value="">{{ 'customers.erasure.filter.all'|trans }}</option>
-                <option value="1" {{ erasure == '1' ? 'selected' : '' }}>{{ 'customers.erasure.filter'|trans }}</option>
-            </select>
-        </form>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'customers.search'|trans }}"{% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="status" class="input" onchange="this.form.submit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'common.all_statuses'|trans } only %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="active" {{ status == 'active' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'customers.status.active'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="lead" {{ status == 'lead' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'customers.status.lead'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="inactive" {{ status == 'inactive' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'customers.status.inactive'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="archived" {{ status == 'archived' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'customers.status.archived'|trans }}{% endblock %}{% endembed %}
+            {% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="erasure" class="input" onchange="this.form.submit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'customers.erasure.filter.all'|trans } only %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="1" {{ erasure == '1' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'customers.erasure.filter'|trans }}{% endblock %}{% endembed %}
+            {% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
     </div>
 
     {% if canBulk and items is not empty %}
-        <form
+        {% embed 'ui/bulk_bar.html.twig' with { bulk_options: { preserve: true, tag: 'form' } } %}{% block component_attributes %}
             class="bulk-bar"
             method="post"
             action="{{ url('admin.customers.bulk') }}"
             x-show="selectedCount > 0"
             x-cloak
             @submit="confirmBulk"
-        >
+        {% endblock %}{% block content %}
             {{ csrf_field()|raw }}
             <input type="hidden" name="confirmed" value="1">
             <template x-for="id in selected" :key="id">
@@ -59,24 +59,35 @@
             <div class="bulk-bar__meta">
                 <strong x-text="selectedCount"></strong>
                 <span>{{ 'customers.bulk.selected'|trans }}</span>
-                <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'customers.bulk.clear'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'customers.bulk.clear'|trans,
+                    type: 'button',
+                    variant: 'link',
+                    class: 'btn-sm',
+                    attrs: { '@click': 'clearSelection' }
+                } only %}
             </div>
             <div class="bulk-bar__actions">
-                <select class="input" name="action" x-model="bulkAction" required>
-                    <option value="">{{ 'customers.bulk.choose'|trans }}</option>
+                {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="bulkAction" {% endblock %}{% block native_attributes %} class="input" name="action" x-model="bulkAction" required{% endblock %}{% block native_options %}
+                    {% include 'ui/option.html.twig' with { value: '', label: 'customers.bulk.choose'|trans } only %}
                     {% if user.can('customers.edit') %}
-                        <option value="activate">{{ 'customers.bulk.action.activate'|trans }}</option>
-                        <option value="lead">{{ 'customers.bulk.action.lead'|trans }}</option>
-                        <option value="deactivate">{{ 'customers.bulk.action.deactivate'|trans }}</option>
-                        <option value="archive">{{ 'customers.bulk.action.archive'|trans }}</option>
+                        {% include 'ui/option.html.twig' with { value: 'activate', label: 'customers.bulk.action.activate'|trans } only %}
+                        {% include 'ui/option.html.twig' with { value: 'lead', label: 'customers.bulk.action.lead'|trans } only %}
+                        {% include 'ui/option.html.twig' with { value: 'deactivate', label: 'customers.bulk.action.deactivate'|trans } only %}
+                        {% include 'ui/option.html.twig' with { value: 'archive', label: 'customers.bulk.action.archive'|trans } only %}
                     {% endif %}
                     {% if user.can('customers.delete') %}
-                        <option value="delete">{{ 'customers.bulk.action.delete'|trans }}</option>
+                        {% include 'ui/option.html.twig' with { value: 'delete', label: 'customers.bulk.action.delete'|trans } only %}
                     {% endif %}
-                </select>
-                <button class="btn btn--primary" type="submit" :disabled="!bulkAction">{{ 'customers.bulk.apply'|trans }}</button>
+                {% endblock %}{% endembed %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'customers.bulk.apply'|trans,
+                    type: 'submit',
+                    variant: 'primary',
+                    attrs: { ':disabled': '!bulkAction' }
+                } only %}
             </div>
-        </form>
+        {% endblock %}{% endembed %}
     {% endif %}
 
     <div class="table-wrap" data-table>
@@ -86,7 +97,7 @@
                     {% if canBulk %}
                         <th class="table__check">
                             <label class="table-check">
-                                <input type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected"{% endblock %}{% endembed %}
                                 <span class="sr-only">{{ 'customers.bulk.select_all'|trans }}</span>
                             </label>
                         </th>
@@ -104,12 +115,12 @@
                         {% if canBulk %}
                             <td class="table__check">
                                 <label class="table-check">
-                                    <input
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                         type="checkbox"
                                         value="{{ item.id() }}"
                                         @change="toggleId('{{ item.id() }}')"
                                         :checked="isSelected('{{ item.id() }}')"
-                                    >
+                                    {% endblock %}{% endembed %}
                                     <span class="sr-only">{{ item.name() }}</span>
                                 </label>
                             </td>

@@ -16,10 +16,25 @@
             <p class="muted"><code>{{ role.name() }}</code></p>
         </div>
         <div class="actions">
-            <button class="btn btn--primary" type="submit" form="role-edit-form">{{ 'common.save'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.users.roles') }}">{{ 'common.back'|trans }}</a>
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'role-edit-form' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.back'|trans,
+                href: (url('admin.users.roles')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
             {% if not role.isPrivileged() and user.can('roles.manage') %}
-                <button class="btn btn--danger" type="submit" form="delete-role">{{ 'common.delete'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'common.delete'|trans,
+                    type: 'submit',
+                    variant: 'danger',
+                    attrs: { 'form': 'delete-role' }
+                } only %}
             {% endif %}
         </div>
     </header>
@@ -30,11 +45,11 @@
         <div class="role-edit__meta">
             <label class="field">
                 <span>{{ 'admin.roles.name'|trans }}</span>
-                <input type="text" name="label" value="{{ role.label() }}" required maxlength="180">
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="text" name="label" value="{{ role.label() }}" required maxlength="180"{% endblock %}{% endembed %}
             </label>
             <label class="field field--full">
                 <span>{{ 'common.description'|trans }}</span>
-                <textarea name="description" rows="2" maxlength="2000">{{ role.description() }}</textarea>
+                {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} name="description" rows="2" maxlength="2000"{% endblock %}{% block content %}{{ role.description() }}{% endblock %}{% endembed %}
             </label>
         </div>
 
@@ -47,7 +62,7 @@
             </div>
             <div class="role-perm-grid">
                 {% for group, permissions in grouped %}
-                    <section class="panel role-perm-card" x-data="{
+                    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}{% block attributes %} class="panel role-perm-card" x-data="{
                         tick: 0,
                         get boxes() {
                             this.tick;
@@ -62,29 +77,29 @@
                             this.boxes.forEach(b => { b.checked = on; });
                             this.refresh();
                         }
-                    }">
+                    }"{% endblock %}{% block content %}
                         <header class="panel__head panel__head--actions">
                             <div>
                                 <h2>{{ group|trans }}</h2>
                                 <p class="muted">{{ 'admin.roles.permissions.count'|trans({ '%count%': permissions|length }) }}</p>
                             </div>
-                            <button
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                                 type="button"
                                 class="btn btn--ghost btn-sm"
                                 @click="toggleAll"
-                            >
+                            {% endblock %}{% block content %}
                                 <span x-text="allOn ? '{{ 'admin.roles.permissions.clear'|trans|e('js') }}' : '{{ 'admin.roles.permissions.all'|trans|e('js') }}'"></span>
-                            </button>
+                            {% endblock %}{% endembed %}
                         </header>
                         <div class="chip-list" x-ref="list" @change="refresh()">
                             {% for permission in permissions %}
                                 <label class="check role-perm-item">
-                                    <input
+                                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                         type="checkbox"
                                         name="permissions[]"
                                         value="{{ permission.id() }}"
                                         {{ assigned[permission.id()] is defined ? 'checked' : '' }}
-                                    >
+                                    {% endblock %}{% endembed %}
                                     <span class="role-perm-item__text">
                                         <span>{{ permission.label()|trans }}</span>
                                         <code>{{ permission.name() }}</code>
@@ -92,7 +107,8 @@
                                 </label>
                             {% endfor %}
                         </div>
-                    </section>
+                        {% endblock %}
+                    {% endembed %}
                 {% endfor %}
             </div>
         {% endif %}

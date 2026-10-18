@@ -18,26 +18,31 @@
                 {{ csrf_field()|raw }}
                 <label class="field">
                     <span>{{ 'auth.mfa.code'|trans }}</span>
-                    <input class="input" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus placeholder="000000">
+                    {% embed 'ui/pin.html.twig' with { pin_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus placeholder="000000"{% endblock %}{% endembed %}
                 </label>
                 <p class="muted auth-mfa__hint">{{ 'auth.mfa.code_hint'|trans }}</p>
-                <button type="submit" class="btn btn--primary btn--block">{{ 'auth.mfa.verify'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'auth.mfa.verify'|trans,
+                    type: 'submit',
+                    variant: 'primary',
+                    block: true
+                } only %}
             </form>
         {% endif %}
 
         {% if passkeyEnabled %}
             <div class="auth-mfa__divider" x-show="passkeyEnabled"><span>{{ 'auth.mfa.or'|trans }}</span></div>
-            <button type="button" class="btn btn--ghost btn--block" @click="usePasskey()" :disabled="busy">
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn--block" @click="usePasskey()" :disabled="busy"{% endblock %}{% block content %}
                 <span class="material-symbols-outlined" aria-hidden="true">fingerprint</span>
                 <span x-text="passkeyButtonLabel()"></span>
-            </button>
+            {% endblock %}{% endembed %}
         {% endif %}
 
         <p class="muted" x-show="error" x-text="error" x-cloak></p>
 
         <form method="post" action="{{ url('admin.login.mfa.cancel') }}" class="auth-mfa__cancel">
             {{ csrf_field()|raw }}
-            <button type="submit" class="text-link">{{ 'auth.mfa.cancel'|trans }}</button>
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit" class="text-link"{% endblock %}{% block content %}{{ 'auth.mfa.cancel'|trans }}{% endblock %}{% endembed %}
         </form>
     </div>
 {% endblock %}

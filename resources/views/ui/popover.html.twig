@@ -1,0 +1,9 @@
+{# Uses gereqPopover. Body is trusted HTML; trigger/body are embed blocks. #}
+<div{% block component_attributes %}{% if id|default(null) %} id="{{ id }}"{% endif %} class="g-popover{{ class|default('') ? ' ' ~ class : '' }}" x-data="gereqPopover" @keydown.escape="close" {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
+    {% block trigger %}
+        {% include 'ui/button.html.twig' with { label: label|default(''), variant: variant|default('ghost'), attrs: { '@click': 'toggle', ':aria-expanded': 'open', 'aria-controls': id|default(null) ? id ~ '-content' : null } } only %}
+    {% endblock %}
+    <div{% if id|default(null) %} id="{{ id }}-content"{% endif %} class="g-popover__panel{{ panel_class|default('') ? ' ' ~ panel_class : '' }}" :class="panelClass">
+        {% block body %}{{ body|default('')|raw }}{% endblock %}
+    </div>
+{% endblock %}</div>

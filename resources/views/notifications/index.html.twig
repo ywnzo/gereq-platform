@@ -5,17 +5,26 @@
     <header class="page-header">
         <h1>{{ 'notifications.title'|trans }}</h1>
         <div class="actions">
-            <a class="btn btn--ghost" href="{{ url('admin.notifications.preferences') }}">{{ 'notifications.preferences.title'|trans }}</a>
+            {% include 'ui/button.html.twig' with {
+                label: 'notifications.preferences.title'|trans,
+                href: (url('admin.notifications.preferences')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
             <form method="post" action="{{ url('admin.notifications.read_all') }}">
                 {{ csrf_field()|raw }}
-                <button class="btn btn--primary" type="submit">{{ 'notifications.mark_all_read'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'notifications.mark_all_read'|trans,
+                    type: 'submit',
+                    variant: 'primary'
+                } only %}
             </form>
         </div>
     </header>
     <p class="muted">{{ 'notifications.unread_count'|trans({'%count%': unread}) }}</p>
 
     <div class="toolbar--table">
-        <div class="toolbar"></div>
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'div' } } %}{% block component_attributes %} class="toolbar"{% endblock %}{% block content %}{% endblock %}{% endembed %}
     </div>
 
     <div class="table-wrap" data-table>
@@ -50,7 +59,7 @@
                                 {% if not item.readAt() %}
                                     <form method="post" action="{{ url('admin.notifications.read', {id: item.id()}) }}">
                                         {{ csrf_field()|raw }}
-                                        <button type="submit">{{ 'notifications.mark_read'|trans }}</button>
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit"{% endblock %}{% block content %}{{ 'notifications.mark_read'|trans }}{% endblock %}{% endembed %}
                                     </form>
                                 {% endif %}
                             {% endblock %}

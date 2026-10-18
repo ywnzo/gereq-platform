@@ -1,7 +1,7 @@
 <aside class="sidebar" :class="sidebarClass">
-    <button type="button" class="icon-btn sidebar__collapse" @click="toggleCollapsed" aria-label="{{ 'ui.collapse_menu'|trans }}">
+    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="icon-btn sidebar__collapse" @click="toggleCollapsed" aria-label="{{ 'ui.collapse_menu'|trans }}"{% endblock %}{% block content %}
         <span class="sidebar__collapse-arrow" aria-hidden="true">{{ icon('chevron-left') }}</span>
-    </button>
+    {% endblock %}{% endembed %}
 
     <div class="sidebar__brand">
         {% include 'partials/brand-lockup.html.twig' with { href: url('admin.dashboard') } %}
@@ -19,15 +19,15 @@
                         x-data="navGroup"
                         :class="groupClass"
                     >
-                        <button
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                             type="button"
                             class="nav-group__head"
                             @click="toggle"
                             :aria-expanded="expandedAttr"
-                        >
+                        {% endblock %}{% block content %}
                             <span class="nav-group__label">{{ section.group|trans }}</span>
                             <span class="nav-group__chevron" :class="chevronClass" aria-hidden="true">{{ icon('chevron-down') }}</span>
-                        </button>
+                        {% endblock %}{% endembed %}
                         <div class="nav-group__body">
                             <div class="nav-group__items">
                                 {% for node in section.nodes %}
@@ -56,15 +56,15 @@
                     x-data="navGroup"
                     :class="groupClass"
                 >
-                    <button
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                         type="button"
                         class="nav-group__head"
                         @click="toggle"
                         :aria-expanded="expandedAttr"
-                    >
+                    {% endblock %}{% block content %}
                         <span class="nav-group__label">{{ section.group|trans }}</span>
                         <span class="nav-group__chevron" :class="chevronClass" aria-hidden="true">{{ icon('chevron-down') }}</span>
-                    </button>
+                    {% endblock %}{% endembed %}
                     <div class="nav-group__body">
                         <div class="nav-group__items">
                             {% for node in section.nodes %}

@@ -18,13 +18,16 @@
             </p>
         </div>
         <div class="actions">
-            <a href="{{ url('admin.queues.index') }}" class="btn btn--ghost">
-                {{ 'queues.action.back'|trans }}
-            </a>
+            {% include 'ui/button.html.twig' with {
+                label: 'queues.action.back'|trans,
+                href: (url('admin.queues.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
             {% if user.can('queues.manage') %}
                 <form method="post" action="{{ url('admin.queues.retry', {id: item.id()}) }}">
                     {{ csrf_field()|raw }}
-                    <button
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                         type="submit"
                         class="btn"
                         {% if not exhausted %}
@@ -35,16 +38,16 @@
                         {% else %}
                             data-confirm="{{ 'queues.retry.confirm'|trans({'%job%': item.job()})|e('html_attr') }}"
                         {% endif %}
-                    >{{ 'queues.action.retry'|trans }}</button>
+                    {% endblock %}{% block content %}{{ 'queues.action.retry'|trans }}{% endblock %}{% endembed %}
                 </form>
                 <form method="post" action="{{ url('admin.queues.forget', {id: item.id()}) }}">
                     {{ csrf_field()|raw }}
-                    <button
-                        type="submit"
-                        class="btn btn--ghost"
-                        data-confirm="{{ 'queues.forget.confirm'|trans|e('html_attr') }}"
-                        data-confirm-danger="1"
-                    >{{ 'queues.action.forget'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'queues.action.forget'|trans,
+                        type: 'submit',
+                        variant: 'ghost',
+                        attrs: { 'data-confirm': ('queues.forget.confirm'|trans|e('html_attr')), 'data-confirm-danger': '1' }
+                    } only %}
                 </form>
             {% endif %}
         </div>
@@ -52,7 +55,9 @@
 
     <div class="detail-layout">
         <div class="detail-layout__main">
-            <section class="detail-hero panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="detail-hero panel"{% endblock %}
+                {% block content %}
                 <div class="detail-hero__body">
                     <div class="detail-hero__highlight">
                         <span>{{ 'queues.detail.error'|trans }}</span>
@@ -77,22 +82,31 @@
                         </div>
                     </dl>
                 </div>
-            </section>
+                {% endblock %}
+            {% endembed %}
 
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'queues.detail.error'|trans }}</h2></header>
                 <pre class="queues-trace">{{ item.exception() }}</pre>
-            </section>
+                {% endblock %}
+            {% endembed %}
 
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'queues.detail.payload'|trans }}</h2></header>
                 <p class="queues-trace__hint muted">{{ 'queues.detail.payload_hint'|trans }}</p>
                 <pre class="queues-trace">{{ item.payload() }}</pre>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </div>
 
         <aside class="detail-layout__aside">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'queues.detail.overview'|trans }}</h2></header>
                 <dl class="meta-list meta-list--flush detail-layout__specs">
                     <div class="meta-list__full">
@@ -110,7 +124,8 @@
                         <dd><code>{{ item.job()|default('—') }}</code></dd>
                     </div>
                 </dl>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </aside>
     </div>
 {% endblock %}

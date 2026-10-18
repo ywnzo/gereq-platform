@@ -16,6 +16,7 @@ type GereqSelectCtx = {
     applyOption: (option: HTMLElement) => void;
     syncMultiUi: () => void;
     syncValidateInput: () => void;
+    syncNativeOptions: () => void;
     clearValue: () => void;
     removeValue: (value: string) => void;
     moveActive: (delta: number) => void;
@@ -26,6 +27,12 @@ type GereqSelectCtx = {
     _onRootKeydown: ((event: KeyboardEvent) => void) | null;
     _onSearchInput: ((event: Event) => void) | null;
     _onSearchKeydown: ((event: KeyboardEvent) => void) | null;
+    _nativeObserver: MutationObserver | null;
+    _onNativeChange: (() => void) | null;
+    _onNativeInvalid: ((event: Event) => void) | null;
+    _onNativeReset: (() => void) | null;
+    _onNativeFocus: (() => void) | null;
+    _nativeForm: HTMLFormElement | null;
 };
 
 export function registerSelect(alpine: typeof Alpine): void {
@@ -43,12 +50,68 @@ export function registerSelect(alpine: typeof Alpine): void {
         _onRootKeydown: null as ((event: KeyboardEvent) => void) | null,
         _onSearchInput: null as ((event: Event) => void) | null,
         _onSearchKeydown: null as ((event: KeyboardEvent) => void) | null,
+        _nativeObserver: null as MutationObserver | null,
+        _onNativeChange: null as (() => void) | null,
+        _onNativeInvalid: null as ((event: Event) => void) | null,
+        _onNativeReset: null as (() => void) | null,
+        _onNativeFocus: null as (() => void) | null,
+        _nativeForm: null as HTMLFormElement | null,
 
         init(this: GereqSelectCtx) {
             const root = this.$el;
             this.searchable = root.dataset.searchable === '1' || root.dataset.searchable === 'true';
             this.multiple = root.dataset.multiple === '1' || root.dataset.multiple === 'true';
             this.clearable = root.dataset.clearable === '1' || root.dataset.clearable === 'true';
+
+            const native = root.querySelector<HTMLSelectElement>('select[data-select-native]');
+            if (native) {
+                this.syncNativeOptions();
+                this._onNativeChange = () => {
+                    this.syncNativeOptions();
+                    // Existing change handlers may reset the source value synchronously.
+                    queueMicrotask(() => {
+                        if (root.isConnected) this.syncNativeOptions();
+                    });
+                };
+                native.addEventListener('change', this._onNativeChange);
+                this._onNativeInvalid = (event: Event) => {
+                    event.preventDefault();
+                    this.open = true;
+                    const trigger = root.querySelector<HTMLButtonElement>('.g-select__trigger');
+                    trigger?.setAttribute('aria-invalid', 'true');
+                    trigger?.focus();
+                    const error = root.querySelector<HTMLElement>('[data-native-error]');
+                    if (error) {
+                        error.textContent = native.validationMessage;
+                        error.hidden = false;
+                    }
+                };
+                native.addEventListener('invalid', this._onNativeInvalid);
+                this._onNativeFocus = () => root.querySelector<HTMLButtonElement>('.g-select__trigger')?.focus();
+                native.addEventListener('focus', this._onNativeFocus);
+                this._nativeForm = native.form;
+                // Reset applies native default values after dispatching the reset event.
+                this._onNativeReset = () => setTimeout(() => {
+                    if (!root.isConnected) return;
+                    this.close();
+                    const error = root.querySelector<HTMLElement>('[data-native-error]');
+                    if (error) {
+                        error.hidden = true;
+                        error.textContent = '';
+                    }
+                    root.querySelector('.g-select__trigger')?.removeAttribute('aria-invalid');
+                    this.syncNativeOptions();
+                }, 0);
+                this._nativeForm?.addEventListener('reset', this._onNativeReset);
+                this._nativeObserver = new MutationObserver((records) => {
+                    if (records.some((record) => native.contains(record.target)
+                        || record.target === native
+                        || (record.target === root && record.attributeName === 'data-native-value'))) {
+                        this.syncNativeOptions();
+                    }
+                });
+                this._nativeObserver.observe(root, { attributes: true, childList: true, characterData: true, subtree: true });
+            }
 
             if (this.multiple) {
                 this.syncMultiUi();
@@ -101,7 +164,7 @@ export function registerSelect(alpine: typeof Alpine): void {
                 if (option && root.contains(option)) {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (option.dataset.empty === '1' || option.hidden || option.classList.contains('is-filtered-out')) {
+                    if (option.dataset.empty === '1' || option.dataset.disabled === '1' || option.hidden || option.classList.contains('is-filtered-out')) {
                         return;
                     }
                     this.applyOption(option);
@@ -197,6 +260,20 @@ export function registerSelect(alpine: typeof Alpine): void {
         },
 
         destroy(this: GereqSelectCtx) {
+            this._nativeObserver?.disconnect();
+            const native = this.$el.querySelector<HTMLSelectElement>('select[data-select-native]');
+            if (native && this._onNativeChange) {
+                native.removeEventListener('change', this._onNativeChange);
+            }
+            if (native && this._onNativeInvalid) {
+                native.removeEventListener('invalid', this._onNativeInvalid);
+            }
+            if (native && this._onNativeFocus) {
+                native.removeEventListener('focus', this._onNativeFocus);
+            }
+            if (this._nativeForm && this._onNativeReset) {
+                this._nativeForm.removeEventListener('reset', this._onNativeReset);
+            }
             if (this._onPointer) {
                 document.removeEventListener('pointerdown', this._onPointer);
             }
@@ -272,7 +349,7 @@ export function registerSelect(alpine: typeof Alpine): void {
         visibleOptions(this: GereqSelectCtx): HTMLElement[] {
             return Array.from(
                 this.$el.querySelectorAll<HTMLElement>('.g-select__option:not([data-empty="1"]):not(.is-filtered-out)'),
-            ).filter((opt) => !opt.hidden);
+            ).filter((opt) => !opt.hidden && opt.dataset.disabled !== '1');
         },
 
         moveActive(this: GereqSelectCtx, delta: number) {
@@ -402,6 +479,78 @@ export function registerSelect(alpine: typeof Alpine): void {
             maybeAutosubmit(root, true);
         },
 
+        syncNativeRoot(this: GereqSelectCtx) {
+            this.$el.classList.toggle('is-open', this.open);
+        },
+
+        syncNativeOptions(this: GereqSelectCtx) {
+            const root = this.$el;
+            const native = root.querySelector<HTMLSelectElement>('select[data-select-native]');
+            const list = root.querySelector<HTMLElement>('.g-select__options');
+            if (!native || !list) {
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            for (const option of native.options) {
+                const row = document.createElement('li');
+                row.className = 'g-select__option';
+                row.dataset.value = option.value;
+                row.dataset.label = option.label;
+                row.dataset.disabled = option.disabled || (option.parentElement instanceof HTMLOptGroupElement && option.parentElement.disabled) ? '1' : '0';
+                row.hidden = option.hidden;
+                row.setAttribute('role', 'option');
+                row.setAttribute('aria-selected', String(option.selected));
+                row.setAttribute('aria-disabled', row.dataset.disabled === '1' ? 'true' : 'false');
+                if (option.selected) {
+                    row.classList.add('is-selected');
+                    row.dataset.selected = '1';
+                }
+                const text = document.createElement('span');
+                text.className = 'g-select__option-text';
+                text.textContent = option.label;
+                row.appendChild(text);
+                const tick = document.createElement('span');
+                tick.className = 'g-select__check';
+                tick.setAttribute('aria-hidden', 'true');
+                tick.textContent = '✓';
+                row.appendChild(tick);
+                fragment.appendChild(row);
+            }
+            list.replaceChildren(fragment);
+            this.label = native.selectedOptions[0]?.label || root.dataset.placeholder || '';
+            const trigger = root.querySelector<HTMLButtonElement>('.g-select__trigger');
+            if (trigger) {
+                trigger.disabled = native.disabled;
+                const fieldLabel = Array.from(native.labels || []).map((label) => {
+                    const copy = label.cloneNode(true) as HTMLElement;
+                    copy.querySelectorAll('.g-select, select').forEach((control) => control.remove());
+                    return copy.textContent?.trim() || '';
+                }).filter(Boolean).join(' ');
+                for (const attribute of ['aria-labelledby', 'aria-describedby', 'aria-required']) {
+                    const value = native.getAttribute(attribute);
+                    if (value !== null) trigger.setAttribute(attribute, value);
+                    else trigger.removeAttribute(attribute);
+                }
+                if (native.required) trigger.setAttribute('aria-required', 'true');
+                if (native.hasAttribute('aria-invalid')) {
+                    trigger.setAttribute('aria-invalid', native.getAttribute('aria-invalid') || 'false');
+                }
+                trigger.setAttribute('aria-label', native.getAttribute('aria-label') || fieldLabel || native.title || native.name || root.dataset.placeholder || '');
+                if (native.validity.valid) {
+                    if (native.hasAttribute('aria-invalid')) {
+                        trigger.setAttribute('aria-invalid', native.getAttribute('aria-invalid') || 'false');
+                    } else {
+                        trigger.removeAttribute('aria-invalid');
+                    }
+                    const error = root.querySelector<HTMLElement>('[data-native-error]');
+                    if (error) {
+                        error.hidden = true;
+                        error.textContent = '';
+                    }
+                }
+            }
+        },
+
         syncValidateInput(this: GereqSelectCtx) {
             const root = this.$el;
             const validate = root.querySelector<HTMLInputElement>('.g-select__native--validate');
@@ -503,7 +652,7 @@ export function registerSelect(alpine: typeof Alpine): void {
                 return;
             }
 
-            const input = root.querySelector<HTMLInputElement>('input.g-select__native:not(.g-select__native--validate), input[type="hidden"]');
+            const input = root.querySelector<HTMLInputElement | HTMLSelectElement>('select[data-select-native], input.g-select__native:not(.g-select__native--validate), input[type="hidden"]');
             if (!input) {
                 return;
             }

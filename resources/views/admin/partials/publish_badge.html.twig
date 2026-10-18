@@ -16,14 +16,14 @@
     @mouseenter="onEnter"
     @mouseleave="onLeave"
 >
-    <button
+    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
         type="button"
         class="badge publish-badge__chip"
         :class="chipClass"
         @click.prevent="togglePanel"
         :aria-expanded="expandedAttr"
         aria-haspopup="dialog"
-    >
+    {% endblock %}{% block content %}
         <span
             class="material-symbols-outlined publish-badge__icon"
             aria-hidden="true"
@@ -32,7 +32,7 @@
         >check_circle</span>
         <span class="publish-badge__label" x-text="chipLabel"></span>
         <span class="publish-badge__count" x-text="count" x-show="count > 0" x-cloak></span>
-    </button>
+    {% endblock %}{% endembed %}
 
     <div
         class="publish-badge__popover"
@@ -52,11 +52,11 @@
                     <section class="publish-badge__group">
                         <label class="publish-check publish-check--category">
                             <span class="publish-check__control">
-                                <input
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                     type="checkbox"
                                     :checked="isCategoryChecked(cat)"
                                     @click.prevent="toggleCategory(cat)"
-                                >
+                                {% endblock %}{% endembed %}
                                 <span class="publish-check__mark" aria-hidden="true"></span>
                             </span>
                             <span class="publish-check__text">
@@ -69,11 +69,11 @@
                                 <li>
                                     <label class="publish-check">
                                         <span class="publish-check__control">
-                                            <input
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                                 type="checkbox"
                                                 :checked="isItemChecked(item)"
                                                 @click.prevent="toggleItem(item)"
-                                            >
+                                            {% endblock %}{% endembed %}
                                             <span class="publish-check__mark" aria-hidden="true"></span>
                                         </span>
                                         <span class="publish-check__text">
@@ -92,15 +92,15 @@
         </div>
 
         <div class="publish-badge__popover-foot">
-            <a class="btn btn--ghost" :href="workspaceUrl" x-show="workspaceUrl">{{ 'publish.show_more'|trans }}</a>
-            <button
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" :href="workspaceUrl" x-show="workspaceUrl"{% endblock %}{% block content %}{{ 'publish.show_more'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                 type="button"
                 class="btn btn--primary publish-badge__submit"
                 @click="publishSelected"
                 :disabled="cannotPublish"
-            >
+            {% endblock %}{% block content %}
                 <span x-text="submitLabel"></span>
-            </button>
+            {% endblock %}{% endembed %}
         </div>
     </div>
 </div>

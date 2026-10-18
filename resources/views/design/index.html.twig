@@ -18,7 +18,7 @@
         </nav>
     </header>
 
-    <div class="design-wrap" x-data="gereqTabs"{% if form_errors('design.demo') %} data-initial="formular"{% endif %}>
+    {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-wrap" x-data="gereqTabs"{% if form_errors('design.demo') %} data-initial="formular"{% endif %}{% endblock %}{% block content %}
         <header class="design-head">
             <p class="design-head__kicker">{{ 'design.head.kicker'|trans }}</p>
             <h1>{{ 'design.head.title'|trans }}</h1>
@@ -32,19 +32,19 @@
             {% endfor %}
         {% endif %}
 
-        <div class="design-tabs" role="tablist" aria-label="{{ 'design.tabs.aria'|trans }}">
-            <button type="button" class="design-tab" role="tab" data-tab="znacka">{{ 'design.tabs.brand'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="zaklad">{{ 'design.tabs.foundation'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="tlacitka">{{ 'design.tabs.buttons'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="pole">{{ 'design.tabs.fields'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="vybery">{{ 'design.tabs.selects'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="editor">{{ 'design.tabs.editor'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="tabulky">{{ 'design.tabs.tables'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="feedback">{{ 'design.tabs.feedback'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="layout">{{ 'design.tabs.layout'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="overlay">{{ 'design.tabs.overlay'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="formular">{{ 'design.tabs.validation'|trans }}</button>
-        </div>
+        {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs" role="tablist" aria-label="{{ 'design.tabs.aria'|trans }}"{% endblock %}{% block content %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="znacka"{% endblock %}{% block content %}{{ 'design.tabs.brand'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="zaklad"{% endblock %}{% block content %}{{ 'design.tabs.foundation'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="tlacitka"{% endblock %}{% block content %}{{ 'design.tabs.buttons'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="pole"{% endblock %}{% block content %}{{ 'design.tabs.fields'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="vybery"{% endblock %}{% block content %}{{ 'design.tabs.selects'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="editor"{% endblock %}{% block content %}{{ 'design.tabs.editor'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="tabulky"{% endblock %}{% block content %}{{ 'design.tabs.tables'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="feedback"{% endblock %}{% block content %}{{ 'design.tabs.feedback'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="layout"{% endblock %}{% block content %}{{ 'design.tabs.layout'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="overlay"{% endblock %}{% block content %}{{ 'design.tabs.overlay'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="formular"{% endblock %}{% block content %}{{ 'design.tabs.validation'|trans }}{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
 
         <section class="design-panel" data-panel="znacka" role="tabpanel">
             <div class="design-box">
@@ -96,7 +96,7 @@
                         </div>
                         <div class="grq-cluster">
                             <span class="badge">cluster</span>
-                            <button type="button" class="btn btn-sm">Action</button>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn-sm"{% endblock %}{% block content %}Action{% endblock %}{% endembed %}
                             <span class="grq-text-meta muted">grq-cluster</span>
                         </div>
                         <div class="grq-stack grq-stack--xs grq-box grq-box--sm">
@@ -109,11 +109,11 @@
                         <div class="grq-grid grq-grid--2">
                             <label class="g-field">
                                 <span class="g-label">g-control</span>
-                                <input class="g-control" type="text" value="Shared input" readonly>
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="g-control" type="text" value="Shared input" readonly{% endblock %}{% endembed %}
                             </label>
                             <label class="g-field">
                                 <span class="g-label">.input (legacy)</span>
-                                <input class="input" type="text" value="Same tokens" readonly>
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" value="Same tokens" readonly{% endblock %}{% endembed %}
                             </label>
                         </div>
                     </div>
@@ -131,60 +131,125 @@
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.types'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn--primary" type="button">{{ 'design.btn.primary'|trans }}</button>
-                            <button class="btn" type="button">{{ 'design.btn.default'|trans }}</button>
-                            <button class="btn btn--dashed" type="button">{{ 'design.btn.dashed'|trans }}</button>
-                            <button class="btn btn--text" type="button">{{ 'design.btn.text'|trans }}</button>
-                            <button class="btn btn--link" type="button">{{ 'design.btn.link'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.primary'|trans,
+                                type: 'button',
+                                variant: 'primary'
+                            } only %}
+                            {% include 'ui/button.html.twig' with { label: 'design.btn.default'|trans, type: 'button' } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.dashed'|trans,
+                                type: 'button',
+                                variant: 'dashed'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.text'|trans,
+                                type: 'button',
+                                variant: 'text'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.link'|trans,
+                                type: 'button',
+                                variant: 'link'
+                            } only %}
                         </div>
                     </div>
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.danger'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn--danger" type="button">{{ 'design.btn.trash'|trans }}</button>
-                            <button class="btn btn--danger-outline" type="button">{{ 'design.btn.danger_outline'|trans }}</button>
-                            <button class="btn btn--primary" type="button" disabled>{{ 'design.btn.disabled'|trans }}</button>
-                            <button class="btn btn--primary is-busy" type="button" aria-busy="true">{{ 'design.btn.loading'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.trash'|trans,
+                                type: 'button',
+                                variant: 'danger'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.danger_outline'|trans,
+                                type: 'button',
+                                variant: 'danger-outline'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.disabled'|trans,
+                                type: 'button',
+                                disabled: true,
+                                variant: 'primary'
+                            } only %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--primary is-busy" type="button" aria-busy="true"{% endblock %}{% block content %}{{ 'design.btn.loading'|trans }}{% endblock %}{% endembed %}
                         </div>
                     </div>
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.semantic'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn--soft" type="button">{{ 'design.btn.soft'|trans }}</button>
-                            <button class="btn btn--success" type="button">{{ 'design.btn.done'|trans }}</button>
-                            <button class="btn btn--warn" type="button">{{ 'design.btn.warning'|trans }}</button>
-                            <button class="btn btn--ink" type="button">{{ 'design.btn.ink'|trans }}</button>
-                            <button class="btn btn--outline" type="button">{{ 'design.btn.outline'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.soft'|trans,
+                                type: 'button',
+                                variant: 'soft'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.done'|trans,
+                                type: 'button',
+                                variant: 'success'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.warning'|trans,
+                                type: 'button',
+                                variant: 'warn'
+                            } only %}
+                            {% include 'ui/button.html.twig' with { label: 'design.btn.ink'|trans, type: 'button', variant: 'ink' } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.outline'|trans,
+                                type: 'button',
+                                variant: 'outline'
+                            } only %}
                         </div>
                     </div>
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.sizes'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn--xs btn--primary" type="button">XS</button>
-                            <button class="btn btn--sm btn--primary" type="button">{{ 'design.btn.small'|trans }}</button>
-                            <button class="btn btn--primary" type="button">{{ 'design.btn.middle'|trans }}</button>
-                            <button class="btn btn--lg btn--primary" type="button">{{ 'design.btn.large'|trans }}</button>
-                            <button class="btn btn--primary g-tip" type="button" data-tip="{{ 'design.btn.tip_save_draft'|trans }}">{{ 'design.btn.with_tip'|trans }}</button>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--xs btn--primary" type="button"{% endblock %}{% block content %}XS{% endblock %}{% endembed %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.small'|trans,
+                                type: 'button',
+                                variant: 'primary',
+                                size: 'sm'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.middle'|trans,
+                                type: 'button',
+                                variant: 'primary'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.large'|trans,
+                                type: 'button',
+                                variant: 'primary',
+                                size: 'lg'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.btn.with_tip'|trans,
+                                type: 'button',
+                                variant: 'primary',
+                                class: 'g-tip',
+                                attrs: { 'data-tip': ('design.btn.tip_save_draft'|trans) }
+                            } only %}
                         </div>
                     </div>
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.icons'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn--primary" type="button"><span class="g-icon" aria-hidden="true">add</span> {{ 'common.create'|trans }}</button>
-                            <button class="btn" type="button"><span class="g-icon" aria-hidden="true">search</span> {{ 'common.search'|trans }}</button>
-                            <button class="btn btn--text" type="button"><span class="g-icon" aria-hidden="true">more_horiz</span></button>
-                            <button class="icon-btn" type="button" aria-label="{{ 'common.edit'|trans }}"><span class="g-icon" aria-hidden="true">edit</span></button>
-                            <button class="icon-btn" type="button" aria-label="{{ 'common.delete'|trans }}"><span class="g-icon" aria-hidden="true">delete</span></button>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--primary" type="button"{% endblock %}{% block content %}<span class="g-icon" aria-hidden="true">add</span> {{ 'common.create'|trans }}{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn" type="button"{% endblock %}{% block content %}<span class="g-icon" aria-hidden="true">search</span> {{ 'common.search'|trans }}{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--text" type="button"{% endblock %}{% block content %}<span class="g-icon" aria-hidden="true">more_horiz</span>{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="icon-btn" type="button" aria-label="{{ 'common.edit'|trans }}"{% endblock %}{% block content %}<span class="g-icon" aria-hidden="true">edit</span>{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="icon-btn" type="button" aria-label="{{ 'common.delete'|trans }}"{% endblock %}{% block content %}<span class="g-icon" aria-hidden="true">delete</span>{% endblock %}{% endembed %}
                         </div>
                     </div>
                     <div class="design-cluster">
                         <p class="design-cluster__label">{{ 'design.actions.legacy'|trans }}</p>
                         <div class="design-row">
-                            <button class="btn btn-primary" type="button">btn-primary</button>
-                            <button class="btn btn-ghost" type="button">btn-ghost</button>
-                            <button class="btn btn-error" type="button">btn-error</button>
-                            <button class="btn btn-success" type="button">btn-success</button>
-                            <button class="btn btn-sm btn-primary" type="button">btn-sm</button>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn-primary" type="button"{% endblock %}{% block content %}btn-primary{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn-ghost" type="button"{% endblock %}{% block content %}btn-ghost{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn-error" type="button"{% endblock %}{% block content %}btn-error{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn-success" type="button"{% endblock %}{% block content %}btn-success{% endblock %}{% endembed %}
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn-sm btn-primary" type="button"{% endblock %}{% block content %}btn-sm{% endblock %}{% endembed %}
                         </div>
                     </div>
                 </div>
@@ -214,18 +279,15 @@
                     {% include 'ui/file.html.twig' with { label: 'design.field.attachment'|trans } %}
                     <div class="g-field">
                         <label class="g-label" for="demo-range">{{ 'design.field.priority'|trans }}</label>
-                        <input class="g-range" id="demo-range" type="range" min="0" max="100" value="40">
+                        {% embed 'ui/range.html.twig' with { range_options: { control_only: true } } %}{% block input_attributes %} class="g-range" id="demo-range" type="range" min="0" max="100" value="40"{% endblock %}{% endembed %}
                         <p class="g-hint">{{ 'design.field.priority.hint'|trans }}</p>
                     </div>
-                    <div class="g-field">
-                        <span class="g-label">{{ 'design.field.pin'|trans }}</span>
-                        <div class="g-pin" aria-label="{{ 'design.field.pin'|trans }}">
-                            <input class="g-control" maxlength="1" inputmode="numeric">
-                            <input class="g-control" maxlength="1" inputmode="numeric">
-                            <input class="g-control" maxlength="1" inputmode="numeric">
-                            <input class="g-control" maxlength="1" inputmode="numeric">
-                        </div>
-                    </div>
+                    {% include 'ui/pin.html.twig' with {
+                        name: 'demo_pin',
+                        label: 'design.field.pin'|trans,
+                        digits: 4,
+                        form: 'design.static'
+                    } only %}
                 </div>
             </div>
             <div class="design-box">
@@ -345,37 +407,53 @@
                                 <p class="muted">{{ 'design.tables.demo_hint'|trans }}</p>
                             </div>
                             <div class="actions">
-                                <button class="btn btn--primary" type="button">{{ icon('plus') }} {{ 'design.tables.new'|trans }}</button>
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--primary" type="button"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'design.tables.new'|trans }}{% endblock %}{% endembed %}
                             </div>
                         </header>
 
                         <div class="toolbar--table">
-                            <div class="toolbar">
-                                <input
+                            {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'div' } } %}{% block component_attributes %} class="toolbar"{% endblock %}{% block content %}
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                     class="input"
                                     type="search"
                                     x-model="query"
                                     placeholder="{{ 'design.tables.search'|trans }}"
                                     autocomplete="off"
-                                >
-                            </div>
+                                {% endblock %}{% endembed %}
+                            {% endblock %}{% endembed %}
                         </div>
 
-                        <div
+                        {% embed 'ui/bulk_bar.html.twig' with { bulk_options: { preserve: true } } %}{% block component_attributes %}
                             class="bulk-bar"
                             x-show="selectedCount > 0"
                             x-cloak
-                        >
+                        {% endblock %}{% block content %}
                             <div class="bulk-bar__meta">
                                 <strong x-text="selectedCount"></strong>
                                 <span>{{ 'design.tables.bulk_selected'|trans }}</span>
-                                <button type="button" class="btn btn--link btn--sm" @click="clearSelection">{{ 'design.tables.bulk_clear'|trans }}</button>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'design.tables.bulk_clear'|trans,
+                                    type: 'button',
+                                    variant: 'link',
+                                    size: 'sm',
+                                    attrs: { '@click': 'clearSelection' }
+                                } only %}
                             </div>
                             <div class="bulk-bar__actions">
-                                <button type="button" class="btn btn--soft" @click="clearSelection">{{ 'design.tables.bulk_export'|trans }}</button>
-                                <button type="button" class="btn btn--danger" @click="clearSelection">{{ 'design.tables.bulk_disable'|trans }}</button>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'design.tables.bulk_export'|trans,
+                                    type: 'button',
+                                    variant: 'soft',
+                                    attrs: { '@click': 'clearSelection' }
+                                } only %}
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'design.tables.bulk_disable'|trans,
+                                    type: 'button',
+                                    variant: 'danger',
+                                    attrs: { '@click': 'clearSelection' }
+                                } only %}
                             </div>
-                        </div>
+                        {% endblock %}{% endembed %}
 
                         {{ design_users_table|raw }}
                     </div>
@@ -418,12 +496,12 @@
                                             <td class="is-num">{{ p.price }}</td>
                                             <td class="is-num">{{ p.stock }}</td>
                                             <td>
-                                                <span class="status-chip status-chip--tone-{{ p.tone }}">
+                                                {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-{{ p.tone }}"{% endblock %}{% block chip_content %}
                                                     <span class="status-chip__dot"></span>
                                                     {% if p.status == 'ok' %}{{ 'design.tables.stock_ok'|trans }}
                                                     {% elseif p.status == 'warn' %}{{ 'design.tables.stock_low'|trans }}
                                                     {% else %}{{ 'design.tables.stock_out'|trans }}{% endif %}
-                                                </span>
+                                                {% endblock %}{% endembed %}
                                             </td>
                                             {% embed 'ui/row_actions.html.twig' %}
                                                 {% block items %}
@@ -473,10 +551,10 @@
                                         <td class="is-num"><strong>{{ o.total }}</strong></td>
                                         <td class="is-mute">{{ o.date }}</td>
                                         <td>
-                                            <span class="status-chip status-chip--tone-{{ o.tone }}">
+                                            {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-{{ o.tone }}"{% endblock %}{% block chip_content %}
                                                 <span class="status-chip__dot"></span>
                                                 {{ ('design.tables.order_' ~ o.status)|trans }}
-                                            </span>
+                                            {% endblock %}{% endembed %}
                                         </td>
                                         {% embed 'ui/row_actions.html.twig' %}
                                             {% block items %}
@@ -545,7 +623,7 @@
                     {{ ui_render('empty', {
                         title: 'design.tables.empty_heading'|trans,
                         hint: 'design.tables.empty_hint'|trans,
-                        action: '<button type="button" class="btn btn--sm btn--primary">' ~ ('design.tables.new'|trans) ~ '</button>'
+                        action: ui_render('button', { label: 'design.tables.new'|trans, variant: 'primary', size: 'sm' })
                     }) }}
                 </div>
             </div>
@@ -558,9 +636,9 @@
                     <p>{{ 'design.feedback.alerts_lead'|trans }}</p>
                 </div>
                 <div class="design-box__body">
-                    <div class="alert alert--success" role="status">{{ 'design.feedback.alert_ok'|trans }}</div>
-                    <div class="alert alert--warn" role="status">{{ 'design.feedback.alert_warn'|trans }}</div>
-                    <div class="alert alert--danger" role="alert">{{ 'design.feedback.alert_danger'|trans }}</div>
+                    {% embed 'ui/alert.html.twig' with { alert_options: { tag: 'div' } } %}{% block component_attributes %} class="alert alert--success" role="status"{% endblock %}{% block content %}{{ 'design.feedback.alert_ok'|trans }}{% endblock %}{% endembed %}
+                    {% embed 'ui/alert.html.twig' with { alert_options: { tag: 'div' } } %}{% block component_attributes %} class="alert alert--warn" role="status"{% endblock %}{% block content %}{{ 'design.feedback.alert_warn'|trans }}{% endblock %}{% endembed %}
+                    {% embed 'ui/alert.html.twig' with { alert_options: { tag: 'div' } } %}{% block component_attributes %} class="alert alert--danger" role="alert"{% endblock %}{% block content %}{{ 'design.feedback.alert_danger'|trans }}{% endblock %}{% endembed %}
                 </div>
             </div>
 
@@ -589,14 +667,14 @@
                 </div>
                 <div class="design-box__body">
                     <div class="design-row">
-                        <span class="status-chip status-chip--tone-success"><span class="status-chip__dot"></span>{{ 'common.enabled'|trans }}</span>
-                        <span class="status-chip status-chip--muted"><span class="status-chip__dot"></span>{{ 'common.disabled'|trans }}</span>
-                        <span class="status-chip status-chip--tone-info"><span class="status-chip__dot"></span>info</span>
-                        <span class="status-chip status-chip--tone-warn"><span class="status-chip__dot"></span>warn</span>
-                        <span class="status-chip status-chip--tone-orange"><span class="status-chip__dot"></span>orange</span>
-                        <span class="status-chip status-chip--tone-danger"><span class="status-chip__dot"></span>danger</span>
-                        <span class="status-chip status-chip--tone-indigo"><span class="status-chip__dot"></span>indigo</span>
-                        <span class="status-chip status-chip--tone-success-muted"><span class="status-chip__dot"></span>success-muted</span>
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-success"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>{{ 'common.enabled'|trans }}{% endblock %}{% endembed %}
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--muted"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>{{ 'common.disabled'|trans }}{% endblock %}{% endembed %}
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-info"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>info{% endblock %}{% endembed %}
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-warn"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>warn{% endblock %}{% endembed %}
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-orange"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>orange{% endblock %}{% endembed %}
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-danger"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>danger{% endblock %}{% endembed %}
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-indigo"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>indigo{% endblock %}{% endembed %}
+                        {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--tone-success-muted"{% endblock %}{% block chip_content %}<span class="status-chip__dot"></span>success-muted{% endblock %}{% endembed %}
                     </div>
                 </div>
             </div>
@@ -608,13 +686,33 @@
                 </div>
                 <div class="design-box__body">
                     <div class="design-row">
-                        <button class="btn btn--ghost" type="button" data-design-confirm>{{ 'design.feedback.confirm_btn'|trans }}</button>
-                        <button class="btn btn--danger" type="button" data-design-confirm-danger>{{ 'design.feedback.confirm_danger_btn'|trans }}</button>
-                        <button class="btn btn--ghost" type="button" data-design-prompt>{{ 'design.feedback.prompt_btn'|trans }}</button>
-                        <button class="btn btn--ghost" type="button" data-design-toast="success">{{ 'design.feedback.toast_btn'|trans }}</button>
-                        <button class="btn btn--ghost" type="button" data-design-toast="error">Error</button>
-                        <button class="btn btn--ghost" type="button" data-design-toast="warning">Warning</button>
-                        <button class="btn btn--ghost" type="button" data-design-toast="info">Info</button>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'design.feedback.confirm_btn'|trans,
+                            type: 'button',
+                            variant: 'ghost',
+                            attrs: { 'data-design-confirm': '' }
+                        } only %}
+                        {% include 'ui/button.html.twig' with {
+                            label: 'design.feedback.confirm_danger_btn'|trans,
+                            type: 'button',
+                            variant: 'danger',
+                            attrs: { 'data-design-confirm-danger': '' }
+                        } only %}
+                        {% include 'ui/button.html.twig' with {
+                            label: 'design.feedback.prompt_btn'|trans,
+                            type: 'button',
+                            variant: 'ghost',
+                            attrs: { 'data-design-prompt': '' }
+                        } only %}
+                        {% include 'ui/button.html.twig' with {
+                            label: 'design.feedback.toast_btn'|trans,
+                            type: 'button',
+                            variant: 'ghost',
+                            attrs: { 'data-design-toast': 'success' }
+                        } only %}
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="button" data-design-toast="error"{% endblock %}{% block content %}Error{% endblock %}{% endembed %}
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="button" data-design-toast="warning"{% endblock %}{% block content %}Warning{% endblock %}{% endembed %}
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="button" data-design-toast="info"{% endblock %}{% block content %}Info{% endblock %}{% endembed %}
                     </div>
                     <script nonce="{{ csp_nonce() }}">
                         document.querySelector('[data-design-confirm]')?.addEventListener('click', async () => {
@@ -666,19 +764,19 @@
                                 <p class="muted">{{ 'design.layout.list_hint'|trans }}</p>
                             </div>
                             <div class="actions">
-                                <button class="btn btn--ghost" type="button">{{ icon('download') }} {{ 'design.layout.export'|trans }}</button>
-                                <button class="btn btn--primary" type="button">{{ icon('plus') }} {{ 'design.tables.new'|trans }}</button>
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="button"{% endblock %}{% block content %}{{ icon('download') }} {{ 'design.layout.export'|trans }}{% endblock %}{% endembed %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--primary" type="button"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'design.tables.new'|trans }}{% endblock %}{% endembed %}
                             </div>
                         </header>
                         <div class="toolbar--table">
-                            <div class="toolbar">
-                                <input class="input" type="search" placeholder="{{ 'design.tables.search'|trans }}" value="">
-                                <select class="input">
-                                    <option>{{ 'common.all_statuses'|trans }}</option>
-                                    <option>{{ 'common.active'|trans }}</option>
-                                    <option>{{ 'common.inactive'|trans }}</option>
-                                </select>
-                            </div>
+                            {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'div' } } %}{% block component_attributes %} class="toolbar"{% endblock %}{% block content %}
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" placeholder="{{ 'design.tables.search'|trans }}" value=""{% endblock %}{% endembed %}
+                                {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input"{% endblock %}{% block native_options %}
+                                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}{{ 'common.all_statuses'|trans }}{% endblock %}{% endembed %}
+                                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}{{ 'common.active'|trans }}{% endblock %}{% endembed %}
+                                    {% embed 'ui/option.html.twig' %}{% block option_attributes %}{% endblock %}{% block content %}{{ 'common.inactive'|trans }}{% endblock %}{% endembed %}
+                                {% endblock %}{% endembed %}
+                            {% endblock %}{% endembed %}
                         </div>
                     </div>
                 </div>
@@ -720,17 +818,25 @@
                                     </div>
                                 </div>
                                 <div class="actions">
-                                    <button class="btn btn--ghost" type="button">{{ icon('mail') }} E-mail</button>
-                                    <button class="btn btn--ghost" type="button">{{ icon('phone') }} {{ 'design.layout.call'|trans }}</button>
-                                    <button class="btn btn--primary" type="button">{{ 'common.edit'|trans }}</button>
-                                    <button class="btn btn--danger" type="button">{{ 'common.delete'|trans }}</button>
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="button"{% endblock %}{% block content %}{{ icon('mail') }} E-mail{% endblock %}{% endembed %}
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="button"{% endblock %}{% block content %}{{ icon('phone') }} {{ 'design.layout.call'|trans }}{% endblock %}{% endembed %}
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'common.edit'|trans,
+                                        type: 'button',
+                                        variant: 'primary'
+                                    } only %}
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'common.delete'|trans,
+                                        type: 'button',
+                                        variant: 'danger'
+                                    } only %}
                                 </div>
                             </header>
-                            <div class="design-tabs detail-tabs" role="tablist">
-                                <button type="button" class="design-tab is-active" role="tab">{{ 'common.overview'|trans }}</button>
-                                <button type="button" class="design-tab" role="tab">{{ 'design.layout.tab_contacts'|trans }} <span class="module-tab-count">3</span></button>
-                                <button type="button" class="design-tab" role="tab">{{ 'design.layout.tab_addresses'|trans }} <span class="module-tab-count">2</span></button>
-                            </div>
+                            {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist"{% endblock %}{% block content %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab is-active" role="tab"{% endblock %}{% block content %}{{ 'common.overview'|trans }}{% endblock %}{% endembed %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab"{% endblock %}{% block content %}{{ 'design.layout.tab_contacts'|trans }} <span class="module-tab-count">3</span>{% endblock %}{% endembed %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab"{% endblock %}{% block content %}{{ 'design.layout.tab_addresses'|trans }} <span class="module-tab-count">2</span>{% endblock %}{% endembed %}
+                            {% endblock %}{% endembed %}
                         </div>
 
                         <div class="customer-sections">
@@ -741,7 +847,12 @@
                                             <h2>{{ 'design.layout.section_profile'|trans }}</h2>
                                             <p class="muted customer-edit__section-hint">{{ 'design.layout.section_profile_hint'|trans }}</p>
                                         </div>
-                                        <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'common.edit'|trans,
+                                            type: 'button',
+                                            variant: 'ghost',
+                                            size: 'sm'
+                                        } only %}
                                     </header>
                                     <dl class="customer-section__facts">
                                         <div>
@@ -773,7 +884,12 @@
                                 <section class="customer-section">
                                     <header class="customer-section__head">
                                         <h2>{{ 'design.layout.tab_addresses'|trans }}</h2>
-                                        <button type="button" class="btn btn--ghost btn--sm">{{ 'design.layout.manage'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'design.layout.manage'|trans,
+                                            type: 'button',
+                                            variant: 'ghost',
+                                            size: 'sm'
+                                        } only %}
                                     </header>
                                     <ul class="customer-list">
                                         <li class="customer-list__item">
@@ -782,14 +898,24 @@
                                                 <span class="badge badge--ok">{{ 'design.layout.primary'|trans }}</span>
                                                 <p class="muted" style="margin:.35rem 0 0">Národní 12, 110 00 Praha 1</p>
                                             </div>
-                                            <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
+                                            {% include 'ui/button.html.twig' with {
+                                                label: 'common.edit'|trans,
+                                                type: 'button',
+                                                variant: 'ghost',
+                                                size: 'sm'
+                                            } only %}
                                         </li>
                                         <li class="customer-list__item">
                                             <div>
                                                 <strong>{{ 'design.layout.addr_shipping'|trans }}</strong>
                                                 <p class="muted" style="margin:.35rem 0 0">Průmyslová 8, 602 00 Brno</p>
                                             </div>
-                                            <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
+                                            {% include 'ui/button.html.twig' with {
+                                                label: 'common.edit'|trans,
+                                                type: 'button',
+                                                variant: 'ghost',
+                                                size: 'sm'
+                                            } only %}
                                         </li>
                                     </ul>
                                 </section>
@@ -843,8 +969,16 @@
                                 </div>
                             </div>
                             <div class="customer-edit__header-actions">
-                                <button class="btn btn--ghost" type="button">{{ 'common.detail'|trans }}</button>
-                                <button class="btn btn--primary" type="button">{{ 'common.save'|trans }}</button>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'common.detail'|trans,
+                                    type: 'button',
+                                    variant: 'ghost'
+                                } only %}
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'common.save'|trans,
+                                    type: 'button',
+                                    variant: 'primary'
+                                } only %}
                             </div>
                         </header>
 
@@ -913,7 +1047,7 @@
                                     </header>
                                     <div class="customer-status-picks" role="radiogroup">
                                         <label class="customer-status-pick customer-status-pick--ok">
-                                            <input type="radio" name="design_status" value="active" checked>
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="radio" name="design_status" value="active" checked{% endblock %}{% endembed %}
                                             <span class="customer-status-pick__dot" aria-hidden="true"></span>
                                             <span class="customer-status-pick__body">
                                                 <strong>{{ 'common.active'|trans }}</strong>
@@ -921,7 +1055,7 @@
                                             </span>
                                         </label>
                                         <label class="customer-status-pick customer-status-pick--warn">
-                                            <input type="radio" name="design_status" value="lead">
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="radio" name="design_status" value="lead"{% endblock %}{% endembed %}
                                             <span class="customer-status-pick__dot" aria-hidden="true"></span>
                                             <span class="customer-status-pick__body">
                                                 <strong>{{ 'design.layout.status_lead'|trans }}</strong>
@@ -929,7 +1063,7 @@
                                             </span>
                                         </label>
                                         <label class="customer-status-pick customer-status-pick--muted">
-                                            <input type="radio" name="design_status" value="inactive">
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="radio" name="design_status" value="inactive"{% endblock %}{% endembed %}
                                             <span class="customer-status-pick__dot" aria-hidden="true"></span>
                                             <span class="customer-status-pick__body">
                                                 <strong>{{ 'common.inactive'|trans }}</strong>
@@ -954,8 +1088,16 @@
                                     </dl>
                                 </section>
                                 <div class="customer-edit__aside-actions">
-                                    <button class="btn btn--primary" type="button">{{ 'common.save'|trans }}</button>
-                                    <button class="btn btn--ghost" type="button">{{ 'common.cancel'|trans }}</button>
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'common.save'|trans,
+                                        type: 'button',
+                                        variant: 'primary'
+                                    } only %}
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'common.cancel'|trans,
+                                        type: 'button',
+                                        variant: 'ghost'
+                                    } only %}
                                 </div>
                             </aside>
                         </div>
@@ -974,27 +1116,34 @@
                         {{ ui_render('page_header', {
                             title: 'design.layout.page_title'|trans,
                             meta: 'design.layout.page_meta'|trans,
-                            actions: '<button type="button" class="btn btn--primary">' ~ ('common.save'|trans) ~ '</button>'
+                            actions: ui_render('button', { label: 'common.save'|trans, variant: 'primary' })
                         }) }}
-                        <section class="panel">
-                            <header class="panel__head panel__head--actions">
-                                <div>
-                                    <h2>{{ 'design.layout.panel_actions'|trans }}</h2>
-                                    <p class="muted">{{ 'design.layout.panel_basic_hint'|trans }}</p>
-                                </div>
-                                <div class="panel__actions">
-                                    <button type="button" class="btn btn--ghost btn--sm">{{ 'common.edit'|trans }}</button>
-                                    <button type="button" class="btn btn--primary btn--sm">{{ 'common.save'|trans }}</button>
-                                </div>
-                            </header>
-                            <div class="panel__body" style="padding: 14px">
+                        {% embed 'ui/panel.html.twig' with {
+                            title: 'design.layout.panel_actions'|trans,
+                            hint: 'design.layout.panel_basic_hint'|trans
+                        } only %}
+                            {% block actions %}
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'common.edit'|trans,
+                                    type: 'button',
+                                    variant: 'ghost',
+                                    size: 'sm'
+                                } only %}
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'common.save'|trans,
+                                    type: 'button',
+                                    variant: 'primary',
+                                    size: 'sm'
+                                } only %}
+                            {% endblock %}
+                            {% block body %}
                                 <div class="meta-grid">
                                     <div class="meta-tile"><span>{{ 'common.status'|trans }}</span><strong>{{ 'common.active'|trans }}</strong></div>
                                     <div class="meta-tile"><span>{{ 'common.email'|trans }}</span><strong>demo@gereq.cz</strong></div>
                                     <div class="meta-tile"><span>{{ 'design.layout.meta_updated'|trans }}</span><strong>29. 9. 2026</strong></div>
                                 </div>
-                            </div>
-                        </section>
+                            {% endblock %}
+                        {% endembed %}
                     </div>
                 </div>
             </div>
@@ -1008,46 +1157,77 @@
                 </div>
                 <div class="design-box__body">
                     <div class="design-row">
-                        <div x-data="gereqModal">
-                            <button class="btn btn--primary" type="button" @click="show">{{ 'design.modal.open'|trans }}</button>
+                        {% embed 'ui/modal.html.twig' %}{% block component_attributes %} x-data="gereqModal"{% endblock %}{% block content %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.modal.open'|trans,
+                                type: 'button',
+                                variant: 'primary',
+                                attrs: { '@click': 'show' }
+                            } only %}
                             <div class="g-modal__backdrop" :class="backdropClass" @click="close"></div>
-                            <div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
+                            {% embed 'ui/modal.html.twig' %}{% block component_attributes %} class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title"{% endblock %}{% block content %}
                                 <div class="g-modal__panel">
                                     <h3 class="g-modal__title" id="demo-modal-title">{{ 'design.modal.title'|trans }}</h3>
                                     <p class="g-modal__body">{{ 'design.modal.body'|trans }}</p>
                                     <div class="g-modal__actions">
-                                        <button class="btn btn--ghost" type="button" @click="close" x-ref="close">{{ 'common.cancel'|trans }}</button>
-                                        <button class="btn btn--danger" type="button" @click="close">{{ 'design.btn.trash'|trans }}</button>
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'common.cancel'|trans,
+                                            type: 'button',
+                                            variant: 'ghost',
+                                            attrs: { '@click': 'close', 'x-ref': 'close' }
+                                        } only %}
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'design.btn.trash'|trans,
+                                            type: 'button',
+                                            variant: 'danger',
+                                            attrs: { '@click': 'close' }
+                                        } only %}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            {% endblock %}{% endembed %}
+                        {% endblock %}{% endembed %}
                         {{ ui_render('drawer_trigger', {
                             drawer_id: 'design-demo-drawer',
                             label: 'ui.drawer.open'|trans,
                             variant: 'ghost',
                             icon: 'panel'
                         }) }}
-                        <button
-                            class="btn btn--ghost"
-                            type="button"
-                            data-drawer-demo-load
-                        >{{ 'ui.drawer.demo.load'|trans }}</button>
-                        <div class="g-popover" x-data="gereqPopover">
-                            <button class="btn btn--ghost" type="button" @click="toggle">{{ 'design.popover'|trans }}</button>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'ui.drawer.demo.load'|trans,
+                            type: 'button',
+                            variant: 'ghost',
+                            attrs: { 'data-drawer-demo-load': '' }
+                        } only %}
+                        {% embed 'ui/popover.html.twig' %}{% block component_attributes %} class="g-popover" x-data="gereqPopover"{% endblock %}{% block content %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.popover'|trans,
+                                type: 'button',
+                                variant: 'ghost',
+                                attrs: { '@click': 'toggle' }
+                            } only %}
                             <div class="g-popover__panel" :class="panelClass" role="dialog">
                                 <strong>{{ 'design.popover.title'|trans }}</strong>
                                 <p class="muted" style="margin: 0.4rem 0 0;">{{ 'design.popover.body'|trans }}</p>
                             </div>
-                        </div>
-                        <button class="btn btn--ghost g-tip" type="button" data-tip="{{ 'design.tooltip.shortcut'|trans }}">{{ 'design.tooltip'|trans }}</button>
-                        <div class="g-hovercard">
-                            <button class="btn btn--ghost" type="button">{{ 'design.hovercard'|trans }}</button>
+                        {% endblock %}{% endembed %}
+                        {% include 'ui/button.html.twig' with {
+                            label: 'design.tooltip'|trans,
+                            type: 'button',
+                            variant: 'ghost',
+                            class: 'g-tip',
+                            attrs: { 'data-tip': ('design.tooltip.shortcut'|trans) }
+                        } only %}
+                        {% embed 'ui/hovercard.html.twig' %}{% block component_attributes %} class="g-hovercard"{% endblock %}{% block content %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.hovercard'|trans,
+                                type: 'button',
+                                variant: 'ghost'
+                            } only %}
                             <div class="g-hovercard__panel">
                                 <strong>{{ 'design.hovercard.name'|trans }}</strong>
                                 <p class="muted" style="margin: 0.35rem 0 0;">{{ 'design.hovercard.meta'|trans }}</p>
                             </div>
-                        </div>
+                        {% endblock %}{% endembed %}
                     </div>
                     {% embed 'ui/drawer.html.twig' with { id: 'design-demo-drawer', title: 'ui.drawer.demo.title'|trans } %}
                         {% block body %}
@@ -1055,8 +1235,18 @@
                             <p>{{ ui_render('badge', { label: 'TOP', tone: 'signal' }) }} {{ ui_render('badge', { label: 'Published', tone: 'ok' }) }}</p>
                         {% endblock %}
                         {% block footer %}
-                            <button type="button" class="btn btn--ghost" data-drawer-close>{{ 'common.cancel'|trans }}</button>
-                            <button type="button" class="btn btn--primary" data-drawer-close>{{ 'common.save'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'common.cancel'|trans,
+                                type: 'button',
+                                variant: 'ghost',
+                                attrs: { 'data-drawer-close': '' }
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'common.save'|trans,
+                                type: 'button',
+                                variant: 'primary',
+                                attrs: { 'data-drawer-close': '' }
+                            } only %}
                         {% endblock %}
                     {% endembed %}
                     <script nonce="{{ csp_nonce() }}">
@@ -1064,7 +1254,7 @@
                             window.gereq?.loadDrawer({
                                 title: {{ 'ui.drawer.demo.title'|trans|json_encode|raw }},
                                 html: '<p class="muted">' + {{ 'ui.drawer.demo.body'|trans|json_encode|raw }} + '</p>',
-                                footer: '<button type="button" class="btn btn--primary" data-drawer-close>' + {{ 'common.cancel'|trans|json_encode|raw }} + '</button>'
+                                footer: {{ ui_render('button', { label: 'common.cancel'|trans, variant: 'primary', attrs: { 'data-drawer-close': '' } })|json_encode|raw }}
                             });
                         });
                     </script>
@@ -1088,19 +1278,19 @@
                 }" @input="clear" @change="clear">
                     <div class="g-field">
                         <label class="g-label" for="state-ok">{{ 'design.errors.ok'|trans }}</label>
-                        <input class="g-control" id="state-ok" value="jiri.novak@gereq.cz">
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="g-control" id="state-ok" value="jiri.novak@gereq.cz"{% endblock %}{% endembed %}
                         <p class="g-hint">{{ 'design.errors.ok.hint'|trans }}</p>
                     </div>
                     <div class="g-field is-invalid">
                         <label class="g-label" for="state-bad">{{ 'common.email'|trans }}</label>
-                        <input class="g-control" id="state-bad" value="neplatny" aria-invalid="true">
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="g-control" id="state-bad" value="neplatny" aria-invalid="true"{% endblock %}{% endembed %}
                         <p class="g-hint">{{ 'design.errors.email.hint'|trans }}</p>
                         <p class="g-error">{{ 'design.errors.email.error'|trans }}</p>
                     </div>
                     <div class="g-check is-invalid">
                         <label class="g-check__row" for="state-check">
                             <span class="g-check__box">
-                                <input id="state-check" class="g-check__input" type="checkbox" aria-invalid="true">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} id="state-check" class="g-check__input" type="checkbox" aria-invalid="true"{% endblock %}{% endembed %}
                                 <span class="g-check__mark" aria-hidden="true"></span>
                             </span>
                             <span class="g-check__copy">
@@ -1155,14 +1345,22 @@
                         } %}
                         {% include 'ui/checkbox.html.twig' with { name: 'terms', label: 'design.live.terms'|trans, form: 'design.demo' } %}
                         <div class="design-submit">
-                            <button class="btn btn--ghost" type="reset">{{ 'design.live.reset'|trans }}</button>
-                            <button class="btn btn-primary" type="submit">{{ 'design.live.submit'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.live.reset'|trans,
+                                type: 'reset',
+                                variant: 'ghost'
+                            } only %}
+                            {% include 'ui/button.html.twig' with {
+                                label: 'design.live.submit'|trans,
+                                type: 'submit',
+                                class: 'btn-primary'
+                            } only %}
                         </div>
                     </form>
                 </div>
             </div>
         </section>
-    </div>
+    {% endblock %}{% endembed %}
 
     {% include 'ui/confirm_dialog.html.twig' %}
     <div class="toasts" id="toasts" data-close="{{ 'common.close'|trans|e('html_attr') }}" aria-live="polite" aria-relevant="additions"></div>

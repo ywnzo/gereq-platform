@@ -1,3 +1,7 @@
+{# Bare mode supports reactive plain textareas without adding a rich editor. #}
+{% if textarea_options.control_only|default(false) %}
+<textarea{% block input_attributes %} class="g-control"{% endblock %}>{% block content %}{{ value|default('') }}{% endblock %}</textarea>
+{% else %}
 {% set name = name|default('') %}
 {% set id = id|default('f-' ~ name) %}
 {% set label = label|default('') %}
@@ -61,4 +65,5 @@
         <p class="g-error" id="{{ id }}-error">{{ err }}</p>
     {% endif %}
 </div>
+{% endif %}
 {% endif %}

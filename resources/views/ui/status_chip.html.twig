@@ -1,0 +1,5 @@
+{# label is plain text; tone uses kernel status-chip tones. #}
+{% set chip_tone = tone|default('muted') %}
+<span{% block component_attributes %} class="status-chip{{ chip_tone == 'muted' ? ' status-chip--muted' : ' status-chip--tone-' ~ chip_tone }}{{ class|default('') ? ' ' ~ class : '' }}" {% block attributes %}{% endblock %}{% endblock %}>{% block chip_content %}
+    {% if dot is not defined or dot %}<span class="status-chip__dot" aria-hidden="true"></span>{% endif %}
+    {% block content %}{{ label|default('') }}{% endblock %}{% endblock %}</span>

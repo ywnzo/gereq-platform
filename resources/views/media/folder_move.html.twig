@@ -7,7 +7,9 @@
 
     <form method="post" class="detail-stack" action="{{ url('admin.media.folders.move.submit', {id: folder.id()}) }}" data-form="media.folder.move" x-data="gereqForm"{% if form_errors('media.folder.move') %} data-server-state="1"{% endif %}>
         {{ csrf_field()|raw }}
-        <section class="panel">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
             <header class="panel__head">
                 <h2>{{ 'common.details'|trans }}</h2>
             </header>
@@ -23,10 +25,16 @@
                     searchable: true
                 })|raw }}
             </div>
-        </section>
+            {% endblock %}
+        {% endembed %}
         <div class="form-actions">
-            <button class="btn btn--primary" type="submit">{{ 'media.folder.move'|trans }}</button>
-            <a class="btn btn--ghost" href="{{ url('admin.media.index', folder.parentId() ? {folder: folder.parentId()} : {}) }}">{{ 'common.cancel'|trans }}</a>
+            {% include 'ui/button.html.twig' with { label: 'media.folder.move'|trans, type: 'submit', variant: 'primary' } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (url('admin.media.index', folder.parentId() ? {folder: folder.parentId()} : {})),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
         </div>
     </form>
 {% endblock %}

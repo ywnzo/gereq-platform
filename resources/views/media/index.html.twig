@@ -53,15 +53,15 @@
         <div class="media-drive__toolbar">
             {% if can_manage %}
                 <div class="media-drive__new" @click.stop>
-                    <button type="button" class="btn btn--primary" @click="toggleNew">
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--primary" @click="toggleNew"{% endblock %}{% block content %}
                         {{ ui().icon('plus')|raw }}
                         {{ 'media.drive.new'|trans }}
-                    </button>
+                    {% endblock %}{% endembed %}
                     <div class="media-drive__new-menu" x-show="newOpen" x-cloak @click.stop>
-                        <button type="button" @click="createFolder">
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" @click="createFolder"{% endblock %}{% block content %}
                             {{ ui().icon('folder')|raw }}
                             {{ 'media.folder.create'|trans }}
-                        </button>
+                        {% endblock %}{% endembed %}
                         <label class="media-drive__menu-item" for="media-drive-file">
                             {{ ui().icon('upload')|raw }}
                             {{ 'media.upload'|trans }}
@@ -72,21 +72,21 @@
                     {{ ui().icon('upload')|raw }}
                     {{ 'media.upload'|trans }}
                 </label>
-                <input
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                     id="media-drive-file"
                     class="sr-only"
                     type="file"
                     multiple
                     data-media-file-input
                     @change="onFilesPicked($event)"
-                >
+                {% endblock %}{% endembed %}
             {% endif %}
 
             <form class="media-drive__search" method="get" action="{{ url('admin.media.index') }}">
                 {% if folder %}<input type="hidden" name="folder" value="{{ folder }}">{% endif %}
                 <input type="hidden" name="sort" value="{{ sort }}">
                 <input type="hidden" name="dir" value="{{ dir }}">
-                <input class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'media.search'|trans }}" aria-label="{{ 'media.search'|trans }}">
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'media.search'|trans }}" aria-label="{{ 'media.search'|trans }}"{% endblock %}{% endembed %}
             </form>
 
             <div class="media-drive__tools">
@@ -95,21 +95,21 @@
                     {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
                     <input type="hidden" name="sort" value="{{ sort }}">
                     <input type="hidden" name="dir" value="{{ dir }}">
-                    <select class="input" name="mime" onchange="this.form.submit()" aria-label="{{ 'media.filter.mime_all'|trans }}">
-                        <option value="">{{ 'media.filter.mime_all'|trans }}</option>
-                        <option value="image/*" {{ mime == 'image/*' ? 'selected' : '' }}>{{ 'media.filter.images'|trans }}</option>
-                        <option value="video/*" {{ mime == 'video/*' ? 'selected' : '' }}>{{ 'media.filter.videos'|trans }}</option>
-                        <option value="application/pdf" {{ mime == 'application/pdf' ? 'selected' : '' }}>PDF</option>
-                    </select>
+                    {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="mime" onchange="this.form.submit()" aria-label="{{ 'media.filter.mime_all'|trans }}"{% endblock %}{% block native_options %}
+                        {% include 'ui/option.html.twig' with { value: '', label: 'media.filter.mime_all'|trans } only %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="image/*" {{ mime == 'image/*' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'media.filter.images'|trans }}{% endblock %}{% endembed %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="video/*" {{ mime == 'video/*' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'media.filter.videos'|trans }}{% endblock %}{% endembed %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="application/pdf" {{ mime == 'application/pdf' ? 'selected' : '' }}{% endblock %}{% block content %}PDF{% endblock %}{% endembed %}
+                    {% endblock %}{% endembed %}
                 </form>
 
                 <div class="media-drive__view-toggle" role="group" aria-label="{{ 'media.drive.view'|trans }}">
-                    <button type="button" :class="{ 'is-active': view === 'grid' }" @click="setView('grid')" title="{{ 'media.drive.view_grid'|trans }}">
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" :class="{ 'is-active': view === 'grid' }" @click="setView('grid')" title="{{ 'media.drive.view_grid'|trans }}"{% endblock %}{% block content %}
                         {{ ui().icon('grid')|raw }}
-                    </button>
-                    <button type="button" :class="{ 'is-active': view === 'list' }" @click="setView('list')" title="{{ 'media.drive.view_list'|trans }}">
+                    {% endblock %}{% endembed %}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" :class="{ 'is-active': view === 'list' }" @click="setView('list')" title="{{ 'media.drive.view_list'|trans }}"{% endblock %}{% block content %}
                         {{ ui().icon('list')|raw }}
-                    </button>
+                    {% endblock %}{% endembed %}
                 </div>
             </div>
         </div>
@@ -145,21 +145,39 @@
                     </template>
                     <div class="media-drive__selection-meta">
                         <strong x-text="formatSelectedLabel()"></strong>
-                        <button type="button" class="btn btn--link btn-sm" @click="clearSelection">{{ 'media.bulk.clear'|trans }}</button>
-                        <button type="button" class="btn btn--link btn-sm" @click="selectAll">{{ 'media.bulk.select_all'|trans }}</button>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'media.bulk.clear'|trans,
+                            type: 'button',
+                            variant: 'link',
+                            class: 'btn-sm',
+                            attrs: { '@click': 'clearSelection' }
+                        } only %}
+                        {% include 'ui/button.html.twig' with {
+                            label: 'media.bulk.select_all'|trans,
+                            type: 'button',
+                            variant: 'link',
+                            class: 'btn-sm',
+                            attrs: { '@click': 'selectAll' }
+                        } only %}
                     </div>
                     <div class="media-drive__selection-actions">
-                        <select class="input" name="action" x-model="bulkAction" required>
-                            <option value="">{{ 'media.bulk.choose'|trans }}</option>
-                            <option value="move">{{ 'media.bulk.action.move'|trans }}</option>
-                            <option value="delete">{{ 'media.bulk.action.delete'|trans }}</option>
-                        </select>
-                        <select class="input" name="folder_id" x-show="bulkAction === 'move'" x-cloak x-model="bulkFolderId">
+                        {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="bulkAction" {% endblock %}{% block native_attributes %} class="input" name="action" x-model="bulkAction" required{% endblock %}{% block native_options %}
+                            {% include 'ui/option.html.twig' with { value: '', label: 'media.bulk.choose'|trans } only %}
+                            {% include 'ui/option.html.twig' with { value: 'move', label: 'media.bulk.action.move'|trans } only %}
+                            {% include 'ui/option.html.twig' with { value: 'delete', label: 'media.bulk.action.delete'|trans } only %}
+                        {% endblock %}{% endembed %}
+                        {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}x-show="bulkAction === 'move'" x-cloak :data-native-value="bulkFolderId" {% endblock %}{% block native_attributes %} class="input" name="folder_id" x-show="bulkAction === 'move'" x-cloak x-model="bulkFolderId"{% endblock %}{% block native_options %}
                             {% for opt in folderOptions %}
-                                <option value="{{ opt.value }}">{{ opt.label }}</option>
+                                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ opt.value }}"{% endblock %}{% block content %}{{ opt.label }}{% endblock %}{% endembed %}
                             {% endfor %}
-                        </select>
-                        <button class="btn btn--primary btn-sm" type="submit" :disabled="!bulkAction">{{ 'media.bulk.apply'|trans }}</button>
+                        {% endblock %}{% endembed %}
+                        {% include 'ui/button.html.twig' with {
+                            label: 'media.bulk.apply'|trans,
+                            type: 'submit',
+                            variant: 'primary',
+                            class: 'btn-sm',
+                            attrs: { ':disabled': '!bulkAction' }
+                        } only %}
                     </div>
                 </form>
             {% endif %}
@@ -182,29 +200,34 @@
                     {% if can_manage and not searching %}
                         <div class="grq-cluster" style="justify-content:center;margin-top:.5rem">
                             <label class="btn btn--primary" for="media-drive-file">{{ 'media.upload'|trans }}</label>
-                            <button type="button" class="btn btn--ghost" @click="createFolder">{{ 'media.folder.create'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'media.folder.create'|trans,
+                                type: 'button',
+                                variant: 'ghost',
+                                attrs: { '@click': 'createFolder' }
+                            } only %}
                         </div>
                     {% endif %}
                 </div>
             {% else %}
                 <div class="media-drive__grid" x-show="view === 'grid'">
                     {% for entry in entries %}
-                        <button
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                             type="button"
                             class="media-drive__tile"
                             :class="{ 'is-selected': isSelected('{{ entry.id }}'), 'is-focused': isFocused('{{ entry.id }}') }"
                             @click="onTileClickById('{{ entry.id }}', $event)"
                             @dblclick="openById('{{ entry.id }}')"
                             @contextmenu="onContextMenuById('{{ entry.id }}', $event)"
-                        >
+                        {% endblock %}{% block content %}
                             {% if can_manage and entry.kind == 'asset' %}
-                                <input
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                     class="media-drive__tile-check"
                                     type="checkbox"
                                     :checked="isSelected('{{ entry.id }}')"
                                     @click="toggleSelect('{{ entry.id }}', $event)"
                                     aria-label="{{ entry.name }}"
-                                >
+                                {% endblock %}{% endembed %}
                             {% endif %}
                             <div class="media-drive__thumb{{ entry.kind == 'folder' ? ' media-drive__thumb--folder' : '' }}{{ entry.is_video ? ' media-drive__thumb--video' : '' }}">
                                 {% if entry.kind == 'folder' %}
@@ -232,27 +255,27 @@
                                     {{ entry.size_label }}
                                 {% endif %}
                             </div>
-                        </button>
+                        {% endblock %}{% endembed %}
                     {% endfor %}
                 </div>
 
                 <div class="media-drive__list" x-show="view === 'list'" x-cloak>
                     {% for entry in entries %}
-                        <button
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                             type="button"
                             class="media-drive__tile"
                             :class="{ 'is-selected': isSelected('{{ entry.id }}'), 'is-focused': isFocused('{{ entry.id }}') }"
                             @click="onTileClickById('{{ entry.id }}', $event)"
                             @dblclick="openById('{{ entry.id }}')"
                             @contextmenu="onContextMenuById('{{ entry.id }}', $event)"
-                        >
+                        {% endblock %}{% block content %}
                             {% if can_manage and entry.kind == 'asset' %}
-                                <input
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                     class="media-drive__tile-check"
                                     type="checkbox"
                                     :checked="isSelected('{{ entry.id }}')"
                                     @click="toggleSelect('{{ entry.id }}', $event)"
-                                >
+                                {% endblock %}{% endembed %}
                             {% endif %}
                             <div class="media-drive__thumb{{ entry.kind == 'folder' ? ' media-drive__thumb--folder' : '' }}{{ entry.is_video ? ' media-drive__thumb--video' : '' }}">
                                 {% if entry.kind == 'folder' %}
@@ -285,7 +308,7 @@
                                     {% if entry.kind == 'asset' %}{{ entry.size_label }} · {% endif %}{{ entry.created }}
                                 </div>
                             </div>
-                        </button>
+                        {% endblock %}{% endembed %}
                     {% endfor %}
                 </div>
             {% endif %}
@@ -296,10 +319,22 @@
                 <span>{{ 'media.drive.showing'|trans({'%from%': ((page - 1) * perPage) + 1, '%to%': min(page * perPage, total), '%total%': total}) }}</span>
                 <div class="grq-cluster">
                     {% if page > 1 %}
-                        <a class="btn btn--ghost btn-sm" href="{{ url('admin.media.index', pager_query|merge({page: page - 1})) }}">{{ 'common.previous'|trans }}</a>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'common.previous'|trans,
+                            href: (url('admin.media.index', pager_query|merge({page: page - 1}))),
+                            button_options: { tag: 'a' },
+                            variant: 'ghost',
+                            class: 'btn-sm'
+                        } only %}
                     {% endif %}
                     {% if page * perPage < total %}
-                        <a class="btn btn--ghost btn-sm" href="{{ url('admin.media.index', pager_query|merge({page: page + 1})) }}">{{ 'common.next'|trans }}</a>
+                        {% include 'ui/button.html.twig' with {
+                            label: 'common.next'|trans,
+                            href: (url('admin.media.index', pager_query|merge({page: page + 1}))),
+                            button_options: { tag: 'a' },
+                            variant: 'ghost',
+                            class: 'btn-sm'
+                        } only %}
                     {% endif %}
                 </div>
             </div>
@@ -313,14 +348,14 @@
         @click.stop
         :style="menuStyle"
     >
-        <button type="button" @click="menuAction('open')">{{ ui().icon('eye')|raw }} {{ 'common.open'|trans }}</button>
-        <button type="button" x-show="menuEntry && menuEntry.file_url" @click="menuAction('download')">{{ ui().icon('download')|raw }} {{ 'media.drive.download'|trans }}</button>
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" @click="menuAction('open')"{% endblock %}{% block content %}{{ ui().icon('eye')|raw }} {{ 'common.open'|trans }}{% endblock %}{% endembed %}
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" x-show="menuEntry && menuEntry.file_url" @click="menuAction('download')"{% endblock %}{% block content %}{{ ui().icon('download')|raw }} {{ 'media.drive.download'|trans }}{% endblock %}{% endembed %}
         {% if can_manage %}
             <div class="media-drive__menu-sep"></div>
-            <button type="button" @click="menuAction('rename')">{{ ui().icon('edit')|raw }} {{ 'media.drive.rename'|trans }}</button>
-            <button type="button" @click="menuAction('move')">{{ ui().icon('move')|raw }} {{ 'media.move'|trans }}</button>
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" @click="menuAction('rename')"{% endblock %}{% block content %}{{ ui().icon('edit')|raw }} {{ 'media.drive.rename'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" @click="menuAction('move')"{% endblock %}{% block content %}{{ ui().icon('move')|raw }} {{ 'media.move'|trans }}{% endblock %}{% endembed %}
             <div class="media-drive__menu-sep"></div>
-            <button type="button" class="is-danger" @click="menuAction('delete')">{{ ui().icon('trash')|raw }} {{ 'common.delete'|trans }}</button>
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="is-danger" @click="menuAction('delete')"{% endblock %}{% block content %}{{ ui().icon('trash')|raw }} {{ 'common.delete'|trans }}{% endblock %}{% endembed %}
         {% endif %}
     </div>
 
@@ -331,7 +366,7 @@
         x-cloak
         @click="closePreview"
     ></div>
-    <div
+    {% embed 'ui/modal.html.twig' %}{% block component_attributes %}
         class="g-modal"
         :class="previewOpen ? 'is-open' : ''"
         x-show="previewOpen"
@@ -340,16 +375,16 @@
         aria-modal="true"
         aria-labelledby="media-drive-preview-title"
         @click.self="closePreview"
-    >
+    {% endblock %}{% block content %}
         <div class="g-modal__panel media-drive__preview-panel" @click.stop x-show="previewEntry">
             <header class="media-drive__preview-head">
                 <div class="media-drive__preview-titles">
                     <h3 class="g-modal__title" id="media-drive-preview-title" x-text="previewEntry ? previewEntry.name : ''"></h3>
                     <p class="media-drive__preview-sub" x-text="formatMime(previewEntry)"></p>
                 </div>
-                <button type="button" class="btn btn--ghost btn-sm" @click="closePreview" aria-label="{{ 'common.close'|trans }}">
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn-sm" @click="closePreview" aria-label="{{ 'common.close'|trans }}"{% endblock %}{% block content %}
                     {{ ui().icon('close')|raw }}
-                </button>
+                {% endblock %}{% endembed %}
             </header>
 
             <div class="media-drive__preview-stage">
@@ -408,21 +443,36 @@
 
             <div class="g-modal__actions media-drive__preview-actions">
                 <template x-if="previewEntry && previewEntry.file_url">
-                    <a class="btn btn--primary" :href="previewEntry.file_url" target="_blank" rel="noopener">{{ 'media.drive.download'|trans }}</a>
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" :href="previewEntry.file_url" target="_blank" rel="noopener"{% endblock %}{% block content %}{{ 'media.drive.download'|trans }}{% endblock %}{% endembed %}
                 </template>
                 {% if can_manage %}
                     <template x-if="previewEntry && previewEntry.edit_url">
-                        <a class="btn btn--ghost" :href="previewEntry.edit_url">{{ 'common.edit'|trans }}</a>
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" :href="previewEntry.edit_url"{% endblock %}{% block content %}{{ 'common.edit'|trans }}{% endblock %}{% endembed %}
                     </template>
-                    <button type="button" class="btn btn--ghost" @click="renamePreview">{{ 'media.drive.rename'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'media.drive.rename'|trans,
+                        type: 'button',
+                        variant: 'ghost',
+                        attrs: { '@click': 'renamePreview' }
+                    } only %}
                     <template x-if="previewEntry && previewEntry.move_url">
-                        <a class="btn btn--ghost" :href="previewEntry.move_url">{{ 'media.move'|trans }}</a>
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" :href="previewEntry.move_url"{% endblock %}{% block content %}{{ 'media.move'|trans }}{% endblock %}{% endembed %}
                     </template>
-                    <button type="button" class="btn btn--danger" @click="deletePreview">{{ 'common.delete'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'common.delete'|trans,
+                        type: 'button',
+                        variant: 'danger',
+                        attrs: { '@click': 'deletePreview' }
+                    } only %}
                 {% endif %}
-                <button type="button" class="btn btn--ghost" @click="closePreview">{{ 'common.close'|trans }}</button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'common.close'|trans,
+                    type: 'button',
+                    variant: 'ghost',
+                    attrs: { '@click': 'closePreview' }
+                } only %}
             </div>
         </div>
-    </div>
+    {% endblock %}{% endembed %}
 </div>
 {% endblock %}

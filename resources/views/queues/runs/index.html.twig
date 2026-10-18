@@ -8,10 +8,10 @@
             <p class="muted">{{ 'queues.runs.subtitle'|trans }}</p>
         </div>
         <div class="actions queues-head">
-            <span class="status-chip queues-status queues-status--{{ health.tone() }}">
+            {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip queues-status queues-status--{{ health.tone() }}"{% endblock %}{% block chip_content %}
                 <span class="status-chip__dot"></span>
                 {{ ('queues.status.' ~ health.status)|trans }}
-            </span>
+            {% endblock %}{% endembed %}
             <dl class="queues-figures" aria-label="{{ 'queues.schedule.figures'|trans }}">
                 <div>
                     <dt>{{ 'queues.figure.depth'|trans }}</dt>
@@ -26,40 +26,45 @@
     </header>
 
     <div class="toolbar--table">
-        <form class="toolbar queues-filters" method="get">
-            <input
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar queues-filters" method="get"{% endblock %}{% block content %}
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                 class="input"
                 type="search"
                 name="q"
                 value="{{ search|default('') }}"
                 placeholder="{{ 'queues.runs.search'|trans }}"
                 aria-label="{{ 'queues.runs.search'|trans }}"
-            />
-            <input
+            /{% endblock %}{% endembed %}
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                 class="input"
                 type="text"
                 name="job"
                 value="{{ job|default('') }}"
                 placeholder="{{ 'queues.runs.filter_job'|trans }}"
                 aria-label="{{ 'queues.runs.filter_job'|trans }}"
-            />
-            <select class="input" name="status" aria-label="{{ 'queues.runs.filter_status'|trans }}">
-                <option value="">{{ 'queues.runs.filter_status'|trans }}</option>
+            /{% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="status" aria-label="{{ 'queues.runs.filter_status'|trans }}"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'queues.runs.filter_status'|trans } only %}
                 {% for s in ['success', 'failed', 'skipped'] %}
-                    <option value="{{ s }}"{% if status == s %} selected{% endif %}>{{ ('queues.runs.status.' ~ s)|trans }}</option>
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ s }}"{% if status == s %} selected{% endif %}{% endblock %}{% block content %}{{ ('queues.runs.status.' ~ s)|trans }}{% endblock %}{% endembed %}
                 {% endfor %}
-            </select>
-            <select class="input" name="trigger" aria-label="{{ 'queues.runs.filter_trigger'|trans }}">
-                <option value="">{{ 'queues.runs.filter_trigger'|trans }}</option>
+            {% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="trigger" aria-label="{{ 'queues.runs.filter_trigger'|trans }}"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'queues.runs.filter_trigger'|trans } only %}
                 {% for t in ['worker', 'sync', 'schedule', 'manual'] %}
-                    <option value="{{ t }}"{% if trigger == t %} selected{% endif %}>{{ ('queues.runs.trigger.' ~ t)|trans }}</option>
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ t }}"{% if trigger == t %} selected{% endif %}{% endblock %}{% block content %}{{ ('queues.runs.trigger.' ~ t)|trans }}{% endblock %}{% endembed %}
                 {% endfor %}
-            </select>
-            <button type="submit" class="btn btn--ghost">{{ 'common.search'|trans }}</button>
+            {% endblock %}{% endembed %}
+            {% include 'ui/button.html.twig' with { label: 'common.search'|trans, type: 'submit', variant: 'ghost' } only %}
             {% if search is not empty or job is not empty or status is not empty or trigger is not empty %}
-                <a href="{{ url('admin.queues.runs') }}" class="btn btn--ghost">{{ 'queues.list.reset'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'queues.list.reset'|trans,
+                    href: (url('admin.queues.runs')),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
             {% endif %}
-        </form>
+        {% endblock %}{% endembed %}
     </div>
 
     <div class="table-wrap">

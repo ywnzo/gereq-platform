@@ -4,7 +4,9 @@
   Vars: items, rates, tableHtml, embedded? (bool)
 #}
 {% set embedded = embedded|default(false) %}
-<section class="panel" id="settings-currencies"{% if not embedded %} style="margin:0"{% endif %}>
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel" id="settings-currencies"{% if not embedded %} style="margin:0"{% endif %}{% endblock %}
+    {% block content %}
     <header class="panel__head panel__head--actions">
         <div>
             <h2>{{ 'currency.title'|trans }}</h2>
@@ -12,16 +14,24 @@
         </div>
         {% if user.can('currency.manage') %}
             <div class="actions">
-                <button class="btn btn--ghost" type="submit" form="currency-sync-form">{{ 'currency.sync_cnb'|trans }}</button>
-                <a class="btn btn--primary" href="{{ url('admin.currencies.create') }}">{{ icon('plus') }} {{ 'currency.add'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'currency.sync_cnb'|trans,
+                    type: 'submit',
+                    variant: 'ghost',
+                    attrs: { 'form': 'currency-sync-form' }
+                } only %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.currencies.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'currency.add'|trans }}{% endblock %}{% endembed %}
             </div>
         {% endif %}
     </header>
 
     {{ tableHtml|raw }}
-</section>
+    {% endblock %}
+{% endembed %}
 
-<section class="panel">
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel"{% endblock %}
+    {% block content %}
     <header class="panel__head">
         <div>
             <h2>{{ 'currency.rates.title'|trans }}</h2>
@@ -56,4 +66,5 @@
             </table>
         </div>
     {% endif %}
-</section>
+    {% endblock %}
+{% endembed %}

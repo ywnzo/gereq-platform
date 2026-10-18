@@ -11,13 +11,27 @@
         </div>
         <div class="actions">
             {% if webhook %}
-                <a class="btn btn--ghost" href="{{ url('admin.developer.webhooks.show', {id: webhook.id()}) }}">{{ 'webhooks.delivery.field.webhook'|trans }}</a>
+                {% include 'ui/button.html.twig' with {
+                    label: 'webhooks.delivery.field.webhook'|trans,
+                    href: (url('admin.developer.webhooks.show', {id: webhook.id()})),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
             {% endif %}
-            <a class="btn btn--ghost" href="{{ url('admin.developer.webhook-deliveries.index') }}">{{ 'webhooks.delivery.list'|trans }}</a>
+            {% include 'ui/button.html.twig' with {
+                label: 'webhooks.delivery.list'|trans,
+                href: (url('admin.developer.webhook-deliveries.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
             {% if user.can('webhooks.deliveries.retry') %}
                 <form method="post" action="{{ url('admin.developer.webhook-deliveries.retry', {id: item.id()}) }}">
                     {{ csrf_field()|raw }}
-                    <button class="btn btn--primary" type="submit">{{ 'webhooks.delivery.retry'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'webhooks.delivery.retry'|trans,
+                        type: 'submit',
+                        variant: 'primary'
+                    } only %}
                 </form>
             {% endif %}
         </div>
@@ -25,7 +39,9 @@
 
     <div class="detail-layout">
         <div class="detail-layout__main">
-            <section class="detail-hero panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="detail-hero panel"{% endblock %}
+                {% block content %}
                 <div class="detail-hero__body">
                     <div class="detail-hero__highlight">
                         <span>{{ 'webhooks.delivery.field.status'|trans }}</span>
@@ -50,28 +66,43 @@
                         </div>
                     </dl>
                 </div>
-            </section>
+                {% endblock %}
+            {% endembed %}
 
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'webhooks.delivery.request_headers'|trans }}</h2></header>
                 <pre class="g-prose" style="margin:0"><code>{{ item.requestHeaders()|json_encode(384) }}</code></pre>
-            </section>
-            <section class="panel">
+                {% endblock %}
+            {% endembed %}
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'webhooks.delivery.request_body'|trans }}</h2></header>
                 <pre class="g-prose" style="margin:0"><code>{{ item.requestBody() }}</code></pre>
-            </section>
-            <section class="panel">
+                {% endblock %}
+            {% endembed %}
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'webhooks.delivery.response_headers'|trans }}</h2></header>
                 <pre class="g-prose" style="margin:0"><code>{{ item.responseHeaders() ? item.responseHeaders()|json_encode(384) : '—' }}</code></pre>
-            </section>
-            <section class="panel">
+                {% endblock %}
+            {% endembed %}
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'webhooks.delivery.response_body'|trans }}</h2></header>
                 <pre class="g-prose" style="margin:0"><code>{{ item.responseBody() ?: '—' }}</code></pre>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </div>
 
         <aside class="detail-layout__aside">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head"><h2>{{ 'common.overview'|trans }}</h2></header>
                 <dl class="meta-list meta-list--flush detail-layout__specs">
                     <div class="meta-list__full">
@@ -99,7 +130,8 @@
                         <dd>{{ item.nextRetryAt() ? item.nextRetryAt().format('d. m. Y H:i:s') : '—' }}</dd>
                     </div>
                 </dl>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </aside>
     </div>
 {% endblock %}

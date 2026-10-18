@@ -107,13 +107,13 @@
                     <span>{{ 'ui.media_box.dialog_title'|trans }}</span>
                 </strong>
                 <div class="media-box-dock__actions">
-                    <button
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                         type="button"
                         class="btn btn--ghost btn-sm media-box-dock__iconbtn"
                         @click="close()"
                         title="{{ 'ui.media_box.close'|trans }}"
                         aria-label="{{ 'ui.media_box.close'|trans }}"
-                    >{{ icon('close') }}</button>
+                    {% endblock %}{% block content %}{{ icon('close') }}{% endblock %}{% endembed %}
                 </div>
             </header>
 
@@ -227,13 +227,13 @@
                                         <option value="name">{{ 'ui.media_box.sort_name'|trans }}</option>
                                     </select>
                                 </label>
-                                <button
-                                    type="button"
-                                    class="btn btn--ghost btn-sm"
-                                    x-show="hasActiveFilters"
-                                    x-cloak
-                                    @click="resetFilters()"
-                                >{{ 'ui.media_box.reset_filters'|trans }}</button>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'ui.media_box.reset_filters'|trans,
+                                    type: 'button',
+                                    variant: 'ghost',
+                                    class: 'btn-sm',
+                                    attrs: { 'x-show': 'hasActiveFilters', 'x-cloak': '', '@click': 'resetFilters()' }
+                                } only %}
                             </div>
                         </div>
 
@@ -287,16 +287,18 @@
             </div>
 
             <footer class="media-box-dock__foot">
-                <button
-                    type="button"
-                    class="btn btn--ghost"
-                    x-show="hasPreview"
-                    x-cloak
-                    @click="clearPhoto"
-                >{{ 'ui.media_box.clear'|trans }}</button>
-                <button type="button" class="btn btn--primary" @click="close()">
-                    {{ 'ui.media_box.done'|trans }}
-                </button>
+                {% include 'ui/button.html.twig' with {
+                    label: 'ui.media_box.clear'|trans,
+                    type: 'button',
+                    variant: 'ghost',
+                    attrs: { 'x-show': 'hasPreview', 'x-cloak': '', '@click': 'clearPhoto' }
+                } only %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'ui.media_box.done'|trans,
+                    type: 'button',
+                    variant: 'primary',
+                    attrs: { '@click': 'close()' }
+                } only %}
             </footer>
         </div>
     </div>

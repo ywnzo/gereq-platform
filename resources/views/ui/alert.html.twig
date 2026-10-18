@@ -1,0 +1,11 @@
+{# tone: success/warn/danger/info. Text is escaped; embed body for custom markup. #}
+{% set alert_tone = tone|default('info') %}
+{% set alert_tag = alert_options.tag|default('div') %}
+{% set alert_tag = alert_tag in ['div', 'span', 'section', 'p', 'aside'] ? alert_tag : 'div' %}
+<{{ alert_tag }}{% block component_attributes %}{% if id|default(null) %} id="{{ id }}"{% endif %} class="alert alert--{{ alert_tone }}{{ class|default('') ? ' ' ~ class : '' }}" role="{{ alert_tone == 'danger' ? 'alert' : 'status' }}" {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
+    {% if icon|default(null) %}<span aria-hidden="true">{{ icon(icon) }}</span>{% endif %}
+    <div>
+        {% if title|default('') %}<strong>{{ title }}</strong>{% endif %}
+        {% block body %}{{ message|default('') }}{% endblock %}
+    </div>
+{% endblock %}</{{ alert_tag }}>

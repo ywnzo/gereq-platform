@@ -8,12 +8,12 @@
 >
     <div class="css-editor__main">
         <div class="css-editor__host" x-ref="host"></div>
-        <textarea
+        {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %}
             class="css-editor__input"
             name="{{ field }}"
             x-ref="input"
             hidden
-        >{{ values[key] }}</textarea>
+        {% endblock %}{% block content %}{{ values[key] }}{% endblock %}{% endembed %}
     </div>
 
     <div class="css-editor__vars grq-box grq-box--soft grq-box--sm">
@@ -22,26 +22,26 @@
                 <strong class="grq-text-ui">{{ 'settings.css.vars_title'|trans }}</strong>
                 <p class="muted grq-text-meta">{{ scope == 'admin' ? ('settings.css.vars_admin'|trans) : ('settings.css.vars_public'|trans) }}</p>
             </div>
-            <input
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                 class="input css-editor__filter"
                 type="search"
                 placeholder="{{ 'settings.css.vars_filter'|trans }}"
                 x-model="filter"
                 @input="applyFilter"
-            >
+            {% endblock %}{% endembed %}
         </div>
         <div class="css-editor__chips grq-cluster" role="list">
             <template x-for="item in filteredVars" :key="item.name">
-                <button
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                     type="button"
                     class="css-editor__chip"
                     role="listitem"
                     :title="item.hint + ' · ' + item.value"
                     @click="insertVar(item.name)"
-                >
+                {% endblock %}{% block content %}
                     <span class="css-editor__swatch" :style="swatchStyle(item.value)"></span>
                     <code x-text="item.name"></code>
-                </button>
+                {% endblock %}{% endembed %}
             </template>
         </div>
         <p class="muted grq-text-meta" x-show="filteredVars.length === 0" x-cloak>

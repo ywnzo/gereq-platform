@@ -38,12 +38,16 @@
         </div>
         <div class="module-header-actions">
             {% if settingsRoute %}
-                <a class="btn btn--ghost" href="{{ url(settingsRoute) }}">{{ icon('settings') }} {{ 'common.settings'|trans }}</a>
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url(settingsRoute) }}"{% endblock %}{% block content %}{{ icon('settings') }} {{ 'common.settings'|trans }}{% endblock %}{% endembed %}
             {% endif %}
             {% if overview.update_available %}
                 <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
                     {{ csrf_field()|raw }}
-                    <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
+                    {% include 'ui/button.html.twig' with {
+                        label: 'admin.modules.update'|trans,
+                        type: 'submit',
+                        variant: 'primary'
+                    } only %}
                 </form>
             {% endif %}
             {% if enabled %}
@@ -56,16 +60,16 @@
                     data-confirm-danger="0"
                 >
                     {{ csrf_field()|raw }}
-                    <button class="btn btn--warn" type="submit" title="{{ 'admin.modules.pause_hint'|trans }}">
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--warn" type="submit" title="{{ 'admin.modules.pause_hint'|trans }}"{% endblock %}{% block content %}
                         {{ icon('pause') }} {{ 'common.pause'|trans }}
-                    </button>
+                    {% endblock %}{% endembed %}
                 </form>
             {% elseif parent_enabled is not defined or parent_enabled %}
                 <form method="post" action="{{ url('admin.modules.enable', {id: manifest.id}) }}">
                     {{ csrf_field()|raw }}
-                    <button class="btn btn--success" type="submit">
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--success" type="submit"{% endblock %}{% block content %}
                         {{ icon('play') }} {{ 'common.activate'|trans }}
-                    </button>
+                    {% endblock %}{% endembed %}
                 </form>
             {% endif %}
             {% if overview.installed_version %}
@@ -84,13 +88,13 @@
                 >
                     {{ csrf_field()|raw }}
                     <input type="hidden" name="purge_media" value="0">
-                    <button
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %}
                         class="btn btn--danger"
                         type="submit"
                         title="{{ 'admin.modules.uninstall_hint'|trans }}"
-                    >
+                    {% endblock %}{% block content %}
                         {{ icon('stop') }} {{ 'common.stop'|trans }}
-                    </button>
+                    {% endblock %}{% endembed %}
                 </form>
             {% endif %}
         </div>
@@ -101,56 +105,58 @@
     {% endif %}
 
     {% if overview.update_available %}
-        <div class="alert alert--warn">
+        {% embed 'ui/alert.html.twig' with { alert_options: { tag: 'div' } } %}{% block component_attributes %} class="alert alert--warn"{% endblock %}{% block content %}
             {{ 'admin.modules.update_hint'|trans({
                 '%installed%': overview.installed_version ?: '—',
                 '%current%': manifest.version,
                 '%pending%': counts.migrations_pending
             }) }}
-        </div>
+        {% endblock %}{% endembed %}
     {% endif %}
 
     {% if enabled and missing is not empty %}
-        <div class="alert alert--danger">{{ 'admin.modules.missing_deps'|trans({'%list%': missing|join(', ')}) }}</div>
+        {% embed 'ui/alert.html.twig' with { alert_options: { tag: 'div' } } %}{% block component_attributes %} class="alert alert--danger"{% endblock %}{% block content %}{{ 'admin.modules.missing_deps'|trans({'%list%': missing|join(', ')}) }}{% endblock %}{% endembed %}
     {% endif %}
 
-    <div class="detail-hub module-hub" x-data="gereqTabs" data-initial="overview">
-        <div class="design-tabs detail-tabs module-tabs" role="tablist" aria-label="{{ 'admin.modules.sections'|trans }}">
-            <button type="button" class="design-tab" role="tab" data-tab="overview">{{ 'admin.modules.tab.overview'|trans }}</button>
-            <button type="button" class="design-tab" role="tab" data-tab="migrations">
+    {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="detail-hub module-hub" x-data="gereqTabs" data-initial="overview"{% endblock %}{% block content %}
+        {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs detail-tabs module-tabs" role="tablist" aria-label="{{ 'admin.modules.sections'|trans }}"{% endblock %}{% block content %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="overview"{% endblock %}{% block content %}{{ 'admin.modules.tab.overview'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="migrations"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.migrations'|trans }}{% if counts.migrations %}<span class="module-tab-count">{{ counts.migrations }}</span>{% endif %}
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="api">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="api"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.api'|trans }}{% if counts.api %}<span class="module-tab-count">{{ counts.api }}</span>{% endif %}
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="routes">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="routes"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.routes'|trans }}{% if counts.routes %}<span class="module-tab-count">{{ counts.routes }}</span>{% endif %}
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="hooks">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="hooks"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.hooks'|trans }}{% if counts.hooks or counts.events %}<span class="module-tab-count">{{ counts.hooks + counts.events }}</span>{% endif %}
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="settings">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="settings"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.settings'|trans }}{% if counts.settings %}<span class="module-tab-count">{{ counts.settings }}</span>{% endif %}
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="files">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="files"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.files'|trans }}{% if counts.files %}<span class="module-tab-count">{{ counts.files }}</span>{% endif %}
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="versions">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="versions"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.versions'|trans }}
                 {% if versionRows is defined and versionRows %}
                     <span class="module-tab-count{% if remoteNewer %} module-tab-count--warn{% endif %}">{{ versionRows|length }}</span>
                 {% endif %}
-            </button>
-            <button type="button" class="design-tab" role="tab" data-tab="health">
+            {% endblock %}{% endembed %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="health"{% endblock %}{% block content %}
                 {{ 'admin.modules.tab.health'|trans }}{% if counts.health_issues %}<span class="module-tab-count module-tab-count--warn">{{ counts.health_issues }}</span>{% endif %}
-            </button>
-        </div>
+            {% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
 
         <section class="design-panel" data-panel="overview" role="tabpanel">
             <div class="detail-stack">
                 <div class="detail-layout">
                     <div class="detail-layout__main">
-                        <section class="detail-hero panel">
+                        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                            {% block attributes %} class="detail-hero panel"{% endblock %}
+                            {% block content %}
                             <div class="detail-hero__body">
                                 <div class="detail-hero__highlight">
                                     <span>{{ 'common.version'|trans }}</span>
@@ -170,7 +176,7 @@
                                                 <p>{{ 'admin.modules.versions.up_to_date'|trans({'%version%': remoteLatest ?: manifest.version}) }}</p>
                                             {% endif %}
                                         </div>
-                                        <a class="btn btn--{{ remoteNewer ? 'primary' : 'ghost' }} btn-sm" href="#versions" data-tab="versions">{{ 'admin.modules.versions.open_tab'|trans }}</a>
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--{{ remoteNewer ? 'primary' : 'ghost' }} btn-sm" href="#versions" data-tab="versions"{% endblock %}{% block content %}{{ 'admin.modules.versions.open_tab'|trans }}{% endblock %}{% endembed %}
                                     </div>
                                 {% endif %}
                                 <dl class="detail-hero__facts">
@@ -192,9 +198,12 @@
                                     </div>
                                 </dl>
                             </div>
-                        </section>
+                            {% endblock %}
+                        {% endembed %}
 
-                        <section class="panel">
+                        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                            {% block attributes %} class="panel"{% endblock %}
+                            {% block content %}
                             <header class="panel__head">
                                 <h2>{{ 'admin.modules.summary.title'|trans }}</h2>
                             </header>
@@ -224,9 +233,12 @@
                                     <span>{{ 'admin.modules.summary.health'|trans }}</span>
                                 </div>
                             </div>
-                        </section>
+                            {% endblock %}
+                        {% endembed %}
 
-                        <section class="panel">
+                        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                            {% block attributes %} class="panel"{% endblock %}
+                            {% block content %}
                             <header class="panel__head">
                                 <h2>{{ 'common.dependencies'|trans }}</h2>
                             </header>
@@ -278,11 +290,14 @@
                                     </div>
                                 </div>
                             </div>
-                        </section>
+                            {% endblock %}
+                        {% endembed %}
                     </div>
 
                     <aside class="detail-layout__aside">
-                        <section class="panel">
+                        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                            {% block attributes %} class="panel"{% endblock %}
+                            {% block content %}
                             <header class="panel__head">
                                 <h2>{{ 'admin.modules.tab.health'|trans }}</h2>
                             </header>
@@ -312,14 +327,17 @@
                                     <dd>{{ overview.enabled_at ?: 'common.none'|trans }}</dd>
                                 </div>
                             </dl>
-                        </section>
+                            {% endblock %}
+                        {% endembed %}
                     </aside>
                 </div>
             </div>
         </section>
 
         <section class="design-panel" data-panel="migrations" role="tabpanel">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.migrations.title'|trans }}</h2>
@@ -328,7 +346,11 @@
                     {% if overview.update_available and counts.migrations_pending %}
                         <form method="post" action="{{ url('admin.modules.update', {id: manifest.id}) }}">
                             {{ csrf_field()|raw }}
-                            <button class="btn btn--primary" type="submit">{{ 'admin.modules.update'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'admin.modules.update'|trans,
+                                type: 'submit',
+                                variant: 'primary'
+                            } only %}
                         </form>
                     {% endif %}
                 </header>
@@ -359,11 +381,14 @@
                         </table>
                     </div>
                 {% endif %}
-            </section>
+                {% endblock %}
+            {% endembed %}
         </section>
 
         <section class="design-panel" data-panel="api" role="tabpanel">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.api.title'|trans }}</h2>
@@ -394,11 +419,14 @@
                         </table>
                     </div>
                 {% endif %}
-            </section>
+                {% endblock %}
+            {% endembed %}
         </section>
 
         <section class="design-panel" data-panel="routes" role="tabpanel">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.routes.title'|trans }}</h2>
@@ -427,12 +455,15 @@
                         </table>
                     </div>
                 {% endif %}
-            </section>
+                {% endblock %}
+            {% endembed %}
         </section>
 
         <section class="design-panel" data-panel="hooks" role="tabpanel">
             <div class="detail-stack">
-                <section class="panel">
+                {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                    {% block attributes %} class="panel"{% endblock %}
+                    {% block content %}
                     <header class="panel__head">
                         <div>
                             <h2>{{ 'admin.modules.events.title'|trans }}</h2>
@@ -460,9 +491,12 @@
                             </table>
                         </div>
                     {% endif %}
-                </section>
+                    {% endblock %}
+                {% endembed %}
 
-                <section class="panel">
+                {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                    {% block attributes %} class="panel"{% endblock %}
+                    {% block content %}
                     <header class="panel__head">
                         <div>
                             <h2>{{ 'admin.modules.hooks.title'|trans }}</h2>
@@ -489,12 +523,15 @@
                             </table>
                         </div>
                     {% endif %}
-                </section>
+                    {% endblock %}
+                {% endembed %}
             </div>
         </section>
 
         <section class="design-panel" data-panel="settings" role="tabpanel">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.settings.title'|trans }}</h2>
@@ -507,7 +544,7 @@
                         </p>
                     </div>
                     {% if settingsRoute %}
-                        <a class="btn btn--ghost" href="{{ url(settingsRoute) }}">{{ icon('settings') }} {{ 'admin.modules.settings.open'|trans }}</a>
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url(settingsRoute) }}"{% endblock %}{% block content %}{{ icon('settings') }} {{ 'admin.modules.settings.open'|trans }}{% endblock %}{% endembed %}
                     {% endif %}
                 </header>
                 {% if report.settings is empty %}
@@ -535,11 +572,11 @@
                                     <label class="field">
                                         <span>{{ setting.label|trans }}</span>
                                         {% if setting.type == 'json' %}
-                                            <textarea class="input" name="{{ field }}" rows="6" spellcheck="false">{{ value|json_encode }}</textarea>
+                                            {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="{{ field }}" rows="6" spellcheck="false"{% endblock %}{% block content %}{{ value|json_encode }}{% endblock %}{% endembed %}
                                         {% elseif secret %}
-                                            <input class="input" type="password" name="{{ field }}" value="{{ value }}" autocomplete="new-password" placeholder="{{ value ? ('settings.secret.placeholder'|trans) : '' }}">
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="{{ field }}" value="{{ value }}" autocomplete="new-password" placeholder="{{ value ? ('settings.secret.placeholder'|trans) : '' }}"{% endblock %}{% endembed %}
                                         {% else %}
-                                            <input class="input" type="text" name="{{ field }}" value="{{ value }}">
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="{{ field }}" value="{{ value }}"{% endblock %}{% endembed %}
                                         {% endif %}
                                         <small class="field__hint"><code>{{ key }}</code></small>
                                     </label>
@@ -547,15 +584,22 @@
                             {% endfor %}
                         </div>
                         <div class="actions" style="margin-top:1rem">
-                            <button class="btn btn--primary" type="submit">{{ 'settings.save'|trans }}</button>
+                            {% include 'ui/button.html.twig' with {
+                                label: 'settings.save'|trans,
+                                type: 'submit',
+                                variant: 'primary'
+                            } only %}
                         </div>
                     </form>
                 {% endif %}
-            </section>
+                {% endblock %}
+            {% endembed %}
         </section>
 
         <section class="design-panel" data-panel="files" role="tabpanel">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.files.title'|trans }}</h2>
@@ -582,11 +626,14 @@
                         </table>
                     </div>
                 {% endif %}
-            </section>
+                {% endblock %}
+            {% endembed %}
         </section>
 
         <section class="design-panel" data-panel="versions" role="tabpanel">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.versions.title'|trans }}</h2>
@@ -602,14 +649,14 @@
                         {% if gitlabConfigured %}
                             <form method="post" action="{{ url('admin.modules.versions.refresh', {id: manifest.id}) }}">
                                 {{ csrf_field()|raw }}
-                                <button class="btn btn--ghost" type="submit">{{ icon('refresh') }} {{ 'admin.modules.versions.refresh'|trans }}</button>
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="submit"{% endblock %}{% block content %}{{ icon('refresh') }} {{ 'admin.modules.versions.refresh'|trans }}{% endblock %}{% endembed %}
                             </form>
                         {% endif %}
                     </div>
                 </header>
 
                 {% if versionsError %}
-                    <div class="alert alert--warn">{{ versionsError }}</div>
+                    {% embed 'ui/alert.html.twig' with { alert_options: { tag: 'div' } } %}{% block component_attributes %} class="alert alert--warn"{% endblock %}{% block content %}{{ versionsError }}{% endblock %}{% endembed %}
                 {% endif %}
 
                 {% if versionRows is empty %}
@@ -619,7 +666,7 @@
                     </div>
                 {% else %}
                     {% if not remoteNewer and remoteOlderCount == 0 and versionRows|length <= 1 %}
-                        <div class="alert alert--info">{{ 'admin.modules.versions.only_current'|trans }}</div>
+                        {% embed 'ui/alert.html.twig' with { alert_options: { tag: 'div' } } %}{% block component_attributes %} class="alert alert--info"{% endblock %}{% block content %}{{ 'admin.modules.versions.only_current'|trans }}{% endblock %}{% endembed %}
                     {% endif %}
                     <div class="table-wrap">
                         <table class="table">
@@ -663,7 +710,7 @@
                                                 {% if not row.cached and gitlabConfigured %}
                                                     <form method="post" action="{{ url('admin.modules.versions.fetch', {id: manifest.id, version: row.version}) }}">
                                                         {{ csrf_field()|raw }}
-                                                        <button type="submit" class="table__action-btn" title="{{ 'admin.modules.versions.fetch'|trans }}">{{ icon('download') }}</button>
+                                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit" class="table__action-btn" title="{{ 'admin.modules.versions.fetch'|trans }}"{% endblock %}{% block content %}{{ icon('download') }}{% endblock %}{% endembed %}
                                                     </form>
                                                 {% endif %}
                                                 {% if not row.active %}
@@ -674,7 +721,7 @@
                                                     >
                                                         {{ csrf_field()|raw }}
                                                         <input type="hidden" name="confirm_downgrade" value="0" data-downgrade>
-                                                        <button type="submit" class="table__action-btn table__action-btn--primary" title="{{ 'admin.modules.versions.activate'|trans }}">{{ icon('play') }}</button>
+                                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit" class="table__action-btn table__action-btn--primary" title="{{ 'admin.modules.versions.activate'|trans }}"{% endblock %}{% block content %}{{ icon('play') }}{% endblock %}{% endembed %}
                                                     </form>
                                                 {% endif %}
                                             </div>
@@ -685,11 +732,14 @@
                         </table>
                     </div>
                 {% endif %}
-            </section>
+                {% endblock %}
+            {% endembed %}
         </section>
 
         <section class="design-panel" data-panel="health" role="tabpanel">
-            <section class="panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
                 <header class="panel__head">
                     <div>
                         <h2>{{ 'admin.modules.health.title'|trans }}</h2>
@@ -707,7 +757,8 @@
                         </article>
                     {% endfor %}
                 </div>
-            </section>
+                {% endblock %}
+            {% endembed %}
         </section>
-    </div>
+    {% endblock %}{% endembed %}
 {% endblock %}

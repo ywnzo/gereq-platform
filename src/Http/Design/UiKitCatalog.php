@@ -111,12 +111,12 @@ final class UiKitCatalog
         $empty = $ui->emptyState(
             $t->trans('design.tables.empty_heading'),
             $t->trans('design.tables.empty_hint'),
-            '<button type="button" class="btn btn--primary btn--sm">' . e($t->trans('design.tables.new')) . '</button>',
+            $ui->component('button', ['label' => $t->trans('design.tables.new'), 'variant' => 'primary', 'size' => 'sm']),
         );
 
         $header = $ui->pageHeader($t->trans('design.ui.demo_header'), [
             'meta' => $t->trans('design.ui.demo_header_meta'),
-            'actions' => '<button type="button" class="btn btn--primary btn--sm">' . e($t->trans('common.save')) . '</button>',
+            'actions' => $ui->component('button', ['label' => $t->trans('common.save'), 'variant' => 'primary', 'size' => 'sm']),
         ]);
 
         $grid = $ui->grid(
@@ -351,18 +351,21 @@ final class UiKitCatalog
         ]);
 
         $statusChips = '<div class="grq-cluster">'
-            . '<span class="status-chip status-chip--tone-success"><span class="status-chip__dot"></span>' . e($t->trans('design.tables.stock_ok')) . '</span>'
-            . '<span class="status-chip status-chip--tone-warn"><span class="status-chip__dot"></span>' . e($t->trans('design.tables.stock_low')) . '</span>'
-            . '<span class="status-chip status-chip--tone-danger"><span class="status-chip__dot"></span>' . e($t->trans('design.tables.stock_out')) . '</span>'
-            . '<span class="status-chip status-chip--tone-info"><span class="status-chip__dot"></span>Info</span>'
-            . '<span class="status-chip status-chip--tone-indigo"><span class="status-chip__dot"></span>Indigo</span>'
+            . $ui->component('status_chip', ['label' => $t->trans('design.tables.stock_ok'), 'tone' => 'success'])
+            . $ui->component('status_chip', ['label' => $t->trans('design.tables.stock_low'), 'tone' => 'warn'])
+            . $ui->component('status_chip', ['label' => $t->trans('design.tables.stock_out'), 'tone' => 'danger'])
+            . $ui->component('status_chip', ['label' => 'Info', 'tone' => 'info'])
+            . $ui->component('status_chip', ['label' => 'Indigo', 'tone' => 'indigo'])
             . '</div>';
 
         $confirm = '<div class="grq-cluster">'
-            . '<button type="button" class="btn btn--soft btn--sm" data-confirm="' . e($t->trans('design.ui.demo_confirm_msg')) . '">'
-            . e($t->trans('design.ui.demo_confirm_btn')) . '</button>'
-            . '<button type="button" class="btn btn--danger btn--sm" id="ui-kit-confirm-js">'
-            . e($t->trans('design.ui.demo_confirm_js')) . '</button>'
+            . $ui->component('button', [
+                'label' => $t->trans('design.ui.demo_confirm_btn'),
+                'variant' => 'soft',
+                'size' => 'sm',
+                'attrs' => ['data-confirm' => $t->trans('design.ui.demo_confirm_msg')],
+            ])
+            . $ui->component('button', ['label' => $t->trans('design.ui.demo_confirm_js'), 'variant' => 'danger', 'size' => 'sm', 'attrs' => ['id' => 'ui-kit-confirm-js']])
             . '</div>'
             . '<script>'
             . 'document.getElementById("ui-kit-confirm-js")?.addEventListener("click",()=>{'
@@ -374,40 +377,40 @@ final class UiKitCatalog
 
         $buttons = '<div class="grq-stack grq-stack--md">'
             . '<div class="grq-cluster">'
-            . '<button type="button" class="btn btn--primary">primary</button>'
-            . '<button type="button" class="btn btn--soft">soft</button>'
-            . '<button type="button" class="btn btn--outline">outline</button>'
-            . '<button type="button" class="btn btn--ghost">ghost</button>'
-            . '<button type="button" class="btn btn--link">link</button>'
-            . '<button type="button" class="btn btn--dashed">dashed</button>'
+            . $ui->component('button', ['label' => 'primary', 'variant' => 'primary'])
+            . $ui->component('button', ['label' => 'soft', 'variant' => 'soft'])
+            . $ui->component('button', ['label' => 'outline', 'variant' => 'outline'])
+            . $ui->component('button', ['label' => 'ghost', 'variant' => 'ghost'])
+            . $ui->component('button', ['label' => 'link', 'variant' => 'link'])
+            . $ui->component('button', ['label' => 'dashed', 'variant' => 'dashed'])
             . '</div>'
             . '<div class="grq-cluster">'
-            . '<button type="button" class="btn btn--success">success</button>'
-            . '<button type="button" class="btn btn--warn">warn</button>'
-            . '<button type="button" class="btn btn--danger">danger</button>'
-            . '<button type="button" class="btn btn--danger-outline">danger-outline</button>'
-            . '<button type="button" class="btn btn--ink">ink</button>'
-            . '<button type="button" class="btn btn--sky">sky</button>'
-            . '<button type="button" class="btn btn--violet">violet</button>'
+            . $ui->component('button', ['label' => 'success', 'variant' => 'success'])
+            . $ui->component('button', ['label' => 'warn', 'variant' => 'warn'])
+            . $ui->component('button', ['label' => 'danger', 'variant' => 'danger'])
+            . $ui->component('button', ['label' => 'danger-outline', 'variant' => 'danger-outline'])
+            . $ui->component('button', ['label' => 'ink', 'variant' => 'ink'])
+            . $ui->component('button', ['label' => 'sky', 'variant' => 'sky'])
+            . $ui->component('button', ['label' => 'violet', 'variant' => 'violet'])
             . '</div>'
             . '<div class="grq-cluster">'
-            . '<button type="button" class="btn btn--primary btn--xs">xs</button>'
-            . '<button type="button" class="btn btn--primary btn--sm">sm</button>'
-            . '<button type="button" class="btn btn--primary">md</button>'
-            . '<button type="button" class="btn btn--primary btn--lg">lg</button>'
-            . '<button type="button" class="btn btn--primary" disabled>disabled</button>'
+            . $ui->component('button', ['label' => 'xs', 'variant' => 'primary', 'size' => 'xs'])
+            . $ui->component('button', ['label' => 'sm', 'variant' => 'primary', 'size' => 'sm'])
+            . $ui->component('button', ['label' => 'md', 'variant' => 'primary'])
+            . $ui->component('button', ['label' => 'lg', 'variant' => 'primary', 'size' => 'lg'])
+            . $ui->component('button', ['label' => 'disabled', 'variant' => 'primary', 'disabled' => true])
             . '</div></div>';
 
         $alerts = '<div class="grq-stack grq-stack--sm">'
-            . '<div class="alert alert--success" role="status">' . e($t->trans('design.ui.demo_alert_ok')) . '</div>'
-            . '<div class="alert alert--warn" role="status">' . e($t->trans('design.ui.demo_alert_warn')) . '</div>'
-            . '<div class="alert alert--danger" role="alert">' . e($t->trans('design.ui.demo_alert_err')) . '</div>'
+            . $ui->component('alert', ['message' => $t->trans('design.ui.demo_alert_ok'), 'tone' => 'success'])
+            . $ui->component('alert', ['message' => $t->trans('design.ui.demo_alert_warn'), 'tone' => 'warn'])
+            . $ui->component('alert', ['message' => $t->trans('design.ui.demo_alert_err'), 'tone' => 'danger'])
             . '</div>';
 
         $toasts = '<div class="grq-cluster">'
-            . '<button type="button" class="btn btn--soft btn--sm" data-ui-toast="success">' . e($t->trans('design.ui.demo_toast_ok')) . '</button>'
-            . '<button type="button" class="btn btn--soft btn--sm" data-ui-toast="info">' . e($t->trans('design.ui.demo_toast_info')) . '</button>'
-            . '<button type="button" class="btn btn--danger btn--sm" data-ui-toast="error">' . e($t->trans('design.ui.demo_toast_err')) . '</button>'
+            . $ui->component('button', ['label' => $t->trans('design.ui.demo_toast_ok'), 'variant' => 'soft', 'size' => 'sm', 'attrs' => ['data-ui-toast' => 'success']])
+            . $ui->component('button', ['label' => $t->trans('design.ui.demo_toast_info'), 'variant' => 'soft', 'size' => 'sm', 'attrs' => ['data-ui-toast' => 'info']])
+            . $ui->component('button', ['label' => $t->trans('design.ui.demo_toast_err'), 'variant' => 'danger', 'size' => 'sm', 'attrs' => ['data-ui-toast' => 'error']])
             . '</div>';
 
         $tableToggle = '<div class="grq-cluster">'
@@ -454,15 +457,18 @@ final class UiKitCatalog
             ['compact' => true],
         );
 
-        $panel = '<section class="panel"><header class="panel__head"><h2>' . e($t->trans('design.ui.demo_panel')) . '</h2></header>'
-            . '<div class="panel__body"><p class="grq-text-meta">' . e($t->trans('design.ui.demo_panel_hint')) . '</p></div></section>';
+        $panel = $ui->component('panel', [
+            'title' => $t->trans('design.ui.demo_panel'),
+            'body' => '<p class="grq-text-meta">' . e($t->trans('design.ui.demo_panel_hint')) . '</p>',
+        ]);
 
-        $bulk = '<div class="bulk-bar" style="display:flex">'
-            . '<div class="bulk-bar__meta"><strong>3</strong> <span>' . e($t->trans('design.tables.bulk_selected')) . '</span></div>'
-            . '<div class="bulk-bar__actions">'
-            . '<button type="button" class="btn btn--soft btn--sm">' . e($t->trans('design.tables.bulk_export')) . '</button>'
-            . '<button type="button" class="btn btn--danger btn--sm">' . e($t->trans('design.tables.bulk_disable')) . '</button>'
-            . '</div></div>';
+        $bulk = $ui->component('bulk_bar', [
+            'reactive' => false,
+            'count' => 3,
+            'selected_label' => $t->trans('design.tables.bulk_selected'),
+            'actions' => $ui->component('button', ['label' => $t->trans('design.tables.bulk_export'), 'variant' => 'soft', 'size' => 'sm'])
+                . $ui->component('button', ['label' => $t->trans('design.tables.bulk_disable'), 'variant' => 'danger', 'size' => 'sm']),
+        ]);
 
         $errorSummary = '<div class="g-summary" role="alert">'
             . '<p class="g-summary__kicker">' . e($t->trans('design.ui.demo_errors_kicker')) . '</p>'
@@ -697,13 +703,11 @@ PHP,
                     ),
                     $this->uiDemo(
                         'status-chips',
-                        'status-chip (CSS pattern)',
-                        'HTML · .status-chip.status-chip--tone-*',
-                        <<<'HTML'
-<span class="status-chip status-chip--tone-success">
-  <span class="status-chip__dot"></span> In stock
-</span>
-HTML,
+                        'ui/status_chip',
+                        'ui_render(\'status_chip\', data)',
+                        <<<'TWIG'
+{{ ui_render('status_chip', { label: 'In stock', tone: 'success' }) }}
+TWIG,
                         $statusChips,
                     ),
                     $this->uiDemo(
@@ -714,7 +718,7 @@ HTML,
 ui()->emptyState(
     __('empty.generic'),
     'Optional hint',
-    '<a class="btn btn--primary btn--sm" href="…">New</a>',
+    ui()->component('button', ['label' => 'New', 'href' => '…', 'variant' => 'primary', 'size' => 'sm']),
 );
 PHP,
                         $empty,
@@ -756,7 +760,7 @@ JS,
                         <<<'PHP'
 ui()->pageHeader('Users', [
     'meta' => '12 records',
-    'actions' => '<button class="btn btn--primary">New</button>',
+    'actions' => ui()->component('button', ['label' => 'New', 'variant' => 'primary']),
 ]);
 PHP,
                         $header,
@@ -936,24 +940,24 @@ PHP,
                 'demos' => [
                     $this->uiDemo(
                         'buttons',
-                        '.btn variants',
-                        'CSS · resources/css/kernel/buttons.css',
-                        <<<'HTML'
-<button class="btn btn--primary">primary</button>
-<button class="btn btn--soft">soft</button>
-<button class="btn btn--danger btn--sm">danger sm</button>
-HTML,
+                        'ui/button',
+                        'ui_render(\'button\', data) / ui()->component(\'button\', data)',
+                        <<<'TWIG'
+{{ ui_render('button', { label: 'Primary', variant: 'primary' }) }}
+{{ ui_render('button', { label: 'Soft', variant: 'soft' }) }}
+{{ ui_render('button', { label: 'Danger', variant: 'danger', size: 'sm' }) }}
+TWIG,
                         $buttons,
                     ),
                     $this->uiDemo(
                         'alerts',
-                        '.alert',
-                        'CSS · resources/css/kernel/feedback.css',
-                        <<<'HTML'
-<div class="alert alert--success">Saved</div>
-<div class="alert alert--warn">Check this</div>
-<div class="alert alert--danger">Failed</div>
-HTML,
+                        'ui/alert',
+                        'ui_render(\'alert\', data)',
+                        <<<'TWIG'
+{{ ui_render('alert', { message: 'Saved', tone: 'success' }) }}
+{{ ui_render('alert', { message: 'Check this', tone: 'warn' }) }}
+{{ ui_render('alert', { message: 'Failed', tone: 'danger' }) }}
+TWIG,
                         $alerts,
                     ),
                     $this->uiDemo(
@@ -968,10 +972,10 @@ JS,
                     ),
                     $this->uiDemo(
                         'panel',
-                        '.panel / ui/form_panel',
-                        'HTML · or {% embed \'ui/form_panel.html.twig\' %}',
+                        'ui/panel',
+                        '{% embed \'ui/panel.html.twig\' %} / ui_render(\'panel\', data)',
                         <<<'TWIG'
-{% embed 'ui/form_panel.html.twig' with { title: 'Settings' } %}
+{% embed 'ui/panel.html.twig' with { title: 'Settings' } only %}
   {% block body %}…{% endblock %}
 {% endembed %}
 TWIG,
@@ -979,14 +983,13 @@ TWIG,
                     ),
                     $this->uiDemo(
                         'bulk-bar',
-                        '.bulk-bar',
+                        'ui/bulk_bar',
                         'list-shell companion for multi-select',
-                        <<<'HTML'
-<div class="bulk-bar">
-  <div class="bulk-bar__meta"><strong>3</strong> selected</div>
-  <div class="bulk-bar__actions">…</div>
-</div>
-HTML,
+                        <<<'TWIG'
+{% embed 'ui/bulk_bar.html.twig' with { selected_label: 'Selected', clear_label: 'Clear' } %}
+  {% block actions %}…{% endblock %}
+{% endembed %}
+TWIG,
                         $bulk,
                     ),
                 ],

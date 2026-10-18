@@ -33,14 +33,19 @@
                 label: 'auth.login.remember'|trans,
                 form: 'auth.login'
             } %}
-            <button type="submit" class="btn btn--primary btn--block">{{ 'auth.login.submit'|trans }}</button>
+            {% include 'ui/button.html.twig' with {
+                label: 'auth.login.submit'|trans,
+                type: 'submit',
+                variant: 'primary',
+                block: true
+            } only %}
         </form>
 
         <div class="auth-mfa__divider"><span>{{ 'auth.mfa.or'|trans }}</span></div>
-        <button type="button" class="btn btn--ghost btn--block" @click="loginWithPasskey()" :disabled="busy">
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn--block" @click="loginWithPasskey()" :disabled="busy"{% endblock %}{% block content %}
             <span class="material-symbols-outlined" aria-hidden="true">fingerprint</span>
             <span x-text="passkeyButtonLabel()"></span>
-        </button>
+        {% endblock %}{% endembed %}
         <p class="muted" x-show="error" x-text="error" x-cloak></p>
         <a class="text-link" href="{{ url('admin.password.forgot') }}">{{ 'auth.login.forgot'|trans }}</a>
     </div>

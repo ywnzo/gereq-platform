@@ -1,0 +1,2 @@
+{# Shared select option. Labels/values are escaped; blocks support Alpine bindings. #}
+<option{% block option_attributes %} value="{{ value is defined ? value : '' }}"{% if selected|default(false) %} selected{% endif %}{% if disabled|default(false) %} disabled{% endif %}{% endblock %}>{% block content %}{{ label|default('') }}{% endblock %}</option>

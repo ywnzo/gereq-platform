@@ -16,15 +16,20 @@
             </p>
         </div>
         <div class="actions">
-            <a href="{{ url('admin.queues.runs') }}" class="btn btn--ghost">
-                {{ 'queues.action.back_runs'|trans }}
-            </a>
+            {% include 'ui/button.html.twig' with {
+                label: 'queues.action.back_runs'|trans,
+                href: (url('admin.queues.runs')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
         </div>
     </header>
 
     <div class="detail-layout">
         <div class="detail-layout__main">
-            <section class="detail-hero panel">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="detail-hero panel"{% endblock %}
+                {% block content %}
                 <div class="detail-hero__body">
                     <div class="detail-hero__highlight">
                         <span>{{ 'queues.runs.detail.summary'|trans }}</span>
@@ -57,25 +62,32 @@
                         </div>
                     </dl>
                 </div>
-            </section>
+                {% endblock %}
+            {% endembed %}
 
             {% if item.exception() %}
-                <section class="panel">
+                {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                    {% block attributes %} class="panel"{% endblock %}
+                    {% block content %}
                     <header class="panel__header">
                         <h2 class="panel__title">{{ 'queues.detail.error'|trans }}</h2>
                     </header>
                     <pre class="queues-trace">{{ item.exception() }}</pre>
-                </section>
+                    {% endblock %}
+                {% endembed %}
             {% endif %}
 
             {% if item.payload() %}
-                <section class="panel">
+                {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                    {% block attributes %} class="panel"{% endblock %}
+                    {% block content %}
                     <header class="panel__header">
                         <h2 class="panel__title">{{ 'queues.detail.payload'|trans }}</h2>
                     </header>
                     <p class="queues-trace__hint muted">{{ 'queues.detail.payload_hint'|trans }}</p>
                     <pre class="queues-trace">{{ item.payload() }}</pre>
-                </section>
+                    {% endblock %}
+                {% endembed %}
             {% endif %}
         </div>
     </div>
