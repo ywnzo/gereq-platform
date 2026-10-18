@@ -272,6 +272,7 @@ final class Application
             }),
             \Gereq\Module\ModuleAssetBuilder::class => autowire()
                 ->constructorParameter('basePath', $basePath),
+            \Gereq\Cms\Cms::class => factory(static fn (ModuleManager $modules): \Gereq\Cms\Cms => new \Gereq\Cms\Cms($modules)),
             ModuleManager::class => factory(static function (
                 EntityManagerInterface $em,
                 PermissionRegistry $permissions,
