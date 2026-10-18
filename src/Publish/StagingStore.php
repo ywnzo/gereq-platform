@@ -137,22 +137,15 @@ final class StagingStore
     /** @return list<ContentStagingEntry> */
     public function all(): array
     {
-        try {
-            /** @var list<ContentStagingEntry> $rows */
-            $rows = $this->em->getRepository(ContentStagingEntry::class)
-                ->findBy([], ['category' => 'ASC', 'updatedAt' => 'DESC']);
+        $this->preloadAll();
+        $rows = array_values(array_filter(
+            $this->findCache,
+            static fn (ContentStagingEntry|false $entry): bool => $entry instanceof ContentStagingEntry,
+        ));
+        usort($rows, static fn (ContentStagingEntry $a, ContentStagingEntry $b): int =>
+            strcmp($a->category(), $b->category()) ?: $b->updatedAt() <=> $a->updatedAt());
 
-            foreach ($rows as $row) {
-                $this->findCache[$row->category() . "\0" . $row->resourceKey()] = $row;
-                $this->categoryFullyLoaded[$row->category()] = true;
-            }
-            // Whole table is in memory now — later find() misses must not hit the DB again.
-            $this->allLoaded = true;
-
-            return $rows;
-        } catch (\Throwable) {
-            return [];
-        }
+        return $rows;
     }
 
     /** @return list<ContentStagingEntry> */

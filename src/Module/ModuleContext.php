@@ -48,6 +48,11 @@ final class ModuleContext
     ) {
     }
 
+    public function cms(): \Gereq\Cms\Cms
+    {
+        return $this->container->get(\Gereq\Cms\Cms::class);
+    }
+
     public function container(): ContainerInterface
     {
         return $this->container;
