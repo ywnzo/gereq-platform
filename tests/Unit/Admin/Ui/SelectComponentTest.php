@@ -91,6 +91,15 @@ final class SelectComponentTest extends TestCase
         self::assertStringContainsString('data-select-clear', $html);
     }
 
+    public function testNativeBackedSelectUsesTopLayerMenu(): void
+    {
+        $html = $this->makeUi()->select(['native' => true]);
+
+        self::assertStringContainsString('data-select-native', $html);
+        self::assertStringContainsString('popover="manual"', $html);
+        self::assertStringContainsString('x-effect="syncNativeRoot()"', $html);
+    }
+
     private function makeUi(): Ui
     {
         $views = dirname(__DIR__, 4) . '/resources/views';

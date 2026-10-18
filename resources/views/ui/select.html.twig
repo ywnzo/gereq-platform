@@ -10,7 +10,7 @@
         <span class="g-select__label" x-text="label"></span>
         <span class="g-select__chevron" aria-hidden="true">{{ icon('chevron-down') }}</span>
     </button>
-    <div class="g-select__list" :class="listClass" role="listbox" tabindex="-1">
+    <div class="g-select__list" popover="manual" :class="listClass" role="listbox" tabindex="-1">
         <ul class="g-select__options"></ul>
     </div>
     <p class="g-error" data-native-error role="alert" hidden></p>

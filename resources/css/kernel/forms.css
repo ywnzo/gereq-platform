@@ -1926,3 +1926,14 @@ html[data-theme="gereq-dark"] .media-box-backdrop {
         min-width: 7.25rem;
     }
 }
+
+/* Native-backed select menus escape clipping in toolbars and scrolling inspectors. */
+.grq-select-bound > .g-select__list[popover] {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+}
+.grq-select-bound > .g-select__list[popover]:popover-open {
+    display: flex;
+    flex-direction: column;
+}

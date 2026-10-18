@@ -17,6 +17,7 @@ type GereqSelectCtx = {
     syncMultiUi: () => void;
     syncValidateInput: () => void;
     syncNativeOptions: () => void;
+    syncNativeRoot: () => void;
     clearValue: () => void;
     removeValue: (value: string) => void;
     moveActive: (delta: number) => void;
@@ -27,6 +28,7 @@ type GereqSelectCtx = {
     _onRootKeydown: ((event: KeyboardEvent) => void) | null;
     _onSearchInput: ((event: Event) => void) | null;
     _onSearchKeydown: ((event: KeyboardEvent) => void) | null;
+    _nativeViewportEvents: AbortController | null;
     _nativeObserver: MutationObserver | null;
     _onNativeChange: (() => void) | null;
     _onNativeInvalid: ((event: Event) => void) | null;
@@ -50,6 +52,7 @@ export function registerSelect(alpine: typeof Alpine): void {
         _onRootKeydown: null as ((event: KeyboardEvent) => void) | null,
         _onSearchInput: null as ((event: Event) => void) | null,
         _onSearchKeydown: null as ((event: KeyboardEvent) => void) | null,
+        _nativeViewportEvents: null as AbortController | null,
         _nativeObserver: null as MutationObserver | null,
         _onNativeChange: null as (() => void) | null,
         _onNativeInvalid: null as ((event: Event) => void) | null,
@@ -65,6 +68,14 @@ export function registerSelect(alpine: typeof Alpine): void {
 
             const native = root.querySelector<HTMLSelectElement>('select[data-select-native]');
             if (native) {
+                this._nativeViewportEvents = new AbortController();
+                const signal = this._nativeViewportEvents.signal;
+                // Keep top-layer menus anchored when their surrounding container scrolls.
+                document.addEventListener('scroll', (event) => {
+                    const list = root.querySelector('.g-select__list');
+                    if (!(event.target instanceof Node) || !list?.contains(event.target)) this.syncNativeRoot();
+                }, { capture: true, signal });
+                window.addEventListener('resize', () => this.close(), { signal });
                 this.syncNativeOptions();
                 this._onNativeChange = () => {
                     this.syncNativeOptions();
@@ -260,6 +271,8 @@ export function registerSelect(alpine: typeof Alpine): void {
         },
 
         destroy(this: GereqSelectCtx) {
+            this._nativeViewportEvents?.abort();
+            this.$el.querySelector<HTMLElement>('.g-select__list[popover]')?.hidePopover();
             this._nativeObserver?.disconnect();
             const native = this.$el.querySelector<HTMLSelectElement>('select[data-select-native]');
             if (native && this._onNativeChange) {
@@ -480,7 +493,33 @@ export function registerSelect(alpine: typeof Alpine): void {
         },
 
         syncNativeRoot(this: GereqSelectCtx) {
-            this.$el.classList.toggle('is-open', this.open);
+            const root = this.$el;
+            root.classList.toggle('is-open', this.open);
+            const list = root.querySelector<HTMLElement>('.g-select__list[popover]');
+            if (!list) return;
+            if (!this.open) {
+                list.hidePopover();
+                return;
+            }
+            queueMicrotask(() => {
+                if (!this.open || !root.isConnected) return;
+                const trigger = root.querySelector<HTMLElement>('.g-select__trigger');
+                if (!trigger) return;
+                const rect = trigger.getBoundingClientRect();
+                const gap = 6;
+                const margin = 8;
+                const below = Math.max(0, window.innerHeight - rect.bottom - gap - margin);
+                const above = Math.max(0, rect.top - gap - margin);
+                const width = Math.min(Math.max(rect.width, 160), Math.max(0, window.innerWidth - margin * 2));
+                list.style.width = `${width}px`;
+                list.style.left = `${Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin))}px`;
+                list.style.maxHeight = `${Math.min(288, Math.max(above, below))}px`;
+                list.showPopover();
+                const height = list.getBoundingClientRect().height;
+                const upwards = below < height && above > below;
+                list.style.maxHeight = `${Math.min(288, upwards ? above : below)}px`;
+                list.style.top = `${upwards ? rect.top - gap - Math.min(height, above) : rect.bottom + gap}px`;
+            });
         },
 
         syncNativeOptions(this: GereqSelectCtx) {
