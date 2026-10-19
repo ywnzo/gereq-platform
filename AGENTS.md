@@ -29,6 +29,7 @@
 - PHP: `declare(strict_types=1);`, PSR-12 podle `phpcs.xml`, typované parametry, properties a návraty; PHPDoc pro kolekce a array shapes. Preferuj `final`, ale Doctrine entity ponechávej vhodné pro proxy.
 - Komentáře, docblocky, TODO/FIXME a CLI help v kódu piš anglicky. Uživatelské texty lokalizuj; nové klíče doplň v `messages.cs.php` i `messages.en.php`.
 - Administrace používá sdílené Twig UI komponenty, formulářový generátor a CSS kernel. Zachovej CSP variantu Alpine a výchozí escapování Twig.
+- Pro práci s médii všude v backendu a jeho modulech povinně používej sdílený Media Box (`resources/views/ui/media_box.html.twig`). Výběr, nahrávání ani zadání URL média nesmí mít samostatný surový input mimo tuto komponentu.
 - Pro potvrzení používej `window.gereq.confirm`, `window.gereq.prompt` nebo `data-confirm`; pro výsledky toast. Nové nativní browser dialogy nepřidávej.
 - Neopravuj okolní legacy kód nebo formátování mimo rozsah úkolu.
 

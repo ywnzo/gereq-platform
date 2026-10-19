@@ -9,6 +9,7 @@ Přečti kořenový `AGENTS.md`, `docs/architecture/admin-ui.md` a `.cursor/rule
 
 - Vycházej z admin/layout.html.twig a existujících bloků; module templates používají svůj Twig namespace.
 - Používej resources/views/ui komponenty, ui_render a icon. Formuláře stav na FormField, FormGenerator, pojmenovaných validačních rulesetech a forms().render podle aktuálního API.
+- Pro veškerou práci s médii ve všech obrazovkách a modulech povinně používej sdílený Media Box (`resources/views/ui/media_box.html.twig`, chování v `resources/js/ui/mediaBox.ts`). Platí to pro výběr, nahrávání, náhradu, odstranění i zadání URL média. Nepřidávej ani neponechávej v upravovaném mediálním poli samostatný surový input pro soubor, URL, cestu nebo ID média; použij Media Box. Nativní inputy uvnitř samotné sdílené komponenty jsou její implementační detail.
 - Zachovej page-specific layout. Detail-stack nepatří automaticky do formulářů s vlastním gridem (Customers, Fleet, Listing hub).
 - Mutující formuláře mají CSRF field, session AJAX CSRF header. Backend permissions a validace fungují i při obejití UI.
 - Nové texty patří do cs/en katalogů a používají trans; placeholders mají %name%. Je-li relevantní, aktualizuj editor index přes `php $GEREQ_TOOLS/gereq-i18n/index-translations.php` ([GEREQ_TOOLS](https://git.gereq.cz/gereq/GEREQ_TOOLS)).

@@ -39,10 +39,13 @@ final class ApiRateLimitMiddleware implements MiddlewareInterface
         $isWrite = in_array(strtoupper($request->getMethod()), ['POST', 'PUT', 'PATCH', 'DELETE'], true);
         $path = $request->getPathInfo();
         $isPublic = str_starts_with($path, '/api/public/') || $path === '/api/public';
+        $isAnalytics = in_array($path, ['/api/public/analytics/collect', '/api/public/analytics/consent'], true);
         $isStore = str_starts_with($path, '/api/v1/store/')
             || str_starts_with($path, '/api/v1/uploads/');
 
-        if ($isPublic) {
+        if ($isAnalytics) {
+            $limit = (int) $this->config->get('api.rate_limit.analytics', 300);
+        } elseif ($isPublic) {
             $limit = $isWrite
                 ? (int) $this->config->get('api.rate_limit.public_write', 30)
                 : (int) $this->config->get('api.rate_limit.public', 120);
@@ -68,6 +71,9 @@ final class ApiRateLimitMiddleware implements MiddlewareInterface
         }
         if ($isPublic) {
             $key = 'public:' . ($request->getClientIp() ?? 'anon') . ':' . hash('sha256', (string) $request->headers->get('Authorization', '') . '|' . (string) $request->headers->get('X-Api-Key', ''));
+        }
+        if ($isAnalytics) {
+            $key = 'public-analytics:' . ($request->getClientIp() ?? 'anon');
         }
         $ok = $this->limiter->hit($key . ($isWrite ? ':w' : ':r'), $limit, $window);
         if (!$ok) {

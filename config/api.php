@@ -13,6 +13,7 @@ return [
         // Stricter defaults for /api/public/* (external FE)
         'public' => (int) env_value('API_RATE_LIMIT_PUBLIC', 120),
         'public_write' => (int) env_value('API_RATE_LIMIT_PUBLIC_WRITE', 30),
+        'analytics' => (int) env_value('API_RATE_LIMIT_ANALYTICS', 300),
         'window' => 60,
         // Non-empty + matching X-Perf-Secret header skips rate limiting (load tests only).
         'perf_secret' => (string) env_value('API_PERF_SECRET', ''),

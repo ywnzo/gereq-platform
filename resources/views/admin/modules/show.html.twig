@@ -4,7 +4,7 @@
     {% include 'ui/breadcrumbs.html.twig' with { items: [
         { label: 'nav.overview'|trans, url: url('admin.dashboard') },
         { label: 'admin.modules.title'|trans, url: url('admin.modules.index') },
-        { label: manifest.name },
+        { label: manifest.name|trans },
     ] } %}
 {% endblock %}
 
@@ -21,7 +21,7 @@
             <p class="eyebrow"><a href="{{ url('admin.modules.index') }}">{{ 'admin.modules.title'|trans }}</a></p>
             <h1 class="module-detail__title">
                 <span class="module-row__icon module-row__icon--lg" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
-                {{ manifest.name }}
+                {{ manifest.name|trans }}
             </h1>
             <p class="muted detail-layout__meta">
                 <code>{{ manifest.id }}</code>

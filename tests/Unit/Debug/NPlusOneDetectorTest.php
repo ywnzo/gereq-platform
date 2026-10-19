@@ -82,7 +82,7 @@ final class NPlusOneDetectorTest extends TestCase
         return [
             [
                 "SELECT * FROM products WHERE id = 1 AND name = 'a'",
-                'SELECT * FROM products WHERE id = 99 AND name = "b"',
+                "SELECT * FROM products WHERE id = 99 AND name = 'b'",
             ],
             [
                 'SELECT * FROM t WHERE id IN (1, 2, 3)',
@@ -109,6 +109,28 @@ final class NPlusOneDetectorTest extends TestCase
         $this->assertNoNPlusOne($queries);
         $this->assertQueryCountAtMost($queries, 2);
         $this->assertNPlusOneHitCount($queries, 0);
+    }
+
+    public function testDifferentQuotedGroupColumnsAreNotTheSameQuery(): void
+    {
+        $detector = new NPlusOneDetector();
+        $hits = $detector->detect([
+            ['sql' => 'SELECT "source" AS bucket, COUNT(*) FROM analytics_sessions GROUP BY "source"', 'params' => [], 'duration' => 0.1, 'origin' => 'ReportRepository.php:1'],
+            ['sql' => 'SELECT "device_type" AS bucket, COUNT(*) FROM analytics_sessions GROUP BY "device_type"', 'params' => [], 'duration' => 0.1, 'origin' => 'ReportRepository.php:1'],
+        ]);
+        self::assertSame([], $hits);
+        self::assertNotSame(
+            NPlusOneDetector::fingerprint('SELECT * FROM "first_table" WHERE "id" = ?'),
+            NPlusOneDetector::fingerprint('SELECT * FROM "second_table" WHERE "id" = ?'),
+        );
+    }
+
+    public function testQuotedIdentifierQueriesStillDetectDifferentBoundIds(): void
+    {
+        $queries = new QueryCollector();
+        $queries->add('SELECT "name" FROM "users" WHERE "id" = ?', [1], 0.1);
+        $queries->add('SELECT "name" FROM "users" WHERE "id" = ?', [2], 0.1);
+        self::assertCount(1, $queries->nPlusOnes());
     }
 
     public function testAssertNoNPlusOneFailsOnClassicLoop(): void

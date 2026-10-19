@@ -34,7 +34,7 @@
                                         href="{{ url('admin.modules.show', {id: m.id}) }}"
                                         data-module-toggle
                                         data-module-id="{{ m.id }}"
-                                        data-module-name="{{ row.manifest.name|e('html_attr') }}"
+                                        data-module-name="{{ row.manifest.name|trans|e('html_attr') }}"
                                         data-enabled="{{ row.enabled ? '1' : '0' }}"
                                         data-enable-url="{{ url('admin.modules.enable', {id: m.id}) }}"
                                         data-pause-url="{{ url('admin.modules.pause', {id: m.id}) }}"
@@ -48,7 +48,7 @@
                                         title="{{ 'admin.modules.group.mod_toggle_hint'|trans }}"
                                     >
                                         <span class="package-row__mod-icon" aria-hidden="true">{{ icon(row.manifest.icon ?: 'modules') }}</span>
-                                        {{ row.manifest.name }}
+                                        {{ row.manifest.name|trans }}
                                     </a>
                                 {% else %}
                                     <span class="package-row__mod is-missing">{{ m.id }}</span>

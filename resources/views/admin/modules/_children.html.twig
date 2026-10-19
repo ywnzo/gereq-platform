@@ -18,7 +18,7 @@
                 {% for child in children %}
                     <tr data-submodule-id="{{ child.manifest.id }}">
                         <td>
-                            <a href="{{ url('admin.modules.show', {id: child.manifest.id}) }}">{{ child.manifest.name }}</a>
+                            <a href="{{ url('admin.modules.show', {id: child.manifest.id}) }}">{{ child.manifest.name|trans }}</a>
                             <span class="table__meta"><code>{{ child.manifest.id }}</code> · v{{ child.manifest.version }}</span>
                         </td>
                         <td class="is-mute">{{ child.manifest.description|trans }}</td>

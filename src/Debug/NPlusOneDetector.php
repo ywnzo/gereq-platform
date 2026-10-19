@@ -83,9 +83,8 @@ final class NPlusOneDetector
     public static function fingerprint(string $sql): string
     {
         $normalized = preg_replace('/\s+/u', ' ', trim($sql)) ?? trim($sql);
-        // string literals
+        // SQL string literals use single quotes; double quotes delimit identifiers.
         $normalized = preg_replace("/'(?:''|\\\\'|[^'])*'/u", '?', $normalized) ?? $normalized;
-        $normalized = preg_replace('/"(?:\\\\"|[^"])*"/u', '?', $normalized) ?? $normalized;
         // numbers only in predicates / value lists (=, <, >, ,, ()), not SELECT 1 / LIMIT n
         $normalized = preg_replace('/([=<>,\(]\s*)-?\d+(?:\.\d+)?\b/u', '${1}?', $normalized) ?? $normalized;
         // IN (?, ?, ?) → IN (?)

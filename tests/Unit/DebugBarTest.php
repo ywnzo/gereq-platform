@@ -71,7 +71,7 @@ final class DebugBarTest extends TestCase
     {
         self::assertSame(
             NPlusOneDetector::fingerprint("SELECT * FROM t WHERE id = 1 AND name = 'a'"),
-            NPlusOneDetector::fingerprint('SELECT * FROM t WHERE id = 99 AND name = "b"'),
+            NPlusOneDetector::fingerprint("SELECT * FROM t WHERE id = 99 AND name = 'b'"),
         );
 
         $detector = new NPlusOneDetector(2);

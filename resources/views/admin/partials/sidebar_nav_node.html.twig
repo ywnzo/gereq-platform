@@ -1,6 +1,6 @@
 {% set menuItem = node.item %}
-{% set active = menuItem.route is not null and route_is(menuItem.route) %}
-{% set childActive = node.children|filter(c => c.route and route_is(c.route))|length > 0 %}
+{% set active = menuItem.id in activeMenuItemIds|default([]) or (menuItem.route is not null and route_is(menuItem.route)) %}
+{% set childActive = node.children|filter(c => c.id in activeMenuItemIds|default([]) or (c.route and route_is(c.route)))|length > 0 %}
 {% set itemLabel = menuItem.label|trans %}
 
 {% if node.children|length > 0 %}
@@ -42,7 +42,7 @@
                 <div class="nav-tree__children" role="group" aria-label="{{ itemLabel }}">
                     {% for child in node.children %}
                         {% set childUrl = child.route ? url(child.route) : (child.url|default('#')) %}
-                        {% set childIsActive = child.route and route_is(child.route) %}
+                        {% set childIsActive = child.id in activeMenuItemIds|default([]) or (child.route and route_is(child.route)) %}
                         <a
                             href="{{ childUrl }}"
                             class="nav-item nav-item--child{% if childIsActive %} is-active{% endif %}"

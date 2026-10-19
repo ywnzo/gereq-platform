@@ -4,7 +4,7 @@
     {% include 'ui/breadcrumbs.html.twig' with { items: [
         { label: 'nav.overview'|trans, url: url('admin.dashboard') },
         { label: 'admin.modules.title'|trans, url: url('admin.modules.index') },
-        { label: manifest.name },
+        { label: manifest.name|trans },
     ] } %}
 {% endblock %}
 
@@ -18,7 +18,7 @@
         <p class="eyebrow">{{ 'admin.modules.update_available'|trans }}</p>
         <h1>{{ 'admin.modules.gate.title'|trans }}</h1>
         <p class="muted">{{ 'admin.modules.gate.body'|trans({
-            '%module%': manifest.name,
+            '%module%': manifest.name|trans,
             '%current%': manifest.version,
             '%installed%': installedVersion|default('—')
         }) }}</p>

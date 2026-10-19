@@ -1,7 +1,7 @@
 {#
   Single-image media picker: compact trigger + large compose-style dialog
   with search / filters for the media library.
-  Params: name, file_name, library_name, clear_name, label, hint, form, value, optional, has_media, library
+  Params: name, file_name, library_name, clear_name, label, hint, form, value, optional, has_media, library, allow_url (default true), trigger_hint, upload_hint, accept
   library items: { value, label, thumb?, mime?, ext?, width?, height?, created?, folder_id?, folder? }
 #}
 {% set name = name|default('image_url') %}
@@ -61,7 +61,7 @@
                 <span class="media-box__trigger-title" x-text="triggerLabel">
                     {{ value ? 'ui.media_box.change'|trans : 'ui.media_box.choose'|trans }}
                 </span>
-                <span class="media-box__trigger-hint muted">{{ 'ui.media_box.trigger_hint'|trans }}</span>
+                <span class="media-box__trigger-hint muted">{{ trigger_hint|default('ui.media_box.trigger_hint'|trans) }}</span>
             </span>
             <span class="media-box__trigger-chevron" aria-hidden="true">{{ icon('chevron-right') }}</span>
         </button>
@@ -76,6 +76,8 @@
         >{{ icon('close') }}</button>
     </div>
 
+    {% if allow_url is defined and not allow_url and hint %}<p class="g-hint">{{ hint }}</p>{% endif %}
+
     <input type="hidden" name="{{ library_name }}" value="" x-ref="asset">
     <input type="checkbox" class="media-box__clear-flag" name="{{ clear_name }}" value="1" x-model="clearing" tabindex="-1" aria-hidden="true">
     <input
@@ -86,18 +88,16 @@
         x-ref="url"
     >
 
-    <div
+    <dialog
         class="media-box-layer"
-        x-show="dialogOpen"
-        x-cloak
-        @keydown.escape.window="onEscape()"
+        x-ref="layer"
+        aria-labelledby="{{ dialog_title_id }}"
+        @cancel.prevent="close()"
+        @close="onLayerClosed()"
     >
         <div class="media-box-backdrop" @click="close()" aria-hidden="true"></div>
         <div
             class="media-box-dock{% if has_library %} media-box-dock--wide{% endif %}"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="{{ dialog_title_id }}"
             @click.stop
             x-ref="dialog"
         >
@@ -137,14 +137,15 @@
                                 id: id ~ '-file',
                                 label: '',
                                 title: 'ui.media_box.upload'|trans,
-                                hint: 'ui.media_box.upload_hint'|trans,
-                                accept: 'image/*',
+                                hint: upload_hint|default('ui.media_box.upload_hint'|trans),
+                                accept: accept|default('image/*'),
                                 compact: true,
                                 extra: 'media-box__upload'
                             } %}
                         </section>
                     {% endif %}
 
+                    {% if allow_url is not defined or allow_url %}
                     <section class="media-box-dock__section">
                         <button
                             type="button"
@@ -170,6 +171,7 @@
                             {% endif %}
                         </div>
                     </section>
+                    {% endif %}
                 </aside>
 
                 {% if has_library %}
@@ -301,7 +303,7 @@
                 } only %}
             </footer>
         </div>
-    </div>
+    </dialog>
 
     {% if err %}
         <p class="g-error">{{ err }}</p>

@@ -204,7 +204,7 @@
                             {% set manifest = row.manifest %}
                             {% set counts = row.counts %}
                             {% set childCount = row.child_count|default(0) %}
-                            {% set searchBlob = (manifest.name ~ ' ' ~ manifest.id ~ ' ' ~ manifest.kind ~ ' ' ~ (row.parent_name|default('')) ~ ' ' ~ (manifest.description|trans))|lower %}
+                            {% set searchBlob = ((manifest.name|trans) ~ ' ' ~ manifest.id ~ ' ' ~ manifest.kind ~ ' ' ~ (row.parent_name|default('')|trans) ~ ' ' ~ (manifest.description|trans))|lower %}
                             <tr
                                 class="{{ manifest.parentId ? 'grq-module-child-row' : (childCount > 0 ? 'grq-module-parent-row' : '') }}"
                                 data-id="{{ manifest.id }}"
@@ -224,7 +224,7 @@
                                             {% if childCount > 0 %}data-has-children="1"{% endif %}
                                             :checked="isSelected($el.value)"
                                         {% endblock %}{% endembed %}
-                                        <span class="sr-only">{{ manifest.name }}</span>
+                                        <span class="sr-only">{{ manifest.name|trans }}</span>
                                     </label>
                                 </td>
                                 <td>
@@ -246,7 +246,7 @@
                                             <span class="module-row__icon" aria-hidden="true">{{ icon(manifest.icon ?: 'modules') }}</span>
                                         {% endif %}
                                         <div class="table__title-text">
-                                            <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name }}</a>
+                                            <a href="{{ url('admin.modules.show', {id: manifest.id}) }}">{{ manifest.name|trans }}</a>
                                             <span class="table__meta">
                                                 <code>{{ manifest.id }}</code> · v{{ manifest.version }}
                                                 {% if manifest.parentId %}

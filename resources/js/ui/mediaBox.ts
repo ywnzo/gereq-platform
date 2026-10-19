@@ -45,6 +45,7 @@ type GereqMediaBoxCtx = {
         urlVisible?: HTMLInputElement;
         asset?: HTMLInputElement;
         dialog?: HTMLElement;
+        layer?: HTMLDialogElement;
         search?: HTMLInputElement;
         grid?: HTMLElement;
     };
@@ -57,7 +58,7 @@ type GereqMediaBoxCtx = {
     libraryGrid: () => HTMLElement | null;
     open: () => void;
     close: () => void;
-    onEscape: () => void;
+    onLayerClosed: () => void;
     pick: (id: string, thumb: string) => void;
     clearPhoto: () => void;
     undoClear: () => void;
@@ -192,6 +193,10 @@ export function registerMediaBox(alpine: typeof Alpine): void {
         },
 
         open(this: GereqMediaBoxCtx) {
+            const layer = this.$refs.layer;
+            if (!layer) return;
+            // The top layer escapes panel stacking contexts without moving form controls.
+            if (!layer.open) layer.showModal();
             this.dialogOpen = true;
             this.syncUrlVisible();
             this.$nextTick(() => {
@@ -203,13 +208,12 @@ export function registerMediaBox(alpine: typeof Alpine): void {
         },
 
         close(this: GereqMediaBoxCtx) {
+            this.$refs.layer?.close();
             this.dialogOpen = false;
         },
 
-        onEscape(this: GereqMediaBoxCtx) {
-            if (this.dialogOpen) {
-                this.close();
-            }
+        onLayerClosed(this: GereqMediaBoxCtx) {
+            this.dialogOpen = false;
         },
 
         revokeBlob(this: GereqMediaBoxCtx) {

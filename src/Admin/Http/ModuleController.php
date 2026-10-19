@@ -219,7 +219,7 @@ final class ModuleController extends Controller
             || $this->modules->isEnabled($manifest->parentId);
 
         return $this->page('admin/modules/show.html.twig', [
-            'pageTitle' => $manifest->name,
+            'pageTitle' => $this->translator->trans($manifest->name),
             'manifest' => $manifest,
             'children' => $children,
             'enabled' => $report['overview']['enabled'],
