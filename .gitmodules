@@ -1,105 +1,18 @@
-[submodule "modules/BikeService"]
-	path = modules/BikeService
-	url = ../module-bikeservice.git
-[submodule "modules/CarService"]
-	path = modules/CarService
-	url = ../module-carservice.git
-[submodule "modules/CRM"]
-	path = modules/CRM
-	url = ../module-crm.git
-[submodule "modules/Documents"]
-	path = modules/Documents
-	url = ../module-documents.git
-[submodule "modules/ESign"]
-	path = modules/ESign
-	url = ../module-esign.git
-[submodule "modules/Feeds"]
-	path = modules/Feeds
-	url = ../module-feeds.git
-[submodule "modules/Fleet"]
-	path = modules/Fleet
-	url = ../module-fleet.git
-[submodule "modules/iDoklad"]
-	path = modules/iDoklad
-	url = ../module-idoklad.git
-[submodule "modules/MoneyS3"]
-	path = modules/MoneyS3
-	url = ../module-moneys3.git
-[submodule "modules/Newsletter"]
-	path = modules/Newsletter
-	url = ../module-newsletter.git
-[submodule "modules/PartsCatalog"]
-	path = modules/PartsCatalog
-	url = ../module-partscatalog.git
-[submodule "modules/Portals"]
-	path = modules/Portals
-	url = ../module-portals.git
-[submodule "modules/ProductDiscounts"]
-	path = modules/ProductDiscounts
-	url = ../module-product_discounts.git
-[submodule "modules/Reviews"]
-	path = modules/Reviews
-	url = ../module-reviews.git
-[submodule "modules/SearchEngines"]
-	path = modules/SearchEngines
-	url = ../module-searchengines.git
-[submodule "modules/Shop"]
-	path = modules/Shop
-	url = ../module-shop.git
-[submodule "modules/Translate"]
-	path = modules/Translate
-	url = ../module-translate.git
-[submodule "modules/Viewings"]
-	path = modules/Viewings
-	url = ../module-viewings.git
-[submodule "modules/Vitality"]
-	path = modules/Vitality
-	url = ../module-vitality.git
-[submodule "modules/Ai"]
-	path = modules/Ai
-	url = ../module-ai.git
-[submodule "modules/Calendar"]
-	path = modules/Calendar
-	url = ../module-calendar.git
+[submodule "modules/Analytics"]
+	path = modules/Analytics
+	url = ../module-analytics.git
 [submodule "modules/Cms"]
 	path = modules/Cms
 	url = ../module-cms.git
-[submodule "modules/Emailing"]
-	path = modules/Emailing
-	url = ../module-emailing.git
-[submodule "modules/Listings"]
-	path = modules/Listings
-	url = ../module-listings.git
-[submodule "modules/Projects"]
-	path = modules/Projects
-	url = ../module-projects.git
-[submodule "modules/WebPlus"]
-	path = modules/WebPlus
-	url = ../module-webplus.git
-[submodule "modules/Engage"]
-	path = modules/Engage
-	url = ../module-engage.git
-[submodule "modules/Gereq"]
-	path = modules/Gereq
-	url = ../module-gereq.git
-[submodule "modules/Forum"]
-	path = modules/Forum
-	url = ../module-forum.git
-[submodule "modules/Achievements"]
-	path = modules/Achievements
-	url = ../module-achievements.git
-[submodule "modules/Community"]
-	path = modules/Community
-	url = ../module-community.git
-[submodule "modules/Messenger"]
-	path = modules/Messenger
-	url = ../module-messenger.git
-[submodule "modules/Events"]
-	path = modules/Events
-	url = ../module-events.git
-[submodule "modules/Authorization"]
-	path = modules/Authorization
-	url = ../module-authorization.git
+[submodule "modules/Reviews"]
+	path = modules/Reviews
+	url = ../module-reviews.git
 [submodule "modules/SiteInquiries"]
 	path = modules/SiteInquiries
 	url = ../module-site_inquiries.git
+[submodule "modules/Cookie"]
+	path = modules/Cookie
+	url = ../module-cookie.git
+[submodule "modules/WebPlus"]
+	path = modules/WebPlus
+	url = ../module-webplus.git
