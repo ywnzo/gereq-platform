@@ -16,6 +16,9 @@ type LibraryItem = {
 };
 
 type GereqMediaBoxCtx = {
+    contextKey: string;
+    clearedSelection: { value: string; preview: string; id: string } | null;
+    syncExternal: (event: CustomEvent<{ context: string; value: string; preview: string; selectedId: string; library?: LibraryItem[] }>) => void;
     preview: string;
     selectedId: string;
     clearing: boolean;
@@ -66,7 +69,7 @@ type GereqMediaBoxCtx = {
     onFileChange: () => void;
     onUrlVisibleInput: () => void;
     syncUrlVisible: () => void;
-    setUrlValue: (value: string) => void;
+    setUrlValue: (value: string, kind?: string) => void;
     toggleUrl: () => void;
     isSelected: (id: string) => boolean;
     revokeBlob: () => void;
@@ -82,6 +85,8 @@ type GereqMediaBoxCtx = {
 
 export function registerMediaBox(alpine: typeof Alpine): void {
     alpine.data('gereqMediaBox', () => ({
+        contextKey: '',
+        clearedSelection: null as { value: string; preview: string; id: string } | null,
         preview: '',
         selectedId: '',
         clearing: false,
@@ -126,6 +131,32 @@ export function registerMediaBox(alpine: typeof Alpine): void {
 
             const input = this.fileInput();
             input?.addEventListener('change', () => this.onFileChange());
+        },
+
+        syncExternal(this: GereqMediaBoxCtx, event: CustomEvent<{ context: string; value: string; preview: string; selectedId: string; library?: LibraryItem[] }>) {
+            const state = event.detail;
+            if (!state || typeof state.context !== 'string') return;
+            if (state.library && JSON.stringify(this.items) !== JSON.stringify(state.library)) {
+                this.items = state.library;
+                this.totalCount = this.items.length;
+                this.buildFolderOptions();
+                this.$nextTick(() => this.applyFilters());
+            }
+            const changedContext = this.contextKey !== state.context;
+            if (!changedContext && this.$refs.url?.value === state.value && this.selectedId === state.selectedId && this.preview === state.preview) return;
+            this.contextKey = state.context;
+            if (changedContext) this.close();
+            this.revokeBlob();
+            this.preview = state.preview;
+            this.initialPreview = state.preview;
+            this.selectedId = state.selectedId;
+            this.clearing = false;
+            this.clearedSelection = null;
+            if (this.$refs.url) this.$refs.url.value = state.value;
+            if (this.$refs.urlVisible) this.$refs.urlVisible.value = state.value;
+            if (this.$refs.asset) this.$refs.asset.value = state.selectedId;
+            this.resetFileWidget();
+            this.preview = state.preview;
         },
 
         parseLibrary(this: GereqMediaBoxCtx) {
@@ -231,7 +262,7 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             input.dispatchEvent(new Event('change', { bubbles: true }));
         },
 
-        setUrlValue(this: GereqMediaBoxCtx, value: string) {
+        setUrlValue(this: GereqMediaBoxCtx, value: string, kind = 'url') {
             if (this.$refs.url) {
                 this.$refs.url.value = value;
                 this.$refs.url.dispatchEvent(new Event('input', { bubbles: true }));
@@ -239,7 +270,7 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             if (this.$refs.urlVisible) {
                 this.$refs.urlVisible.value = value;
             }
-            this.$el.dispatchEvent(new CustomEvent('media-change', { bubbles: true, detail: { value } }));
+            this.$el.dispatchEvent(new CustomEvent('media-change', { bubbles: true, detail: { value, kind, selectedId: this.selectedId, context: this.contextKey } }));
         },
 
         syncUrlVisible(this: GereqMediaBoxCtx) {
@@ -256,12 +287,13 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             if (this.$refs.asset) {
                 this.$refs.asset.value = id;
             }
-            this.setUrlValue(thumb || '');
+            this.setUrlValue(thumb || '', 'pick');
             this.resetFileWidget();
             this.close();
         },
 
         clearPhoto(this: GereqMediaBoxCtx) {
+            this.clearedSelection = { value: this.$refs.url?.value || '', preview: this.preview, id: this.selectedId };
             this.clearing = true;
             this.selectedId = '';
             this.revokeBlob();
@@ -269,7 +301,7 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             if (this.$refs.asset) {
                 this.$refs.asset.value = '';
             }
-            this.setUrlValue('');
+            this.setUrlValue('', 'clear');
             this.resetFileWidget();
         },
 
@@ -283,8 +315,11 @@ export function registerMediaBox(alpine: typeof Alpine): void {
 
         undoClear(this: GereqMediaBoxCtx) {
             this.clearing = false;
-            this.preview = this.initialPreview;
-            this.setUrlValue(this.initialPreview);
+            const previous = this.clearedSelection;
+            this.preview = previous?.preview ?? this.initialPreview;
+            this.selectedId = previous?.id ?? '';
+            if (this.$refs.asset) this.$refs.asset.value = this.selectedId;
+            this.setUrlValue(previous?.value ?? this.initialPreview, 'undo');
         },
 
         onFileChange(this: GereqMediaBoxCtx) {
@@ -308,7 +343,7 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             this.preview = URL.createObjectURL(file);
             this.$el.dispatchEvent(new CustomEvent('media-change', {
                 bubbles: true,
-                detail: { value: this.preview },
+                detail: { value: this.preview, kind: 'file', file, selectedId: '', context: this.contextKey },
             }));
         },
 
@@ -317,16 +352,13 @@ export function registerMediaBox(alpine: typeof Alpine): void {
             if (input?.files?.length) {
                 return;
             }
-            if (this.selectedId) {
-                return;
-            }
             const url = (this.$refs.urlVisible?.value || '').trim();
             this.clearing = false;
-            if (this.$refs.url) {
-                this.$refs.url.value = url;
-            }
+            this.selectedId = '';
+            if (this.$refs.asset) this.$refs.asset.value = '';
             this.revokeBlob();
             this.preview = url;
+            this.setUrlValue(url);
         },
 
         toggleUrl(this: GereqMediaBoxCtx) {

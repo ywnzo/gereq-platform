@@ -1716,7 +1716,8 @@ html[data-theme="gereq-dark"] .media-box-backdrop {
     font-size: 1.1rem;
 }
 .media-box-dock__search-input {
-    padding-left: 2.35rem;
+    /* The global input rule reads this token and outranks local padding. */
+    --control-px: 2.35rem;
 }
 .media-box-dock__filters {
     display: flex;
