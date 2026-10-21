@@ -10,7 +10,12 @@ GEREQ exposes two HTTP API surfaces: the **authenticated API** under `/api/v1` (
 | public | `/api/public/…` | Bearer / `X-Api-Key: grq_pub_*` **or** first-party browser (`Sec-Fetch-Site` same-origin/same-site, or `Origin` / `Referer` in `FRONTEND_ORIGIN` / `APP_URL`) | `ApiRateLimitMiddleware`, `PublicApiAuthMiddleware` (auto-added by `PublicCors::isPublicApiPath()`), CORS via `PublicCors::apply()` in controllers |
 | meta | `/api/v1/health`, `/api/openapi.json` | none | `HealthController`, `OpenApiController` |
 
-CSRF is skipped for every `/api/*` path (`CsrfMiddleware`).
+The global `CsrfMiddleware` delegates authenticated API CSRF checks to `ApiAuthMiddleware`.
+Session-authenticated POST/PATCH/PUT/DELETE requests require a valid `X-CSRF-TOKEN`
+header or `_csrf` form field; missing or invalid tokens return HTTP 419 with
+`csrf_token_mismatch`. Safe methods do not require a token. A successfully authenticated
+Bearer token is exempt; an invalid Bearer token falling back to an admin session is not.
+Public and store API routes retain their separate authentication and origin protections.
 
 ## Declaring endpoints: `ApiRegistry` / `ApiModule`
 

@@ -11,6 +11,7 @@ use Gereq\Api\Entity\ApiToken;
 use Gereq\Auth\Authenticator;
 use Gereq\Http\Middleware\MiddlewareInterface;
 use Gereq\Http\Route;
+use Gereq\Security\Csrf;
 use Gereq\User\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,6 +22,7 @@ final class ApiAuthMiddleware implements MiddlewareInterface
         private readonly Authenticator $auth,
         private readonly ApiTokenService $tokens,
         private readonly EntityManagerInterface $em,
+        private readonly Csrf $csrf,
     ) {
     }
 
@@ -37,6 +39,13 @@ final class ApiAuthMiddleware implements MiddlewareInterface
             $this->tokens->touch($token);
             $this->authViaRequest($request, $user);
         } elseif ($this->auth->check()) {
+            // Session cookies are ambient credentials; only authenticated Bearer tokens bypass CSRF.
+            if (!$request->isMethodSafe()) {
+                $value = $request->headers->get('X-CSRF-TOKEN') ?? $request->request->all()['_csrf'] ?? '';
+                if (!is_string($value) || !$this->csrf->isValid($value)) {
+                    return ApiResponse::error('csrf_token_mismatch', 'Invalid CSRF token.', [], 419);
+                }
+            }
             $request->attributes->set('_api_actor', ['type' => 'user', 'id' => $this->auth->id()]);
         } else {
             return ApiResponse::unauthorized();
@@ -91,7 +100,6 @@ final class ApiAuthMiddleware implements MiddlewareInterface
         $ref = new \ReflectionClass($this->auth);
         if ($ref->hasProperty('user')) {
             $prop = $ref->getProperty('user');
-            $prop->setAccessible(true);
             $prop->setValue($this->auth, $user);
         }
         $request->attributes->set('_api_user', $user);

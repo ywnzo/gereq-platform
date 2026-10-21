@@ -68,13 +68,19 @@ final class HtmlSanitizer
         $previous = libxml_use_internal_errors(true);
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $wrapped = '<?xml encoding="UTF-8"><div id="gereq-sanitize-root">' . $html . '</div>';
-        $dom->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
+        try {
+            $loaded = $dom->loadHTML($wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+        if (!$loaded) {
+            return '';
+        }
 
         $root = $dom->getElementById('gereq-sanitize-root');
         if (!$root instanceof \DOMElement) {
-            return strip_tags($html, '<' . implode('><', self::ALLOWED_TAGS) . '>');
+            return '';
         }
 
         $this->walk($root);
@@ -110,7 +116,13 @@ final class HtmlSanitizer
             if ($child instanceof \DOMElement) {
                 $tag = strtolower($child->tagName);
                 if (!in_array($tag, self::ALLOWED_TAGS, true)) {
-                    // Keep text content of disallowed wrappers.
+                    // Discard executable/embedded content, including its descendants.
+                    if (in_array($tag, ['script', 'style', 'iframe', 'object', 'embed', 'template', 'svg', 'math', 'noscript'], true)) {
+                        $node->removeChild($child);
+                        continue;
+                    }
+                    // Sanitize descendants before promoting them into the allowed tree.
+                    $this->walk($child);
                     while ($child->firstChild) {
                         $node->insertBefore($child->firstChild, $child);
                     }

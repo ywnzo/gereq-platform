@@ -24,4 +24,25 @@ final class HtmlSanitizerTest extends TestCase
         self::assertStringNotContainsString('script', $clean);
         self::assertStringContainsString('A', $clean);
     }
+    public function testUnsupportedWrappersCannotHideExecutableDescendants(): void
+    {
+        $sanitizer = new HtmlSanitizer();
+        foreach ([
+            '<section><article><img src=x onerror="alert(1)"></article></section>',
+            '<section><p onclick="alert(1)">Safe</p></section>',
+            '<article><a href="javascript:alert(1)">Link</a></article>',
+            '<section><script>alert(1)</script></section>',
+            '<div><svg><a onload="alert(1)">Bad</a></svg></div>',
+        ] as $source) {
+            $clean = $sanitizer->sanitize($source);
+            self::assertDoesNotMatchRegularExpression('/onerror|onclick|onload|javascript:|<script|<svg/i', $clean);
+            self::assertSame($clean, $sanitizer->sanitize($clean));
+        }
+    }
+
+    public function testUnwrappedSafeDescendantsKeepTheirContentAndLoseUnsafeAttributes(): void
+    {
+        $clean = (new HtmlSanitizer())->sanitize('<section><article><p onclick="bad()"><strong>Safe</strong></p></article></section>');
+        self::assertSame('<p><strong>Safe</strong></p>', $clean);
+    }
 }
