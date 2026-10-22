@@ -27,7 +27,7 @@ return [
     'watch' => [
         'reload' => true,
         'poll_ms' => 1200,
-        /** When true (default: APP_DEBUG), inject probe even before watch starts. */
+        /** When true + APP_DEBUG, keep probing existing watch.json (idle/active) without 404. */
         'probe_when_debug' => true,
     ],
 
