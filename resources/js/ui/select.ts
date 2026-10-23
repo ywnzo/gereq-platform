@@ -16,7 +16,7 @@ type GereqSelectCtx = {
     applyOption: (option: HTMLElement) => void;
     syncMultiUi: () => void;
     syncValidateInput: () => void;
-    syncNativeOptions: () => void;
+    syncNativeOptions: (readRootValue?: boolean) => void;
     syncNativeRoot: () => void;
     clearValue: () => void;
     removeValue: (value: string) => void;
@@ -78,10 +78,10 @@ export function registerSelect(alpine: typeof Alpine): void {
                 window.addEventListener('resize', () => this.close(), { signal });
                 this.syncNativeOptions();
                 this._onNativeChange = () => {
-                    this.syncNativeOptions();
+                    this.syncNativeOptions(false);
                     // Existing change handlers may reset the source value synchronously.
                     queueMicrotask(() => {
-                        if (root.isConnected) this.syncNativeOptions();
+                        if (root.isConnected) this.syncNativeOptions(false);
                     });
                 };
                 native.addEventListener('change', this._onNativeChange);
@@ -522,12 +522,15 @@ export function registerSelect(alpine: typeof Alpine): void {
             });
         },
 
-        syncNativeOptions(this: GereqSelectCtx) {
+        syncNativeOptions(this: GereqSelectCtx, readRootValue = true) {
             const root = this.$el;
             const native = root.querySelector<HTMLSelectElement>('select[data-select-native]');
             const list = root.querySelector<HTMLElement>('.g-select__options');
             if (!native || !list) {
                 return;
+            }
+            if (readRootValue && root.hasAttribute('data-native-value')) {
+                native.value = root.dataset.nativeValue ?? '';
             }
             const fragment = document.createDocumentFragment();
             for (const option of native.options) {

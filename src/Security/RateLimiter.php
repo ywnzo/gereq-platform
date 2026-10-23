@@ -8,6 +8,8 @@ final class RateLimiter
 {
     /** @var list<string> Key prefixes that must fail closed when the store is unusable. */
     private const SENSITIVE_PREFIXES = [
+        'cms:form:',
+        'site:inquiry:',
         'login:',
         'mfa:',
         'login-passkey:',

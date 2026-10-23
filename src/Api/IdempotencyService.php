@@ -39,6 +39,20 @@ final class IdempotencyService
         return $row instanceof IdempotencyRecord ? $row : null;
     }
 
+    /** Claim a unique key inside the caller's transaction before performing any mutation. */
+    public function claim(string $key, Request $request, JsonResponse $response): void
+    {
+        if (!$this->em->getConnection()->isTransactionActive()) {
+            throw new \LogicException('Idempotency claims require an active transaction.');
+        }
+        // Use the database unique constraint, including when another worker already committed.
+        $this->em->getConnection()->insert('api_idempotency', [
+            $this->em->getConnection()->quoteIdentifier('key') => $key, 'request_hash' => $this->requestHash($request),
+            'response_code' => $response->getStatusCode(), 'response_body' => (string) $response->getContent(),
+            'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+        ]);
+    }
+
     public function remember(string $key, Request $request, JsonResponse $response): void
     {
         $hash = $this->requestHash($request);
