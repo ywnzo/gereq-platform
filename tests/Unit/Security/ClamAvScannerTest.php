@@ -11,6 +11,15 @@ use Gereq\Testing\TestCase;
 
 final class ClamAvScannerTest extends TestCase
 {
+    public function testDeploymentPolicyAlertsOnUninspectableContainers(): void
+    {
+        $config = file_get_contents(dirname(__DIR__, 3) . '/docker/clamav/clamd.conf');
+        self::assertNotFalse($config);
+        foreach (['ScanPDF', 'ScanArchive', 'AlertEncryptedDoc', 'AlertEncryptedArchive', 'AlertExceedsMax'] as $setting) {
+            self::assertMatchesRegularExpression('/^' . $setting . '\s+yes\s*$/m', $config, $setting . ' is required to avoid incomplete scans appearing clean.');
+        }
+    }
+
     public function testMissingOrInvalidConfigurationNeverReturnsClean(): void
     {
         self::assertSame('failed', (new ClamAvScanner(new Repository()))->scan('bytes')->status);
@@ -32,7 +41,7 @@ final class ClamAvScannerTest extends TestCase
 
     public function testIncompleteScansAndStaleDefinitionsAreNotCleanOrConfirmedThreats(): void
     {
-        foreach (['Heuristics.Encrypted.PDF' => 'encrypted', 'Heuristics.Limits.Exceeded.MaxFileSize' => 'scan_limit'] as $signature => $reason) {
+        foreach (['Heuristics.Encrypted.PDF' => 'encrypted', 'Heuristics.Encrypted.Zip' => 'encrypted', 'Heuristics.Limits.Exceeded.MaxFileSize' => 'scan_limit'] as $signature => $reason) {
             $result = $this->scanReply('stream: ' . $signature . ' FOUND');
             self::assertSame('failed', $result->status);
             self::assertSame($reason, $result->reason);

@@ -63,7 +63,7 @@ Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) ·
 
 ## Development
 
-[Malware scanning](development/malware-scanning.md) — shared scanner, runtime setup and form attachment policy.
+[Malware scanning](development/malware-scanning.md) — shared scanner, runtime setup and form/mailbox attachment policy.
 
 | Page | Contents |
 |---|---|

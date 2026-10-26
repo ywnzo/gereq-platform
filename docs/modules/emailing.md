@@ -193,3 +193,12 @@ None.
 - Failed outbox messages are not retried automatically and there is no admin outbox screen – failures surface only as counts in dashboard widgets.
 - API error messages and several runtime exceptions are Czech literals (e.g. `Žádný aktivní e-mailový účet.`).
 - `README.md` version (1.5.3) lags `module.php` (1.6.1).
+
+
+## Attachment malware scanning (2.1.0)
+
+Cached attachments are scanned asynchronously through the shared Core scanner.
+The mailbox and scoped API expose verdicts; unscanned downloads need explicit
+CSRF-protected acknowledgement, infected downloads are blocked, and inline
+previews require clean, byte-matching raster images. Incoming mail is not delayed
+by scanner outages. See [scanner setup and mailbox policy](../development/malware-scanning.md#mailbox-attachments-emailing-210).

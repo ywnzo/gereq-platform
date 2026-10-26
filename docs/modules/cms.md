@@ -433,4 +433,4 @@ Form attachments are scanned asynchronously. Inquiry creation never waits for
 ClamAV; unscanned files require an authorized, CSRF-protected acknowledgement
 before download, and detected threats are blocked. See
 [malware scanning](../development/malware-scanning.md) for setup, retries, retained
-file backfill and the separate future mailbox integration.
+file backfill and the mailbox integration.

@@ -26,15 +26,15 @@ final class ContentSecurityPolicy
     /**
      * CSP for HTML e-mail preview iframes (inline styles/images, no scripts).
      */
-    public function emailPreviewHeader(): string
+    public function emailPreviewHeader(bool $allowEmbeddedMedia = true): string
     {
         return implode('; ', [
             "default-src 'none'",
             "script-src 'none'",
             "style-src 'unsafe-inline'",
-            "img-src data: blob: https: http:",
-            "font-src data: https: http:",
-            "media-src data: https: http:",
+            $allowEmbeddedMedia ? "img-src data: blob: https: http:" : "img-src 'self' https: http:",
+            $allowEmbeddedMedia ? "font-src data: https: http:" : "font-src 'self' https: http:",
+            $allowEmbeddedMedia ? "media-src data: https: http:" : "media-src 'self' https: http:",
             "object-src 'none'",
             "base-uri 'none'",
             "form-action 'none'",
