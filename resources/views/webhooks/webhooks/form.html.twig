@@ -15,7 +15,7 @@
             <header class="panel__head">
                 <h2>{{ 'common.details'|trans }}</h2>
             </header>
-            {{ forms().render(item ?? 'Modules\\Webhooks\\Domain\\Webhook', {
+            {{ forms().render(item ?? 'Gereq\\Webhooks\\Domain\\Webhook', {
                 form: 'webhooks.save',
                 cols: 1,
                 values: item ? {} : { timeout_seconds: defaultTimeout }
