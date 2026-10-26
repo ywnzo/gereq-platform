@@ -27,7 +27,8 @@ final class AnalyticsRateLimitTest extends TestCase
             self::assertSame(200, $middleware->process(Request::create('/api/public/site/inquiries', 'POST'), $next)->getStatusCode());
             self::assertSame(429, $middleware->process(Request::create('/api/public/site/inquiries', 'POST'), $next)->getStatusCode());
         } finally {
-            foreach (glob($directory . '/*') ?: [] as $file) {
+            $files = glob($directory . '/*');
+            foreach ($files === false ? [] : $files as $file) {
                 unlink($file);
             }
             rmdir($directory);

@@ -252,6 +252,7 @@ final class Application
             \Gereq\Schedule\ScheduleState::class => factory(
                 static fn (): \Gereq\Schedule\ScheduleState => new \Gereq\Schedule\ScheduleState($basePath),
             ),
+            \Gereq\Security\Malware\MalwareScanner::class => autowire(\Gereq\Security\Malware\ClamAvScanner::class),
             RateLimiter::class => factory(static fn (): RateLimiter => new RateLimiter($basePath . '/storage/cache/rate')),
             \Gereq\Search\SelfRepairSearch::class => factory(static function (Repository $config): \Gereq\Search\SelfRepairSearch {
                 $normalizer = new \Gereq\Search\TextNormalizer();

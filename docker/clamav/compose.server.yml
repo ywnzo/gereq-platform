@@ -1,0 +1,35 @@
+name: gereq-malware
+
+services:
+  clamav:
+    image: ${CLAMAV_IMAGE:?Set CLAMAV_IMAGE to a reviewed version pinned by digest}
+    container_name: gereq-clamav
+    restart: unless-stopped
+    mem_limit: 4g
+    cpus: 2
+    environment:
+      FRESHCLAM_CHECKS: "12"
+    volumes:
+      - signatures:/var/lib/clamav
+      - ./clamd.conf:/etc/clamav/clamd.conf:ro
+      - ./freshclam.server.conf:/etc/clamav/freshclam.conf:ro
+    networks:
+      - scanner
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh && kill -0 $$(cat /run/clamav/freshclam.pid)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  signatures:
+
+networks:
+  scanner:
+    name: gereq-malware-scanner

@@ -63,6 +63,8 @@ Forum package: [Forum](modules/forum.md) · [Community](modules/community.md) ·
 
 ## Development
 
+[Malware scanning](development/malware-scanning.md) — shared scanner, runtime setup and form attachment policy.
+
 | Page | Contents |
 |---|---|
 | [Creating a module](development/creating-a-module.md) | Scaffolding, register/boot, routes, API, events, widgets, migrations, GitLab submodule, release checklist |

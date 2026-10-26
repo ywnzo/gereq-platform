@@ -428,3 +428,9 @@ pixels, including zero for square corners. A positive form block radius clips
 the form contents at its rounded corners without changing individual inputs. Native controls and Ant Design date/
 select controls share the same scoped CSS variables. Validation borders retain
 their error color. Numeric settings and colors are normalized before persistence.
+
+Form attachments are scanned asynchronously. Inquiry creation never waits for
+ClamAV; unscanned files require an authorized, CSRF-protected acknowledgement
+before download, and detected threats are blocked. See
+[malware scanning](../development/malware-scanning.md) for setup, retries, retained
+file backfill and the separate future mailbox integration.

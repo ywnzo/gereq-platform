@@ -73,7 +73,7 @@ final class Cms
         $this->attachments = $storage;
     }
 
-    /** @return list<array{id: string, filename: string, route: string, params: array<string, string>}> */
+    /** @return list<array{id: string, filename: string, scan_status: string, route: string, params: array<string, string>}> */
     public function recordAttachments(string $action, string $recordId): array
     {
         return $this->attachments?->forRecord($action, $recordId) ?? [];
