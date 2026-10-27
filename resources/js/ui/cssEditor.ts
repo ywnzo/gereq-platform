@@ -47,7 +47,6 @@ function adminIsDark(): boolean {
 
 const lightTheme = EditorView.theme({
     '&': {
-        fontSize: '13px',
         border: '1px solid var(--border)',
         borderRadius: '12px',
         overflow: 'hidden',
@@ -75,6 +74,10 @@ const lightTheme = EditorView.theme({
         outlineOffset: '1px',
     },
 }, { dark: false });
+
+const fontTheme = EditorView.theme({
+    '&': { fontSize: 'var(--control-font, var(--grq-text-control))' },
+});
 
 const dialogHeightTheme = EditorView.theme({
     '.cm-scroller': {
@@ -185,6 +188,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                         cssSyntaxLinter(),
                         keymap.of([...defaultKeymap, indentWithTab]),
                         this.themeComp.of(themeExtension(dark)),
+                        fontTheme,
                         ...(dialog ? [dialogHeightTheme] : []),
                         EditorView.updateListener.of((update) => {
                             if (update.docChanged) {

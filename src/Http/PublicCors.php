@@ -20,7 +20,7 @@ final class PublicCors
      */
     public static function apply(Response $response, ?Request $request, string $methods = 'GET, OPTIONS'): Response
     {
-        $allowedRaw = trim((string) env_value('FRONTEND_ORIGIN', ''));
+        $allowedRaw = StorefrontOrigins::raw();
         $requestOrigin = trim((string) ($request?->headers->get('Origin') ?? ''));
         $debug = (bool) env_value('APP_DEBUG', false);
 
@@ -108,9 +108,9 @@ final class PublicCors
     /** @return list<string> */
     public static function allowedOrigins(): array
     {
-        $raw = trim((string) env_value('FRONTEND_ORIGIN', ''));
+        $raw = StorefrontOrigins::raw();
         $list = [];
-        if ($raw !== '' && $raw !== '*') {
+        if ($raw !== '' && $raw !== '*' && $raw !== StorefrontOrigins::UNAVAILABLE) {
             foreach (explode(',', $raw) as $part) {
                 $origin = trim($part);
                 if ($origin !== '') {

@@ -16,6 +16,7 @@
 
     <form
         id="settings-form"
+        class="settings-page"
         method="post"
         action="{{ url('admin.settings.update') }}"
         autocomplete="off"
@@ -36,11 +37,11 @@
             </div>
         </header>
 
-        <div class="detail-hub">
+        <div class="detail-hub settings-page__layout">
             {% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'div' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'settings.title'|trans }}"{% endblock %}{% block content %}
                 {% for groupId, group in groups %}
                     {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="design-tab" role="tab" data-tab="{{ groupId }}"{% endblock %}{% block content %}
-                        {{ group.label|trans }}<span class="module-tab-count">{{ group.items|length }}</span>
+                        {{ group.label|trans }}
                     {% endblock %}{% endembed %}
                 {% endfor %}
             {% endblock %}{% endembed %}
@@ -62,8 +63,9 @@
                         } %}
                     {% else %}
                         <div class="detail-stack">
+                            {% if canManageSettings or groupId != 'storefront' %}
                             {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
-                                {% block attributes %} class="panel"{% endblock %}
+                                {% block attributes %} class="panel settings-page__panel"{% endblock %}
                                 {% block content %}
                                 <header class="panel__head">
                                     <div>
@@ -91,7 +93,27 @@
                                         {% set isWide = key in wideKeys %}
                                         {% set isWidget = isColor or isWide %}
                                         {% set isChoice = definition.type == 'boolean' or (definition.options is defined and definition.options is not empty) %}
-                                        {% if isChoice and not isWidget %}
+                                        {% if groupId == 'storefront' and key in ['storefront.origins_override', 'storefront.path', 'storefront.cache_enabled'] %}
+                                            {% set section = key == 'storefront.origins_override' ? 'origins' : (key == 'storefront.path' ? 'build' : 'cache') %}
+                                            <h3 class="settings-page__section-title field--full">{{ ('settings.storefront.section.' ~ section)|trans }}</h3>
+                                        {% endif %}
+                                        {% if key == 'storefront.origins_override' %}
+                                            {% set originMode = old('origin_mode', values[key] ? 'custom' : 'environment', 'settings.origins') %}
+                                            <div class="field field--full" x-data="gereqStorefrontOrigins" data-mode="{{ originMode }}" @change="updateMode">
+                                                {% include 'admin/settings/_choice_select.html.twig' with {
+                                                    field: 'origin_mode', value: originMode,
+                                                    options: { environment: 'settings.storefront.origins.environment', custom: 'settings.storefront.origins.custom' },
+                                                    label: 'settings.storefront.origins.mode'|trans,
+                                                } %}
+                                                <p class="field__hint" x-show="isEnvironment" x-cloak>{{ 'settings.storefront.origins.environment_value'|trans }}: <code>{{ originEnvironment ?: ('settings.storefront.origins.environment_empty'|trans) }}</code></p>
+                                                <label class="field" x-show="isCustom" x-cloak>
+                                                    <span>{{ 'settings.storefront.origins'|trans }}</span>
+                                                    {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input settings-origins" name="origins" rows="2"{% endblock %}{% block content %}{{ old('origins', values[key] ?: originEnvironment, 'settings.origins') }}{% endblock %}{% endembed %}
+                                                    {% if error('origins', 'settings.origins') %}<small class="g-error">{{ error('origins', 'settings.origins')|trans }}</small>{% endif %}
+                                                    <small class="field__hint">{{ 'settings.storefront.origins.help'|trans }}</small>
+                                                </label>
+                                            </div>
+                                        {% elseif isChoice and not isWidget %}
                                             {% include 'admin/settings/_choice_select.html.twig' with {
                                                 field: field,
                                                 value: values[key],
@@ -132,24 +154,46 @@
                                                 {% endif %}
                                             {% if isWidget %}</div>{% else %}</label>{% endif %}
                                         {% endif %}
+                                        {% if groupId == 'storefront' and key == 'storefront.build_command' and canManageSettings %}
+                                            <div class="field field--full settings-page__action">
+                                                <p class="field__hint">{{ 'settings.storefront.rebuild.help'|trans }}</p>
+                                                {% include 'ui/button.html.twig' with {
+                                                    label: 'settings.storefront.rebuild'|trans,
+                                                    type: 'submit', variant: 'ghost',
+                                                    attrs: { 'formaction': (url('admin.settings.storefront.rebuild')), 'formmethod': 'post', 'data-confirm': ('settings.storefront.rebuild.confirm'|trans|e('html_attr')), 'data-confirm-title': ('settings.storefront.rebuild'|trans|e('html_attr')), 'data-confirm-label': ('settings.storefront.rebuild'|trans|e('html_attr')), 'data-confirm-danger': '0' }
+                                                } only %}
+                                            </div>
+                                        {% endif %}
                                     {% endfor %}
                                 </div>
-                            {% if groupId == 'storefront' %}
-                                <div class="form-grid" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border, rgba(0,0,0,.08))">
-                                    <div class="field field--full">
-                                        <span class="settings-row__label">{{ 'settings.storefront.rebuild'|trans }}</span>
-                                        <p class="muted" style="margin:.35rem 0 .75rem">{{ 'settings.storefront.rebuild.help'|trans }}</p>
-                                        {% include 'ui/button.html.twig' with {
-                                            label: 'settings.storefront.rebuild'|trans,
-                                            type: 'submit',
-                                            variant: 'primary',
-                                            attrs: { 'formaction': (url('admin.settings.storefront.rebuild')), 'formmethod': 'post', 'data-confirm': ('settings.storefront.rebuild.confirm'|trans|e('html_attr')), 'data-confirm-title': ('settings.storefront.rebuild'|trans|e('html_attr')), 'data-confirm-label': ('settings.storefront.rebuild'|trans|e('html_attr')), 'data-confirm-danger': '0' }
-                                        } only %}
-                                    </div>
-                                </div>
-                            {% endif %}
                                 {% endblock %}
                             {% endembed %}
+                            {% endif %}
+
+                            {% if groupId == 'storefront' and canManageCmsSettings %}
+                                <section class="panel">
+                                    <header class="panel__head"><div><h2>{{ 'settings.storefront.cms'|trans }}</h2><p class="muted">{{ 'settings.storefront.cms.help'|trans }}</p></div></header>
+                                    <div class="form-grid">
+                                        <div class="field field--full">
+                                            <span>{{ 'settings.storefront.home'|trans }}</span>
+                                            {% embed 'ui/select.html.twig' with { native: true } %}
+                                                {% block native_attributes %} name="home_page_id"{% endblock %}
+                                                {% block native_options %}
+                                                    {% embed 'ui/option.html.twig' %}{% block option_attributes %} value=""{% endblock %}{% block content %}{{ 'settings.storefront.home.none'|trans }}{% endblock %}{% endembed %}
+                                                    {% for page in cmsPages %}
+                                                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ page.id }}" {{ page.id == cmsHomePageId ? 'selected' : '' }}{% endblock %}{% block content %}{{ page.title }}{% endblock %}{% endembed %}
+                                                    {% endfor %}
+                                                {% endblock %}
+                                            {% endembed %}
+                                        </div>
+                                        <details class="field--full settings-page__advanced">
+                                            <summary>{{ 'cms.settings.custom_css_public'|trans }}</summary>
+                                            {% include 'admin/settings/_css_editor.html.twig' with { key: 'cms.custom_css_public', field: 'cms__custom_css_public', values: { 'cms.custom_css_public': cmsPublicCss }, cssVariables: cssVariables } only %}
+                                        </details>
+                                        <input type="hidden" name="cms_settings_present" value="1">
+                                    </div>
+                                </section>
+                            {% endif %}
 
                             {% if groupId == 'core' %}
                                 {{ apply_filters('admin.settings.panel.core', '')|raw }}
@@ -160,5 +204,5 @@
             {% endfor %}
         </div>
     </form>
-    {{ apply_filters('admin.settings.extra_forms', '')|raw }}
+    {% if canManageSettings %}{{ apply_filters('admin.settings.extra_forms', '')|raw }}{% endif %}
 {% endblock %}

@@ -46,18 +46,7 @@ final class PublicUrl
     /** @return list<string> */
     public static function frontendList(): array
     {
-        $raw = trim((string) env_value('FRONTEND_ORIGIN', ''));
-        $list = [];
-        if ($raw !== '' && $raw !== '*') {
-            foreach (explode(',', $raw) as $part) {
-                $origin = rtrim(trim($part), '/');
-                if ($origin !== '') {
-                    $list[] = $origin;
-                }
-            }
-        }
-
-        return array_values(array_unique($list));
+        return StorefrontOrigins::list();
     }
 
     public static function isLoopback(string $url): bool

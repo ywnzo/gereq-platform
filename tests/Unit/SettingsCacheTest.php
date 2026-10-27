@@ -75,6 +75,33 @@ final class SettingsCacheTest extends TestCase
         self::assertTrue($state->isComplete());
     }
 
+    public function testOriginOverrideAndEnvironmentFallback(): void
+    {
+        $repo = $this->createMock(EntityRepository::class);
+        $repo->method('findAll')->willReturn([
+            new SettingRecord('storefront.origins_override', 'https://shop.example', SettingRecord::TYPE_STRING),
+        ]);
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getRepository')->willReturn($repo);
+        self::assertSame('https://shop.example', \Gereq\Http\StorefrontOrigins::resolve($this->settings($em), '*'));
+
+        $emptyRepo = $this->createMock(EntityRepository::class);
+        $emptyRepo->method('findAll')->willReturn([]);
+        $emptyEm = $this->createMock(EntityManagerInterface::class);
+        $emptyEm->method('getRepository')->willReturn($emptyRepo);
+        self::assertSame('*', \Gereq\Http\StorefrontOrigins::resolve($this->settings($emptyEm), '*'));
+    }
+
+    public function testUnavailableSettingsDoNotFallBackToWildcard(): void
+    {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getRepository')->willThrowException(new \RuntimeException('database unavailable'));
+        self::assertSame(
+            \Gereq\Http\StorefrontOrigins::UNAVAILABLE,
+            \Gereq\Http\StorefrontOrigins::resolve($this->settings($em), '*'),
+        );
+    }
+
     private function settings(EntityManagerInterface $em): Settings
     {
         $publishables = new PublishableRegistry();

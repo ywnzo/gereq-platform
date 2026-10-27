@@ -18,6 +18,7 @@ import { registerStickyChrome } from './stickyChrome';
 import { registerDashboardGrid } from './dashboardGrid';
 import { registerAmbientPointer } from './ambientPointer';
 import { registerSettingsBrandPreview } from './settingsBrandPreview';
+import { registerStorefrontOrigins } from './storefrontOrigins';
 import { registerColorField } from './colorField';
 import { registerBrandAsset } from './brandAsset';
 import { registerCssEditor } from './cssEditor';
@@ -62,6 +63,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerAmbientPointer();
     registerWebauthn(alpine);
     registerSettingsBrandPreview(alpine);
+    registerStorefrontOrigins(alpine);
     registerColorField(alpine);
     registerBrandAsset(alpine);
     registerFile(alpine);

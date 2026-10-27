@@ -1,4 +1,104 @@
 /* Settings — standard admin panels with a sticky save bar */
+.settings-page__layout {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr);
+    align-items: start;
+    gap: var(--grq-space-5);
+}
+.settings-page__layout > .design-tabs {
+    grid-column: 1;
+    grid-row: 1;
+    top: calc(var(--topbar-h, 52px) + 1rem);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    max-height: calc(100vh - var(--topbar-h, 52px) - 2rem);
+    overflow-y: auto;
+    margin: 0;
+    padding: var(--grq-space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: none;
+}
+.settings-page__layout > .design-tabs .design-tab {
+    justify-content: flex-start;
+    text-align: left;
+    white-space: normal;
+}
+.settings-page__layout > .design-panel {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+}
+.settings-page__panel > .form-grid {
+    width: min(100%, 75rem);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--grq-space-5);
+}
+.settings-page__panel [data-mode] {
+    width: min(100%, 34rem);
+}
+.settings-page__action {
+    align-items: flex-start;
+    gap: var(--grq-space-2);
+}
+.settings-page__action p { margin: 0; }
+.settings-page__section-title {
+    margin: var(--grq-space-3) 0 0;
+    padding-top: var(--grq-space-4);
+    border-top: 1px solid var(--border);
+    font-size: var(--grq-text-base);
+    font-weight: 650;
+    color: var(--text);
+}
+.settings-page__section-title:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+.settings-page__advanced {
+    min-width: 0;
+    padding: var(--grq-space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.settings-page__advanced > summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+.settings-page__advanced[open] > summary {
+    margin-bottom: var(--grq-space-4);
+}
+@media (max-width: 1100px) {
+    .settings-page__panel > .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+    .settings-page__layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--grq-space-4);
+    }
+    .settings-page__layout > .design-tabs {
+        position: static;
+        grid-column: 1;
+        grid-row: 1;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-height: none;
+    }
+    .settings-page__layout > .design-tabs .design-tab { white-space: nowrap; }
+    .settings-page__layout > .design-panel { grid-column: 1; grid-row: 2; }
+}
+@media (max-width: 600px) {
+    .settings-page__panel > .form-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+textarea.settings-origins {
+    min-height: 0;
+}
+
 .settings-footer {
     position: sticky;
     bottom: 0;

@@ -106,6 +106,7 @@ final class CoreSettingsRegistrar
             ContentVersion::DEFAULT,
         );
 
+        $this->settings->define('storefront.origins_override', SettingRecord::TYPE_STRING, 'settings.storefront.origins', '');
         // Storefront source + rebuild (local path or user@host:/path).
         $this->settings->define(
             \Gereq\Http\StorefrontRebuild::SETTING_PATH,
@@ -168,6 +169,17 @@ final class CoreSettingsRegistrar
 
     private function validation(): void
     {
+        $this->validation->ruleset('settings.origins', [
+            'origin_mode' => 'required|in:environment,custom',
+            'origins' => 'nullable|max:8000',
+        ], static function (array $data, array $errors): array {
+            if (($data['origin_mode'] ?? '') === 'custom'
+                && \Gereq\Http\StorefrontOrigins::parseOverride((string) ($data['origins'] ?? '')) === null) {
+                $errors['origins'] = 'settings.storefront.origins.invalid';
+            }
+
+            return $errors;
+        });
         $this->validation->ruleset('auth.login', [
             'email' => 'required|email|max:190',
             'password' => 'required|min:1',

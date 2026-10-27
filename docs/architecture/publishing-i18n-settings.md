@@ -61,6 +61,8 @@ Admin routes: `admin.publish.pending`, `admin.publish.run`, `admin.publish.relea
 | `setLive(key, value, type, module)` | upsert, flush, refresh cache |
 | `has()`, `typeOf()`, `definitions()`, `globalDefinitions()` | |
 
+Storefront origins are configured in Settings → Storefront. A saved custom list takes precedence over `FRONTEND_ORIGIN`; selecting environment configuration restores the fallback. Origin changes apply immediately to CORS, first-party checks, CSP and storefront previews. Empty or wildcard environment values retain their legacy behavior. CMS managers can access the CMS section without platform settings permission; CMS home page and public CSS remain staged until published.
+
 Types (`SettingRecord::TYPE_*`): `string`, `boolean` (`'1'`/`'0'`), `integer`, `json`, `encrypted` (AES-256-GCM with `sha256(APP_KEY)`, payload `gcm:<base64 iv|tag|cipher>`; legacy AES-CBC values are still decrypted). All rows are loaded with one `SELECT` per request (`warm()`).
 
 Core-defined keys: `app.name`, `app.locale`, `admin.theme` (`system|light|dark`), `admin.dashboard.layout` (json), `app.content_version`, and the `brand.*` group (below). Modules define their own with a `module` id so they can be listed/reset per module.

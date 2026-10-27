@@ -11,6 +11,7 @@
         {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %}
             class="css-editor__input"
             name="{{ field }}"
+            {% if formId|default(false) %}form="{{ formId }}"{% endif %}
             x-ref="input"
             hidden
         {% endblock %}{% block content %}{{ values[key] }}{% endblock %}{% endembed %}

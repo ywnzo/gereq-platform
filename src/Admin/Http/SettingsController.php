@@ -55,7 +55,13 @@ final class SettingsController extends Controller
 
     public function index(Request $request): Response
     {
-        $definitions = $this->settings->globalDefinitions();
+        $user = $this->auth->user();
+        $canManage = $user !== null && $user->can('settings.manage');
+        $canManageCms = $user !== null && $user->can('cms.manage') && $this->capabilities->has('cms');
+        if (!$canManage && !$canManageCms) {
+            $this->abort(403);
+        }
+        $definitions = $canManage ? $this->settings->globalDefinitions() : [];
         $values = [];
         foreach ($definitions as $key => $definition) {
             $values[$key] = $this->settings->get($key, $definition['default']);
@@ -89,7 +95,21 @@ final class SettingsController extends Controller
                 $values['cms.custom_css_public'] = $legacy;
             }
         }
+        $cmsPublicCss = (string) $this->settings->get('cms.custom_css_public', '');
+        if ($cmsPublicCss === '') {
+            $cmsPublicCss = (string) $this->settings->get('cms.custom_css', '');
+        }
         $groups = $this->groupDefinitions($definitions);
+        $cmsPages = [];
+        if ($canManageCms) {
+            $provider = $this->capabilities->get('cms');
+            if ($provider instanceof \Gereq\Cms\StorefrontSettingsProvider) {
+                $cmsPages = $provider->storefrontSettingsPages();
+                $groups['storefront'] ??= ['label' => 'settings.group.storefront', 'items' => []];
+            } else {
+                $canManageCms = false;
+            }
+        }
         $tab = (string) $request->query->get('tab', '');
         if ($tab === '' || !isset($groups[$tab])) {
             $tab = (string) (array_key_first($groups) ?? 'core');
@@ -104,71 +124,131 @@ final class SettingsController extends Controller
             'cssVariables' => $this->branding->documentedVariables(),
             'dashboardCatalog' => $this->dashboard->catalog(null),
             'adminPath' => \Gereq\Support\AdminPath::base(),
-            'libraryImages' => $this->libraryImages(),
+            'libraryImages' => $canManage ? $this->libraryImages() : [],
+            'canManageSettings' => $canManage,
+            'canManageCmsSettings' => $canManageCms,
+            'cmsPages' => $cmsPages,
+            'cmsHomePageId' => (string) $this->settings->get('cms.home_page_id', ''),
+            'cmsPublicCss' => $cmsPublicCss,
+            'originEnvironment' => (string) env_value('FRONTEND_ORIGIN', ''),
         ]);
     }
 
     public function update(Request $request): Response
     {
-        foreach ($this->settings->globalDefinitions() as $key => $definition) {
-            if ($key === Dashboard::LAYOUT_SETTING) {
-                $posted = $request->request->get(str_replace('.', '__', $key));
-                $items = [];
-                if (is_string($posted) && $posted !== '') {
-                    $decoded = Json::decode($posted);
-                    $items = is_array($decoded) ? $decoded : [];
+        $user = $this->auth->user();
+        $canManage = $user !== null && $user->can('settings.manage');
+        $canManageCms = $user !== null && $user->can('cms.manage') && $this->capabilities->has('cms');
+        if (!$canManage && !$canManageCms) {
+            $this->abort(403);
+        }
+        $cmsPosted = $request->request->has('cms_settings_present');
+        if (!$canManageCms && ($cmsPosted || $request->request->has('home_page_id') || $request->request->has('cms__custom_css_public'))) {
+            $this->abort(403);
+        }
+        $cmsProvider = null;
+        $cmsData = null;
+        if ($cmsPosted) {
+            $provider = $this->capabilities->get('cms');
+            if (!$provider instanceof \Gereq\Cms\StorefrontSettingsProvider) {
+                $this->abort(403);
+            }
+            $cmsData = $this->validate($request, 'cms.storefront.settings');
+            $cmsData['home_page_id'] = trim((string) ($cmsData['home_page_id'] ?? ''));
+            $currentCss = (string) $this->settings->get('cms.custom_css_public', '');
+            if ($currentCss === '') {
+                $currentCss = (string) $this->settings->get('cms.custom_css', '');
+            }
+            $cmsChanged = $cmsData['home_page_id'] !== (string) $this->settings->get('cms.home_page_id', '')
+                || (string) ($cmsData['cms__custom_css_public'] ?? '') !== $currentCss;
+            if ($cmsChanged) {
+                if (gereq()->make(\Gereq\Module\ModuleUpdater::class)->isUpdateAvailable('cms')) {
+                    $this->abort(409, $this->translator->trans('admin.modules.gate.json', ['%module%' => 'CMS']));
                 }
-                $this->dashboard->saveLayout($items);
-                continue;
+                $provider->validateStorefrontHomePage($cmsData['home_page_id']);
+                $cmsProvider = $provider;
             }
-
-            // Brand assets are resolved from media box (file / library / clear / URL).
-            if ($key === 'brand.logo_url' || $key === 'brand.favicon_url') {
-                continue;
-            }
-
-            $posted = $request->request->get(str_replace('.', '__', $key));
-            if ($definition['type'] === 'boolean') {
-                $this->settings->set($key, $posted === '1', $definition['type'], $definition['module']);
-                continue;
-            }
-
-            if ($definition['type'] === SettingRecord::TYPE_JSON) {
-                $decoded = is_string($posted) && $posted !== '' ? Json::decode($posted) : [];
-                $this->settings->set($key, is_array($decoded) ? $decoded : [], $definition['type'], $definition['module']);
-                continue;
-            }
-
-            $value = (string) $posted;
-            if ($key === 'app.locale' && !$this->locales->isSupported($value)) {
-                continue;
-            }
-
-            $this->settings->set($key, $value, $definition['type'], $definition['module']);
         }
 
-        $this->resolveBrandAsset(
-            $request,
-            'logo',
-            'brand.logo_url',
-            'brand_logo_file',
-            'brand_logo_media_asset_id',
-            'clear_brand_logo',
-            'brand__logo_url',
-        );
-        $this->resolveBrandAsset(
-            $request,
-            'favicon',
-            'brand.favicon_url',
-            'brand_favicon_file',
-            'brand_favicon_media_asset_id',
-            'clear_brand_favicon',
-            'brand__favicon_url',
-        );
+        $originOverride = '';
+        if ($canManage) {
+            $originInput = $this->validate($request, 'settings.origins');
+            $originOverride = ($originInput['origin_mode'] ?? '') === 'custom'
+                ? implode(',', \Gereq\Http\StorefrontOrigins::parseOverride((string) ($originInput['origins'] ?? '')) ?? [])
+                : '';
+        }
+        if ($canManage) {
+            foreach ($this->settings->globalDefinitions() as $key => $definition) {
+                if ($key === \Gereq\Http\StorefrontOrigins::SETTING) {
+                    $this->settings->set($key, $originOverride, SettingRecord::TYPE_STRING);
+                    continue;
+                }
+                if ($key === Dashboard::LAYOUT_SETTING) {
+                    $posted = $request->request->get(str_replace('.', '__', $key));
+                    $items = [];
+                    if (is_string($posted) && $posted !== '') {
+                        $decoded = Json::decode($posted);
+                        $items = is_array($decoded) ? $decoded : [];
+                    }
+                    $this->dashboard->saveLayout($items);
+                    continue;
+                }
+
+                // Brand assets are resolved from media box (file / library / clear / URL).
+                if ($key === 'brand.logo_url' || $key === 'brand.favicon_url') {
+                    continue;
+                }
+
+                $posted = $request->request->get(str_replace('.', '__', $key));
+                if ($definition['type'] === 'boolean') {
+                    $this->settings->set($key, $posted === '1', $definition['type'], $definition['module']);
+                    continue;
+                }
+
+                if ($definition['type'] === SettingRecord::TYPE_JSON) {
+                    $decoded = is_string($posted) && $posted !== '' ? Json::decode($posted) : [];
+                    $this->settings->set($key, is_array($decoded) ? $decoded : [], $definition['type'], $definition['module']);
+                    continue;
+                }
+
+                $value = (string) $posted;
+                if ($key === 'app.locale' && !$this->locales->isSupported($value)) {
+                    continue;
+                }
+
+                $this->settings->set($key, $value, $definition['type'], $definition['module']);
+            }
+
+            $this->resolveBrandAsset(
+                $request,
+                'logo',
+                'brand.logo_url',
+                'brand_logo_file',
+                'brand_logo_media_asset_id',
+                'clear_brand_logo',
+                'brand__logo_url',
+            );
+            $this->resolveBrandAsset(
+                $request,
+                'favicon',
+                'brand.favicon_url',
+                'brand_favicon_file',
+                'brand_favicon_media_asset_id',
+                'clear_brand_favicon',
+                'brand__favicon_url',
+            );
+        }
+        if ($cmsProvider !== null && $cmsData !== null) {
+            $cmsProvider->saveStorefrontSettings(
+                (string) $cmsData['home_page_id'],
+                (string) ($cmsData['cms__custom_css_public'] ?? ''),
+            );
+            $this->auditor->log('cms.storefront_settings.updated', 'settings', null);
+        }
 
         $tab = (string) $request->request->get('settings_tab', '');
         // Driver/TTL/enable changes must not leave stale public payloads around.
-        if ($tab === 'storefront') {
+        if ($canManage && $tab === 'storefront') {
             $this->storeFrontCache->flush();
         }
 

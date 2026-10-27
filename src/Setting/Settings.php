@@ -19,6 +19,8 @@ final class Settings
     /** @var array<string, mixed>|null null = not loaded yet */
     private ?array $values = null;
 
+    private bool $storageAvailable = true;
+
     /** @var array<string, mixed> in-request overlay from staging (settings keys) */
     private array $stagingOverlay = [];
 
@@ -54,6 +56,13 @@ final class Settings
             'options' => $options,
             'global' => $global,
         ];
+    }
+
+    public function storageAvailable(): bool
+    {
+        $this->warm();
+
+        return $this->storageAvailable;
     }
 
     public function has(string $key): bool
@@ -212,6 +221,7 @@ final class Settings
             }
         } catch (\Throwable) {
             // table may not exist yet (install / migrate)
+            $this->storageAvailable = false;
             $this->values = [];
         }
     }

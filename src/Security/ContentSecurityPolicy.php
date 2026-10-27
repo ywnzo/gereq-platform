@@ -57,9 +57,9 @@ final class ContentSecurityPolicy
         }
 
         $frameSrc = ["'self'", 'https://gereq.cz', ...$this->render->cspOrigins()];
-        foreach (explode(',', (string) env_value('FRONTEND_ORIGIN', '')) as $origin) {
+        foreach (explode(',', \Gereq\Http\StorefrontOrigins::raw()) as $origin) {
             $origin = trim($origin);
-            if ($origin !== '') {
+            if ($origin !== '' && $origin !== \Gereq\Http\StorefrontOrigins::UNAVAILABLE) {
                 $frameSrc[] = $origin;
             }
         }

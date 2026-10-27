@@ -162,8 +162,8 @@ final class AdminRoutesRegistrar
             $router->post('/modules/{id}/update', [ModuleController::class, 'update'])->name('admin.modules.update')->middleware('auth')->permission('modules.manage');
             $router->post('/modules/{id}/settings', [ModuleController::class, 'saveSettings'])->name('admin.modules.settings')->middleware('auth')->permission('modules.manage');
 
-            $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth')->permission('settings.manage');
-            $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth')->permission('settings.manage');
+            $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth');
+            $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth');
             $router->post('/settings/storefront/rebuild', [SettingsController::class, 'rebuildStorefront'])->name('admin.settings.storefront.rebuild')->middleware('auth')->permission('settings.manage');
             $router->get('/publish/pending', [PublishController::class, 'pending'])->name('admin.publish.pending')->middleware('auth')->permission('settings.manage');
             $router->post('/publish', [PublishController::class, 'publish'])->name('admin.publish.run')->middleware('auth')->permission('settings.manage');
