@@ -1397,6 +1397,7 @@ return [
     'settings.palette.preview.accent' => 'Doporučujeme',
     'settings.palette.preview.card' => 'Objevte více',
     'settings.palette.preview.card_description' => 'Obsah se zobrazuje na plochách, jako je tato.',
+    'settings.palette.preview.input' => 'E-mail',
     'settings.palette.mode.help' => 'Stávající barvy zůstanou zachovány, dokud nezapnete a neuložíte sjednocenou paletu.',
     'settings.palette.legacy' => 'Stávající barvy',
     'settings.palette.unified' => 'Sjednocená paleta',

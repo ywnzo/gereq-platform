@@ -1380,6 +1380,7 @@ return [
     'settings.palette.preview.accent' => 'Featured',
     'settings.palette.preview.card' => 'A little more to explore',
     'settings.palette.preview.card_description' => 'Content appears on surfaces like this one.',
+    'settings.palette.preview.input' => 'Email',
     'settings.palette.mode.help' => 'Existing colors stay in place until you enable and save the unified palette.',
     'settings.palette.legacy' => 'Existing colors',
     'settings.palette.unified' => 'Unified palette',

@@ -1197,12 +1197,16 @@ html[data-brand-palette="1"] .brand-settings__section--colors .settings-row--col
 .brand-storefront-preview__nav span { color: var(--preview-text-muted); font-size: var(--grq-text-sm); }
 .brand-storefront-preview__hero { display: grid; justify-items: start; gap: .55rem; padding: 1.5rem 1rem; }
 .brand-storefront-preview__hero > strong { font-size: 1.35rem; line-height: 1.2; }
-.brand-storefront-preview__eyebrow { color: var(--preview-secondary); font-weight: 700; font-size: var(--grq-text-sm); }
+.brand-storefront-preview__eyebrow { color: var(--preview-text); font-weight: 700; font-size: var(--grq-text-sm); }
 .brand-storefront-preview__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .4rem; }
 .brand-storefront-preview__button, .brand-storefront-preview__badge { border-radius: var(--control-radius); font-size: var(--grq-text-sm); font-weight: 600; padding: .45rem .7rem; }
 .brand-storefront-preview__button--primary { background: var(--preview-primary); color: var(--preview-on-primary); }
 .brand-storefront-preview__button--secondary { background: var(--preview-secondary); color: var(--preview-on-secondary); }
 .brand-storefront-preview__card { display: grid; justify-items: start; gap: .4rem; margin: 0 1rem 1rem; padding: 1rem; background: var(--preview-surface); color: var(--preview-text-on-surface); border: 1px solid var(--preview-border); border-radius: var(--control-radius); }
+.brand-storefront-preview__input-label { margin-top: .35rem; font-size: var(--grq-text-sm); font-weight: 600; }
+.brand-storefront-preview__input { box-sizing: border-box; width: 100%; padding: .55rem .75rem; background: var(--preview-surface); color: var(--preview-text-on-surface); border: 1px solid var(--preview-border); border-radius: var(--control-radius); }
+.brand-storefront-preview__footer { padding: .75rem 1rem; border-top: 1px solid var(--preview-secondary); font-size: var(--grq-text-sm); }
+.brand-storefront-preview__footer span { text-decoration: underline; text-decoration-color: var(--preview-secondary); text-underline-offset: .2em; }
 .brand-storefront-preview__badge { background: var(--preview-accent); color: var(--preview-on-accent); padding: .2rem .5rem; }
 .brand-settings__section--colors .settings-row--color {
     padding: var(--grq-space-3);

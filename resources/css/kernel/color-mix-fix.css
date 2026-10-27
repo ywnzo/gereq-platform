@@ -180,6 +180,24 @@ html[data-brand-palette="1"] :is(.btn--ghost, .btn-ghost) {
     --btn-hover-border: color-mix(in srgb, var(--primary) 88%, #fff);
     --btn-active-bg: color-mix(in srgb, var(--primary) 82%, var(--text));
 }
+html[data-brand-palette="1"] :is(.btn--primary, .btn-primary, .btn--signal):hover {
+    --btn-hover-bg: var(--primary);
+    --btn-hover-border: var(--primary);
+    --btn-active-bg: var(--primary);
+}
+html[data-brand-palette="1"] :is(.btn--secondary, .btn-secondary):hover {
+    --btn-hover-bg: var(--color-secondary);
+    --btn-hover-border: var(--color-secondary);
+    --btn-active-bg: var(--color-secondary);
+}
+html[data-brand-palette="1"] :is(.btn--accent, .btn-accent):hover {
+    --btn-hover-bg: var(--color-accent);
+    --btn-hover-border: var(--color-accent);
+    --btn-active-bg: var(--color-accent);
+}
+html[data-brand-palette="1"] :is(.btn--primary, .btn-primary, .btn--signal, .btn--secondary, .btn-secondary, .btn--accent, .btn-accent):hover:not(:focus-visible) {
+    box-shadow: inset 0 0 0 2px currentColor;
+}
 .btn--danger:hover {
     --btn-hover-bg: color-mix(in srgb, var(--danger) 88%, #fff);
     --btn-hover-border: color-mix(in srgb, var(--danger) 88%, #fff);
