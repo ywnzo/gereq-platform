@@ -129,6 +129,7 @@ final class AdminRoutesRegistrar
             $router->post('/reset-password/{token}', [AuthController::class, 'updatePassword'])->name('admin.password.update')->middleware('guest');
 
             $router->get('', [DashboardController::class, 'index'])->name('admin.dashboard')->middleware('auth');
+            $router->post('/dashboard/layout', [DashboardController::class, 'saveLayout'])->name('admin.dashboard.layout.save')->middleware('auth')->permission('settings.manage');
 
             $router->get('/users', [UserController::class, 'index'])->name('admin.users.index')->middleware('auth')->permission('users.view');
             $router->get('/users/create', [UserController::class, 'create'])->name('admin.users.create')->middleware('auth')->permission('users.create');
@@ -164,6 +165,7 @@ final class AdminRoutesRegistrar
 
             $router->get('/settings', [SettingsController::class, 'index'])->name('admin.settings.index')->middleware('auth');
             $router->post('/settings', [SettingsController::class, 'update'])->name('admin.settings.update')->middleware('auth');
+            $router->post('/settings/palette/preview', [SettingsController::class, 'previewPalette'])->name('admin.settings.palette.preview')->middleware('auth')->permission('settings.manage');
             $router->post('/settings/storefront/rebuild', [SettingsController::class, 'rebuildStorefront'])->name('admin.settings.storefront.rebuild')->middleware('auth')->permission('settings.manage');
             $router->get('/publish/pending', [PublishController::class, 'pending'])->name('admin.publish.pending')->middleware('auth')->permission('settings.manage');
             $router->post('/publish', [PublishController::class, 'publish'])->name('admin.publish.run')->middleware('auth')->permission('settings.manage');
@@ -210,8 +212,11 @@ final class AdminRoutesRegistrar
             icon: 'publish',
             route: 'admin.content.staging',
             permission: 'settings.manage',
-            order: 15,
+            parent: 'cms',
+            order: 50,
             group: 'Obsah',
+            fallbackToRoot: true,
+            groupOrder: 15,
         ));
         $this->menu->add(new MenuItem(id: 'developer', label: 'nav.developer', icon: 'key', route: 'admin.developer.api', permission: 'developer.api.view', order: 110, group: 'Systém'));
         $this->menu->add(new MenuItem(id: 'developer.api', label: 'nav.api', route: 'admin.developer.api', permission: 'developer.api.view', parent: 'developer', order: 10, group: 'Systém'));

@@ -43,12 +43,16 @@ final class Menu
             }
         );
 
+        $visibleIds = [];
+        foreach ($visible as $item) {
+            $visibleIds[$item->id] = true;
+        }
         $children = [];
         /** @var array<string, list<MenuItem>> $rootsByGroup */
         $rootsByGroup = [];
 
         foreach ($visible as $item) {
-            if ($item->parent !== null) {
+            if ($item->parent !== null && (!$item->fallbackToRoot || isset($visibleIds[$item->parent]))) {
                 $children[$item->parent][] = $item;
                 continue;
             }
@@ -63,6 +67,12 @@ final class Menu
             usort($roots, static fn (MenuItem $a, MenuItem $b): int => $a->order <=> $b->order ?: strcmp($a->id, $b->id));
             $rootsByGroup[$group] = $roots;
             $groupRanks[$group] = min(array_map(static fn (MenuItem $i): int => $i->order, $roots));
+        }
+
+        foreach ($visible as $item) {
+            if ($item->fallbackToRoot && $item->group !== null && isset($groupRanks[$item->group])) {
+                $groupRanks[$item->group] = min($groupRanks[$item->group], $item->groupOrder ?? $item->order);
+            }
         }
 
         uksort(

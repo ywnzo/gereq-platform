@@ -155,3 +155,22 @@ body.has-image-viewer {
         margin-left: auto;
     }
 }
+
+html[data-brand-palette="1"] .g-image-viewer__bar {
+    background: var(--card-header);
+    color: var(--text-on-card-header);
+}
+html[data-brand-palette="1"] .g-image-viewer__bar :is(.g-image-viewer__title, .g-image-viewer__zoom) {
+    color: var(--text-on-card-header);
+}
+html[data-brand-palette="1"] .g-image-viewer__bar .g-image-viewer__btn {
+    color: var(--text-on-card-header) !important;
+}
+html[data-brand-palette="1"] .g-image-viewer__bar .g-image-viewer__btn:hover,
+html[data-brand-palette="1"] .g-image-viewer__bar .g-image-viewer__btn:focus-visible {
+    background: color-mix(in srgb, var(--text-on-card-header) 14%, transparent) !important;
+    color: var(--text-on-card-header) !important;
+}
+html[data-brand-palette="1"] .g-image-viewer__bar .g-image-viewer__sep {
+    background: color-mix(in srgb, var(--text-on-card-header) 25%, transparent);
+}

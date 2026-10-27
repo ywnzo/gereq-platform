@@ -1,5 +1,5 @@
-{% set colorValue = values[key]|default('#d7ff45') %}
-{% if colorValue is empty %}{% set colorValue = '#d7ff45' %}{% endif %}
+{% set colorValue = values[key]|default('') %}
+{% if colorValue is empty %}{% set colorValue = values['brand.color_signal']|default('#d7ff45') ?: '#d7ff45' %}{% endif %}
 {% set colorHex = colorValue|replace({'#': ''}) %}
 <div
     class="color-picker"

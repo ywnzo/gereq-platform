@@ -1,7 +1,5 @@
 /* ——— Detail hub / tabs ——— */
-/* Stacked sticky: page-header then tabs under it.
-   --page-header-sticky-h is set by resources/js/ui/stickyChrome.ts.
-   Negative top cancels .page padding so nothing shows through above. */
+/* Dedicated sticky chrome retains its own opaque background. */
 .detail-sticky {
     position: sticky;
     top: calc(-1 * var(--page-pad-top, 1rem));
@@ -16,8 +14,7 @@
 }
 .page > .page-header,
 .page > form > .page-header {
-    position: sticky;
-    top: calc(-1 * var(--page-pad-top, 1rem));
+    position: relative;
     z-index: 13;
     align-self: stretch;
     box-sizing: border-box;
@@ -29,7 +26,7 @@
     padding-top: 0.85rem;
     padding-inline: var(--page-pad-x, 1.25rem);
     padding-bottom: 0.85rem;
-    background: var(--background);
+    background: transparent;
     box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
 }
 .page > .page-header:first-child {
@@ -43,7 +40,7 @@
     margin-top: 0;
     padding-top: calc(var(--page-pad-top, 1rem) + 0.15rem);
 }
-/* Tighter gap before sticky tabs — margin collapses out of the sticky stack. */
+/* Tighter gap before detail tabs. */
 .page > .page-header:has(+ .detail-hub) {
     margin-bottom: 0.65rem;
 }
@@ -56,8 +53,8 @@
 }
 /* Only tabs inside detail-hub (not list-shell tabs). */
 .detail-hub > .design-tabs {
-    position: sticky;
-    top: calc(var(--page-header-sticky-h, 0px) - var(--page-pad-top, 1rem));
+    position: relative;
+    top: auto;
     z-index: 12;
     align-self: stretch;
     box-sizing: border-box;
@@ -71,7 +68,7 @@
     border: 0;
     border-bottom: 1px solid var(--border);
     border-radius: 0;
-    background: var(--background);
+    background: transparent;
     backdrop-filter: none;
     box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
 }

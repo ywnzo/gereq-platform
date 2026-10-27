@@ -16,6 +16,7 @@ import { registerIconPicker } from './iconPicker';
 import { registerTabs } from './tabs';
 import { registerStickyChrome } from './stickyChrome';
 import { registerDashboardGrid } from './dashboardGrid';
+import { registerDashboardEditor } from './dashboardEditor';
 import { registerAmbientPointer } from './ambientPointer';
 import { registerSettingsBrandPreview } from './settingsBrandPreview';
 import { registerStorefrontOrigins } from './storefrontOrigins';
@@ -60,6 +61,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerTabs(alpine);
     registerStickyChrome();
     registerDashboardGrid();
+    registerDashboardEditor();
     registerAmbientPointer();
     registerWebauthn(alpine);
     registerSettingsBrandPreview(alpine);

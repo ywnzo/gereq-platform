@@ -1,2 +1,3 @@
 {# Must come AFTER kernel.css, otherwise default tokens override client colors. #}
-<style nonce="{{ csp_nonce() }}">{{ brand_css() }}</style>
+{# The generated CSS includes sanitized custom CSS and must remain valid inside a style element. #}
+<style nonce="{{ csp_nonce() }}">{{ brand_css()|raw }}</style>

@@ -1,0 +1,76 @@
+{% set sections = [
+    { label: 'settings.storefront.section.origins', keys: ['storefront.origins_override'] },
+    { label: 'settings.storefront.section.build', keys: ['storefront.path', 'storefront.build_command'] },
+    { label: 'settings.storefront.section.cache', keys: ['storefront.cache_enabled', 'storefront.cache_driver', 'storefront.cache_ttl'] },
+] %}
+{% set knownKeys = ['storefront.origins_override', 'storefront.path', 'storefront.build_command', 'storefront.cache_enabled', 'storefront.cache_driver', 'storefront.cache_ttl'] %}
+<div class="platform-settings__sections storefront-settings__sections">
+    {% for section in sections %}
+        {% if loop.first %}<div class="storefront-settings__stack">{% endif %}
+        <section class="panel platform-settings__section storefront-settings__section{{ loop.first ? ' storefront-settings__section--origins' : '' }}">
+            <header class="panel__head"><h2>{{ section.label|trans }}</h2></header>
+            <div class="form-grid">
+                {% for item in group.items %}
+                    {% if item.key in section.keys %}
+                        {% if item.key == 'storefront.origins_override' %}
+                            {% set originMode = old('origin_mode', values[item.key] ? 'custom' : 'environment', 'settings.origins') %}
+                            <div class="field" x-data="gereqStorefrontOrigins" data-mode="{{ originMode }}" @change="updateMode">
+                                {% include 'admin/settings/_choice_select.html.twig' with {
+                                    field: 'origin_mode', value: originMode,
+                                    options: { environment: 'settings.storefront.origins.environment', custom: 'settings.storefront.origins.custom' },
+                                    label: 'settings.storefront.origins.mode'|trans,
+                                } only %}
+                                {% include 'admin/settings/_environment_origins.html.twig' with { originEnvironment: originEnvironment } only %}
+                                <label class="field" x-show="isCustom" x-cloak>
+                                    <span>{{ 'settings.storefront.origins'|trans }}</span>
+                                    {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input settings-origins" name="origins" rows="2"{% endblock %}{% block content %}{{ old('origins', values[item.key] ?: originEnvironment, 'settings.origins') }}{% endblock %}{% endembed %}
+                                    {% if error('origins', 'settings.origins') %}<small class="g-error">{{ error('origins', 'settings.origins')|trans }}</small>{% endif %}
+                                    <small class="field__hint">{{ 'settings.storefront.origins.help'|trans }}</small>
+                                </label>
+                            </div>
+                        {% else %}
+                            {% include 'admin/settings/_platform_field.html.twig' with { item: item, values: values } only %}
+                        {% endif %}
+                        {% if item.key == 'storefront.build_command' %}
+                            <div class="field settings-page__action">
+                                <p class="field__hint">{{ 'settings.storefront.rebuild.help'|trans }}</p>
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'settings.storefront.rebuild'|trans,
+                                    type: 'submit', variant: 'ghost',
+                                    attrs: { 'formaction': url('admin.settings.storefront.rebuild'), 'formmethod': 'post', 'data-confirm': 'settings.storefront.rebuild.confirm'|trans, 'data-confirm-title': 'settings.storefront.rebuild'|trans, 'data-confirm-label': 'settings.storefront.rebuild'|trans, 'data-confirm-danger': '0' }
+                                } only %}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% if loop.first %}
+    {% if uploadSettings is not null %}
+        <section class="panel platform-settings__section storefront-settings__section">
+            <header class="panel__head"><h2>{{ 'uploads.settings.section'|trans }}</h2></header>
+            <div class="form-grid">
+                <input type="hidden" name="uploads_settings_present" value="1">
+                {% include 'ui/input.html.twig' with { name: 'uploads_max_mib', type: 'number', step: 'any', label: 'uploads.settings.size_mib'|trans, hint: 'uploads.settings.size_help'|trans, value: uploadSettings.uploads_max_mib, form: 'uploads.settings.save' } only %}
+                {% include 'ui/input.html.twig' with { name: 'uploads_session_hours', type: 'number', step: 'any', label: 'uploads.settings.session_hours'|trans, hint: 'uploads.settings.session_help'|trans, value: uploadSettings.uploads_session_hours, form: 'uploads.settings.save' } only %}
+                {% include 'ui/input.html.twig' with { name: 'uploads_retention_days', type: 'number', step: 'any', label: 'uploads.settings.retention'|trans, hint: 'uploads.settings.retention_help'|trans, value: uploadSettings.uploads_retention_days, form: 'uploads.settings.save' } only %}
+            </div>
+        </section>
+    {% endif %}
+        </div>{% endif %}
+    {% endfor %}
+    {% set hasOther = false %}
+    {% for item in group.items %}{% if item.key not in knownKeys %}{% set hasOther = true %}{% endif %}{% endfor %}
+    {% if hasOther %}
+        <section class="panel platform-settings__section storefront-settings__section">
+            <header class="panel__head"><h2>{{ 'settings.group.other'|trans }}</h2></header>
+            <div class="form-grid">
+                {% for item in group.items %}
+                    {% if item.key not in knownKeys %}
+                        {% include 'admin/settings/_platform_field.html.twig' with { item: item, values: values } only %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</div>

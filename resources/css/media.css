@@ -110,6 +110,9 @@
     color: var(--primary);
     font-weight: var(--grq-weight-semibold);
 }
+html[data-brand-palette="1"] .media-drive__tree-link.is-active {
+    color: var(--text-on-surface);
+}
 
 .media-drive__tree-link .g-icon {
     font-size: 1.1rem;
@@ -590,10 +593,21 @@
 }
 
 .media-drive__preview-head {
+    margin: -1rem -1.15rem 0;
+    padding: 10px 14px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--card-header, var(--surface));
+    color: var(--text);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--grq-space-3);
+}
+
+html[data-brand-palette="1"] .media-drive__preview-head {
+    --text: var(--text-on-card-header);
+    --text-muted: var(--text-muted-on-card-header);
 }
 
 .media-drive__preview-titles {

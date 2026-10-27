@@ -10,7 +10,6 @@
 {% block content %}
     {% set firstGroup = groups|keys|first %}
     {% set wideKeys = [
-        'admin.dashboard.layout',
         'brand.custom_css'
     ] %}
 
@@ -53,13 +52,23 @@
                     data-panel="{{ groupId }}"
                     role="tabpanel"
                 >
-                    {% if groupId == 'brand' %}
+                    {% if groupId == 'core' %}
+                        {% include 'admin/settings/_platform_tab.html.twig' with { group: group, values: values, adminPath: adminPath } only %}
+                    {% elseif groupId == 'storefront' %}
+                        {% if canManageSettings %}
+                            {% include 'admin/settings/_storefront_tab.html.twig' with { group: group, values: values, originEnvironment: originEnvironment, uploadSettings: uploadSettings } only %}
+                        {% endif %}
+                    {% elseif groupId == 'brand' %}
                         {% include 'admin/settings/_brand_tab.html.twig' with {
                             group: group,
                             values: values,
                             cssVariables: cssVariables,
                             wideKeys: wideKeys,
                             libraryImages: libraryImages|default([]),
+                            brandPalette: brandPalette,
+                            brandAppearance: brandAppearance,
+                            adminFont: adminFont,
+                            adminFonts: adminFonts,
                         } %}
                     {% else %}
                         <div class="detail-stack">
@@ -76,19 +85,12 @@
                                     </div>
                                 </header>
                                 <div class="form-grid">
-                                    {% if groupId == 'core' %}
-                                        <label class="field">
-                                            <span>{{ 'settings.admin.path'|trans }}</span>
-                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" value="{{ adminPath }}" readonly disabled{% endblock %}{% endembed %}
-                                            <small class="field__hint">{{ 'settings.admin.path.help'|trans }}</small>
-                                        </label>
-                                    {% endif %}
                                     {% for item in group.items %}
                                         {% set key = item.key %}
                                         {% set definition = item.definition %}
                                         {% set field = key|replace({'.': '__'}) %}
                                         {% set helpKey = definition.label ~ '.help' %}
-                                        {% set helpText = helpKey|trans != helpKey and key != 'admin.dashboard.layout' ? helpKey|trans : '' %}
+                                        {% set helpText = helpKey|trans != helpKey ? helpKey|trans : '' %}
                                         {% set isColor = 'color_' in key or key ends with '_primary' %}
                                         {% set isWide = key in wideKeys %}
                                         {% set isWidget = isColor or isWide %}
@@ -105,7 +107,7 @@
                                                     options: { environment: 'settings.storefront.origins.environment', custom: 'settings.storefront.origins.custom' },
                                                     label: 'settings.storefront.origins.mode'|trans,
                                                 } %}
-                                                <p class="field__hint" x-show="isEnvironment" x-cloak>{{ 'settings.storefront.origins.environment_value'|trans }}: <code>{{ originEnvironment ?: ('settings.storefront.origins.environment_empty'|trans) }}</code></p>
+                                                {% include 'admin/settings/_environment_origins.html.twig' with { originEnvironment: originEnvironment } only %}
                                                 <label class="field" x-show="isCustom" x-cloak>
                                                     <span>{{ 'settings.storefront.origins'|trans }}</span>
                                                     {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input settings-origins" name="origins" rows="2"{% endblock %}{% block content %}{{ old('origins', values[key] ?: originEnvironment, 'settings.origins') }}{% endblock %}{% endembed %}
@@ -142,8 +144,6 @@
                                                     {% include 'admin/settings/_color_picker.html.twig' %}
                                                 {% elseif key == 'brand.custom_css' %}
                                                     {% include 'admin/settings/_css_editor.html.twig' %}
-                                                {% elseif key == 'admin.dashboard.layout' %}
-                                                    {% include 'admin/settings/_dashboard_widgets.html.twig' %}
                                                 {% elseif definition.type == 'json' %}
                                                     {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="{{ field }}" rows="6" spellcheck="false"{% endblock %}{% block content %}{{ values[key]|json_encode }}{% endblock %}{% endembed %}
                                                 {% else %}
@@ -170,34 +170,6 @@
                             {% endembed %}
                             {% endif %}
 
-                            {% if groupId == 'storefront' and canManageCmsSettings %}
-                                <section class="panel">
-                                    <header class="panel__head"><div><h2>{{ 'settings.storefront.cms'|trans }}</h2><p class="muted">{{ 'settings.storefront.cms.help'|trans }}</p></div></header>
-                                    <div class="form-grid">
-                                        <div class="field field--full">
-                                            <span>{{ 'settings.storefront.home'|trans }}</span>
-                                            {% embed 'ui/select.html.twig' with { native: true } %}
-                                                {% block native_attributes %} name="home_page_id"{% endblock %}
-                                                {% block native_options %}
-                                                    {% embed 'ui/option.html.twig' %}{% block option_attributes %} value=""{% endblock %}{% block content %}{{ 'settings.storefront.home.none'|trans }}{% endblock %}{% endembed %}
-                                                    {% for page in cmsPages %}
-                                                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ page.id }}" {{ page.id == cmsHomePageId ? 'selected' : '' }}{% endblock %}{% block content %}{{ page.title }}{% endblock %}{% endembed %}
-                                                    {% endfor %}
-                                                {% endblock %}
-                                            {% endembed %}
-                                        </div>
-                                        <details class="field--full settings-page__advanced">
-                                            <summary>{{ 'cms.settings.custom_css_public'|trans }}</summary>
-                                            {% include 'admin/settings/_css_editor.html.twig' with { key: 'cms.custom_css_public', field: 'cms__custom_css_public', values: { 'cms.custom_css_public': cmsPublicCss }, cssVariables: cssVariables } only %}
-                                        </details>
-                                        <input type="hidden" name="cms_settings_present" value="1">
-                                    </div>
-                                </section>
-                            {% endif %}
-
-                            {% if groupId == 'core' %}
-                                {{ apply_filters('admin.settings.panel.core', '')|raw }}
-                            {% endif %}
                         </div>
                     {% endif %}
                 </section>

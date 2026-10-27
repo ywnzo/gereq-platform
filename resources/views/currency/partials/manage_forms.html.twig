@@ -14,3 +14,50 @@
         {% endif %}
     {% endfor %}
 {% endif %}
+
+{% if user.can('currency.manage') %}
+    {% set failedModal = old('_currency_modal', '', 'currency.save') %}
+    {% for item in [null]|merge(items) %}
+        {% set modalKey = item ? item.code() : 'create' %}
+        {% set failed = form_errors('currency.save') and failedModal == modalKey %}
+        {% set fieldForm = failed ? 'currency.save' : 'currency.modal.' ~ modalKey %}
+        {% set modalId = 'currency-modal-' ~ modalKey %}
+        {% set formId = 'currency-modal-form-' ~ modalKey %}
+        {% set resetValues = { code: item ? item.code() : '', name: item ? item.name() : '', symbol: item ? item.symbol() : '', decimal_places: item ? item.decimalPlaces() : 2, is_active: item ? (item.isActive() ? '1' : '0') : '1', is_default: item and item.isDefault() ? '1' : '0' } %}
+        {% embed 'ui/modal.html.twig' with { id: modalId, title: (item ? 'currency.edit' : 'currency.new')|trans, panel_class: 'g-modal__panel--form' } %}
+            {% block component_attributes %} id="{{ modalId }}" x-data="gereqModal" data-modal-hash="{{ modalId }}" data-reset-form="{{ formId }}"{% if failed %} x-init="show"{% endif %}{% endblock %}
+            {% block trigger %}{% endblock %}
+            {% block body %}
+                {% if failed %}<div data-modal-error-summary>{% include 'ui/error-summary.html.twig' with { form: 'currency.save', id_prefix: modalId ~ '-' } %}</div>{% endif %}
+                <form id="{{ formId }}" method="post" class="detail-stack" data-reset-values="{{ resetValues|json_encode|e('html_attr') }}" action="{{ item ? url('admin.currencies.update', {code: item.code()}) : url('admin.currencies.store') }}">
+                    {{ csrf_field()|raw }}
+                    <input type="hidden" name="_currency_modal" value="{{ modalKey }}">
+                    <div class="form-grid form-grid--cols-2">
+                        {% include 'ui/input.html.twig' with { id: modalId ~ '-code', name: 'code', label: 'currency.field.code'|trans, value: item ? item.code() : '', readonly: item is not null, required: true, maxlength: 3, form: fieldForm } only %}
+                        {% include 'ui/input.html.twig' with { id: modalId ~ '-name', name: 'name', label: 'currency.field.name'|trans, value: item ? item.name() : '', required: true, maxlength: 120, form: fieldForm } only %}
+                        {% include 'ui/input.html.twig' with { id: modalId ~ '-symbol', name: 'symbol', label: 'currency.field.symbol'|trans, value: item ? item.symbol() : '', required: true, maxlength: 16, form: fieldForm } only %}
+                        {% include 'ui/input.html.twig' with { id: modalId ~ '-decimal_places', name: 'decimal_places', label: 'currency.field.decimal_places'|trans, type: 'number', value: item ? item.decimalPlaces() : 2, min: 0, max: 6, form: fieldForm } only %}
+                        {% for field, selected in { is_active: item ? item.isActive() : true, is_default: item ? item.isDefault() : false } %}
+                            <div class="g-field">
+                                <span class="g-label" id="{{ modalId }}-{{ field }}-label">{{ ('currency.field.' ~ field)|trans }}</span>
+                                {% set selected = old(field, selected ? '1' : '0', fieldForm) %}
+                                {% embed 'ui/select.html.twig' with { native: true } %}
+                                    {% block native_attributes %}id="{{ modalId }}-{{ field }}" name="{{ field }}" aria-labelledby="{{ modalId }}-{{ field }}-label"{% endblock %}
+                                    {% block native_options %}
+                                        {% include 'ui/option.html.twig' with { value: '1', label: 'common.yes'|trans, selected: selected == '1' } only %}
+                                        {% include 'ui/option.html.twig' with { value: '0', label: 'common.no'|trans, selected: selected == '0' } only %}
+                                    {% endblock %}
+                                {% endembed %}
+                                {% if error(field, fieldForm) %}<p class="g-error">{{ error(field, fieldForm) }}</p>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </form>
+            {% endblock %}
+            {% block actions %}
+                {% include 'ui/button.html.twig' with { label: 'common.cancel'|trans, variant: 'ghost', attrs: { '@click': 'close', 'x-ref': 'close' } } only %}
+                {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary', attrs: { form: formId } } only %}
+            {% endblock %}
+        {% endembed %}
+    {% endfor %}
+{% endif %}

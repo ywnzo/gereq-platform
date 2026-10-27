@@ -6,12 +6,13 @@ namespace Gereq\Admin\Http;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gereq\Admin\CommandPalette\CommandPalette;
-use Gereq\Admin\Dashboard\Dashboard;
 use Gereq\Admin\Menu\Menu;
 use Gereq\Audit\Auditor;
 use Gereq\Auth\Authenticator;
 use Gereq\Brand\Branding;
+use Gereq\Brand\PaletteResolver;
 use Gereq\Cache\StoreFrontCache;
+use Gereq\Currency\Domain\Currency;
 use Gereq\Http\Controller;
 use Gereq\Http\Router;
 use Gereq\Http\StorefrontRebuild;
@@ -22,7 +23,9 @@ use Gereq\Module\CapabilityRegistry;
 use Gereq\Setting\SettingRecord;
 use Gereq\Setting\Settings;
 use Gereq\Support\Json;
+use Gereq\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,7 +46,6 @@ final class SettingsController extends Controller
         private readonly LocaleCatalog $locales,
         private readonly TranslatorInterface $translator,
         private readonly Branding $branding,
-        private readonly Dashboard $dashboard,
         private readonly StoreFrontCache $storeFrontCache,
         private readonly StorefrontRebuild $storefrontRebuild,
         private readonly CapabilityRegistry $capabilities,
@@ -61,10 +63,24 @@ final class SettingsController extends Controller
         if (!$canManage && !$canManageCms) {
             $this->abort(403);
         }
-        $definitions = $canManage ? $this->settings->globalDefinitions() : [];
+        $definitions = $canManage ? $this->globalSettings() : [];
         $values = [];
         foreach ($definitions as $key => $definition) {
             $values[$key] = $this->settings->get($key, $definition['default']);
+        }
+        if (isset($definitions['shop.default_currency'])) {
+            $options = ['' => $this->translator->trans('settings.shop_currency.use_default')];
+            /** @var list<Currency> $currencies */
+            $currencies = $this->em->getRepository(Currency::class)->findBy([], ['code' => 'ASC']);
+            foreach ($currencies as $currency) {
+                $options[$currency->code()] = $currency->code() . ' — ' . $currency->name()
+                    . ($currency->isActive() ? '' : ' (' . $this->translator->trans('settings.shop_currency.inactive') . ')');
+            }
+            $current = (string) $values['shop.default_currency'];
+            if ($current !== '' && !isset($options[$current])) {
+                $options[$current] = $current . ' (' . $this->translator->trans('settings.shop_currency.unavailable') . ')';
+            }
+            $definitions['shop.default_currency']['options'] = $options;
         }
         // One-time: CMS site title → Brand public site name.
         if (
@@ -76,38 +92,48 @@ final class SettingsController extends Controller
                 $values['brand.site_name'] = $legacyTitle;
             }
         }
-        // Migrate legacy admin CSS into brand.custom_css when not yet stored.
-        if (!$this->settings->has('brand.custom_css')) {
-            $fromCmsAdmin = trim((string) $this->settings->get('cms.custom_css_admin', ''));
-            $fromLegacy = trim((string) $this->settings->get('cms.custom_css', ''));
-            if ($fromCmsAdmin !== '') {
-                $values['brand.custom_css'] = $fromCmsAdmin;
-            } elseif ($fromLegacy !== '') {
-                $values['brand.custom_css'] = $fromLegacy;
-            }
-        }
-        if (
-            !$this->settings->has('cms.custom_css_public')
-            && trim((string) ($values['cms.custom_css_public'] ?? '')) === ''
-        ) {
-            $legacy = trim((string) $this->settings->get('cms.custom_css', ''));
-            if ($legacy !== '') {
-                $values['cms.custom_css_public'] = $legacy;
-            }
-        }
-        $cmsPublicCss = (string) $this->settings->get('cms.custom_css_public', '');
-        if ($cmsPublicCss === '') {
-            $cmsPublicCss = (string) $this->settings->get('cms.custom_css', '');
-        }
         $groups = $this->groupDefinitions($definitions);
-        $cmsPages = [];
+        $storedPalette = $this->settings->get('brand.palette', []);
+        $storedPalette = is_array($storedPalette) ? $storedPalette : [];
+        $brand = $this->branding->resolve();
+        $expandHex = static fn (string $color): string => strlen($color) === 4
+            ? '#' . $color[1] . $color[1] . $color[2] . $color[2] . $color[3] . $color[3]
+            : $color;
+        $primary = $expandHex($brand['color_signal']);
+        $ink = $expandHex($brand['color_ink']);
+        $cream = $expandHex($brand['color_cream']);
+        $channels = array_map(static function (int $offset) use ($ink): float {
+            $channel = hexdec(substr($ink, $offset, 2)) / 255;
+            return $channel <= 0.03928 ? $channel / 12.92 : (($channel + 0.055) / 1.055) ** 2.4;
+        }, [1, 3, 5]);
+        $paletteDefaults = [
+            'primary' => $primary,
+            'secondary' => $primary,
+            'accent' => $primary,
+            'light_background' => $cream,
+            'light_surface' => $cream,
+            'dark_background' => $ink,
+            'dark_surface' => $ink,
+            'storefront_mode' => 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2] < 0.45 ? 'dark' : 'light',
+        ];
+        $resolvedPalette = $this->branding->resolvedPalette() ?? (new PaletteResolver())->resolve($paletteDefaults);
+        $paletteDefaults['light_header'] = $resolvedPalette['modes']['light']['header'];
+        $paletteDefaults['dark_header'] = $resolvedPalette['modes']['dark']['header'];
+
         if ($canManageCms) {
             $provider = $this->capabilities->get('cms');
             if ($provider instanceof \Gereq\Cms\StorefrontSettingsProvider) {
-                $cmsPages = $provider->storefrontSettingsPages();
                 $groups['storefront'] ??= ['label' => 'settings.group.storefront', 'items' => []];
             } else {
                 $canManageCms = false;
+            }
+        }
+        $uploadSettings = null;
+        if ($canManage && $this->capabilities->has('customer_uploads.settings')) {
+            $uploadProvider = $this->capabilities->get('customer_uploads.settings');
+            if ($uploadProvider instanceof \Gereq\Setting\CustomerUploadSettingsProvider) {
+                $uploadSettings = $uploadProvider->fields();
+                $groups['storefront'] ??= ['label' => 'settings.group.storefront', 'items' => []];
             }
         }
         $tab = (string) $request->query->get('tab', '');
@@ -115,23 +141,58 @@ final class SettingsController extends Controller
             $tab = (string) (array_key_first($groups) ?? 'core');
         }
 
-        return $this->page('admin/settings/index.html.twig', [
+        $response = $this->page('admin/settings/index.html.twig', [
             'pageTitle' => $this->translator->trans('settings.title'),
             'definitions' => $definitions,
             'groups' => $groups,
             'values' => $values,
             'activeTab' => $tab,
             'cssVariables' => $this->branding->documentedVariables(),
-            'dashboardCatalog' => $this->dashboard->catalog(null),
             'adminPath' => \Gereq\Support\AdminPath::base(),
             'libraryImages' => $canManage ? $this->libraryImages() : [],
             'canManageSettings' => $canManage,
             'canManageCmsSettings' => $canManageCms,
-            'cmsPages' => $cmsPages,
-            'cmsHomePageId' => (string) $this->settings->get('cms.home_page_id', ''),
-            'cmsPublicCss' => $cmsPublicCss,
+            'uploadSettings' => $uploadSettings,
             'originEnvironment' => (string) env_value('FRONTEND_ORIGIN', ''),
+            'brandPalette' => array_merge($paletteDefaults, $storedPalette),
+            'brandAppearance' => $this->branding->adminAppearance(),
+            'adminFont' => (string) $this->settings->get('brand.admin_font', 'default'),
+            'adminFonts' => Branding::ADMIN_FONTS,
         ]);
+        if ($this->formState()->hasErrors('currency.save')) {
+            $this->forgetForm('currency.save');
+        }
+
+        return $response;
+    }
+
+    public function previewPalette(Request $request): JsonResponse
+    {
+        $user = $this->auth->user();
+        if ($user === null || !$user->can('settings.manage')) {
+            $this->abort(403);
+        }
+
+        $resolver = new PaletteResolver();
+        try {
+            $palette = $resolver->resolve($this->paletteInput($request));
+            $appearance = $request->request->has('admin_motion')
+                ? $this->validate($request, 'settings.brand_appearance')
+                : null;
+        } catch (ValidationException $exception) {
+            return $this->jsonError('validation_failed', $exception->getMessage(), $exception->errors(), 422);
+        }
+        if ($this->formState()->hasErrors('settings.brand_appearance')
+            && $this->formState()->old('appearance_present', null, 'settings.brand_appearance') === null) {
+            $this->forgetForm('settings.brand_appearance');
+        }
+        $opacity = $appearance !== null ? (int) $appearance['admin_panel_opacity'] : $this->branding->adminAppearance()['panel_opacity'];
+        $palette['css'] = [
+            'light' => $resolver->cssTokens($palette['modes']['light'], $opacity),
+            'dark' => $resolver->cssTokens($palette['modes']['dark'], $opacity),
+        ];
+
+        return $this->json($palette);
     }
 
     public function update(Request $request): Response
@@ -155,12 +216,7 @@ final class SettingsController extends Controller
             }
             $cmsData = $this->validate($request, 'cms.storefront.settings');
             $cmsData['home_page_id'] = trim((string) ($cmsData['home_page_id'] ?? ''));
-            $currentCss = (string) $this->settings->get('cms.custom_css_public', '');
-            if ($currentCss === '') {
-                $currentCss = (string) $this->settings->get('cms.custom_css', '');
-            }
-            $cmsChanged = $cmsData['home_page_id'] !== (string) $this->settings->get('cms.home_page_id', '')
-                || (string) ($cmsData['cms__custom_css_public'] ?? '') !== $currentCss;
+            $cmsChanged = $cmsData['home_page_id'] !== (string) $this->settings->get('cms.home_page_id', '');
             if ($cmsChanged) {
                 if (gereq()->make(\Gereq\Module\ModuleUpdater::class)->isUpdateAvailable('cms')) {
                     $this->abort(409, $this->translator->trans('admin.modules.gate.json', ['%module%' => 'CMS']));
@@ -170,32 +226,58 @@ final class SettingsController extends Controller
             }
         }
 
+        $uploadProvider = null;
+        $uploadData = null;
+        if ($canManage && $request->request->has('uploads_settings_present') && $this->capabilities->has('customer_uploads.settings')) {
+            $provider = $this->capabilities->get('customer_uploads.settings');
+            if ($provider instanceof \Gereq\Setting\CustomerUploadSettingsProvider) {
+                $uploadProvider = $provider;
+                $uploadData = $this->validate($request, 'uploads.settings.save');
+            }
+        }
+
         $originOverride = '';
+        $appearanceInput = $canManage && $request->request->has('appearance_present')
+            ? $this->validate($request, 'settings.brand_appearance')
+            : null;
+        $paletteInput = null;
+        $paletteSubmitted = $canManage && $request->request->has('palette_present')
+            && ($request->request->get('settings_tab') === 'brand'
+                || $request->request->get('palette_dirty') === '1'
+                || $this->branding->resolvedPalette() !== null);
+        if ($paletteSubmitted) {
+            $paletteInput = $this->paletteInput($request);
+        }
         if ($canManage) {
             $originInput = $this->validate($request, 'settings.origins');
             $originOverride = ($originInput['origin_mode'] ?? '') === 'custom'
                 ? implode(',', \Gereq\Http\StorefrontOrigins::parseOverride((string) ($originInput['origins'] ?? '')) ?? [])
                 : '';
         }
+        if ($canManage && isset($this->settings->globalDefinitions()['shop.default_currency'])) {
+            $currencyInput = $this->validate($request, 'settings.shop_currency');
+            $code = (string) ($currencyInput['shop__default_currency'] ?? '');
+            $previous = (string) $this->settings->get('shop.default_currency', 'CZK');
+            if ($code !== '' && $code !== $previous && !$this->em->find(Currency::class, $code) instanceof Currency) {
+                throw new ValidationException(
+                    ['shop__default_currency' => $this->translator->trans('settings.shop_currency.invalid')],
+                    [],
+                    'settings.shop_currency',
+                );
+            }
+        }
         if ($canManage) {
-            foreach ($this->settings->globalDefinitions() as $key => $definition) {
+            foreach ($this->globalSettings() as $key => $definition) {
                 if ($key === \Gereq\Http\StorefrontOrigins::SETTING) {
                     $this->settings->set($key, $originOverride, SettingRecord::TYPE_STRING);
                     continue;
                 }
-                if ($key === Dashboard::LAYOUT_SETTING) {
-                    $posted = $request->request->get(str_replace('.', '__', $key));
-                    $items = [];
-                    if (is_string($posted) && $posted !== '') {
-                        $decoded = Json::decode($posted);
-                        $items = is_array($decoded) ? $decoded : [];
-                    }
-                    $this->dashboard->saveLayout($items);
-                    continue;
-                }
-
                 // Brand assets are resolved from media box (file / library / clear / URL).
                 if ($key === 'brand.logo_url' || $key === 'brand.favicon_url') {
+                    continue;
+                }
+                // Legacy color values are retained for older clients; the palette syncs the primary below.
+                if (in_array($key, ['brand.color_signal', 'brand.color_ink', 'brand.color_cream'], true)) {
                     continue;
                 }
 
@@ -216,7 +298,37 @@ final class SettingsController extends Controller
                     continue;
                 }
 
+                $oldValue = (string) $this->settings->get($key, '');
                 $this->settings->set($key, $value, $definition['type'], $definition['module']);
+                $syncBrand = (string) $request->request->get('settings_tab', '') === 'brand' || $value !== $oldValue;
+                if ($key === 'brand.name' && $syncBrand) {
+                    $this->settings->set('brand.site_name', $this->branding->resolve()['name'], SettingRecord::TYPE_STRING, 'core');
+                    if ($value !== $oldValue && isset($this->settings->definitions()['shop.store_name'])) {
+                        $this->settings->set('shop.store_name', $this->branding->resolve()['name'], SettingRecord::TYPE_STRING, 'shop');
+                    }
+                }
+            }
+
+            if ($paletteSubmitted) {
+                $this->settings->set('brand.palette', $paletteInput, SettingRecord::TYPE_JSON, 'core');
+                foreach (['brand.color_signal', 'brand.site_signal', 'brand.site_primary'] as $key) {
+                    $this->settings->set($key, $paletteInput['primary'], SettingRecord::TYPE_STRING, 'core');
+                }
+            }
+            if ($appearanceInput !== null) {
+                $appearance = $this->branding->adminAppearance();
+                $motion = $appearanceInput['admin_motion'] === '1';
+                $opacity = (int) $appearanceInput['admin_panel_opacity'];
+                if ($motion !== $appearance['motion']) {
+                    $this->settings->set('brand.admin_motion', $motion, SettingRecord::TYPE_BOOLEAN, 'core');
+                }
+                if ($opacity !== $appearance['panel_opacity']) {
+                    $this->settings->set('brand.admin_panel_opacity', $opacity, SettingRecord::TYPE_INTEGER, 'core');
+                }
+                $font = $appearanceInput['admin_font'] ?? null;
+                if (is_string($font) && $font !== '' && $font !== $this->settings->get('brand.admin_font', 'default')) {
+                    $this->settings->set('brand.admin_font', $font, SettingRecord::TYPE_STRING, 'core');
+                }
             }
 
             $this->resolveBrandAsset(
@@ -238,10 +350,14 @@ final class SettingsController extends Controller
                 'brand__favicon_url',
             );
         }
+        if ($uploadProvider !== null && $uploadData !== null) {
+            $uploadProvider->save($uploadData);
+            $this->forgetForm('uploads.settings.save');
+        }
         if ($cmsProvider !== null && $cmsData !== null) {
             $cmsProvider->saveStorefrontSettings(
                 (string) $cmsData['home_page_id'],
-                (string) ($cmsData['cms__custom_css_public'] ?? ''),
+                (string) $this->settings->get('cms.custom_css_public', ''),
             );
             $this->auditor->log('cms.storefront_settings.updated', 'settings', null);
         }
@@ -253,6 +369,12 @@ final class SettingsController extends Controller
         }
 
         $this->auditor->log('settings.updated', 'settings', null);
+        if ($appearanceInput !== null) {
+            $this->forgetForm('settings.brand_appearance');
+        }
+        if ($paletteSubmitted) {
+            $this->forgetForm('settings.palette');
+        }
         $this->flash('success', $this->translator->trans('settings.saved'));
 
         $params = $tab !== '' ? ['tab' => $tab] : [];
@@ -326,6 +448,23 @@ final class SettingsController extends Controller
         }
 
         return $line;
+    }
+
+    /** @return array<string, string> */
+    private function paletteInput(Request $request): array
+    {
+        $validated = $this->validate($request, 'settings.palette');
+        $input = [];
+        foreach (['primary', 'secondary', 'accent', 'light_background', 'light_surface', 'dark_background', 'dark_surface', 'storefront_mode'] as $key) {
+            $input[$key] = (string) $validated['palette_' . $key];
+        }
+        foreach (['light_header', 'dark_header'] as $key) {
+            if (is_string($validated['palette_' . $key] ?? null) && $validated['palette_' . $key] !== '') {
+                $input[$key] = $validated['palette_' . $key];
+            }
+        }
+
+        return $input;
     }
 
     private function resolveBrandAsset(
@@ -632,6 +771,23 @@ final class SettingsController extends Controller
         return $real;
     }
 
+    /** @return array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>, global: bool}> */
+    private function globalSettings(): array
+    {
+        $definitions = $this->settings->globalDefinitions();
+        if ($this->capabilities->has('payments')) {
+            foreach ([
+                'payments.comgate_merchant', 'payments.comgate_secret', 'payments.comgate_test',
+                'payments.gopay_goid', 'payments.gopay_client_id', 'payments.gopay_client_secret', 'payments.gopay_sandbox',
+                'payments.stripe_secret', 'payments.stripe_webhook_secret',
+            ] as $key) {
+                unset($definitions[$key]);
+            }
+        }
+
+        return $definitions;
+    }
+
     /**
      * @param array<string, array{type: string, label: string, module: ?string, default: mixed, options: array<string, string>}> $definitions
      * @return array<string, array{label: string, items: list<array{key: string, definition: array<string, mixed>, secret: bool}>}>
@@ -645,6 +801,7 @@ final class SettingsController extends Controller
             $groupId = match (true) {
                 str_starts_with($key, 'admin.dashboard.') => 'dashboard',
                 str_starts_with($key, 'storefront.') => 'storefront',
+                $key === 'shop.default_currency' => 'core',
                 $module === null || in_array($module, ['core', 'app', 'admin'], true) => str_starts_with($key, 'brand.') ? 'brand' : 'core',
                 $module === 'orders' => 'orders',
                 $module === 'shop' => 'shop',

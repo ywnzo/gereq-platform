@@ -108,6 +108,28 @@
         --btn-tracking: -0.014em;
     }
 
+    html[data-brand-palette="1"] .btn--secondary,
+    html[data-brand-palette="1"] .btn-secondary {
+        --btn-bg: var(--color-secondary);
+        --btn-fg: var(--color-secondary-content);
+        --btn-border: var(--color-secondary);
+        --btn-hover-bg: color-mix(in srgb, var(--color-secondary) 88%, #fff);
+        --btn-hover-fg: var(--color-secondary-content);
+        --btn-hover-border: var(--btn-hover-bg);
+        --btn-active-bg: color-mix(in srgb, var(--color-secondary) 82%, var(--text));
+    }
+
+    html[data-brand-palette="1"] .btn--accent,
+    html[data-brand-palette="1"] .btn-accent {
+        --btn-bg: var(--color-accent);
+        --btn-fg: var(--color-accent-content);
+        --btn-border: var(--color-accent);
+        --btn-hover-bg: color-mix(in srgb, var(--color-accent) 88%, #fff);
+        --btn-hover-fg: var(--color-accent-content);
+        --btn-hover-border: var(--btn-hover-bg);
+        --btn-active-bg: color-mix(in srgb, var(--color-accent) 82%, var(--text));
+    }
+
     .btn--ink,
     .btn-neutral {
         --btn-bg: var(--gereq-ink, var(--text));
@@ -168,6 +190,17 @@
         --btn-hover-bg: color-mix(in srgb, #fff 9%, transparent);
         --btn-hover-border: color-mix(in srgb, #fff 40%, transparent);
         box-shadow: 0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset;
+    }
+
+    html[data-brand-palette="1"] :is(.btn--ghost, .btn-ghost) {
+        --btn-bg: transparent;
+        --btn-fg: var(--text);
+        --btn-border: color-mix(in srgb, var(--text) 70%, transparent);
+        --btn-hover-bg: color-mix(in srgb, var(--text) 8%, transparent);
+        --btn-hover-fg: var(--text);
+        --btn-hover-border: var(--text);
+        --btn-active-bg: color-mix(in srgb, var(--text) 14%, transparent);
+        box-shadow: none;
     }
 
     .btn--link,

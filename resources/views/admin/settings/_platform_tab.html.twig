@@ -1,0 +1,58 @@
+{% set hasShopCurrency = false %}
+{% for item in group.items %}{% if item.key == 'shop.default_currency' %}{% set hasShopCurrency = true %}{% endif %}{% endfor %}
+{% set sections = [
+    { label: 'settings.platform.section.general', fallback: 'settings.group.core', keys: ['app.name', 'app.locale'] },
+    { label: 'settings.platform.section.tax', fallback: 'currency.settings.vat_payer', keys: ['currency.vat_payer', 'currency.vat_rate'] },
+    { label: 'settings.platform.section.publishing', fallback: 'settings.app.content_version', keys: ['app.content_version'] },
+    { label: 'settings.platform.section.admin', fallback: 'settings.admin.theme', keys: ['admin.theme', 'admin.modules.auto_update'], path: true },
+] %}
+{% set knownKeys = ['app.name', 'app.locale', 'admin.theme', 'admin.modules.auto_update', 'currency.vat_payer', 'currency.vat_rate', 'app.content_version', 'shop.default_currency'] %}
+<div class="detail-stack">
+    <div class="platform-settings__sections">
+        {% for section in sections %}
+            <section class="panel platform-settings__section{{ section.path|default(false) ? ' platform-settings__section--admin' ~ (hasShopCurrency ? ' platform-settings__section--admin-with-currency' : '') : '' }}">
+                {% set sectionTitle = section.label|trans %}
+                <header class="panel__head"><h2>{{ sectionTitle == section.label ? (section.fallback|trans) : sectionTitle }}</h2></header>
+                <div class="form-grid">
+                    {% for item in group.items %}
+                        {% if item.key in section.keys %}
+                            {% include 'admin/settings/_platform_field.html.twig' with { item: item, values: values } only %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if section.path|default(false) %}
+                        <label class="field">
+                            <span>{{ 'settings.admin.path'|trans }}</span>
+                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" value="{{ adminPath }}" readonly disabled{% endblock %}{% endembed %}
+                            <small class="field__hint">{{ 'settings.admin.path.help'|trans }}</small>
+                        </label>
+                    {% endif %}
+                </div>
+            </section>
+        {% endfor %}
+        {% for item in group.items %}
+            {% if item.key == 'shop.default_currency' %}
+                <section class="panel platform-settings__section">
+                    <header class="panel__head"><h2>{{ 'settings.platform.section.currency'|trans }}</h2></header>
+                    <div class="form-grid">
+                        {% include 'admin/settings/_platform_field.html.twig' with { item: item, values: values } only %}
+                    </div>
+                </section>
+            {% endif %}
+        {% endfor %}
+        {% set hasOther = false %}
+        {% for item in group.items %}{% if item.key not in knownKeys %}{% set hasOther = true %}{% endif %}{% endfor %}
+        {% if hasOther %}
+            <section class="panel platform-settings__section">
+                <header class="panel__head"><h2>{{ 'settings.group.other'|trans }}</h2></header>
+                <div class="form-grid">
+                    {% for item in group.items %}
+                        {% if item.key not in knownKeys %}
+                            {% include 'admin/settings/_platform_field.html.twig' with { item: item, values: values } only %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </div>
+    {{ apply_filters('admin.settings.panel.core', '')|raw }}
+</div>

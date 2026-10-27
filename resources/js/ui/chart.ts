@@ -32,8 +32,8 @@ Chart.register(
     Legend,
 );
 
-function cssVar(name: string, fallback: string): string {
-    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function cssVar(name: string, fallback: string, element: HTMLElement = document.documentElement): string {
+    const value = getComputedStyle(element).getPropertyValue(name).trim();
 
     return value || fallback;
 }
@@ -62,7 +62,7 @@ export function registerChart(alpine: typeof Alpine): void {
             const labels = (config.labels as string[]) || [];
             const datasets = (config.datasets as Array<Record<string, unknown>>) || [];
             const primary = cssVar('--primary', '#47c2ff');
-            const text = cssVar('--text-muted', '#64748b');
+            const text = cssVar('--text-muted', '#64748b', root);
             const border = cssVar('--border', '#e2e8f0');
             const surface = cssVar('--surface', '#ffffff');
 

@@ -8,8 +8,8 @@
     {% endblock %}
     <div class="g-modal__backdrop" :class="backdropClass" @click="close" aria-hidden="true"></div>
     <div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-label="{{ title|default('') }}" :aria-hidden="!open">
-        <div class="g-modal__panel{{ panel_class|default('') ? ' ' ~ panel_class : '' }}">
-            {% if title|default('') %}<h3 class="g-modal__title">{{ title }}</h3>{% endif %}
+        <div class="g-modal__panel panel{{ panel_class|default('') ? ' ' ~ panel_class : '' }}">
+            {% block title %}{% if title|default('') %}<header class="panel__head"><h2>{{ title }}</h2></header>{% endif %}{% endblock %}
             <div class="g-modal__body">{% block body %}{{ body|default('')|raw }}{% endblock %}</div>
             <div class="g-modal__actions">
                 {% block actions %}

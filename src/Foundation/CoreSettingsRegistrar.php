@@ -98,6 +98,9 @@ final class CoreSettingsRegistrar
             SettingRecord::TYPE_JSON,
             'settings.dashboard.layout',
             [],
+            null,
+            [],
+            false,
         );
         $this->settings->define(
             ContentVersion::SETTING_KEY,
@@ -147,15 +150,22 @@ final class CoreSettingsRegistrar
         );
 
         // White-label branding (admin + public site).
+        $this->settings->define('brand.palette', SettingRecord::TYPE_JSON, 'settings.brand.palette', [], null, [], false);
+        $this->settings->define('brand.admin_motion', SettingRecord::TYPE_BOOLEAN, 'settings.brand.admin_motion', true, null, [], false);
+        $this->settings->define('brand.admin_panel_opacity', SettingRecord::TYPE_INTEGER, 'settings.brand.admin_panel_opacity', 100, null, [], false);
+        $this->settings->define('brand.admin_font', SettingRecord::TYPE_STRING, 'settings.brand.appearance.font', 'default', null, [], false);
         $this->settings->define('brand.name', SettingRecord::TYPE_STRING, 'settings.brand.name', '');
         $this->settings->define('brand.subtitle', SettingRecord::TYPE_STRING, 'settings.brand.subtitle', '');
         $this->settings->define('brand.logo_url', SettingRecord::TYPE_STRING, 'settings.brand.logo_url', '');
         $this->settings->define('brand.favicon_url', SettingRecord::TYPE_STRING, 'settings.brand.favicon_url', '');
         $this->settings->define('brand.color_signal', SettingRecord::TYPE_STRING, 'settings.brand.color_signal', '#d7ff45');
+        $this->settings->define('brand.color_secondary', SettingRecord::TYPE_STRING, 'settings.brand.color_secondary', '', null, [], false);
+        $this->settings->define('brand.color_accent', SettingRecord::TYPE_STRING, 'settings.brand.color_accent', '', null, [], false);
         $this->settings->define('brand.color_ink', SettingRecord::TYPE_STRING, 'settings.brand.color_ink', '#0a0b0a');
         $this->settings->define('brand.color_cream', SettingRecord::TYPE_STRING, 'settings.brand.color_cream', '#f5f5ef');
-        $this->settings->define('brand.site_primary', SettingRecord::TYPE_STRING, 'settings.brand.site_primary', '#17375a');
-        $this->settings->define('brand.site_name', SettingRecord::TYPE_STRING, 'settings.brand.site_name', '');
+        $this->settings->define('brand.site_signal', SettingRecord::TYPE_STRING, 'settings.brand.site_signal', '', null, [], false);
+        $this->settings->define('brand.site_primary', SettingRecord::TYPE_STRING, 'settings.brand.site_primary', '#17375a', null, [], false);
+        $this->settings->define('brand.site_name', SettingRecord::TYPE_STRING, 'settings.brand.site_name', '', null, [], false);
         $this->settings->define('brand.site_mark', SettingRecord::TYPE_STRING, 'settings.brand.site_mark', '');
         $this->settings->define('brand.tagline', SettingRecord::TYPE_STRING, 'settings.brand.tagline', '');
         $this->settings->define('brand.footnote', SettingRecord::TYPE_STRING, 'settings.brand.footnote', '');
@@ -164,11 +174,40 @@ final class CoreSettingsRegistrar
             SettingRecord::TYPE_STRING,
             'settings.brand.custom_css',
             "/* Admin CSS — override tokens or add rules */\n:root {\n  /* --primary: #47c2ff; */\n}\n",
+            null,
+            [],
+            false,
         );
     }
 
     private function validation(): void
     {
+        $this->validation->ruleset('settings.brand_appearance', [
+            'admin_motion' => 'required|in:0,1',
+            'admin_panel_opacity' => ['required', 'integer', 'regex:/^(100|[1-9]?[0-9])$/'],
+            'admin_font' => 'nullable|in:default,system,serif,rounded',
+        ]);
+        $this->validation->ruleset('settings.shop_currency', [
+            'shop__default_currency' => 'nullable',
+        ], function (array $data, array $errors): array {
+            if (!isset($data['shop__default_currency']) || !is_string($data['shop__default_currency'])) {
+                $errors['shop__default_currency'] = $this->translator->trans('settings.shop_currency.invalid');
+            }
+
+            return $errors;
+        });
+        $this->validation->ruleset('settings.palette', [
+            'palette_primary' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_secondary' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_accent' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_light_background' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_light_surface' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_light_header' => 'nullable|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_dark_background' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_dark_surface' => 'required|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_dark_header' => 'nullable|regex:/^#[a-fA-F0-9]{6}$/',
+            'palette_storefront_mode' => 'required|in:light,dark',
+        ]);
         $this->validation->ruleset('settings.origins', [
             'origin_mode' => 'required|in:environment,custom',
             'origins' => 'nullable|max:8000',
@@ -180,6 +219,9 @@ final class CoreSettingsRegistrar
 
             return $errors;
         });
+        $this->validation->ruleset('dashboard.layout.save', [
+            'dashboard_layout' => 'required|json|max:100000',
+        ]);
         $this->validation->ruleset('auth.login', [
             'email' => 'required|email|max:190',
             'password' => 'required|min:1',

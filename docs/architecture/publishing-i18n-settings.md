@@ -110,7 +110,15 @@ Core-defined keys: `app.name`, `app.locale`, `admin.theme` (`system|light|dark`)
 
 ## Brand
 
-`Gereq\Brand\Branding` (`src/Brand/Branding.php`) reads the `brand.*` settings defined by core: `brand.name`, `brand.subtitle`, `brand.logo_url`, `brand.favicon_url`, `brand.color_signal`, `brand.color_ink`, `brand.color_cream`, `brand.site_primary`, `brand.site_name`, `brand.site_mark`, `brand.tagline`, `brand.footnote`, `brand.custom_css`.
+`Gereq\Brand\Branding` (`src/Brand/Branding.php`) reads the `brand.*` settings defined by core: `brand.name`, `brand.subtitle`, `brand.logo_url`, `brand.favicon_url`, `brand.color_signal`, `brand.color_ink`, `brand.color_cream`, `brand.site_signal`, `brand.site_primary`, `brand.site_name`, `brand.site_mark`, `brand.tagline`, `brand.footnote`, `brand.custom_css`.
+
+Branding is configured in platform settings. Saving the Brand tab stages the shared name and primary color for the storefront; existing storefront values remain unchanged until that save is published. The logo and favicon are shared.
+
+The unified palette is configured in branding settings: `brand.palette` stores primary, secondary, accent and light/dark background, surface and admin card header colors, plus the storefront mode. `PaletteResolver` validates these colors and derives a versioned semantic palette, including contrasting page and card text colors. Older palettes without card header colors retain the derived default. The admin uses the staged palette for live appearance; public branding exposes the published palette and legacy fields for older clients. The CMS library and reference storefront map these resolved values to their CSS variables rather than recalculating them. Public custom CSS is applied after the palette and may override its variables. Existing installations retain their legacy colors until branding is saved and published.
+
+Brand settings also offer a curated palette generator. Background motion and panel opacity are immediate admin-only settings; they do not alter published storefront branding. Panel text is derived from the chosen opacity and the page background. Increasing opacity also fades the ambient background, which is hidden at 100%.
+
+The admin font selector uses device-installed font stacks and previews changes immediately. The former admin custom CSS editor is removed; existing `brand.custom_css` and legacy admin CSS continue to apply for compatibility.
 
 | Method | Use |
 | --- | --- |

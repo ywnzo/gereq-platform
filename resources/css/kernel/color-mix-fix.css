@@ -149,6 +149,11 @@ html[data-theme="gereq-dark"] .publish-badge__chip.badge--warn .publish-badge__c
     color: var(--danger) !important;
 }
 
+html[data-brand-palette="1"] :is(.btn--ghost, .btn-ghost) {
+    --btn-hover-bg: color-mix(in srgb, var(--text) 8%, transparent);
+    --btn-active-bg: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
 .btn--soft {
     --btn-bg: color-mix(in srgb, var(--primary) 28%, var(--surface));
     --btn-hover-bg: color-mix(in srgb, var(--primary) 40%, var(--surface));

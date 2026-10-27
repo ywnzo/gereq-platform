@@ -211,11 +211,13 @@ html[data-theme="gereq-dark"] .api-tester-backdrop {
     min-height: 3.1rem;
     padding: 0 0.65rem 0 1.2rem;
     border-bottom: 1px solid color-mix(in oklab, var(--border, #e5e7eb) 70%, transparent);
-    background: color-mix(in oklab, var(--hover, #f4f5f7) 78%, var(--surface, #fff));
+    background: var(--card-header, color-mix(in oklab, var(--hover, #f4f5f7) 78%, var(--surface, #fff)));
+    color: var(--text);
     flex-shrink: 0;
     cursor: grab;
     user-select: none;
 }
+html[data-brand-palette="1"] .api-tester-dock__bar { --text: var(--text-on-card-header); }
 .api-tester-dock__bar:active { cursor: grabbing; }
 .api-tester-dock__title {
     display: inline-flex;

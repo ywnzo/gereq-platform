@@ -135,6 +135,13 @@ export function registerCssEditor(alpine: typeof Alpine): void {
             } catch {
                 this.vars = [];
             }
+            if (root.dataset.scope === 'admin') {
+                const styles = getComputedStyle(document.documentElement);
+                this.vars = this.vars.map((item) => ({
+                    ...item,
+                    value: styles.getPropertyValue(item.name).trim() || item.value,
+                }));
+            }
             this.applyFilter();
             this.$watch('filter', () => this.applyFilter());
 
@@ -145,10 +152,18 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                 this.mountEditor();
                 this.refresh();
             };
+            const onReset = (event: Event) => {
+                const value = (event as CustomEvent<string>).detail;
+                if (this.view && typeof value === 'string') {
+                    this.view.dispatch({ changes: { from: 0, to: this.view.state.doc.length, insert: value } });
+                }
+            };
             root.addEventListener('cms-css-refresh', onRefresh);
+            root.addEventListener('cms-css-reset', onReset);
 
             return () => {
                 root.removeEventListener('cms-css-refresh', onRefresh);
+                root.removeEventListener('cms-css-reset', onReset);
                 this.destroy();
             };
         },
@@ -193,6 +208,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
                         EditorView.updateListener.of((update) => {
                             if (update.docChanged) {
                                 sync(update.view);
+                                this.applyFilter();
                             }
                         }),
                     ],
@@ -201,6 +217,7 @@ export function registerCssEditor(alpine: typeof Alpine): void {
             this.view = view;
 
             sync(view);
+            this.applyFilter();
 
             this.themeObserver = new MutationObserver(() => {
                 if (!this.view || !this.themeComp) {
@@ -234,11 +251,22 @@ export function registerCssEditor(alpine: typeof Alpine): void {
 
         applyFilter() {
             const q = this.filter.trim().toLowerCase();
-            this.filteredVars = q === ''
-                ? this.vars
-                : this.vars.filter((v) =>
-                    v.name.toLowerCase().includes(q) || v.hint.toLowerCase().includes(q),
-                );
+            const used = new Set<string>();
+            const editor = this.view;
+            if (editor && (this.$refs.input as HTMLTextAreaElement | undefined)?.name === 'cms__custom_css_public') {
+                const doc = editor.state.doc.toString();
+                for (const rule of syntaxTree(editor.state).topNode.getChildren('RuleSet')) {
+                    const block = rule.getChild('Block');
+                    if (!block || doc.slice(rule.from, block.from).trim() !== ':root') continue;
+                    for (const declaration of block.getChildren('Declaration')) {
+                        const name = declaration.getChild('VariableName');
+                        if (name) used.add(doc.slice(name.from, name.to));
+                    }
+                }
+            }
+            this.filteredVars = this.vars.filter((v) =>
+                !used.has(v.name) && (q === '' || v.name.toLowerCase().includes(q) || v.hint.toLowerCase().includes(q)),
+            );
         },
 
         swatchStyle(value: string): string {
@@ -270,11 +298,33 @@ export function registerCssEditor(alpine: typeof Alpine): void {
             if (value !== '' && (isColorValue(value) || /^[\w.#%-]+$/i.test(value))) {
                 snippet = `${name}: ${value};`;
             }
-            const { from, to } = editor.state.selection.main;
-            editor.dispatch({
-                changes: { from, to, insert: snippet },
-                selection: { anchor: from + snippet.length },
-            });
+            if ((this.$refs.input as HTMLTextAreaElement | undefined)?.name === 'cms__custom_css_public') {
+                const doc = editor.state.doc.toString();
+                const rootRule = syntaxTree(editor.state).topNode.getChildren('RuleSet').find((rule) => {
+                    const block = rule.getChild('Block');
+                    return block && doc.slice(rule.from, block.from).trim() === ':root';
+                });
+                const block = rootRule?.getChild('Block');
+                const closingBrace = block?.lastChild;
+                if (block && closingBrace?.name === '}') {
+                    const content = doc.slice(block.from + 1, closingBrace.from);
+                    const trailingWhitespace = content.match(/\s*$/)?.[0] ?? '';
+                    const from = closingBrace.from - trailingWhitespace.length;
+                    const indent = content.match(/\n([ \t]+)\S/)?.[1] ?? '  ';
+                    const insert = `\n${indent}${snippet}\n`;
+                    editor.dispatch({ changes: { from, to: closingBrace.from, insert }, selection: { anchor: from + insert.length - 1 } });
+                } else {
+                    const separator = doc === '' || doc.endsWith('\n') ? '' : '\n';
+                    const insert = `${separator}:root {\n  ${snippet}\n}\n`;
+                    editor.dispatch({ changes: { from: doc.length, insert }, selection: { anchor: doc.length + insert.length - 3 } });
+                }
+            } else {
+                const { from, to } = editor.state.selection.main;
+                editor.dispatch({
+                    changes: { from, to, insert: snippet },
+                    selection: { anchor: from + snippet.length },
+                });
+            }
             editor.focus();
             const input = this.$refs.input as HTMLTextAreaElement | undefined;
             if (input) {

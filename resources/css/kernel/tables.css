@@ -34,6 +34,12 @@ form > .table,
     z-index: 2;
     box-shadow: inset 0 -1px 0 var(--border);
 }
+html[data-brand-palette="1"] .table th {
+    --text: var(--text-on-card-header);
+    --grq-fg-muted: var(--text-muted-on-card-header);
+    background: var(--card-header);
+    color: var(--grq-fg-muted);
+}
 .table th.is-sorted { color: var(--text); }
 .table-sort {
     display: inline-flex;
@@ -251,6 +257,9 @@ form > .table,
     color: var(--primary);
     border-color: var(--border);
     background: var(--surface);
+}
+html[data-brand-palette="1"] .table-wrap .table__action-btn--primary {
+    color: var(--text-on-surface) !important;
 }
 .table__action-btn--primary:hover,
 .table__action-btns > form > button.table__action-btn--primary:hover,

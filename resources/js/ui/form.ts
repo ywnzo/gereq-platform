@@ -21,7 +21,7 @@ export function registerForm(alpine: typeof Alpine): void {
         init() {
             const form = this.$el as HTMLFormElement;
             const name = form.dataset.form || form.id || form.getAttribute('action') || 'form';
-            this.key = 'gereq:form:' + name;
+            this.key = 'gereq:form:' + (form.dataset.draftKey || name);
             this.clearIfNeeded(name);
             if (form.dataset.serverState !== '1') {
                 this.restore(form);

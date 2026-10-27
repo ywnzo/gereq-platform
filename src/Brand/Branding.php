@@ -17,6 +17,12 @@ final class Branding
     public const DEFAULT_INK = '#0a0b0a';
     public const DEFAULT_CREAM = '#f5f5ef';
     public const DEFAULT_SITE_PRIMARY = '#17375a';
+    public const ADMIN_FONTS = [
+        'default' => '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif',
+        'system' => 'system-ui, sans-serif',
+        'serif' => 'Georgia, "DejaVu Serif", serif',
+        'rounded' => '"Trebuchet MS", "DejaVu Sans", sans-serif',
+    ];
 
     public function __construct(private readonly Settings $settings)
     {
@@ -30,12 +36,15 @@ final class Branding
      *   logo_url: string,
      *   logo_custom: bool,
      *   favicon_url: string,
+     *   palette_active: bool,
+     *   admin_motion: bool,
      *   color_signal: string,
      *   color_ink: string,
      *   color_cream: string,
      *   color_on_signal: string,
      *   site_name: string,
      *   site_mark: string,
+     *   site_signal: string,
      *   site_primary: string,
      *   tagline: string,
      *   footnote: string,
@@ -62,6 +71,7 @@ final class Branding
         $signal = $this->hex('brand.color_signal', self::DEFAULT_SIGNAL);
         $ink = $this->hex('brand.color_ink', self::DEFAULT_INK);
         $cream = $this->hex('brand.color_cream', self::DEFAULT_CREAM);
+        $siteSignal = $this->hex('brand.site_signal', $signal);
         $sitePrimary = $this->hex('brand.site_primary', self::DEFAULT_SITE_PRIMARY);
 
         // Public site name comes from Brand (Značka); cms.site_title is legacy fallback only.
@@ -90,12 +100,15 @@ final class Branding
             'logo_url' => $logo,
             'logo_custom' => $logoCustom,
             'favicon_url' => $favicon,
+            'palette_active' => $this->resolvedPalette() !== null,
+            'admin_motion' => $this->adminAppearance()['motion'],
             'color_signal' => $signal,
             'color_ink' => $ink,
             'color_cream' => $cream,
             'color_on_signal' => $this->contrastOn($signal),
             'site_name' => $siteName,
             'site_mark' => mb_substr($siteMark, 0, 3),
+            'site_signal' => $siteSignal,
             'site_primary' => $sitePrimary,
             'tagline' => $this->string('brand.tagline', ''),
             'footnote' => $this->string('brand.footnote', ''),
@@ -109,7 +122,7 @@ final class Branding
     {
         $b = $this->resolve();
 
-        return [
+        $payload = [
             'app_name' => $b['app_name'],
             'name' => $b['name'],
             'site_name' => $b['site_name'],
@@ -121,12 +134,49 @@ final class Branding
             'tagline' => $b['tagline'],
             'custom_css' => $b['custom_css_public'],
             'colors' => [
-                'signal' => $b['color_signal'],
+                'signal' => $b['site_signal'],
                 'ink' => $b['color_ink'],
                 'cream' => $b['color_cream'],
                 'primary' => $b['site_primary'],
-                'on_signal' => $b['color_on_signal'],
+                'on_signal' => $this->contrastOn($b['site_signal']),
             ],
+        ];
+
+        $palette = $this->resolvedPalette();
+        if ($palette !== null) {
+            $payload['palette'] = $palette;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @return array{version: int, storefront_mode: string, colors: array<string, string>, modes: array<string, array<string, string>>, warnings: list<string>}|null
+     */
+    public function resolvedPalette(): ?array
+    {
+        $value = $this->settings->get('brand.palette', []);
+        if (!is_array($value) || $value === []) {
+            return null;
+        }
+
+        try {
+            return (new PaletteResolver())->resolve($value);
+        } catch (\InvalidArgumentException) {
+            return null;
+        }
+    }
+
+    /** @return array{motion: bool, panel_opacity: int} */
+    public function adminAppearance(): array
+    {
+        $opacity = $this->settings->has('brand.admin_panel_opacity')
+            ? (int) $this->settings->get('brand.admin_panel_opacity', 100)
+            : ($this->resolvedPalette() !== null ? 100 : 66);
+
+        return [
+            'motion' => (bool) $this->settings->get('brand.admin_motion', true),
+            'panel_opacity' => max(0, min(100, $opacity)),
         ];
     }
 
@@ -134,10 +184,34 @@ final class Branding
     public function adminCssVariables(): string
     {
         $lines = [':root, html, html.dark, [data-theme="gereq"], [data-theme="gereq-dark"] {'];
+        $font = (string) $this->settings->get('brand.admin_font', 'default');
+        if ($font !== 'default' && isset(self::ADMIN_FONTS[$font])) {
+            $lines[] = '--gereq-font-sans: ' . self::ADMIN_FONTS[$font] . ' !important;';
+            $lines[] = '--gereq-font-display: ' . self::ADMIN_FONTS[$font] . ' !important;';
+        }
         foreach ($this->cssVariableMap() as $name => $value) {
             $lines[] = "{$name}: {$value} !important;";
         }
         $lines[] = '}';
+        $palette = $this->resolvedPalette();
+        $opacity = $this->adminAppearance()['panel_opacity'];
+        if ($palette === null && $this->settings->has('brand.admin_panel_opacity')) {
+            $lines[] = 'html { --glass-surface: color-mix(in srgb, var(--surface) ' . $opacity . '%, transparent) !important;'
+                . ' --ambient-opacity: ' . ((100 - $opacity) / 100) . ' !important; }';
+        }
+        if ($palette !== null) {
+            $resolver = new PaletteResolver();
+            foreach (['light', 'dark'] as $mode) {
+                $selector = $mode === 'light'
+                    ? 'html[data-brand-palette="1"]:not(.dark):not([data-theme="gereq-dark"])'
+                    : 'html.dark[data-brand-palette="1"], html[data-theme="gereq-dark"][data-brand-palette="1"]';
+                $lines[] = $selector . ' {';
+                foreach ($resolver->cssTokens($palette['modes'][$mode], $opacity) as $name => $value) {
+                    $lines[] = "{$name}: {$value} !important;";
+                }
+                $lines[] = '}';
+            }
+        }
         $custom = $this->customCssAdmin();
         if ($custom !== '') {
             $lines[] = $custom;
@@ -222,6 +296,27 @@ final class Branding
      */
     private function publicCssDefaults(array $b): array
     {
+        $palette = $this->resolvedPalette();
+        if ($palette !== null) {
+            $mode = $palette['modes'][$palette['storefront_mode']];
+
+            return [
+                ['name' => '--color-brand-50', 'value' => $mode['brand_50'], 'hint' => 'Nejsvětlejší brand'],
+                ['name' => '--color-brand-600', 'value' => $mode['brand_600'], 'hint' => 'Brand střed'],
+                ['name' => '--color-brand-700', 'value' => $mode['primary'], 'hint' => 'Primární barva'],
+                ['name' => '--color-brand-900', 'value' => $mode['brand_900'], 'hint' => 'Nejtmavší brand'],
+                ['name' => '--color-secondary', 'value' => $mode['secondary'], 'hint' => 'Sekundární barva'],
+                ['name' => '--color-accent', 'value' => $mode['accent'], 'hint' => 'Doplňková barva'],
+                ['name' => '--color-paper', 'value' => $mode['background'], 'hint' => 'Pozadí stránky'],
+                ['name' => '--color-surface', 'value' => $mode['surface'], 'hint' => 'Karty'],
+                ['name' => '--color-ink-600', 'value' => $mode['text_muted'], 'hint' => 'Text muted'],
+                ['name' => '--color-ink-900', 'value' => $mode['text'], 'hint' => 'Hlavní text'],
+                ['name' => '--font-sans', 'value' => 'Arial', 'hint' => 'Základní font'],
+                ['name' => '--radius-card', 'value' => '0.75rem', 'hint' => 'Radius karet'],
+                ['name' => '--radius-control', 'value' => '0.5rem', 'hint' => 'Radius inputů'],
+            ];
+        }
+
         $primary = $b['site_primary'];
         $ink = $b['color_ink'];
         $cream = $b['color_cream'];

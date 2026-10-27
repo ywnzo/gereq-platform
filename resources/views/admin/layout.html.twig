@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app_locale() }}" class="dark" data-theme="gereq-dark" data-csp-nonce="{{ csp_nonce() }}" data-url-prefix="{{ config('app.url_prefix') }}" data-admin-path="/{{ config('admin.path') }}" style="{{ brand_html_style() }}">
+<html lang="{{ app_locale() }}" class="dark" data-theme="gereq-dark" data-brand-palette="{{ brand('palette_active') ? '1' : '0' }}" data-ambient-motion="{{ brand('admin_motion') ? '1' : '0' }}" data-csp-nonce="{{ csp_nonce() }}" data-url-prefix="{{ config('app.url_prefix') }}" data-admin-path="/{{ config('admin.path') }}" style="{{ brand_html_style() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

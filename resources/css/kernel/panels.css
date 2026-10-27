@@ -10,6 +10,51 @@
         0 1px 0 color-mix(in srgb, #fff 10%, transparent) inset,
         0 10px 28px color-mix(in srgb, #000 5%, transparent);
 }
+html[data-brand-palette="1"] :is(
+    .panel, .table-wrap, .dash-hero, .metric-card, .metrics > div,
+    .module-list, .module-stat, .developer-card, .media-drive,
+    .customer-edit__header, .customer-profile__header, .customer-section,
+    .flyout, .alert, .alert-success, .alert-error, .toast, .g-select__list
+) {
+    --text: var(--text-on-surface);
+    --text-muted: var(--text-muted-on-surface);
+    --text-soft: var(--text-muted-on-surface);
+    --muted: var(--text-muted-on-surface);
+    --gereq-fg: var(--text-on-surface);
+    --gereq-ink: var(--text-on-surface);
+    --gereq-muted: var(--text-muted-on-surface);
+    --grq-fg: var(--text-on-surface);
+    --grq-fg-muted: var(--text-muted-on-surface);
+    --grq-fg-soft: var(--text-muted-on-surface);
+    color: var(--text-on-surface);
+}
+html[data-brand-palette="1"] :is(.panel, .table-wrap, .dash-hero, .metric-card, .metrics > div) {
+    --text: var(--text-on-panel, var(--text-on-surface));
+    --text-muted: var(--text-muted-on-panel, var(--text-muted-on-surface));
+    --text-soft: var(--text-muted-on-panel, var(--text-muted-on-surface));
+    --muted: var(--text-muted-on-panel, var(--text-muted-on-surface));
+    --gereq-fg: var(--text-on-panel, var(--text-on-surface));
+    --gereq-ink: var(--text-on-panel, var(--text-on-surface));
+    --gereq-muted: var(--text-muted-on-panel, var(--text-muted-on-surface));
+    --grq-fg: var(--text-on-panel, var(--text-on-surface));
+    --grq-fg-muted: var(--text-muted-on-panel, var(--text-muted-on-surface));
+    --grq-fg-soft: var(--text-muted-on-panel, var(--text-muted-on-surface));
+    color: var(--text-on-panel, var(--text-on-surface));
+}
+html[data-brand-palette="1"] .panel > .panel__head {
+    --text: var(--text-on-card-header);
+    --text-muted: var(--text-muted-on-card-header);
+    --text-soft: var(--text-muted-on-card-header);
+    --gereq-fg: var(--text-on-card-header);
+    --gereq-ink: var(--text-on-card-header);
+    --gereq-muted: var(--text-muted-on-card-header);
+    --grq-fg: var(--text-on-card-header);
+    --grq-fg-muted: var(--text-muted-on-card-header);
+    --grq-fg-soft: var(--text-muted-on-card-header);
+    background: var(--card-header);
+    color: var(--text-on-card-header);
+    border-radius: var(--radius) var(--radius) 0 0;
+}
 .panel__head {
     display: flex;
     align-items: flex-start;
@@ -175,6 +220,14 @@ html:not(.dark) .avatar {
     max-width: 280px;
     min-height: var(--control-h);
     height: var(--control-h);
+}
+.toolbar > :is(.btn-sm, .btn--sm) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--control-h);
+    min-height: var(--control-h);
+    padding-block: 0;
 }
 
 .flyout {

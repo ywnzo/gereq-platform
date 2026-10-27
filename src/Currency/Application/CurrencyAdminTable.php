@@ -71,7 +71,7 @@ final class CurrencyAdminTable
                 'empty_hint' => $this->translator->trans('currency.empty.hint'),
                 'actions' => $canManage
                     ? fn (Currency $item): array => [[
-                        'href' => $this->router->url('admin.currencies.edit', ['code' => $item->code()], $request),
+                        'href' => '#currency-modal-' . $item->code(),
                         'label' => $this->translator->trans('common.edit'),
                         'icon' => 'edit',
                     ]]

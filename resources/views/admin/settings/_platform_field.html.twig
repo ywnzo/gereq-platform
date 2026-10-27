@@ -1,0 +1,25 @@
+{% set key = item.key %}
+{% set definition = item.definition %}
+{% set field = key|replace({'.': '__'}) %}
+{% set helpKey = definition.label ~ '.help' %}
+{% set helpText = helpKey|trans != helpKey ? helpKey|trans : '' %}
+{% if definition.type == 'boolean' or (definition.options is defined and definition.options is not empty) %}
+    {% include 'admin/settings/_choice_select.html.twig' with {
+        field: field, value: values[key],
+        options: definition.type == 'boolean' ? null : definition.options,
+        label: definition.label|trans, hint: helpText,
+    } only %}
+    {% if key == 'shop.default_currency' and error(field, 'settings.shop_currency') %}<p class="g-error">{{ error(field, 'settings.shop_currency') }}</p>{% endif %}
+{% else %}
+    <label class="field">
+        <span>{{ definition.label|trans }}</span>
+        {% if item.secret %}
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="{{ field }}" value="{{ values[key] }}" autocomplete="new-password" placeholder="{{ values[key] ? ('settings.secret.placeholder'|trans) : '' }}"{% endblock %}{% endembed %}
+        {% elseif definition.type == 'json' %}
+            {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="{{ field }}" rows="6" spellcheck="false"{% endblock %}{% block content %}{{ values[key]|json_encode }}{% endblock %}{% endembed %}
+        {% else %}
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="{{ field }}" value="{{ values[key] }}"{% endblock %}{% endembed %}
+        {% endif %}
+        {% if helpText %}<small class="field__hint">{{ helpText }}</small>{% endif %}
+    </label>
+{% endif %}

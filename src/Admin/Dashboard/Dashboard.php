@@ -84,23 +84,25 @@ final class Dashboard
     /**
      * @return list<DashboardWidget>
      */
-    public function widgets(?User $user = null, ?string $type = null): array
+    public function widgets(?User $user = null, ?string $type = null, bool $includeDisabled = false): array
     {
         $widgets = $this->registered($user);
         $layout = $this->layoutIndex();
 
         if ($layout !== []) {
-            $widgets = array_values(array_filter(
-                $widgets,
-                static function (DashboardWidget $widget) use ($layout): bool {
-                    $pref = $layout[$widget->id()] ?? null;
-                    if ($pref === null) {
-                        return true;
-                    }
+            if (!$includeDisabled) {
+                $widgets = array_values(array_filter(
+                    $widgets,
+                    static function (DashboardWidget $widget) use ($layout): bool {
+                        $pref = $layout[$widget->id()] ?? null;
+                        if ($pref === null) {
+                            return true;
+                        }
 
-                    return (bool) ($pref['enabled'] ?? true);
-                }
-            ));
+                        return (bool) ($pref['enabled'] ?? true);
+                    }
+                ));
+            }
 
             usort($widgets, static function (DashboardWidget $a, DashboardWidget $b) use ($layout): int {
                 $oa = (int) ($layout[$a->id()]['order'] ?? $a->order());
@@ -127,12 +129,12 @@ final class Dashboard
      *
      * @return list<array{id: string, width: string, html: string}>
      */
-    public function gridItems(?User $user = null): array
+    public function gridItems(?User $user = null, bool $includeDisabled = false): array
     {
         $layout = $this->layoutIndex();
         $items = [];
 
-        foreach ($this->widgets($user, DashboardWidget::TYPE_PANEL) as $widget) {
+        foreach ($this->widgets($user, DashboardWidget::TYPE_PANEL, $includeDisabled) as $widget) {
             $items[] = [
                 'id' => $widget->id(),
                 'width' => $this->resolveWidth($widget->id(), $this->defaultWidthFor($widget)),
@@ -141,10 +143,10 @@ final class Dashboard
             ];
         }
 
-        $shortcuts = $this->widgets($user, DashboardWidget::TYPE_SHORTCUT);
+        $shortcuts = $this->widgets($user, DashboardWidget::TYPE_SHORTCUT, $includeDisabled);
         $shortcutPref = $layout[self::SHORTCUTS_ID] ?? null;
         $shortcutsEnabled = $shortcutPref === null ? true : (bool) ($shortcutPref['enabled'] ?? true);
-        if ($shortcuts !== [] && $shortcutsEnabled) {
+        if ($shortcuts !== [] && ($shortcutsEnabled || $includeDisabled)) {
             $items[] = [
                 'id' => self::SHORTCUTS_ID,
                 'width' => $this->resolveWidth(self::SHORTCUTS_ID, self::WIDTH_THIRD),
@@ -162,7 +164,7 @@ final class Dashboard
     /**
      * @return array{metric: list<DashboardWidget>, panel: list<DashboardWidget>, hero: list<DashboardWidget>, shortcut: list<DashboardWidget>}
      */
-    public function grouped(?User $user = null): array
+    public function grouped(?User $user = null, bool $includeDisabled = false): array
     {
         $grouped = [
             DashboardWidget::TYPE_METRIC => [],
@@ -171,7 +173,7 @@ final class Dashboard
             DashboardWidget::TYPE_SHORTCUT => [],
         ];
 
-        foreach ($this->widgets($user) as $widget) {
+        foreach ($this->widgets($user, null, $includeDisabled) as $widget) {
             $type = $widget->type();
             if (!isset($grouped[$type])) {
                 $grouped[$type] = [];
@@ -204,6 +206,36 @@ final class Dashboard
         usort($normalized, static fn (array $a, array $b): int => $a['order'] <=> $b['order']);
 
         $this->settings->set(self::LAYOUT_SETTING, $normalized, SettingRecord::TYPE_JSON, 'core');
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     */
+    public function saveVisibleLayout(array $items, User $user): void
+    {
+        $allowed = [];
+        foreach ($this->catalog($user) as $item) {
+            $allowed[$item['id']] = $item;
+        }
+        $layout = $this->layoutIndex();
+        $seen = [];
+        foreach ($items as $item) {
+            $id = $item['id'] ?? null;
+            if (!is_string($id) || !isset($allowed[$id]) || isset($seen[$id])
+                || !is_bool($item['enabled'] ?? null) || !is_int($item['order'] ?? null)
+                || !is_string($item['width'] ?? null)
+                || !in_array($item['width'], [self::WIDTH_FULL, self::WIDTH_TWO_THIRDS, self::WIDTH_HALF, self::WIDTH_THIRD], true)) {
+                throw new \Gereq\Validation\ValidationException(['dashboard_layout' => 'validation.json']);
+            }
+            $seen[$id] = true;
+            $layout[$id] = [
+                'id' => $id,
+                'enabled' => $item['enabled'],
+                'order' => $item['order'],
+                'width' => $item['width'],
+            ];
+        }
+        $this->saveLayout(array_values($layout));
     }
 
     public function resolveWidth(string $id, string $default = self::WIDTH_HALF): string

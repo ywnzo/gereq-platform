@@ -1,0 +1,15 @@
+<div class="dash-edit__controls" data-dash-controls>
+    <button type="button" class="btn btn--ghost btn--sm" data-dash-action="up" aria-label="{{ 'admin.dashboard.edit.up'|trans }}">{{ icon('chevron-up') }}</button>
+    <button type="button" class="btn btn--ghost btn--sm" data-dash-action="down" aria-label="{{ 'admin.dashboard.edit.down'|trans }}">{{ icon('chevron-down') }}</button>
+    <button type="button" class="btn btn--ghost btn--sm" data-dash-action="remove" aria-label="{{ 'admin.dashboard.edit.remove'|trans }}">{{ icon('trash') }}</button>
+    {% if editableType == 'panel' %}
+        {% embed 'ui/select.html.twig' with { native: true } %}
+            {% block native_attributes %} data-dash-width aria-label="{{ 'admin.dashboard.edit.width'|trans }}"{% endblock %}
+            {% block native_options %}
+                {% for width in ['third', 'half', 'two_thirds', 'full'] %}
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ width }}" {{ editableWidth == width ? 'selected' : '' }}{% endblock %}{% block content %}{{ ('settings.dashboard.width.' ~ width)|trans }}{% endblock %}{% endembed %}
+                {% endfor %}
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+</div>

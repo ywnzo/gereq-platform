@@ -114,6 +114,8 @@ final class ServeCommand extends Command
         $bind = $host . ':' . $port;
         $cmd = [
             PHP_BINARY,
+            '-d',
+            'opcache.enable_cli=0',
             '-S',
             $bind,
             '-t',

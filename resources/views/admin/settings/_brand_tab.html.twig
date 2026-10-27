@@ -7,7 +7,7 @@
     {% set byKey = byKey|merge({ (item.key): item }) %}
 {% endfor %}
 
-{% set brandWide = ['brand.custom_css'] %}
+{% set brandWide = [] %}
 {% set fieldCtx = {
     values: values,
     groupId: 'brand',
@@ -16,7 +16,15 @@
     libraryImages: libraryImages|default([])
 } %}
 
-<div class="brand-settings" x-data="settingsBrandPreview">
+<div class="brand-settings" x-data="settingsBrandPreview"
+     data-palette-url="{{ url('admin.settings.palette.preview') }}"
+     data-palette-error="{{ 'settings.palette.preview_error'|trans|e('html_attr') }}"
+     data-storefront-theme-light="{{ 'settings.theme.light'|trans|e('html_attr') }}"
+     data-storefront-theme-dark="{{ 'settings.theme.dark'|trans|e('html_attr') }}"
+     data-storefront-theme-label="{{ 'settings.palette.storefront_mode'|trans|e('html_attr') }}"
+     data-admin-fonts="{{ adminFonts|json_encode|e('html_attr') }}"
+     data-default-subtitle="{{ 'brand.subtitle'|trans|e('html_attr') }}"
+     data-app-name="{{ brand('app_name')|e('html_attr') }}">
     <div class="brand-settings__fields">
         {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
             {% block attributes %} class="panel brand-settings__section brand-settings__section--identity"{% endblock %}
@@ -45,6 +53,20 @@
         {% endembed %}
 
         {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel brand-settings__section brand-settings__section--public"{% endblock %}
+            {% block content %}
+                <header class="panel__head"><div><h2>{{ 'settings.brand.section.public'|trans }}</h2><p class="muted">{{ 'settings.brand.section.public.help'|trans }}</p></div></header>
+                <div class="form-grid">
+                    {% for key in ['brand.site_mark', 'brand.tagline', 'brand.footnote'] %}
+                        {% if byKey[key] is defined %}
+                            {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endblock %}
+        {% endembed %}
+
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
             {% block attributes %} class="panel brand-settings__section brand-settings__section--colors"{% endblock %}
             {% block content %}
             <header class="panel__head panel__head--actions">
@@ -52,130 +74,100 @@
                     <h2>{{ 'settings.brand.section.colors'|trans }}</h2>
                     <p class="muted">{{ 'settings.brand.section.colors.help'|trans }}</p>
                 </div>
-                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="btn btn--ghost btn--sm" @click="generateStyle"{% endblock %}{% block content %}
-                    {{ icon('palette') }} {{ 'settings.brand.generate_style'|trans }}
-                {% endblock %}{% endembed %}
             </header>
-            <div class="form-grid form-grid--cols-3">
-                {% for key in ['brand.color_signal', 'brand.color_ink', 'brand.color_cream'] %}
-                    {% if byKey[key] is defined %}
-                        {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
-                    {% endif %}
+            <input type="hidden" name="palette_present" value="1">
+            <input type="hidden" name="palette_dirty" value="0">
+            <p class="field__hint brand-settings__palette-warning" x-show="paletteWarning" x-text="paletteWarning" role="status" x-cloak></p>
+            <div class="brand-settings__palette">
+              <div class="brand-settings__palette-fields">
+                {% for section, fields in {
+                    'colors': ['primary', 'secondary', 'accent'],
+                    'light': ['light_background', 'light_surface', 'light_header'],
+                    'dark': ['dark_background', 'dark_surface', 'dark_header'],
+                } %}
+                    <div class="brand-settings__palette-group">
+                        <h3>{{ ('settings.palette.section.' ~ section)|trans }}</h3>
+                        <div class="form-grid form-grid--cols-3">
+                            {% for paletteKey in fields %}
+                                <div class="settings-row settings-row--color">
+                                    <span class="settings-row__label">{{ ('settings.palette.' ~ paletteKey)|trans }}</span>
+                                    {% include 'admin/settings/_color_picker.html.twig' with {
+                                        key: paletteKey, field: 'palette_' ~ paletteKey,
+                                        values: { (paletteKey): brandPalette[paletteKey] },
+                                        definition: { label: 'settings.palette.' ~ paletteKey },
+                                    } only %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 {% endfor %}
+              </div>
+                <div class="brand-storefront-preview-wrap">
+                    <div class="brand-storefront-preview__heading">
+                        <div class="brand-storefront-preview__intro">
+                            <h3>{{ 'settings.palette.preview.title'|trans }}</h3>
+                            <p class="muted">{{ 'settings.palette.preview.help'|trans }}</p>
+                        </div>
+                        <div class="brand-storefront-preview__controls">
+                            <div class="brand-settings__generator">
+                                {% include 'admin/settings/_choice_select.html.twig' with {
+                                    field: 'palette_generator_style', value: 'balanced', label: 'settings.palette.generator.style'|trans,
+                                    options: { balanced: 'settings.palette.generator.balanced', pastel: 'settings.palette.generator.pastel', monochrome: 'settings.palette.generator.monochrome', nature: 'settings.palette.generator.nature' },
+                                } only %}
+                                {% include 'ui/button.html.twig' with { icon: 'auto_awesome', class: 'icon-btn', attrs: { '@click': 'generatePalette', 'aria-label': 'settings.palette.generator.generate'|trans, title: 'settings.palette.generator.generate'|trans } } only %}
+                            </div>
+                            <input type="hidden" name="palette_storefront_mode" value="{{ brandPalette.storefront_mode }}">
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="icon-btn" @click="toggleStorefrontTheme" :aria-label="storefrontThemeLabel" :title="storefrontThemeLabel"{% endblock %}{% block content %}
+                                <span class="material-symbols-outlined g-icon" aria-hidden="true" x-text="storefrontThemeIcon">{{ brandPalette.storefront_mode == 'dark' ? 'dark_mode' : 'light_mode' }}</span>
+                            {% endblock %}{% endembed %}
+                        </div>
+                    </div>
+                    <div class="brand-storefront-preview">
+                        <div class="brand-storefront-preview__nav">
+                            <strong>{{ brand('site_name') }}</strong>
+                            <span>{{ 'settings.palette.preview.nav'|trans }}</span>
+                        </div>
+                        <div class="brand-storefront-preview__hero">
+                            <span class="brand-storefront-preview__eyebrow">{{ 'settings.palette.preview.eyebrow'|trans }}</span>
+                            <strong>{{ 'settings.palette.preview.headline'|trans }}</strong>
+                            <span>{{ 'settings.palette.preview.description'|trans }}</span>
+                            <div class="brand-storefront-preview__actions">
+                                <span class="brand-storefront-preview__button brand-storefront-preview__button--primary">{{ 'settings.palette.preview.primary'|trans }}</span>
+                                <span class="brand-storefront-preview__button brand-storefront-preview__button--secondary">{{ 'settings.palette.preview.secondary'|trans }}</span>
+                            </div>
+                        </div>
+                        <div class="brand-storefront-preview__card">
+                            <span class="brand-storefront-preview__badge">{{ 'settings.palette.preview.accent'|trans }}</span>
+                            <strong>{{ 'settings.palette.preview.card'|trans }}</strong>
+                            <span>{{ 'settings.palette.preview.card_description'|trans }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <p class="field__hint">{{ 'settings.brand.generate_style.hint'|trans }}</p>
             {% endblock %}
         {% endembed %}
 
         {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
-            {% block attributes %} class="panel brand-settings__section brand-settings__section--public"{% endblock %}
+            {% block attributes %} class="panel brand-settings__section brand-settings__section--appearance"{% endblock %}
             {% block content %}
-            <header class="panel__head">
-                <div>
-                    <h2>{{ 'settings.brand.section.public'|trans }}</h2>
-                    <p class="muted">{{ 'settings.brand.section.public.help'|trans }}</p>
+            <header class="panel__head"><div><h2>{{ 'settings.brand.appearance.title'|trans }}</h2><p class="muted">{{ 'settings.brand.appearance.help'|trans }}</p></div></header>
+            <div class="brand-settings__appearance">
+                <input type="hidden" name="appearance_present" value="1">
+                {% include 'admin/settings/_choice_select.html.twig' with {
+                    field: 'admin_font', value: adminFont,
+                    options: { default: 'settings.brand.font.default', system: 'settings.brand.font.system', serif: 'settings.brand.font.serif', rounded: 'settings.brand.font.rounded' },
+                    label: 'settings.brand.appearance.font'|trans, hint: 'settings.brand.appearance.font.help'|trans,
+                    extra: 'brand-settings__font',
+                } only %}
+                {% include 'ui/switch.html.twig' with { name: 'admin_motion', label: 'settings.brand.appearance.motion'|trans, hint: 'settings.brand.appearance.motion.help'|trans, on: brandAppearance.motion } only %}
+                <div class="brand-settings__opacity">
+                    {% include 'ui/range.html.twig' with { name: 'admin_panel_opacity', id: 'admin-panel-opacity', label: 'settings.brand.appearance.opacity'|trans, hint: 'settings.brand.appearance.opacity.help'|trans, value: brandAppearance.panel_opacity, min: 0, max: 100, step: 5 } only %}
+                    <output for="admin-panel-opacity" data-opacity-output>{{ brandAppearance.panel_opacity }}%</output>
                 </div>
-            </header>
-            <div class="form-grid">
-                {% for key in ['brand.site_name', 'brand.site_mark', 'brand.site_primary', 'brand.tagline'] %}
-                    {% if byKey[key] is defined %}
-                        {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey[key] }) %}
-                    {% endif %}
-                {% endfor %}
-                {% if byKey['brand.footnote'] is defined %}
-                    {% include 'admin/settings/_brand_field.html.twig' with fieldCtx|merge({ item: byKey['brand.footnote'], forceFull: true }) %}
-                {% endif %}
             </div>
             {% endblock %}
         {% endembed %}
 
-        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'details' } } %}{% block attributes %} class="panel brand-settings__section brand-settings__section--css"{% endblock %}{% block content %}
-            <summary class="panel__head brand-settings__advanced">
-                <div>
-                    <span class="brand-settings__advanced-title">{{ 'settings.brand.section.css'|trans }}</span>
-                    <p class="muted">{{ 'settings.brand.section.css.help'|trans }}</p>
-                </div>
-                <span class="material-symbols-outlined g-icon brand-settings__chevron" aria-hidden="true">keyboard_arrow_down</span>
-            </summary>
-            {% if byKey['brand.custom_css'] is defined %}
-                {% set item = byKey['brand.custom_css'] %}
-                {% set key = item.key %}
-                {% set definition = item.definition %}
-                {% set field = key|replace({'.': '__'}) %}
-                {% include 'admin/settings/_css_editor.html.twig' %}
-            {% endif %}
-        {% endblock %}{% endembed %}
     </div>
 
-    <aside class="brand-settings__preview" aria-label="{{ 'settings.preview'|trans }}">
-        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
-            {% block attributes %} class="panel"{% endblock %}
-            {% block content %}
-            <header class="panel__head">
-                <div>
-                    <h2>{{ 'settings.preview'|trans }}</h2>
-                    <p class="muted">{{ 'settings.brand.preview.help'|trans }}</p>
-                </div>
-            </header>
-
-            <div class="brand-preview" aria-live="polite">
-                <div class="brand-preview__block">
-                    <span class="brand-preview__label">{{ 'settings.brand.preview.admin'|trans }}</span>
-                    <div class="brand-preview__admin" :style="adminStyle">
-                        <div class="brand-preview__rail" aria-hidden="true">
-                            <span class="brand-preview__rail-dot" :style="swatchSignal"></span>
-                            <span class="brand-preview__rail-line"></span>
-                            <span class="brand-preview__rail-line"></span>
-                            <span class="brand-preview__rail-line brand-preview__rail-line--muted"></span>
-                        </div>
-                        <div class="brand-preview__admin-main">
-                            <div class="brand-preview__lockup">
-                                <img class="brand-preview__mark" :src="logoUrl" width="32" height="32" alt="">
-                                <div class="brand-preview__lockup-text">
-                                    <div class="brand-preview__name" x-text="name"></div>
-                                    <div class="brand-preview__sub" x-text="subtitle"></div>
-                                </div>
-                            </div>
-                            <div class="brand-preview__chrome">
-                                <span class="brand-preview__chip" :style="btnStyle">{{ 'settings.save'|trans }}</span>
-                                <span class="brand-preview__ghost">Ctrl K</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="brand-preview__block">
-                    <span class="brand-preview__label">{{ 'settings.brand.preview.site'|trans }}</span>
-                    <div class="brand-preview__site">
-                        <div class="brand-preview__site-bar" :style="siteBarStyle">
-                            <span class="brand-preview__badge" :style="badgeStyle" x-text="siteMark"></span>
-                            <span class="brand-preview__site-name" x-text="siteName"></span>
-                        </div>
-                        <p class="brand-preview__tagline" x-show="tagline" x-text="tagline"></p>
-                        <p class="brand-preview__tagline" x-show="!tagline">{{ 'settings.preview.tagline_fallback'|trans }}</p>
-                    </div>
-                </div>
-
-                <div class="brand-preview__swatches" role="list" aria-label="{{ 'settings.brand.section.colors'|trans }}">
-                    <div class="brand-preview__swatch" role="listitem">
-                        <span :style="swatchSignal"></span>
-                        <small>{{ 'settings.brand.color_signal'|trans }}</small>
-                    </div>
-                    <div class="brand-preview__swatch" role="listitem">
-                        <span :style="swatchInk"></span>
-                        <small>{{ 'settings.brand.color_ink'|trans }}</small>
-                    </div>
-                    <div class="brand-preview__swatch" role="listitem">
-                        <span :style="swatchCream"></span>
-                        <small>{{ 'settings.brand.color_cream'|trans }}</small>
-                    </div>
-                    <div class="brand-preview__swatch" role="listitem">
-                        <span :style="swatchSite"></span>
-                        <small>{{ 'settings.brand.site_primary'|trans }}</small>
-                    </div>
-                </div>
-            </div>
-            {% endblock %}
-        {% endembed %}
-    </aside>
 </div>

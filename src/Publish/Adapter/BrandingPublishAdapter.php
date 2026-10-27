@@ -17,13 +17,17 @@ final class BrandingPublishAdapter implements PublishableAdapterInterface
 {
     /** @var list<string> */
     private const KEYS = [
+        'brand.palette',
         'brand.name',
         'brand.subtitle',
         'brand.logo_url',
         'brand.favicon_url',
         'brand.color_signal',
+        'brand.color_secondary',
+        'brand.color_accent',
         'brand.color_ink',
         'brand.color_cream',
+        'brand.site_signal',
         'brand.site_primary',
         'brand.site_name',
         'brand.site_mark',

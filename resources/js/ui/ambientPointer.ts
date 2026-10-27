@@ -27,7 +27,7 @@ export function registerAmbientPointer(): void {
 
     const tick = (): void => {
         const el = ensureRoot();
-        if (!el || reduced.matches) {
+        if (!el || reduced.matches || document.documentElement.dataset.ambientMotion === '0') {
             running = false;
             raf = 0;
 
@@ -53,7 +53,7 @@ export function registerAmbientPointer(): void {
     };
 
     const kick = (): void => {
-        if (running || reduced.matches) {
+        if (running || reduced.matches || document.documentElement.dataset.ambientMotion === '0') {
             return;
         }
         running = true;
@@ -61,7 +61,7 @@ export function registerAmbientPointer(): void {
     };
 
     const onPointer = (event: PointerEvent): void => {
-        if (reduced.matches || event.pointerType === 'touch') {
+        if (reduced.matches || document.documentElement.dataset.ambientMotion === '0' || event.pointerType === 'touch') {
             return;
         }
         const w = window.innerWidth || 1;

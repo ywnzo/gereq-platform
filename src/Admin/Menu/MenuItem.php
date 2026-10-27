@@ -19,6 +19,8 @@ final class MenuItem
         public readonly bool $divider = false,
         public readonly bool $hidden = false,
         public readonly ?string $group = null,
+        public readonly bool $fallbackToRoot = false,
+        public readonly ?int $groupOrder = null,
     ) {
     }
 }

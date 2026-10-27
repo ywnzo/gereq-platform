@@ -1,0 +1,4 @@
+<p class="field__hint settings-origins-environment" x-show="isEnvironment" x-cloak>
+    {{ 'settings.storefront.origins.environment_value'|trans }}:
+    <code>{%- for part in (originEnvironment ?: ('settings.storefront.origins.environment_empty'|trans))|split(',') -%}{{ part }}{% if not loop.last %},<wbr>{% endif %}{%- endfor -%}</code>
+</p>

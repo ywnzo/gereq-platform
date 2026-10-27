@@ -7,7 +7,7 @@
         <ul class="g-summary__list">
             {% for field, message in bag %}
                 <li>
-                    <a href="#f-{{ field }}">{{ message }}</a>
+                    <a href="#{{ id_prefix|default('f-') }}{{ field }}">{{ message }}</a>
                 </li>
             {% endfor %}
         </ul>

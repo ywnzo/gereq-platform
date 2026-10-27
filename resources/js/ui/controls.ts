@@ -32,10 +32,6 @@ export function registerSwitch(alpine: typeof Alpine): void {
         refresh() {
             this.onClass = this.on ? 'is-on' : '';
             this.checkedAttr = this.on ? 'true' : 'false';
-            const btn = (this.$el as HTMLElement).querySelector('.table-switch');
-            if (btn) {
-                btn.classList.toggle('is-on', this.on);
-            }
         },
 
         toggle() {

@@ -174,7 +174,7 @@ Register widgets in `boot()`, not `register()`, so that providers from other mod
 ## Layout persistence
 
 - Setting `admin.dashboard.layout` (defined in `CoreRegistrar::settings()` as `TYPE_JSON`, default `[]`): `[{"id": "viewings.upcoming", "enabled": true, "order": 16, "width": "half"}, …]`. Unknown widths normalise to `half`; ids not present in the layout keep `enabled = true`, their own `order()` and the type default width.
-- Edited from Admin → Settings (dashboard tab, Alpine `gereqDashboardSettings` in `resources/js/ui/dashboardSettings.ts`) and saved by `SettingsController` → `Dashboard::saveLayout()`.
+- Edited directly on the dashboard by users with `settings.manage`; changes are saved through the dashboard layout route. Setup continues to use the widget catalog editor.
 - The layout is global (not per user) and participates in the settings staging mechanism only if registered as a publishable settings key (it is not, so it applies immediately).
 
 ## Grid

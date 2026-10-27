@@ -17,6 +17,7 @@ use Gereq\Currency\Application\SyncExchangeRates;
 use Gereq\Currency\Domain\Currency;
 use Gereq\Currency\Domain\ExchangeRate;
 use Gereq\User\Entity\User;
+use Gereq\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -55,13 +56,18 @@ final class CurrencyAdminController extends Controller
         $items = $qb->getQuery()->getResult();
         $user = $this->auth->user();
 
-        return $this->page('currency/index.html.twig', [
+        $response = $this->page('currency/index.html.twig', [
             'pageTitle' => $this->translator->trans('currency.title'),
             'items' => $items,
             'tableHtml' => $this->currencyTable->render($items, $user instanceof User ? $user : null, $request),
             'search' => $search,
             'rates' => $this->latestCnbRates(),
         ]);
+        if ($this->formState()->hasErrors('currency.save')) {
+            $this->forgetForm('currency.save');
+        }
+
+        return $response;
     }
 
     public function syncRates(): Response
@@ -125,6 +131,11 @@ final class CurrencyAdminController extends Controller
 
     public function create(): Response
     {
+        $user = $this->auth->user();
+        if ($user instanceof User && $user->can('settings.manage') && $user->can('currency.view')) {
+            return $this->redirectTo($this->router->url('admin.settings.index', ['tab' => 'core', 'modal' => 'currency-modal-create']));
+        }
+
         return $this->page('currency/form.html.twig', [
             'pageTitle' => $this->translator->trans('currency.new'),
             'item' => null,
@@ -135,7 +146,7 @@ final class CurrencyAdminController extends Controller
     {
         $data = $this->validated($request, true);
         if ($this->em->find(Currency::class, $data['code']) instanceof Currency) {
-            $this->abort(422, $this->translator->trans('currency.error.exists'));
+            $this->reject($request, 'code', 'currency.error.exists');
         }
 
         $currency = new Currency($data['code'], $data['name'], $data['symbol'], $data['decimal_places']);
@@ -167,6 +178,11 @@ final class CurrencyAdminController extends Controller
             $this->abort(404, $this->translator->trans('currency.error.not_found'));
         }
 
+        $user = $this->auth->user();
+        if ($user instanceof User && $user->can('settings.manage') && $user->can('currency.view')) {
+            return $this->redirectTo($this->router->url('admin.settings.index', ['tab' => 'core', 'modal' => 'currency-modal-' . $currency->code()]));
+        }
+
         return $this->page('currency/form.html.twig', [
             'pageTitle' => $this->translator->trans('currency.edit'),
             'item' => $currency,
@@ -183,6 +199,12 @@ final class CurrencyAdminController extends Controller
         $data = $this->validated($request, false);
         $wasActive = $currency->isActive();
         $wasDefault = $currency->isDefault();
+        if ($wasDefault && !$data['is_default']) {
+            $this->reject($request, 'is_default', 'currency.error.keep_default');
+        }
+        if ($wasDefault && !$data['is_active']) {
+            $this->reject($request, 'is_active', 'currency.error.default_active');
+        }
 
         $currency->setName($data['name']);
         $currency->setSymbol($data['symbol']);
@@ -197,8 +219,6 @@ final class CurrencyAdminController extends Controller
         if ($data['is_default'] && !$wasDefault) {
             $this->clearDefaults();
             $currency->markDefault(true);
-        } elseif (!$data['is_default'] && $wasDefault) {
-            $this->abort(422, $this->translator->trans('currency.error.keep_default'));
         }
 
         $this->em->flush();
@@ -264,7 +284,7 @@ final class CurrencyAdminController extends Controller
 
         $code = strtoupper(trim((string) ($data['code'] ?? '')));
         if ($requireCode && !preg_match('/^[A-Z]{3}$/', $code)) {
-            $this->abort(422, $this->translator->trans('currency.error.code_format'));
+            $this->reject($request, 'code', 'currency.error.code_format');
         }
 
         return [
@@ -275,6 +295,15 @@ final class CurrencyAdminController extends Controller
             'is_active' => $this->boolValue($data['is_active'] ?? true),
             'is_default' => $this->boolValue($data['is_default'] ?? false),
         ];
+    }
+
+    private function reject(Request $request, string $field, string $message): never
+    {
+        throw new ValidationException(
+            [$field => $this->translator->trans($message)],
+            $request->request->all(),
+            'currency.save',
+        );
     }
 
     private function clearDefaults(): void

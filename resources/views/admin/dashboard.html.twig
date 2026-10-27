@@ -1,60 +1,109 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-    <section class="dash-hero">
-        <div>
-            <p class="eyebrow">{{ 'admin.dashboard.eyebrow'|trans }}</p>
-            <h1 class="greeting">{% if user %}{{ 'admin.dashboard.greeting_named'|trans({'%name%': user.name()|split(' ')|first}) }}{% else %}{{ 'admin.dashboard.greeting'|trans }}{% endif %}</h1>
-            <p class="muted" style="margin:8px 0 0">{{ 'admin.dashboard.subtitle'|trans|default('Přehled platformy a rychlé akce.') }}</p>
-        </div>
-        {% if widgets.hero is not empty %}
+    {% set entries = {} %}
+    {% for entry in dashboardCatalog|default([]) %}{% set entries = entries|merge({ (entry.id): entry }) %}{% endfor %}
+    <div {% if editing %}class="dash-edit" data-dashboard-editor data-items="{{ dashboardCatalog|json_encode|e('html_attr') }}"{% endif %}>
+        <section class="dash-hero">
+            <div>
+                <p class="eyebrow">{{ 'admin.dashboard.eyebrow'|trans }}</p>
+                <h1 class="greeting">{% if user %}{{ 'admin.dashboard.greeting_named'|trans({'%name%': user.name()|split(' ')|first}) }}{% else %}{{ 'admin.dashboard.greeting'|trans }}{% endif %}</h1>
+                <p class="muted" style="margin:8px 0 0">{{ 'admin.dashboard.subtitle'|trans }}</p>
+            </div>
             <div class="dash-hero__actions">
                 {% for widget in widgets.hero %}
+                    {% if editing %}<div data-dash-widget="{{ widget.id() }}" data-dash-type="hero" draggable="true" {% if not entries[widget.id()].enabled %}hidden{% endif %}>{% include 'admin/dashboard/_edit_controls.html.twig' with { editableType: 'hero', editableWidth: 'half' } only %}<div class="dash-edit__preview">{% endif %}
                     {{ widget.render()|raw }}
+                    {% if editing %}</div></div>{% endif %}
+                {% endfor %}
+                {% if user and user.can('settings.manage') and not editing %}
+                    {% include 'ui/button.html.twig' with { label: 'admin.dashboard.edit'|trans, href: url('admin.dashboard', {edit: 1}), variant: 'ghost', class: 'dash-hero__edit' } only %}
+                {% endif %}
+            </div>
+        </section>
+
+        {% if editing %}
+            <details class="dash-edit__picker">
+                <summary>{{ 'admin.dashboard.edit.add'|trans }}</summary>
+                <div class="dash-edit__picker-search">
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" data-dash-search placeholder="{{ 'settings.dashboard.search'|trans }}" aria-label="{{ 'settings.dashboard.search'|trans }}"{% endblock %}{% endembed %}
+                </div>
+                <div class="dash-edit__picker-body">
+                    <nav class="dash-edit__filters" aria-label="{{ 'admin.dashboard.edit.filter'|trans }}">
+                        <button type="button" class="dash-edit__filter is-active" data-dash-filter="all" aria-pressed="true"><span>{{ 'admin.dashboard.edit.all'|trans }}</span><span data-dash-count="all"></span></button>
+                        {% for type in ['metric', 'hero', 'panel', 'shortcut'] %}
+                            <button type="button" class="dash-edit__filter" data-dash-filter="{{ type }}" aria-pressed="false"><span>{{ ('settings.dashboard.type.' ~ type)|trans }}</span><span data-dash-count="{{ type }}"></span></button>
+                        {% endfor %}
+                    </nav>
+                    <div class="dash-edit__picker-results">
+                        {% for type in ['metric', 'hero', 'panel', 'shortcut'] %}
+                            <section class="dash-edit__picker-section" data-dash-category="{{ type }}">
+                                <h3>{{ ('settings.dashboard.type.' ~ type)|trans }}</h3>
+                                <div class="dash-edit__picker-list">
+                                    {% for entry in dashboardCatalog|filter(item => item.type == type) %}
+                                        <button type="button" class="dash-edit__picker-item" data-dash-add="{{ entry.id }}" data-dash-add-type="{{ type }}" data-dash-title="{{ entry.title }}" {% if entry.enabled %}hidden{% endif %}><span>{{ entry.title }}</span>{{ icon('plus') }}</button>
+                                    {% endfor %}
+                                </div>
+                            </section>
+                        {% endfor %}
+                        <p class="muted dash-edit__picker-empty" data-dash-picker-empty hidden>{{ 'admin.dashboard.edit.no_widgets'|trans }}</p>
+                    </div>
+                </div>
+            </details>
+            <div class="dash-edit__widget-preview" data-dash-widget-preview hidden tabindex="0" aria-label="{{ 'admin.dashboard.edit.preview'|trans }}"></div>
+            <form id="dashboard-layout-form" action="{{ url('admin.dashboard.layout.save') }}" method="post">
+                {{ csrf_field()|raw }}
+                <input type="hidden" name="dashboard_layout" value="{{ dashboardCatalog|json_encode|e('html_attr') }}" data-dash-payload>
+            </form>
+        {% endif %}
+
+        {% if widgets.metric is not empty %}
+            <section class="metrics" aria-label="{{ 'admin.dashboard.system_status'|trans }}">
+                {% for widget in widgets.metric %}
+                    {% if editing %}<div class="dash-edit__metric" data-dash-widget="{{ widget.id() }}" data-dash-type="metric" draggable="true" {% if not entries[widget.id()].enabled %}hidden{% endif %}>{% include 'admin/dashboard/_edit_controls.html.twig' with { editableType: 'metric', editableWidth: 'half' } only %}<div class="dash-edit__preview">{% endif %}
+                    {{ widget.render()|raw }}
+                    {% if editing %}</div></div>{% endif %}
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        {% if gridItems is not empty %}
+            <div class="dash-grid">
+                {% for item in gridItems %}
+                    <div class="dash-cell dash-cell--{{ item.width }}" {% if editing %}data-dash-widget="{{ item.id }}" data-dash-type="panel" draggable="true" {% if not entries[item.id].enabled %}hidden{% endif %}{% endif %}>
+                        {% if editing %}<div class="dash-edit__cell">{% include 'admin/dashboard/_edit_controls.html.twig' with { editableType: 'panel', editableWidth: item.width } only %}{% endif %}
+                        {% if item.id == 'core.shortcuts' %}
+                            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                                {% block attributes %} class="panel"{% endblock %}
+                                {% block content %}
+                                <header class="panel__head"><h2>{{ 'admin.dashboard.shortcuts'|trans }}</h2></header>
+                                <div class="dash-shortcuts">
+                                    {% for widget in item.shortcuts %}
+                                        {% if editing %}<div data-dash-widget="{{ widget.id() }}" data-dash-type="shortcut" draggable="true" {% if not entries[widget.id()].enabled %}hidden{% endif %}>{% include 'admin/dashboard/_edit_controls.html.twig' with { editableType: 'shortcut', editableWidth: 'third' } only %}<div class="dash-edit__preview">{% endif %}
+                                        {{ widget.render()|raw }}
+                                        {% if editing %}</div></div>{% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endblock %}
+                            {% endembed %}
+                        {% else %}
+                            {% if editing %}<div class="dash-edit__preview">{% endif %}{{ item.html|raw }}{% if editing %}</div>{% endif %}
+                        {% endif %}
+                        {% if editing %}</div>{% endif %}
+                    </div>
                 {% endfor %}
             </div>
+        {% elseif widgets.metric is empty and not editing %}
+            <div class="dash-empty" role="status"><span class="dash-empty__icon" aria-hidden="true">{{ icon('layout') }}</span><h2 class="dash-empty__title">{{ 'admin.dashboard.empty'|trans }}</h2></div>
         {% endif %}
-    </section>
-
-    {% if widgets.metric is not empty %}
-        <section class="metrics" aria-label="{{ 'admin.dashboard.system_status'|trans }}">
-            {% for widget in widgets.metric %}
-                {{ widget.render()|raw }}
-            {% endfor %}
-        </section>
-    {% endif %}
-
-    {% if gridItems is not empty %}
-        <div class="dash-grid">
-            {% for item in gridItems %}
-                <div class="dash-cell dash-cell--{{ item.width }}">
-                    {% if item.id == 'core.shortcuts' %}
-                        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
-                            {% block attributes %} class="panel"{% endblock %}
-                            {% block content %}
-                            <header class="panel__head">
-                                <h2>{{ 'admin.dashboard.shortcuts'|trans }}</h2>
-                            </header>
-                            <div class="dash-shortcuts">
-                                {% for widget in item.shortcuts %}
-                                    {{ widget.render()|raw }}
-                                {% endfor %}
-                            </div>
-                            {% endblock %}
-                        {% endembed %}
-                    {% else %}
-                        {{ item.html|raw }}
-                    {% endif %}
+        {% if editing %}
+            <div class="dash-edit__bar">
+                <span class="dash-edit__notice">{{ 'admin.dashboard.edit.shared'|trans }}</span>
+                <div class="dash-edit__bar-actions">
+                    {% include 'ui/button.html.twig' with { label: 'common.cancel'|trans, href: url('admin.dashboard'), variant: 'ghost' } only %}
+                    {% include 'ui/button.html.twig' with { label: 'settings.save'|trans, type: 'submit', variant: 'primary', attrs: { form: 'dashboard-layout-form' } } only %}
                 </div>
-            {% endfor %}
-        </div>
-    {% elseif widgets.metric is empty %}
-        <div class="dash-empty" role="status">
-            <span class="dash-empty__icon" aria-hidden="true">{{ icon('layout') }}</span>
-            <h2 class="dash-empty__title">{{ 'admin.dashboard.empty'|trans }}</h2>
-            <p class="dash-empty__hint">{{ 'admin.dashboard.empty.hint'|trans({
-                '%url%': url('admin.settings.index', {tab: 'dashboard'})
-            })|raw }}</p>
-        </div>
-    {% endif %}
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

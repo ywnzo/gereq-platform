@@ -93,11 +93,68 @@
     line-height: var(--control-line);
     transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
 }
+/* Keep native date pickers aligned with the shared control and icon styling. */
+input:is([type="date"], [type="datetime-local"])::-webkit-datetime-edit {
+    padding: 0;
+}
+html[data-brand-palette="1"] input:is([type="date"], [type="datetime-local"])::-webkit-datetime-edit {
+    color: var(--text-on-card-header, var(--text));
+}
+input:is([type="date"], [type="datetime-local"])::-webkit-calendar-picker-indicator {
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
+    margin-inline-start: 0.5rem;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M7 3v4M17 3v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M7 3v4M17 3v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+    opacity: 0.75;
+    cursor: pointer;
+}
+input:is([type="date"], [type="datetime-local"]):disabled::-webkit-calendar-picker-indicator {
+    cursor: not-allowed;
+}
+
 .g-control::placeholder,
 .textarea::placeholder,
 .textarea-mini::placeholder {
     color: var(--text-soft);
     opacity: 1;
+}
+html[data-brand-palette="1"] :is(.g-control:not(.color-picker__hex-input), .g-select__trigger, .textarea, .textarea-mini) {
+    background-color: var(--card-header, var(--surface-2));
+    color: var(--text-on-card-header, var(--text-on-secondary-surface));
+}
+html[data-brand-palette="1"] :is(.g-control:not(.color-picker__hex-input), .textarea, .textarea-mini)::placeholder {
+    color: var(--text-muted-on-card-header, var(--text-muted-on-secondary-surface));
+}
+html[data-brand-palette="1"] body:is(.admin-body, .auth-body) :is(
+    input:not([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"], .color-picker__hex-input, .g-select__native),
+    textarea,
+    select
+) {
+    background-color: var(--card-header, var(--surface-2));
+    color: var(--text-on-card-header, var(--text-on-secondary-surface));
+}
+/* Match the legacy input selector's specificity so palette colors win there too. */
+html[data-brand-palette="1"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]):not([type="color"]):not(.color-picker__hex-input):not(.cms-builder__layer-name-input):not(.cms-builder__block-heading-input) {
+    background-color: var(--card-header, var(--surface-2));
+    color: var(--text-on-card-header, var(--text-on-secondary-surface));
+}
+html[data-brand-palette="1"] body:is(.admin-body, .auth-body) :is(
+    input:not([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"], .color-picker__hex-input, .g-select__native),
+    textarea
+)::placeholder {
+    color: var(--text-muted-on-card-header, var(--text-muted-on-secondary-surface));
+}
+html[data-brand-palette="1"] :is(.g-check__input, .g-check input, .g-radio input):not(:checked) {
+    background-color: var(--card-header, var(--surface-2));
+}
+html[data-brand-palette="1"] :is(.textarea-shell, .textarea-shell:focus-within, .g-editor__surface) {
+    --text: var(--text-on-card-header, var(--text-on-secondary-surface));
+    --text-muted: var(--text-muted-on-card-header, var(--text-muted-on-secondary-surface));
+    background: var(--card-header, var(--surface-2));
+    color: var(--text);
 }
 .g-control:hover,
 .g-select__trigger:hover,
@@ -1081,6 +1138,16 @@ label.g-switch > span {
     border-bottom: 1px solid var(--border);
     background: var(--surface-2);
 }
+html[data-brand-palette="1"] .g-editor__bar {
+    --text: var(--text-on-secondary-surface);
+    --text-muted: var(--text-muted-on-secondary-surface);
+    --text-soft: var(--text-muted-on-secondary-surface);
+    --gereq-fg: var(--text-on-secondary-surface);
+    --gereq-muted: var(--text-muted-on-secondary-surface);
+    --grq-fg: var(--text-on-secondary-surface);
+    --grq-fg-muted: var(--text-muted-on-secondary-surface);
+    color: var(--text-on-secondary-surface);
+}
 .g-editor__tools {
     display: flex;
     flex-wrap: wrap;
@@ -1324,7 +1391,10 @@ label.g-switch > span {
     border: 1px solid var(--border);
     box-shadow: 0 24px 60px rgb(10 11 10 / 0.18);
     padding: 1.25rem 1.35rem 1.1rem;
+    border-radius: var(--radius);
 }
+.g-modal__panel.panel { padding: 0; }
+.g-modal__panel.panel > .g-modal__body { margin: 0; }
 .g-modal__panel--form {
     width: min(40rem, 100%);
     max-height: min(92vh, 56rem);
@@ -1336,6 +1406,18 @@ label.g-switch > span {
     overflow: auto;
 }
 .g-modal__title { margin: 0 0 0.4rem; font-family: var(--grq-font-sans); font-size: 1.25rem; color: var(--text); }
+.g-modal__panel > .g-modal__title,
+.publish-workspace__detail > div > .g-modal__title {
+    margin: -1.25rem -1.35rem 1rem;
+    padding: 10px 14px;
+    min-height: 44px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--card-header, var(--surface));
+    color: var(--text-on-card-header, var(--text));
+    font-size: var(--grq-text-md);
+    font-weight: 600;
+}
 .g-modal__body { color: var(--text-muted); margin: 0 0 1.1rem; }
 .g-confirm__field { margin: 0 0 1.1rem; }
 .g-confirm__field .field { margin: 0; }
@@ -1642,7 +1724,10 @@ html[data-theme="gereq-dark"] .media-box-backdrop {
     flex: 0 0 auto;
     padding: 0.55rem 0.65rem 0.55rem 0.95rem;
     border-bottom: 1px solid var(--border, #d0d4dc);
-    background: color-mix(in oklab, var(--surface-2, var(--surface)) 70%, var(--surface));
+    background: var(--card-header, color-mix(in oklab, var(--surface-2, var(--surface)) 70%, var(--surface)));
+}
+html[data-brand-palette="1"] .media-box-dock__bar {
+    --text: var(--text-on-card-header);
 }
 .media-box-dock__title {
     flex: 1;
@@ -1732,6 +1817,14 @@ html[data-theme="gereq-dark"] .media-box-backdrop {
     flex-wrap: wrap;
     gap: 0.45rem;
     align-items: center;
+}
+.media-box-dock__filters > :is(.btn-sm, .btn--sm) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--control-h);
+    min-height: var(--control-h);
+    padding-block: 0;
 }
 .media-box-dock__filter {
     margin: 0;

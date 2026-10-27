@@ -2,6 +2,15 @@
 :root {
     --sidebar-w: 264px;
 }
+html[data-brand-palette="1"] :is(.sidebar, .topbar) {
+    --text: var(--text-on-surface);
+    --text-muted: var(--text-muted-on-surface);
+    --text-soft: var(--text-muted-on-surface);
+    --gereq-fg: var(--text-on-surface);
+    --gereq-ink: var(--text-on-surface);
+    --gereq-muted: var(--text-muted-on-surface);
+    color: var(--text-on-surface);
+}
 .sidebar {
     background: var(--glass-sidebar, var(--sidebar));
     -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--glass-saturate, 1.12));
@@ -61,13 +70,13 @@ html[data-theme="gereq-dark"] .sidebar {
 }
 .sidebar .icon-btn.sidebar__collapse:hover,
 .sidebar .icon-btn.sidebar__collapse:focus-visible {
-    border-color: color-mix(in srgb, var(--sidebar-active) 28%, var(--border));
-    /* Keep an opaque fill — global .icon-btn:hover uses translucent --hover-strong. */
-    background: color-mix(in srgb, var(--hover-strong) 55%, var(--sidebar));
+    border-color: var(--sidebar-active);
+    background: var(--sidebar);
     color: var(--sidebar-active);
 }
-/* While a flyout is open, ignore the collapse control under the cursor path. */
-.sidebar:has(.is-flyout-open) .icon-btn.sidebar__collapse {
+/* Let an open flyout cover the collapse control and receive pointer events. */
+.sidebar.is-collapsed:has(.is-flyout-open) .icon-btn.sidebar__collapse {
+    z-index: 0;
     pointer-events: none;
 }
 .sidebar__collapse-arrow {
