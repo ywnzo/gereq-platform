@@ -244,6 +244,24 @@ final class ModuleAssetBuilderTest extends TestCase
         self::assertArrayNotHasKey('module:demo', $manifest);
     }
 
+    public function testPrebuiltModeRejectsChangedSourcesInsteadOfRunningBun(): void
+    {
+        $root = $this->scratchModule('demo', withJs: true, withCss: false);
+        mkdir($root . '/public/build/assets', 0775, true);
+        file_put_contents($root . '/public/build/assets/demo.js', '// built');
+        file_put_contents($root . '/public/build/manifest.json', json_encode(['module:demo' => ['file' => 'assets/demo.js']], JSON_THROW_ON_ERROR));
+        file_put_contents($root . '/public/build/module-source-hashes.json', json_encode(['demo' => \Gereq\Module\ModuleFootprint::ofDirectory($root . '/modules/Demo')], JSON_THROW_ON_ERROR));
+        $builder = new ModuleAssetBuilder($root, static function (): array {
+            self::fail('Prebuilt runtime attempted a build');
+        }, prebuilt: true);
+        $builder->ensure('demo', force: true);
+        self::assertFalse($builder->isStale('demo'));
+        file_put_contents($root . '/modules/Demo/Resources/assets/js/admin.ts', '// changed');
+        self::assertTrue($builder->isStale('demo'));
+        $this->expectException(\RuntimeException::class);
+        $builder->ensure('demo', force: true);
+    }
+
     private function scratchModule(string $id, bool $withJs, bool $withCss): string
     {
         $root = sys_get_temp_dir() . '/gereq-assets-' . bin2hex(random_bytes(4));

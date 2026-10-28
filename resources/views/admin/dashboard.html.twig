@@ -8,7 +8,7 @@
             <div>
                 <p class="eyebrow">{{ 'admin.dashboard.eyebrow'|trans }}</p>
                 <h1 class="greeting">{% if user %}{{ 'admin.dashboard.greeting_named'|trans({'%name%': user.name()|split(' ')|first}) }}{% else %}{{ 'admin.dashboard.greeting'|trans }}{% endif %}</h1>
-                <p class="muted" style="margin:8px 0 0">{{ 'admin.dashboard.subtitle'|trans }}</p>
+                <p class="muted" style="margin:8px 0 0">{{ (config('app.package') == 'funnel-v1' ? 'admin.dashboard.funnel_subtitle' : 'admin.dashboard.subtitle')|trans }}</p>
             </div>
             <div class="dash-hero__actions">
                 {% for widget in widgets.hero %}

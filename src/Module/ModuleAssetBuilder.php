@@ -22,6 +22,7 @@ final class ModuleAssetBuilder
     public function __construct(
         private readonly string $basePath,
         ?callable $runner = null,
+        private readonly bool $prebuilt = false,
     ) {
         $this->runner = $runner;
     }
@@ -57,6 +58,9 @@ final class ModuleAssetBuilder
         if ($id === '' || !$this->hasSources($id)) {
             return false;
         }
+        if ($this->prebuilt) {
+            return !$this->validPrebuilt($id);
+        }
         if (!$this->isBuilt($id)) {
             return true;
         }
@@ -80,6 +84,13 @@ final class ModuleAssetBuilder
     {
         $id = strtolower(trim($id));
         if ($id === '' || !$this->hasSources($id)) {
+            return;
+        }
+        if ($this->prebuilt) {
+            if (!$this->validPrebuilt($id)) {
+                throw new \RuntimeException('Prebuilt module assets do not match source: ' . $id);
+            }
+
             return;
         }
         if (!$force && !$this->isStale($id)) {
@@ -109,6 +120,27 @@ final class ModuleAssetBuilder
                 . ($tail !== '' ? ': ' . $tail : ' (exit ' . $result['code'] . ').'),
             );
         }
+    }
+
+    private function validPrebuilt(string $id): bool
+    {
+        $file = $this->basePath . '/public/build/module-source-hashes.json';
+        if (!$this->isBuilt($id) || !is_file($file)) {
+            return false;
+        }
+        $hashes = json_decode((string) file_get_contents($file), true);
+        $path = $this->sourcePaths($id)['path'];
+        if (!is_array($hashes) || !is_string($hashes[$id] ?? null) || $path === null
+            || !hash_equals($hashes[$id], ModuleFootprint::ofDirectory($path))) {
+            return false;
+        }
+        foreach (($this->manifestRecord($id)['css'] ?? []) as $css) {
+            if (!is_string($css) || !is_file($this->basePath . '/public/build/' . $css)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

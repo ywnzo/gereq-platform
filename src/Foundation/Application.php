@@ -272,6 +272,7 @@ final class Application
                 return new FileManager($em, $config, $basePath, $translator);
             }),
             \Gereq\Module\ModuleAssetBuilder::class => autowire()
+                ->constructorParameter('prebuilt', filter_var(env_value('GEREQ_PREBUILT_ASSETS', false), FILTER_VALIDATE_BOOLEAN))
                 ->constructorParameter('basePath', $basePath),
             \Gereq\Cms\Cms::class => factory(static fn (ModuleManager $modules): \Gereq\Cms\Cms => new \Gereq\Cms\Cms($modules)),
             ModuleManager::class => factory(static function (
