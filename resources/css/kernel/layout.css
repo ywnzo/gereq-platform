@@ -571,7 +571,7 @@ button.icon-btn.topbar__menu { display: none; }
     height: 1rem;
     margin-top: 0.1rem;
 }
-.publish-check__control input {
+.publish-check__control input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
     width: 1rem;
@@ -582,7 +582,7 @@ button.icon-btn.topbar__menu { display: none; }
     background: var(--surface);
     cursor: pointer;
 }
-.publish-check__control input:checked {
+.publish-check__control input[type="checkbox"]:checked {
     background: var(--gereq-signal, #d7ff45);
     border-color: color-mix(in srgb, var(--gereq-signal, #d7ff45) 55%, #000);
 }
@@ -598,7 +598,7 @@ button.icon-btn.topbar__menu { display: none; }
     transform: rotate(-45deg) translate(1px, -1px);
     opacity: 0;
 }
-.publish-check__control input:checked + .publish-check__mark {
+.publish-check__control input[type="checkbox"]:checked + .publish-check__mark {
     opacity: 1;
 }
 .publish-check__text {

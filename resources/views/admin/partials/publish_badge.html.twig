@@ -55,7 +55,7 @@
                                 {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                     type="checkbox"
                                     :checked="isCategoryChecked(cat)"
-                                    @click.prevent="toggleCategory(cat)"
+                                    @change="toggleCategory(cat)"
                                 {% endblock %}{% endembed %}
                                 <span class="publish-check__mark" aria-hidden="true"></span>
                             </span>
@@ -72,7 +72,7 @@
                                             {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
                                                 type="checkbox"
                                                 :checked="isItemChecked(item)"
-                                                @click.prevent="toggleItem(item)"
+                                                @change="toggleItem(item)"
                                             {% endblock %}{% endembed %}
                                             <span class="publish-check__mark" aria-hidden="true"></span>
                                         </span>

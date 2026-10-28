@@ -74,7 +74,7 @@
                     <section class="publish-workspace__group">
                         <label class="publish-check publish-check--category">
                             <span class="publish-check__control">
-                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" :checked="isCategoryChecked(cat)" @click.prevent="toggleCategory(cat)"{% endblock %}{% endembed %}
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" :checked="isCategoryChecked(cat)" @change="toggleCategory(cat)"{% endblock %}{% endembed %}
                                 <span class="publish-check__mark" aria-hidden="true"></span>
                             </span>
                             <span class="publish-check__text">
@@ -87,7 +87,7 @@
                                 <li class="publish-workspace__item">
                                     <label class="publish-check">
                                         <span class="publish-check__control">
-                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" :checked="isItemChecked(item)" @click.prevent="toggleItem(item)"{% endblock %}{% endembed %}
+                                            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" :checked="isItemChecked(item)" @change="toggleItem(item)"{% endblock %}{% endembed %}
                                             <span class="publish-check__mark" aria-hidden="true"></span>
                                         </span>
                                         <span class="publish-check__text">
