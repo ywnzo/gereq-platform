@@ -32,6 +32,37 @@ export type ModuleAssetPaths = {
   css: string | null;
 };
 
+/** Serialize builds that share the manifest and output directory. */
+export async function withBuildLock<T>(build: () => Promise<T>): Promise<T> {
+  const lock = path.join(outdir, '.build-lock');
+  await mkdir(outdir, { recursive: true });
+  const deadline = Date.now() + 30000;
+  while (true) {
+    try {
+      await mkdir(lock);
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      try {
+        if (Date.now() - (await stat(lock)).mtimeMs > 120000) {
+          await rm(lock, { recursive: true, force: true });
+          continue;
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+        throw error;
+      }
+      if (Date.now() >= deadline) throw new Error('Timed out waiting for the frontend build lock');
+      await Bun.sleep(100);
+    }
+  }
+  try {
+    return await build();
+  } finally {
+    await rm(lock, { recursive: true, force: true });
+  }
+}
+
 export async function exists(p: string): Promise<boolean> {
   try {
     await access(p);

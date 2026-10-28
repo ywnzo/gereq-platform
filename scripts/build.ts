@@ -16,7 +16,6 @@ import {
   clearDevMarker,
   clearDevMarkerSync,
   clearLegacyViteMarkers,
-  cleanKernelAssets,
   discoverModuleAssets,
   entryKey,
   kernelEntry,
@@ -30,6 +29,7 @@ import {
   root,
   writeDevMarker,
   writeManifestFile,
+  withBuildLock,
   type ManifestRecord,
 } from './build-lib';
 
@@ -39,69 +39,70 @@ async function buildKernel(preserveModules: boolean): Promise<{
   manifest: Record<string, ManifestRecord>;
   sizeLines: string[];
 }> {
-  await clearLegacyViteMarkers();
-  await mkdir(assetsDir, { recursive: true });
+  return withBuildLock(async () => {
+    await clearLegacyViteMarkers();
+    await mkdir(assetsDir, { recursive: true });
 
-  const previous = preserveModules ? await readManifest() : {};
-  const preserved: Record<string, ManifestRecord> = {};
-  if (preserveModules) {
-    for (const [key, rec] of Object.entries(previous)) {
-      if (key.startsWith('module:')) {
-        preserved[key] = rec;
+    const previous = preserveModules ? await readManifest() : {};
+    const preserved: Record<string, ManifestRecord> = {};
+    if (preserveModules) {
+      for (const [key, rec] of Object.entries(previous)) {
+        if (key.startsWith('module:')) {
+          preserved[key] = rec;
+        }
       }
     }
-  }
 
-  if (!preserveModules) {
-    await rm(outdir, { recursive: true, force: true });
-    await mkdir(assetsDir, { recursive: true });
-    await clearDevMarker();
-  } else {
-    await cleanKernelAssets();
-    if (!watch) {
+    if (!preserveModules) {
+      await rm(outdir, { recursive: true, force: true });
+      await mkdir(assetsDir, { recursive: true });
       await clearDevMarker();
+    } else {
+      if (!watch) {
+        await clearDevMarker();
+      }
     }
-  }
 
-  const sizeLines: string[] = [];
-  const adminResult = await Bun.build({
-    ...buildOptions(watch),
-    entrypoints: [kernelEntry],
+    const sizeLines: string[] = [];
+    const adminResult = await Bun.build({
+      ...buildOptions(watch),
+      entrypoints: [kernelEntry],
+    });
+
+    const adminJs = pickJs(adminResult.outputs);
+    const adminCss = pickCss(adminResult.outputs);
+    if (adminJs === null) {
+      throw new Error('Bun build produced no admin JS entry');
+    }
+
+    const manifest: Record<string, ManifestRecord> = {
+      ...preserved,
+      [entryKey]: {
+        file: adminJs,
+        css: adminCss ? [adminCss] : [],
+        isEntry: true,
+        src: entryKey,
+      },
+    };
+
+    for (const o of adminResult.outputs) {
+      sizeLines.push(`  ${relOut(o.path)}  ${(o.size / 1024).toFixed(1)} kB`);
+    }
+
+    await writeManifestFile(manifest);
+
+    const cssToRepair = new Set<string>();
+    for (const c of manifest[entryKey].css) {
+      cssToRepair.add(c);
+    }
+    await repairColorMixCss([...cssToRepair]);
+
+    if (watch) {
+      await writeDevMarker();
+    }
+
+    return { manifest, sizeLines };
   });
-
-  const adminJs = pickJs(adminResult.outputs);
-  const adminCss = pickCss(adminResult.outputs);
-  if (adminJs === null) {
-    throw new Error('Bun build produced no admin JS entry');
-  }
-
-  const manifest: Record<string, ManifestRecord> = {
-    ...preserved,
-    [entryKey]: {
-      file: adminJs,
-      css: adminCss ? [adminCss] : [],
-      isEntry: true,
-      src: entryKey,
-    },
-  };
-
-  for (const o of adminResult.outputs) {
-    sizeLines.push(`  ${relOut(o.path)}  ${(o.size / 1024).toFixed(1)} kB`);
-  }
-
-  await writeManifestFile(manifest);
-
-  const cssToRepair = new Set<string>();
-  for (const c of manifest[entryKey].css) {
-    cssToRepair.add(c);
-  }
-  await repairColorMixCss([...cssToRepair]);
-
-  if (watch) {
-    await writeDevMarker();
-  }
-
-  return { manifest, sizeLines };
 }
 
 async function rebuildModule(id: string): Promise<void> {
