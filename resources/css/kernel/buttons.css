@@ -170,10 +170,10 @@
     .btn-ghost {
         /* Light: ink-tinted border so the outline reads on soft paper / glass. */
         --btn-bg: color-mix(in srgb, var(--surface) 42%, transparent);
-        --btn-fg: var(--text);
+        --btn-fg: color-mix(in srgb, var(--text) 72%, var(--surface));
         --btn-border: color-mix(in srgb, var(--text) 26%, var(--border));
         --btn-hover-bg: color-mix(in srgb, var(--hover-strong) 80%, var(--surface));
-        --btn-hover-fg: var(--text);
+        --btn-hover-fg: color-mix(in srgb, var(--text) 82%, var(--surface));
         --btn-hover-border: color-mix(in srgb, var(--text) 40%, var(--border));
         --btn-active-bg: color-mix(in srgb, var(--text) 8%, transparent);
         -webkit-backdrop-filter: blur(8px) saturate(1.08);
@@ -186,19 +186,19 @@
     html[data-theme="gereq-dark"] .btn-ghost {
         /* Dark: soft frosted edge (the look that already reads well). */
         --btn-bg: color-mix(in srgb, #fff 5%, transparent);
-        --btn-border: color-mix(in srgb, #fff 26%, transparent);
+        --btn-border: color-mix(in srgb, var(--text) 30%, transparent);
         --btn-hover-bg: color-mix(in srgb, #fff 9%, transparent);
-        --btn-hover-border: color-mix(in srgb, #fff 40%, transparent);
+        --btn-hover-border: color-mix(in srgb, var(--text) 48%, transparent);
         box-shadow: 0 1px 0 color-mix(in srgb, #fff 12%, transparent) inset;
     }
 
     html[data-brand-palette="1"] :is(.btn--ghost, .btn-ghost) {
         --btn-bg: transparent;
-        --btn-fg: var(--text);
-        --btn-border: color-mix(in srgb, var(--text) 70%, transparent);
+        --btn-fg: color-mix(in srgb, var(--text) 72%, var(--background));
+        --btn-border: color-mix(in srgb, var(--text) 32%, transparent);
         --btn-hover-bg: color-mix(in srgb, var(--text) 8%, transparent);
-        --btn-hover-fg: var(--text);
-        --btn-hover-border: var(--text);
+        --btn-hover-fg: color-mix(in srgb, var(--text) 82%, var(--background));
+        --btn-hover-border: color-mix(in srgb, var(--text) 48%, transparent);
         --btn-active-bg: color-mix(in srgb, var(--text) 14%, transparent);
         box-shadow: none;
     }

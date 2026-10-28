@@ -149,8 +149,16 @@ html[data-theme="gereq-dark"] .publish-badge__chip.badge--warn .publish-badge__c
     color: var(--danger) !important;
 }
 
+:is(.btn--ghost, .btn-ghost) {
+    --btn-fg: color-mix(in srgb, var(--text) 72%, var(--surface));
+    --btn-hover-fg: color-mix(in srgb, var(--text) 82%, var(--surface));
+}
 html[data-brand-palette="1"] :is(.btn--ghost, .btn-ghost) {
+    --btn-fg: color-mix(in srgb, var(--text) 72%, var(--background));
+    --btn-border: color-mix(in srgb, var(--text) 32%, transparent);
     --btn-hover-bg: color-mix(in srgb, var(--text) 8%, transparent);
+    --btn-hover-fg: color-mix(in srgb, var(--text) 82%, var(--background));
+    --btn-hover-border: color-mix(in srgb, var(--text) 48%, transparent);
     --btn-active-bg: color-mix(in srgb, var(--text) 14%, transparent);
 }
 
