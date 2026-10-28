@@ -272,6 +272,9 @@ final class HtmlSanitizer
         if (in_array($lower, ['inherit', 'transparent', 'currentcolor'], true)) {
             return $lower;
         }
+        if (in_array($lower, ['var(--color-paper)', 'var(--color-surface)', 'var(--color-header)', 'var(--color-brand-700)', 'var(--color-secondary)', 'var(--color-accent)'], true)) {
+            return $lower;
+        }
         if (preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $val) === 1) {
             return strtolower($val);
         }

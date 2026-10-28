@@ -7,6 +7,18 @@ use PHPUnit\Framework\TestCase;
 
 final class HtmlSanitizerTest extends TestCase
 {
+    public function testPaletteColorVariablesSurviveWithoutAllowingArbitraryCssVariables(): void
+    {
+        $sanitizer = new HtmlSanitizer();
+        foreach (['--color-paper', '--color-surface', '--color-header', '--color-brand-700', '--color-secondary', '--color-accent'] as $variable) {
+            $clean = $sanitizer->sanitize('<span style="color: var(' . $variable . '); background-color: var(' . $variable . ')">Text</span>');
+            self::assertStringContainsString('color: var(' . $variable . ')', $clean);
+            self::assertStringContainsString('background-color: var(' . $variable . ')', $clean);
+        }
+        self::assertStringNotContainsString('var(', $sanitizer->sanitize('<span style="color: var(--untrusted)">Text</span>'));
+        self::assertStringNotContainsString('var(', $sanitizer->sanitize('<span style="color: var(--color-paper, red)">Text</span>'));
+    }
+
     public function testTableMarkupSurvives(): void
     {
         $html = '<table><colgroup><col style="width: 200px"></colgroup>'

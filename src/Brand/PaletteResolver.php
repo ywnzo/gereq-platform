@@ -55,6 +55,7 @@ final class PaletteResolver
                 'surface' => $surface,
                 'surface_secondary' => $secondarySurface,
                 'header' => $header,
+                'text_on_header' => $this->foreground($header),
                 'text' => $text,
                 'text_on_surface' => $surfaceText,
                 'text_muted' => $muted,
