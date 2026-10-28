@@ -169,6 +169,9 @@ final class SetupController extends Controller
         if ($response = $this->guard('company')) {
             return $response;
         }
+        if ($this->package() !== '') {
+            return $this->saveHostedCompany($request);
+        }
         try {
             $profile = $this->profile->validate($request->request->all());
         } catch (ValidationException $exception) {
@@ -185,6 +188,64 @@ final class SetupController extends Controller
         $this->completeStep('company');
 
         return $this->redirect('admin.setup.step', ['step' => 'modules']);
+    }
+
+    private function package(): string
+    {
+        return (string) config('app.package', '');
+    }
+
+    private function hasShop(): bool
+    {
+        return SetupFlow::shopPackage($this->package());
+    }
+
+    private function saveHostedCompany(Request $request): Response
+    {
+        $isCompany = $request->request->get('is_company') === '1';
+        $data = [];
+        if ($isCompany) {
+            try {
+                $data = $this->profile->validateHosted($request->request->all());
+            } catch (ValidationException $exception) {
+                $this->flash('error', $this->translator->trans('setup.error.operator'));
+
+                return $this->redirect('admin.setup.step', ['step' => 'company']);
+            }
+        }
+        $this->settings->set('setup.is_company', $isCompany, SettingRecord::TYPE_BOOLEAN, 'core');
+        $map = ['seller_name' => 'invoices.seller_name', 'seller_ico' => 'invoices.seller_ico',
+            'seller_dic' => 'invoices.seller_dic', 'seller_address' => 'invoices.seller_address', 'seller_email' => 'invoices.seller_email'];
+        if ($this->hasShop()) {
+            $map += ['order_prefix' => 'orders.number_prefix', 'invoice_prefix' => 'invoices.number_prefix'];
+        }
+        foreach ($isCompany ? $map : [] as $field => $key) {
+            $this->settings->set($key, $data[$field] ?? '', SettingRecord::TYPE_STRING, 'core');
+        }
+        $this->auditor->log('setup.hosted_company_saved', 'setup');
+        $this->completeStep('company');
+
+        return $this->redirect('admin.setup.step', ['step' => $this->hasShop() ? 'shop' : 'done']);
+    }
+
+    public function saveShop(Request $request): Response
+    {
+        if ($response = $this->guard('shop')) {
+            return $response;
+        }
+        if (!$this->hasShop()) {
+            $this->abort(404);
+        }
+        $store = trim((string) $request->request->get('store_name', ''));
+        $this->settings->set('shop.store_name', $store !== '' ? $store : (string) $this->settings->get('app.name', ''), SettingRecord::TYPE_STRING, 'shop');
+        $currency = strtoupper(trim((string) $request->request->get('currency', 'CZK')));
+        if (strlen($currency) === 3) {
+            $this->settings->set('shop.default_currency', $currency, SettingRecord::TYPE_STRING, 'shop');
+        }
+        $this->settings->set('shop.checkout_enabled', $request->request->get('checkout_enabled', '1') === '1', SettingRecord::TYPE_BOOLEAN, 'shop');
+        $this->completeStep('shop');
+
+        return $this->redirect('admin.setup.step', ['step' => 'done']);
     }
 
     public function saveModules(Request $request): Response
@@ -267,12 +328,12 @@ final class SetupController extends Controller
     /** @return list<string> */
     private function steps(): array
     {
-        return SetupFlow::steps($this->settings->get('setup.modules', []) !== []);
+        return SetupFlow::steps($this->settings->get('setup.modules', []) !== [], $this->package());
     }
 
     private function nextStep(): string
     {
-        return SetupFlow::next($this->settings->get('setup.completed_steps', []), $this->settings->get('setup.modules', []) !== []);
+        return SetupFlow::next($this->settings->get('setup.completed_steps', []), $this->settings->get('setup.modules', []) !== [], $this->package());
     }
 
     private function guard(string $step): ?Response
@@ -285,6 +346,9 @@ final class SetupController extends Controller
             return $this->redirect('admin.dashboard');
         }
         $next = $this->nextStep();
+        if ($this->package() !== '' && $step === 'finish' && $next === 'done') {
+            return null;
+        }
         $order = [...$this->steps(), 'finish'];
         $requested = array_search($step, $order, true);
         if ($requested === false || $requested > array_search($next, $order, true)) {
@@ -300,12 +364,16 @@ final class SetupController extends Controller
             $this->settings->get('setup.completed_steps', []),
             $step,
             $this->settings->get('setup.modules', []) !== [],
+            $this->package(),
         );
         $this->settings->set('setup.completed_steps', $completed, SettingRecord::TYPE_JSON, 'core');
     }
 
     private function normalizeStep(string $step): string
     {
+        if ($this->package() !== '' && $step === 'shop' && !$this->hasShop()) {
+            return 'done';
+        }
         return in_array($step, [...$this->steps(), 'dashboard'], true) ? $step : 'welcome';
     }
 
@@ -319,6 +387,18 @@ final class SetupController extends Controller
             'name' => $user->name(),
             'email' => $user->email(),
             'operator' => $this->operatorValues(),
+            'is_company' => (bool) $this->settings->get('setup.is_company', (string) $this->settings->get('invoices.seller_name', '') !== ''),
+            'seller_name' => (string) $this->settings->get('invoices.seller_name', ''),
+            'seller_ico' => (string) $this->settings->get('invoices.seller_ico', ''),
+            'seller_dic' => (string) $this->settings->get('invoices.seller_dic', ''),
+            'seller_address' => (string) $this->settings->get('invoices.seller_address', ''),
+            'seller_email' => (string) $this->settings->get('invoices.seller_email', ''),
+            'order_prefix' => (string) $this->settings->get('orders.number_prefix', 'ORD-'),
+            'invoice_prefix' => (string) $this->settings->get('invoices.number_prefix', 'INV-'),
+            'store_name' => (string) $this->settings->get('shop.store_name', ''),
+            'currency' => (string) $this->settings->get('shop.default_currency', 'CZK'),
+            'checkout_enabled' => (bool) $this->settings->get('shop.checkout_enabled', true),
+
         ];
     }
 
@@ -354,6 +434,8 @@ final class SetupController extends Controller
             'pageTitle' => $this->translator->trans('setup.title'),
             'step' => $step,
             'steps' => $this->steps(),
+            'hostedPackage' => $this->package(),
+            'hasShop' => $this->hasShop(),
             'user' => $user,
         ]));
     }

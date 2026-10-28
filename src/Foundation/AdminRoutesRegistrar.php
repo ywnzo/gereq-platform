@@ -119,6 +119,7 @@ final class AdminRoutesRegistrar
             $router->post('/setup/welcome', [SetupController::class, 'saveWelcome'])->name('admin.setup.welcome')->middleware('auth');
             $router->post('/setup/account', [SetupController::class, 'saveAccount'])->name('admin.setup.account')->middleware('auth');
             $router->post('/setup/company', [SetupController::class, 'saveCompany'])->name('admin.setup.company')->middleware('auth');
+            $router->post('/setup/shop', [SetupController::class, 'saveShop'])->name('admin.setup.shop')->middleware('auth');
             $router->post('/setup/modules', [SetupController::class, 'saveModules'])->name('admin.setup.modules')->middleware('auth');
             $router->post('/setup/dashboard', [SetupController::class, 'saveDashboard'])->name('admin.setup.dashboard')->middleware('auth');
             $router->post('/setup/finish', [SetupController::class, 'finish'])->name('admin.setup.finish')->middleware('auth');

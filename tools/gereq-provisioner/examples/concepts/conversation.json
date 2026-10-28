@@ -1,0 +1,908 @@
+{
+  "schema_version": 1,
+  "artifact_id": "concept-conversation-20261028",
+  "title": "Studio Jasno — Conversation",
+  "slug": "funnel-conversation",
+  "blocks": [
+    {
+      "id": "342027cd-6c0d-4265-aa53-2fc0ab68fbc3",
+      "client_id": "342027cd-6c0d-4265-aa53-2fc0ab68fbc3",
+      "type": "layout",
+      "payload": {
+        "variant": "stack",
+        "display": "flex",
+        "dir": "column",
+        "gap": 32,
+        "children": [
+          {
+            "id": "1513ff17-f806-4458-afaa-3583727eb652",
+            "client_id": "1513ff17-f806-4458-afaa-3583727eb652",
+            "type": "layout",
+            "payload": {
+              "variant": "stack",
+              "display": "flex",
+              "dir": "column",
+              "gap": 26,
+              "children": [
+                {
+                  "id": "5b00e925-773c-4eb2-b9cc-ad6d6cda576b",
+                  "client_id": "5b00e925-773c-4eb2-b9cc-ad6d6cda576b",
+                  "type": "text",
+                  "payload": {
+                    "body": "✳ KONZULTACE PRO NOVÉ ZAČÁTKY",
+                    "text_color": "dark-background",
+                    "align": "center",
+                    "margin": 0
+                  }
+                },
+                {
+                  "id": "a986083f-8a36-48e2-8cbf-4c6c8e0a77c7",
+                  "client_id": "a986083f-8a36-48e2-8cbf-4c6c8e0a77c7",
+                  "type": "heading",
+                  "payload": {
+                    "text": "Každý velký nápad si zaslouží jasný směr.",
+                    "level": 1,
+                    "font_size": "display",
+                    "font_family": "system",
+                    "font_weight": "normal",
+                    "text_color": "dark-background",
+                    "align": "center",
+                    "margin": 0
+                  }
+                },
+                {
+                  "id": "fbf34c96-9096-4816-ae66-3cc76694def7",
+                  "client_id": "fbf34c96-9096-4816-ae66-3cc76694def7",
+                  "type": "text",
+                  "payload": {
+                    "body": "Pomáháme profesionálům a malým týmům utřídit myšlenky, prozkoumat možnosti a najít další krok.",
+                    "text_color": "muted",
+                    "align": "center",
+                    "margin": 0
+                  }
+                },
+                {
+                  "id": "957a9333-b54c-427b-b700-4915162eff03",
+                  "client_id": "957a9333-b54c-427b-b700-4915162eff03",
+                  "type": "cta",
+                  "payload": {
+                    "label": "Promluvme si o tom ↗",
+                    "url": "#cms-field-cb29823a-f893-4efe-a03e-83e98d139d2f-name",
+                    "style": "primary",
+                    "bg_color": "dark-background",
+                    "text_color": "light-background",
+                    "padding": 18,
+                    "radius": 12,
+                    "width": "auto",
+                    "align_self": "center",
+                    "margin": 0
+                  }
+                }
+              ],
+              "align_items": "center",
+              "margin": 0
+            }
+          },
+          {
+            "id": "6eb53d3d-d898-466c-a5d3-ba6c81df2884",
+            "client_id": "6eb53d3d-d898-466c-a5d3-ba6c81df2884",
+            "type": "image",
+            "payload": {
+              "url": "/media/01a183bb-cc75-7215-bb69-fb7d49123c6a/file",
+              "media_id": "01a183bb-cc75-7215-bb69-fb7d49123c6a",
+              "alt": "Grafická ilustrace směru a pohybu",
+              "img_fit": "contain",
+              "margin": 0
+            }
+          }
+        ],
+        "bg_color": "light-background",
+        "padding_top": 64,
+        "padding_bottom": 64,
+        "padding_left": 24,
+        "padding_right": 24,
+        "margin": 0
+      }
+    },
+    {
+      "id": "70fe8e74-25aa-48d9-96e3-4b974f2e8c28",
+      "client_id": "70fe8e74-25aa-48d9-96e3-4b974f2e8c28",
+      "type": "layout",
+      "payload": {
+        "variant": "stack",
+        "display": "flex",
+        "dir": "column",
+        "gap": 32,
+        "children": [
+          {
+            "id": "7c97f000-3353-4a6c-9c47-c647c5621fe6",
+            "client_id": "7c97f000-3353-4a6c-9c47-c647c5621fe6",
+            "type": "heading",
+            "payload": {
+              "text": "Pro vaše myšlenky. A všechno, co přijde potom.",
+              "level": 2,
+              "font_size": "display-sm",
+              "font_family": "system",
+              "font_weight": "normal",
+              "text_color": "dark-background",
+              "align": "start",
+              "margin": 0
+            }
+          },
+          {
+            "id": "11f7fc9e-c279-4478-9659-780802326969",
+            "client_id": "11f7fc9e-c279-4478-9659-780802326969",
+            "type": "layout",
+            "payload": {
+              "variant": "row",
+              "display": "flex",
+              "dir": "row",
+              "flex_wrap": "wrap",
+              "gap": 20,
+              "children": [
+                {
+                  "id": "5f8633ec-a1c9-47a8-984e-f27097e29acd",
+                  "client_id": "5f8633ec-a1c9-47a8-984e-f27097e29acd",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "stack",
+                    "display": "flex",
+                    "dir": "column",
+                    "gap": 20,
+                    "children": [
+                      {
+                        "id": "fc0826cc-eda2-4947-a1b8-c1708d830ce6",
+                        "client_id": "fc0826cc-eda2-4947-a1b8-c1708d830ce6",
+                        "type": "text",
+                        "payload": {
+                          "body": "✳",
+                          "text_color": "brand",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "d618a744-9c27-40fb-9474-1d825de357c9",
+                        "client_id": "d618a744-9c27-40fb-9474-1d825de357c9",
+                        "type": "heading",
+                        "payload": {
+                          "text": "Jasnější priority.",
+                          "level": 3,
+                          "font_size": "2xl",
+                          "font_family": "system",
+                          "font_weight": "normal",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "b6e7016d-9f1b-4494-b294-770d93a1aa6d",
+                        "client_id": "b6e7016d-9f1b-4494-b294-770d93a1aa6d",
+                        "type": "text",
+                        "payload": {
+                          "body": "Pojmenujte své cíle a to, na čem vám nejvíce záleží.",
+                          "text_color": "muted",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      }
+                    ],
+                    "bg_color": "brand-soft",
+                    "padding": 24,
+                    "margin": 0,
+                    "flex_basis": "240px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1"
+                  }
+                },
+                {
+                  "id": "537bdd38-0af3-4b87-b2ba-9eeef6e0458f",
+                  "client_id": "537bdd38-0af3-4b87-b2ba-9eeef6e0458f",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "stack",
+                    "display": "flex",
+                    "dir": "column",
+                    "gap": 20,
+                    "children": [
+                      {
+                        "id": "9c8dcf5b-c931-4361-ae97-5f951050f61f",
+                        "client_id": "9c8dcf5b-c931-4361-ae97-5f951050f61f",
+                        "type": "text",
+                        "payload": {
+                          "body": "✳",
+                          "text_color": "brand",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "f4ac1641-14c9-4737-853f-5d00d78dce07",
+                        "client_id": "f4ac1641-14c9-4737-853f-5d00d78dce07",
+                        "type": "heading",
+                        "payload": {
+                          "text": "Nové možnosti.",
+                          "level": 3,
+                          "font_size": "2xl",
+                          "font_family": "system",
+                          "font_weight": "normal",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "9a3ee47c-3afd-4e7d-b506-a20ff2b16751",
+                        "client_id": "9a3ee47c-3afd-4e7d-b506-a20ff2b16751",
+                        "type": "text",
+                        "payload": {
+                          "body": "Získejte jiný pohled na souvislosti a cesty před vámi.",
+                          "text_color": "muted",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      }
+                    ],
+                    "bg_color": "brand-soft",
+                    "padding": 24,
+                    "margin": 0,
+                    "flex_basis": "240px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1"
+                  }
+                },
+                {
+                  "id": "9d227857-bfaf-42c3-b5d6-112e2a214493",
+                  "client_id": "9d227857-bfaf-42c3-b5d6-112e2a214493",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "stack",
+                    "display": "flex",
+                    "dir": "column",
+                    "gap": 20,
+                    "children": [
+                      {
+                        "id": "a4514d14-e31f-49d7-bd84-38dfa2cfea22",
+                        "client_id": "a4514d14-e31f-49d7-bd84-38dfa2cfea22",
+                        "type": "text",
+                        "payload": {
+                          "body": "✳",
+                          "text_color": "brand",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "97f2c6a2-87d7-4df9-82d7-e4c548aef9c8",
+                        "client_id": "97f2c6a2-87d7-4df9-82d7-e4c548aef9c8",
+                        "type": "heading",
+                        "payload": {
+                          "text": "Konkrétní další krok.",
+                          "level": 3,
+                          "font_size": "2xl",
+                          "font_family": "system",
+                          "font_weight": "normal",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "d8faa013-c1b3-4210-b4c4-ab94dcc46fb4",
+                        "client_id": "d8faa013-c1b3-4210-b4c4-ab94dcc46fb4",
+                        "type": "text",
+                        "payload": {
+                          "body": "Přejděte od přemýšlení k postupu, který odpovídá vašemu záměru.",
+                          "text_color": "muted",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      }
+                    ],
+                    "bg_color": "brand-soft",
+                    "padding": 24,
+                    "margin": 0,
+                    "flex_basis": "240px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1"
+                  }
+                }
+              ],
+              "margin": 0
+            }
+          }
+        ],
+        "bg_color": "light-background",
+        "padding_top": 72,
+        "padding_bottom": 72,
+        "padding_left": 24,
+        "padding_right": 24,
+        "margin": 0
+      }
+    },
+    {
+      "id": "3d213b7b-3c15-43e1-af3e-9175ff75b542",
+      "client_id": "3d213b7b-3c15-43e1-af3e-9175ff75b542",
+      "type": "layout",
+      "payload": {
+        "variant": "stack",
+        "display": "flex",
+        "dir": "column",
+        "gap": 32,
+        "children": [
+          {
+            "id": "ff7d735a-a39e-4f00-9123-8ab7b80b1fd5",
+            "client_id": "ff7d735a-a39e-4f00-9123-8ab7b80b1fd5",
+            "type": "text",
+            "payload": {
+              "body": "JEDNODUŠE, SPOLEČNĚ.",
+              "text_color": "brand",
+              "align": "start",
+              "margin": 0
+            }
+          },
+          {
+            "id": "163c7d12-3db6-498b-a5a4-90c54e71d367",
+            "client_id": "163c7d12-3db6-498b-a5a4-90c54e71d367",
+            "type": "heading",
+            "payload": {
+              "text": "Od „co kdyby“ k „co dál“.",
+              "level": 2,
+              "font_size": "display-sm",
+              "font_family": "georgia",
+              "font_weight": "normal",
+              "text_color": "light-background",
+              "align": "start",
+              "margin": 0
+            }
+          },
+          {
+            "id": "eefd2ff3-16a3-4e13-b07d-23b241fb5488",
+            "client_id": "eefd2ff3-16a3-4e13-b07d-23b241fb5488",
+            "type": "layout",
+            "payload": {
+              "variant": "stack",
+              "display": "flex",
+              "dir": "column",
+              "gap": 28,
+              "children": [
+                {
+                  "id": "0d032b09-159c-425e-966f-0d4fd5a6589e",
+                  "client_id": "0d032b09-159c-425e-966f-0d4fd5a6589e",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "row",
+                    "display": "flex",
+                    "dir": "row",
+                    "flex_wrap": "wrap",
+                    "gap": 16,
+                    "children": [
+                      {
+                        "id": "45db47e4-7d13-423e-9dcf-b51881533f3b",
+                        "client_id": "45db47e4-7d13-423e-9dcf-b51881533f3b",
+                        "type": "text",
+                        "payload": {
+                          "body": "01",
+                          "text_color": "brand",
+                          "align": "start",
+                          "margin": 0,
+                          "flex_basis": "40px",
+                          "flex_grow": "1",
+                          "flex_shrink": "1"
+                        }
+                      },
+                      {
+                        "id": "8cf28ba1-313d-4b31-a70a-38885897dd72",
+                        "client_id": "8cf28ba1-313d-4b31-a70a-38885897dd72",
+                        "type": "layout",
+                        "payload": {
+                          "variant": "stack",
+                          "display": "flex",
+                          "dir": "column",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "bd1dc8cf-4768-4847-bc0b-f5193840e4a8",
+                              "client_id": "bd1dc8cf-4768-4847-bc0b-f5193840e4a8",
+                              "type": "heading",
+                              "payload": {
+                                "text": "Váš kontext.",
+                                "level": 3,
+                                "font_size": "2xl",
+                                "font_family": "system",
+                                "font_weight": "normal",
+                                "text_color": "light-background",
+                                "align": "start",
+                                "margin": 0
+                              }
+                            },
+                            {
+                              "id": "9cbfe8be-0c7c-4a96-bc41-a1d32015dd14",
+                              "client_id": "9cbfe8be-0c7c-4a96-bc41-a1d32015dd14",
+                              "type": "text",
+                              "payload": {
+                                "body": "Přiblížíte nám, co právě řešíte a kam chcete svůj projekt posunout.",
+                                "text_color": "light-background",
+                                "align": "start",
+                                "margin": 0
+                              }
+                            }
+                          ],
+                          "margin": 0,
+                          "flex_basis": "260px",
+                          "flex_grow": "1",
+                          "flex_shrink": "1"
+                        }
+                      }
+                    ],
+                    "margin": 0
+                  }
+                },
+                {
+                  "id": "373c13cc-686a-4034-be1b-53439c0fb573",
+                  "client_id": "373c13cc-686a-4034-be1b-53439c0fb573",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "row",
+                    "display": "flex",
+                    "dir": "row",
+                    "flex_wrap": "wrap",
+                    "gap": 16,
+                    "children": [
+                      {
+                        "id": "c57a2bdb-6852-4cb3-9d84-fa3c3096ddfb",
+                        "client_id": "c57a2bdb-6852-4cb3-9d84-fa3c3096ddfb",
+                        "type": "text",
+                        "payload": {
+                          "body": "02",
+                          "text_color": "brand",
+                          "align": "start",
+                          "margin": 0,
+                          "flex_basis": "40px",
+                          "flex_grow": "1",
+                          "flex_shrink": "1"
+                        }
+                      },
+                      {
+                        "id": "e58f4252-c121-495d-9fc5-fcfc030e32bc",
+                        "client_id": "e58f4252-c121-495d-9fc5-fcfc030e32bc",
+                        "type": "layout",
+                        "payload": {
+                          "variant": "stack",
+                          "display": "flex",
+                          "dir": "column",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "a956e6d5-b04e-4095-9687-f628b19e5f92",
+                              "client_id": "a956e6d5-b04e-4095-9687-f628b19e5f92",
+                              "type": "heading",
+                              "payload": {
+                                "text": "Společný pohled.",
+                                "level": 3,
+                                "font_size": "2xl",
+                                "font_family": "system",
+                                "font_weight": "normal",
+                                "text_color": "light-background",
+                                "align": "start",
+                                "margin": 0
+                              }
+                            },
+                            {
+                              "id": "7db5c7b4-6e5e-4579-b7b0-b56187fd6d12",
+                              "client_id": "7db5c7b4-6e5e-4579-b7b0-b56187fd6d12",
+                              "type": "text",
+                              "payload": {
+                                "body": "Probereme možnosti, souvislosti a otázky, které potřebují odpověď.",
+                                "text_color": "light-background",
+                                "align": "start",
+                                "margin": 0
+                              }
+                            }
+                          ],
+                          "margin": 0,
+                          "flex_basis": "260px",
+                          "flex_grow": "1",
+                          "flex_shrink": "1"
+                        }
+                      }
+                    ],
+                    "margin": 0
+                  }
+                },
+                {
+                  "id": "2d8f0d41-618e-4caa-8302-98082b7f3b16",
+                  "client_id": "2d8f0d41-618e-4caa-8302-98082b7f3b16",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "row",
+                    "display": "flex",
+                    "dir": "row",
+                    "flex_wrap": "wrap",
+                    "gap": 16,
+                    "children": [
+                      {
+                        "id": "0dc1b64b-d5f8-4e38-b47e-b590c8e11e1c",
+                        "client_id": "0dc1b64b-d5f8-4e38-b47e-b590c8e11e1c",
+                        "type": "text",
+                        "payload": {
+                          "body": "03",
+                          "text_color": "brand",
+                          "align": "start",
+                          "margin": 0,
+                          "flex_basis": "40px",
+                          "flex_grow": "1",
+                          "flex_shrink": "1"
+                        }
+                      },
+                      {
+                        "id": "cc5ec917-7902-4d66-911e-924068fd2fd5",
+                        "client_id": "cc5ec917-7902-4d66-911e-924068fd2fd5",
+                        "type": "layout",
+                        "payload": {
+                          "variant": "stack",
+                          "display": "flex",
+                          "dir": "column",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "7f7fef01-1b22-4435-adf7-b7289f3a8ea2",
+                              "client_id": "7f7fef01-1b22-4435-adf7-b7289f3a8ea2",
+                              "type": "heading",
+                              "payload": {
+                                "text": "Další směr.",
+                                "level": 3,
+                                "font_size": "2xl",
+                                "font_family": "system",
+                                "font_weight": "normal",
+                                "text_color": "light-background",
+                                "align": "start",
+                                "margin": 0
+                              }
+                            },
+                            {
+                              "id": "ff1e228a-033a-4cf3-b57b-6ad65ef0303f",
+                              "client_id": "ff1e228a-033a-4cf3-b57b-6ad65ef0303f",
+                              "type": "text",
+                              "payload": {
+                                "body": "Shrneme podstatné a pojmenujeme navazující kroky.",
+                                "text_color": "light-background",
+                                "align": "start",
+                                "margin": 0
+                              }
+                            }
+                          ],
+                          "margin": 0,
+                          "flex_basis": "260px",
+                          "flex_grow": "1",
+                          "flex_shrink": "1"
+                        }
+                      }
+                    ],
+                    "margin": 0
+                  }
+                }
+              ],
+              "margin": 0
+            }
+          }
+        ],
+        "bg_color": "dark-background",
+        "padding_top": 72,
+        "padding_bottom": 72,
+        "padding_left": 24,
+        "padding_right": 24,
+        "margin": 0
+      }
+    },
+    {
+      "id": "6195fbcc-0b50-40a2-92d3-0c44d37a271e",
+      "client_id": "6195fbcc-0b50-40a2-92d3-0c44d37a271e",
+      "type": "layout",
+      "payload": {
+        "variant": "stack",
+        "display": "flex",
+        "dir": "column",
+        "gap": 32,
+        "children": [
+          {
+            "id": "5a5ed436-25ef-48be-be6b-58763f9668df",
+            "client_id": "5a5ed436-25ef-48be-be6b-58763f9668df",
+            "type": "layout",
+            "payload": {
+              "variant": "row",
+              "display": "flex",
+              "dir": "row",
+              "flex_wrap": "wrap",
+              "gap": 64,
+              "children": [
+                {
+                  "id": "ba3d303e-2579-473b-9cd2-c5c758cc2912",
+                  "client_id": "ba3d303e-2579-473b-9cd2-c5c758cc2912",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "stack",
+                    "display": "flex",
+                    "dir": "column",
+                    "gap": 24,
+                    "children": [
+                      {
+                        "id": "07dff204-be6a-4402-a2d3-75bb7b39f33e",
+                        "client_id": "07dff204-be6a-4402-a2d3-75bb7b39f33e",
+                        "type": "text",
+                        "payload": {
+                          "body": "DOBRÉ OTÁZKY",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "3934ecdd-5000-45e5-8e06-9957b11de761",
+                        "client_id": "3934ecdd-5000-45e5-8e06-9957b11de761",
+                        "type": "heading",
+                        "payload": {
+                          "text": "Než začneme.",
+                          "level": 2,
+                          "font_size": "display-sm",
+                          "font_family": "georgia",
+                          "font_weight": "normal",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      }
+                    ],
+                    "margin": 0,
+                    "flex_basis": "300px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1"
+                  }
+                },
+                {
+                  "id": "5b517bd8-c4f5-4195-a7a6-e018ebab604e",
+                  "client_id": "5b517bd8-c4f5-4195-a7a6-e018ebab604e",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "stack",
+                    "display": "flex",
+                    "dir": "column",
+                    "gap": 20,
+                    "children": [
+                      {
+                        "id": "a8e49832-31ad-4c49-aa72-d3da06cba7e0",
+                        "client_id": "a8e49832-31ad-4c49-aa72-d3da06cba7e0",
+                        "type": "heading",
+                        "payload": {
+                          "text": "Pro koho je konzultace?",
+                          "level": 3,
+                          "font_size": "xl",
+                          "font_family": "system",
+                          "font_weight": "normal",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "f7572257-6d1d-4a09-9c4e-80b4e176893c",
+                        "client_id": "f7572257-6d1d-4a09-9c4e-80b4e176893c",
+                        "type": "text",
+                        "payload": {
+                          "body": "Pro samostatné profesionály a malé týmy.",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "08f7a147-a6fb-46bd-baeb-a1700bae9f28",
+                        "client_id": "08f7a147-a6fb-46bd-baeb-a1700bae9f28",
+                        "type": "heading",
+                        "payload": {
+                          "text": "Můžeme se potkat online?",
+                          "level": 3,
+                          "font_size": "xl",
+                          "font_family": "system",
+                          "font_weight": "normal",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "68a6ff22-d812-4ed2-b621-b9b236d68b01",
+                        "client_id": "68a6ff22-d812-4ed2-b621-b9b236d68b01",
+                        "type": "text",
+                        "payload": {
+                          "body": "Ano, konzultace mohou proběhnout online.",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      }
+                    ],
+                    "margin": 0,
+                    "flex_basis": "400px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1"
+                  }
+                }
+              ],
+              "margin": 0
+            }
+          }
+        ],
+        "bg_color": "light-background",
+        "padding_top": 72,
+        "padding_bottom": 72,
+        "padding_left": 24,
+        "padding_right": 24,
+        "margin": 0
+      }
+    },
+    {
+      "id": "9c7ae4dd-3390-4904-b030-01de9c06d02f",
+      "client_id": "9c7ae4dd-3390-4904-b030-01de9c06d02f",
+      "type": "layout",
+      "payload": {
+        "variant": "stack",
+        "display": "flex",
+        "dir": "column",
+        "gap": 32,
+        "children": [
+          {
+            "id": "3b57bafc-88f7-4f3d-9f28-27830387d6a4",
+            "client_id": "3b57bafc-88f7-4f3d-9f28-27830387d6a4",
+            "type": "layout",
+            "payload": {
+              "variant": "row",
+              "display": "flex",
+              "dir": "row",
+              "flex_wrap": "wrap",
+              "gap": 64,
+              "children": [
+                {
+                  "id": "b460742e-cea1-4b2b-ab43-bfb039e38f51",
+                  "client_id": "b460742e-cea1-4b2b-ab43-bfb039e38f51",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "stack",
+                    "display": "flex",
+                    "dir": "column",
+                    "gap": 24,
+                    "children": [
+                      {
+                        "id": "839c580a-f227-4285-9297-319546e2c33c",
+                        "client_id": "839c580a-f227-4285-9297-319546e2c33c",
+                        "type": "text",
+                        "payload": {
+                          "body": "NOVÝ SMĚR ZAČÍNÁ ZPRÁVOU",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "857ed8e7-125f-4179-8084-f8b876a072b2",
+                        "client_id": "857ed8e7-125f-4179-8084-f8b876a072b2",
+                        "type": "heading",
+                        "payload": {
+                          "text": "Pojďme dát vašemu nápadu prostor.",
+                          "level": 2,
+                          "font_size": "display-sm",
+                          "font_family": "georgia",
+                          "font_weight": "normal",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      },
+                      {
+                        "id": "c4e44dbf-b6e1-42f0-9ff1-1aa60c73785b",
+                        "client_id": "c4e44dbf-b6e1-42f0-9ff1-1aa60c73785b",
+                        "type": "text",
+                        "payload": {
+                          "body": "Napište nám pár vět. Potkat se můžeme i online.",
+                          "text_color": "dark-background",
+                          "align": "start",
+                          "margin": 0
+                        }
+                      }
+                    ],
+                    "margin": 0,
+                    "flex_basis": "300px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1"
+                  }
+                },
+                {
+                  "id": "79d4c1eb-ddac-4d7f-b083-f442fca555b4",
+                  "client_id": "79d4c1eb-ddac-4d7f-b083-f442fca555b4",
+                  "type": "layout",
+                  "payload": {
+                    "variant": "stack",
+                    "display": "flex",
+                    "dir": "column",
+                    "gap": 0,
+                    "children": [
+                      {
+                        "id": "cb29823a-f893-4efe-a03e-83e98d139d2f",
+                        "client_id": "cb29823a-f893-4efe-a03e-83e98d139d2f",
+                        "type": "form",
+                        "payload": {
+                          "action": "site_inquiries.create",
+                          "submit_label": "Odeslat poptávku",
+                          "submit_bg_color": "dark-background",
+                          "submit_text_color": "light-background",
+                          "submit_radius": 28,
+                          "submit_padding": 18,
+                          "children": [
+                            {
+                              "id": "895a0cad-c481-4410-8de5-be6facc8a474",
+                              "client_id": "895a0cad-c481-4410-8de5-be6facc8a474",
+                              "type": "form_field",
+                              "payload": {
+                                "name": "name",
+                                "control": "text",
+                                "label": "Vaše jméno",
+                                "required": 1,
+                                "full": 0,
+                                "margin": 0
+                              }
+                            },
+                            {
+                              "id": "18cb6ce3-9d31-4623-a0d9-5025882514fa",
+                              "client_id": "18cb6ce3-9d31-4623-a0d9-5025882514fa",
+                              "type": "form_field",
+                              "payload": {
+                                "name": "email",
+                                "control": "email",
+                                "label": "E-mailová adresa",
+                                "required": 1,
+                                "full": 0,
+                                "margin": 0
+                              }
+                            },
+                            {
+                              "id": "1eaf1ff5-238f-4dca-9343-c067c783ccaf",
+                              "client_id": "1eaf1ff5-238f-4dca-9343-c067c783ccaf",
+                              "type": "form_field",
+                              "payload": {
+                                "name": "details",
+                                "control": "textarea",
+                                "label": "O čem si chcete promluvit?",
+                                "required": 1,
+                                "full": 1,
+                                "margin": 0
+                              }
+                            }
+                          ],
+                          "margin": 0
+                        }
+                      }
+                    ],
+                    "bg_color": "light-background",
+                    "padding": 24,
+                    "margin": 0,
+                    "flex_basis": "400px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1"
+                  }
+                }
+              ],
+              "margin": 0
+            }
+          }
+        ],
+        "bg_color": "brand-soft",
+        "padding_top": 72,
+        "padding_bottom": 72,
+        "padding_left": 24,
+        "padding_right": 24,
+        "margin": 0
+      }
+    }
+  ]
+}

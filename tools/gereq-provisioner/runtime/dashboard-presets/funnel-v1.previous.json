@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "funnel-v1",
+  "widgets": [
+    {"id": "cms.stats", "enabled": true, "order": 10, "width": "full"},
+    {"id": "cms.recent", "enabled": true, "order": 20, "width": "two_thirds"},
+    {"id": "core.shortcuts", "enabled": true, "order": 30, "width": "third"},
+    {"id": "cms.shortcut", "enabled": true, "order": 10, "width": "third"},
+    {"id": "core.settings.shortcut", "enabled": true, "order": 20, "width": "third"}
+  ]
+}

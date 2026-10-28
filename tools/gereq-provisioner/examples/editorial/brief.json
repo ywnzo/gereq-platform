@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "Studio Jasno",
+  "offer": "Strategické konzultace",
+  "audience": "Samostatní profesionálové a malé týmy",
+  "language": "cs",
+  "slug": "editorial-native",
+  "goal": "inquiry",
+  "booking_url": "",
+  "facts": [
+    "Konzultace mohou proběhnout online."
+  ],
+  "illustration_url": "/media/01a18399-3406-72df-8df2-43cc6155b1e9/file"
+}

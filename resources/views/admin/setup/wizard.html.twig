@@ -3,15 +3,15 @@
 {% block content %}
     <div class="setup-wizard{% if step == 'modules' %} setup-wizard--modules{% endif %}{% if step in ['modules', 'dashboard'] %} setup-wizard--wide{% endif %}">
         <p class="eyebrow">{{ 'setup.eyebrow'|trans }}</p>
-        <h1>{{ ('setup.step.' ~ step ~ '.title')|trans }}</h1>
-        <p class="muted">{{ ('setup.step.' ~ step ~ '.lead')|trans }}</p>
+        <h1>{{ (hostedPackage and step == 'company' ? 'setup.hosted.company.title' : ('setup.step.' ~ step ~ '.title'))|trans }}</h1>
+        <p class="muted">{{ (hostedPackage and step == 'company' ? 'setup.hosted.company.lead' : ('setup.step.' ~ step ~ '.lead'))|trans }}</p>
 
         <ol class="setup-steps" aria-label="{{ 'setup.progress'|trans }}">
             {% for s in steps %}
                 {% if s != 'done' or step == 'done' %}
                     <li class="setup-steps__item{{ step == s ? ' is-current' : '' }}{{ loop.index0 < stepIndex ? ' is-done' : '' }}">
                         <span class="setup-steps__n">{{ loop.index }}</span>
-                        <span class="setup-steps__label">{{ ('setup.step.' ~ s ~ '.nav')|trans }}</span>
+                        <span class="setup-steps__label">{{ (hostedPackage and s == 'company' ? 'setup.hosted.company.title' : ('setup.step.' ~ s ~ '.nav'))|trans }}</span>
                     </li>
                 {% endif %}
             {% endfor %}
@@ -79,6 +79,71 @@
             </form>
 
         {% elseif step == 'company' %}
+            {% if hostedPackage %}
+            <form method="post" action="{{ url('admin.setup.company') }}" class="stack setup-form" x-data="gereqSetupCompany" @change="syncCompany">
+                {{ csrf_field()|raw }}
+                {% include 'ui/switch.html.twig' with {name: 'is_company', label: 'setup.field.is_company'|trans, on: values.is_company} only %}
+                <div data-company-fields {% if not values.is_company %}hidden{% endif %}>
+                    <div class="stack" x-data="gereqAresSubject">
+                <label class="field">
+                    <span>{{ 'setup.field.seller_name'|trans }}</span>
+                    <input class="input" type="text" name="seller_name" data-ares-fill="name" value="{{ values.seller_name }}">
+                </label>
+                <div class="setup-grid">
+                    <div class="field ares-field">
+                        <span>{{ 'setup.field.seller_ico'|trans }}</span>
+                        <div class="ares-field__row">
+                            <input
+                                class="input"
+                                type="text"
+                                name="seller_ico"
+                                data-ares-ico
+                                data-ares-fill="ico"
+                                data-ares-query
+                                autocomplete="off"
+                                value="{{ values.seller_ico }}"
+                                @input="onInput"
+                                @keydown="onKeydown"
+                                x-ref="query"
+                            >
+                            <button type="button" class="btn btn--ghost" @click="lookupIco">ARES</button>
+                        </div>
+                        {% include 'ui/ares_subject_suggest.html.twig' %}
+                    </div>
+                    <label class="field">
+                        <span>{{ 'setup.field.seller_dic'|trans }}</span>
+                        <input class="input" type="text" name="seller_dic" data-ares-fill="dic" value="{{ values.seller_dic }}">
+                    </label>
+                </div>
+                <label class="field">
+                    <span>{{ 'setup.field.seller_address'|trans }}</span>
+                    <input class="input" type="text" name="seller_address" data-ares-fill="address" value="{{ values.seller_address }}">
+                </label>
+                <label class="field">
+                    <span>{{ 'setup.field.seller_email'|trans }}</span>
+                    <input class="input" type="email" name="seller_email" value="{{ values.seller_email }}">
+                </label>
+                {% if hasShop %}
+                <div class="setup-grid">
+                    <label class="field">
+                        <span>{{ 'setup.field.order_prefix'|trans }}</span>
+                        <input class="input" type="text" name="order_prefix" value="{{ values.order_prefix }}">
+                    </label>
+                    <label class="field">
+                        <span>{{ 'setup.field.invoice_prefix'|trans }}</span>
+                        <input class="input" type="text" name="invoice_prefix" value="{{ values.invoice_prefix }}">
+                    </label>
+                </div>
+                {% endif %}
+                    </div>
+                </div>
+                <div class="setup-nav">
+                    <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'account'}) }}">{{ 'setup.back'|trans }}</a>
+                    <button type="submit" class="btn btn--primary">{{ 'setup.next'|trans }}</button>
+                </div>
+            </form>
+
+            {% else %}
             <form method="post" action="{{ url('admin.setup.company') }}" class="stack setup-form" x-data="setupOperator" data-type="{{ values.operator.type }}">
                 {{ csrf_field()|raw }}
                 <label class="field">
@@ -149,6 +214,7 @@
                 </div>
             </form>
 
+            {% endif %}
         {% elseif step == 'modules' %}
             <form method="post" action="{{ url('admin.setup.modules') }}" class="stack setup-form" x-data="setupModulePicker">
                 {{ csrf_field()|raw }}
@@ -223,6 +289,44 @@
                     {% include 'ui/button.html.twig' with { label: 'setup.finish'|trans, type: 'submit', variant: 'primary' } only %}
                 </div>
             </form>
+        {% elseif step == 'shop' %}
+            <form method="post" action="{{ url('admin.setup.shop') }}" class="stack setup-form">
+                {{ csrf_field()|raw }}
+                <label class="field">
+                    <span>{{ 'setup.field.store_name'|trans }}</span>
+                    <input class="input" type="text" name="store_name" value="{{ values.store_name ?: values.app_name }}">
+                </label>
+                <label class="field">
+                    <span>{{ 'setup.field.currency'|trans }}</span>
+                    <input class="input" type="text" name="currency" value="{{ values.currency }}" maxlength="3">
+                </label>
+                <label class="field">
+                    <span>{{ 'setup.field.checkout_enabled'|trans }}</span>
+                    <select class="input" name="checkout_enabled">
+                        <option value="1" {{ values.checkout_enabled ? 'selected' : '' }}>{{ 'common.yes'|trans }}</option>
+                        <option value="0" {{ not values.checkout_enabled ? 'selected' : '' }}>{{ 'common.no'|trans }}</option>
+                    </select>
+                </label>
+                <div class="setup-nav">
+                    <a class="btn btn--ghost" href="{{ url('admin.setup.step', {step: 'company'}) }}">{{ 'setup.back'|trans }}</a>
+                    <button type="submit" class="btn btn--primary">{{ 'setup.next'|trans }}</button>
+                </div>
+            </form>
+
+        {% elseif step == 'done' %}
+            <div class="setup-done stack">
+                <p>{{ 'setup.step.done.body'|trans }}</p>
+                <ul class="setup-checklist muted">
+                    <li>{{ 'setup.step.done.check_app'|trans({'%name%': values.app_name}) }}</li>
+                    <li>{{ 'setup.step.done.check_account'|trans({'%email%': values.email}) }}</li>
+                    {% if hasShop %}<li>{{ 'setup.step.done.check_shop'|trans({'%store%': values.store_name ?: values.app_name}) }}</li>{% endif %}
+                </ul>
+                <form method="post" action="{{ url('admin.setup.finish') }}">
+                    {{ csrf_field()|raw }}
+                    <button type="submit" class="btn btn--primary btn--block">{{ 'setup.finish'|trans }}</button>
+                </form>
+                <a class="text-link" href="{{ url('admin.setup.step', {step: hasShop ? 'shop' : 'company'}) }}">{{ 'setup.back'|trans }}</a>
+            </div>
         {% endif %}
     </div>
 {% endblock %}

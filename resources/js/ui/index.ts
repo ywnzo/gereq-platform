@@ -1,3 +1,4 @@
+import { registerSetupCompany } from './setupCompany';
 import type Alpine from '@alpinejs/csp';
 import { registerSetup } from './setup';
 import { registerAres } from './ares';
@@ -57,6 +58,7 @@ export function registerUi(alpine: typeof Alpine): void {
     registerTableToggle(alpine);
     registerTextarea(alpine);
     registerForm(alpine);
+    registerSetupCompany(alpine);
     registerEditor(alpine);
     registerTabs(alpine);
     registerStickyChrome();

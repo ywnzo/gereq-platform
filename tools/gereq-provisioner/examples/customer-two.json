@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "request_id": "request-customer-two-v1",
+  "site_id": "customer-two",
+  "customer_ref": "local-customer-two",
+  "package": "funnel-v1",
+  "release_id": "latest-3ddf041-editorial1",
+  "port": 18082
+}

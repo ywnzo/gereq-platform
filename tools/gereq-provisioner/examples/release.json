@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "latest-3ddf041-editorial1",
+  "image": "localhost/gereq-local:latest-3ddf041-editorial1",
+  "development": true,
+  "modules": [
+    "cms",
+    "site_inquiries",
+    "analytics"
+  ]
+}

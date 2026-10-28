@@ -1,0 +1,54 @@
+{
+  "layout": "editorial",
+  "eyebrow": "Strategické konzultace · Studio Jasno",
+  "headline": "Velké věci. Jasný směr.",
+  "intro": "Máte nápad. Nebo spoustu otázek.\nSpolečně najdeme to podstatné a proměníme ho v další krok.",
+  "cta": "Odeslat poptávku",
+  "benefits_title": "Jasno v tom, na čem záleží.",
+  "benefits": [
+    {
+      "title": "Jasné priority.",
+      "body": "Ujasníte si, co je pro váš záměr opravdu důležité."
+    },
+    {
+      "title": "Nová perspektiva.",
+      "body": "Uvidíte souvislosti a možnosti, které vám mohly unikat."
+    },
+    {
+      "title": "Vlastní směr.",
+      "body": "Získáte pevnější podklady pro vlastní rozhodnutí."
+    }
+  ],
+  "process_title": "Dobrý rozhovor.\nNová perspektiva.",
+  "process": [
+    {
+      "title": "Začneme u vás.",
+      "body": "Přiblížíte nám svou situaci, projekt a to, co právě řešíte."
+    },
+    {
+      "title": "Podíváme se jinak.",
+      "body": "Probereme souvislosti a možnosti, které dávají smysl vašemu záměru."
+    },
+    {
+      "title": "Najdeme další krok.",
+      "body": "Shrneme podstatné a společně pojmenujeme další směr."
+    }
+  ],
+  "faq_title": "Než začneme.",
+  "faq": [
+    {
+      "title": "Pro koho je konzultace určená?",
+      "body": "Pro samostatné profesionály a malé týmy, které připravují nový projekt nebo hledají další směr."
+    },
+    {
+      "title": "Můžeme se potkat online?",
+      "body": "Ano. Konzultace mohou proběhnout online, ať už pracujete odkudkoli."
+    },
+    {
+      "title": "Co si mám připravit?",
+      "body": "Stačí váš záměr a otázky, které právě řešíte. Pro začátek je můžete stručně popsat ve formuláři."
+    }
+  ],
+  "contact_title": "Co vám právě\nleží v hlavě?",
+  "contact_body": "Napište nám pár vět o svém záměru. Konzultace mohou proběhnout i online."
+}

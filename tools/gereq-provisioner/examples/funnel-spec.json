@@ -1,0 +1,54 @@
+{
+  "layout": "editorial",
+  "eyebrow": "Prostor pro váš další krok",
+  "headline": "Jasnější směr začíná rozhovorem.",
+  "intro": "Podívejme se společně na váš záměr. Pomůžeme vám utřídit možnosti a připravit konkrétní další krok.",
+  "cta": "Odeslat poptávku",
+  "benefits_title": "Méně otázek. Jasnější rozhodnutí.",
+  "benefits": [
+    {
+      "title": "Pojmenujte podstatné",
+      "body": "Ujasněte si, co chcete změnit a proč vám na tom záleží."
+    },
+    {
+      "title": "Získejte nový pohled",
+      "body": "Prozkoumejte možnosti a zvažte, která cesta odpovídá vašim cílům."
+    },
+    {
+      "title": "Připravte další krok",
+      "body": "Proměňte úvahy v konkrétní postup, se kterým můžete začít."
+    }
+  ],
+  "process_title": "Od prvního kontaktu ke společnému směru.",
+  "process": [
+    {
+      "title": "Napište nám",
+      "body": "Přibližte nám svůj projekt nebo situaci, kterou řešíte."
+    },
+    {
+      "title": "Upřesníme zadání",
+      "body": "Probereme vaše očekávání a téma konzultace."
+    },
+    {
+      "title": "Domluvíme postup",
+      "body": "Společně najdeme vhodný způsob další spolupráce."
+    }
+  ],
+  "faq_title": "Co vás může zajímat",
+  "faq": [
+    {
+      "title": "Pro koho je konzultace?",
+      "body": "Pro samostatné profesionály a malé týmy, které připravují projekt nebo hledají další směr."
+    },
+    {
+      "title": "Můžeme se potkat online?",
+      "body": "Ano, konzultace mohou proběhnout online."
+    },
+    {
+      "title": "Jak začít?",
+      "body": "Napište nám přes formulář a přibližte téma, které chcete probrat."
+    }
+  ],
+  "contact_title": "Co právě řešíte?",
+  "contact_body": "Představte nám svůj záměr. Společně se podíváme na možnosti dalšího postupu."
+}

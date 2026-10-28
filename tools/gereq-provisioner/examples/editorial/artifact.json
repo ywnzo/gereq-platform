@@ -1,0 +1,1294 @@
+{
+  "schema_version": 1,
+  "artifact_id": "gen-e1d6bdb207ee921dada8a893",
+  "title": "Studio Jasno — Velké věci. Jasný směr.",
+  "slug": "editorial-native",
+  "blocks": [
+    {
+      "id": "034dd61e-e059-443a-afa2-505c5624f747",
+      "client_id": "editorial-012",
+      "type": "layout",
+      "payload": {
+        "bg_color": "light-background",
+        "children": [
+          {
+            "id": "6aaef0ad-7ab0-41f4-9740-e3c3ef884b5e",
+            "client_id": "editorial-011",
+            "type": "layout",
+            "payload": {
+              "align_items": "center",
+              "children": [
+                {
+                  "id": "ff5af114-3aee-4389-8b83-a17279e95862",
+                  "client_id": "editorial-009",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "7ef4d3df-afe7-4772-ab8c-865b5d90d1de",
+                        "client_id": "editorial-007",
+                        "type": "text",
+                        "payload": {
+                          "body": "STRATEGICKÉ KONZULTACE · STUDIO JASNO",
+                          "font_size": "sm",
+                          "font_weight": "semibold",
+                          "margin": 0,
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "bdef3cdc-f795-4ca9-a9f0-cb40a878fe47",
+                        "client_id": "editorial-005",
+                        "type": "heading",
+                        "payload": {
+                          "font_family": "georgia",
+                          "font_size": "display",
+                          "font_weight": "normal",
+                          "level": 1,
+                          "margin": 0,
+                          "text": "Velké věci.\u003cbr\u003e\u003cem\u003eJasný směr.\u003c/em\u003e",
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "6cd08317-8a29-4ed5-8584-59bd517a2a18",
+                        "client_id": "editorial-006",
+                        "type": "text",
+                        "payload": {
+                          "body": "Máte nápad. Nebo spoustu otázek.\u003cbr\u003eSpolečně najdeme to podstatné a proměníme ho v další krok.",
+                          "font_size": "md",
+                          "margin": 0,
+                          "text_color": "muted"
+                        }
+                      },
+                      {
+                        "id": "3877ab44-6124-476e-8fad-30228f6f028b",
+                        "client_id": "editorial-008",
+                        "type": "cta",
+                        "payload": {
+                          "align_self": "flex-start",
+                          "bg_color": "dark-background",
+                          "font_size": "sm",
+                          "font_weight": "semibold",
+                          "label": "Pojďme si promluvit  ↗",
+                          "margin": 0,
+                          "padding": 18,
+                          "radius": 12,
+                          "style": "primary",
+                          "text_color": "light-background",
+                          "url": "#cms-field-5f22d6af-2803-4ae5-a7b8-66f6d0bbae38-name",
+                          "width": "auto"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "420px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 28,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                },
+                {
+                  "id": "f10e2c73-8e20-48fd-937b-21094aa933d3",
+                  "client_id": "editorial-010",
+                  "type": "image",
+                  "payload": {
+                    "alt": "Ilustrace cesty od nápadu k jasnému směru. Aha. Tudy.",
+                    "flex_basis": "400px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "img_fit": "contain",
+                    "margin": 0,
+                    "priority": 1,
+                    "ratio": "20 / 21",
+                    "url": "/media/01a18399-3406-72df-8df2-43cc6155b1e9/file"
+                  }
+                }
+              ],
+              "dir": "row",
+              "display": "flex",
+              "flex_wrap": "wrap",
+              "gap": 64,
+              "margin": 0,
+              "variant": "row"
+            }
+          }
+        ],
+        "dir": "column",
+        "display": "flex",
+        "gap": 32,
+        "margin": 0,
+        "padding_bottom": 64,
+        "padding_left": 24,
+        "padding_right": 24,
+        "padding_top": 64,
+        "variant": "stack"
+      }
+    },
+    {
+      "id": "4b6af150-2273-40f1-81a8-1647df3cf2d8",
+      "client_id": "editorial-020",
+      "type": "layout",
+      "payload": {
+        "bg_color": "light-background",
+        "children": [
+          {
+            "id": "fa79d3b4-2246-4b01-a570-c89c1b448860",
+            "client_id": "editorial-017",
+            "type": "layout",
+            "payload": {
+              "bg_color": "dark-background",
+              "children": [],
+              "dir": "column",
+              "display": "flex",
+              "gap": 0,
+              "margin": 0,
+              "min_height": 1,
+              "opacity": 20,
+              "variant": "stack"
+            }
+          },
+          {
+            "id": "38fe228b-0401-4550-be09-7aae9cf78b8c",
+            "client_id": "editorial-018",
+            "type": "layout",
+            "payload": {
+              "align_items": "stretch",
+              "children": [
+                {
+                  "id": "1df179d2-ca7a-4311-a256-e6899decf205",
+                  "client_id": "editorial-013",
+                  "type": "text",
+                  "payload": {
+                    "body": "✳  NOVÉ PROJEKTY",
+                    "flex_basis": "170px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "font_size": "sm",
+                    "font_weight": "semibold",
+                    "margin": 0,
+                    "text_color": "dark-background"
+                  }
+                },
+                {
+                  "id": "72c38787-374f-44d2-bc32-6e1f6a5a7a38",
+                  "client_id": "editorial-014",
+                  "type": "text",
+                  "payload": {
+                    "body": "✳  DŮLEŽITÁ ROZHODNUTÍ",
+                    "flex_basis": "170px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "font_size": "sm",
+                    "font_weight": "semibold",
+                    "margin": 0,
+                    "text_color": "dark-background"
+                  }
+                },
+                {
+                  "id": "3bb666e0-7187-4829-8564-c920eeec7ef5",
+                  "client_id": "editorial-015",
+                  "type": "text",
+                  "payload": {
+                    "body": "✳  JASNÉ PRIORITY",
+                    "flex_basis": "170px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "font_size": "sm",
+                    "font_weight": "semibold",
+                    "margin": 0,
+                    "text_color": "dark-background"
+                  }
+                },
+                {
+                  "id": "f28230ea-fd87-460d-9976-4363a0c2688c",
+                  "client_id": "editorial-016",
+                  "type": "text",
+                  "payload": {
+                    "body": "✳  KONKRÉTNÍ KROKY",
+                    "flex_basis": "170px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "font_size": "sm",
+                    "font_weight": "semibold",
+                    "margin": 0,
+                    "text_color": "dark-background"
+                  }
+                }
+              ],
+              "dir": "row",
+              "display": "flex",
+              "flex_wrap": "wrap",
+              "gap": 20,
+              "margin": 0,
+              "variant": "row"
+            }
+          },
+          {
+            "id": "9c6cf2b3-6f9e-4f7e-b487-27bfeb2c270b",
+            "client_id": "editorial-019",
+            "type": "layout",
+            "payload": {
+              "bg_color": "dark-background",
+              "children": [],
+              "dir": "column",
+              "display": "flex",
+              "gap": 0,
+              "margin": 0,
+              "min_height": 1,
+              "opacity": 20,
+              "variant": "stack"
+            }
+          }
+        ],
+        "dir": "column",
+        "display": "flex",
+        "gap": 32,
+        "margin": 0,
+        "padding_bottom": 0,
+        "padding_left": 24,
+        "padding_right": 24,
+        "padding_top": 0,
+        "variant": "stack"
+      }
+    },
+    {
+      "id": "5acf3026-46e9-4d94-9582-71e729ae457f",
+      "client_id": "editorial-037",
+      "type": "layout",
+      "payload": {
+        "bg_color": "light-background",
+        "children": [
+          {
+            "id": "04ea6249-1633-491a-b119-3af95514b922",
+            "client_id": "editorial-023",
+            "type": "layout",
+            "payload": {
+              "children": [
+                {
+                  "id": "ecce8a02-a61b-4128-9bd0-af56d73674be",
+                  "client_id": "editorial-021",
+                  "type": "text",
+                  "payload": {
+                    "body": "CO SI ODNESETE",
+                    "font_size": "sm",
+                    "font_weight": "semibold",
+                    "margin": 0,
+                    "text_color": "dark-background"
+                  }
+                },
+                {
+                  "id": "d919adca-ef24-4138-ba95-f56acb23f283",
+                  "client_id": "editorial-022",
+                  "type": "heading",
+                  "payload": {
+                    "font_family": "georgia",
+                    "font_size": "display-sm",
+                    "font_weight": "normal",
+                    "level": 2,
+                    "margin": 0,
+                    "text": "Jasno v tom, na čem záleží.",
+                    "text_color": "dark-background"
+                  }
+                }
+              ],
+              "dir": "column",
+              "display": "flex",
+              "gap": 20,
+              "margin": 0,
+              "variant": "stack"
+            }
+          },
+          {
+            "id": "5f4f1347-0034-4f8e-aac7-0a4cf3179f45",
+            "client_id": "editorial-036",
+            "type": "layout",
+            "payload": {
+              "align_items": "stretch",
+              "children": [
+                {
+                  "id": "ecd456d8-60f8-4deb-b2e2-6adcc3b7a065",
+                  "client_id": "editorial-027",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "fb7cdb0f-0162-4bc8-adf5-ef99f6182d1a",
+                        "client_id": "editorial-024",
+                        "type": "icon",
+                        "payload": {
+                          "align_self": "flex-start",
+                          "bg_color": "brand",
+                          "margin": 0,
+                          "name": "filter_alt",
+                          "padding": 12,
+                          "radius": 50,
+                          "size": "24",
+                          "text_color": "dark-background",
+                          "width": "auto"
+                        }
+                      },
+                      {
+                        "id": "b4e2185b-9e72-4705-9df5-ca48389489fd",
+                        "client_id": "editorial-025",
+                        "type": "heading",
+                        "payload": {
+                          "font_family": "georgia",
+                          "font_size": "2xl",
+                          "font_weight": "normal",
+                          "level": 3,
+                          "margin": 0,
+                          "text": "Jasné priority.",
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "e6a3dd0a-ae23-41dc-84ed-34eb409a79c5",
+                        "client_id": "editorial-026",
+                        "type": "text",
+                        "payload": {
+                          "body": "Ujasníte si, co je pro váš záměr opravdu důležité.",
+                          "font_size": "md",
+                          "margin": 0,
+                          "text_color": "muted"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "240px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 20,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                },
+                {
+                  "id": "fce09683-1450-42f0-89ed-cc24e3aa40ed",
+                  "client_id": "editorial-031",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "4acba150-a9ba-4155-915a-102225d602f7",
+                        "client_id": "editorial-028",
+                        "type": "icon",
+                        "payload": {
+                          "align_self": "flex-start",
+                          "bg_color": "brand",
+                          "margin": 0,
+                          "name": "lightbulb",
+                          "padding": 12,
+                          "radius": 50,
+                          "size": "24",
+                          "text_color": "dark-background",
+                          "width": "auto"
+                        }
+                      },
+                      {
+                        "id": "d2710a23-57b3-4e90-ac95-abd5f079866d",
+                        "client_id": "editorial-029",
+                        "type": "heading",
+                        "payload": {
+                          "font_family": "georgia",
+                          "font_size": "2xl",
+                          "font_weight": "normal",
+                          "level": 3,
+                          "margin": 0,
+                          "text": "Nová perspektiva.",
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "fb9f8d9a-2fa2-4b30-802c-a6fd11f08f5d",
+                        "client_id": "editorial-030",
+                        "type": "text",
+                        "payload": {
+                          "body": "Uvidíte souvislosti a možnosti, které vám mohly unikat.",
+                          "font_size": "md",
+                          "margin": 0,
+                          "text_color": "muted"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "240px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 20,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                },
+                {
+                  "id": "40444534-11fa-4405-9489-30d64612172e",
+                  "client_id": "editorial-035",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "5a1ab0ec-6a79-4e05-8d94-940265468987",
+                        "client_id": "editorial-032",
+                        "type": "icon",
+                        "payload": {
+                          "align_self": "flex-start",
+                          "bg_color": "brand",
+                          "margin": 0,
+                          "name": "explore",
+                          "padding": 12,
+                          "radius": 50,
+                          "size": "24",
+                          "text_color": "dark-background",
+                          "width": "auto"
+                        }
+                      },
+                      {
+                        "id": "2220df6e-cab9-4bd4-98f4-67d66a9b4918",
+                        "client_id": "editorial-033",
+                        "type": "heading",
+                        "payload": {
+                          "font_family": "georgia",
+                          "font_size": "2xl",
+                          "font_weight": "normal",
+                          "level": 3,
+                          "margin": 0,
+                          "text": "Vlastní směr.",
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "a8b32cd4-bae9-493e-9fd3-70fb96a07ca5",
+                        "client_id": "editorial-034",
+                        "type": "text",
+                        "payload": {
+                          "body": "Získáte pevnější podklady pro vlastní rozhodnutí.",
+                          "font_size": "md",
+                          "margin": 0,
+                          "text_color": "muted"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "240px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 20,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                }
+              ],
+              "dir": "row",
+              "display": "flex",
+              "flex_wrap": "wrap",
+              "gap": 40,
+              "margin": 0,
+              "variant": "row"
+            }
+          }
+        ],
+        "dir": "column",
+        "display": "flex",
+        "gap": 36,
+        "margin": 0,
+        "padding_bottom": 64,
+        "padding_left": 24,
+        "padding_right": 24,
+        "padding_top": 64,
+        "variant": "stack"
+      }
+    },
+    {
+      "id": "ccc6b907-1201-4d7f-8002-2b1e4b190ce7",
+      "client_id": "editorial-061",
+      "type": "layout",
+      "payload": {
+        "bg_color": "dark-background",
+        "children": [
+          {
+            "id": "e16dabb5-ddba-418c-910e-56fec6c726f4",
+            "client_id": "editorial-060",
+            "type": "layout",
+            "payload": {
+              "align_items": "stretch",
+              "children": [
+                {
+                  "id": "408153d6-9554-44b1-a0ab-bd1ed4325dcb",
+                  "client_id": "editorial-041",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "3314e748-7862-4a7e-b158-fcffac0c8f4d",
+                        "client_id": "editorial-038",
+                        "type": "text",
+                        "payload": {
+                          "body": "02 / JAK TO PROBÍHÁ",
+                          "font_size": "sm",
+                          "font_weight": "semibold",
+                          "margin": 0,
+                          "text_color": "light-background"
+                        }
+                      },
+                      {
+                        "id": "766a62ca-7683-4934-a752-c500e43185b4",
+                        "client_id": "editorial-039",
+                        "type": "heading",
+                        "payload": {
+                          "font_family": "georgia",
+                          "font_size": "display-sm",
+                          "font_weight": "normal",
+                          "level": 2,
+                          "margin": 0,
+                          "text": "Dobrý rozhovor.\u003cbr\u003eNová perspektiva.",
+                          "text_color": "light-background"
+                        }
+                      },
+                      {
+                        "id": "6af3e5e3-3be5-4b89-8b11-13bc094e812c",
+                        "client_id": "editorial-040",
+                        "type": "icon",
+                        "payload": {
+                          "margin": 0,
+                          "name": "arrow_outward",
+                          "size": "64",
+                          "text_color": "brand"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "330px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 28,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                },
+                {
+                  "id": "5cbca334-5feb-4493-b797-444e5b44d6b6",
+                  "client_id": "editorial-059",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "7b0ad113-321c-43a3-be5c-8754eef31638",
+                        "client_id": "editorial-046",
+                        "type": "layout",
+                        "payload": {
+                          "align_items": "stretch",
+                          "children": [
+                            {
+                              "id": "cfac3c58-6b6b-464b-9250-dd484b7a7a54",
+                              "client_id": "editorial-042",
+                              "type": "text",
+                              "payload": {
+                                "body": "01",
+                                "flex_basis": "32px",
+                                "flex_grow": "0",
+                                "flex_shrink": "1",
+                                "font_size": "sm",
+                                "font_weight": "semibold",
+                                "margin": 0,
+                                "text_color": "brand"
+                              }
+                            },
+                            {
+                              "id": "08366e4d-8d53-4d04-8923-522f7b88ba11",
+                              "client_id": "editorial-045",
+                              "type": "layout",
+                              "payload": {
+                                "children": [
+                                  {
+                                    "id": "10263961-f790-4fbb-a857-601c06db0e8f",
+                                    "client_id": "editorial-043",
+                                    "type": "heading",
+                                    "payload": {
+                                      "font_family": "georgia",
+                                      "font_size": "2xl",
+                                      "font_weight": "normal",
+                                      "level": 3,
+                                      "margin": 0,
+                                      "text": "Začneme u vás.",
+                                      "text_color": "light-background"
+                                    }
+                                  },
+                                  {
+                                    "id": "909c99bd-4659-43a4-a1b4-9890ce81fe6d",
+                                    "client_id": "editorial-044",
+                                    "type": "text",
+                                    "payload": {
+                                      "body": "Přiblížíte nám svou situaci, projekt a to, co právě řešíte.",
+                                      "font_size": "md",
+                                      "margin": 0,
+                                      "text_color": "light-background"
+                                    }
+                                  }
+                                ],
+                                "dir": "column",
+                                "display": "flex",
+                                "flex_basis": "260px",
+                                "flex_grow": "1",
+                                "flex_shrink": "1",
+                                "gap": 16,
+                                "margin": 0,
+                                "variant": "stack"
+                              }
+                            }
+                          ],
+                          "dir": "row",
+                          "display": "flex",
+                          "flex_wrap": "wrap",
+                          "gap": 18,
+                          "margin": 0,
+                          "variant": "row"
+                        }
+                      },
+                      {
+                        "id": "2b61fea3-1579-4e56-af97-862b756a3a10",
+                        "client_id": "editorial-047",
+                        "type": "layout",
+                        "payload": {
+                          "bg_color": "light-background",
+                          "children": [],
+                          "dir": "column",
+                          "display": "flex",
+                          "gap": 0,
+                          "margin": 0,
+                          "min_height": 1,
+                          "opacity": 20,
+                          "variant": "stack"
+                        }
+                      },
+                      {
+                        "id": "5d841599-674a-44b3-adf4-3718dfd869a8",
+                        "client_id": "editorial-052",
+                        "type": "layout",
+                        "payload": {
+                          "align_items": "stretch",
+                          "children": [
+                            {
+                              "id": "e35c8a24-5fd4-4512-bbeb-438d5170be59",
+                              "client_id": "editorial-048",
+                              "type": "text",
+                              "payload": {
+                                "body": "02",
+                                "flex_basis": "32px",
+                                "flex_grow": "0",
+                                "flex_shrink": "1",
+                                "font_size": "sm",
+                                "font_weight": "semibold",
+                                "margin": 0,
+                                "text_color": "brand"
+                              }
+                            },
+                            {
+                              "id": "61c217ff-9648-4c86-8eed-6144400b5874",
+                              "client_id": "editorial-051",
+                              "type": "layout",
+                              "payload": {
+                                "children": [
+                                  {
+                                    "id": "056847bb-1a48-4c52-9372-77bafed542af",
+                                    "client_id": "editorial-049",
+                                    "type": "heading",
+                                    "payload": {
+                                      "font_family": "georgia",
+                                      "font_size": "2xl",
+                                      "font_weight": "normal",
+                                      "level": 3,
+                                      "margin": 0,
+                                      "text": "Podíváme se jinak.",
+                                      "text_color": "light-background"
+                                    }
+                                  },
+                                  {
+                                    "id": "94526c96-d3a4-4e3e-bdb1-0523bce67659",
+                                    "client_id": "editorial-050",
+                                    "type": "text",
+                                    "payload": {
+                                      "body": "Probereme souvislosti a možnosti, které dávají smysl vašemu záměru.",
+                                      "font_size": "md",
+                                      "margin": 0,
+                                      "text_color": "light-background"
+                                    }
+                                  }
+                                ],
+                                "dir": "column",
+                                "display": "flex",
+                                "flex_basis": "260px",
+                                "flex_grow": "1",
+                                "flex_shrink": "1",
+                                "gap": 16,
+                                "margin": 0,
+                                "variant": "stack"
+                              }
+                            }
+                          ],
+                          "dir": "row",
+                          "display": "flex",
+                          "flex_wrap": "wrap",
+                          "gap": 18,
+                          "margin": 0,
+                          "variant": "row"
+                        }
+                      },
+                      {
+                        "id": "b49d4f73-5557-4e45-a616-0e367aa222de",
+                        "client_id": "editorial-053",
+                        "type": "layout",
+                        "payload": {
+                          "bg_color": "light-background",
+                          "children": [],
+                          "dir": "column",
+                          "display": "flex",
+                          "gap": 0,
+                          "margin": 0,
+                          "min_height": 1,
+                          "opacity": 20,
+                          "variant": "stack"
+                        }
+                      },
+                      {
+                        "id": "702b1739-9c14-4352-a5e6-6113421f2a68",
+                        "client_id": "editorial-058",
+                        "type": "layout",
+                        "payload": {
+                          "align_items": "stretch",
+                          "children": [
+                            {
+                              "id": "b85f6e27-ad20-4660-9ae3-142f0e662d39",
+                              "client_id": "editorial-054",
+                              "type": "text",
+                              "payload": {
+                                "body": "03",
+                                "flex_basis": "32px",
+                                "flex_grow": "0",
+                                "flex_shrink": "1",
+                                "font_size": "sm",
+                                "font_weight": "semibold",
+                                "margin": 0,
+                                "text_color": "brand"
+                              }
+                            },
+                            {
+                              "id": "b6aa570b-aee7-4173-9a65-ca2cca1d8665",
+                              "client_id": "editorial-057",
+                              "type": "layout",
+                              "payload": {
+                                "children": [
+                                  {
+                                    "id": "a4a41caf-21fc-468d-937e-194723c8768e",
+                                    "client_id": "editorial-055",
+                                    "type": "heading",
+                                    "payload": {
+                                      "font_family": "georgia",
+                                      "font_size": "2xl",
+                                      "font_weight": "normal",
+                                      "level": 3,
+                                      "margin": 0,
+                                      "text": "Najdeme další krok.",
+                                      "text_color": "light-background"
+                                    }
+                                  },
+                                  {
+                                    "id": "0288222b-6c91-4d56-8761-277210c53a39",
+                                    "client_id": "editorial-056",
+                                    "type": "text",
+                                    "payload": {
+                                      "body": "Shrneme podstatné a společně pojmenujeme další směr.",
+                                      "font_size": "md",
+                                      "margin": 0,
+                                      "text_color": "light-background"
+                                    }
+                                  }
+                                ],
+                                "dir": "column",
+                                "display": "flex",
+                                "flex_basis": "260px",
+                                "flex_grow": "1",
+                                "flex_shrink": "1",
+                                "gap": 16,
+                                "margin": 0,
+                                "variant": "stack"
+                              }
+                            }
+                          ],
+                          "dir": "row",
+                          "display": "flex",
+                          "flex_wrap": "wrap",
+                          "gap": 18,
+                          "margin": 0,
+                          "variant": "row"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "380px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 28,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                }
+              ],
+              "dir": "row",
+              "display": "flex",
+              "flex_wrap": "wrap",
+              "gap": 72,
+              "margin": 0,
+              "variant": "row"
+            }
+          }
+        ],
+        "dir": "column",
+        "display": "flex",
+        "gap": 32,
+        "margin": 0,
+        "padding_bottom": 80,
+        "padding_left": 24,
+        "padding_right": 24,
+        "padding_top": 80,
+        "variant": "stack"
+      }
+    },
+    {
+      "id": "e2ee807e-0364-479f-b67f-8b26a8ab6345",
+      "client_id": "editorial-079",
+      "type": "layout",
+      "payload": {
+        "bg_color": "light-background",
+        "children": [
+          {
+            "id": "53002c3b-a7e5-4ddb-ac86-1f5b7455d14d",
+            "client_id": "editorial-078",
+            "type": "layout",
+            "payload": {
+              "align_items": "stretch",
+              "children": [
+                {
+                  "id": "489cc904-ab3c-487c-a58a-0bd791ca4848",
+                  "client_id": "editorial-076",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "c611696f-a519-419c-83a1-9aef93131324",
+                        "client_id": "editorial-074",
+                        "type": "text",
+                        "payload": {
+                          "body": "03 / JEŠTĚ VÁS ZAJÍMÁ",
+                          "font_size": "sm",
+                          "font_weight": "semibold",
+                          "margin": 0,
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "506c5aef-6588-4e2d-b6e7-24a7a6090a9a",
+                        "client_id": "editorial-075",
+                        "type": "heading",
+                        "payload": {
+                          "font_family": "georgia",
+                          "font_size": "display-sm",
+                          "font_weight": "normal",
+                          "level": 2,
+                          "margin": 0,
+                          "text": "Než začneme.",
+                          "text_color": "dark-background"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "330px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 24,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                },
+                {
+                  "id": "1837220b-726f-4756-9ef2-349815107017",
+                  "client_id": "editorial-077",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "0acce404-e0a1-448e-b957-c07c68302e9c",
+                        "client_id": "editorial-065",
+                        "type": "layout",
+                        "payload": {
+                          "children": [
+                            {
+                              "id": "99a98044-6824-47ca-bbb7-43094dfcd1c6",
+                              "client_id": "editorial-062",
+                              "type": "heading",
+                              "payload": {
+                                "font_family": "georgia",
+                                "font_size": "xl",
+                                "font_weight": "normal",
+                                "level": 3,
+                                "margin": 0,
+                                "text": "Pro koho je konzultace určená?",
+                                "text_color": "dark-background"
+                              }
+                            },
+                            {
+                              "id": "92c2cc5e-ff48-411e-9512-13d720b02ca1",
+                              "client_id": "editorial-063",
+                              "type": "text",
+                              "payload": {
+                                "body": "Pro samostatné profesionály a malé týmy, které připravují nový projekt nebo hledají další směr.",
+                                "font_size": "md",
+                                "margin": 0,
+                                "text_color": "muted"
+                              }
+                            },
+                            {
+                              "id": "d980a991-bc34-402f-b808-985c75fac21a",
+                              "client_id": "editorial-064",
+                              "type": "layout",
+                              "payload": {
+                                "bg_color": "dark-background",
+                                "children": [],
+                                "dir": "column",
+                                "display": "flex",
+                                "gap": 0,
+                                "margin": 0,
+                                "min_height": 1,
+                                "opacity": 20,
+                                "variant": "stack"
+                              }
+                            }
+                          ],
+                          "dir": "column",
+                          "display": "flex",
+                          "gap": 18,
+                          "margin": 0,
+                          "variant": "stack"
+                        }
+                      },
+                      {
+                        "id": "b667f19b-8c59-4468-80a4-93c74d64bf6e",
+                        "client_id": "editorial-069",
+                        "type": "layout",
+                        "payload": {
+                          "children": [
+                            {
+                              "id": "dd18aba9-5887-44a9-a4ad-daae6fd5980c",
+                              "client_id": "editorial-066",
+                              "type": "heading",
+                              "payload": {
+                                "font_family": "georgia",
+                                "font_size": "xl",
+                                "font_weight": "normal",
+                                "level": 3,
+                                "margin": 0,
+                                "text": "Můžeme se potkat online?",
+                                "text_color": "dark-background"
+                              }
+                            },
+                            {
+                              "id": "a84f5214-b3e1-41df-9d55-34ef8664c7da",
+                              "client_id": "editorial-067",
+                              "type": "text",
+                              "payload": {
+                                "body": "Ano. Konzultace mohou proběhnout online, ať už pracujete odkudkoli.",
+                                "font_size": "md",
+                                "margin": 0,
+                                "text_color": "muted"
+                              }
+                            },
+                            {
+                              "id": "97e2a12a-31f8-47f3-9a7d-9ae2203f79da",
+                              "client_id": "editorial-068",
+                              "type": "layout",
+                              "payload": {
+                                "bg_color": "dark-background",
+                                "children": [],
+                                "dir": "column",
+                                "display": "flex",
+                                "gap": 0,
+                                "margin": 0,
+                                "min_height": 1,
+                                "opacity": 20,
+                                "variant": "stack"
+                              }
+                            }
+                          ],
+                          "dir": "column",
+                          "display": "flex",
+                          "gap": 18,
+                          "margin": 0,
+                          "variant": "stack"
+                        }
+                      },
+                      {
+                        "id": "54ee0363-9b48-4714-809d-7b105bb28ad0",
+                        "client_id": "editorial-073",
+                        "type": "layout",
+                        "payload": {
+                          "children": [
+                            {
+                              "id": "77e70985-94b1-481c-8591-09367d23ab9d",
+                              "client_id": "editorial-070",
+                              "type": "heading",
+                              "payload": {
+                                "font_family": "georgia",
+                                "font_size": "xl",
+                                "font_weight": "normal",
+                                "level": 3,
+                                "margin": 0,
+                                "text": "Co si mám připravit?",
+                                "text_color": "dark-background"
+                              }
+                            },
+                            {
+                              "id": "cecaabc0-a36a-4d70-9e56-a01b7beda0f9",
+                              "client_id": "editorial-071",
+                              "type": "text",
+                              "payload": {
+                                "body": "Stačí váš záměr a otázky, které právě řešíte. Pro začátek je můžete stručně popsat ve formuláři.",
+                                "font_size": "md",
+                                "margin": 0,
+                                "text_color": "muted"
+                              }
+                            },
+                            {
+                              "id": "e4da1b74-3229-4503-a392-db2bde21ab31",
+                              "client_id": "editorial-072",
+                              "type": "layout",
+                              "payload": {
+                                "bg_color": "dark-background",
+                                "children": [],
+                                "dir": "column",
+                                "display": "flex",
+                                "gap": 0,
+                                "margin": 0,
+                                "min_height": 1,
+                                "opacity": 20,
+                                "variant": "stack"
+                              }
+                            }
+                          ],
+                          "dir": "column",
+                          "display": "flex",
+                          "gap": 18,
+                          "margin": 0,
+                          "variant": "stack"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "380px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 28,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                }
+              ],
+              "dir": "row",
+              "display": "flex",
+              "flex_wrap": "wrap",
+              "gap": 72,
+              "margin": 0,
+              "variant": "row"
+            }
+          }
+        ],
+        "dir": "column",
+        "display": "flex",
+        "gap": 32,
+        "margin": 0,
+        "padding_bottom": 88,
+        "padding_left": 24,
+        "padding_right": 24,
+        "padding_top": 88,
+        "variant": "stack"
+      }
+    },
+    {
+      "id": "10a96a5a-bc01-48a1-bc4e-76a5dde06037",
+      "client_id": "editorial-086",
+      "type": "layout",
+      "payload": {
+        "bg_color": "brand",
+        "children": [
+          {
+            "id": "6f9dab90-f295-499d-b2c2-049c533f08a5",
+            "client_id": "editorial-085",
+            "type": "layout",
+            "payload": {
+              "align_items": "stretch",
+              "children": [
+                {
+                  "id": "ecfd17c2-100c-4af3-bd91-50c110bf1efa",
+                  "client_id": "editorial-083",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "80b05364-5930-4ce1-bfd7-264863b0c6c0",
+                        "client_id": "editorial-080",
+                        "type": "text",
+                        "payload": {
+                          "body": "04 / TEĎ JE ŘADA NA VÁS",
+                          "font_size": "sm",
+                          "font_weight": "semibold",
+                          "margin": 0,
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "52b3ef27-58fd-4c60-9200-ac8adc8b468d",
+                        "client_id": "editorial-081",
+                        "type": "heading",
+                        "payload": {
+                          "font_family": "georgia",
+                          "font_size": "display-sm",
+                          "font_weight": "normal",
+                          "level": 2,
+                          "margin": 0,
+                          "text": "Co vám právě\u003cbr\u003eleží v hlavě?",
+                          "text_color": "dark-background"
+                        }
+                      },
+                      {
+                        "id": "7267a25f-631c-4888-b519-f070496ee773",
+                        "client_id": "editorial-082",
+                        "type": "text",
+                        "payload": {
+                          "body": "Napište nám pár vět o svém záměru. Konzultace mohou proběhnout i online.",
+                          "font_size": "md",
+                          "margin": 0,
+                          "text_color": "dark-background"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "330px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 24,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                },
+                {
+                  "id": "1698f815-c41f-4a89-b039-d31375c17030",
+                  "client_id": "editorial-084",
+                  "type": "layout",
+                  "payload": {
+                    "children": [
+                      {
+                        "id": "5f22d6af-2803-4ae5-a7b8-66f6d0bbae38",
+                        "client_id": "editorial-004",
+                        "type": "form",
+                        "payload": {
+                          "action": "site_inquiries.create",
+                          "children": [
+                            {
+                              "id": "5d1dbcde-e2c3-40a2-a5a2-7d40d198ad57",
+                              "client_id": "editorial-001",
+                              "type": "form_field",
+                              "payload": {
+                                "control": "text",
+                                "full": 0,
+                                "label": "Vaše jméno",
+                                "margin": 0,
+                                "name": "name",
+                                "required": 1
+                              }
+                            },
+                            {
+                              "id": "efb3acb3-9be0-4655-b153-4282424f096d",
+                              "client_id": "editorial-002",
+                              "type": "form_field",
+                              "payload": {
+                                "control": "email",
+                                "full": 0,
+                                "label": "E-mailová adresa",
+                                "margin": 0,
+                                "name": "email",
+                                "required": 1
+                              }
+                            },
+                            {
+                              "id": "327a2165-4a69-433e-bc1b-e0ef175aa778",
+                              "client_id": "editorial-003",
+                              "type": "form_field",
+                              "payload": {
+                                "control": "textarea",
+                                "full": 1,
+                                "label": "O čem si chcete promluvit?",
+                                "margin": 0,
+                                "name": "details",
+                                "required": 1
+                              }
+                            }
+                          ],
+                          "error_summary": 1,
+                          "input_bg_color": "brand",
+                          "input_border_color": "dark-background",
+                          "input_focus_color": "dark-background",
+                          "input_padding": 14,
+                          "input_radius": 0,
+                          "input_text_color": "dark-background",
+                          "margin": 0,
+                          "submit_bg_color": "dark-background",
+                          "submit_full": 0,
+                          "submit_label": "Odeslat poptávku",
+                          "submit_padding": 18,
+                          "submit_radius": 30,
+                          "submit_text_color": "light-background"
+                        }
+                      }
+                    ],
+                    "dir": "column",
+                    "display": "flex",
+                    "flex_basis": "380px",
+                    "flex_grow": "1",
+                    "flex_shrink": "1",
+                    "gap": 0,
+                    "margin": 0,
+                    "variant": "stack"
+                  }
+                }
+              ],
+              "dir": "row",
+              "display": "flex",
+              "flex_wrap": "wrap",
+              "gap": 72,
+              "margin": 0,
+              "variant": "row"
+            }
+          }
+        ],
+        "dir": "column",
+        "display": "flex",
+        "gap": 32,
+        "margin": 0,
+        "padding_bottom": 72,
+        "padding_left": 24,
+        "padding_right": 24,
+        "padding_top": 72,
+        "variant": "stack"
+      }
+    }
+  ]
+}

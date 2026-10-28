@@ -332,11 +332,26 @@ final class AuthController extends Controller
             return $this->redirectTo($this->router->url('admin.password.reset', ['token' => $token], $request));
         }
 
-        $user = $record->user();
-        $user->setPasswordHash($this->hasher->hash($password));
-        $this->em->remove($record);
-        $this->auth->revokeRememberTokens($user);
-        $this->em->flush();
+        // Claim the token atomically so two submissions cannot both change the password.
+        $claimed = $this->em->getConnection()->transactional(function () use ($record, $hash, $password): bool {
+            $deleted = $this->em->createQuery(
+                'DELETE FROM ' . PasswordResetToken::class . ' t WHERE t.tokenHash = :hash AND t.expiresAt > :now',
+            )->setParameter('hash', $hash)->setParameter('now', new \DateTimeImmutable())->execute();
+            if ($deleted !== 1) {
+                return false;
+            }
+            $user = $record->user();
+            $user->setPasswordHash($this->hasher->hash($password));
+            $this->auth->revokeRememberTokens($user);
+            $this->em->flush();
+
+            return true;
+        });
+        if (!$claimed) {
+            $this->flash('error', $this->translator->trans('auth.reset.invalid'));
+
+            return $this->redirect('admin.login');
+        }
         $this->flash('success', $this->translator->trans('auth.reset.success'));
 
         return $this->redirect('admin.login');

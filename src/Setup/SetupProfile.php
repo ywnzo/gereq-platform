@@ -20,6 +20,15 @@ final class SetupProfile
             return $date !== false && $date->format('Y-m-d') === $value && $date <= new \DateTimeImmutable('today')
                 ? null : 'setup.error.birth_date';
         });
+        $validation->ruleset('setup.hosted.company', [
+            'seller_name' => 'nullable|setup_text|max:180',
+            'seller_ico' => ['nullable', 'setup_text', 'regex:/^[0-9]{8}$/D'],
+            'seller_dic' => 'nullable|setup_text|max:32',
+            'seller_address' => 'nullable|setup_text|max:500',
+            'seller_email' => 'nullable|setup_text|email|max:180',
+            'order_prefix' => 'nullable|setup_text|max:32',
+            'invoice_prefix' => 'nullable|setup_text|max:32',
+        ]);
         $validation->ruleset('setup.operator.type', ['operator_type' => 'required|setup_text|in:business,person']);
         $validation->ruleset('setup.operator.business', [
             'company_name' => 'required|setup_text|max:180',
@@ -34,6 +43,16 @@ final class SetupProfile
             'address' => 'required|setup_text|max:500',
             'birth_date' => 'required|setup_birth_date',
         ]);
+    }
+
+    /** @param array<string, mixed> $input
+     *  @return array<string, string>
+     */
+    public function validateHosted(array $input): array
+    {
+        $data = $this->validation->validate('setup.hosted.company', $input);
+
+        return array_map(static fn ($value): string => trim((string) $value), $data);
     }
 
     /** @param array<string, mixed> $input
