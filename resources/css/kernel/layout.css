@@ -949,3 +949,44 @@ button.icon-btn.topbar__menu { display: none; }
 }
 
 .muted { color: var(--grq-fg-muted); }
+
+/* Keep the unread counter independent of the topbar icon's footprint. */
+.topbar__icons .grq-topbar-notifications {
+    position: relative;
+    overflow: visible;
+    border-radius: var(--control-radius, 6px);
+}
+.grq-topbar-notifications__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.grq-topbar-notifications__icon .g-icon {
+    width: 19px;
+    height: 19px;
+    font-size: 19px;
+    line-height: 1;
+}
+.grq-topbar-notifications.has-unread {
+    color: var(--text);
+}
+.grq-topbar-notifications__count {
+    position: absolute;
+    inset-block-start: -3px;
+    inset-inline-end: -4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding-inline: 4px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: var(--primary-fg);
+    box-shadow: 0 0 0 2px var(--surface);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}

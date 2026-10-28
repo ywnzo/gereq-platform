@@ -1,6 +1,6 @@
 /* ——— Sidebar ——— */
 :root {
-    --sidebar-w: 264px;
+    --sidebar-w: 240px;
 }
 html[data-brand-palette="1"] :is(.sidebar, .topbar) {
     --text: var(--text-on-surface);

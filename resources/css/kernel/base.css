@@ -59,7 +59,7 @@
     --glass-surface: color-mix(in srgb, var(--surface) 68%, transparent);
     --glass-sidebar: color-mix(in srgb, var(--sidebar) 72%, transparent);
     --glass-topbar: color-mix(in srgb, var(--surface) 66%, transparent);
-    --sidebar-w: 264px;
+    --sidebar-w: 240px;
     --sidebar-collapsed: 64px;
     --topbar-h: 46px;
     --gereq-font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;

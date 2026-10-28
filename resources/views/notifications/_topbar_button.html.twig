@@ -1,0 +1,18 @@
+{% set notification_label = 'notifications.title'|trans %}
+{% if count > 0 %}
+    {% set notification_label = notification_label ~ ' — ' ~ 'notifications.unread_count'|trans({'%count%': count}) %}
+{% endif %}
+{% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}
+    {% block button_attributes %}
+        class="icon-btn grq-topbar-notifications{{ count > 0 ? ' has-unread' : '' }}"
+        href="{{ url }}"
+        aria-label="{{ notification_label }}"
+        title="{{ notification_label }}"
+    {% endblock %}
+    {% block content %}
+        <span class="grq-topbar-notifications__icon" aria-hidden="true">{{ bellIcon|raw }}</span>
+        {% if count > 0 %}
+            <span class="grq-topbar-notifications__count" aria-hidden="true">{{ count > 99 ? '99+' : count }}</span>
+        {% endif %}
+    {% endblock %}
+{% endembed %}

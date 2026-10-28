@@ -324,11 +324,11 @@ final readonly class NotificationsRegistrar
             }
             $count = $bridge->unreadCount($user->id());
             $url = $this->router->url('admin.notifications.index');
-            $badge = $count > 0 ? '<span class="nav-item__badge">' . $count . '</span>' : '';
-            $icon = $this->icons->svg('bell');
-
-            return $html . '<a class="icon-btn" href="' . htmlspecialchars($url)
-                . '" title="Notifications">' . $icon . $badge . '</a>';
+            return $html . $this->twig->render('notifications/_topbar_button.html.twig', [
+                'url' => $url,
+                'count' => $count,
+                'bellIcon' => $this->icons->svg('bell'),
+            ]);
         });
     }
 }
