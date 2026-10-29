@@ -775,7 +775,7 @@ final class SettingsController extends Controller
     private function globalSettings(): array
     {
         $definitions = $this->settings->globalDefinitions();
-        if ($this->capabilities->has('payments')) {
+        if (!$this->capabilities->has('payments') || $this->capabilities->has('payments.settings')) {
             foreach ([
                 'payments.comgate_merchant', 'payments.comgate_secret', 'payments.comgate_test',
                 'payments.gopay_goid', 'payments.gopay_client_id', 'payments.gopay_client_secret', 'payments.gopay_sandbox',
