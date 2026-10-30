@@ -6,14 +6,14 @@ return [
     'id' => 'stripe',
     'name' => 'Stripe',
     'icon' => 'credit-card',
-    'version' => '1.0.2',
+    'version' => '1.1.0',
     'description' => 'module.stripe.description',
     'class' => Integrations\Stripe\StripeModule::class,
     'author' => 'GEREQ',
     'kind' => 'integration',
     'requires' => [
         'core' => '^1.0',
-        'payments' => '^2.0',
+        'payments' => '^2.2',
     ],
     'optional' => [
         'webhooks' => '^1.0',

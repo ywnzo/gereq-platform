@@ -7,6 +7,7 @@ namespace Integrations\Stripe\Application;
 use Gereq\Config\Repository as Config;
 use Gereq\Setting\Settings;
 use Modules\Shop\Submodules\Payments\Application\PaymentGatewayInterface;
+use Modules\Shop\Submodules\Payments\Application\PaymentMethodOptionsInterface;
 use Modules\Shop\Submodules\Payments\Domain\PaymentIntent;
 use Modules\Shop\Submodules\Payments\Domain\PaymentMethod;
 
@@ -14,7 +15,7 @@ use Modules\Shop\Submodules\Payments\Domain\PaymentMethod;
  * Stripe Checkout Session + webhook.
  * Settings: payments.stripe_secret, payments.stripe_webhook_secret.
  */
-final class StripeGateway implements PaymentGatewayInterface
+final class StripeGateway implements PaymentGatewayInterface, PaymentMethodOptionsInterface
 {
     private const API = 'https://api.stripe.com/v1';
 
@@ -27,6 +28,11 @@ final class StripeGateway implements PaymentGatewayInterface
     public function key(): string
     {
         return 'stripe';
+    }
+
+    public function paymentTypes(): array
+    {
+        return ['online'];
     }
 
     public function createPayment(PaymentIntent $intent, PaymentMethod $method, array $context = []): array
@@ -69,11 +75,7 @@ final class StripeGateway implements PaymentGatewayInterface
             $params['customer_email'] = (string) $context['customer_email'];
         }
 
-        // Apple Pay / Google Pay are enabled automatically in Stripe Checkout when allowed in the Dashboard.
-        $wallet = strtoupper($method->code());
-        if (str_contains($wallet, 'APPLE') || str_contains($wallet, 'GOOGLE')) {
-            $params['payment_method_types[0]'] = 'card';
-        }
+        // Checkout resolves available methods, including eligible wallets, from Stripe account settings.
 
         $response = $this->request('POST', '/checkout/sessions', $secret, $params);
         if (($response['_http'] ?? 0) >= 400 || empty($response['id']) || empty($response['url'])) {

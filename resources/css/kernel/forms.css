@@ -574,7 +574,8 @@ textarea.g-control {
     /* Longhands — WebKit search often ignores shorthand padding-left. */
     padding-block: 0.5rem;
     padding-inline-end: 0.7rem;
-    padding-inline-start: 2.55rem;
+    /* Preserve icon space against legacy input padding rules. */
+    padding-inline-start: 2.55rem !important;
     -webkit-appearance: none;
     appearance: textfield;
 }
@@ -1419,6 +1420,8 @@ html[data-brand-palette="1"] .g-editor__bar {
     font-weight: 600;
 }
 .g-modal__body { color: var(--text-muted); margin: 0 0 1.1rem; }
+.g-confirm .g-modal__backdrop { z-index: 14000; }
+.g-confirm .g-modal { z-index: 14001; }
 .g-confirm__field { margin: 0 0 1.1rem; }
 .g-confirm__field .field { margin: 0; }
 .g-confirm__field .field > span { display: block; margin-bottom: 0.35rem; font-size: var(--grq-text-md); color: var(--text-muted); }
@@ -2043,13 +2046,13 @@ html[data-brand-palette="1"] .media-box-dock__bar {
     }
 }
 
-/* Native-backed select menus escape clipping in toolbars and scrolling inspectors. */
-.grq-select-bound > .g-select__list[popover] {
+/* Top-layer select menus escape clipping in scrolling containers. */
+.g-select > .g-select__list[popover] {
     position: fixed;
     inset: auto;
     margin: 0;
 }
-.grq-select-bound > .g-select__list[popover]:popover-open {
+.g-select > .g-select__list[popover]:popover-open {
     display: flex;
     flex-direction: column;
 }

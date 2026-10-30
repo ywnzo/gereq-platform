@@ -6,23 +6,41 @@ namespace Integrations\Packeta\Application;
 
 use Gereq\Setting\Settings;
 use Modules\Shop\Application\ShippingCarrierInterface;
+use Modules\Shop\Application\PickupPointProviderInterface;
+use Modules\Shop\Domain\PickupPoint;
+use Modules\Shop\Application\ShippingMethodOptionsInterface;
 use Modules\Shop\Domain\Shipment;
 
 /**
  * Packeta / Zásilkovna REST XML carrier.
  * Settings: shop.packeta_api_password, shop.packeta_api_key, shop.packeta_eshop, shop.packeta_sender_label.
  */
-final class PacketaCarrier implements ShippingCarrierInterface
+final class PacketaCarrier implements ShippingCarrierInterface, ShippingMethodOptionsInterface, PickupPointProviderInterface
 {
     private const API = 'https://www.zasilkovna.cz/api/rest';
 
-    public function __construct(private readonly Settings $settings)
+    public function __construct(private readonly Settings $settings, private readonly PacketaPickupPoints $pickupPoints)
     {
     }
 
     public function key(): string
     {
         return 'packeta';
+    }
+
+    public function shippingTypes(): array
+    {
+        return ['courier', 'parcel_shop'];
+    }
+
+    public function searchPickupPoints(string $country, string $query, int $limit = 20): array
+    {
+        return $this->pickupPoints->search($country, $query, $limit);
+    }
+
+    public function resolvePickupPoint(string $country, string $id): PickupPoint
+    {
+        return $this->pickupPoints->resolve($country, $id);
     }
 
     public function createShipment(Shipment $shipment, array $context = []): array

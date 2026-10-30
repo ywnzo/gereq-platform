@@ -58,6 +58,8 @@ export function registerModal(alpine: typeof Alpine): void {
         },
 
         close() {
+            const eventName = this._root?.dataset.modalCloseEvent;
+            if (this.open && eventName && !window.dispatchEvent(new Event(eventName, { cancelable: true }))) return;
             this.open = false;
             this._root?.querySelector('[data-modal-error-summary]')?.remove();
             const formId = this._root?.dataset.resetForm;

@@ -7,14 +7,15 @@ namespace Integrations\GoPay\Application;
 use Gereq\Config\Repository as Config;
 use Gereq\Setting\Settings;
 use Modules\Shop\Submodules\Payments\Application\PaymentGatewayInterface;
+use Modules\Shop\Submodules\Payments\Application\PaymentMethodOptionsInterface;
 use Modules\Shop\Submodules\Payments\Domain\PaymentIntent;
 use Modules\Shop\Submodules\Payments\Domain\PaymentMethod;
 
 /**
- * GoPay REST API — karty + Apple Pay / Google Pay (payment instruments).
+ * GoPay hosted checkout with optional card or bank-transfer selection.
  * Settings: payments.gopay_goid, payments.gopay_client_id, payments.gopay_client_secret, payments.gopay_sandbox.
  */
-final class GoPayGateway implements PaymentGatewayInterface
+final class GoPayGateway implements PaymentGatewayInterface, PaymentMethodOptionsInterface
 {
     private const PROD = 'https://gate.gopay.cz/api';
     private const SANDBOX = 'https://gw.sandbox.gopay.com/api';
@@ -28,6 +29,11 @@ final class GoPayGateway implements PaymentGatewayInterface
     public function key(): string
     {
         return 'gopay';
+    }
+
+    public function paymentTypes(): array
+    {
+        return ['online', 'card', 'gateway_bank_transfer'];
     }
 
     public function createPayment(PaymentIntent $intent, PaymentMethod $method, array $context = []): array
@@ -66,12 +72,10 @@ final class GoPayGateway implements PaymentGatewayInterface
         $baseUrl = rtrim((string) $this->config->get('app.url', 'http://127.0.0.1:8080'), '/');
         $returnBase = rtrim((string) ($context['return_url'] ?? $baseUrl), '/');
         $cents = max(1, (int) round(((float) $intent->amount()) * 100));
-        $instrument = $this->instrumentForMethod($method, $context);
+        $instrument = $this->instrumentForMethod($method);
 
         $payload = [
             'payer' => [
-                'default_payment_instrument' => $instrument,
-                'allowed_payment_instruments' => [$instrument],
                 'contact' => array_filter([
                     'email' => (string) ($context['customer_email'] ?? '') ?: null,
                     'first_name' => (string) ($context['customer_first_name'] ?? '') ?: null,
@@ -93,6 +97,10 @@ final class GoPayGateway implements PaymentGatewayInterface
                 'notification_url' => $returnBase . '/api/v1/payments/notify/gopay',
             ],
         ];
+        if ($instrument !== null) {
+            $payload['payer']['default_payment_instrument'] = $instrument;
+            $payload['payer']['allowed_payment_instruments'] = [$instrument];
+        }
 
         $response = $this->request('POST', '/payments/payment', $token, $payload);
         if (($response['_http'] ?? 0) >= 400 || empty($response['id'])) {
@@ -174,20 +182,13 @@ final class GoPayGateway implements PaymentGatewayInterface
         ];
     }
 
-    /** @param array<string, mixed> $context */
-    private function instrumentForMethod(PaymentMethod $method, array $context): string
+    private function instrumentForMethod(PaymentMethod $method): ?string
     {
-        if (!empty($context['gopay_instrument'])) {
-            return strtoupper((string) $context['gopay_instrument']);
-        }
-
-        $code = strtoupper($method->code());
-
-        return match (true) {
-            str_contains($code, 'APPLE') => 'APPLE_PAY',
-            str_contains($code, 'GOOGLE') => 'GOOGLE_PAY',
-            str_contains($code, 'BANK') => 'BANK_ACCOUNT',
-            default => 'PAYMENT_CARD',
+        return match ($method->type()) {
+            'online' => null,
+            'card' => 'PAYMENT_CARD',
+            'gateway_bank_transfer' => 'BANK_ACCOUNT',
+            default => throw new \InvalidArgumentException('payments.error.unsupported_method'),
         };
     }
 

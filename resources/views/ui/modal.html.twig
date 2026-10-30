@@ -1,11 +1,14 @@
 {#
   Local modal using gereqModal. Supply title, trigger_label, and trusted body HTML,
   or embed and override trigger/body/actions. id must be unique when provided.
+  data-modal-close-event emits a cancelable window event before closing.
+  Set teleport to true to place the overlay outside ancestor stacking contexts.
 #}
 <div{% block component_attributes %}{% if id|default(null) %} id="{{ id }}"{% endif %} class="{{ class|default('') }}" x-data="gereqModal" {% block attributes %}{% endblock %}{% endblock %}>{% block content %}
     {% block trigger %}
         {% include 'ui/button.html.twig' with { label: trigger_label|default(title|default('')), variant: trigger_variant|default('primary'), attrs: { '@click': 'show', 'aria-haspopup': 'dialog', ':aria-expanded': 'open' } } only %}
     {% endblock %}
+    {% if teleport|default(false) %}<template x-teleport="body"><div>{% endif %}
     <div class="g-modal__backdrop" :class="backdropClass" @click="close" aria-hidden="true"></div>
     <div class="g-modal" :class="panelClass" role="dialog" aria-modal="true" aria-label="{{ title|default('') }}" :aria-hidden="!open">
         <div class="g-modal__panel panel{{ panel_class|default('') ? ' ' ~ panel_class : '' }}">
@@ -17,4 +20,6 @@
                 {% endblock %}
             </div>
         </div>
-    </div>{% endblock %}</div>
+    </div>
+    {% if teleport|default(false) %}</div></template>{% endif %}
+{% endblock %}</div>

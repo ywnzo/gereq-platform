@@ -56,6 +56,7 @@
     <div
         class="g-select{% if searchable %} g-select--search{% endif %}{% if multiple %} g-select--multi{% endif %}{% if clearable %} g-select--clearable{% endif %}"
         x-data="gereqSelect"
+        {% if popover|default(false) %}x-effect="syncNativeRoot()"{% endif %}
         :class="rootClass"
         data-placeholder="{{ placeholder }}"
         {% if searchable %}data-searchable="1"{% endif %}
@@ -140,7 +141,7 @@
             {% endif %}
             <span class="g-select__chevron" aria-hidden="true">{{ icon('chevron-down') }}</span>
         </button>
-        <div class="g-select__list" :class="listClass" role="listbox" tabindex="-1"{% if multiple %} aria-multiselectable="true"{% endif %}>
+        <div class="g-select__list"{% if popover|default(false) %} popover="manual"{% endif %} :class="listClass" role="listbox" tabindex="-1"{% if multiple %} aria-multiselectable="true"{% endif %}>
             {% if searchable %}
                 <div class="g-select__search">
                     <label class="g-select__search-field">

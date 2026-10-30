@@ -518,6 +518,8 @@ html[data-brand-palette="1"] .table-wrap .table__action-btn--primary {
     border: 0;
 }
 .toolbar--table {
+    /* Keep the 3px control focus ring inside clipping list/scroll containers. */
+    padding: 3px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -526,6 +528,7 @@ html[data-brand-palette="1"] .table-wrap .table__action-btn--primary {
     margin-bottom: 1rem;
 }
 .toolbar--table .toolbar {
+    padding: 0;
     margin: 0;
     flex: 1 1 auto;
 }

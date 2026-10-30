@@ -67,7 +67,7 @@ export function registerSelect(alpine: typeof Alpine): void {
             this.clearable = root.dataset.clearable === '1' || root.dataset.clearable === 'true';
 
             const native = root.querySelector<HTMLSelectElement>('select[data-select-native]');
-            if (native) {
+            if (root.querySelector('.g-select__list[popover]')) {
                 this._nativeViewportEvents = new AbortController();
                 const signal = this._nativeViewportEvents.signal;
                 // Keep top-layer menus anchored when their surrounding container scrolls.
@@ -76,6 +76,8 @@ export function registerSelect(alpine: typeof Alpine): void {
                     if (!(event.target instanceof Node) || !list?.contains(event.target)) this.syncNativeRoot();
                 }, { capture: true, signal });
                 window.addEventListener('resize', () => this.close(), { signal });
+            }
+            if (native) {
                 this.syncNativeOptions();
                 this._onNativeChange = () => {
                     this.syncNativeOptions(false);
@@ -247,11 +249,11 @@ export function registerSelect(alpine: typeof Alpine): void {
                         this.close();
                     }
                     if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+                        event.stopPropagation();
                         onRootKeydown(event);
                     }
                 };
                 search.addEventListener('input', onSearchInput);
-                search.addEventListener('keyup', onSearchInput);
                 search.addEventListener('search', onSearchInput);
                 search.addEventListener('keydown', onSearchKeydown);
                 this._onSearchInput = onSearchInput;
@@ -689,6 +691,16 @@ export function registerSelect(alpine: typeof Alpine): void {
                 this.syncMultiUi();
                 this.syncValidateInput();
                 dispatchNativeChange(root);
+                if (this.searchable) {
+                    this.query = '';
+                    this.activeIndex = -1;
+                    const search = root.querySelector<HTMLInputElement>('.g-select__search-input');
+                    if (search) search.value = '';
+                    this.applyFilter();
+                    queueMicrotask(() => {
+                        if (this.open && root.isConnected) search?.focus();
+                    });
+                }
                 // Keep the menu open for multi-select.
                 maybeAutosubmit(root, changed);
                 return;

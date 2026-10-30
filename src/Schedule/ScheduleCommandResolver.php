@@ -37,6 +37,7 @@ use Modules\Shop\Submodules\CustomerUploads\Console\PurgeUploadsCommand;
 use Modules\Events\Console\ImportEventsCommand;
 use Modules\PartsCatalog\Console\SyncJamaCatalogCommand;
 use Modules\Shop\Submodules\Payments\Console\ImapMatchCommand;
+use Modules\Shop\Submodules\Payments\Console\SendBankEmailsCommand;
 use Modules\Portals\Console\SeedDemoPortalsCommand;
 use Modules\Shop\Submodules\Products\Console\ImportProductsCsvCommand;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -84,6 +85,7 @@ final class ScheduleCommandResolver
             ImportSqliteCommand::class,
             ImportProductsCsvCommand::class,
             ImapMatchCommand::class,
+            SendBankEmailsCommand::class,
             PurgeUploadsCommand::class,
             SeedDemoPortalsCommand::class,
         ];

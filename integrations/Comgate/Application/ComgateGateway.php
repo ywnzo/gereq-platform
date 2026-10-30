@@ -7,6 +7,7 @@ namespace Integrations\Comgate\Application;
 use Gereq\Config\Repository as Config;
 use Gereq\Setting\Settings;
 use Modules\Shop\Submodules\Payments\Application\PaymentGatewayInterface;
+use Modules\Shop\Submodules\Payments\Application\PaymentMethodOptionsInterface;
 use Modules\Shop\Submodules\Payments\Domain\PaymentIntent;
 use Modules\Shop\Submodules\Payments\Domain\PaymentMethod;
 
@@ -14,7 +15,7 @@ use Modules\Shop\Submodules\Payments\Domain\PaymentMethod;
  * Comgate payment gateway (CZ/SK).
  * Settings: payments.comgate_merchant, payments.comgate_secret, payments.comgate_test.
  */
-final class ComgateGateway implements PaymentGatewayInterface
+final class ComgateGateway implements PaymentGatewayInterface, PaymentMethodOptionsInterface
 {
     private const API = 'https://payments.comgate.cz/v1.0';
 
@@ -27,6 +28,23 @@ final class ComgateGateway implements PaymentGatewayInterface
     public function key(): string
     {
         return 'comgate';
+    }
+
+    public function paymentTypes(): array
+    {
+        return ['online', 'card', 'gateway_bank_transfer', 'apple_pay', 'google_pay'];
+    }
+
+    private function methodForType(string $type): string
+    {
+        return match ($type) {
+            'online' => 'ALL',
+            'card' => 'CARD_ALL',
+            'gateway_bank_transfer' => 'BANK_ONLY',
+            'apple_pay' => 'APPLEPAY_REDIRECT',
+            'google_pay' => 'GOOGLEPAY_REDIRECT',
+            default => throw new \InvalidArgumentException('payments.error.unsupported_method'),
+        };
     }
 
     public function createPayment(PaymentIntent $intent, PaymentMethod $method, array $context = []): array
@@ -62,7 +80,7 @@ final class ComgateGateway implements PaymentGatewayInterface
             'curr' => strtoupper($intent->currency()),
             'label' => mb_substr($orderNumber, 0, 16),
             'refId' => $orderNumber,
-            'method' => (string) ($context['comgate_method'] ?? 'ALL'),
+            'method' => $this->methodForType($method->type()),
             'email' => (string) ($context['customer_email'] ?? ''),
             'fullName' => (string) ($context['customer_name'] ?? ''),
             'lang' => (string) ($context['lang'] ?? 'cs'),

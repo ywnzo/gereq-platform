@@ -213,7 +213,7 @@ html:not(.dark) .avatar {
 .cell-user__text strong { font-weight: 650; }
 .cell-user__text small { display: block; font-size: var(--grq-text-sm); line-height: 1.3; }
 
-.toolbar { display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; width: 100%; }
+.toolbar { display: flex; padding: 3px; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; width: 100%; }
 .toolbar .input,
 .toolbar input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 .toolbar select {

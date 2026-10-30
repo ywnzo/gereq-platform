@@ -20,7 +20,7 @@ final class PacketaModule implements ModuleInterface
 
     public function version(): string
     {
-        return '1.0.1';
+        return '1.2.0';
     }
 
     public function register(ModuleContext $context): void
@@ -33,10 +33,12 @@ final class PacketaModule implements ModuleInterface
 
         $context->settings()->define(
             'shop.packeta_api_password',
-            SettingRecord::TYPE_STRING,
+            SettingRecord::TYPE_ENCRYPTED,
             'packeta.settings.api_password',
             '',
             $this->id(),
+            [],
+            false,
         );
         $context->settings()->define(
             'shop.packeta_api_key',
@@ -44,6 +46,8 @@ final class PacketaModule implements ModuleInterface
             'packeta.settings.api_key',
             '',
             $this->id(),
+            [],
+            false,
         );
         $context->settings()->define(
             'shop.packeta_eshop',
@@ -51,6 +55,8 @@ final class PacketaModule implements ModuleInterface
             'packeta.settings.eshop',
             '',
             $this->id(),
+            [],
+            false,
         );
         $context->settings()->define(
             'shop.packeta_address_carrier_id',
@@ -58,6 +64,8 @@ final class PacketaModule implements ModuleInterface
             'packeta.settings.address_carrier_id',
             '106',
             $this->id(),
+            [],
+            false,
         );
 
         $context->router()->get(
