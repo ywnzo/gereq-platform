@@ -55,7 +55,9 @@ final class PublishController
         try {
             $result = $this->publish->publish($ids, $this->auth->user()?->id());
         } catch (\Gereq\Validation\ValidationException $e) {
-            return new JsonResponse(['ok' => false, 'error' => implode(' ', $e->errors()), 'fields' => $e->errors()], 422);
+            return new JsonResponse(['ok' => false, 'error' => implode(' ', $e->errors()), 'fields' => $e->errors(),
+                'action_url' => $e->redirectTo(), 'action_label' => $e->input()['action_label'] ?? null,
+                'dialog_title' => $e->input()['dialog_title'] ?? null, 'cancel_label' => $e->input()['cancel_label'] ?? null], 422);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['ok' => false, 'error' => $e->getMessage()], 422);
         } catch (\Throwable $e) {

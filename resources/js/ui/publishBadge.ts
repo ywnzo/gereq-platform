@@ -118,7 +118,7 @@ function normalizeCategories(
 
 type GereqUi = {
     toast?: (message: string, tone?: string) => void;
-    confirm?: (opts: string | { title?: string; body?: string }) => Promise<boolean>;
+    confirm?: (opts: string | { title?: string; body?: string; confirmLabel?: string; cancelLabel?: string; danger?: boolean }) => Promise<boolean>;
     staging?: {
         refresh: () => Promise<void>;
         refreshCount: () => Promise<void>;
@@ -282,7 +282,26 @@ export function registerPublishBadge(alpine: typeof Alpine): void {
                 }
                 const payload = json as { ok?: boolean; data?: { version?: string } };
                 if (!payload?.ok) {
-                    toast(errorMessage(json, 'Publish failed'), 'error');
+                    const failure = json as { action_url?: unknown; action_label?: string; dialog_title?: string; cancel_label?: string } | null;
+                    const message = errorMessage(json, 'Publish failed');
+                    if (typeof failure?.action_url === 'string' && failure.action_url.startsWith('/') && !failure.action_url.startsWith('//') && gereqUi().confirm) {
+                        const open = await gereqUi().confirm!({ title: failure.dialog_title, body: message, confirmLabel: failure.action_label, cancelLabel: failure.cancel_label, danger: false });
+                        if (open) {
+                            const target = new URL(failure.action_url, window.location.origin);
+                            if (target.origin !== window.location.origin) {
+                                toast(message, 'error');
+                                return false;
+                            }
+                            const formId = target.searchParams.get('focus_form');
+                            if (target.pathname === window.location.pathname && formId) {
+                                window.dispatchEvent(new CustomEvent('cms:focus-form', { detail: formId }));
+                            } else {
+                                window.location.assign(target.href);
+                            }
+                        }
+                    } else {
+                        toast(message, 'error');
+                    }
                     return false;
                 }
                 const version = payload.data?.version ?? '';
