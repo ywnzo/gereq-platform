@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'modules.error.managed_package' => 'Modules in this instance are managed centrally according to the customer package.',
     'settings.css.variable.color_brand_50' => 'Lightest brand shade',
     'settings.css.variable.color_brand_600' => 'Brand shade',
     'settings.css.variable.color_brand_700' => 'Primary color',

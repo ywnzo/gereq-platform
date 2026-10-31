@@ -76,6 +76,7 @@ final class ModuleVersionInstaller
      */
     public function fetch(string $moduleId, string $version): string
     {
+        ManagedModulePolicy::fromEnvironment()->assertMutation($this->translator);
         $manifest = $this->requireManifest($moduleId);
         if (!$this->gitlab->configured()) {
             throw new \RuntimeException($this->translator->trans('admin.modules.versions.error.not_configured'));

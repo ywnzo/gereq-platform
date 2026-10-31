@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 $basePath = getenv('GEREQ_INSTANCE_ROOT') ?: '/app';
 require $basePath . '/vendor/autoload.php';
+require_once __DIR__ . '/modules.php';
 
 // Bootstrap diagnostics may include credentials; never emit platform output.
 ob_start();
@@ -25,6 +26,8 @@ try {
     $db->executeStatement('PRAGMA journal_mode=WAL');
     $db->executeStatement('PRAGMA foreign_keys=ON');
     $operation = $argv[1] ?? '';
+    $moduleManager = $container->get(ModuleManager::class);
+    $selectedModules = provisionModuleSelection($moduleManager);
     $result = ['ok' => true];
     $marker = $basePath . '/storage/.provision-bootstrap.json';
     $saveMarker = static function (array $value) use ($marker): void {
@@ -74,7 +77,7 @@ try {
             }
             // An unguessable password exists only in process memory; no login secret is exported.
             $container->get(Seeder::class)->seedBare([
-                'email' => 'operator@example.invalid', 'name' => 'Instance owner',
+                'email' => 'operator@example.invalid', 'name' => 'Administrator',
                 'password' => bin2hex(random_bytes(32)), 'role' => 'superadmin', 'generated' => false,
             ]);
             $user = $em->getRepository(Gereq\User\Entity\User::class)->findOneBy(['email' => 'operator@example.invalid']);
@@ -82,10 +85,61 @@ try {
             $user->setPasswordHash($container->get(Gereq\Auth\PasswordHasher::class)->hash(bin2hex(random_bytes(32))));
             $container->get(Gereq\Auth\Authenticator::class)->revokeRememberTokens($user);
             $em->flush();
+            // The approved funnel uses semantic colors against this initial palette.
+            // Apply it only when no palette exists during first bootstrap.
+            $settings = $container->get(Gereq\Setting\Settings::class);
+            if ($tables === [] && !$settings->has('brand.palette')) {
+                $settings->setLive('brand.palette', [
+                    'primary' => '#f5c518', 'secondary' => '#101211', 'accent' => '#a88400',
+                    'light_background' => '#fff6c8', 'light_surface' => '#fff6c8', 'light_header' => '#fff6c8',
+                    'dark_background' => '#101211', 'dark_surface' => '#161816', 'dark_header' => '#101211',
+                    'storefront_mode' => 'light',
+                ], Gereq\Setting\SettingRecord::TYPE_JSON, 'core');
+                $container->get(Gereq\Cache\StoreFrontCache::class)->forget('branding');
+            }
             $container->get(Gereq\Setup\SetupState::class)->markIncomplete();
             $saveMarker(['version' => 2, 'user_id' => $user->id()]);
         }
         $secureAccess();
+    } elseif ($operation === 'capabilities') {
+        $secureAccess();
+        $result['generated_palette'] = true;
+        $result['module_selection'] = true;
+        $result['selected_modules'] = $selectedModules;
+    } elseif ($operation === 'editorial-media') {
+        $data = $secureAccess();
+        $owner = $em->find(Gereq\User\Entity\User::class, $data['user_id']);
+        if (!$owner instanceof Gereq\User\Entity\User) {
+            throw new RuntimeException('Editorial media owner unavailable');
+        }
+        $settings = $container->get(Gereq\Setting\Settings::class);
+        $files = $container->get(Gereq\File\FileManager::class);
+        $existingId = $settings->get('provision.editorial_illustration', '');
+        if (is_string($existingId) && $existingId !== '') {
+            $asset = $em->find(Gereq\Media\Domain\MediaAsset::class, $existingId);
+            if (!$asset instanceof Gereq\Media\Domain\MediaAsset || !$asset->isPublic() || !$files->filesystem()->fileExists($asset->path())) {
+                throw new RuntimeException('Editorial illustration was removed or made private; select another image');
+            }
+        } else {
+            $name = $argv[2] ?? '';
+            if (!is_string($name) || !preg_match('/^\.editorial-upload-[A-Za-z0-9]+$/D', $name)) {
+                throw new RuntimeException('Invalid editorial media input');
+            }
+            $input = $basePath . '/storage/' . $name;
+            if (!is_file($input) || is_link($input)) {
+                throw new RuntimeException('Editorial media input unavailable');
+            }
+            $uploaded = new Symfony\Component\HttpFoundation\File\UploadedFile($input, 'editorial-path.png', 'image/png', null, true);
+            $stored = $files->store($uploaded, $owner);
+            $dimensions = $stored->metadata();
+            $asset = new Gereq\Media\Domain\MediaAsset('Editorial illustration', $stored->path(), $stored->mime(), $stored->size(), $owner->id(), null, $dimensions['width'] ?? null, $dimensions['height'] ?? null);
+            $em->persist($asset);
+            $em->flush();
+            $settings->setLive('provision.editorial_illustration', $asset->id(), Gereq\Setting\SettingRecord::TYPE_STRING, 'provision');
+            $container->get(Gereq\Event\EventBus::class)->dispatch(Gereq\Media\Domain\Events\MediaUploaded::make($asset->id(), ['id' => $asset->id(), 'title' => $asset->title(), 'mime' => $asset->mime()]));
+            $container->get(Gereq\Audit\Auditor::class)->log('media.uploaded', 'media_asset', $asset->id());
+        }
+        $result['url'] = '/media/' . $asset->id() . '/file';
     } elseif ($operation === 'secure-access') {
         $secureAccess();
     } elseif ($operation === 'dashboard-catalog' || $operation === 'dashboard-preset') {
@@ -112,6 +166,9 @@ try {
             $available = array_column($catalog, null, 'id');
             foreach ($preset['widgets'] as $item) {
                 $id = $item['id'] ?? null;
+                if (is_string($id) && !isset($available[$id]) && in_array(explode('.', $id)[0], ['cms', 'site_inquiries', 'analytics'], true) && !in_array(explode('.', $id)[0], $selectedModules, true)) {
+                    continue;
+                }
                 if (!is_string($id) || !isset($available[$id]) || isset($desired[$id])) {
                     throw new RuntimeException('Unavailable or duplicate dashboard widget');
                 }
@@ -155,6 +212,9 @@ try {
             }
         }
     } elseif ($operation === 'analytics-config') {
+        if (!in_array('analytics', $selectedModules, true)) {
+            throw new RuntimeException('Analytics is not selected for this package');
+        }
         $sites = $container->get(Modules\Analytics\Application\Repositories\SiteRepository::class);
         $host = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
         if ($sites->findEnabledByDomain($host) === null) {
@@ -199,31 +259,29 @@ try {
         $result['expires_at'] = $expires->format(DATE_ATOM);
     } elseif ($operation === 'upgrade') {
         $container->get(Migrator::class)->migrate();
-        foreach (['cms', 'site_inquiries', 'analytics'] as $module) {
-            if (!$container->get(ModuleManager::class)->isEnabled($module)) {
-                $container->get(ModuleManager::class)->enable($module); }
+        provisionAssertModuleSelection($moduleManager, $selectedModules);
+        foreach ($selectedModules as $module) {
             $container->get(Gereq\Module\ModuleUpdater::class)->update($module);
         }
         if ($db->fetchOne('PRAGMA integrity_check') !== 'ok') {
             throw new RuntimeException('Upgraded database integrity failed');
         }
     } elseif ($operation === 'modules') {
-        $modules = $container->get(ModuleManager::class);
-        foreach (['cms', 'site_inquiries', 'analytics'] as $module) {
-            if (!$modules->isEnabled($module)) {
-                $modules->enable($module);
+        if (array_diff(provisionPersistedModuleIds($moduleManager), $selectedModules) !== []) {
+            throw new RuntimeException('Unselected modules are already enabled');
+        }
+        foreach ($selectedModules as $module) {
+            if (!$moduleManager->isEnabled($module)) {
+                $moduleManager->enable($module);
             }
-            if (!$container->get(ModuleManager::class)->isEnabled($module)) {
-                $container->get(ModuleManager::class)->enable($module); }
             $container->get(Gereq\Module\ModuleUpdater::class)->update($module);
         }
+        provisionAssertModuleSelection($moduleManager, $selectedModules);
+        $result['enabled_modules'] = $moduleManager->enabledIds();
     } elseif ($operation === 'health') {
         $db->fetchOne('SELECT 1');
-        foreach (['cms', 'site_inquiries', 'analytics'] as $module) {
-            if (!$container->get(ModuleManager::class)->isEnabled($module)) {
-                throw new RuntimeException('Required module unavailable');
-            }
-        }
+        provisionAssertModuleSelection($moduleManager, $selectedModules);
+        $result['enabled_modules'] = $moduleManager->enabledIds();
         if (!is_writable($basePath . '/storage') || !is_file('/frontend/index.html')) {
             throw new RuntimeException('Storage or frontend unavailable');
         }
@@ -285,6 +343,18 @@ try {
             }
         };
         $check($artifact['blocks']);
+        $palette = $artifact['palette'] ?? null;
+        if ($palette !== null) {
+            if (!is_array($palette) || count($palette) !== 8 || ($palette['storefront_mode'] ?? null) !== 'light') {
+                throw new RuntimeException('Invalid generated palette');
+            }
+            foreach (['primary', 'secondary', 'accent', 'light_background', 'light_surface', 'dark_background', 'dark_surface'] as $color) {
+                if (!is_string($palette[$color] ?? null) || !preg_match('/^#[0-9a-fA-F]{6}$/D', $palette[$color])) {
+                    throw new RuntimeException('Invalid generated palette color');
+                }
+            }
+            (new Gereq\Brand\PaletteResolver())->resolve($palette);
+        }
         $settings = $container->get(Gereq\Setting\Settings::class);
         $artifactKey = 'provision.artifact.' . $artifact['artifact_id'];
         $lock = fopen($basePath . '/storage/.provision-import.lock', 'c');
@@ -302,8 +372,16 @@ try {
             if ($em->getRepository(Page::class)->findOneBy(['slug' => $artifact['slug']]) !== null) {
                 throw new RuntimeException('Slug already exists; existing customer content is preserved');
             }
+            $existingPalette = $container->get(Gereq\Publish\StagingStore::class)->findSettingsOverlay('brand.palette');
+            if ($palette !== null && $existingPalette !== null && ($existingPalette['value'] ?? null) !== $palette) {
+                throw new RuntimeException('A different brand palette is already staged; publish or discard it before importing');
+            }
             $db->beginTransaction();
             try {
+                if ($palette !== null) {
+                    $container->get(Gereq\Publish\ContentReadContext::class)->useStaging();
+                    $settings->set('brand.palette', $palette, Gereq\Setting\SettingRecord::TYPE_JSON, 'core');
+                }
                 $page = new Page($artifact['slug'], $artifact['title']);
                 $em->persist($page);
                 $em->flush();

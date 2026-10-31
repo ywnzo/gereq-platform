@@ -44,7 +44,7 @@ def verify(before,instance):
   for table,(columns,rows) in before.items():
    after=set(c.execute('select '+','.join('"'+v+'"' for v in columns)+' from "'+table+'"').fetchall())
    if not set(rows).issubset(after):raise RuntimeError('Existing records changed in '+table)
-  versions=dict(c.execute('select id,version from modules'));expected=json.loads((pathlib.Path(__file__).resolve().parents[3]/'source-revisions.json').read_text())['module_versions'];assert all(versions.get(k)==v for k,v in expected.items())
+  versions=dict(c.execute('select id,version from modules'));assert all(versions.get(k)==v for k,v in expected_versions.items())
 def health(state):
  r=state['request'];request=urllib.request.Request('http://127.0.0.1:'+str(r['port'])+'/api/v1/health',headers={'Host':r['site_id']+'.localhost:'+str(r['port'])})
  with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request,timeout=15) as response:
@@ -76,7 +76,11 @@ def configure(instance,registry,site,port):
  return state
 
 def migrate(instance):compose(instance/'compose.json',['run','--rm','--no-deps','app','php','/opt/provision/bridge.php','upgrade'])
-image_id=run(['podman','image','inspect','--format','{{.Id}}',release['image']]).strip();sites=['customer-one','customer-two']
+image_id=run(['podman','image','inspect','--format','{{.Id}}',release['image']]).strip()
+provenance=json.loads(run(['podman','run','--rm','--network','none','--read-only','--entrypoint','cat',release['image'],'/app/PROVISION_SOURCE.json']))
+expected_versions=provenance['module_versions']
+if not isinstance(expected_versions,dict) or not all(isinstance(v,str) and v for v in expected_versions.values()):raise RuntimeError('Invalid image module provenance')
+sites=['customer-one','customer-two']
 if a.phase=='preflight':
  for index,site in enumerate(sites):
   saved=job/'preflight-backups'/site

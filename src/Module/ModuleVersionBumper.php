@@ -22,6 +22,7 @@ final class ModuleVersionBumper
      */
     public function bumpPatch(string $moduleId): string
     {
+        ManagedModulePolicy::fromEnvironment()->assertMutation($this->translator);
         $manifest = $this->modules->manifest($moduleId);
         if ($manifest === null) {
             throw new \RuntimeException($this->translator->trans('modules.error.not_found', ['%id%' => $moduleId]));

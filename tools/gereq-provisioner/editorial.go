@@ -147,5 +147,5 @@ func compileEditorial(b Brief, s FunnelSpec, id string) FunnelArtifact {
 		action = button()
 	}
 	blocks = append(blocks, section([]NativeBlock{row([]NativeBlock{contactHead, item(stack([]NativeBlock{action}, 0), "380px")}, 72)}, "brand", 72))
-	return FunnelArtifact{1, id, b.Name + " — " + s.Headline, b.Slug, blocks}
+	return FunnelArtifact{Schema: 1, ID: id, Title: generatedPageTitle(b.Name, s.Headline), Slug: b.Slug, Blocks: blocks}
 }

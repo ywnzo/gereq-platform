@@ -14,32 +14,42 @@ import (
 )
 
 type Request struct {
-	Schema      int    `json:"schema_version"`
-	RequestID   string `json:"request_id"`
-	SiteID      string `json:"site_id"`
-	CustomerRef string `json:"customer_ref"`
-	Package     string `json:"package"`
-	Release     string `json:"release_id"`
-	Port        int    `json:"port"`
+	EnabledModules         []string `json:"enabled_modules,omitempty"`
+	TrialDays              *int     `json:"trial_days,omitempty"`
+	BrandName              string   `json:"brand_name,omitempty"`
+	Schema                 int      `json:"schema_version"`
+	RequestID              string   `json:"request_id"`
+	SiteID                 string   `json:"site_id"`
+	CustomerRef            string   `json:"customer_ref"`
+	Package                string   `json:"package"`
+	CatalogPackageID       string   `json:"catalog_package_id,omitempty"`
+	CatalogPackageRevision int      `json:"catalog_package_revision,omitempty"`
+	AllowedTemplates       []string `json:"allowed_templates,omitempty"`
+	Release                string   `json:"release_id"`
+	Port                   int      `json:"port"`
 }
 type Release struct {
-	Schema      int      `json:"schema_version"`
-	ID          string   `json:"id"`
-	Image       string   `json:"image"`
-	Development bool     `json:"development"`
-	Modules     []string `json:"modules"`
+	ModuleSelection bool                `json:"module_selection,omitempty"`
+	ModuleRequires  map[string][]string `json:"module_requires,omitempty"`
+	Schema          int                 `json:"schema_version"`
+	ID              string              `json:"id"`
+	Image           string              `json:"image"`
+	Development     bool                `json:"development"`
+	Modules         []string            `json:"modules"`
 }
 type State struct {
-	RelocatedTo string            `json:"relocated_to,omitempty"`
-	Runtime     string            `json:"runtime"`
-	Request     Request           `json:"request"`
-	Release     Release           `json:"release"`
-	Fingerprint string            `json:"fingerprint"`
-	Status      string            `json:"status"`
-	Step        string            `json:"step"`
-	Completed   []string          `json:"completed"`
-	Error       string            `json:"error,omitempty"`
-	Drafts      map[string]string `json:"drafts,omitempty"`
+	ActiveModules []string          `json:"active_modules,omitempty"`
+	RelocatedTo   string            `json:"relocated_to,omitempty"`
+	LastUpdateID  string            `json:"last_update_id,omitempty"`
+	Runtime       string            `json:"runtime"`
+	Request       Request           `json:"request"`
+	Release       Release           `json:"release"`
+	Fingerprint   string            `json:"fingerprint"`
+	Status        string            `json:"status"`
+	Step          string            `json:"step"`
+	Completed     []string          `json:"completed"`
+	Error         string            `json:"error,omitempty"`
+	Drafts        map[string]string `json:"drafts,omitempty"`
 }
 
 var sitePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,39}$`)
@@ -62,6 +72,9 @@ func decode(path string, v any) error {
 	return nil
 }
 func validate(r Request, l Release) error {
+	if r.BrandName != "" && !validBusinessName(r.BrandName) {
+		return errors.New("invalid business name")
+	}
 	if r.Schema != 1 || l.Schema != 1 {
 		return errors.New("unsupported schema version")
 	}
@@ -83,8 +96,8 @@ func validate(r Request, l Release) error {
 	if !l.Development && !regexp.MustCompile(`@sha256:[a-f0-9]{64}$`).MatchString(l.Image) {
 		return errors.New("non-development release requires an immutable image digest")
 	}
-	if (len(l.Modules) != 2 && len(l.Modules) != 3) || l.Modules[0] != "cms" || l.Modules[1] != "site_inquiries" || (len(l.Modules) == 3 && l.Modules[2] != "analytics") {
-		return errors.New("funnel-v1 requires exactly cms and site_inquiries in activation order")
+	if err := validateSelectedModules(r, l); err != nil {
+		return err
 	}
 	return nil
 }

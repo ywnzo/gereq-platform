@@ -105,6 +105,31 @@ func compileApprovedEditorial(b Brief, s FunnelSpec, id string) (FunnelArtifact,
 				if json.Unmarshal(encoded, &children) != nil {
 					return nil, errors.New("invalid approved blocks")
 				}
+				if v.Type == "form" && b.Goal == "inquiry" {
+					found := false
+					for _, child := range children {
+						if child.Type == "form_field" && child.Payload["name"] == "phone" {
+							found = true
+						}
+					}
+					if !found {
+						label := "Telefon"
+						if b.Language == "en" {
+							label = "Phone"
+						}
+						phone := NativeBlock{Type: "form_field", Payload: map[string]any{"name": "phone", "control": "tel", "label": label, "required": 1, "full": 1}}
+						at := len(children)
+						for i, child := range children {
+							if child.Type == "form_field" && child.Payload["name"] == "details" {
+								at = i
+								break
+							}
+						}
+						children = append(children, NativeBlock{})
+						copy(children[at+1:], children[at:])
+						children[at] = phone
+					}
+				}
 				var err error
 				children, err = transform(children)
 				if err != nil {
@@ -133,5 +158,5 @@ func compileApprovedEditorial(b Brief, s FunnelSpec, id string) (FunnelArtifact,
 			}
 		}
 	}
-	return FunnelArtifact{1, id, b.Name + " — " + s.Headline, b.Slug, blocks}, nil
+	return FunnelArtifact{Schema: 1, ID: id, Title: generatedPageTitle(b.Name, s.Headline), Slug: b.Slug, Blocks: blocks}, nil
 }

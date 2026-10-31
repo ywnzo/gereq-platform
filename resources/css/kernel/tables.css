@@ -518,14 +518,22 @@ html[data-brand-palette="1"] .table-wrap .table__action-btn--primary {
     border: 0;
 }
 .toolbar--table {
-    /* Keep the 3px control focus ring inside clipping list/scroll containers. */
-    padding: 3px;
+    padding-block: 3px;
+    padding-inline: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 1rem;
+}
+/* Inset focus rings keep controls aligned with tables inside clipping list shells. */
+.toolbar--table :is(.input, .select, .g-control, .g-select__trigger, .btn, .icon-btn):is(:focus, :focus-visible),
+.toolbar--table .g-addon:focus-within {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+.toolbar--table .g-addon .g-control:is(:focus, :focus-visible) {
+    box-shadow: none;
 }
 .toolbar--table .toolbar {
     padding: 0;

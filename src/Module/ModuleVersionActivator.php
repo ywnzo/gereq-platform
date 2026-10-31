@@ -34,6 +34,7 @@ final class ModuleVersionActivator
      */
     public function activate(string $moduleId, string $version, bool $fetchIfMissing = true): array
     {
+        ManagedModulePolicy::fromEnvironment()->assertMutation($this->translator);
         $manifest = $this->modules->manifest($moduleId);
         if ($manifest === null) {
             throw new \RuntimeException($this->translator->trans('modules.error.not_found', ['%id%' => $moduleId]));

@@ -7,14 +7,18 @@ class BridgeTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory(prefix='gereq-provision-test-');self.base=pathlib.Path(self.tmp.name)
  def tearDown(self):self.tmp.cleanup()
- def instance(self,name):
+ def instance(self,name,selected=None):
   p=self.base/name;p.mkdir();(p/'storage').mkdir();(p/'public').mkdir();(p/'public/build').mkdir();(p/'modules').mkdir()
   for part in ['vendor','src','config','resources','integrations','VERSION']:
    if (ROOT/part).exists():(p/part).symlink_to(ROOT/part,target_is_directory=(ROOT/part).is_dir())
   import shutil
   shutil.copytree(ROOT/'public/build',p/'public/build',dirs_exist_ok=True)
   for part in ['Cms','SiteInquiries','Analytics']:(p/'modules'/part).symlink_to(ROOT/'modules'/part,target_is_directory=True)
+  hashes=subprocess.check_output(['php','-r',r"require $argv[1].'/vendor/autoload.php'; $h=[]; foreach (['cms'=>'Cms','site_inquiries'=>'SiteInquiries','analytics'=>'Analytics'] as $id=>$dir) { $h[$id]=Gereq\Module\ModuleFootprint::ofDirectory($argv[1].'/modules/'.$dir); } echo json_encode($h, JSON_THROW_ON_ERROR);",str(ROOT)],text=True)
+  (p/'public/build/module-source-hashes.json').write_text(hashes)
   (p/'.env').write_text('APP_ENV=production\nAPP_DEBUG=false\nGEREQ_PACKAGE=funnel-v1\nAPP_KEY='+secrets.token_hex(32)+'\nAPP_URL=http://'+name+'.localhost:18081\nDB_CONNECTION=sqlite\nDB_DATABASE='+str(p/'storage/database.sqlite')+'\nCACHE_DRIVER=file\nSESSION_DRIVER=file\nQUEUE_DRIVER=sync\nGEREQ_PREBUILT_ASSETS=true\nGEREQ_SKIP_AUTO_BOOTSTRAP=true\nMAILER_DSN=null://null\n')
+  if selected is not None:
+   with (p/'.env').open('a') as f:f.write('GEREQ_PACKAGE_MODULES='+','.join(selected)+'\n')
   self.call(p,'bootstrap');self.call(p,'modules');return p
  def call(self,p,op,artifact=None,ok=True):
   env=os.environ.copy();env.update(GEREQ_INSTANCE_ROOT=str(p),GEREQ_PROVISION_TEST_DEBUG='1')
@@ -23,6 +27,107 @@ class BridgeTests(unittest.TestCase):
   result=subprocess.run(args,env=env,cwd=p,text=True,capture_output=True)
   if ok:self.assertEqual(result.returncode,0,result.stderr);return json.loads(result.stdout)
   self.assertNotEqual(result.returncode,0);return result
+ def test_backend_cannot_enable_modules_outside_managed_package(self):
+  p=self.instance('managed-policy',['cms'])
+  code=r"require $argv[1].'/vendor/autoload.php';$c=Gereq\Foundation\Application::create($argv[1])->container();$c->get(Gereq\Module\ModuleManager::class)->enable('analytics');"
+  result=subprocess.run(['php','-r',code,str(p)],cwd=p,text=True,capture_output=True)
+  self.assertNotEqual(result.returncode,0)
+  with sqlite3.connect(p/'storage/database.sqlite') as c:
+   self.assertEqual({r[0] for r in c.execute('select id from modules where enabled=1')},{'cms'})
+ def test_default_administrator_initializer_handles_old_images_without_touching_custom_names(self):
+  p=self.instance('legacy-default')
+  script=(BRIDGE.parent/'administrator.php').read_text().removeprefix('<?php\n')
+  with sqlite3.connect(p/'storage/database.sqlite') as c:c.execute("update users set name='Instance owner' where email='operator@example.invalid'")
+  def initialize():
+   result=subprocess.run(['php','-r',script],cwd=p,env=dict(os.environ,GEREQ_INSTANCE_ROOT=str(p)),text=True,capture_output=True)
+   self.assertEqual(result.returncode,0,result.stderr)
+  initialize()
+  with sqlite3.connect(p/'storage/database.sqlite') as c:
+   self.assertEqual(c.execute("select name from users where email='operator@example.invalid'").fetchone()[0],'Administrator')
+   c.execute("update users set name='Customer chosen name' where email='operator@example.invalid'")
+  initialize()
+  with sqlite3.connect(p/'storage/database.sqlite') as c:self.assertEqual(c.execute("select name from users where email='operator@example.invalid'").fetchone()[0],'Customer chosen name')
+ def test_default_owner_name_is_administrator(self):
+  p=self.instance('administrator-default')
+  with sqlite3.connect(p/'storage/database.sqlite') as c:
+   name=c.execute("select name from users where email='operator@example.invalid'").fetchone()[0]
+   self.assertEqual(name,'Administrator')
+ def test_package_modules_exclude_analytics_and_filter_dashboard(self):
+  p=self.instance('without-analytics',['cms','site_inquiries'])
+  enabled=self.call(p,'modules')['enabled_modules']
+  self.assertEqual(set(enabled),{'cms','site_inquiries'})
+  self.assertEqual(set(self.call(p,'capabilities')['selected_modules']),set(enabled))
+  self.call(p,'analytics-config',ok=False)
+  self.call(p,'upgrade')
+  self.assertEqual(set(self.call(p,'modules')['enabled_modules']),{'cms','site_inquiries'})
+  self.call(p,'dashboard-preset')
+  widgets=self.call(p,'dashboard-catalog')['widgets']
+  self.assertFalse(any(w['id'].startswith('analytics.') for w in widgets))
+ def test_cms_only_and_existing_enabled_modules_are_not_silently_removed(self):
+  p=self.instance('cms-only',['cms'])
+  self.assertEqual(self.call(p,'modules')['enabled_modules'],['cms'])
+  self.call(p,'dashboard-preset')
+  self.assertFalse(any(w['id'].startswith('site_inquiries.') for w in self.call(p,'dashboard-catalog')['widgets']))
+  other=self.instance('full-package')
+  with (other/'.env').open('a') as f:f.write('GEREQ_PACKAGE_MODULES=cms\n')
+  self.call(other,'modules',ok=False)
+  with sqlite3.connect(other/'storage/database.sqlite') as c:
+   self.assertEqual({r[0] for r in c.execute('select id from modules where enabled=1')},{'cms','site_inquiries','analytics'})
+ def transition(self,p,operation,target,expected,ok=True):
+  script=(BRIDGE.parent/'package-modules.php').read_text().removeprefix('<?php\n')
+  env=os.environ.copy();env['GEREQ_INSTANCE_ROOT']=str(p)
+  result=subprocess.run(['php','-r',script,operation,json.dumps(target),json.dumps(expected)],env=env,cwd=p,text=True,capture_output=True)
+  if ok:self.assertEqual(result.returncode,0,result.stderr);return json.loads(result.stdout)
+  self.assertNotEqual(result.returncode,0)
+ def test_package_module_upgrade_downgrade_retains_data_and_credentials(self):
+  p=self.instance('module-transition',['cms'])
+  with sqlite3.connect(p/'storage/database.sqlite') as c:
+   user=c.execute('select id,password from users').fetchall() if 'password' in [r[1] for r in c.execute('pragma table_info(users)')] else c.execute('select * from users').fetchall()
+  all_modules=['cms','site_inquiries','analytics']
+  self.transition(p,'preflight',all_modules,['cms'])
+  self.transition(p,'apply',all_modules,['cms'])
+  with (p/'.env').open('a') as f:f.write('GEREQ_PACKAGE_MODULES='+','.join(all_modules)+'\n')
+  self.call(p,'analytics-config')
+  with sqlite3.connect(p/'storage/database.sqlite') as c:
+   count=c.execute('select count(*) from analytics_sites').fetchone()[0]
+   self.assertEqual(count,1)
+  self.transition(p,'apply',['cms'],all_modules)
+  with sqlite3.connect(p/'storage/database.sqlite') as c:
+   self.assertEqual(c.execute('select count(*) from analytics_sites').fetchone()[0],count)
+   self.assertEqual({r[0] for r in c.execute('select id from modules where enabled=1')},{'cms'})
+   current=c.execute('select id,password from users').fetchall() if 'password' in [r[1] for r in c.execute('pragma table_info(users)')] else c.execute('select * from users').fetchall()
+   self.assertEqual(current,user)
+  self.transition(p,'apply',all_modules,['cms'])
+  with sqlite3.connect(p/'storage/database.sqlite') as c:self.assertEqual(c.execute('select count(*) from analytics_sites').fetchone()[0],count)
+  self.transition(p,'preflight',['cms','nonexistent'],all_modules,ok=False)
+  self.transition(p,'preflight',['cms'],['cms'],ok=False)
+ def test_initial_palette_is_set_once_and_preserves_owner_changes(self):
+  a=self.instance('customer-a')
+  with sqlite3.connect(a/'storage/database.sqlite') as c:
+   original=json.loads(c.execute("select value from settings where keyName='brand.palette'").fetchone()[0])
+   self.assertEqual(original['primary'],'#f5c518')
+   original['primary']='#123456'
+   c.execute("update settings set value=? where keyName='brand.palette'",(json.dumps(original),))
+  self.call(a,'bootstrap')
+  with sqlite3.connect(a/'storage/database.sqlite') as c:
+   self.assertEqual(json.loads(c.execute("select value from settings where keyName='brand.palette'").fetchone()[0])['primary'],'#123456')
+ def test_generated_palette_is_staged_and_conflicts_preserve_existing_work(self):
+  a=self.instance('customer-a'); self.assertTrue(self.call(a,'capabilities')['generated_palette']); path=self.artifact('palette-one','palette-one')
+  data=json.loads(path.read_text()); data['palette']={'primary':'#ffdb99','secondary':'#112211','accent':'#443311','light_background':'#fff7ee','light_surface':'#fff7ee','dark_background':'#112211','dark_surface':'#182218','storefront_mode':'light'}; path.write_text(json.dumps(data))
+  self.call(a,'import',path)
+  with sqlite3.connect(a/'storage/database.sqlite') as c:
+   live=json.loads(c.execute("select value from settings where keyName='brand.palette'").fetchone()[0]); staged=json.loads(c.execute("select payload from content_staging where resource_key='brand.palette'").fetchone()[0]); self.assertNotEqual(live['primary'],data['palette']['primary']); self.assertEqual(staged['value'],data['palette'])
+  other=self.artifact('palette-two','palette-two'); data2=json.loads(other.read_text()); data2['palette']={**data['palette'],'primary':'#ffcc66'}; other.write_text(json.dumps(data2)); self.call(a,'import',other,False)
+  with sqlite3.connect(a/'storage/database.sqlite') as c:
+   self.assertEqual(json.loads(c.execute("select payload from content_staging where resource_key='brand.palette'").fetchone()[0])['value'],data['palette']); self.assertEqual(c.execute("select count(*) from cms_pages where slug='palette-two'").fetchone()[0],0)
+ def test_editorial_illustration_is_instance_owned_and_idempotent(self):
+  a=self.instance('customer-a');b=self.instance('customer-b')
+  source=pathlib.Path(__file__).parent/'examples/editorial/editorial-path.png'
+  name='.editorial-upload-test123'
+  for instance in [a,b]:(instance/'storage'/name).write_bytes(source.read_bytes())
+  first=self.call(a,'editorial-media',name);again=self.call(a,'editorial-media',name);other=self.call(b,'editorial-media',name)
+  self.assertEqual(first['url'],again['url']);self.assertNotEqual(first['url'],other['url'])
+  with sqlite3.connect(a/'storage/database.sqlite') as c:self.assertEqual(c.execute('select count(*) from media_assets').fetchone()[0],1)
  def test_setup_links_hash_only_rotate_and_refuse_completed_setup(self):
   a=self.instance('customer-a')
   one=self.call(a,'setup-link','owner@example.test')

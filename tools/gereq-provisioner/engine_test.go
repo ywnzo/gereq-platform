@@ -15,6 +15,7 @@ type fakeDocker struct {
 	fail         string
 	failed       bool
 	containerIDs string
+	capabilities string
 	labels       map[string]string
 }
 
@@ -25,6 +26,9 @@ func (f *fakeDocker) Run(_ context.Context, a []string) ([]byte, error) {
 	}
 	if len(a) > 0 && a[0] == "inspect" {
 		return json.Marshal(f.labels)
+	}
+	if strings.HasSuffix(strings.Join(a, " "), " bridge.php capabilities") || strings.HasSuffix(strings.Join(a, " "), " /opt/provision/bridge.php capabilities") {
+		return []byte(f.capabilities), nil
 	}
 	if f.fail != "" && !f.failed && strings.Contains(strings.Join(a, " "), f.fail) {
 		f.failed = true
@@ -56,7 +60,7 @@ func TestRuntimeOwnershipUsesInspectLabels(t *testing.T) {
 func fixture(t *testing.T) (Engine, Request, Release, *fakeDocker) {
 	t.Helper()
 	f := &fakeDocker{}
-	return Engine{Root: filepath.Join(t.TempDir(), "state"), Runner: f}, Request{1, "request-0001", "customer-one", "customer-1", "funnel-v1", "local-v1", 18371}, Release{1, "local-v1", "gereq-local:dev", true, []string{"cms", "site_inquiries"}}, f
+	return Engine{Root: filepath.Join(t.TempDir(), "state"), Runner: f}, Request{Schema: 1, RequestID: "request-0001", SiteID: "customer-one", CustomerRef: "customer-1", Package: "funnel-v1", Release: "local-v1", Port: 18371}, Release{Schema: 1, ID: "local-v1", Image: "gereq-local:dev", Development: true, Modules: []string{"cms", "site_inquiries"}}, f
 }
 func TestRetryAndIdempotency(t *testing.T) {
 	e, r, l, f := fixture(t)
@@ -368,5 +372,22 @@ func TestPublicStorefrontKeysAreUniquePerInstance(t *testing.T) {
 	}
 	if read(r.SiteID) == first {
 		t.Fatal("public API key shared across customer instances")
+	}
+}
+
+func TestGeneratedPaletteRequiresCompatibleCustomerImage(t *testing.T) {
+	e, r, l, f := fixture(t)
+	s, err := e.Create(context.Background(), r, l)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(e.Root, "sites", r.SiteID)
+	f.capabilities = `{"ok":true}`
+	if e.checkPaletteSupport(context.Background(), s, p) == nil {
+		t.Fatal("legacy bridge accepted")
+	}
+	f.capabilities = `{"ok":true,"generated_palette":true}`
+	if err = e.checkPaletteSupport(context.Background(), s, p); err != nil {
+		t.Fatal(err)
 	}
 }

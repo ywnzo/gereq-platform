@@ -129,6 +129,7 @@ final class ModuleUpdater
      */
     public function update(string $id, bool $syncSchema = true): array
     {
+        ManagedModulePolicy::fromEnvironment()->assertMutation($this->translator);
         $manifest = $this->modules->manifest($id);
         if ($manifest === null) {
             throw new \RuntimeException($this->translator->trans('modules.error.not_found', ['%id%' => $id]));

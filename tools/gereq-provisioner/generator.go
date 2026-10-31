@@ -17,7 +17,7 @@ import (
 	"unicode/utf8"
 )
 
-const generatorVersion = "funnel-approved-editorial-10"
+const generatorVersion = "funnel-ai-layout-19"
 
 var slugPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,79}$`)
 
@@ -38,32 +38,35 @@ type CopyItem struct {
 	Body  string `json:"body"`
 }
 type FunnelSpec struct {
-	Layout        string     `json:"layout"`
-	Eyebrow       string     `json:"eyebrow"`
-	Headline      string     `json:"headline"`
-	Intro         string     `json:"intro"`
-	CTA           string     `json:"cta"`
-	BenefitsTitle string     `json:"benefits_title"`
-	Benefits      []CopyItem `json:"benefits"`
-	ProcessTitle  string     `json:"process_title"`
-	Process       []CopyItem `json:"process"`
-	FAQTitle      string     `json:"faq_title"`
-	FAQ           []CopyItem `json:"faq"`
-	ContactTitle  string     `json:"contact_title"`
-	ContactBody   string     `json:"contact_body"`
+	Design        *GeneratedDesign `json:"design,omitempty"`
+	Layout        string           `json:"layout"`
+	Eyebrow       string           `json:"eyebrow"`
+	Headline      string           `json:"headline"`
+	Intro         string           `json:"intro"`
+	CTA           string           `json:"cta"`
+	BenefitsTitle string           `json:"benefits_title"`
+	Benefits      []CopyItem       `json:"benefits"`
+	ProcessTitle  string           `json:"process_title"`
+	Process       []CopyItem       `json:"process"`
+	FAQTitle      string           `json:"faq_title"`
+	FAQ           []CopyItem       `json:"faq"`
+	ContactTitle  string           `json:"contact_title"`
+	ContactBody   string           `json:"contact_body"`
 }
 type NativeBlock struct {
-	ID       string         `json:"id"`
-	ClientID string         `json:"client_id"`
-	Type     string         `json:"type"`
-	Payload  map[string]any `json:"payload"`
+	ID        string         `json:"id"`
+	ClientID  string         `json:"client_id"`
+	SortOrder int            `json:"sort_order,omitempty"`
+	Type      string         `json:"type"`
+	Payload   map[string]any `json:"payload"`
 }
 type FunnelArtifact struct {
-	Schema int           `json:"schema_version"`
-	ID     string        `json:"artifact_id"`
-	Title  string        `json:"title"`
-	Slug   string        `json:"slug"`
-	Blocks []NativeBlock `json:"blocks"`
+	Schema  int               `json:"schema_version"`
+	ID      string            `json:"artifact_id"`
+	Title   string            `json:"title"`
+	Slug    string            `json:"slug"`
+	Blocks  []NativeBlock     `json:"blocks"`
+	Palette map[string]string `json:"palette,omitempty"`
 }
 type CopyProvider interface {
 	Generate(context.Context, Brief) (FunnelSpec, error)
@@ -123,6 +126,9 @@ func (s FunnelSpec) validate() error {
 func compileFunnel(b Brief, s FunnelSpec, id string) (FunnelArtifact, error) {
 	if err := b.validate(); err != nil {
 		return FunnelArtifact{}, err
+	}
+	if s.Design != nil {
+		return compileGeneratedDesign(b, *s.Design, id, s.CTA)
 	}
 	if err := s.validate(); err != nil {
 		return FunnelArtifact{}, err
@@ -243,7 +249,7 @@ func compileFunnel(b Brief, s FunnelSpec, id string) (FunnelArtifact, error) {
 	contactPanel.Payload["bg_color"] = "background"
 	contactPanel.Payload["radius"] = 2
 	contactSection := section([]NativeBlock{row([]NativeBlock{contactHead, contactPanel}, 64)}, "surface")
-	return FunnelArtifact{1, id, b.Name + " — " + s.Headline, b.Slug, []NativeBlock{heroSection, benefitSection, processSection, faqSection, contactSection}}, nil
+	return FunnelArtifact{Schema: 1, ID: id, Title: generatedPageTitle(b.Name, s.Headline), Slug: b.Slug, Blocks: []NativeBlock{heroSection, benefitSection, processSection, faqSection, contactSection}}, nil
 }
 
 func strictJSON(raw []byte, v any) error {
@@ -265,7 +271,10 @@ type GenerationResult struct {
 	Imported json.RawMessage `json:"imported,omitempty"`
 }
 
-func generate(ctx context.Context, root, site, briefFile, specFile string, p CopyProvider, model string) (GenerationResult, error) {
+func generate(ctx context.Context, root, site, briefFile, specFile string, p CopyProvider, model string, media ...func(context.Context) (string, error)) (GenerationResult, error) {
+	return generateWithNativeTemplate(ctx, root, site, briefFile, specFile, p, model, nil, media...)
+}
+func generateWithNativeTemplate(ctx context.Context, root, site, briefFile, specFile string, p CopyProvider, model string, template *NativeTemplate, media ...func(context.Context) (string, error)) (GenerationResult, error) {
 	result := GenerationResult{}
 	if !sitePattern.MatchString(site) {
 		return result, errors.New("invalid site ID")
@@ -293,7 +302,8 @@ func generate(ctx context.Context, root, site, briefFile, specFile string, p Cop
 		Version, Site, Model string
 		Brief                Brief
 		Spec                 json.RawMessage
-	}{generatorVersion, site, model, b, supplied})
+		Template             *NativeTemplate `json:"template,omitempty"`
+	}{generatorVersion, site, model, b, supplied, template})
 	hash := sha256.Sum256(input)
 	id := "gen-" + hex.EncodeToString(hash[:12])
 	result.JobID = id
@@ -331,12 +341,26 @@ func generate(ctx context.Context, root, site, briefFile, specFile string, p Cop
 	if err != nil {
 		return result, err
 	}
-	a, err := compileFunnel(b, spec, id)
+	if ((template != nil && templateHasImages(template.Blocks)) || (template == nil && ((spec.Design != nil && designUsesImage(spec.Design.Blocks)) || (spec.Design == nil && spec.Layout == "editorial")))) && b.IllustrationURL == "" && len(media) > 0 && media[0] != nil {
+		b.IllustrationURL, err = media[0](ctx)
+		if err != nil {
+			return result, err
+		}
+	}
+	var a FunnelArtifact
+	if template != nil {
+		a, err = compileNativeTemplate(b, spec, *template, id)
+	} else {
+		a, err = compileFunnel(b, spec, id)
+	}
 	if err != nil {
 		return result, err
 	}
-	if len(a.Title) > 190 {
-		a.Title = b.Name
+	a.Title = generatedPageTitle(b.Name, spec.Headline)
+	if template != nil {
+		if err = atomicJSON(filepath.Join(job, "template.json"), template); err != nil {
+			return result, err
+		}
 	}
 	// Persist copy and provenance first. The artifact is the commit point for a reusable job.
 	for name, v := range map[string]any{"brief.json": b, "spec.json": spec, "provenance.json": map[string]any{"compiler": generatorVersion, "model": model, "input_sha256": hex.EncodeToString(hash[:])}} {
@@ -350,4 +374,21 @@ func generate(ctx context.Context, root, site, briefFile, specFile string, p Cop
 		return result, err
 	}
 	return result, nil
+}
+
+func generatedPageTitle(name, headline string) string {
+	name = strings.TrimSpace(name)
+	headline = strings.TrimSpace(headline)
+	if headline == "" {
+		headline = name
+	}
+	title := headline
+	if name != "" && name != headline {
+		title = name + " — " + headline
+	}
+	runes := []rune(title)
+	if len(runes) > 190 {
+		title = string(runes[:189]) + "…"
+	}
+	return title
 }

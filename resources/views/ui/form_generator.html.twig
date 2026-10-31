@@ -30,7 +30,8 @@
         {% elseif type == 'select' %}
             {% include 'ui/select.html.twig' with common|merge({
                 options: field.choices,
-                searchable: field.options.searchable|default(false)
+                searchable: field.options.searchable|default(false),
+                popover: field.options.popover|default(false)
             }) %}
         {% elseif type == 'icon' %}
             {% include 'ui/icon_picker.html.twig' with common|merge({

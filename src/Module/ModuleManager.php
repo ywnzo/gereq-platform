@@ -138,13 +138,14 @@ final class ModuleManager implements EnabledModulesProvider
                 unset($enabled[$id]);
             }
         }
-        $this->enabledIds = array_keys($enabled);
+        $this->enabledIds = ManagedModulePolicy::fromEnvironment()->filterEnabled(array_keys($enabled));
 
         return $this->enabledIds;
     }
 
     public function enable(string $id): void
     {
+        ManagedModulePolicy::fromEnvironment()->assertEnable($id, $this->translator);
         $manifest = $this->requireManifest($id);
         $this->assertDependencies($manifest);
 
@@ -184,6 +185,7 @@ final class ModuleManager implements EnabledModulesProvider
 
     public function disable(string $id, array $alsoDisabling = []): void
     {
+        ManagedModulePolicy::fromEnvironment()->assertMutation($this->translator);
         $this->requireManifest($id);
         $also = array_fill_keys($alsoDisabling, true);
 

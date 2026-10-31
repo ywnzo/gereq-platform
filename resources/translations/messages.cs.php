@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    'modules.error.managed_package' => 'Moduly této instance spravuje centrální služba podle zákaznického balíčku.',
     'settings.css.variable.color_brand_50' => 'Nejsvětlejší odstín značky',
     'settings.css.variable.color_brand_600' => 'Odstín značky',
     'settings.css.variable.color_brand_700' => 'Primární barva',

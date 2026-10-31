@@ -80,10 +80,28 @@ func (e Engine) runtimeName() string {
 	}
 	return e.Runtime
 }
-func (e Engine) load(site string) (*State, string, error) {
+func (e Engine) load(site string) (*State, string, error) { return e.loadPackageState(site, false) }
+func (e Engine) loadPackageState(site string, recovery bool) (*State, string, error) {
 	p, err := ownedDir(e.Root, site)
 	if err != nil {
 		return nil, "", err
+	}
+	if !recovery {
+		if _, err = os.Lstat(activePackageModuleChange(p)); err == nil {
+			return nil, p, errors.New("package module change requires recovery")
+		} else if !os.IsNotExist(err) {
+			return nil, p, err
+		}
+	}
+	if _, err = os.Lstat(activeUpdate(p)); err == nil {
+		return nil, p, errors.New("instance has an unfinished update; use update-recover")
+	} else if !os.IsNotExist(err) {
+		return nil, p, err
+	}
+	if _, err = os.Lstat(filepath.Join(p, ".backup-active.json")); err == nil {
+		return nil, p, errors.New("instance backup requires recovery; use backup-recover")
+	} else if !os.IsNotExist(err) {
+		return nil, p, err
 	}
 	var s State
 	if err = decode(filepath.Join(p, "state.json"), &s); err != nil {
@@ -91,6 +109,13 @@ func (e Engine) load(site string) (*State, string, error) {
 	}
 	if s.Request.SiteID != site || s.Fingerprint != fingerprint(s.Request, s.Release) || s.Runtime != e.runtimeName() {
 		return nil, p, errors.New("instance ownership/state mismatch")
+	}
+	if len(s.ActiveModules) > 0 {
+		r := s.Request
+		r.EnabledModules = s.ActiveModules
+		if err = validateSelectedModules(r, s.Release); err != nil {
+			return nil, p, err
+		}
 	}
 	return &s, p, nil
 }
@@ -217,6 +242,9 @@ func (e Engine) step(ctx context.Context, s *State, p, step string) error {
 				return err
 			}
 			env := fmt.Sprintf("APP_NAME=%s\nAPP_ENV=production\nAPP_DEBUG=false\nGEREQ_PACKAGE=%s\nAPP_KEY=%s\nAPI_PUBLIC_KEY=grq_pub_%s\nAPP_URL=http://%s.localhost:%d\nFRONTEND_ORIGIN=http://%s.localhost:%d\nDB_CONNECTION=sqlite\nDB_DATABASE=/app/storage/database.sqlite\nCACHE_DRIVER=file\nSESSION_DRIVER=file\nQUEUE_DRIVER=sync\nGEREQ_SKIP_AUTO_BOOTSTRAP=true\nMAILER_DSN=null://null\n", s.Request.SiteID, s.Request.Package, key, publicKey, s.Request.SiteID, s.Request.Port, s.Request.SiteID, s.Request.Port)
+			if len(s.Request.EnabledModules) > 0 {
+				env += "GEREQ_PACKAGE_MODULES=" + strings.Join(s.Request.EnabledModules, ",") + "\n"
+			}
 			if err = atomicFile(filepath.Join(p, ".env"), []byte(env)); err != nil {
 				return err
 			}
@@ -239,11 +267,20 @@ func (e Engine) step(ctx context.Context, s *State, p, step string) error {
 		if err != nil {
 			return err
 		}
-		return removeLegacyAccess(p)
+		if err = removeLegacyAccess(p); err != nil {
+			return err
+		}
+		if err = e.initializeAdministrator(ctx, s, p); err != nil {
+			return err
+		}
+		return e.initializeBrand(ctx, s, p)
 	case "modules":
 		_, err := e.Runner.Run(ctx, compose(s, p, "run", "--rm", "--no-deps", "app", "php", "/opt/provision/bridge.php", "modules"))
 		return err
 	case "analytics":
+		if !contains(instanceModules(s), "analytics") {
+			return nil
+		}
 		_, err := e.Runner.Run(ctx, compose(s, p, "run", "--rm", "--no-deps", "app", "php", "/opt/provision/bridge.php", "analytics-config"))
 		return err
 	case "dashboard":
@@ -308,6 +345,38 @@ func (e Engine) Lifecycle(ctx context.Context, site, op string) (*State, error) 
 	}
 	return s, e.save(s, p)
 }
+func (e Engine) checkPaletteSupport(ctx context.Context, s *State, p string) error {
+	raw, err := e.Runner.Run(ctx, compose(s, p, "exec", "-T", "app", "php", "/opt/provision/bridge.php", "capabilities"))
+	if err != nil {
+		return errors.New("customer image does not support generated palettes; update the instance first")
+	}
+	var caps struct {
+		OK               bool `json:"ok"`
+		GeneratedPalette bool `json:"generated_palette"`
+	}
+	if json.Unmarshal(raw, &caps) != nil || !caps.OK || !caps.GeneratedPalette {
+		return errors.New("customer image does not support generated palettes; update the instance first")
+	}
+	return nil
+}
+func (e Engine) requirePaletteSupport(ctx context.Context, site string) error {
+	unlock, err := e.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	s, p, err := e.load(site)
+	if err != nil {
+		return err
+	}
+	if s.RelocatedTo != "" || (s.Status != "ready" && s.Status != "needs_customer_setup") {
+		return errors.New("instance must be running here")
+	}
+	if err = e.checkOwner(ctx, s, p); err != nil {
+		return err
+	}
+	return e.checkPaletteSupport(ctx, s, p)
+}
 func (e Engine) Import(ctx context.Context, site, file string) ([]byte, error) {
 	unlock, err := e.lock()
 	if err != nil {
@@ -345,6 +414,11 @@ func (e Engine) Import(ctx context.Context, site, file string) ([]byte, error) {
 	if err = json.Unmarshal(raw, &v); err != nil {
 		return nil, err
 	}
+	if _, hasPalette := v["palette"]; hasPalette {
+		if err = e.checkPaletteSupport(ctx, s, p); err != nil {
+			return nil, err
+		}
+	}
 	artifact := filepath.Join(p, "storage", "incoming.json")
 	if err = atomicFile(artifact, raw); err != nil {
 		return nil, err
@@ -356,7 +430,11 @@ func timeout() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 5*time.Minute)
 }
 func publicState(s *State) map[string]any {
-	result := map[string]any{"site_id": s.Request.SiteID, "status": s.Status, "step": s.Step, "completed": s.Completed, "release": s.Release.ID, "error": s.Error, "preview_url": fmt.Sprintf("http://%s.localhost:%d", s.Request.SiteID, s.Request.Port), "admin_url": fmt.Sprintf("http://%s.localhost:%d/admin", s.Request.SiteID, s.Request.Port)}
+	packageID := s.Request.CatalogPackageID
+	if packageID == "" {
+		packageID = s.Request.Package
+	}
+	result := map[string]any{"catalog_package_id": packageID, "catalog_package_revision": s.Request.CatalogPackageRevision, "site_id": s.Request.SiteID, "status": s.Status, "step": s.Step, "completed": s.Completed, "release": s.Release.ID, "error": s.Error, "preview_url": fmt.Sprintf("http://%s.localhost:%d", s.Request.SiteID, s.Request.Port), "admin_url": fmt.Sprintf("http://%s.localhost:%d/admin", s.Request.SiteID, s.Request.Port)}
 	if s.RelocatedTo != "" {
 		result["relocated_to"] = s.RelocatedTo
 	}
