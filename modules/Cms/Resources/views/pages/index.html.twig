@@ -1,0 +1,168 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+{% set homePageId = homePageId|default('') %}
+{% set canManage = user.can('cms.manage') %}
+<div
+    class="list-shell"
+>
+    <header class="page-header">
+        <div>
+            <h1>{{ 'cms.pages.title'|trans }}</h1>
+            <p class="muted">{{ 'cms.pages.subtitle'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% if canManage %}
+                {% include 'ui/button.html.twig' with { tag: 'a', href: url('admin.cms.forms.attempts'), label: 'cms.form.attempts'|trans, variant: 'ghost' } only %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url('admin.cms.pages.builder.sandbox') }}"{% endblock %}{% block content %}{{ icon('layout') }} {{ 'cms.builder.sandbox.open'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.cms.pages.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'cms.pages.new'|trans }}{% endblock %}{% endembed %}
+            {% endif %}
+        </div>
+    </header>
+
+    <div x-data="dataTable" data-table-id="cms-pages" data-actions-default="1">
+        <div class="toolbar--table">
+            {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'cms.pages.search'|trans }}" aria-label="{{ 'cms.pages.search'|trans }}"{% endblock %}{% endembed %}
+                {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="status" onchange="this.form.submit()" aria-label="{{ 'cms.filter.status_all'|trans }}"{% endblock %}{% block native_options %}
+                    {% include 'ui/option.html.twig' with { value: '', label: 'cms.filter.status_all'|trans } only %}
+                    {% for s in statuses %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ s }}" {{ status == s ? 'selected' : '' }}{% endblock %}{% block content %}{{ ('cms.page.status.' ~ s)|trans }}{% endblock %}{% endembed %}
+                    {% endfor %}
+                {% endblock %}{% endembed %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'cms.pages.filter'|trans,
+                    type: 'submit',
+                    variant: 'ghost',
+                    class: 'btn-sm'
+                } only %}
+            {% endblock %}{% endembed %}
+        </div>
+
+        <div class="table-wrap" data-table>
+            <table class="table cms-pages-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'cms.field.title'|trans }}</th>
+                        <th>{{ 'cms.field.url'|trans }}</th>
+                        <th>{{ 'cms.field.template'|trans }}</th>
+                        <th>{{ 'cms.field.menu'|trans }}</th>
+                        <th>{{ 'cms.field.status'|trans }}</th>
+                        <th>{{ 'cms.field.updated'|trans }}</th>
+                        {% if canManage %}
+                            <th class="table__toggle-cell">{{ 'ui.table.col.publish'|trans }}</th>
+                            <th>{{ 'cms.pages.col.home'|trans }}</th>
+                        {% endif %}
+                        <th class="table__actions-head"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        {% set isHome = homePageId != '' and homePageId == item.id() %}
+                        {% if item.status() == 'published' %}
+                            {% set statusTone = 'ok' %}
+                            {% set statusLabel = 'cms.page.status.live'|trans %}
+                        {% elseif item.status() == 'archived' or item.publishedAt() %}
+                            {% set statusTone = 'warn' %}
+                            {% set statusLabel = 'cms.page.status.unpublished'|trans %}
+                        {% else %}
+                            {% set statusTone = 'muted' %}
+                            {% set statusLabel = 'cms.page.status.draft'|trans %}
+                        {% endif %}
+                        <tr{% if isHome %} class="cms-pages-table__row--home"{% endif %}>
+                            <td>
+                                <a class="cms-pages-table__name" href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ item.title() }}</a>
+                            </td>
+                            <td>
+                                <code class="cms-pages-table__url">/{{ item.slug() }}</code>
+                            </td>
+                            <td>{{ item.templateLabel()|trans }}</td>
+                            <td>
+                                {% set menus = item.menuLocationLabels() %}
+                                {% if menus is not empty %}
+                                    <span class="cms-link-menus__badges">
+                                        {% for label in menus %}
+                                            <span class="badge badge--info">{{ label|trans }}</span>
+                                        {% endfor %}
+                                    </span>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge--{{ statusTone }}">{{ statusLabel }}</span>
+                            </td>
+                            <td class="is-mute">{{ item.updatedAt().format('d. m. Y H:i') }}</td>
+                            {% if canManage %}
+                                <td class="table__toggle-cell">
+                                    {% include 'ui/table_toggle.html.twig' with {
+                                        action: url('admin.cms.pages.publish', {id: item.id()}),
+                                        on: item.isPublished(),
+                                        title_on: 'ui.table.publish.on'|trans,
+                                        title_off: 'ui.table.publish.off'|trans
+                                    } %}
+                                </td>
+                                <td>
+                                    {% if isHome %}
+                                        <span class="badge badge--info">{{ 'cms.pages.home_badge'|trans }}</span>
+                                    {% else %}
+                                        <form method="post" action="{{ url('admin.cms.pages.home', {id: item.id()}) }}" data-confirm="{{ 'cms.pages.home.confirm'|trans({'%title%': item.title()}) }}" data-confirm-title="{{ 'cms.pages.home.set'|trans }}" data-confirm-label="{{ 'cms.pages.home.set'|trans }}" data-confirm-danger="0">
+                                            {{ csrf_field()|raw }}
+                                            {% include 'ui/button.html.twig' with { type: 'submit', label: 'cms.pages.home.set'|trans, variant: 'ghost', class: 'btn-sm' } only %}
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                            {% embed 'ui/row_actions.html.twig' %}
+                                {% block items %}
+                                    {% if canManage and not item.isRaw() %}
+                                        {% include 'ui/row_action.html.twig' with {
+                                            href: url('admin.cms.pages.builder', {id: item.id()}),
+                                            label: 'cms.builder.open'|trans,
+                                            icon: 'layout',
+                                            variant: 'primary'
+                                        } %}
+                                    {% endif %}
+                                    {% include 'ui/row_action.html.twig' with {
+                                        href: url('admin.cms.pages.preview', {id: item.id()}),
+                                        label: 'cms.pages.preview'|trans,
+                                        icon: 'external',
+                                        target: '_blank'
+                                    } %}
+                                    {% if canManage %}
+                                        {% include 'ui/row_action.html.twig' with {
+                                            href: url('admin.cms.pages.edit', {id: item.id()}),
+                                            label: 'common.edit'|trans,
+                                            icon: 'edit'
+                                        } %}
+                                        {% include 'ui/row_action_destroy.html.twig' with {
+                                            action: url('admin.cms.pages.destroy', {id: item.id()}),
+                                            confirm: 'cms.confirm_delete_page'|trans
+                                        } %}
+                                    {% endif %}
+                                {% endblock %}
+                            {% endembed %}
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="{{ canManage ? 9 : 7 }}">
+                                <div class="empty">
+                                    <h2>{{ 'cms.pages.empty'|trans }}</h2>
+                                    <p>{{ 'cms.pages.empty.hint'|trans }}</p>
+                                    {% if canManage %}
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.cms.pages.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'cms.pages.new'|trans }}{% endblock %}{% endembed %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'ui/table_footer.html.twig' %}
+    </div>
+
+
+</div>
+{% endblock %}

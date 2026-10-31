@@ -1,0 +1,183 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: item ? 'webplus.metas.edit'|trans : 'webplus.metas.new'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ item ? 'webplus.metas.edit'|trans : 'webplus.metas.new'|trans }}</h1>
+        <p class="muted">{{ 'webplus.metas.form.intro'|trans }}</p>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'webplus.meta.save' } %}
+
+{% set metaSource = item ?? 'Modules\\WebPlus\\Domain\\WebMeta' %}
+{% set selectedPage = item ? item.cmsPageId() : presetPageId %}
+{% set isTemplate = item ? item.isPathTemplate() : (presetPath is defined and '{' in presetPath) %}
+
+<form method="post" class="detail-stack" enctype="multipart/form-data" action="{{ item ? url('admin.webplus.metas.update', {id: item.id()}) : url('admin.webplus.metas.store') }}" data-form="webplus.meta.save" x-data="gereqForm"{% if form_errors('webplus.meta.save') %} data-server-state="1"{% endif %}>
+    {{ csrf_field()|raw }}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus.section.identity'|trans }}</h2>
+            <p class="muted">{{ 'webplus.section.identity_hint'|trans }}</p>
+        </header>
+        <div class="form-grid">
+            {{ forms().render(metaSource, {
+                form: 'webplus.meta.save',
+                group: 'identity',
+                cols: 1,
+                wrap: false,
+                exclude: ['cms_page_id'],
+                values: item ? {} : { path: presetPath, active: true }
+            }) }}
+            <label class="field">
+                <span>{{ 'webplus.field.cms_page_id'|trans }}</span>
+                {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="cms_page_id"{% endblock %}{% block native_options %}
+                    {% include 'ui/option.html.twig' with { value: '', label: 'webplus.field.cms_page_id.empty'|trans } only %}
+                    {% for page in cmsPages %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ page.id }}" {{ selectedPage == page.id ? 'selected' : '' }}{% endblock %}{% block content %}{{ page.label }}{% endblock %}{% endembed %}
+                    {% endfor %}
+                {% endblock %}{% endembed %}
+                <span class="field__hint">{{ 'webplus.field.cms_page_id.hint'|trans }}</span>
+            </label>
+        </div>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus.section.seo'|trans }}</h2>
+            <p class="muted">{{ 'webplus.section.seo_hint'|trans }}</p>
+        </header>
+        {{ forms().render(metaSource, { form: 'webplus.meta.save', group: 'seo', cols: 1 }) }}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus.section.geo'|trans }}</h2>
+            <p class="muted">{{ 'webplus.section.geo_hint'|trans }}</p>
+        </header>
+        {{ forms().render(metaSource, { form: 'webplus.meta.save', group: 'geo', cols: 1 }) }}
+        {% include 'ui/textarea.html.twig' with {
+            name: 'json_ld_json',
+            label: 'webplus.field.json_ld'|trans,
+            optional: true,
+            form: 'webplus.meta.save',
+            value: jsonLdJson,
+            hint: 'webplus.field.json_ld.hint'|trans,
+            size: 'mini',
+            rows: 8
+        } %}
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}{% block attributes %} class="panel" x-data='webplusOgPreview({{ {
+        mode: "meta",
+        siteName: siteName|default(""),
+        defaultOgImage: defaultOgImage|default(""),
+        isTemplate: isTemplate
+    }|json_encode|raw }})'{% endblock %}{% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus.section.share'|trans }}</h2>
+            <p class="muted">{{ 'webplus.section.share_hint'|trans }}</p>
+        </header>
+        <div class="webplus-share__grid">
+            <div class="webplus-share__fields">
+                {{ forms().render(metaSource, {
+                    form: 'webplus.meta.save',
+                    group: 'og',
+                    cols: 1,
+                    exclude: ['og_image_url'],
+                    wrap: false
+                }) }}
+                {% include 'ui/media_box.html.twig' with {
+                    name: 'og_image_url',
+                    file_name: 'og_image_file',
+                    library_name: 'og_media_asset_id',
+                    clear_name: 'clear_og_image',
+                    id: 'f-og_image_url',
+                    label: 'webplus.field.og_image_url'|trans,
+                    optional: true,
+                    form: 'webplus.meta.save',
+                    value: item and item.ogImageUrl() ? item.ogImageUrl() : '',
+                    hint: 'webplus.field.og_image_url.hint'|trans,
+                    has_media: hasMedia|default(false),
+                    library: libraryImages|default([])
+                } %}
+
+                <header class="panel__head" style="padding:0;border:0">
+                    <h3 style="margin:0;font-size:1rem">{{ 'webplus.section.twitter'|trans }}</h3>
+                </header>
+                {{ forms().render(metaSource, {
+                    form: 'webplus.meta.save',
+                    group: 'twitter',
+                    cols: 1,
+                    exclude: ['twitter_image_url'],
+                    wrap: false
+                }) }}
+                {% include 'ui/media_box.html.twig' with {
+                    name: 'twitter_image_url',
+                    file_name: 'twitter_image_file',
+                    library_name: 'twitter_media_asset_id',
+                    clear_name: 'clear_twitter_image',
+                    id: 'f-twitter_image_url',
+                    label: 'webplus.field.twitter_image_url'|trans,
+                    optional: true,
+                    form: 'webplus.meta.save',
+                    value: item and item.twitterImageUrl() ? item.twitterImageUrl() : '',
+                    hint: 'webplus.field.twitter_image_url.hint'|trans,
+                    has_media: hasMedia|default(false),
+                    library: libraryImages|default([])
+                } %}
+
+                <label class="field field--full" x-show="isTemplate" x-cloak>
+                    <span>{{ 'webplus.field.og_sample_path'|trans }}</span>
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="og_sample_path" value="{{ samplePath|default('') }}" placeholder="{{ 'webplus.field.og_sample_path.placeholder'|trans }}" @input="touch()"{% endblock %}{% endembed %}
+                    <span class="field__hint">{{ 'webplus.field.og_sample_path.hint'|trans }}</span>
+                </label>
+            </div>
+            <aside class="webplus-share__preview">
+                <p class="webplus-share__preview-label">{{ 'webplus.og_preview.title'|trans }}</p>
+                {% include '@webplus/partials/og_preview.html.twig' %}
+            </aside>
+        </div>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus.section.sitemap'|trans }}</h2>
+        </header>
+        {{ forms().render(metaSource, { form: 'webplus.meta.save', group: 'sitemap', cols: 1 }) }}
+        {% endblock %}
+    {% endembed %}
+
+    <div class="form-actions">
+        {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+        {% include 'ui/button.html.twig' with {
+            label: 'common.cancel'|trans,
+            href: (url('admin.webplus.metas.index')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+    </div>
+</form>
+{% endblock %}

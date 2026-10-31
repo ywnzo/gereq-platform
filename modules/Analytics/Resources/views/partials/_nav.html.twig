@@ -1,0 +1,31 @@
+{#
+    Analytics hub tabs (overview ↔ reports ↔ visitors).
+    {% include '@analytics/partials/_nav.html.twig' with { active: 'pages', site: site, range: range } %}
+#}
+{% set active = active|default('') %}
+{% set site = site|default(null) %}
+{% set range = range|default(null) %}
+{% set siteParam = site ? site.id|default(null) : null %}
+{% set rangeParam = range is iterable ? range.key|default(null) : range %}
+{% set tabs = [
+    { key: 'overview', route: 'admin.analytics.index' },
+    { key: 'pages', route: 'admin.analytics.pages' },
+    { key: 'sources', route: 'admin.analytics.sources' },
+    { key: 'devices', route: 'admin.analytics.devices' },
+    { key: 'forms', route: 'admin.analytics.forms' },
+    { key: 'recordings', route: 'admin.analytics.recordings', permission: 'analytics.raw' },
+    { key: 'events', route: 'admin.analytics.events' },
+    { key: 'visitors', route: 'admin.analytics.visitors', permission: 'analytics.raw' },
+] %}
+<nav class="design-tabs detail-tabs" aria-label="{{ 'nav.analytics'|trans }}">
+    {% for tab in tabs %}
+        {% if route_exists(tab.route) and (tab.permission is not defined or user.can(tab.permission)) %}
+            <a
+                class="design-tab{{ active == tab.key ? ' is-active' : '' }}"
+                href="{{ url(tab.route, { site: siteParam, range: rangeParam }) }}"
+                {% if active == tab.key %}aria-current="page"{% endif %}
+                style="text-decoration:none"
+            >{{ ('analytics.title.' ~ tab.key)|trans }}</a>
+        {% endif %}
+    {% endfor %}
+</nav>

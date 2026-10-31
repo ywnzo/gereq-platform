@@ -1,0 +1,40 @@
+{#
+    Generic report table driven by `columns` and `rows` render data.
+    columns: list<{key, label, numeric?}> (a plain list of key strings also works)
+    rows:    list<map<string, mixed>> keyed by column key
+    {% include '@analytics/partials/_table.html.twig' with { columns: columns, rows: rows } %}
+#}
+{% import '@analytics/partials/_macros.html.twig' as analytics %}
+{% set columns = columns|default([]) %}
+{% set rows = rows|default([]) %}
+<div class="table-wrap" data-table>
+    <table class="table">
+        <thead>
+            <tr>
+                {% for column in columns %}
+                    <th scope="col"{{ column is iterable and column.numeric|default(false) ? ' class="is-num"' : '' }}>{{ analytics.column_label(column) }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    {% for column in columns %}
+                        <td{{ column is iterable and column.numeric|default(false) ? ' class="is-num"' : '' }}>{{ analytics.cell(row, column) }}</td>
+                    {% endfor %}
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="{{ max(1, columns|length) }}">
+                        <div class="empty">
+                            <h2>{{ empty_title|default('analytics.report.empty'|trans) }}</h2>
+                            {% if empty_hint|default('analytics.report.empty.hint'|trans) is not empty %}
+                                <p>{{ empty_hint|default('analytics.report.empty.hint'|trans) }}</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,147 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: 'webplus.mapping.title'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<div class="list-shell list-shell--tabs">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'webplus.mapping.title'|trans }}</h1>
+            <p class="muted">{{ 'webplus.mapping.intro'|trans }}</p>
+        </div>
+        {% if user.can('webplus.manage') %}
+            <div class="actions">
+                <form method="post" action="{{ url('admin.webplus.metas.auto_map') }}" data-confirm="{{ 'webplus.mapping.auto.confirm'|trans }}">
+                    {{ csrf_field()|raw }}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--primary" type="submit"{% endblock %}{% block content %}{{ icon('zap') }} {{ 'webplus.mapping.auto'|trans }}{% endblock %}{% endembed %}
+                </form>
+                <form method="post" action="{{ url('admin.webplus.metas.ensure_templates') }}">
+                    {{ csrf_field()|raw }}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="submit"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'webplus.mapping.ensure'|trans }}{% endblock %}{% endembed %}
+                </form>
+            </div>
+        {% endif %}
+    </header>
+
+    {% include '@webplus/partials/_hub_tabs.html.twig' with { active: 'mapping' } %}
+
+    {% if discovered is defined and discovered|length > 0 %}
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel" style="margin: 0 0 1rem"{% endblock %}
+            {% block content %}
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'webplus.mapping.discovered.title'|trans }}</h2>
+                    <p class="muted">{{ 'webplus.mapping.discovered.intro'|trans }}</p>
+                </div>
+            </header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'webplus.mapping.template'|trans }}</th>
+                            <th>{{ 'webplus.mapping.tokens'|trans }}</th>
+                            <th>{{ 'webplus.mapping.discovered.hits'|trans }}</th>
+                            <th>{{ 'webplus.mapping.example'|trans }}</th>
+                            <th>{{ 'webplus.mapping.meta'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in discovered %}
+                            <tr>
+                                <td><code>{{ row.template }}</code></td>
+                                <td>
+                                    {% for token in row.tokens %}
+                                        <code>{{ '{' ~ token ~ '}' }}</code>
+                                    {% endfor %}
+                                </td>
+                                <td>{{ row.hit_count }}</td>
+                                <td>
+                                    {% for sample in row.samples|slice(0, 3) %}
+                                        <code>{{ sample }}</code>{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if row.exists %}
+                                        <span class="badge badge--ok">{{ 'webplus.mapping.discovered.exists'|trans }}</span>
+                                    {% else %}
+                                        <span class="badge badge--warn">{{ 'webplus.mapping.discovered.new'|trans }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'webplus.mapping.fe'|trans }}</th>
+                    <th>{{ 'webplus.mapping.template'|trans }}</th>
+                    <th>{{ 'webplus.mapping.source'|trans }}</th>
+                    <th>{{ 'webplus.mapping.tokens'|trans }}</th>
+                    <th>{{ 'webplus.mapping.live'|trans }}</th>
+                    <th>{{ 'webplus.mapping.meta'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for map in mappings %}
+                    <tr>
+                        <td>
+                            <code>{{ map.fe_route }}</code>
+                            {% if map.dynamic %}
+                                <span class="badge badge--signal">{{ 'webplus.mapping.dynamic'|trans }}</span>
+                            {% endif %}
+                            <div class="muted" style="margin-top:.25rem">{{ 'webplus.mapping.example'|trans }} <code>{{ map.example }}</code></div>
+                        </td>
+                        <td><code>{{ map.template }}</code></td>
+                        <td>{{ ('webplus.mapping.source.' ~ map.source)|trans }}</td>
+                        <td>
+                            {% for token in map.tokens %}
+                                <code>{{ '{' ~ token ~ '}' }}</code>
+                            {% else %}
+                                —
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if map.dynamic %}
+                                {{ map.live_count }}
+                                {% if map.override_count > 0 %}
+                                    <span class="muted">· {{ 'webplus.mapping.overrides'|trans({ '%count%': map.override_count }) }}</span>
+                                {% endif %}
+                            {% else %}
+                                {{ map.meta_id ? '1' : '—' }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if map.meta_id %}
+                                <a href="{{ url('admin.webplus.metas.edit', {id: map.meta_id}) }}">{{ map.meta_title ?: map.template }}</a>
+                            {% elseif user.can('webplus.manage') %}
+                                {% include 'ui/button.html.twig' with {
+                                    label: 'webplus.mapping.create'|trans,
+                                    href: (url('admin.webplus.metas.create', {path: map.template})),
+                                    button_options: { tag: 'a' },
+                                    variant: 'ghost'
+                                } only %}
+                            {% else %}
+                                <span class="muted">{{ 'webplus.mapping.missing'|trans }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

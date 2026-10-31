@@ -1,0 +1,140 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.cms'|trans, url: url('admin.cms.pages.index') },
+        { label: 'nav.cms.pages'|trans, url: url('admin.cms.pages.index') },
+        { label: item.title() },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <p class="eyebrow"><a href="{{ url('admin.cms.pages.index') }}">{{ 'nav.cms.pages'|trans }}</a></p>
+            <h1>{{ item.title() }}</h1>
+            <p class="muted detail-layout__meta">
+                <code>/{{ item.slug() }}</code>
+                <span class="status-chip"><span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}</span>
+                <span class="badge badge--muted">{{ item.templateLabel()|trans }}</span>
+                {% if staged %}
+                    <span class="badge badge--warn">{{ 'cms.staging.pending'|trans }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="actions">
+            {% if user.can('cms.manage') and not item.isRaw() %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.cms.pages.builder', {id: item.id()}) }}"{% endblock %}{% block content %}{{ 'cms.builder.open'|trans }}{% endblock %}{% endembed %}
+            {% endif %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn {{ user.can('cms.manage') and not item.isRaw() ? 'btn--ghost' : 'btn--primary' }}" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank" rel="noopener"{% endblock %}{% block content %}{{ 'cms.pages.preview'|trans }}{% endblock %}{% endembed %}
+            {% if route_exists('admin.webplus.metas.for_page') and user.can('webplus.manage') %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url('admin.webplus.metas.for_page', {pageId: item.id()}) }}"{% endblock %}{% block content %}{{ icon('globe') }} {{ 'webplus.cms.action'|trans }}{% endblock %}{% endembed %}
+            {% endif %}
+            {% if user.can('cms.manage') %}
+                <form method="post" action="{{ url('admin.cms.pages.publish', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost" type="submit" title="{{ 'cms.pages.publish_hint'|trans }}"{% endblock %}{% block content %}
+                        {{ item.isPublished() ? 'cms.pages.unpublish'|trans : 'cms.pages.stage_publish'|trans }}
+                    {% endblock %}{% endembed %}
+                </form>
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}"{% endblock %}{% block content %}{{ 'common.edit'|trans }}{% endblock %}{% endembed %}
+                <form method="post" action="{{ url('admin.cms.pages.destroy', {id: item.id()}) }}" data-confirm="{{ 'cms.confirm_delete_page'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                    {{ csrf_field()|raw }}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--danger" type="submit"{% endblock %}{% block content %}{{ 'common.delete'|trans }}{% endblock %}{% endembed %}
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+            <div class="detail-layout">
+                <div class="detail-layout__main">
+                    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}{% block attributes %} class="detail-hero panel"{% endblock %}{% block content %}
+                        <div class="detail-hero__body">
+                            <div class="detail-hero__highlight">
+                                <span>{{ 'cms.field.status'|trans }}</span>
+                                <strong>{{ item.statusLabel()|trans }}</strong>
+                            </div>
+                            <dl class="detail-hero__facts">
+                                <div>
+                                    <dt>{{ 'cms.field.slug'|trans }}</dt>
+                                    <dd><code>{{ item.slug() }}</code></dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'cms.field.template'|trans }}</dt>
+                                    <dd>{{ item.templateLabel()|trans }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'cms.field.content_mode'|trans }}</dt>
+                                    <dd>{{ item.contentModeLabel()|trans }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ 'cms.field.updated'|trans }}</dt>
+                                    <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    {% endblock %}{% endembed %}
+                    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}{% block attributes %} class="panel cms-page-preview-panel"{% endblock %}{% block content %}
+                        <header class="panel__head">
+                            <h2>{{ 'cms.detail.appearance'|trans }}</h2>
+                            {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost btn--sm" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank" rel="noopener"{% endblock %}{% block content %}{{ 'cms.pages.preview'|trans }}{% endblock %}{% endembed %}
+                        </header>
+                        <p class="muted cms-page-preview-caption">{{ (staged ? 'cms.detail.preview_staged' : 'cms.detail.preview_current')|trans }}</p>
+                        <div class="cms-page-preview-shot" x-data="cmsPagePreview" data-boot="{{ previewBoot|json_encode|e('html_attr') }}">
+                            {% if storefrontUrl %}
+                            <iframe id="cmsPreviewFrame" src="{{ storefrontUrl }}?preview=1" title="{{ 'cms.detail.appearance'|trans }}" loading="lazy" tabindex="-1" aria-hidden="true"></iframe>
+                            {% else %}
+                            <p class="muted cms-page-preview-caption">{{ 'cms.detail.preview_unavailable'|trans }}</p>
+                            {% endif %}
+                            <a class="cms-page-preview-open" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank" rel="noopener" aria-label="{{ 'cms.pages.preview'|trans }}"></a>
+                        </div>
+                    {% endblock %}{% endembed %}
+                </div>
+
+                <aside class="detail-layout__aside">
+                    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}{% block attributes %} class="panel"{% endblock %}{% block content %}
+                        <header class="panel__head"><h2>{{ 'cms.detail.menus'|trans }}</h2></header>
+                        <div class="cms-page-menu-locations">
+                            {% for label in item.menuLocationLabels() %}
+                                <span class="badge badge--info">{{ label|trans }}</span>
+                            {% else %}
+                                <p class="muted">{{ 'cms.menu.location.none'|trans }}</p>
+                            {% endfor %}
+                            {% if user.can('cms.manage') %}
+                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} href="{{ url('admin.cms.pages.edit', {id: item.id()}) }}" class="btn btn--ghost btn--sm"{% endblock %}{% block content %}{{ 'cms.detail.edit_menus'|trans }}{% endblock %}{% endembed %}
+                            {% endif %}
+                        </div>
+                    {% endblock %}{% endembed %}
+
+                    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}{% block attributes %} class="panel"{% endblock %}{% block content %}
+                        <header class="panel__head">
+                            <h2>{{ 'common.overview'|trans }}</h2>
+                        </header>
+                        <dl class="meta-list meta-list--flush detail-layout__specs">
+                            <div class="meta-list__full">
+                                <dt>{{ 'cms.field.meta_description'|trans }}</dt>
+                                <dd>{{ item.metaDescription()|default('—') }}</dd>
+                            </div>
+                            <div class="meta-list__full">
+                                <dt>{{ 'cms.field.published_at'|trans }}</dt>
+                                <dd>{{ item.publishedAt() ? item.publishedAt().format('d. m. Y H:i') : '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'cms.field.status'|trans }}</dt>
+                                <dd>{{ item.statusLabel()|trans }}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'cms.staging.pending'|trans }}</dt>
+                                <dd>{% if staged %}{{ 'common.yes'|trans|default('Ano') }}{% else %}—{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>{{ 'cms.field.updated'|trans }}</dt>
+                                <dd>{{ item.updatedAt().format('d. m. Y H:i') }}</dd>
+                            </div>
+                        </dl>
+                    {% endblock %}{% endembed %}
+                </aside>
+            </div>
+
+{% endblock %}

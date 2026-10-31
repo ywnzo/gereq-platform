@@ -1,0 +1,21 @@
+{#
+  Shared Web+ hub tabs (metas ↔ FE route mapping).
+  {% include '@webplus/partials/_hub_tabs.html.twig' with { active: 'metas' } %}
+#}
+{% set active = active|default('metas') %}
+{% embed 'ui/tabs.html.twig' with { tabs_options: { tag: 'nav' } } %}{% block component_attributes %} class="design-tabs detail-tabs" role="tablist" aria-label="{{ 'nav.webplus'|trans }}"{% endblock %}{% block content %}
+    <a
+        class="design-tab{{ active == 'metas' ? ' is-active' : '' }}"
+        role="tab"
+        href="{{ url('admin.webplus.metas.index') }}"
+        aria-selected="{{ active == 'metas' ? 'true' : 'false' }}"
+        style="text-decoration:none"
+    >{{ 'nav.webplus.metas'|trans }}</a>
+    <a
+        class="design-tab{{ active == 'mapping' ? ' is-active' : '' }}"
+        role="tab"
+        href="{{ url('admin.webplus.metas.mapping') }}"
+        aria-selected="{{ active == 'mapping' ? 'true' : 'false' }}"
+        style="text-decoration:none"
+    >{{ 'webplus.mapping.title'|trans }}</a>
+{% endblock %}{% endembed %}

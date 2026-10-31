@@ -1,0 +1,20 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="cms-form-upload-warning">
+    <h1>{{ 'cms.form.scan.warning_title'|trans }}</h1>
+    {% include 'ui/alert.html.twig' with { tone: 'warn', title: ('cms.form.scan.' ~ scan_status)|trans, message: 'cms.form.scan.warning'|trans, icon: 'warning' } only %}
+    <p><strong>{{ upload.filename }}</strong></p>
+    <p>{{ 'cms.form.scan.confirm_hint'|trans }}</p>
+    <form method="post" action="{{ url('admin.cms.forms.download.confirm', {id: upload.id}) }}" data-confirm="{{ 'cms.form.scan.warning'|trans }}">
+        {{ csrf_field()|raw }}
+        <input type="hidden" name="acknowledge" value="1">
+        {% include 'ui/button.html.twig' with { type: 'submit', label: 'cms.form.scan.download_anyway'|trans, variant: 'secondary' } only %}
+    </form>
+    {% if scan_status == 'failed' and user.can('cms.manage') %}
+        <form method="post" action="{{ url('admin.cms.forms.scan.retry', {id: upload.id}) }}">
+            {{ csrf_field()|raw }}
+            {% include 'ui/button.html.twig' with { type: 'submit', label: 'cms.form.scan.retry'|trans, variant: 'ghost' } only %}
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

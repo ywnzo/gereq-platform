@@ -1,0 +1,229 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.cms'|trans, url: url('admin.cms.pages.index') },
+        { label: 'nav.cms.menus'|trans, url: url('admin.cms.menus.index') },
+        { label: item ? item.name() : ('cms.menus.new'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1>{{ item ? 'cms.menus.edit'|trans : 'cms.menus.new'|trans }}</h1>
+            <p class="muted">{{ item ? ('cms.menus.edit.intro'|trans) : ('cms.menus.new.intro'|trans) }}</p>
+        </div>
+        <div class="actions">
+            {% if not item %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'common.save'|trans,
+                    type: 'submit',
+                    variant: 'primary',
+                    attrs: { 'form': 'cms-menu-form' }
+                } only %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'common.cancel'|trans,
+                    href: (url('admin.cms.menus.index')),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
+            {% elseif user.can('cms.manage') %}
+                <form method="post" action="{{ url('admin.cms.menus.destroy', {id: item.id()}) }}" data-confirm="{{ 'cms.confirm_delete_menu'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/button.html.twig' with { label: 'common.delete'|trans, type: 'submit', variant: 'danger' } only %}
+                </form>
+            {% endif %}
+        </div>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'cms.menu.save' } %}
+
+    <form
+        id="cms-menu-form"
+        method="post"
+        class="detail-stack"
+        action="{{ item ? url('admin.cms.menus.update', {id: item.id()}) : url('admin.cms.menus.store') }}"
+        data-form="cms.menu.save"
+        x-data="gereqForm"
+        {% if form_errors('cms.menu.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
+            <header class="panel__head">
+                <h2>{{ 'cms.menus.settings'|trans }}</h2>
+            </header>
+            {{ forms().render(item ?? 'Modules\\Cms\\Domain\\SiteMenu', {
+                form: 'cms.menu.save',
+                cols: 1
+            }) }}
+            <div class="form-actions">
+                {% include 'ui/button.html.twig' with {
+                    label: item ? ('cms.menus.save_settings'|trans) : ('common.save'|trans),
+                    type: 'submit',
+                    variant: 'primary'
+                } only %}
+                {% if not item %}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'common.cancel'|trans,
+                        href: (url('admin.cms.menus.index')),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
+                {% endif %}
+            </div>
+            {% endblock %}
+        {% endembed %}
+    </form>
+
+    {% if item %}
+        {% set parentOptions = [{value: '', label: '—'}] %}
+        {% for row in menuItems %}
+            {% set parentOptions = parentOptions|merge([{value: row.id(), label: row.label()}]) %}
+        {% endfor %}
+
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
+            <header class="panel__head"><h2>{{ 'cms.menu_items.title'|trans }}</h2></header>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ 'cms.field.order'|trans }}</th>
+                            <th>{{ 'cms.field.label'|trans }}</th>
+                            <th>{{ 'cms.field.url'|trans }}</th>
+                            <th>{{ 'cms.field.page'|trans }}</th>
+                            <th>{{ 'cms.field.parent_id'|trans }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in menuItems %}
+                            <tr>
+                                <td>
+                                    <div class="actions actions--compact">
+                                        <span class="muted">{{ row.sortOrder() }}</span>
+                                        {% if user.can('cms.manage') %}
+                                            <form method="post" action="{{ url('admin.cms.menus.items.move', {id: item.id(), itemId: row.id(), dir: 'up'}) }}">
+                                                {{ csrf_field()|raw }}
+                                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost btn-sm" type="submit" title="↑"{% endblock %}{% block content %}↑{% endblock %}{% endembed %}
+                                            </form>
+                                            <form method="post" action="{{ url('admin.cms.menus.items.move', {id: item.id(), itemId: row.id(), dir: 'down'}) }}">
+                                                {{ csrf_field()|raw }}
+                                                {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} class="btn btn--ghost btn-sm" type="submit" title="↓"{% endblock %}{% block content %}↓{% endblock %}{% endembed %}
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ row.label() }}</td>
+                                <td>{{ row.url()|default('—') }}</td>
+                                <td>
+                                    {% set pageLabel = '—' %}
+                                    {% for opt in pageOptions %}
+                                        {% if opt.value == row.pageId() %}
+                                            {% set pageLabel = opt.label %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ pageLabel }}
+                                </td>
+                                <td>
+                                    {% set parentLabel = '—' %}
+                                    {% for opt in parentOptions %}
+                                        {% if opt.value == row.parentId() %}
+                                            {% set parentLabel = opt.label %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ parentLabel }}
+                                </td>
+                                <td>
+                                    {% if user.can('cms.manage') %}
+                                        <details class="cms-menu-item-edit">
+                                            <summary class="btn btn--ghost btn-sm">{{ 'common.edit'|trans }}</summary>
+                                            <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.cms.menus.items.update', {id: item.id(), itemId: row.id()}) }}" data-form="cms.menu_item.save">
+                                                {{ csrf_field()|raw }}
+                                                {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.field.label'|trans, form: 'cms.menu_item.save', value: row.label() } %}
+                                                {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.field.url'|trans, optional: true, form: 'cms.menu_item.save', value: row.url()|default(''), hint: 'cms.field.url.hint'|trans } %}
+                                                {% include 'ui/select.html.twig' with {
+                                                    name: 'page_id',
+                                                    label: 'cms.field.page'|trans,
+                                                    optional: true,
+                                                    form: 'cms.menu_item.save',
+                                                    value: row.pageId()|default(''),
+                                                    options: pageOptions
+                                                } %}
+                                                {% include 'ui/select.html.twig' with {
+                                                    name: 'parent_id',
+                                                    label: 'cms.field.parent_id'|trans,
+                                                    optional: true,
+                                                    form: 'cms.menu_item.save',
+                                                    value: row.parentId()|default(''),
+                                                    options: parentOptions
+                                                } %}
+                                                <div class="form-actions">
+                                                    {% include 'ui/button.html.twig' with {
+                                                        label: 'common.save'|trans,
+                                                        type: 'submit',
+                                                        variant: 'primary',
+                                                        class: 'btn-sm'
+                                                    } only %}
+                                                </div>
+                                            </form>
+                                        </details>
+                                        <form method="post" action="{{ url('admin.cms.menus.items.destroy', {id: item.id(), itemId: row.id()}) }}" data-confirm="{{ 'cms.confirm_delete_menu_item'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                                            {{ csrf_field()|raw }}
+                                            {% include 'ui/button.html.twig' with {
+                                                label: 'common.delete'|trans,
+                                                type: 'submit',
+                                                variant: 'ghost',
+                                                class: 'btn-sm'
+                                            } only %}
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="6" class="muted">{{ 'cms.menu_items.empty'|trans }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if user.can('cms.manage') %}
+                {% include 'ui/error-summary.html.twig' with { form: 'cms.menu_item.save' } %}
+                <form method="post" class="form-grid form-grid--compact" action="{{ url('admin.cms.menus.items.store', {id: item.id()}) }}" data-form="cms.menu_item.save" x-data="gereqForm"{% if form_errors('cms.menu_item.save') %} data-server-state="1"{% endif %}>
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.field.label'|trans, form: 'cms.menu_item.save', value: '' } %}
+                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.field.url'|trans, optional: true, form: 'cms.menu_item.save', value: '', hint: 'cms.field.url.hint'|trans } %}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'page_id',
+                        label: 'cms.field.page'|trans,
+                        optional: true,
+                        form: 'cms.menu_item.save',
+                        value: '',
+                        options: pageOptions
+                    } %}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'parent_id',
+                        label: 'cms.field.parent_id'|trans,
+                        optional: true,
+                        form: 'cms.menu_item.save',
+                        value: '',
+                        options: parentOptions
+                    } %}
+                    <div class="form-actions">
+                        {% include 'ui/button.html.twig' with {
+                            label: 'cms.menu_items.add'|trans,
+                            type: 'submit',
+                            variant: 'primary'
+                        } only %}
+                    </div>
+                </form>
+            {% endif %}
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
+{% endblock %}

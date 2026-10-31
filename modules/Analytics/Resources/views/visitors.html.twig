@@ -1,0 +1,109 @@
+{% extends 'admin/layout.html.twig' %}
+{% import '@analytics/partials/_macros.html.twig' as analytics %}
+
+{#
+    Render data (frozen contract): pageTitle, site, range, rows.
+    Rows follow the visitor columns of modules/Analytics/README.md; both the
+    column names (visitor_hash) and the entity accessors (visitorHash) work.
+#}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.analytics'|trans, url: url('admin.analytics.index') },
+        { label: pageTitle|default('analytics.title.visitors'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    {% set rangeSummary = range ? 'analytics.range.summary'|trans({'%days%': analytics.range_days(range)}) : '' %}
+
+    {% set items = [] %}
+    {% for row in rows|default([]) %}
+        {% set items = items|merge([{
+            visitor: row.visitor_hash|default(row.visitorHash|default(null)),
+            first_seen: row.first_seen_at|default(row.firstSeenAt|default(null)),
+            last_seen: row.last_seen_at|default(row.lastSeenAt|default(null)),
+            sessions: row.session_count|default(row.sessionCount|default(null)),
+            pageviews: row.pageview_count|default(row.pageviewCount|default(null)),
+            events: row.event_count|default(row.eventCount|default(null)),
+            device: row.device_type|default(row.deviceType|default(null)),
+            browser: row.browser|default(null),
+            os: row.os|default(null),
+            country: row.country_code|default(row.countryCode|default(null)),
+            landing: row.landing_path|default(row.landingPath|default(null)),
+            last_path: row.last_path|default(row.lastPath|default(row.landing_path|default(null)))
+        }]) %}
+    {% endfor %}
+
+    <div class="grq-stack">
+        <header class="page-header">
+            <div>
+                <h1>{{ pageTitle|default('analytics.title.visitors'|trans) }}</h1>
+                <p class="muted">{{ 'analytics.visitors.intro'|trans }}</p>
+            </div>
+        </header>
+
+        {% include '@analytics/partials/_nav.html.twig' with { active: 'visitors', site: site, range: range } %}
+
+        {% include '@analytics/partials/_filters.html.twig' with {
+            route: 'admin.analytics.visitors',
+            site: site,
+            range: range,
+        } %}
+
+        <div class="table-wrap" data-table>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'analytics.visitors.col.visitor'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.first_seen'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.last_seen'|trans }}</th>
+                        <th scope="col" class="is-num">{{ 'analytics.visitors.col.sessions'|trans }}</th>
+                        <th scope="col" class="is-num">{{ 'analytics.visitors.col.pageviews'|trans }}</th>
+                        <th scope="col" class="is-num">{{ 'analytics.visitors.col.events'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.device'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.browser'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.os'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.country'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.landing'|trans }}</th>
+                        <th scope="col">{{ 'analytics.visitors.col.last_path'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>
+                                {% if item.visitor %}
+                                    <code title="{{ item.visitor }}">{{ item.visitor|slice(0, 12) }}…</code>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ analytics.date_cell(item.first_seen) }}</td>
+                            <td>{{ analytics.date_cell(item.last_seen) }}</td>
+                            <td class="is-num">{{ item.sessions|default('—') }}</td>
+                            <td class="is-num">{{ item.pageviews|default('—') }}</td>
+                            <td class="is-num">{{ item.events|default('—') }}</td>
+                            <td>{{ item.device|default('—') }}</td>
+                            <td>{{ item.browser|default('—') }}</td>
+                            <td>{{ item.os|default('—') }}</td>
+                            <td>{{ item.country|default('—') }}</td>
+                            <td>{{ item.landing|default('—') }}</td>
+                            <td>{{ item.last_path|default('—') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="12">
+                                <div class="empty">
+                                    <h2>{{ 'analytics.visitors.empty'|trans }}</h2>
+                                    <p>{{ 'analytics.visitors.empty.hint'|trans }}</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

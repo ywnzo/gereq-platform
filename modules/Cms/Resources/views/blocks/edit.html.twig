@@ -1,0 +1,172 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.cms'|trans, url: url('admin.cms.pages.index') },
+        { label: 'nav.cms.pages'|trans, url: url('admin.cms.pages.index') },
+        { label: item.title(), url: url('admin.cms.pages.show', {id: item.id()}) },
+        { label: 'cms.blocks.edit'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <p class="eyebrow"><a href="{{ url('admin.cms.pages.show', {id: item.id()}) }}">{{ item.title() }}</a></p>
+            <h1>{{ 'cms.blocks.edit'|trans }}</h1>
+            <p class="muted detail-layout__meta">
+                <span class="badge badge--info">{{ block.typeLabel()|trans }}</span>
+            </p>
+        </div>
+        <div class="actions">
+            {% include 'ui/button.html.twig' with {
+                label: 'cms.pages.preview'|trans,
+                href: (url('admin.cms.pages.preview', {id: item.id()})),
+                button_options: { tag: 'a' },
+                variant: 'ghost',
+                attrs: { 'target': '_blank', 'rel': 'noopener' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'cms-block-form' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (url('admin.cms.pages.show', {id: item.id()})),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        </div>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'cms.block.save' } %}
+    {% set p = block.payload() %}
+
+    <form
+        id="cms-block-form"
+        method="post"
+        class="detail-stack"
+        action="{{ url('admin.cms.blocks.update', {id: item.id(), blockId: block.id()}) }}"
+        data-form="cms.block.save"
+        x-data="gereqForm"
+        {% if form_errors('cms.block.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+        <input type="hidden" name="type" value="{{ block.type() }}">
+
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            <div class="form-grid">
+                {% if block.type() == 'heading' %}
+                    {% include 'ui/input.html.twig' with { name: 'text', label: 'cms.block.field.text'|trans, form: 'cms.block.save', value: p.text|default(''), extra: 'field--full' } %}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'level',
+                        label: 'cms.block.field.level'|trans,
+                        form: 'cms.block.save',
+                        value: p.level|default('2'),
+                        options: [{value:'1',label:'H1'},{value:'2',label:'H2'},{value:'3',label:'H3'}]
+                    } %}
+                {% elseif block.type() == 'text' %}
+                    {% include 'ui/textarea.html.twig' with { name: 'body', label: 'cms.block.field.body'|trans, form: 'cms.block.save', value: p.body|default(''), extra: 'field--full' } %}
+                {% elseif block.type() == 'image' %}
+                    {% if hasMedia %}
+                        {% include 'ui/select.html.twig' with { name: 'media_id', label: 'cms.block.field.media_id'|trans, optional: true, form: 'cms.block.save', value: p.media_id|default(''), options: mediaOptions, extra: 'field--full' } %}
+                    {% endif %}
+                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, optional: true, form: 'cms.block.save', value: p.url|default(''), extra: 'field--full' } %}
+                    {% include 'ui/input.html.twig' with { name: 'alt', label: 'cms.block.field.alt'|trans, optional: true, form: 'cms.block.save', value: p.alt|default('') } %}
+                    {% include 'ui/input.html.twig' with { name: 'caption', label: 'cms.block.field.caption'|trans, optional: true, form: 'cms.block.save', value: p.caption|default('') } %}
+                {% elseif block.type() == 'widget' %}
+                    {% include 'ui/select.html.twig' with { name: 'provider', label: 'cms.integration.provider'|trans, form: 'cms.block.save', value: p.provider|default('openstreetmap'), options: [{value:'openstreetmap',label:'OpenStreetMap'},{value:'google_maps',label:'Google Maps'},{value:'calendly',label:'Calendly'},{value:'tally',label:'Tally'}] } %}
+                    {% for field in ['url', 'title', 'widget_height'] %}
+                        {% set fieldKey = field == 'widget_height' ? 'height' : field %}
+                        {% include 'ui/input.html.twig' with { name: field, label: ('cms.integration.' ~ fieldKey)|trans, form: 'cms.block.save', value: attribute(p, field)|default('') } %}
+                    {% endfor %}
+                {% elseif block.type() == 'avatar' %}
+                    {% for field in ['name', 'initials', 'url', 'avatar_size', 'shape'] %}
+                        {% set fieldKey = field == 'avatar_size' ? 'size' : field %}
+                        {% include 'ui/input.html.twig' with { name: field, label: ('cms.avatar.' ~ fieldKey)|trans, form: 'cms.block.save', value: attribute(p, field)|default('') } %}
+                    {% endfor %}
+                {% elseif block.type() == 'badge' %}
+                    {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.badge.label'|trans, form: 'cms.block.save', value: p.label|default('') } %}
+                    {% include 'ui/select.html.twig' with { name: 'tone', label: 'cms.badge.tone'|trans, form: 'cms.block.save', value: p.tone|default('soft'), options: [{value:'soft',label:'cms.badge.soft'|trans},{value:'outline',label:'cms.badge.outline'|trans},{value:'solid',label:'cms.badge.solid'|trans}] } %}
+                {% elseif block.type() == 'dynamic' %}
+                    {% for field in ['source', 'item_template', 'variant', 'limit', 'empty_text'] %}
+                        {% include 'ui/textarea.html.twig' with { name: field, label: ('cms.dynamic.' ~ (field == 'item_template' ? 'template' : (field == 'empty_text' ? 'empty' : field)))|trans, form: 'cms.block.save', value: attribute(p, field)|default(''), extra: 'field--full' } %}
+                    {% endfor %}
+                {% elseif block.type() == 'html' %}
+                    {% include 'ui/textarea.html.twig' with { name: 'html', label: 'cms.block.field.html'|trans, form: 'cms.block.save', value: p.html|default(''), extra: 'field--full' } %}
+                {% elseif block.type() == 'cta' %}
+                    {% include 'ui/input.html.twig' with { name: 'label', label: 'cms.block.field.label'|trans, form: 'cms.block.save', value: p.label|default('') } %}
+                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, form: 'cms.block.save', value: p.url|default(''), extra: 'field--full' } %}
+                    {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: p.style|default('primary') } %}
+                {% elseif block.type() == 'columns' %}
+                    {% include 'ui/textarea.html.twig' with { name: 'left', label: 'cms.block.field.left'|trans, form: 'cms.block.save', value: p.left|default(''), extra: 'field--full' } %}
+                    {% include 'ui/textarea.html.twig' with { name: 'right', label: 'cms.block.field.right'|trans, form: 'cms.block.save', value: p.right|default(''), extra: 'field--full' } %}
+                {% elseif block.type() == 'divider' %}
+                    {% include 'ui/input.html.twig' with { name: 'style', label: 'cms.block.field.style'|trans, optional: true, form: 'cms.block.save', value: p.style|default('hero'), hint: 'cms.block.hint.divider_style'|trans } %}
+                {% elseif block.type() == 'products' %}
+                    {% include 'ui/input.html.twig' with { name: 'product_ids', label: 'cms.block.field.product_ids'|trans, form: 'cms.block.save', value: p.product_ids|default(''), hint: 'cms.block.hint.product_ids'|trans, extra: 'field--full' } %}
+                {% elseif block.type() == 'gallery' %}
+                    {% include 'ui/input.html.twig' with { name: 'media_ids', label: 'cms.block.field.media_ids'|trans, form: 'cms.block.save', value: p.media_ids|default(''), hint: 'cms.block.hint.media_ids'|trans, extra: 'field--full' } %}
+                {% elseif block.type() == 'quote' %}
+                    {% include 'ui/textarea.html.twig' with { name: 'quote', label: 'cms.block.field.quote'|trans, form: 'cms.block.save', value: p.quote|default(''), extra: 'field--full' } %}
+                    {% include 'ui/input.html.twig' with { name: 'author', label: 'cms.block.field.author'|trans, optional: true, form: 'cms.block.save', value: p.author|default('') } %}
+                    {% include 'ui/input.html.twig' with { name: 'role', label: 'cms.block.field.role'|trans, optional: true, form: 'cms.block.save', value: p.role|default('') } %}
+                {% elseif block.type() == 'video' %}
+                    {% include 'ui/input.html.twig' with { name: 'url', label: 'cms.block.field.url'|trans, form: 'cms.block.save', value: p.url|default(''), hint: 'cms.builder.video.hint'|trans, extra: 'field--full' } %}
+                    {% include 'ui/input.html.twig' with { name: 'caption', label: 'cms.block.field.caption'|trans, optional: true, form: 'cms.block.save', value: p.caption|default('') } %}
+                {% elseif block.type() == 'spacer' %}
+                    {% include 'ui/select.html.twig' with {
+                        name: 'size',
+                        label: 'cms.block.field.size'|trans,
+                        form: 'cms.block.save',
+                        value: p.size|default('md'),
+                        options: [{value:'sm',label:'sm'},{value:'md',label:'md'},{value:'lg',label:'lg'}]
+                    } %}
+                {% endif %}
+                {% include 'ui/select.html.twig' with {
+                    name: 'spacing',
+                    label: 'cms.block.field.spacing'|trans,
+                    optional: true,
+                    form: 'cms.block.save',
+                    value: p.spacing|default('normal'),
+                    options: [
+                        {value:'tight', label: 'cms.block.spacing.tight'|trans},
+                        {value:'normal', label: 'cms.block.spacing.normal'|trans},
+                        {value:'loose', label: 'cms.block.spacing.loose'|trans}
+                    ]
+                } %}
+                {% include 'ui/select.html.twig' with {
+                    name: 'align',
+                    label: 'cms.block.field.align'|trans,
+                    optional: true,
+                    form: 'cms.block.save',
+                    value: p.align|default('start'),
+                    options: [
+                        {value:'start', label: 'cms.block.align.start'|trans},
+                        {value:'center', label: 'cms.block.align.center'|trans},
+                        {value:'end', label: 'cms.block.align.end'|trans}
+                    ]
+                } %}
+            </div>
+            {% endblock %}
+        {% endembed %}
+
+        <div class="form-actions">
+            {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (url('admin.cms.pages.show', {id: item.id()})),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        </div>
+    </form>
+{% endblock %}

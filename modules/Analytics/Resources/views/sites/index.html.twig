@@ -1,0 +1,150 @@
+{% extends 'admin/layout.html.twig' %}
+
+{#
+    Render data (frozen contract): pageTitle, sites.
+    Every site carries its trackerSnippet (server-built <script> tag).
+#}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.analytics'|trans, url: url('admin.analytics.index') },
+        { label: 'analytics.title.sites'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    <div class="list-shell">
+        <header class="page-header">
+            <div>
+                <h1>{{ pageTitle|default('analytics.title.sites'|trans) }}</h1>
+                <p class="muted">{{ 'analytics.sites.intro'|trans }}</p>
+            </div>
+            {% if user.can('analytics.manage') %}
+                <div class="actions">
+                    <a class="btn btn--primary" href="{{ url('admin.analytics.sites.create') }}">{{ icon('plus') }} {{ 'analytics.sites.new'|trans }}</a>
+                </div>
+            {% endif %}
+        </header>
+
+        <div class="table-wrap" data-table>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'analytics.sites.col.name'|trans }}</th>
+                        <th scope="col">{{ 'analytics.sites.col.key'|trans }}</th>
+                        <th scope="col">{{ 'analytics.sites.col.domains'|trans }}</th>
+                        <th scope="col">{{ 'analytics.sites.col.state'|trans }}</th>
+                        <th class="table__actions-head"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for site in sites|default([]) %}
+                        {% set siteId = site.id ?? null %}
+                        {% set siteKey = site.key ?? '—' %}
+                        {% set snippet = site.trackerSnippet ?? '' %}
+                        {% set domains = site.domains ?? [] %}
+                        {% set domainList = domains is iterable ? domains : (domains is empty ? [] : domains|split(',')) %}
+                        <tr>
+                            <td>
+                                <div class="table__title">
+                                    <span class="table__title-text">
+                                        <strong>{{ site.name ?? siteKey }}</strong>
+                                        {% if site.timezone ?? null %}
+                                            <span class="table__meta muted">{{ site.timezone }}</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if snippet %}
+                                    <details class="grq-stack grq-stack--xs">
+                                        <summary class="text-link">{{ 'analytics.sites.snippet.title'|trans }}</summary>
+                                        <div x-data="gereqTextarea">
+                                            <label class="sr-only" for="analytics-snippet-{{ siteId }}">{{ 'analytics.sites.snippet.title'|trans }}</label>
+                                            <textarea
+                                                class="textarea-mini"
+                                                id="analytics-snippet-{{ siteId }}"
+                                                x-ref="input"
+                                                rows="4"
+                                                readonly
+                                                spellcheck="false"
+                                            >{{ snippet }}</textarea>
+                                            <div class="grq-cluster grq-cluster--sm">
+                                                <button type="button" class="btn btn--ghost btn-sm" @click="selectAll()">{{ icon('copy') }} {{ 'analytics.sites.snippet.select'|trans }}</button>
+                                                <span class="muted">{{ 'analytics.sites.snippet.hint'|trans }}</span>
+                                            </div>
+                                        </div>
+                                    </details>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ siteKey }}</code></td>
+                            <td>
+                                {% if domainList is not empty %}
+                                    <span class="grq-cluster grq-cluster--sm">
+                                        {% for domain in domainList %}
+                                            <span class="badge badge--muted">{{ domain }}</span>
+                                        {% endfor %}
+                                    </span>
+                                {% else %}
+                                    <span class="muted">{{ 'analytics.sites.domains.none'|trans }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set enabled = site.enabled ?? site.isEnabled ?? false %}
+                                <span class="badge badge--{{ enabled ? 'ok' : 'muted' }}">
+                                    {{ enabled ? 'analytics.sites.state.enabled'|trans : 'analytics.sites.state.disabled'|trans }}
+                                </span>
+                            </td>
+                            {% embed 'ui/row_actions.html.twig' %}
+                                {% block items %}
+                                    {% if user.can('analytics.manage') %}
+                                        {% include 'ui/row_action.html.twig' with {
+                                            href: url('admin.analytics.sites.edit', { id: siteId }),
+                                            label: 'common.edit'|trans,
+                                            icon: 'edit'
+                                        } %}
+                                        <form
+                                            method="post"
+                                            action="{{ url('admin.analytics.sites.rotate', { id: siteId }) }}"
+                                            class="table__action-form"
+                                            data-confirm="{{ 'analytics.sites.rotate.confirm'|trans|e('html_attr') }}"
+                                            data-confirm-title="{{ 'analytics.sites.rotate.confirm_title'|trans|e('html_attr') }}"
+                                            data-confirm-label="{{ 'analytics.sites.rotate'|trans|e('html_attr') }}"
+                                            data-confirm-danger="1"
+                                        >
+                                            {{ csrf_field()|raw }}
+                                            <button
+                                                type="submit"
+                                                class="table__action-btn table__action-btn--warn"
+                                                title="{{ 'analytics.sites.rotate'|trans }}"
+                                                aria-label="{{ 'analytics.sites.rotate'|trans }}"
+                                            >
+                                                {{ icon('key') }}
+                                                <span class="table__action-btn__label">{{ 'analytics.sites.rotate'|trans }}</span>
+                                            </button>
+                                        </form>
+                                        {% include 'ui/row_action_destroy.html.twig' with {
+                                            action: url('admin.analytics.sites.delete', { id: siteId }),
+                                            confirm: 'analytics.sites.delete.confirm'|trans
+                                        } %}
+                                    {% endif %}
+                                {% endblock %}
+                            {% endembed %}
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5">
+                                <div class="empty">
+                                    <h2>{{ 'analytics.sites.empty'|trans }}</h2>
+                                    <p>{{ 'analytics.sites.empty.hint'|trans }}</p>
+                                    {% if user.can('analytics.manage') %}
+                                        <a class="btn btn--primary" href="{{ url('admin.analytics.sites.create') }}">{{ icon('plus') }} {{ 'analytics.sites.new'|trans }}</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

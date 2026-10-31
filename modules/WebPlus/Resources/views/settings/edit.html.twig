@@ -1,0 +1,167 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: 'webplus.settings.title'|trans },
+    ] } %}
+{% endblock %}
+
+{% macro control(field) %}
+    {% if field.definition.type == 'boolean' %}
+        {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="{{ field.field }}"{% endblock %}{% block native_options %}
+            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="1" {{ field.value ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'common.yes'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="0" {{ not field.value ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'common.no'|trans }}{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
+    {% elseif field.select is defined and field.select %}
+        {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="{{ field.field }}"{% endblock %}{% block native_options %}
+            {% for option in field.select %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ option.value }}" {{ field.value == option.value ? 'selected' : '' }}{% endblock %}{% block content %}{{ option.label }}{% endblock %}{% endembed %}
+            {% endfor %}
+        {% endblock %}{% endembed %}
+    {% elseif field.wysiwyg|default(false) %}
+        {% include 'ui/editor.html.twig' with {
+            name: field.field,
+            id: 'f-' ~ field.field,
+            label: '',
+            value: field.value|default(''),
+            form: null,
+            optional: true,
+            placeholder: 'ui.editor.placeholder'|trans,
+            extra: 'field--full webplus-settings-editor'
+        } only %}
+    {% elseif field.textarea %}
+        {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="{{ field.field }}" rows="8"{% endblock %}{% block content %}{{ field.value }}{% endblock %}{% endembed %}
+    {% else %}
+        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="{{ field.field }}" value="{{ field.value }}"{% endblock %}{% endembed %}
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+    {% import _self as ui %}
+
+    <header class="page-header">
+        <div>
+            <h1>{{ 'webplus.settings.title'|trans }}</h1>
+            <p class="muted">{{ 'webplus.settings.intro'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% include 'ui/button.html.twig' with {
+                label: 'webplus.google_feed.preview'|trans,
+                href: (url('admin.webplus.google_feed')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'webplus-settings-form' }
+            } only %}
+        </div>
+    </header>
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus.settings.public_endpoints'|trans }}</h2>
+            <p class="muted">{{ 'webplus.settings.public_endpoints_hint'|trans }}</p>
+        </header>
+        <dl class="meta-list meta-list--flush">
+            {% for key, endpoint in publicUrls %}
+                <div class="meta-list__full">
+                    <dt>{{ key }}</dt>
+                    <dd><code>{{ endpoint }}</code></dd>
+                </div>
+            {% endfor %}
+        </dl>
+        {% endblock %}
+    {% endembed %}
+
+    <form id="webplus-settings-form" method="post" action="{{ url('admin.webplus.settings.update') }}" class="detail-stack" enctype="multipart/form-data" autocomplete="off">
+        {{ csrf_field()|raw }}
+
+        {% for section in ['site', 'discovery', 'google', 'legal'] %}
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}{% block attributes %} class="panel"{% if section == 'site' %} x-data='webplusOgPreview({{ {
+                mode: "settings",
+                siteName: fields["webplus.site_name"].value|default(""),
+                defaultOgImage: fields["webplus.default_og_image"].value|default("")
+            }|json_encode|raw }})'{% endif %}{% endblock %}{% block content %}
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ ('webplus.settings.section.' ~ section)|trans }}</h2>
+                        <p class="muted">{{ ('webplus.settings.section.' ~ section ~ '_hint')|trans }}</p>
+                        {% if section == 'google' and feedSources is defined and feedSources|length > 0 %}
+                            <p class="muted">{{ 'webplus.settings.google_feed_sources_available'|trans }}:
+                                {% for source in feedSources %}
+                                    <code>{{ source.id }}</code>{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                    </div>
+                </header>
+                {% if section == 'site' %}
+                    <div class="webplus-share__grid">
+                        <div class="webplus-share__fields">
+                            <div class="form-grid">
+                                {% for key in sections[section] %}
+                                    {% if fields[key] is defined %}
+                                        <label class="field {{ fields[key].textarea ? 'field--full' : '' }}">
+                                            <span>{{ fields[key].definition.label|trans }}</span>
+                                            {% import '@webplus/settings/edit.html.twig' as ui %}
+                                            {{ ui.control(fields[key]) }}
+                                        </label>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% if fields['webplus.default_og_image'] is defined %}
+                                {% include 'ui/media_box.html.twig' with {
+                                    name: 'webplus__default_og_image',
+                                    file_name: 'default_og_image_file',
+                                    library_name: 'default_og_media_asset_id',
+                                    clear_name: 'clear_default_og_image',
+                                    id: 'f-webplus_default_og_image',
+                                    label: 'webplus.settings.default_og_image'|trans,
+                                    optional: true,
+                                    value: fields['webplus.default_og_image'].value|default(''),
+                                    hint: 'webplus.settings.default_og_image.hint'|trans,
+                                    has_media: hasMedia|default(false),
+                                    library: libraryImages|default([])
+                                } %}
+                            {% endif %}
+                        </div>
+                        <aside class="webplus-share__preview">
+                            <p class="webplus-share__preview-label">{{ 'webplus.og_preview.title'|trans }}</p>
+                            {% include '@webplus/partials/og_preview.html.twig' %}
+                        </aside>
+                    </div>
+                {% else %}
+                    <div class="form-grid">
+                        {% for key in sections[section] %}
+                            {% if fields[key] is defined %}
+                                <label class="field {{ fields[key].textarea or fields[key].wysiwyg|default(false) ? 'field--full' : '' }}">
+                                    <span>{{ fields[key].definition.label|trans }}</span>
+                                    {% import '@webplus/settings/edit.html.twig' as ui %}
+                                    {{ ui.control(fields[key]) }}
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% endblock %}
+            {% endembed %}
+        {% endfor %}
+
+        <div class="form-actions">
+            {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.back'|trans,
+                href: (url('admin.webplus.metas.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        </div>
+    </form>
+{% endblock %}

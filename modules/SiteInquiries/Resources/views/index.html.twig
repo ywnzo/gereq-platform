@@ -1,0 +1,183 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+{% set pageIds = items|map(i => i.id) %}
+{% set canManage = user.can('site_inquiries.manage') %}
+{% set filterQuery = { view: view } %}
+{% if status %}{% set filterQuery = filterQuery|merge({ status: status }) %}{% endif %}
+{% if from %}{% set filterQuery = filterQuery|merge({ from: from }) %}{% endif %}
+{% if to %}{% set filterQuery = filterQuery|merge({ to: to }) %}{% endif %}
+{% set colCount = canManage ? 7 : 5 %}
+
+<div
+    class="list-shell"
+    x-data="dataTable"
+    data-table-id="site-inquiries"
+    data-actions-default="1"
+    data-page-ids="{{ pageIds|json_encode|e('html_attr') }}"
+    data-bulk-delete-confirm="{{ 'site_inquiries.bulk.confirm_delete'|trans|e('html_attr') }}"
+>
+    <header class="page-header">
+        <div>
+            <h1>{{ 'site_inquiries.index.title'|trans }}</h1>
+            <p class="muted">{{ 'site_inquiries.index.hint'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% if canManage %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'nav.site_inquiries.settings'|trans,
+                    href: (url('admin.site_inquiries.settings')),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost'
+                } only %}
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="toolbar--table">
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            <input type="hidden" name="view" value="{{ view }}">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'site_inquiries.search'|trans }}"{% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="status" class="input" onchange="this.form.requestSubmit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'site_inquiries.filter.status_all'|trans } only %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="open" {{ status == 'open' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'site_inquiries.status.open'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="resolved" {{ status == 'resolved' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'site_inquiries.status.resolved'|trans }}{% endblock %}{% endembed %}
+            {% endblock %}{% endembed %}
+            <label class="toolbar__date">
+                <span class="sr-only">{{ 'site_inquiries.filter.from'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="date" name="from" value="{{ from }}" title="{{ 'site_inquiries.filter.from'|trans }}" onchange="this.form.requestSubmit()"{% endblock %}{% endembed %}
+            </label>
+            <label class="toolbar__date">
+                <span class="sr-only">{{ 'site_inquiries.filter.to'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="date" name="to" value="{{ to }}" title="{{ 'site_inquiries.filter.to'|trans }}" onchange="this.form.requestSubmit()"{% endblock %}{% endembed %}
+            </label>
+            {% if hasFilters %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'site_inquiries.filter.reset'|trans,
+                    href: '?view=' ~ (view|e('url')),
+                    button_options: { tag: 'a' },
+                    variant: 'ghost',
+                    class: 'btn-sm'
+                } only %}
+            {% endif %}
+        {% endblock %}{% endembed %}
+        <div class="toolbar__toggles" role="group" aria-label="{{ 'site_inquiries.view.label'|trans }}">
+            <a
+                class="toolbar__toggle{{ view == 'list' ? ' is-on' : '' }}"
+                href="?{{ list_query.params({ view: 'list', page: 1 })|url_encode }}"
+            >{{ icon('list') }} {{ 'site_inquiries.view.list'|trans }}</a>
+            <a
+                class="toolbar__toggle{{ view == 'day' ? ' is-on' : '' }}"
+                href="?{{ list_query.params({ view: 'day', page: 1 })|url_encode }}"
+            >{{ icon('calendar') }} {{ 'site_inquiries.view.day'|trans }}</a>
+        </div>
+    </div>
+
+    {% if canManage and items is not empty %}
+        {% embed 'ui/bulk_bar.html.twig' with { bulk_options: { preserve: true, tag: 'form' } } %}{% block component_attributes %}
+            class="bulk-bar"
+            method="post"
+            action="{{ url('admin.site_inquiries.bulk') }}"
+            x-show="selectedCount > 0"
+            x-cloak
+            @submit="confirmBulk"
+        {% endblock %}{% block content %}
+            {{ csrf_field()|raw }}
+            <input type="hidden" name="confirmed" value="1">
+            <template x-for="id in selected" :key="id">
+                <input type="hidden" name="ids[]" :value="id">
+            </template>
+            <div class="bulk-bar__meta">
+                <strong x-text="selectedCount"></strong>
+                <span>{{ 'site_inquiries.bulk.selected'|trans }}</span>
+                {% include 'ui/button.html.twig' with {
+                    label: 'site_inquiries.bulk.clear'|trans,
+                    type: 'button',
+                    variant: 'link',
+                    class: 'btn-sm',
+                    attrs: { '@click': 'clearSelection' }
+                } only %}
+            </div>
+            <div class="bulk-bar__actions">
+                {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="bulkAction" {% endblock %}{% block native_attributes %} class="input" name="action" x-model="bulkAction" required{% endblock %}{% block native_options %}
+                    {% include 'ui/option.html.twig' with { value: '', label: 'site_inquiries.bulk.choose'|trans } only %}
+                    {% include 'ui/option.html.twig' with { value: 'resolve', label: 'site_inquiries.bulk.action.resolve'|trans } only %}
+                    {% include 'ui/option.html.twig' with { value: 'reopen', label: 'site_inquiries.bulk.action.reopen'|trans } only %}
+                    {% include 'ui/option.html.twig' with { value: 'delete', label: 'site_inquiries.bulk.action.delete'|trans } only %}
+                {% endblock %}{% endembed %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'site_inquiries.bulk.apply'|trans,
+                    type: 'submit',
+                    variant: 'primary',
+                    attrs: { ':disabled': '!bulkAction' }
+                } only %}
+            </div>
+        {% endblock %}{% endembed %}
+    {% endif %}
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    {% if canManage %}
+                        <th class="table__check">
+                            <label class="table-check">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" x-ref="selectAll" @change="toggleAll" :checked="allSelected"{% endblock %}{% endembed %}
+                                <span class="sr-only">{{ 'site_inquiries.bulk.select_all'|trans }}</span>
+                            </label>
+                        </th>
+                    {% endif %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'site_inquiries.col.created'|trans, column: 'createdAt', query: filterQuery } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'site_inquiries.col.name'|trans, column: 'name', query: filterQuery } %}
+                    <th>{{ 'site_inquiries.col.contact'|trans }}</th>
+                    <th>{{ 'site_inquiries.col.route'|trans }}</th>
+                    <th>{{ 'site_inquiries.col.details'|trans }}</th>
+                    {% include 'ui/sort_th.html.twig' with { label: 'site_inquiries.col.status'|trans, column: 'status', query: filterQuery } %}
+                    {% if canManage %}
+                        <th class="table__actions-head"></th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if items is empty %}
+                    <tr>
+                        <td colspan="{{ colCount }}">
+                            <div class="empty">
+                                <h2>{{ 'site_inquiries.index.empty'|trans }}</h2>
+                                <p>{{ hasFilters ? 'site_inquiries.index.empty_filtered'|trans : 'site_inquiries.index.empty_hint'|trans }}</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% elseif view == 'day' %}
+                    {% for group in groups %}
+                        <tr
+                            class="table-group"
+                            data-day="{{ group.key }}"
+                            :class="isDayClosed('{{ group.key }}') ? 'is-closed' : ''"
+                            @click="toggleDay('{{ group.key }}')"
+                        >
+                            <td colspan="{{ colCount }}">
+                                <span class="table-group__label">
+                                    <span class="table-group__chevron">{{ icon('expand_more') }}</span>
+                                    {{ group.label }}
+                                    <span class="table-group__count">({{ group.count }})</span>
+                                </span>
+                            </td>
+                        </tr>
+                        {% for item in group.items %}
+                            {% include '@siteinquiries/_row.html.twig' with { item: item, canManage: canManage, dayKey: group.key } %}
+                        {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    {% for item in items %}
+                        {% include '@siteinquiries/_row.html.twig' with { item: item, canManage: canManage } %}
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

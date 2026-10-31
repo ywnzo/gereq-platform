@@ -1,0 +1,38 @@
+<details class="cms-builder__inspector-accordion">
+    <summary>{{ 'cms.form.input_appearance'|trans }}</summary>
+    <div class="cms-builder__fields">
+        <p class="field__hint">{{ 'cms.form.input_appearance_hint'|trans }}</p>
+        {% for key in ['input_bg_color', 'input_text_color', 'input_border_color', 'input_focus_color'] %}
+            {% set fallback = key == 'input_bg_color' ? 'none' : 'inherit' %}
+            <div class="field">
+                <span class="field__label">{{ ('cms.form.' ~ key)|trans }}</span>
+                <div class="cms-prop__color">
+                    <label class="cms-prop__swatch">
+                        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}
+                            {% block input_attributes %} type="color" aria-label="{{ ('cms.form.' ~ key)|trans }}" :value="colorSwatch(selected.payload.{{ key }}, 'ink')" @input="setColorHex('{{ key }}', $event)"{% endblock %}
+                        {% endembed %}
+                    </label>
+                    {% embed 'ui/select.html.twig' with { native: true } %}
+                        {% block root_attributes %}:data-native-value="colorTokenSelect(selected.payload.{{ key }} || '{{ fallback }}', '{{ fallback }}')"{% endblock %}
+                        {% block native_attributes %} class="cms-prop__control" aria-label="{{ ('cms.form.' ~ key)|trans }}" :value="colorTokenSelect(selected.payload.{{ key }} || '{{ fallback }}', '{{ fallback }}')" @change="setColorToken('{{ key }}', $event)"{% endblock %}
+                        {% block native_options %}
+                            {% include 'ui/option.html.twig' with { value: fallback, label: 'cms.form.button.default'|trans } only %}
+                            {% include '@cms/pages/_palette_color_options.html.twig' %}
+                        {% endblock %}
+                    {% endembed %}
+                </div>
+            </div>
+        {% endfor %}
+        {% for key in ['input_radius', 'input_padding', 'input_font_size'] %}
+            <label class="field">
+                <span class="field__label">{{ ('cms.form.' ~ key)|trans }}</span>
+                <span class="cms-builder__number-reset-wrap">
+                    {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}
+                        {% block input_attributes %} class="input" type="number" min="{{ key == 'input_font_size' ? 10 : 0 }}" max="{{ key == 'input_font_size' ? 72 : 100 }}" placeholder="{{ 'cms.form.button.default'|trans }}" :value="selected.payload.{{ key }}" @input="onTextInput('{{ key }}', $event)"{% endblock %}
+                    {% endembed %}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="cms-prop__spacing-reset" aria-label="{{ 'admin.roles.permissions.clear'|trans }}: {{ ('cms.form.' ~ key)|trans }}" title="{{ 'admin.roles.permissions.clear'|trans }}" :disabled="isNumberDefault('{{ key }}', '', 'payload')" @click.stop.prevent="resetNumberInput('{{ key }}', '', 'payload', $event)"{% endblock %}{% block content %}<span class="material-symbols-outlined g-icon" aria-hidden="true">close</span>{% endblock %}{% endembed %}
+                </span>
+            </label>
+        {% endfor %}
+    </div>
+</details>

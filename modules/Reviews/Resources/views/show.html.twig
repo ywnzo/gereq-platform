@@ -1,0 +1,252 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.reviews'|trans, url: url('admin.reviews.index') },
+        { label: item.title()|default(item.authorName()) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+{% set statusTone = item.status() == 'approved' ? 'ok' : (item.status() == 'pending' ? 'warn' : 'danger') %}
+{% set sourceTone = item.source() == 'local' ? 'muted' : 'info' %}
+
+<header class="page-header">
+    <div>
+        <p class="eyebrow"><a href="{{ url('admin.reviews.index') }}">{{ 'nav.reviews'|trans }}</a></p>
+        <h1>{{ item.title()|default(item.authorName()) }}</h1>
+        <p class="muted detail-layout__meta">
+            {{ item.authorName() }}
+            {% if item.authorEmail() %} · {{ item.authorEmail() }}{% endif %}
+            <span class="badge badge--{{ sourceTone }}">{{ item.sourceLabel()|trans }}</span>
+            <span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span>
+            {% if item.isVerifiedPurchase() %}
+                <span class="badge badge--ok">{{ 'reviews.field.verified'|trans }}</span>
+            {% endif %}
+        </p>
+    </div>
+    {% if user.can('reviews.manage') %}
+        <div class="actions">
+            {% if item.status() != 'approved' %}
+                <form method="post" action="{{ url('admin.reviews.approve', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'reviews.action.approve'|trans,
+                        type: 'submit',
+                        variant: 'primary'
+                    } only %}
+                </form>
+            {% endif %}
+            {% if item.status() != 'rejected' %}
+                <form method="post" action="{{ url('admin.reviews.reject', {id: item.id()}) }}">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'reviews.action.reject'|trans,
+                        type: 'submit',
+                        variant: 'ghost'
+                    } only %}
+                </form>
+            {% endif %}
+            <form method="post" action="{{ url('admin.reviews.destroy', {id: item.id()}) }}" data-confirm="{{ 'reviews.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1">
+                {{ csrf_field()|raw }}
+                {% include 'ui/button.html.twig' with { label: 'common.delete'|trans, type: 'submit', variant: 'ghost' } only %}
+            </form>
+        </div>
+    {% endif %}
+</header>
+
+<div class="detail-layout">
+    <div class="detail-layout__main">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="detail-hero panel"{% endblock %}
+            {% block content %}
+            <div class="detail-hero__body">
+                <div class="detail-hero__highlight">
+                    <span>{{ 'reviews.field.rating'|trans }}</span>
+                    <strong>
+                        <span class="reviews-rating reviews-rating--lg" data-rating="{{ item.rating() }}" aria-label="{{ item.rating() }}/5">
+                            {% for i in 1..5 %}
+                                <span class="reviews-rating__star{% if i <= item.rating() %} is-on{% endif %}">★</span>
+                            {% endfor %}
+                        </span>
+                    </strong>
+                </div>
+                <dl class="detail-hero__facts">
+                    <div>
+                        <dt>{{ 'reviews.field.product'|trans }}</dt>
+                        <dd><code>{{ item.productId() }}</code></dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'reviews.field.locale'|trans }}</dt>
+                        <dd>{{ item.locale() }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'reviews.field.helpful'|trans }}</dt>
+                        <dd>{{ item.helpfulCount() }}</dd>
+                    </div>
+                    <div>
+                        <dt>{{ 'reviews.field.created'|trans }}</dt>
+                        <dd>{{ item.createdAt().format('d. m. Y H:i') }}</dd>
+                    </div>
+                </dl>
+            </div>
+            {% endblock %}
+        {% endembed %}
+
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
+            <header class="panel__head">
+                <h2>{{ 'reviews.field.body'|trans }}</h2>
+            </header>
+            <div class="prose reviews-body detail-prose">{{ bodyHtml|raw }}</div>
+            {% endblock %}
+        {% endembed %}
+
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
+            <header class="panel__head">
+                <div>
+                    <h2>{{ 'reviews.replies.title'|trans }}</h2>
+                    <p class="muted">{{ 'reviews.replies.hint'|trans }}</p>
+                </div>
+                {% if user.can('reviews.manage') %}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost btn-sm" href="{{ url('admin.reviews.settings') }}"{% endblock %}{% block content %}{{ icon('settings') }} {{ 'reviews.settings.title'|trans }}{% endblock %}{% endembed %}
+                {% endif %}
+            </header>
+            {% if replies is empty %}
+                <div class="empty">
+                    <h2>{{ 'reviews.replies.empty'|trans }}</h2>
+                </div>
+            {% else %}
+                <div class="reviews-replies">
+                    {% for reply in replies %}
+                        <article class="reviews-reply">
+                            <header class="reviews-reply__head">
+                                <strong>{{ reply.authorName() }}</strong>
+                                {% if reply.isOfficial() %}
+                                    <span class="badge badge--info">{{ 'reviews.replies.official'|trans }}</span>
+                                {% endif %}
+                                <span class="muted">{{ reply.createdAt().format('d. m. Y H:i') }}</span>
+                                {% if user.can('reviews.manage') %}
+                                    <form method="post" action="{{ url('admin.reviews.replies.destroy', {id: item.id(), replyId: reply.id()}) }}" data-confirm="{{ 'reviews.replies.confirm_delete'|trans }}" data-confirm-title="{{ 'ui.confirm.delete_title'|trans }}" data-confirm-danger="1" class="reviews-reply__actions">
+                                        {{ csrf_field()|raw }}
+                                        {% include 'ui/button.html.twig' with {
+                                            label: 'common.delete'|trans,
+                                            type: 'submit',
+                                            variant: 'ghost',
+                                            class: 'btn-sm'
+                                        } only %}
+                                    </form>
+                                {% endif %}
+                            </header>
+                            <div class="prose">{{ reply.body()|raw }}</div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if user.can('reviews.manage') %}
+                {% if repliesEnabled %}
+                    {% include 'ui/error-summary.html.twig' with { form: 'reviews.reply.create' } %}
+                    <form method="post" class="reviews-reply-form" action="{{ url('admin.reviews.replies.store', {id: item.id()}) }}" data-form="reviews.reply.create" x-data="gereqForm"{% if form_errors('reviews.reply.create') %} data-server-state="1"{% endif %}>
+                        {{ csrf_field()|raw }}
+                        {% include 'ui/input.html.twig' with {
+                            name: 'author_name',
+                            label: 'reviews.replies.author'|trans,
+                            optional: true,
+                            form: 'reviews.reply.create',
+                            value: defaultReplyAuthor,
+                            hint: 'reviews.replies.author_hint'|trans
+                        } %}
+                        {% include 'ui/textarea.html.twig' with {
+                            name: 'body',
+                            label: 'reviews.replies.body'|trans,
+                            required: true,
+                            form: 'reviews.reply.create',
+                            value: '',
+                            extra: 'field--full',
+                            placeholder: 'reviews.replies.body_placeholder'|trans
+                        } %}
+                        <div class="actions">
+                            {% include 'ui/button.html.twig' with {
+                                label: 'reviews.action.reply'|trans,
+                                type: 'submit',
+                                variant: 'primary'
+                            } only %}
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="muted reviews-replies-disabled">{{ 'reviews.replies.disabled'|trans }} <a href="{{ url('admin.reviews.settings') }}">{{ 'reviews.settings.title'|trans }}</a></p>
+                {% endif %}
+            {% endif %}
+            {% endblock %}
+        {% endembed %}
+    </div>
+
+    <aside class="detail-layout__aside">
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel"{% endblock %}
+            {% block content %}
+            <header class="panel__head">
+                <h2>{{ 'reviews.detail.overview'|trans }}</h2>
+            </header>
+            <dl class="meta-list meta-list--flush detail-layout__specs">
+                <div>
+                    <dt>{{ 'reviews.field.status'|trans|default('Stav') }}</dt>
+                    <dd><span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span></dd>
+                </div>
+                <div>
+                    <dt>{{ 'reviews.field.source'|trans|default('Zdroj') }}</dt>
+                    <dd><span class="badge badge--{{ sourceTone }}">{{ item.sourceLabel()|trans }}</span></dd>
+                </div>
+                {% if average is not null %}
+                    <div>
+                        <dt>{{ 'reviews.field.average'|trans }}</dt>
+                        <dd>{{ average }}</dd>
+                    </div>
+                {% endif %}
+                {% if item.isVerifiedPurchase() %}
+                    <div>
+                        <dt>{{ 'reviews.field.verified'|trans }}</dt>
+                        <dd><span class="badge badge--ok">{{ 'common.yes'|trans }}</span></dd>
+                    </div>
+                {% endif %}
+                {% if item.externalId() or item.externalUrl() %}
+                    <div class="meta-list__full">
+                        <dt>{{ 'reviews.field.external'|trans }}</dt>
+                        <dd>
+                            {% if item.externalId() %}<code>{{ item.externalId() }}</code>{% endif %}
+                            {% if item.externalUrl() %}
+                                · <a href="{{ item.externalUrl() }}" target="_blank" rel="noopener">{{ 'reviews.action.open_external'|trans }}</a>
+                            {% endif %}
+                        </dd>
+                    </div>
+                {% endif %}
+            </dl>
+            {% endblock %}
+        {% endembed %}
+
+        {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+            {% block attributes %} class="panel detail-side-card"{% endblock %}
+            {% block content %}
+            <header class="panel__head">
+                <h2>{{ 'reviews.field.author'|trans|default('Autor') }}</h2>
+            </header>
+            <div class="detail-side-card__body">
+                <strong class="detail-side-card__title">{{ item.authorName() }}</strong>
+                <ul class="detail-side-card__list">
+                    {% if item.authorEmail() %}
+                        <li><a href="mailto:{{ item.authorEmail() }}">{{ item.authorEmail() }}</a></li>
+                    {% else %}
+                        <li class="muted">—</li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endblock %}
+        {% endembed %}
+    </aside>
+</div>
+{% endblock %}

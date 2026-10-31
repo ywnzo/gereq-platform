@@ -1,0 +1,72 @@
+{% extends 'admin/layout.html.twig' %}
+{% import '@analytics/partials/_macros.html.twig' as analytics %}
+
+{#
+    Render data (frozen contract): pageTitle, sites, site, range, kpi, trend,
+    topPages, topSources, topDevices, topEvents.
+#}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.analytics'|trans, url: url('admin.analytics.index') },
+        { label: 'analytics.title.overview'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    {% set rangeSummary = range ? 'analytics.range.summary'|trans({'%days%': analytics.range_days(range)}) : '' %}
+
+    <div class="grq-stack">
+        <header class="page-header">
+            <div>
+                <h1>{{ pageTitle|default('analytics.title.overview'|trans) }}</h1>
+                <p class="muted">{{ 'analytics.overview.intro'|trans }}</p>
+            </div>
+        </header>
+
+        {% include '@analytics/partials/_nav.html.twig' with { active: 'overview', site: site, range: range } %}
+
+        {% if not site %}
+            <div class="empty">
+                <h2>{{ 'analytics.overview.no_site'|trans }}</h2>
+                <p>{{ 'analytics.overview.no_site.hint'|trans }}</p>
+                {% if user.can('analytics.manage') %}
+                    <a class="btn btn--primary" href="{{ url('admin.analytics.sites.create') }}">{{ icon('plus') }} {{ 'analytics.sites.new'|trans }}</a>
+                {% endif %}
+            </div>
+        {% else %}
+            {% include '@analytics/partials/_filters.html.twig' with {
+                route: 'admin.analytics.index',
+                site: site,
+                sites: sites|default([]),
+                range: range,
+            } %}
+
+            {% if kpi|default([]) is not empty %}
+                <section class="panel">
+                    <header class="panel__head">
+                        <div>
+                            <h2>{{ 'analytics.kpi.section'|trans }}</h2>
+                            {% if rangeSummary %}<p class="muted panel__sub">{{ rangeSummary }}</p>{% endif %}
+                        </div>
+                    </header>
+                    {{ analytics.kpi_row(kpi) }}
+                </section>
+            {% endif %}
+
+            {% include '@analytics/partials/_chart.html.twig' with {
+                chart: trend,
+                title: 'analytics.chart.trend'|trans,
+                subtitle: rangeSummary,
+            } %}
+
+            <div class="grq-grid grq-grid--2">
+                {{ analytics.top_list('analytics.top.pages'|trans, topPages|default([])) }}
+                {{ analytics.top_list('analytics.top.sources'|trans, topSources|default([])) }}
+                {{ analytics.top_list('analytics.top.devices'|trans, topDevices|default([])) }}
+                {{ analytics.top_list('analytics.top.events'|trans, topEvents|default([])) }}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: 'nav.webplus.health'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<style>
+.webplus-health-score {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2rem;
+    align-items: center;
+}
+.webplus-health-score__badge {
+    flex: 0 0 auto;
+    width: 7.5rem;
+    height: 7.5rem;
+    border-radius: 50%;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    line-height: 1;
+    color: #fff;
+    background:
+        radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.22), transparent 45%),
+        var(--health-color, #22c55e);
+    box-shadow:
+        0 0 0 6px color-mix(in srgb, var(--health-color, #22c55e) 22%, transparent),
+        0 14px 36px -18px rgb(0 0 0 / 0.55);
+}
+.webplus-health-score__badge strong {
+    display: block;
+    font-size: 2.1rem;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+}
+.webplus-health-score__badge span {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+.webplus-health-score__meta { flex: 1 1 16rem; min-width: 0; }
+.webplus-health-score__meta h2 { margin: 0.25rem 0 0.5rem; }
+.webplus-health-bar {
+    margin-top: 1rem;
+    height: 0.65rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--border) 70%, transparent);
+    overflow: hidden;
+}
+.webplus-health-bar__fill {
+    height: 100%;
+    border-radius: inherit;
+    min-width: 0.4rem;
+    transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.webplus-health-fixes {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.65rem;
+}
+.webplus-health-fixes li { line-height: 1.45; }
+</style>
+
+<header class="page-header">
+    <div>
+        <h1>{{ 'webplus.health.title'|trans }}</h1>
+        <p class="muted">{{ 'webplus.health.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        {% include 'ui/button.html.twig' with {
+            label: 'nav.webplus.settings'|trans,
+            href: (url('admin.webplus.settings')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.webplus.health') }}"{% endblock %}{% block content %}{{ icon('refresh') }} {{ 'webplus.health.rerun'|trans }}{% endblock %}{% endembed %}
+    </div>
+</header>
+
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel webplus-health-hero"{% endblock %}
+    {% block content %}
+    <div class="webplus-health-score" style="--health-color: {{ reportData.color }}">
+        <div class="webplus-health-score__badge" aria-label="{{ report.score }} %">
+            <strong>{{ report.score }}</strong>
+            <span>%</span>
+        </div>
+        <div class="webplus-health-score__meta">
+            <p class="eyebrow">{{ ('webplus.health.grade.' ~ report.grade)|trans }}</p>
+            <h2>{{ 'webplus.health.score_label'|trans }}</h2>
+            <p class="muted">
+                {{ 'webplus.health.checked_at'|trans }}:
+                <time datetime="{{ reportData.checked_at }}">{{ report.checkedAt|date('d.m.Y H:i:s') }}</time>
+            </p>
+            <p class="muted">
+                {{ 'webplus.health.frontend'|trans }}:
+                {% if report.frontendUrl %}
+                    <a href="{{ report.frontendUrl }}" target="_blank" rel="noopener">{{ report.frontendUrl }}</a>
+                {% else %}
+                    <em>{{ 'webplus.health.frontend_missing'|trans }}</em>
+                {% endif %}
+            </p>
+            <div class="webplus-health-bar" aria-hidden="true">
+                <div class="webplus-health-bar__fill" style="width: {{ report.score }}%; background: {{ reportData.color }}"></div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+{% endembed %}
+
+{% if report.recommendations|length > 0 %}
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel"{% endblock %}
+    {% block content %}
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'webplus.health.recommendations'|trans }}</h2>
+            <p class="muted">{{ 'webplus.health.recommendations_hint'|trans }}</p>
+        </div>
+    </header>
+    <ol class="webplus-health-fixes">
+        {% for tip in report.recommendations %}
+            <li>{{ tip }}</li>
+        {% endfor %}
+    </ol>
+    {% endblock %}
+{% endembed %}
+{% else %}
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel"{% endblock %}
+    {% block content %}
+    <p class="muted" style="margin:0">{{ 'webplus.health.all_good'|trans }}</p>
+    {% endblock %}
+{% endembed %}
+{% endif %}
+
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel"{% endblock %}
+    {% block content %}
+    <header class="panel__head">
+        <div>
+            <h2>{{ 'webplus.health.checks'|trans }}</h2>
+            <p class="muted">{{ 'webplus.health.checks_hint'|trans }}</p>
+        </div>
+    </header>
+    <div class="module-health-list">
+        {% for check in report.checks %}
+            <article class="module-health module-health--{{ check.status == 'pass' ? 'ok' : (check.status == 'warn' ? 'warn' : 'fail') }}">
+                <div class="module-health__status">{{ check.status|upper }}</div>
+                <div>
+                    <h3>{{ check.label }} <span class="muted">({{ check.group }})</span></h3>
+                    <p>{{ check.detail }}</p>
+                    {% if check.fix %}
+                        <p><strong>{{ 'webplus.health.fix'|trans }}:</strong> {{ check.fix }}</p>
+                    {% endif %}
+                    <p class="muted">{{ 'webplus.health.points'|trans({ '%score%': check.score, '%weight%': check.weight }) }}</p>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    {% endblock %}
+{% endembed %}
+{% endblock %}

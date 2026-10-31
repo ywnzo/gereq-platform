@@ -1,0 +1,116 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.reviews'|trans, url: url('admin.reviews.index') },
+        { label: 'reviews.new'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'reviews.new'|trans }}</h1>
+        <p class="muted">{{ 'reviews.new.hint'|trans }}</p>
+    </div>
+</header>
+
+{% include 'ui/error-summary.html.twig' with { form: 'reviews.admin.create' } %}
+
+<form method="post" class="detail-stack" action="{{ url('admin.reviews.store') }}" data-form="reviews.admin.create" x-data="gereqForm"{% if form_errors('reviews.admin.create') %} data-server-state="1"{% endif %}>
+    {{ csrf_field()|raw }}
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'common.details'|trans }}</h2>
+        </header>
+        <div class="form-grid">
+            {% include 'ui/input.html.twig' with {
+                name: 'author_name',
+                label: 'reviews.field.author'|trans,
+                required: true,
+                form: 'reviews.admin.create',
+                value: ''
+            } %}
+            {% include 'ui/input.html.twig' with {
+                name: 'author_email',
+                type: 'email',
+                label: 'reviews.field.email'|trans,
+                optional: true,
+                form: 'reviews.admin.create',
+                value: ''
+            } %}
+            {% include 'ui/select.html.twig' with {
+                name: 'rating',
+                label: 'reviews.field.rating'|trans,
+                required: true,
+                form: 'reviews.admin.create',
+                value: '5',
+                options: [
+                    { value: '5', label: '5 ★' },
+                    { value: '4', label: '4 ★' },
+                    { value: '3', label: '3 ★' },
+                    { value: '2', label: '2 ★' },
+                    { value: '1', label: '1 ★' }
+                ]
+            } %}
+            {% include 'ui/select.html.twig' with {
+                name: 'status',
+                label: 'reviews.field.status'|trans,
+                form: 'reviews.admin.create',
+                value: 'approved',
+                options: [
+                    { value: 'approved', label: 'reviews.status.approved' },
+                    { value: 'pending', label: 'reviews.status.pending' },
+                    { value: 'rejected', label: 'reviews.status.rejected' }
+                ]
+            } %}
+            {% include 'ui/input.html.twig' with {
+                name: 'title',
+                label: 'reviews.field.title'|trans,
+                optional: true,
+                hint: 'reviews.field.title.hint'|trans,
+                form: 'reviews.admin.create',
+                value: '',
+                extra: 'field--full'
+            } %}
+            {% include 'ui/textarea.html.twig' with {
+                name: 'body',
+                label: 'reviews.field.body'|trans,
+                required: true,
+                form: 'reviews.admin.create',
+                value: '',
+                extra: 'field--full',
+                rows: 5
+            } %}
+            {% include 'ui/input.html.twig' with {
+                name: 'product_id',
+                label: 'reviews.field.product'|trans,
+                hint: 'reviews.field.product.hint'|trans,
+                form: 'reviews.admin.create',
+                value: siteProductId,
+                extra: 'field--full'
+            } %}
+            {% include 'ui/input.html.twig' with {
+                name: 'locale',
+                label: 'reviews.field.locale'|trans,
+                optional: true,
+                form: 'reviews.admin.create',
+                value: 'cs'
+            } %}
+        </div>
+        {% endblock %}
+    {% endembed %}
+    <div class="form-actions">
+        {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+        {% include 'ui/button.html.twig' with {
+            label: 'common.cancel'|trans,
+            href: (url('admin.reviews.index')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+    </div>
+</form>
+{% endblock %}

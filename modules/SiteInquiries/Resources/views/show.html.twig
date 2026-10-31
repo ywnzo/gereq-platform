@@ -1,0 +1,5 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header"><h1>{{ item.name }}</h1>{% include 'ui/button.html.twig' with { href: url('admin.site_inquiries.index'), label: 'site_inquiries.index.title'|trans, variant: 'ghost' } only %}</header>
+{% include '@siteinquiries/_detail.html.twig' %}
+{% endblock %}

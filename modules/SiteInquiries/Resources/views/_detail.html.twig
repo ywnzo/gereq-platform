@@ -1,0 +1,67 @@
+<section class="site-inquiry-detail" data-inquiry-detail>
+    <header class="site-inquiry-detail__header">
+        <div>
+            <h2>{{ item.name }}</h2>
+            <p class="site-inquiry-detail__received">{{ 'site_inquiries.detail.received'|trans }} <time datetime="{{ item.created_at }}">{{ item.created_at|date('d.m.Y H:i', 'UTC') }}</time> UTC</p>
+        </div>
+        {% include 'ui/status_chip.html.twig' with { label: ('site_inquiries.status.' ~ item.status)|trans, tone: item.status == 'resolved' ? 'success' : 'info' } only %}
+    </header>
+
+    <div class="site-inquiry-detail__contacts">
+        {% for contact in [{ key: 'email', prefix: 'mailto:', symbol: 'mail' }, { key: 'phone', prefix: 'tel:', symbol: 'phone' }] %}
+            <div class="site-inquiry-detail__contact">
+                <span class="site-inquiry-detail__contact-icon" aria-hidden="true">{{ icon(contact.symbol) }}</span>
+                <div><span class="site-inquiry-detail__label">{{ ('site_inquiries.col.' ~ contact.key)|trans }}</span><a href="{{ contact.prefix ~ item[contact.key] }}">{{ item[contact.key] }}</a></div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if item.route_from or item.route_to or item.preferred_date %}
+        <dl class="site-inquiry-detail__metadata">
+            {% if item.route_from or item.route_to %}<div><dt>{{ 'site_inquiries.col.route'|trans }}</dt><dd>{{ item.route_from ?: '—' }} → {{ item.route_to ?: '—' }}</dd></div>{% endif %}
+            {% if item.preferred_date %}<div><dt>{{ 'site_inquiries.col.term'|trans }}</dt><dd>{{ item.preferred_date }}</dd></div>{% endif %}
+        </dl>
+    {% endif %}
+
+    <section class="site-inquiry-detail__section">
+        <h3>{{ 'site_inquiries.detail.message'|trans }}</h3>
+        <div class="site-inquiry-detail__message">{{ item.details }}</div>
+    </section>
+
+    {% if attachments %}
+        <section class="site-inquiry-detail__section">
+            <h3>{{ 'site_inquiries.attachments'|trans }} <span class="site-inquiry-detail__count">{{ attachments|length }}</span></h3>
+            {% set unscanned = attachments|filter(file => file.scan_status not in ['clean', 'infected']) %}
+            {% set infected = attachments|filter(file => file.scan_status == 'infected') %}
+            {% if unscanned %}{% include 'ui/alert.html.twig' with { tone: 'warn', title: 'site_inquiries.scan.warning_title'|trans, message: 'site_inquiries.scan.warning'|trans, icon: 'warning' } only %}{% endif %}
+            {% if infected %}{% include 'ui/alert.html.twig' with { tone: 'danger', title: 'site_inquiries.scan.infected'|trans, message: 'site_inquiries.scan.blocked'|trans, icon: 'warning' } only %}{% endif %}
+            <ul class="site-inquiry-detail__files">
+                {% for attachment in attachments %}<li>
+                    {% if attachment.scan_status == 'infected' %}<strong>{{ attachment.filename }}</strong>
+                    {% else %}<a href="{{ url(attachment.route, attachment.params) }}"><span>{{ attachment.filename }}</span>{{ icon('download') }}</a>{% endif %}
+                    {% include 'ui/status_chip.html.twig' with { label: ('site_inquiries.scan.' ~ attachment.scan_status)|trans, tone: attachment.scan_status == 'infected' ? 'danger' : (attachment.scan_status == 'clean' ? 'success' : 'warn') } only %}
+                </li>{% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    {% set deliveryTone = notification.status == 'sent' ? 'success' : (notification.status == 'failed' ? 'danger' : (notification.status == 'not_configured' ? 'warn' : (notification.status in ['queued', 'sending'] ? 'info' : 'muted'))) %}
+    <section class="site-inquiry-detail__notification">
+        <div class="site-inquiry-detail__notification-heading">
+            <h3>{{ icon('mail') }} {{ 'site_inquiries.notification.label'|trans }}</h3>
+            {% include 'ui/status_chip.html.twig' with { label: ('site_inquiries.notification.' ~ notification.status)|trans, tone: deliveryTone } only %}
+        </div>
+        <dl class="site-inquiry-detail__metadata">
+            <div><dt>{{ 'site_inquiries.notification.attempts'|trans }}</dt><dd>{{ notification.attempts }} / 5</dd></div>
+            {% if notification.next_at and notification.status == 'queued' %}<div><dt>{{ 'site_inquiries.notification.next'|trans }}</dt><dd>{{ notification.next_at|date('d.m.Y H:i', 'UTC') }} UTC</dd></div>{% endif %}
+            {% if notification.sent_at %}<div><dt>{{ 'site_inquiries.notification.sent_at'|trans }}</dt><dd>{{ notification.sent_at|date('d.m.Y H:i', 'UTC') }} UTC</dd></div>{% endif %}
+        </dl>
+        <p class="site-inquiry-detail__hint">{{ 'site_inquiries.notification.hint'|trans }}</p>
+        {% if user.can('site_inquiries.manage') and notification.status in ['failed', 'not_configured', 'not_attempted'] %}
+            <form data-inquiry-notification-retry method="post" action="{{ url('admin.site_inquiries.notification.retry', { id: item.id }) }}">
+                {{ csrf_field()|raw }}
+                {% include 'ui/button.html.twig' with { type: 'submit', label: 'site_inquiries.notification.retry'|trans, variant: 'secondary', size: 'sm' } only %}
+            </form>
+        {% endif %}
+    </section>
+</section>

@@ -1,0 +1,38 @@
+{% set resetValues = {} %}
+{% for item in fields %}
+    {% set resetValues = resetValues|merge({ (item.field): item.secret ? '' : (item.definition.type == 'boolean' ? (item.value ? '1' : '0') : (item.value ~ '')) }) %}
+{% endfor %}
+<form id="reviews-settings-form" method="post" action="{{ url('admin.reviews.settings.update') }}" class="detail-stack" data-reset-values="{{ resetValues|json_encode|e('html_attr') }}">
+    {{ csrf_field()|raw }}
+    {% for section in ['general', 'google', 'facebook'] %}
+        <section class="detail-stack">
+            <h3 class="g-label">{{ ('reviews.settings.section.' ~ section)|trans }}</h3>
+            {% if section in ['google', 'facebook'] %}<p class="muted">{{ 'reviews.settings.unfinished_import'|trans }}</p>{% endif %}
+            <div class="form-grid form-grid--cols-2">
+                {% for key in sections[section] %}
+                    {% if fields[key] is defined %}
+                        {% set item = fields[key] %}
+                        {% if item.definition.type == 'boolean' %}
+                            <div class="g-field">
+                                <span class="g-label" id="{{ item.field }}-label">{{ item.definition.label|trans }}</span>
+                                {% set selected = old(item.field, item.value ? '1' : '0', 'reviews.settings.save') %}
+                                {% embed 'ui/select.html.twig' with { native: true } %}
+                                    {% block native_attributes %}name="{{ item.field }}" aria-labelledby="{{ item.field }}-label"{% endblock %}
+                                    {% block native_options %}
+                                        {% include 'ui/option.html.twig' with { value: '1', label: 'common.yes'|trans, selected: selected == '1' } only %}
+                                        {% include 'ui/option.html.twig' with { value: '0', label: 'common.no'|trans, selected: selected == '0' } only %}
+                                    {% endblock %}
+                                {% endembed %}
+                                {% if error(item.field, 'reviews.settings.save') %}<p class="g-error">{{ error(item.field, 'reviews.settings.save') }}</p>{% endif %}
+                            </div>
+                        {% elseif item.secret %}
+                            {% include 'ui/input.html.twig' with { name: item.field, type: 'password', label: item.definition.label|trans, hint: (item.value ? 'reviews.settings.secret_configured' : 'reviews.settings.secret_empty')|trans, autocomplete: 'new-password', form: 'reviews.settings.save' } only %}
+                        {% else %}
+                            {% include 'ui/input.html.twig' with { name: item.field, label: item.definition.label|trans, value: item.value, hint: key == 'reviews.default_locale' ? 'reviews.settings.unfinished_locale'|trans : '', form: 'reviews.settings.save' } only %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endfor %}
+</form>

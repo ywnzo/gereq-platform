@@ -1,0 +1,225 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.cms'|trans, url: url('admin.cms.pages.index') },
+        { label: 'nav.cms.pages'|trans, url: url('admin.cms.pages.index') },
+        { label: item ? item.title() : ('cms.pages.new'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    {% set isEdit = item is not null %}
+    {% set mode = isEdit ? item.contentMode() : 'blocks' %}
+    {% set statusKey = isEdit ? item.status() : 'draft' %}
+    {% set statusTone = statusKey == 'published' ? 'info' : (statusKey == 'draft' ? 'muted' : 'ok') %}
+
+    <header class="page-header cms-page-form__header">
+        <div>
+            <p class="eyebrow">
+                <a href="{{ url('admin.cms.pages.index') }}">{{ 'nav.cms.pages'|trans }}</a>
+            </p>
+            <h1>{{ isEdit ? 'cms.pages.edit'|trans : 'cms.pages.new'|trans }}</h1>
+            {% if isEdit %}
+                <p class="muted detail-layout__meta">
+                    <code>/{{ item.slug() }}</code>
+                    {% embed 'ui/status_chip.html.twig' %}{% block component_attributes %} class="status-chip status-chip--{{ statusTone }}"{% endblock %}{% block chip_content %}
+                        <span class="status-chip__dot"></span>{{ item.statusLabel()|trans }}
+                    {% endblock %}{% endembed %}
+                    <span class="badge badge--muted">{{ item.templateLabel()|trans }}</span>
+                </p>
+            {% else %}
+                <p class="muted">{{ 'cms.pages.form.intro'|trans }}</p>
+            {% endif %}
+        </div>
+        <div class="actions">
+            {% if isEdit %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url('admin.cms.pages.preview', {id: item.id()}) }}" target="_blank" rel="noopener"{% endblock %}{% block content %}{{ icon('external') }} {{ 'cms.pages.preview'|trans }}{% endblock %}{% endembed %}
+                {% if not item.isRaw() %}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url('admin.cms.pages.builder', {id: item.id()}) }}"{% endblock %}{% block content %}{{ icon('layout') }} {{ 'cms.builder.open'|trans }}{% endblock %}{% endembed %}
+                {% endif %}
+                {% if route_exists('admin.webplus.metas.for_page') and user.can('webplus.manage') %}
+                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ url('admin.webplus.metas.for_page', {pageId: item.id()}) }}"{% endblock %}{% block content %}{{ icon('globe') }} {{ 'webplus.cms.action'|trans }}{% endblock %}{% endembed %}
+                {% endif %}
+            {% endif %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'cms-page-form' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (isEdit ? url('admin.cms.pages.show', {id: item.id()}) : url('admin.cms.pages.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        </div>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'cms.page.save' } %}
+
+    {% set pageSource = item ?? 'Modules\\Cms\\Domain\\Page' %}
+    <form
+        id="cms-page-form"
+        method="post"
+        class="detail-layout cms-page-form"
+        action="{{ isEdit ? url('admin.cms.pages.update', {id: item.id()}) : url('admin.cms.pages.store') }}"
+        data-form="cms.page.save"
+        x-data="gereqForm"
+        {% if form_errors('cms.page.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+
+        <div
+            class="detail-layout__main"
+            x-data="cmsPageForm"
+            data-content-mode="{{ mode|e('html_attr') }}"
+            data-new-page="{{ isEdit ? '0' : '1' }}"
+            @change="syncMode($event)"
+        >
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel cms-page-form__panel"{% endblock %}
+                {% block content %}
+                <header class="cms-page-form__panel-head">
+                    <p class="cms-page-form__eyebrow">{{ 'cms.pages.section.identity'|trans }}</p>
+                    <h2>{{ 'cms.pages.section.identity_title'|trans }}</h2>
+                    <p class="muted">{{ 'cms.pages.section.identity_hint'|trans }}</p>
+                </header>
+                {{ forms().render(pageSource, {
+                    form: 'cms.page.save',
+                    group: 'content',
+                    only: ['title', 'slug'],
+                    cols: 1
+                }) }}
+                {% endblock %}
+            {% endembed %}
+
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel cms-page-form__panel"{% endblock %}
+                {% block content %}
+                <header class="cms-page-form__panel-head">
+                    <p class="cms-page-form__eyebrow">SEO</p>
+                    <h2>{{ 'cms.pages.section.seo'|trans }}</h2>
+                    <p class="muted">{{ 'cms.pages.section.seo_hint'|trans }}</p>
+                </header>
+                {{ forms().render(pageSource, {
+                    form: 'cms.page.save',
+                    group: 'content',
+                    only: ['meta_description', 'metaDescription'],
+                    cols: 1
+                }) }}
+                {% endblock %}
+            {% endembed %}
+
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel cms-page-form__panel cms-page-form__panel--canvas" x-show="isBlocks" x-cloak{% endblock %}
+                {% block content %}
+                <header class="cms-page-form__panel-head">
+                    <p class="cms-page-form__eyebrow">{{ 'cms.pages.section.content'|trans }}</p>
+                    <h2>{{ 'cms.pages.section.content_blocks'|trans }}</h2>
+                    <p class="muted">{{ 'cms.pages.form.builder_cta_hint'|trans }}</p>
+                </header>
+                <div class="cms-page-form__canvas-cta">
+                    <div class="cms-page-form__canvas-copy">
+                        <strong>{{ 'cms.pages.form.builder_cta'|trans }}</strong>
+                        <span class="muted">{{ 'cms.field.content_mode.hint'|trans }}</span>
+                    </div>
+                    {% if isEdit and not item.isRaw() %}
+                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.cms.pages.builder', {id: item.id()}) }}"{% endblock %}{% block content %}{{ icon('layout') }} {{ 'cms.builder.open'|trans }}{% endblock %}{% endembed %}
+                    {% elseif isEdit %}
+                        <span class="badge badge--muted">{{ 'cms.page.content_mode.blocks'|trans }}</span>
+                    {% else %}
+                        <span class="muted">{{ 'cms.pages.form.builder_after_save'|trans }}</span>
+                    {% endif %}
+                </div>
+                {% endblock %}
+            {% endembed %}
+
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel cms-page-form__panel" x-show="isRaw" x-cloak{% endblock %}
+                {% block content %}
+                <header class="cms-page-form__panel-head">
+                    <p class="cms-page-form__eyebrow">{{ 'cms.pages.section.content'|trans }}</p>
+                    <h2>{{ 'cms.field.body'|trans }}</h2>
+                    <p class="muted">{{ 'cms.field.body.hint'|trans }}</p>
+                </header>
+                {{ forms().render(pageSource, {
+                    form: 'cms.page.save',
+                    group: 'content',
+                    only: ['body'],
+                    cols: 1
+                }) }}
+                {% endblock %}
+            {% endembed %}
+        </div>
+
+        <aside class="detail-layout__aside">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel cms-page-form__publish"{% endblock %}
+                {% block content %}
+                <header class="cms-page-form__panel-head">
+                    <p class="cms-page-form__eyebrow">{{ 'cms.pages.section.publishing'|trans }}</p>
+                    <h2>{{ 'cms.pages.section.publishing_title'|trans }}</h2>
+                    <p class="muted">{{ 'cms.pages.section.publishing_hint'|trans }}</p>
+                </header>
+
+                {% if isEdit %}
+                    <div class="cms-page-form__status-strip" aria-hidden="true">
+                        <span class="cms-page-form__status-pill is-{{ statusTone }}">
+                            <span class="cms-page-form__status-dot"></span>
+                            {{ item.statusLabel()|trans }}
+                        </span>
+                        <span class="cms-page-form__status-meta">
+                            <code>/{{ item.slug() }}</code>
+                        </span>
+                    </div>
+                {% endif %}
+
+                {{ forms().render(pageSource, {
+                    form: 'cms.page.save',
+                    group: 'publishing',
+                    cols: 1
+                }) }}
+
+                {% set selectedMenus = item ? item.menuLocations() : [] %}
+                {% if form_errors('cms.page.save') %}
+                    {% set oldMenus = old('menu_locations', [], 'cms.page.save') %}
+                    {% if oldMenus is iterable %}
+                        {% set selectedMenus = oldMenus %}
+                    {% endif %}
+                {% endif %}
+                <fieldset class="g-drawer__field cms-link-menus">
+                    <legend class="g-drawer__label">{{ 'cms.field.menu'|trans }}</legend>
+                    <p class="muted g-hint">{{ 'cms.field.menu_multi.hint'|trans }}</p>
+                    <div class="cms-link-menus__tags" role="group" aria-label="{{ 'cms.field.menu'|trans }}">
+                        {% for loc in ['header', 'footer', 'custom'] %}
+                            <label class="cms-link-menus__tag">
+                                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %}
+                                    class="sr-only"
+                                    type="checkbox"
+                                    name="menu_locations[]"
+                                    value="{{ loc }}"
+                                    {% if loc in selectedMenus %}checked{% endif %}
+                                {% endblock %}{% endembed %}
+                                <span class="cms-link-menus__tag-face">{{ ('cms.menu.location.' ~ loc)|trans }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+
+                <div class="cms-page-form__aside-actions">
+                    {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'common.cancel'|trans,
+                        href: (isEdit ? url('admin.cms.pages.show', {id: item.id()}) : url('admin.cms.pages.index')),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
+                </div>
+                {% endblock %}
+            {% endembed %}
+        </aside>
+    </form>
+{% endblock %}

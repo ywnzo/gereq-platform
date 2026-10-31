@@ -1,0 +1,207 @@
+{% extends 'admin/layout.html.twig' %}
+
+{#
+    Render data (frozen contract): pageTitle, values, definitions, purgePreview, consentHint.
+
+    `definitions` is the settings definition map (Setting\Settings::definitionsForModule('analytics')),
+    keyed by the full setting key: {type, label, module, default, options, global}. A plain list of
+    definitions that carry their own `key` is normalised below. `values` maps the same keys to the
+    current values, `purgePreview` is the PurgeService dry-run result (null = not run yet).
+    Field names follow the platform convention str_replace('.', '__', $key).
+#}
+
+{% macro control(key, definition, value) %}
+    {% set field = key|replace({'.': '__'}) %}
+    {% set type = definition.type|default('string') %}
+    {% if type == 'boolean' %}
+        <select class="input" name="{{ field }}" id="f-{{ field }}">
+            <option value="1"{{ value ? ' selected' : '' }}>{{ 'common.yes'|trans }}</option>
+            <option value="0"{{ not value ? ' selected' : '' }}>{{ 'common.no'|trans }}</option>
+        </select>
+    {% elseif type == 'integer' %}
+        <input class="input" type="number" min="0" step="1" name="{{ field }}" id="f-{{ field }}" value="{{ value }}">
+    {% elseif type == 'json' %}
+        <textarea class="textarea-mini" name="{{ field }}" id="f-{{ field }}" rows="5" spellcheck="false">{{ value|json_encode }}</textarea>
+    {% elseif key == 'analytics.internal_ips' %}
+        {# CIDR list, one range per line. #}
+        <textarea class="textarea-mini" name="{{ field }}" id="f-{{ field }}" rows="5" spellcheck="false">{{ value }}</textarea>
+    {% else %}
+        <input class="input" type="text" name="{{ field }}" id="f-{{ field }}" value="{{ value }}">
+    {% endif %}
+{% endmacro %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.analytics'|trans, url: url('admin.analytics.index') },
+        { label: 'analytics.title.settings'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    {% set definitions = definitions|default({}) %}
+    {% set values = values|default({}) %}
+
+    {# Accept both a keyed definition map and a plain list of definitions. #}
+    {% set definitionMap = {} %}
+    {% if definitions|keys|first is same as(0) %}
+        {% for item in definitions %}
+            {% set definitionMap = definitionMap|merge({ (item.key): item }) %}
+        {% endfor %}
+    {% else %}
+        {% set definitionMap = definitions %}
+    {% endif %}
+
+    {% set sections = {
+        tracking: [
+            'analytics.tracker_enabled',
+            'analytics.session_idle_minutes',
+            'analytics.beacon_max_events',
+            'analytics.keep_bot_hits',
+            'analytics.internal_ips'
+        ],
+        consent: [
+            'analytics.consent_category',
+            'analytics.consent_storage_key',
+            'analytics.respect_dnt',
+            'analytics.purge_on_revocation'
+        ],
+        retention: [
+            'analytics.retention_raw_days',
+            'analytics.retention_visitor_days',
+            'analytics.retention_rollup_days',
+            'analytics.purge_batch_size'
+        ]
+    } %}
+
+    {% set mapped = [] %}
+    {% for keys in sections %}
+        {% for key in keys %}
+            {% set mapped = mapped|merge([key]) %}
+        {% endfor %}
+    {% endfor %}
+
+    {% set extraKeys = [] %}
+    {% for key in definitionMap|keys %}
+        {% if key not in mapped %}
+            {% set extraKeys = extraKeys|merge([key]) %}
+        {% endif %}
+    {% endfor %}
+
+    <header class="page-header">
+        <div>
+            <h1>{{ pageTitle|default('analytics.title.settings'|trans) }}</h1>
+            <p class="muted">{{ 'analytics.settings.intro'|trans }}</p>
+        </div>
+        <div class="actions">
+            <button class="btn btn--primary" type="submit" form="analytics-settings-form">{{ 'common.save'|trans }}</button>
+        </div>
+    </header>
+
+    <section class="panel">
+        <div class="grq-row">
+            {{ icon('shield') }}
+            <p class="muted grq-grow">{{ consentHint|default('analytics.settings.consent_hint'|trans) }}</p>
+        </div>
+    </section>
+
+    {% if definitionMap is empty %}
+        <div class="empty">
+            <h2>{{ 'analytics.settings.empty'|trans }}</h2>
+        </div>
+    {% else %}
+        <form id="analytics-settings-form" method="post" action="{{ url('admin.analytics.settings.save') }}" class="detail-stack" autocomplete="off">
+            {{ csrf_field()|raw }}
+
+            {% for group, keys in sections %}
+                <section class="panel">
+                    <header class="panel__head">
+                        <div>
+                            <h2>{{ ('analytics.settings.section.' ~ group)|trans }}</h2>
+                            <p class="muted panel__sub">{{ ('analytics.settings.section.' ~ group ~ '_hint')|trans }}</p>
+                        </div>
+                    </header>
+                    {% if group == 'retention' %}
+                        <p class="muted">{{ 'analytics.settings.retention_warning'|trans }}</p>
+                    {% endif %}
+                    <div class="form-grid">
+                        {% for key in keys %}
+                            {% if definitionMap[key] is defined %}
+                                {% set definition = definitionMap[key] %}
+                                {% set value = values[key] ?? definition.default ?? '' %}
+                                {% set helpKey = definition.label ~ '.help' %}
+                                {% set wide = key == 'analytics.internal_ips' or definition.type|default('') in ['json', 'text'] %}
+                                <label class="field{{ wide ? ' field--full' : '' }}">
+                                    <span>{{ definition.label|trans }}</span>
+                                    {{ _self.control(key, definition, value) }}
+                                    {% if helpKey|trans != helpKey %}
+                                        <small class="field__hint">{{ helpKey|trans }}</small>
+                                    {% endif %}
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+
+            {% if extraKeys is not empty %}
+                <section class="panel">
+                    <header class="panel__head">
+                        <h2>{{ 'analytics.settings.section.other'|trans }}</h2>
+                    </header>
+                    <div class="form-grid">
+                        {% for key in extraKeys %}
+                            {% set definition = definitionMap[key] %}
+                            {% set value = values[key] ?? definition.default ?? '' %}
+                            {% set helpKey = definition.label ~ '.help' %}
+                            <label class="field">
+                                <span>{{ definition.label|trans }}</span>
+                                {{ _self.control(key, definition, value) }}
+                                {% if helpKey|trans != helpKey %}
+                                    <small class="field__hint">{{ helpKey|trans }}</small>
+                                {% endif %}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+        </form>
+    {% endif %}
+
+    <section class="panel">
+        <header class="panel__head">
+            <div>
+                <h2>{{ 'analytics.settings.purge.title'|trans }}</h2>
+                <p class="muted panel__sub">{{ 'analytics.settings.purge.hint'|trans }}</p>
+            </div>
+        </header>
+
+        {% if user.can('analytics.purge') %}
+            <form method="post" action="{{ url('admin.analytics.settings.purge-preview') }}" class="grq-stack grq-stack--sm">
+                {{ csrf_field()|raw }}
+                <div class="form-actions">
+                    <button class="btn btn--ghost" type="submit">{{ icon('database') }} {{ 'analytics.settings.purge.submit'|trans }}</button>
+                </div>
+            </form>
+        {% endif %}
+
+        {# Counter order mirrors PurgeService::preview(); `candidates`/`deleted` are totals, so they frame the list.
+           Every field is optional: an older payload without `consent` simply omits that row. #}
+        {% set purgeFields = ['candidates', 'pageviews', 'events', 'sessions', 'visitors', 'consent', 'rollups', 'deleted'] %}
+        {% if purgePreview|default(null) is not empty %}
+            <dl class="meta-list meta-list--flush">
+                {% for field in purgeFields %}
+                    {% if purgePreview[field] is defined %}
+                        <div>
+                            <dt>{{ ('analytics.settings.purge.' ~ field)|trans }}</dt>
+                            <dd>{{ purgePreview[field] }}</dd>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </dl>
+        {% else %}
+            <p class="muted">{{ 'analytics.settings.purge.empty'|trans }}</p>
+        {% endif %}
+    </section>
+{% endblock %}

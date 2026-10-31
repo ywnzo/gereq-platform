@@ -1,0 +1,15 @@
+{% extends 'admin/layout.html.twig' %}
+{% import '@analytics/partials/_macros.html.twig' as analytics %}
+{% block content %}
+<div class="grq-stack">
+    <header class="page-header"><div><h1>{{ pageTitle }}</h1><p class="muted">{{ 'analytics.recordings.intro'|trans }}</p></div></header>
+    {% include '@analytics/partials/_nav.html.twig' with { active: 'recordings' } %}
+    {% include '@analytics/partials/_filters.html.twig' with { route: 'admin.analytics.recordings' } %}
+    <div class="table-wrap"><table class="table">
+        <thead><tr><th>{{ 'analytics.recordings.started'|trans }}</th><th>{{ 'analytics.visitors.col.device'|trans }}</th><th>{{ 'analytics.visitors.col.landing'|trans }}</th><th>{{ 'analytics.kpi.pageviews'|trans }}</th><th>{{ 'analytics.recordings.conversions'|trans }}</th><th>{{ 'analytics.recordings.replay'|trans }}</th></tr></thead>
+        <tbody>{% for row in rows %}
+            <tr><td><a href="{{ url('admin.analytics.recordings.show', {id: row.id, site: site.id, range: range.key}) }}">{{ analytics.date_cell(row.started_at) }}</a></td><td>{{ row.device_type }} · {{ row.browser }}</td><td>{{ row.landing_path }}</td><td>{{ row.pageview_count }}</td><td>{{ row.conversions }}</td><td>{{ (row.replay_chunks > 0 ? 'analytics.recordings.available' : 'analytics.recordings.timeline_only')|trans }}</td></tr>
+        {% else %}<tr><td colspan="6"><div class="empty">{{ 'analytics.recordings.empty'|trans }}</div></td></tr>{% endfor %}</tbody>
+    </table></div>
+</div>
+{% endblock %}

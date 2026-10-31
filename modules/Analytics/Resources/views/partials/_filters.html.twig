@@ -1,0 +1,37 @@
+{#
+    Site + range toolbar (GET form; kernel autosubmits the selects on change,
+    the noscript button keeps it usable without JS).
+    {% include '@analytics/partials/_filters.html.twig' with { route: 'admin.analytics.pages', site: site, sites: sites|default([]), range: range } %}
+#}
+{% import '@analytics/partials/_macros.html.twig' as analytics %}
+{% set route = route|default('admin.analytics.index') %}
+{% set site = site|default(null) %}
+{% set sites = sites|default([]) %}
+{% set range = range|default(null) %}
+{% set presets = ['7d', '30d', '90d'] %}
+{% set currentDays = analytics.range_days(range) %}
+{% set siteId = site ? site.id|default(null) : null %}
+{% set siteName = site ? site.name|default(site.key|default(siteId)) : null %}
+
+<div class="toolbar--table">
+    <form class="toolbar" method="get" action="{{ url(route) }}">
+        {% if sites|length > 0 %}
+            <label class="sr-only" for="analytics-site">{{ 'analytics.filter.site'|trans }}</label>
+            <select class="input" id="analytics-site" name="site" data-autosubmit="1">
+                {% for option in sites %}
+                    {% set optionId = option.id|default(null) %}
+                    <option value="{{ optionId }}"{{ (siteId and siteId == optionId) ? ' selected' : '' }}>{{ option.name|default(option.key|default(optionId)) }}</option>
+                {% endfor %}
+            </select>
+        {% elseif siteName %}
+            <span class="muted">{{ 'analytics.filter.site.current'|trans({'%site%': siteName}) }}</span>
+        {% endif %}
+        <label class="sr-only" for="analytics-range">{{ 'analytics.filter.range'|trans }}</label>
+        <select class="input" id="analytics-range" name="range" data-autosubmit="1">
+            {% for preset in presets %}
+                <option value="{{ preset }}"{{ currentDays == analytics.range_days(preset) ? ' selected' : '' }}>{{ ('analytics.range.' ~ preset)|trans }}</option>
+            {% endfor %}
+        </select>
+        <noscript><button class="btn btn--ghost btn-sm" type="submit">{{ 'analytics.filter.apply'|trans }}</button></noscript>
+    </form>
+</div>

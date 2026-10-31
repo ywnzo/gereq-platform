@@ -1,0 +1,44 @@
+{% extends 'admin/layout.html.twig' %}
+{% import '@analytics/partials/_macros.html.twig' as analytics %}
+
+{# Render data (frozen contract): pageTitle, site, range, rows, chart, columns #}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.analytics'|trans, url: url('admin.analytics.index') },
+        { label: pageTitle|default('analytics.title.devices'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    {% set rangeSummary = range ? 'analytics.range.summary'|trans({'%days%': analytics.range_days(range)}) : '' %}
+
+    <div class="grq-stack">
+        <header class="page-header">
+            <div>
+                <h1>{{ pageTitle|default('analytics.title.devices'|trans) }}</h1>
+                {% if rangeSummary %}<p class="muted">{{ rangeSummary }}</p>{% endif %}
+            </div>
+        </header>
+
+        {% include '@analytics/partials/_nav.html.twig' with { active: 'devices', site: site, range: range } %}
+
+        {% include '@analytics/partials/_filters.html.twig' with {
+            route: 'admin.analytics.devices',
+            site: site,
+            range: range,
+        } %}
+
+        {% include '@analytics/partials/_chart.html.twig' with {
+            chart: chart,
+            title: pageTitle|default('analytics.title.devices'|trans),
+            subtitle: rangeSummary,
+        } %}
+
+        {% include '@analytics/partials/_table.html.twig' with {
+            columns: columns|default([]),
+            rows: rows|default([]),
+        } %}
+    </div>
+{% endblock %}

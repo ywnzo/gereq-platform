@@ -1,0 +1,18 @@
+{# These roles follow the active storefront palette. #}
+{% include 'ui/option.html.twig' with { value: 'brand', label: 'settings.palette.primary'|trans } only %}
+{% include 'ui/option.html.twig' with { value: 'secondary', label: 'settings.palette.secondary'|trans } only %}
+{% include 'ui/option.html.twig' with { value: 'accent', label: 'settings.palette.accent'|trans } only %}
+{% include 'ui/option.html.twig' with { value: 'background', label: 'settings.palette.light_background'|trans } only %}
+{% include 'ui/option.html.twig' with { value: 'surface', label: 'settings.palette.light_surface'|trans } only %}
+{% include 'ui/option.html.twig' with { value: 'header', label: 'settings.palette.light_header'|trans } only %}
+{% for mode in ['light', 'dark'] %}
+    {% for role in ['background', 'surface', 'header'] %}
+        <option value="{{ mode }}-{{ role }}" hidden>{{ ('settings.palette.' ~ mode ~ '_' ~ role)|trans }}</option>
+    {% endfor %}
+{% endfor %}
+{# Keep saved legacy values selectable without offering them for new choices. #}
+<option value="ink" hidden>{{ 'cms.builder.color.ink'|trans }}</option>
+<option value="muted" hidden>{{ 'cms.builder.color.muted'|trans }}</option>
+<option value="paper" hidden>{{ 'cms.builder.color.paper'|trans }}</option>
+<option value="brand-soft" hidden>{{ 'cms.builder.color.brand_soft'|trans }}</option>
+{% include 'ui/option.html.twig' with { value: 'custom', label: 'cms.builder.color.custom'|trans } only %}

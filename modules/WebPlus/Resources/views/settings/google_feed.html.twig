@@ -1,0 +1,38 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: 'webplus.settings.title'|trans, url: url('admin.webplus.settings') },
+        { label: 'webplus.google_feed.preview'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'webplus.google_feed.preview'|trans }}</h1>
+        <p class="muted">{{ 'webplus.google_feed.preview_hint'|trans }} <code>{{ publicUrl }}</code></p>
+    </div>
+    <div class="actions">
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--ghost" href="{{ publicUrl }}" target="_blank" rel="noopener"{% endblock %}{% block content %}{{ icon('external') }} {{ 'webplus.google_feed.open_public'|trans }}{% endblock %}{% endembed %}
+        {% include 'ui/button.html.twig' with {
+            label: 'common.back'|trans,
+            href: (url('admin.webplus.settings')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+    </div>
+</header>
+
+{% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+    {% block attributes %} class="panel"{% endblock %}
+    {% block content %}
+    <header class="panel__head">
+        <h2>{{ contentType }}</h2>
+    </header>
+    <pre class="code-block" style="white-space:pre-wrap;overflow:auto;max-height:70vh">{{ body }}</pre>
+    {% endblock %}
+{% endembed %}
+{% endblock %}

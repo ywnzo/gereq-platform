@@ -1,0 +1,98 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.cms'|trans, url: url('admin.cms.pages.index') },
+        { label: 'nav.cms.links'|trans, url: url('admin.cms.links.index') },
+        { label: item ? item.title() : ('cms.links.new'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    {% set isEdit = item is not null %}
+
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">
+                <a href="{{ url('admin.cms.links.index') }}">{{ 'nav.cms.links'|trans }}</a>
+            </p>
+            <h1>{{ isEdit ? 'cms.links.edit'|trans : 'cms.links.new'|trans }}</h1>
+            <p class="muted">{{ 'cms.links.form.intro'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'cms-link-form' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.cancel'|trans,
+                href: (url('admin.cms.links.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        </div>
+    </header>
+
+    {% include 'ui/error-summary.html.twig' with { form: 'cms.link.save' } %}
+
+    {% set linkSource = item ?? 'Modules\\Cms\\Domain\\NavLink' %}
+    <form
+        id="cms-link-form"
+        method="post"
+        class="detail-layout cms-page-form"
+        action="{{ isEdit ? url('admin.cms.links.update', {id: item.id()}) : url('admin.cms.links.store') }}"
+        data-form="cms.link.save"
+        x-data="gereqForm"
+        {% if form_errors('cms.link.save') %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+
+        <div class="detail-layout__main">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel cms-page-form__panel"{% endblock %}
+                {% block content %}
+                <header class="cms-page-form__panel-head">
+                    <p class="cms-page-form__eyebrow">{{ 'cms.pages.section.identity'|trans }}</p>
+                    <h2>{{ 'cms.links.section.identity_title'|trans }}</h2>
+                    <p class="muted">{{ 'cms.links.section.identity_hint'|trans }}</p>
+                </header>
+                {{ forms().render(linkSource, {
+                    form: 'cms.link.save',
+                    group: 'content',
+                    cols: 1
+                }) }}
+                {% endblock %}
+            {% endembed %}
+        </div>
+
+        <aside class="detail-layout__aside">
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel cms-page-form__publish"{% endblock %}
+                {% block content %}
+                <header class="cms-page-form__panel-head">
+                    <p class="cms-page-form__eyebrow">{{ 'cms.pages.section.publishing'|trans }}</p>
+                    <h2>{{ 'cms.links.section.publishing_title'|trans }}</h2>
+                    <p class="muted">{{ 'cms.links.section.publishing_hint'|trans }}</p>
+                </header>
+                {{ forms().render(linkSource, {
+                    form: 'cms.link.save',
+                    group: 'publishing',
+                    cols: 1
+                }) }}
+                <div class="cms-page-form__aside-actions">
+                    {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+                    {% include 'ui/button.html.twig' with {
+                        label: 'common.cancel'|trans,
+                        href: (url('admin.cms.links.index')),
+                        button_options: { tag: 'a' },
+                        variant: 'ghost'
+                    } only %}
+                </div>
+                {% endblock %}
+            {% endembed %}
+        </aside>
+    </form>
+{% endblock %}

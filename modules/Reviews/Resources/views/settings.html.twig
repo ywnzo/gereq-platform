@@ -1,0 +1,89 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.reviews'|trans, url: url('admin.reviews.index') },
+        { label: 'reviews.settings.title'|trans },
+    ] } %}
+{% endblock %}
+
+{% macro control(field) %}
+    {% if field.definition.type == 'boolean' %}
+        {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="{{ field.field }}"{% endblock %}{% block native_options %}
+            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="1" {{ field.value ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'common.yes'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="0" {{ not field.value ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'common.no'|trans }}{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
+    {% elseif field.secret %}
+        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="password" name="{{ field.field }}" value="" autocomplete="new-password" placeholder="{{ field.value ? ('settings.secret.placeholder'|trans) : '' }}"{% endblock %}{% endembed %}
+    {% else %}
+        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="{{ field.field }}" value="{{ field.value }}"{% endblock %}{% endembed %}
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+    {% import _self as ui %}
+
+    <header class="page-header">
+        <div>
+            <h1>{{ 'reviews.settings.title'|trans }}</h1>
+            <p class="muted">{{ 'reviews.settings.intro'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% include 'ui/button.html.twig' with {
+                label: 'common.save'|trans,
+                type: 'submit',
+                variant: 'primary',
+                attrs: { 'form': 'reviews-settings-form' }
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.back'|trans,
+                href: (url('admin.reviews.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        </div>
+    </header>
+
+    <form id="reviews-settings-form" method="post" action="{{ url('admin.reviews.settings.update') }}" class="detail-stack" autocomplete="off">
+        {{ csrf_field()|raw }}
+
+        {% for section in ['google', 'facebook', 'general'] %}
+            {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+                {% block attributes %} class="panel"{% endblock %}
+                {% block content %}
+                <header class="panel__head">
+                    <div>
+                        <h2>{{ ('reviews.settings.section.' ~ section)|trans }}</h2>
+                        <p class="muted">{{ ('reviews.settings.section.' ~ section ~ '_hint')|trans }}</p>
+                    </div>
+                </header>
+                {% if section in ['google', 'facebook'] %}<p class="muted">{{ 'reviews.settings.unfinished_import'|trans }}</p>{% endif %}
+                <div class="form-grid">
+                    {% for key in sections[section] %}
+                        {% if fields[key] is defined %}
+                            <label class="field">
+                                <span>{{ fields[key].definition.label|trans }}</span>
+                                {% import '@reviews/settings.html.twig' as ui %}
+                                {{ ui.control(fields[key]) }}
+                                {% if key == 'reviews.default_locale' %}<small class="field__hint">{{ 'reviews.settings.unfinished_locale'|trans }}</small>{% endif %}
+                                {% if error(fields[key].field, 'reviews.settings.save') %}<small class="g-error">{{ error(fields[key].field, 'reviews.settings.save') }}</small>{% endif %}
+                            </label>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endblock %}
+            {% endembed %}
+        {% endfor %}
+
+        <div class="form-actions">
+            {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'common.back'|trans,
+                href: (url('admin.reviews.index')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        </div>
+    </form>
+{% endblock %}

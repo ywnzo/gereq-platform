@@ -1,0 +1,15 @@
+{#
+    Chart panel wrapper around the shared dashboard chart (gereqChart, Chart.js).
+    `chart` is the chart_panel config: {type, labels, datasets, stats?}.
+    {% include '@analytics/partials/_chart.html.twig' with { chart: trend, title: 'analytics.chart.trend'|trans, subtitle: summary } %}
+#}
+{% set chart = chart|default(null) %}
+{% set empty = chart is null or chart is not iterable or chart.datasets|default([]) is empty %}
+{% include 'admin/dashboard/widgets/chart_panel.html.twig' with {
+    title: title|default('analytics.chart.trend'|trans),
+    subtitle: subtitle|default(''),
+    config: chart is iterable ? chart : {},
+    stats: chart is iterable ? chart.stats|default([]) : [],
+    empty: empty,
+    empty_message: empty_message|default('analytics.chart.empty'|trans),
+} only %}

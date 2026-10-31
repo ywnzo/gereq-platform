@@ -1,0 +1,7 @@
+<label class="field" aria-label="{{ 'cms.dynamic.item_text_overflow'|trans }}">
+                        {% embed 'ui/select.html.twig' with { native: true } %}{% block root_attributes %}:data-native-value="selected.payload.text_overflow || 'wrap'"{% endblock %}{% block native_attributes %} class="input" aria-label="{{ 'cms.dynamic.item_text_overflow'|trans }}" :value="selected.payload.text_overflow || 'wrap'" @change="setBlockTextOverflow($event)"{% endblock %}{% block native_options %}
+                            <option value="wrap">{{ 'cms.dynamic.overflow_wrap'|trans }}</option>
+                            <option value="clip">{{ 'cms.dynamic.overflow_clip'|trans }}</option>
+                            <option value="ellipsis">{{ 'cms.dynamic.overflow_ellipsis'|trans }}</option>
+                        {% endblock %}{% endembed %}
+                    </label>

@@ -1,0 +1,90 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: 'nav.webplus_ai.tools'|trans, url: url('admin.webplus_ai.tools.index') },
+        { label: item ? 'webplus_ai.tools.edit'|trans : 'webplus_ai.tools.new'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ item ? 'webplus_ai.tools.edit'|trans : 'webplus_ai.tools.new'|trans }}</h1>
+        <p class="muted">{{ 'webplus_ai.tools.form_intro'|trans }}</p>
+    </div>
+</header>
+
+<form method="post" class="detail-stack" action="{{ item ? url('admin.webplus_ai.tools.update', {id: item.id()}) : url('admin.webplus_ai.tools.store') }}">
+    {{ csrf_field()|raw }}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus_ai.tools.title'|trans }}</h2>
+        </header>
+
+        <label class="field">
+            <span>{{ 'webplus_ai.field.name'|trans }}</span>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="name" value="{{ item ? item.name() : '' }}" {{ item and item.isBuiltin() ? 'readonly' : 'required' }} pattern="[a-z0-9_]+" placeholder="find_properties"{% endblock %}{% endembed %}
+            <span class="field__hint">{{ 'webplus_ai.field.name.hint'|trans }}</span>
+        </label>
+
+        <label class="field">
+            <span>{{ 'webplus_ai.field.title'|trans }}</span>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="text" name="title" value="{{ item ? item.title() : '' }}" required{% endblock %}{% endembed %}
+        </label>
+
+        <label class="field">
+            <span>{{ 'webplus_ai.field.description'|trans }}</span>
+            {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="description" rows="4" required{% endblock %}{% block content %}{{ item ? item.description() : '' }}{% endblock %}{% endembed %}
+        </label>
+
+        <label class="field">
+            <span>{{ 'webplus_ai.field.sort_order'|trans }}</span>
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="number" name="sort_order" value="{{ item ? item.sortOrder() : 100 }}"{% endblock %}{% endembed %}
+        </label>
+
+        <label class="field field--inline">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="enabled" value="1" {{ (item is null or item.isEnabled()) ? 'checked' : '' }}{% endblock %}{% endembed %}
+            <span>{{ 'webplus_ai.field.enabled'|trans }}</span>
+        </label>
+
+        <label class="field field--inline">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="mutating" value="1" {{ item and item.isMutating() ? 'checked' : '' }}{% endblock %}{% endembed %}
+            <span>{{ 'webplus_ai.field.mutating'|trans }}</span>
+        </label>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus_ai.field.input_schema'|trans }}</h2>
+        </header>
+        <div class="field">
+            {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="input_schema" data-kind="json" rows="14" required{% endblock %}{% block content %}{{ inputSchemaJson }}{% endblock %}{% endembed %}
+        </div>
+        <div class="field">
+            <span class="field__label">{{ 'webplus_ai.field.output_schema'|trans }}</span>
+            {% embed 'ui/textarea.html.twig' with { textarea_options: { control_only: true } } %}{% block input_attributes %} class="input" name="output_schema" data-kind="json" rows="10"{% endblock %}{% block content %}{{ outputSchemaJson }}{% endblock %}{% endembed %}
+            <span class="field__hint">{{ 'webplus_ai.field.output_schema.hint'|trans }}</span>
+        </div>
+        {% endblock %}
+    {% endembed %}
+
+    <div class="actions">
+        {% include 'ui/button.html.twig' with {
+            label: 'common.cancel'|trans,
+            href: (url('admin.webplus_ai.tools.index')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+        {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+    </div>
+</form>
+{% endblock %}

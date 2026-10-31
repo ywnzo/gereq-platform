@@ -1,0 +1,158 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block content %}
+{% set canManage = user.can('cms.manage') %}
+{% set openDrawer = old('_drawer', open_drawer|default(''), 'cms.link.save') %}
+
+<div class="list-shell">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'cms.links.title'|trans }}</h1>
+            <p class="muted">{{ 'cms.links.subtitle'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% if canManage %}
+                {% include 'ui/button.html.twig' with { href: '#cms-link-create', label: 'cms.links.new'|trans, variant: 'primary', icon: 'plus' } only %}
+            {% endif %}
+        </div>
+    </header>
+
+    <div x-data="dataTable" data-table-id="cms-links" data-actions-default="1">
+        <div class="toolbar--table">
+            {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'cms.links.search'|trans }}" aria-label="{{ 'cms.links.search'|trans }}"{% endblock %}{% endembed %}
+                {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} class="input" name="status" onchange="this.form.submit()" aria-label="{{ 'cms.filter.status_all'|trans }}"{% endblock %}{% block native_options %}
+                    {% include 'ui/option.html.twig' with { value: '', label: 'cms.filter.status_all'|trans } only %}
+                    {% for s in statuses %}
+                        {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ s }}" {{ status == s ? 'selected' : '' }}{% endblock %}{% block content %}{{ ('cms.page.status.' ~ s)|trans }}{% endblock %}{% endembed %}
+                    {% endfor %}
+                {% endblock %}{% endembed %}
+                {% include 'ui/button.html.twig' with {
+                    label: 'cms.pages.filter'|trans,
+                    type: 'submit',
+                    variant: 'ghost',
+                    class: 'btn-sm'
+                } only %}
+            {% endblock %}{% endembed %}
+        </div>
+
+        <div class="table-wrap" data-table>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ 'cms.field.title'|trans }}</th>
+                        <th>{{ 'cms.field.url'|trans }}</th>
+                        <th>{{ 'cms.field.menu'|trans }}</th>
+                        <th>{{ 'cms.field.updated'|trans }}</th>
+                        {% if canManage %}
+                            <th class="table__toggle-cell">{{ 'ui.table.col.publish'|trans }}</th>
+                        {% endif %}
+                        <th class="table__actions-head"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>
+                                {% if canManage %}
+                                    {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %}
+                                        href="#cms-link-edit-{{ item.id() }}"
+                                        class="cms-pages-table__name"
+                                    {% endblock %}{% block content %}{{ item.title() }}{% endblock %}{% endembed %}
+                                {% else %}
+                                    <span class="cms-pages-table__name">{{ item.title() }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="cms-pages-table__url">{{ item.url() }}</code>
+                            </td>
+                            <td>
+                                {% set menus = item.menuLocationLabels() %}
+                                {% if menus is not empty %}
+                                    <span class="cms-link-menus__badges">
+                                        {% for label in menus %}
+                                            <span class="badge badge--info">{{ label|trans }}</span>
+                                        {% endfor %}
+                                    </span>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="is-mute">{{ item.updatedAt().format('d. m. Y H:i') }}</td>
+                            {% if canManage %}
+                                <td class="table__toggle-cell">
+                                    {% include 'ui/table_toggle.html.twig' with {
+                                        action: url('admin.cms.links.publish', {id: item.id()}),
+                                        on: item.isPublished(),
+                                        title_on: 'ui.table.publish.on'|trans,
+                                        title_off: 'ui.table.publish.off'|trans
+                                    } %}
+                                </td>
+                            {% endif %}
+                            {% embed 'ui/row_actions.html.twig' %}
+                                {% block items %}
+                                    {% if canManage %}
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %}
+                                            href="#cms-link-edit-{{ item.id() }}"
+                                            class="table__action-btn table__action-btn--success"
+                                            title="{{ 'common.edit'|trans }}"
+                                            aria-label="{{ 'common.edit'|trans }}"
+                                        {% endblock %}{% block content %}
+                                            {{ icon('edit') }}
+                                            <span class="table__action-btn__label">{{ 'common.edit'|trans }}</span>
+                                        {% endblock %}{% endembed %}
+                                        {% include 'ui/row_action_destroy.html.twig' with {
+                                            action: url('admin.cms.links.destroy', {id: item.id()}),
+                                            confirm: 'cms.confirm_delete_link'|trans
+                                        } %}
+                                    {% endif %}
+                                {% endblock %}
+                            {% endembed %}
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="{{ canManage ? 6 : 5 }}">
+                                <div class="empty">
+                                    <h2>{{ 'cms.links.empty'|trans }}</h2>
+                                    <p>{{ 'cms.links.empty.hint'|trans }}</p>
+                                    {% if canManage %}
+                                        {% include 'ui/button.html.twig' with { href: '#cms-link-create', label: 'cms.links.new'|trans, variant: 'primary', icon: 'plus' } only %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'ui/table_footer.html.twig' %}
+    </div>
+</div>
+
+{% if canManage %}
+    {% set modalItems = [null]|merge(items) %}
+    {% if drawer_item is defined and drawer_item %}{% set modalItems = modalItems|merge([drawer_item]) %}{% endif %}
+    {% for item in modalItems %}
+        {% set modalId = item ? 'cms-link-edit-' ~ item.id() : 'cms-link-create' %}
+        {% set formId = modalId ~ '-form' %}
+        {% set failed = form_errors('cms.link.save') and old('_drawer', '', 'cms.link.save') == modalId %}
+        {% set requested = openDrawer == modalId or openDrawer == (item ? 'edit-' ~ item.id() : 'create') %}
+        {% embed 'ui/modal.html.twig' with { id: modalId, title: (item ? 'cms.links.edit' : 'cms.links.new')|trans, panel_class: 'g-modal__panel--form' } %}
+            {% block component_attributes %} id="{{ modalId }}" x-data="gereqModal" data-modal-hash="{{ modalId }}" data-reset-form="{{ formId }}"{% if requested %} x-init="show"{% endif %}{% endblock %}
+            {% block trigger %}{% endblock %}
+            {% block body %}
+                <span tabindex="-1" x-ref="close"></span>
+                {% include '@cms/links/_modal_form.html.twig' with {
+                    form_id: formId, modal_id: modalId, failed: failed,
+                    action: item ? url('admin.cms.links.update', {id: item.id()}) : url('admin.cms.links.store'), item: item
+                } only %}
+            {% endblock %}
+            {% block actions %}
+                {% include 'ui/button.html.twig' with { label: 'common.cancel'|trans, variant: 'ghost', attrs: { '@click': 'close' } } only %}
+                {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary', attrs: { form: formId } } only %}
+            {% endblock %}
+        {% endembed %}
+    {% endfor %}
+{% endif %}
+{% endblock %}

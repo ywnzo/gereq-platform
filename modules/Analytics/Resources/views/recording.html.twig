@@ -1,0 +1,32 @@
+{% extends 'admin/layout.html.twig' %}
+{% import '@analytics/partials/_macros.html.twig' as analytics %}
+{% block content %}
+<div class="grq-stack">
+    <header class="page-header"><div><h1>{{ pageTitle }}</h1><p class="muted">{{ analytics.date_cell(session.started_at) }} · {{ session.device_type }} · {{ session.browser }} · {{ session.landing_path }}</p></div></header>
+    {% include '@analytics/partials/_nav.html.twig' with { active: 'recordings' } %}
+    <section class="panel" x-data="analyticsReplay" data-replay-url="{{ url('admin.analytics.recordings.data', {id: session.id, site: site.id}) }}">
+        <header class="panel__head"><h2>{{ 'analytics.recordings.replay'|trans }}</h2></header>
+        <p class="muted">{{ 'analytics.recording.privacy'|trans }}</p>
+        <div class="actions">
+            <button type="button" class="btn btn--primary" @click="play" :disabled="unavailable">{{ 'analytics.recording.play'|trans }}</button>
+            <button type="button" class="btn btn--ghost" @click="pause" :disabled="unavailable">{{ 'analytics.recording.pause'|trans }}</button>
+            <button type="button" class="btn btn--ghost" @click="restart" :disabled="unavailable">{{ 'analytics.recording.restart'|trans }}</button>
+            <button type="button" class="btn btn--ghost" @click="next" :disabled="unavailable">{{ 'analytics.recording.next'|trans }}</button>
+            <span x-text="position"></span>
+        </div>
+        <p x-show="loading">{{ 'analytics.recording.loading'|trans }}</p>
+        <p x-show="empty" x-cloak>{{ 'analytics.recording.empty'|trans }}</p>
+        <p x-show="failed" x-cloak role="alert">{{ 'analytics.recording.error'|trans }}</p>
+        <div class="analytics-replay-stage" x-ref="stage"></div>
+    </section>
+    <section class="panel">
+        <header class="panel__head"><h2>{{ 'analytics.recording.timeline'|trans }}</h2></header>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>{{ 'analytics.recordings.started'|trans }}</th><th>{{ 'analytics.title.events'|trans }}</th><th>{{ 'analytics.recording.field'|trans }}</th><th>{{ 'analytics.title.pages'|trans }}</th></tr></thead>
+            <tbody>{% for event in timeline %}
+                <tr><td>{{ analytics.date_cell(event.occurred_at) }}</td><td>{{ ('analytics.event.' ~ event.name)|trans }}{% if event.reason %} · {{ ('analytics.reason.' ~ event.reason)|trans }}{% endif %}</td><td>{% if event.field %}{{ ('analytics.field.' ~ event.field)|trans }}{% if event.filled is not null %} · {{ (event.filled ? 'analytics.field.filled' : 'analytics.field.cleared')|trans }}{% endif %}{% else %}—{% endif %}</td><td>{{ event.path|default('—') }}</td></tr>
+            {% else %}<tr><td colspan="4">{{ 'analytics.recordings.empty'|trans }}</td></tr>{% endfor %}</tbody>
+        </table></div>
+    </section>
+</div>
+{% endblock %}

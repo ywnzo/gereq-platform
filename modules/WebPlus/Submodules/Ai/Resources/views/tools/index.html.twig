@@ -1,0 +1,103 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: 'nav.webplus_ai.tools'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="webplus-ai-tools" data-actions-default="1">
+<header class="page-header">
+    <div>
+        <h1>{{ 'webplus_ai.tools.title'|trans }}</h1>
+        <p class="muted">{{ 'webplus_ai.tools.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        {% include 'ui/button.html.twig' with {
+            label: catalogPath,
+            href: (catalogPath),
+            button_options: { tag: 'a' },
+            variant: 'ghost',
+            attrs: { 'target': '_blank', 'rel': 'noopener' }
+        } only %}
+        {% if user.can('webplus_ai.manage') %}
+            {% include 'ui/button.html.twig' with {
+                label: 'nav.webplus_ai.settings'|trans,
+                href: (url('admin.webplus_ai.settings')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.webplus_ai.tools.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'webplus_ai.tools.new'|trans }}{% endblock %}{% endembed %}
+        {% endif %}
+    </div>
+</header>
+
+{% if not moduleEnabled %}
+    <div class="notice notice--warn">{{ 'webplus_ai.module_off'|trans }}</div>
+{% endif %}
+
+<div class="toolbar--table">
+    {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="dir" value="{{ dir }}">
+        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'webplus_ai.tools.search'|trans }}"{% endblock %}{% endembed %}
+        {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="enabled" class="input" onchange="this.form.submit()"{% endblock %}{% block native_options %}
+            {% include 'ui/option.html.twig' with { value: '', label: 'common.all'|trans } only %}
+            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="1" {{ enabled == '1' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'webplus_ai.field.enabled'|trans }}{% endblock %}{% endembed %}
+            {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="0" {{ enabled == '0' ? 'selected' : '' }}{% endblock %}{% block content %}{{ 'common.no'|trans }}{% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
+    {% endblock %}{% endembed %}
+</div>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+{% include 'ui/sort_th.html.twig' with { label: 'webplus_ai.field.title'|trans, column: 'title', query: { enabled: enabled } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'webplus_ai.field.name'|trans, column: 'name', query: { enabled: enabled } } %}
+{% include 'ui/sort_th.html.twig' with { label: 'webplus_ai.field.sort_order'|trans, column: 'sortOrder', query: { enabled: enabled } } %}
+<th>{{ 'webplus_ai.field.enabled'|trans }}</th>
+<th>{{ 'webplus_ai.field.builtin'|trans }}</th>
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td><a href="{{ url('admin.webplus_ai.tools.edit', {id: item.id()}) }}"><strong>{{ item.title() }}</strong></a>
+        <div class="muted" style="max-width:36ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.description() }}</div>
+    </td>
+    <td><code>{{ item.name() }}</code></td>
+    <td class="is-mute">{{ item.sortOrder() }}</td>
+    <td>{{ item.isEnabled() ? 'common.yes'|trans : 'common.no'|trans }}</td>
+    <td>{{ item.isBuiltin() ? 'common.yes'|trans : 'common.no'|trans }}</td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% include 'ui/row_action.html.twig' with { href: url('admin.webplus_ai.tools.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+            {% if user.can('webplus_ai.manage') %}
+                <form method="post" action="{{ url('admin.webplus_ai.tools.toggle', {id: item.id()}) }}" style="display:inline">
+                    {{ csrf_field()|raw }}
+                    {% include 'ui/button.html.twig' with {
+                        label: item.isEnabled() ? 'webplus_ai.action.disable'|trans : 'webplus_ai.action.enable'|trans,
+                        type: 'submit',
+                        variant: 'ghost',
+                        size: 'sm'
+                    } only %}
+                </form>
+                {% if not item.isBuiltin() %}
+                    {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.webplus_ai.tools.destroy', {id: item.id()}), confirm: 'webplus_ai.confirm_delete'|trans } %}
+                {% endif %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr><td colspan="6"><div class="empty"><h2>{{ 'webplus_ai.tools.empty'|trans }}</h2></div></td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

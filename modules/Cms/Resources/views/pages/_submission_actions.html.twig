@@ -1,0 +1,18 @@
+<div class="cms-form-actions">
+    {% if attempt.record_url %}
+        {% include 'ui/button.html.twig' with { href: attempt.record_url, label: 'cms.form.view_record'|trans, variant: 'ghost' } only %}
+    {% endif %}
+    {% if attempt.uploads is not empty %}
+        {% include 'ui/button.html.twig' with {
+            href: '#cms-form-attachments-' ~ attempt.id,
+            label: 'cms.form.attachments.title'|trans,
+            variant: 'ghost'
+        } only %}
+    {% endif %}
+    {% if attempt.retry %}
+        <form method="post" action="{{ url('admin.cms.forms.retry', {id: attempt.id}) }}">
+            {{ csrf_field()|raw }}
+            {% include 'ui/button.html.twig' with { type: 'submit', label: 'cms.form.retry_notification'|trans, variant: 'ghost' } only %}
+        </form>
+    {% endif %}
+</div>

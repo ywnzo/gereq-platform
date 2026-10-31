@@ -1,0 +1,38 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="grq-stack">
+    <header class="page-header"><div><h1>{{ pageTitle }}</h1><p class="muted">{{ 'cookie.settings.intro'|trans }}</p></div>
+        <button class="btn btn--primary" type="submit" form="cookie-settings">{{ 'common.save'|trans }}</button>
+    </header>
+    <section class="panel"><header class="panel__head"><h2>{{ 'cookie.preview.title'|trans }}</h2><p class="muted">{{ 'cookie.preview.hint'|trans }}</p></header>
+        <iframe src="{{ url('admin.cookie.preview') }}" title="{{ 'cookie.preview.title'|trans }}" style="width:100%;height:520px;border:0;border-radius:12px"></iframe>
+    </section>
+    <form id="cookie-settings" method="post" enctype="multipart/form-data" action="{{ url('admin.cookie.save') }}" class="grq-stack">
+        {{ csrf_field() }}
+        {% for section, fields in sections %}
+        <section class="panel"><header class="panel__head"><h2>{{ ('cookie.section.' ~ section)|trans }}</h2></header>
+            <div class="grq-grid grq-grid--2">
+            {% for field in fields %}
+                {% if field.definition.type == 'boolean' %}
+                    {% include 'ui/switch.html.twig' with { name: field.name, label: field.key|trans, on: field.value, form: 'cookie.settings' } %}
+                    {% if field.name == 'show_on_mobile' %}<p class="muted">{{ 'cookie.show_on_mobile.hint'|trans }}</p>{% endif %}
+                {% elseif field.name == 'style' %}
+                    <label class="field"><span>{{ field.key|trans }}</span><select class="input" name="style">{% for style in ['card', 'compact', 'square', 'banner'] %}<option value="{{ style }}"{{ field.value == style ? ' selected' : '' }}>{{ ('cookie.style.' ~ style)|trans }}</option>{% endfor %}</select></label>
+                {% elseif field.name == 'image' %}
+                    {% include 'ui/media_box.html.twig' with { name: 'image', file_name: 'image_upload', clear_name: 'clear_image', label: field.key|trans, hint: 'cookie.image.hint'|trans, value: imageUrl, has_media: true, allow_url: false, trigger_hint: 'cookie.image.trigger'|trans, upload_hint: 'cookie.image.hint'|trans, accept: 'image/png,image/jpeg,image/webp,image/gif', form: 'cookie.settings' } %}
+                {% elseif field.name == 'icon' %}
+                    <label class="field"><span>{{ field.key|trans }}</span><input class="input" name="icon" value="{{ field.value }}" maxlength="16" aria-label="{{ field.key|trans }}"><small class="muted">{{ 'cookie.icon.hint'|trans }}</small></label>
+                {% elseif field.name == 'position' %}
+                    <label class="field"><span>{{ field.key|trans }}</span><select class="input" name="position"><option value="right"{{ field.value == 'right' ? ' selected' : '' }}>{{ 'cookie.position.right'|trans }}</option><option value="left"{{ field.value == 'left' ? ' selected' : '' }}>{{ 'cookie.position.left'|trans }}</option></select></label>
+                {% elseif field.name == 'text' or field.name ends with '_text' %}
+                    <label class="field"><span>{{ field.key|trans }}</span><textarea class="input" name="{{ field.name }}" rows="4" maxlength="2000" required>{{ field.value }}</textarea></label>
+                {% else %}
+                    <label class="field"><span>{{ field.key|trans }}</span><input class="input" name="{{ field.name }}" value="{{ field.value }}" type="{{ field.definition.type == 'integer' ? 'number' : (field.name in ['accent', 'background', 'color'] ? 'color' : 'text') }}" {% if field.definition.type == 'integer' %}min="1" max="365"{% endif %} required maxlength="2000"></label>
+                {% endif %}
+            {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </form>
+</div>
+{% endblock %}

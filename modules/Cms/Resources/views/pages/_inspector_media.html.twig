@@ -1,0 +1,26 @@
+{% set mediaLibrary = [] %}
+{% for media in boot.media|default([]) %}
+    {% set mediaLibrary = mediaLibrary|merge([{ value: media.id, label: media.title, thumb: media.url, mime: media.mime }]) %}
+{% endfor %}
+<div class="cms-builder__media-box" x-effect="syncInspectorMediaBox($el)" @media-change.stop="onInspectorMediaChange($event)">
+{% embed 'ui/media_box.html.twig' with {
+    id: 'cms-inspector-' ~ kind ~ '-media', name: 'cms_' ~ kind ~ '_url',
+    file_name: 'cms_' ~ kind ~ '_upload', library_name: 'cms_' ~ kind ~ '_media_id',
+    clear_name: 'cms_' ~ kind ~ '_clear', label: '', optional: false, full: false,
+    value: '', dynamic_library: true, has_media: boot.mediaUploadUrl|default('') != '', library: mediaLibrary,
+    upload_hint: 'cms.builder.media.upload_hint'|trans
+} %}
+    {% block library_items %}
+        <template x-for="item in items" :key="item.value">
+            <button type="button" class="media-box__thumb" data-media-item="1"
+                    :data-id="item.value" :title="item.label" :class="isSelected(item.value) && 'is-selected'"
+                    @click="pick(item.value, item.thumb)">
+                <span class="media-box__thumb-media"><img :src="item.thumb" alt="" loading="lazy" decoding="async"></span>
+                <span class="media-box__thumb-label" x-text="item.label"></span>
+            </button>
+        </template>
+    {% endblock %}
+{% endembed %}
+</div>
+<p class="muted" x-show="mediaUploading" x-cloak>{{ 'cms.builder.media.uploading'|trans }}</p>
+<p class="cms-builder-upload__error" x-show="mediaUploadError" x-text="mediaUploadError" x-cloak></p>

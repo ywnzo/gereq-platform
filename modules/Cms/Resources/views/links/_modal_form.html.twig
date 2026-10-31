@@ -1,0 +1,36 @@
+{# Shared link fields; the source supplies the form generator metadata. #}
+{% set linkSource = item ?? 'Modules\\Cms\\Domain\\NavLink' %}
+{% set formName = failed ? 'cms.link.save' : 'cms.link.modal.' ~ modal_id %}
+{% set initialMenus = item ? item.menuLocations() : [] %}
+{% set selectedMenus = failed ? old('menu_locations', [], 'cms.link.save') : initialMenus %}
+{% if selectedMenus is not iterable %}{% set selectedMenus = [] %}{% endif %}
+{% set resetValues = { title: item ? item.title() : '', url: item ? item.url() : '', status: item ? item.status() : 'draft' } %}
+<form method="post" action="{{ action }}" class="detail-stack" id="{{ form_id }}" data-form="cms.link.save" data-draft-key="{{ modal_id }}" data-reset-values="{{ resetValues|json_encode|e('html_attr') }}" x-data="gereqForm"{% if failed %} data-server-state="1"{% endif %}>
+    {{ csrf_field()|raw }}
+    <input type="hidden" name="_drawer" value="{{ modal_id }}">
+    {% if failed %}<div data-modal-error-summary>{% include 'ui/error-summary.html.twig' with { form: 'cms.link.save', id_prefix: modal_id ~ '-' } %}</div>{% endif %}
+    <div class="form-grid form-grid--cols-1">
+        {% for field in forms().fields(linkSource) %}
+            {% if field.group in ['content', 'publishing'] %}
+                {% set common = { id: modal_id ~ '-' ~ field.name, name: field.name, label: field.label|trans, form: formName, required: field.required, value: field.value, hint: field.hint ? field.hint|trans : null, entity: item } %}
+                {% if field.type == 'select' %}
+                    {% include 'ui/select.html.twig' with common|merge({ options: field.choices }) only %}
+                {% else %}
+                    {% include 'ui/input.html.twig' with common|merge({ type: field.type }) only %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <fieldset class="g-drawer__field cms-link-menus">
+            <legend class="g-drawer__label">{{ 'cms.field.menu'|trans }}</legend>
+            <p class="muted g-hint">{{ 'cms.field.menu_multi.hint'|trans }}</p>
+            <div class="cms-link-menus__tags" role="group" aria-label="{{ 'cms.field.menu'|trans }}">
+                {% for loc in ['header', 'footer', 'custom'] %}
+                    <label class="cms-link-menus__tag">
+                        <input class="sr-only" type="checkbox" name="menu_locations[]" value="{{ loc }}" data-reset-checked="{{ loc in initialMenus ? '1' : '0' }}"{% if loc in selectedMenus %} checked{% endif %}>
+                        <span class="cms-link-menus__tag-face">{{ ('cms.menu.location.' ~ loc)|trans }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </fieldset>
+    </div>
+</form>

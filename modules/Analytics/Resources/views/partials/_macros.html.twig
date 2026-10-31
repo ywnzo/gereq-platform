@@ -1,0 +1,79 @@
+{#
+    Shared analytics admin macros.
+
+    They normalise the render data of the frozen contract (modules/Analytics/README.md)
+    so every template stays declarative:
+
+      kpi       list<{label|key, value, hint?}> or map<key, {value, hint?}> or map<key, scalar>
+      top rows  list<{label, value}>; the value may also arrive as visitors /
+                pageviews / sessions / events / count
+      chart     chart_panel config {type, labels, datasets, stats?}
+      range     selected preset, e.g. '30d' (plain number of days is accepted too)
+
+    A label that is already translated passes through |trans unchanged, so both
+    "label" (translated in PHP) and "key" (translated here) work.
+#}
+
+{% macro kpi_label(card) %}{% if card.label is not empty %}{{ card.label|trans }}{% elseif card.key is not empty %}{% set labelKey = 'analytics.kpi.' ~ card.key %}{% set text = labelKey|trans %}{{ text == labelKey ? card.key|replace({'_': ' '}) : text }}{% endif %}{% endmacro %}
+
+{% macro kpi_row(kpi) %}
+    {% set cards = [] %}
+    {% for name, metric in kpi|default([]) %}
+        {% if metric is iterable %}
+            {% set cards = cards|merge([{
+                key: metric.key|default(name),
+                label: metric.label|default(null),
+                value: metric.value|default(metric.count|default('—')),
+                hint: metric.hint|default(null)
+            }]) %}
+        {% else %}
+            {% set cards = cards|merge([{ key: name, label: null, value: metric, hint: null }]) %}
+        {% endif %}
+    {% endfor %}
+    {% if cards is not empty %}
+        <div class="widget-row">
+            {% for card in cards %}
+                <div class="stat-card">
+                    <div class="stat-card__label">{{ _self.kpi_label(card) }}</div>
+                    <div class="stat-card__value">{{ card.value }}</div>
+                    {% if card.hint is not empty %}<div class="stat-card__hint">{{ card.hint|trans }}</div>{% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro top_label(row) %}{% set label = row.label|default(row.name|default(row.host|default(row.path|default('—')))) %}{{ label|trans }}{% endmacro %}
+
+{% macro top_value(row) %}{% set value = row.value|default(row.count|default(row.visitors|default(row.pageviews|default(row.sessions|default(row.events|default('—')))))) %}{{ value }}{% endmacro %}
+
+{% macro top_list(title, rows) %}
+    <section class="panel">
+        <header class="panel__head">
+            <h2>{{ title }}</h2>
+        </header>
+        {% if rows|default([]) is empty %}
+            <div class="empty"><p>{{ 'analytics.top.empty'|trans }}</p></div>
+        {% else %}
+            <dl class="meta-list meta-list--flush">
+                {% for row in rows %}
+                    <div>
+                        <dt>{{ _self.top_label(row) }}</dt>
+                        <dd>{{ _self.top_value(row) }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        {% endif %}
+    </section>
+{% endmacro %}
+
+{% macro column_key(column) %}{{ column is iterable ? column.key|default('') : column }}{% endmacro %}
+
+{% macro column_label(column) %}{% set key = column is iterable ? column.key|default('') : column %}{% set label = column is iterable ? column.label|default(key) : key %}{{ label|trans }}{% endmacro %}
+
+{# Generic report cell: plain value, badge for booleans, JSON for nested data. #}
+{% macro cell(row, column) %}{% set key = column is iterable ? column.key|default(column) : column %}{% set value = attribute(row, key) %}{% if value is null or value is same as('') %}—{% elseif value is same as(true) %}<span class="badge badge--ok">{{ 'common.yes'|trans }}</span>{% elseif value is same as(false) %}<span class="badge badge--muted">{{ 'common.no'|trans }}</span>{% elseif value is iterable %}{{ value|json_encode }}{% else %}{{ value }}{% endif %}{% endmacro %}
+
+{% macro date_cell(value) %}{% if value is null or value is same as('') %}—{% elseif value.format is defined %}{{ value.format('d. m. Y H:i') }}{% else %}{{ value }}{% endif %}{% endmacro %}
+
+{% macro range_days(range) %}{% set raw = (range is iterable ? range.key|default('') : range|default('')) ~ '' %}{% set digits = raw|replace({'d': '', 'D': '', ' ': ''})|trim %}{{ digits is empty ? '30' : digits }}{% endmacro %}

@@ -1,0 +1,88 @@
+{#
+  Interactive social share preview (Facebook / Messenger / X / LinkedIn).
+  Expects Alpine scope: webplusOgPreview
+#}
+<div class="webplus-og-preview">
+    <div class="webplus-og-preview__tabs" role="tablist">
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="webplus-og-preview__tab" role="tab" :aria-selected="tab === 'facebook'" :class="tab === 'facebook' && 'is-active'" @click="setTab('facebook')"{% endblock %}{% block content %}{{ 'webplus.og_preview.tab.facebook'|trans }}{% endblock %}{% endembed %}
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="webplus-og-preview__tab" role="tab" :aria-selected="tab === 'messenger'" :class="tab === 'messenger' && 'is-active'" @click="setTab('messenger')"{% endblock %}{% block content %}{{ 'webplus.og_preview.tab.messenger'|trans }}{% endblock %}{% endembed %}
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="webplus-og-preview__tab" role="tab" :aria-selected="tab === 'twitter'" :class="tab === 'twitter' && 'is-active'" @click="setTab('twitter')"{% endblock %}{% block content %}{{ 'webplus.og_preview.tab.twitter'|trans }}{% endblock %}{% endembed %}
+        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="button" class="webplus-og-preview__tab" role="tab" :aria-selected="tab === 'linkedin'" :class="tab === 'linkedin' && 'is-active'" @click="setTab('linkedin')"{% endblock %}{% block content %}{{ 'webplus.og_preview.tab.linkedin'|trans }}{% endblock %}{% endembed %}
+    </div>
+
+    <p class="webplus-og-preview__fallbacks muted" x-show="titleSource || imageSource" x-cloak>
+        <span x-show="titleSource === 'seo'">{{ 'webplus.og_preview.fallback.title_seo'|trans }}</span>
+        <span x-show="titleSource === 'site'">{{ 'webplus.og_preview.fallback.title_site'|trans }}</span>
+        <span x-show="imageSource === 'default'">{{ 'webplus.og_preview.fallback.image_default'|trans }}</span>
+        <span x-show="imageSource === 'upload'">{{ 'webplus.og_preview.fallback.image_upload'|trans }}</span>
+    </p>
+
+    {# Facebook feed card #}
+    <div class="webplus-og-card webplus-og-card--facebook" x-show="tab === 'facebook'" x-cloak>
+        <div class="webplus-og-card__chrome">
+            <div class="webplus-og-card__avatar" aria-hidden="true"></div>
+            <div>
+                <div class="webplus-og-card__poster" x-text="resolvedSiteName"></div>
+                <div class="webplus-og-card__meta">{{ 'webplus.og_preview.sponsored'|trans }}</div>
+            </div>
+        </div>
+        <div class="webplus-og-card__media" :class="!resolvedImage && 'is-empty'">
+            <img x-show="resolvedImage" :src="resolvedImage" alt="" loading="lazy">
+            <span x-show="!resolvedImage" class="webplus-og-card__placeholder">{{ 'webplus.og_preview.no_image'|trans }}</span>
+        </div>
+        <div class="webplus-og-card__body">
+            <div class="webplus-og-card__host" x-text="displayUrl"></div>
+            <div class="webplus-og-card__title" x-text="resolvedTitle || '{{ 'webplus.og_preview.empty_title'|trans|e('js') }}'"></div>
+            <div class="webplus-og-card__desc" x-text="resolvedDescription" x-show="resolvedDescription"></div>
+        </div>
+    </div>
+
+    {# Messenger share bubble #}
+    <div class="webplus-og-card webplus-og-card--messenger" x-show="tab === 'messenger'" x-cloak>
+        <div class="webplus-og-card__bubble">
+            <div class="webplus-og-card__media webplus-og-card__media--compact" :class="!resolvedImage && 'is-empty'">
+                <img x-show="resolvedImage" :src="resolvedImage" alt="" loading="lazy">
+                <span x-show="!resolvedImage" class="webplus-og-card__placeholder">{{ 'webplus.og_preview.no_image'|trans }}</span>
+            </div>
+            <div class="webplus-og-card__body">
+                <div class="webplus-og-card__title" x-text="resolvedTitle || '{{ 'webplus.og_preview.empty_title'|trans|e('js') }}'"></div>
+                <div class="webplus-og-card__host" x-text="displayUrl"></div>
+            </div>
+        </div>
+    </div>
+
+    {# X / Twitter #}
+    <div class="webplus-og-card webplus-og-card--twitter" :class="isLargeTwitter ? 'is-large' : 'is-summary'" x-show="tab === 'twitter'" x-cloak>
+        <div class="webplus-og-card__media" :class="!resolvedTwitterImage && 'is-empty'" x-show="isLargeTwitter">
+            <img x-show="resolvedTwitterImage" :src="resolvedTwitterImage" alt="" loading="lazy">
+            <span x-show="!resolvedTwitterImage" class="webplus-og-card__placeholder">{{ 'webplus.og_preview.no_image'|trans }}</span>
+        </div>
+        <div class="webplus-og-card__row" x-show="!isLargeTwitter">
+            <div class="webplus-og-card__thumb" :class="!resolvedTwitterImage && 'is-empty'">
+                <img x-show="resolvedTwitterImage" :src="resolvedTwitterImage" alt="" loading="lazy">
+            </div>
+            <div class="webplus-og-card__body">
+                <div class="webplus-og-card__host" x-text="displayUrl"></div>
+                <div class="webplus-og-card__title" x-text="resolvedTitle || '{{ 'webplus.og_preview.empty_title'|trans|e('js') }}'"></div>
+                <div class="webplus-og-card__desc" x-text="resolvedDescription" x-show="resolvedDescription"></div>
+            </div>
+        </div>
+        <div class="webplus-og-card__body" x-show="isLargeTwitter">
+            <div class="webplus-og-card__host" x-text="displayUrl"></div>
+            <div class="webplus-og-card__title" x-text="resolvedTitle || '{{ 'webplus.og_preview.empty_title'|trans|e('js') }}'"></div>
+            <div class="webplus-og-card__desc" x-text="resolvedDescription" x-show="resolvedDescription"></div>
+        </div>
+    </div>
+
+    {# LinkedIn #}
+    <div class="webplus-og-card webplus-og-card--linkedin" x-show="tab === 'linkedin'" x-cloak>
+        <div class="webplus-og-card__media" :class="!resolvedImage && 'is-empty'">
+            <img x-show="resolvedImage" :src="resolvedImage" alt="" loading="lazy">
+            <span x-show="!resolvedImage" class="webplus-og-card__placeholder">{{ 'webplus.og_preview.no_image'|trans }}</span>
+        </div>
+        <div class="webplus-og-card__body">
+            <div class="webplus-og-card__title" x-text="resolvedTitle || '{{ 'webplus.og_preview.empty_title'|trans|e('js') }}'"></div>
+            <div class="webplus-og-card__host" x-text="displayUrl"></div>
+        </div>
+    </div>
+</div>

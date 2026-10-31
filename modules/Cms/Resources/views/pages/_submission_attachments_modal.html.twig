@@ -1,0 +1,44 @@
+{% set modalId = 'cms-form-attachments-' ~ attempt.id %}
+{% embed 'ui/modal.html.twig' with { id: modalId, title: 'cms.form.attachments.title'|trans, panel_class: 'g-modal__panel--form' } %}
+    {% block component_attributes %}id="{{ modalId }}" x-data="gereqModal" data-modal-hash="{{ modalId }}"{% endblock %}
+    {% block trigger %}{% endblock %}
+    {% block body %}
+        <span tabindex="-1" x-ref="close"></span>
+        <div class="cms-submission-files">
+            {% for upload in attempt.uploads %}
+                <article class="cms-submission-files__item">
+                    <div class="cms-submission-files__heading">
+                        <div class="cms-submission-files__identity">
+                            <div class="cms-submission-files__title">
+                                <h3 class="cms-submission-files__name">{{ upload.filename }}</h3>
+                                <span class="badge {{ upload.scan_status == 'clean' ? 'badge--ok' : (upload.scan_status == 'infected' ? 'badge--danger' : 'badge--warn') }}">
+                                    {{ ('cms.form.scan.' ~ upload.scan_status)|trans }}
+                                </span>
+                            </div>
+                            <span class="cms-submission-files__type">{{ upload.mime_type ?: '—' }}</span>
+                        </div>
+                        {% if upload.scan_status == 'infected' %}
+                            {% include 'ui/button.html.twig' with { label: 'cms.form.download'|trans, variant: 'ghost', disabled: true } only %}
+                        {% else %}
+                            {% include 'ui/button.html.twig' with { href: url('admin.cms.forms.download', {id: upload.id}), label: 'cms.form.download'|trans, variant: 'ghost', attrs: { 'aria-label': ('cms.form.download'|trans) ~ ': ' ~ upload.filename } } only %}
+                        {% endif %}
+                    </div>
+                    <dl class="cms-submission-files__details">
+                        <div><dt>{{ 'cms.form.attachments.field'|trans }}</dt><dd>{{ upload.field_name ?: '—' }}</dd></div>
+                        <div><dt>{{ 'cms.form.attachments.uploaded'|trans }}</dt><dd>{{ upload.created_at ?: '—' }}</dd></div>
+                        {% if upload.scanned_at %}<div><dt>{{ 'cms.form.attachments.scanned'|trans }}</dt><dd>{{ upload.scanned_at }}</dd></div>{% endif %}
+                        {% if upload.scan_engine %}<div><dt>{{ 'cms.form.attachments.engine'|trans }}</dt><dd>{{ upload.scan_engine }}</dd></div>{% endif %}
+                    </dl>
+                    {% if upload.scan_status == 'infected' %}
+                        <p class="cms-submission-files__notice">{{ 'cms.form.scan.blocked'|trans }}</p>
+                    {% elseif upload.scan_status != 'clean' %}
+                        <p class="cms-submission-files__notice">{{ 'cms.form.scan.warning'|trans }}</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% endblock %}
+    {% block actions %}
+        {% include 'ui/button.html.twig' with { label: 'common.close'|trans, variant: 'ghost', attrs: { '@click': 'close' } } only %}
+    {% endblock %}
+{% endembed %}

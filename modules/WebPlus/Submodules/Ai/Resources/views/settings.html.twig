@@ -1,0 +1,60 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.webplus'|trans, url: url('admin.webplus.metas.index') },
+        { label: 'webplus_ai.settings.title'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1>{{ 'webplus_ai.settings.title'|trans }}</h1>
+        <p class="muted">{{ 'webplus_ai.settings.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        {% include 'ui/button.html.twig' with {
+            label: 'nav.webplus_ai.tools'|trans,
+            href: (url('admin.webplus_ai.tools.index')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+    </div>
+</header>
+
+<form method="post" class="detail-stack" action="{{ url('admin.webplus_ai.settings.save') }}">
+    {{ csrf_field()|raw }}
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus_ai.settings.enabled'|trans }}</h2>
+            <p class="muted">{{ 'webplus_ai.settings.enabled_hint'|trans }}</p>
+        </header>
+        <label class="field field--inline">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} type="checkbox" name="webplus_ai_enabled" value="1" {{ enabled ? 'checked' : '' }}{% endblock %}{% endembed %}
+            <span>{{ 'webplus_ai.settings.enabled'|trans }}</span>
+        </label>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head">
+            <h2>{{ 'webplus_ai.settings.catalog'|trans }}</h2>
+        </header>
+        <dl class="meta-list meta-list--flush">
+            <div><dt>FE</dt><dd><code>{{ catalogPath }}</code></dd></div>
+            <div><dt>API</dt><dd><code>{{ catalogApi }}</code></dd></div>
+        </dl>
+        {% endblock %}
+    {% endembed %}
+
+    <div class="actions">
+        {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary' } only %}
+    </div>
+</form>
+{% endblock %}

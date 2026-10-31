@@ -1,0 +1,7 @@
+{% embed 'ui/modal.html.twig' with { id: 'site-inquiry-modal', title: 'site_inquiries.detail.title'|trans, panel_class: 'site-inquiry-modal__panel' } %}
+    {% block component_attributes %} id="site-inquiry-modal" data-detail-base="{{ url('admin.site_inquiries.index') }}/" data-retry-error="{{ 'site_inquiries.detail.retry_error'|trans }}" x-data="gereqModal" @site-inquiry-open.window="show"{% endblock %}
+    {% block trigger %}{% endblock %}
+    {% block body %}<div data-inquiry-modal-body aria-live="polite"></div>{% endblock %}
+{% endembed %}
+<template id="site-inquiry-loading"><p role="status">{{ 'site_inquiries.detail.loading'|trans }}</p></template>
+<template id="site-inquiry-error"><p role="alert">{{ 'site_inquiries.detail.error'|trans }}</p></template>

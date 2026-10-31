@@ -1,0 +1,131 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.reviews'|trans },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+<div class="list-shell" x-data="dataTable" data-table-id="reviews" data-actions-default="1">
+    <header class="page-header">
+        <div>
+            <h1>{{ 'reviews.title'|trans }}</h1>
+            <p class="muted">{{ 'reviews.subtitle'|trans }}</p>
+        </div>
+        <div class="actions">
+            {% if user.can('reviews.manage') %}
+                {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.reviews.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'reviews.new'|trans }}{% endblock %}{% endembed %}
+                {% embed 'ui/modal.html.twig' with { id: 'reviews-settings-modal', title: 'reviews.settings.modal_title'|trans, panel_class: 'g-modal__panel--form' } %}
+                    {% block component_attributes %} id="reviews-settings-modal" x-data="gereqModal" data-modal-hash="reviews-settings-modal" data-reset-form="reviews-settings-form"{% if form_errors('reviews.settings.save') %} x-init="show"{% endif %}{% endblock %}
+                    {% block trigger %}
+                        {% include 'ui/button.html.twig' with { label: 'reviews.settings.modal_title'|trans, icon: 'settings', variant: 'ghost', attrs: { '@click': 'show', 'aria-haspopup': 'dialog', ':aria-expanded': 'open' } } only %}
+                    {% endblock %}
+                    {% block body %}<span tabindex="-1" x-ref="close"></span>{% include '@reviews/settings_modal.html.twig' with { fields: reviewSettings, sections: reviewSections } only %}{% endblock %}
+                    {% block actions %}
+                        {% include 'ui/button.html.twig' with { label: 'common.cancel'|trans, variant: 'ghost', attrs: { '@click': 'close' } } only %}
+                        {% include 'ui/button.html.twig' with { label: 'common.save'|trans, type: 'submit', variant: 'primary', attrs: { form: 'reviews-settings-form' } } only %}
+                    {% endblock %}
+                {% endembed %}
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="toolbar--table">
+        {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="dir" value="{{ dir }}">
+            {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'reviews.search'|trans }}"{% endblock %}{% endembed %}
+            {% embed 'ui/select.html.twig' with { native: true } %}{% block native_attributes %} name="status" class="input" onchange="this.form.submit()"{% endblock %}{% block native_options %}
+                {% include 'ui/option.html.twig' with { value: '', label: 'reviews.all_statuses'|trans } only %}
+                {% for s in statuses %}
+                    {% embed 'ui/option.html.twig' %}{% block option_attributes %} value="{{ s }}" {{ status == s ? 'selected' : '' }}{% endblock %}{% block content %}{{ ('reviews.status.' ~ s)|trans }}{% endblock %}{% endembed %}
+                {% endfor %}
+            {% endblock %}{% endembed %}
+        {% endblock %}{% endembed %}
+    </div>
+
+    <div class="table-wrap" data-table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{{ 'reviews.field.author'|trans }}</th>
+                    <th>{{ 'reviews.field.product'|trans }}</th>
+                    <th>{{ 'reviews.field.source'|trans }}</th>
+                    {% include 'ui/sort_th.html.twig' with { label: 'reviews.field.rating'|trans, column: 'rating', query: { status: status } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'reviews.field.status'|trans, column: 'status', query: { status: status } } %}
+                    {% include 'ui/sort_th.html.twig' with { label: 'reviews.field.created'|trans, column: 'createdAt', query: { status: status } } %}
+                    <th class="table__actions-head"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    {% set statusTone = item.status() == 'approved' ? 'ok' : (item.status() == 'pending' ? 'warn' : 'danger') %}
+                    {% set sourceTone = item.source() == 'local' ? 'muted' : 'info' %}
+                    <tr>
+                        <td>
+                            <div class="table__title">
+                                <a href="{{ url('admin.reviews.show', {id: item.id()}) }}">{{ item.authorName() }}</a>
+                                {% if item.title() %}
+                                    <span class="table__meta">{{ item.title() }}</span>
+                                {% endif %}
+                                {% if item.isVerifiedPurchase() %}
+                                    <div class="table__chips" style="margin-top:4px">
+                                        <span class="badge badge--ok">{{ 'reviews.field.verified'|trans }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td><code>{{ item.productId() }}</code></td>
+                        <td><span class="badge badge--{{ sourceTone }}">{{ item.sourceLabel()|trans }}</span></td>
+                        <td>
+                            <span class="reviews-rating" data-rating="{{ item.rating() }}" aria-label="{{ item.rating() }}/5">
+                                {% for i in 1..5 %}
+                                    <span class="reviews-rating__star{% if i <= item.rating() %} is-on{% endif %}">★</span>
+                                {% endfor %}
+                            </span>
+                        </td>
+                        <td><span class="badge badge--{{ statusTone }}">{{ item.statusLabel()|trans }}</span></td>
+                        <td class="is-mute">{{ item.createdAt().format('d. m. Y H:i') }}</td>
+                        {% embed 'ui/row_actions.html.twig' %}
+                            {% block items %}
+                                {% include 'ui/row_action.html.twig' with { href: url('admin.reviews.show', {id: item.id()}), label: 'common.detail'|trans, icon: 'eye' } %}
+                                {% if user.can('reviews.manage') and item.status() == 'pending' %}
+                                    <form method="post" action="{{ url('admin.reviews.approve', {id: item.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit"{% endblock %}{% block content %}{{ 'reviews.action.approve'|trans }}{% endblock %}{% endembed %}
+                                    </form>
+                                    <form method="post" action="{{ url('admin.reviews.reject', {id: item.id()}) }}">
+                                        {{ csrf_field()|raw }}
+                                        {% embed 'ui/button.html.twig' with { button_options: { tag: 'button' } } %}{% block button_attributes %} type="submit"{% endblock %}{% block content %}{{ 'reviews.action.reject'|trans }}{% endblock %}{% endembed %}
+                                    </form>
+                                {% endif %}
+                            {% endblock %}
+                        {% endembed %}
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty">
+                                <h2>{{ 'reviews.empty'|trans }}</h2>
+                                <p>{{ 'reviews.empty.hint'|trans }}</p>
+                                {% if user.can('reviews.manage') %}
+                                    {% include 'ui/button.html.twig' with {
+                                        label: 'reviews.new'|trans,
+                                        href: (url('admin.reviews.create')),
+                                        button_options: { tag: 'a' },
+                                        variant: 'primary'
+                                    } only %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include 'ui/table_footer.html.twig' %}
+</div>
+{% endblock %}

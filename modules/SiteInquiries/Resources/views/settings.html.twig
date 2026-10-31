@@ -1,0 +1,70 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<header class="page-header">
+    <h1>{{ 'site_inquiries.settings.title'|trans }}</h1>
+    <div class="actions">
+        {% include 'ui/button.html.twig' with {
+            label: 'site_inquiries.index.title'|trans,
+            href: (url('admin.site_inquiries.index')),
+            button_options: { tag: 'a' },
+            variant: 'ghost'
+        } only %}
+        {% include 'ui/button.html.twig' with {
+            label: 'common.save'|trans,
+            type: 'submit',
+            variant: 'primary',
+            attrs: { 'form': 'site-inquiries-settings' }
+        } only %}
+    </div>
+</header>
+
+<p class="muted">{{ 'site_inquiries.settings.lead'|trans }}</p>
+
+<form id="site-inquiries-settings" class="detail-stack" method="post" action="{{ url('admin.site_inquiries.settings.update') }}">
+    {{ csrf_field()|raw }}
+    {% embed 'ui/panel.html.twig' with { panel_options: { tag: 'section' } } %}
+        {% block attributes %} class="panel"{% endblock %}
+        {% block content %}
+        <header class="panel__head"><h2>{{ 'nav.site_inquiries.settings'|trans }}</h2></header>
+        <div class="form-grid form-grid--2">
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_person'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="contact_person" value="{{ values.contact_person }}"{% endblock %}{% endembed %}
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_ico'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="contact_ico" value="{{ values.contact_ico }}"{% endblock %}{% endembed %}
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_dic'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="contact_dic" value="{{ values.contact_dic }}" placeholder="CZ12345678"{% endblock %}{% endembed %}
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_phone'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="contact_phone" value="{{ values.contact_phone }}"{% endblock %}{% endembed %}
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_phone_tel'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="contact_phone_tel" value="{{ values.contact_phone_tel }}"{% endblock %}{% endembed %}
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.contact_email'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="email" name="contact_email" value="{{ values.contact_email }}"{% endblock %}{% endembed %}
+            </label>
+            <label class="field">
+                <span>{{ 'site_inquiries.settings.notify_email'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="email" name="notify_email" value="{{ values.notify_email }}"{% endblock %}{% endembed %}
+            </label>
+            <label class="field field--full">
+                <span>{{ 'site_inquiries.settings.contact_address'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="contact_address" value="{{ values.contact_address }}"{% endblock %}{% endembed %}
+            </label>
+            <label class="field field--full">
+                <span>{{ 'site_inquiries.settings.tagline'|trans }}</span>
+                {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" name="tagline" value="{{ values.tagline }}"{% endblock %}{% endembed %}
+            </label>
+        </div>
+        {% endblock %}
+    {% endembed %}
+</form>
+{% endblock %}

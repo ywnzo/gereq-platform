@@ -1,0 +1,93 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell list-shell--tabs" x-data="dataTable" data-table-id="webplus-metas" data-actions-default="1">
+<header class="page-header">
+    <div>
+        <h1>{{ 'webplus.metas.title'|trans }}</h1>
+        <p class="muted">{{ 'webplus.metas.intro'|trans }}</p>
+    </div>
+    <div class="actions">
+        {% if user.can('webplus.manage') %}
+            {% embed 'ui/button.html.twig' with { button_options: { tag: 'a' } } %}{% block button_attributes %} class="btn btn--primary" href="{{ url('admin.webplus.metas.create') }}"{% endblock %}{% block content %}{{ icon('plus') }} {{ 'webplus.metas.new'|trans }}{% endblock %}{% endembed %}
+        {% endif %}
+        {% if user.can('webplus.manage') %}
+            {% include 'ui/button.html.twig' with {
+                label: 'nav.webplus.health'|trans,
+                href: (url('admin.webplus.health')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+            {% include 'ui/button.html.twig' with {
+                label: 'nav.webplus.settings'|trans,
+                href: (url('admin.webplus.settings')),
+                button_options: { tag: 'a' },
+                variant: 'ghost'
+            } only %}
+        {% endif %}
+    </div>
+</header>
+
+{% include '@webplus/partials/_hub_tabs.html.twig' with { active: 'metas' } %}
+
+<div class="toolbar--table">
+    {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}{% block component_attributes %} class="toolbar" method="get"{% endblock %}{% block content %}
+        {% embed 'ui/input.html.twig' with { input_options: { control_only: true } } %}{% block input_attributes %} class="input" type="search" name="q" value="{{ search }}" placeholder="{{ 'webplus.metas.search'|trans }}"{% endblock %}{% endembed %}
+    {% endblock %}{% endembed %}
+</div>
+
+<div class="table-wrap" data-table>
+<table class="table">
+<thead><tr>
+<th>{{ 'webplus.field.path'|trans }}</th>
+<th>{{ 'webplus.field.seo_title'|trans }}</th>
+<th>{{ 'webplus.field.cms_page_id'|trans }}</th>
+<th>{{ 'webplus.field.active'|trans }}</th>
+<th class="table__actions-head"></th>
+</tr></thead>
+<tbody>
+{% for item in items %}
+<tr>
+    <td>
+        <code>{{ item.path() }}</code>
+        {% if item.isPathTemplate() %}
+            <span class="badge badge--muted">{{ 'webplus.metas.template'|trans }}</span>
+        {% endif %}
+        {% set map = coverage[item.id()] ?? null %}
+        {% if map %}
+            <div class="muted" style="margin-top:.25rem">
+                {{ ('webplus.mapping.source.' ~ map.source)|trans }}
+                · <code>{{ map.template }}</code>
+            </div>
+        {% endif %}
+    </td>
+    <td>{{ item.seoTitle() ?: '—' }}</td>
+    <td>{{ item.cmsPageId() ? item.cmsPageId()|slice(0, 8) ~ '…' : '—' }}</td>
+    <td>
+        <span class="badge badge--{{ item.isActive() ? 'ok' : 'muted' }}">
+            {{ item.isActive() ? 'webplus.active'|trans : 'webplus.inactive'|trans }}
+        </span>
+    </td>
+    {% embed 'ui/row_actions.html.twig' %}
+        {% block items %}
+            {% if user.can('webplus.manage') %}
+                {% include 'ui/row_action.html.twig' with { href: url('admin.webplus.metas.edit', {id: item.id()}), label: 'common.edit'|trans, icon: 'edit' } %}
+                {% include 'ui/row_action_destroy.html.twig' with { action: url('admin.webplus.metas.destroy', {id: item.id()}), confirm: 'webplus.confirm_delete'|trans } %}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+</tr>
+{% else %}
+<tr>
+<td colspan="5">
+<div class="empty">
+<h2>{{ 'webplus.metas.empty'|trans }}</h2>
+<p>{{ 'webplus.metas.empty.hint'|trans }}</p>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endblock %}

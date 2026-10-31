@@ -1,0 +1,125 @@
+{% extends 'admin/layout.html.twig' %}
+
+{#
+    Render data (frozen contract): pageTitle, site, form, errors.
+    `form` is the form name used by forms()->render() and the validation bag
+    (FormState reads the errors through errors()/error(), `errors` is the
+    explicit map fallback the controller may pass instead).
+#}
+
+{% block breadcrumb %}
+    {% include 'ui/breadcrumbs.html.twig' with { items: [
+        { label: 'nav.overview'|trans, url: url('admin.dashboard') },
+        { label: 'nav.analytics'|trans, url: url('admin.analytics.index') },
+        { label: 'analytics.title.sites'|trans, url: url('admin.analytics.sites.index') },
+        { label: site ? ('analytics.sites.edit'|trans({'%name%': site.name ?? site.key ?? ''})) : ('analytics.sites.new'|trans) },
+    ] } %}
+{% endblock %}
+
+{% block content %}
+    {% set formName = form|default('analytics.site') %}
+    {% set siteSource = site is iterable or site is null ? 'Modules\\Analytics\\Domain\\Site' : site %}
+    {% set siteId = site.id|default(null) %}
+    {% set formValues = site is iterable ? site : {} %}
+    {% set formErrors = errors|default([]) %}
+
+    {#
+        `domains`, `excluded_paths` and `excluded_ips` are JSON list columns and stay out of the
+        generator: an array value cannot be bound to a scalar control (same precedent as
+        Listing::$images). SiteController reads one entry per line from one textarea value, so the
+        three lists are rendered by hand. Values resolve from the snake_case row keys the form is
+        re-rendered with (`domains`, `excluded_paths`, `excluded_ips`) and from an entity object.
+    #}
+    {% set siteDomains = site.domains|default([]) %}
+    {% set siteExcludedPaths = site.excluded_paths|default(site.excludedPaths|default([])) %}
+    {% set siteExcludedIps = site.excluded_ips|default(site.excludedIps|default([])) %}
+    {% set domainsValue = siteDomains is iterable ? siteDomains|join("\n") : (siteDomains|default('')) %}
+    {% set excludedPathsValue = siteExcludedPaths is iterable ? siteExcludedPaths|join("\n") : (siteExcludedPaths|default('')) %}
+    {% set excludedIpsValue = siteExcludedIps is iterable ? siteExcludedIps|join("\n") : (siteExcludedIps|default('')) %}
+
+    <header class="page-header">
+        <div>
+            <h1>{{ pageTitle|default(site ? ('analytics.sites.edit'|trans({'%name%': site.name ?? site.key ?? ''})) : ('analytics.sites.new'|trans)) }}</h1>
+            <p class="muted">{{ 'analytics.sites.form.hint'|trans }}</p>
+        </div>
+    </header>
+
+    {% if formErrors is not empty %}
+        <div class="g-summary" role="alert" tabindex="-1" id="form-errors">
+            <p class="g-summary__kicker">{{ (formErrors|length == 1 ? 'ui.error_summary.one' : 'ui.error_summary.many')|trans({'%count%': formErrors|length}) }}</p>
+            <p class="g-summary__title">{{ 'ui.error_summary.title'|trans }}</p>
+            <ul class="g-summary__list">
+                {% for field, message in formErrors %}
+                    <li><a href="#f-{{ field }}">{{ message }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        {% include 'ui/error-summary.html.twig' with { form: formName } %}
+    {% endif %}
+
+    <form
+        method="post"
+        class="detail-stack"
+        action="{{ site ? url('admin.analytics.sites.update', { id: siteId }) : url('admin.analytics.sites.store') }}"
+        data-form="{{ formName }}"
+        x-data="gereqForm"
+        autocomplete="off"
+        {% if form_errors(formName) %}data-server-state="1"{% endif %}
+    >
+        {{ csrf_field()|raw }}
+
+        <section class="panel">
+            <header class="panel__head">
+                <h2>{{ 'common.details'|trans }}</h2>
+            </header>
+            {{ forms().render(siteSource, {
+                form: formName,
+                cols: 2,
+                values: formValues,
+            }) }}
+
+            {# List columns (see the note above) — one entry per line, posted as a single value. #}
+            <div class="form-grid">
+                {% include 'ui/textarea.html.twig' with {
+                    name: 'domains',
+                    label: 'analytics.sites.field.domains'|trans,
+                    hint: 'analytics.sites.field.domains.help'|trans,
+                    optional: true,
+                    value: domainsValue,
+                    form: formName,
+                    size: 'mini',
+                    rows: 4,
+                    extra: 'field--full'
+                } %}
+                {% include 'ui/textarea.html.twig' with {
+                    name: 'excluded_paths',
+                    label: 'analytics.sites.field.excluded_paths'|trans,
+                    hint: 'analytics.sites.field.excluded_paths.help'|trans,
+                    optional: true,
+                    value: excludedPathsValue,
+                    form: formName,
+                    size: 'mini',
+                    rows: 4,
+                    extra: 'field--full'
+                } %}
+                {% include 'ui/textarea.html.twig' with {
+                    name: 'excluded_ips',
+                    label: 'analytics.sites.field.excluded_ips'|trans,
+                    hint: 'analytics.sites.field.excluded_ips.help'|trans,
+                    optional: true,
+                    value: excludedIpsValue,
+                    form: formName,
+                    size: 'mini',
+                    rows: 4,
+                    extra: 'field--full'
+                } %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{{ 'common.save'|trans }}</button>
+            <a class="btn btn--ghost" href="{{ url('admin.analytics.sites.index') }}">{{ 'common.cancel'|trans }}</a>
+        </div>
+    </form>
+{% endblock %}

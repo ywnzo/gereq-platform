@@ -1,0 +1,21 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="grq-stack">
+    <header class="page-header"><div><h1>{{ pageTitle }}</h1><p class="muted">{{ 'analytics.forms.intro'|trans }}</p></div></header>
+    {% include '@analytics/partials/_nav.html.twig' with { active: 'forms' } %}
+    {% include '@analytics/partials/_filters.html.twig' with { route: 'admin.analytics.forms' } %}
+    <section class="panel">
+        <header class="panel__head"><h2>{{ 'analytics.forms.inquiry'|trans }}</h2></header>
+        <div class="table-wrap"><table class="table">
+            <thead><tr><th>{{ 'analytics.forms.step'|trans }}</th><th>{{ 'analytics.kpi.sessions'|trans }}</th><th>{{ 'analytics.kpi.events'|trans }}</th></tr></thead>
+            <tbody>
+            {% for step in ['form_start', 'form_field_focus', 'form_field_complete', 'form_validation_error', 'form_submit_attempt', 'form_submit_success', 'form_submit_error', 'form_abandon'] %}
+                <tr><td>{{ ('analytics.event.' ~ step)|trans }}</td><td>{{ summary[step].sessions|default(0) }}</td><td>{{ summary[step].events|default(0) }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table></div>
+        <p class="muted">{{ 'analytics.forms.note'|trans }}</p>
+        {% if user.can('analytics.raw') %}<a class="btn btn--ghost" href="{{ url('admin.analytics.recordings', {site: site.id|default(null), range: range.key}) }}">{{ 'analytics.forms.timeline'|trans }}</a>{% endif %}
+    </section>
+</div>
+{% endblock %}

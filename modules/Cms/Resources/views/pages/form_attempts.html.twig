@@ -1,0 +1,52 @@
+{% extends 'admin/layout.html.twig' %}
+{% block content %}
+<div class="list-shell">
+    <header class="page-header">
+        <div><h1>{{ 'cms.form.attempts'|trans }}</h1><p class="muted">{{ 'cms.form.attempts_hint'|trans }}</p></div>
+    </header>
+    <div x-data="dataTable" data-table-id="cms-form-submissions">
+        <div class="toolbar--table">
+            {% embed 'ui/toolbar.html.twig' with { table: false, toolbar_options: { tag: 'form' } } %}
+                {% block component_attributes %} class="toolbar cms-form-filters" method="get" action="{{ url('admin.cms.forms.attempts') }}"{% endblock %}
+                {% block content %}
+                    {% for key, translation in { page: 'cms.form.page', form: 'cms.block.type.form' } %}
+                        {% include 'ui/input.html.twig' with { name: key, label: translation|trans, value: filters[key] } only %}
+                    {% endfor %}
+                    {% for key, choices in { outcome: outcomes, delivery: deliveries } %}
+                        {% set options = [{ value: '', label: 'cms.form.filter_all' }] %}
+                        {% for choice in choices %}
+                            {% set options = options|merge([{ value: choice, label: 'cms.form.' ~ key ~ '.' ~ choice }]) %}
+                        {% endfor %}
+                        {% include 'ui/select.html.twig' with { name: key, label: ('cms.form.' ~ key)|trans, value: filters[key], options: options, placeholder: 'cms.form.filter_all'|trans } only %}
+                    {% endfor %}
+                    {% for key, translation in { from: 'cms.form.date_from', to: 'cms.form.date_to' } %}
+                        <div class="g-field cms-form-filters__date">
+                            <label class="g-label" for="f-{{ key }}">{{ translation|trans }}</label>
+                            <input type="hidden" name="{{ key }}" value="{{ filters[key] }}" data-cms-date-value>
+                            <div data-cms-date-picker data-input-id="f-{{ key }}" data-placeholder="{{ 'cms.form.select_date'|trans }}"></div>
+                        </div>
+                    {% endfor %}
+                    <div class="cms-form-filters__actions">
+                    {% include 'ui/button.html.twig' with { label: 'cms.pages.filter'|trans, type: 'submit', variant: 'ghost' } only %}
+                    {% include 'ui/button.html.twig' with { label: 'cms.form.clear_filters'|trans, href: url('admin.cms.forms.attempts'), variant: 'ghost' } only %}
+                    </div>
+                {% endblock %}
+            {% endembed %}
+        </div>
+        <div class="table-wrap" data-table>
+            <table class="table">
+                <thead><tr><th>{{ 'cms.form.time'|trans }}</th><th>{{ 'cms.form.page'|trans }}</th><th>{{ 'cms.block.type.form'|trans }}</th><th>{{ 'cms.form.outcome'|trans }}</th><th>{{ 'cms.form.delivery'|trans }}</th><th>{{ 'cms.form.http_status'|trans }}</th><th>{{ 'cms.form.record'|trans }}</th></tr></thead>
+                <tbody>{% for attempt in attempts %}<tr>
+                    <td>{{ attempt.created_at }}</td><td>/{{ attempt.page_slug }}</td>
+                    <td><code title="{{ attempt.form_id }}">{{ attempt.form_id|length > 12 ? attempt.form_id|slice(0, 8) ~ '…' : attempt.form_id }}</code></td>
+                    <td>{{ ('cms.form.outcome.' ~ attempt.outcome)|trans }}</td><td>{{ ('cms.form.delivery.' ~ attempt.delivery_status)|trans }}</td><td>{{ attempt.http_status }}</td>
+                <td>{% include '@cms/pages/_submission_actions.html.twig' with { attempt: attempt } only %}</td>
+                </tr>{% else %}<tr><td colspan="7">{{ 'cms.form.no_attempts'|trans }}</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% for attempt in attempts %}
+    {% if attempt.uploads is not empty %}{% include '@cms/pages/_submission_attachments_modal.html.twig' with { attempt: attempt } only %}{% endif %}
+{% endfor %}
+{% endblock %}
